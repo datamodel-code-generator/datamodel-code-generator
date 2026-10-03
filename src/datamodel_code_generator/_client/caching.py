@@ -58,7 +58,7 @@ class _Caches:
     def __init__(
         self, protocols: Protocols, codecs: CodecPlan, wire: WirePlan, request: TargetRequest, plan: ClientPlan
     ) -> None:
-        """Index the use bindings, the schema reader that types parameters, and the headers credentials travel in."""
+        """Index the response bindings and the headers credentials travel in."""
         self.pages = _Pages(protocols, plan, codecs, wire, request)
         self.bindings = dict(codecs.bindings)
         self.credential_headers = self.pages.secret_headers

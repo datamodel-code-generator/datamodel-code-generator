@@ -275,9 +275,9 @@ class _Fetch(Generic[T]):
                 "accept": headers.get("accept"),
                 "partition": "anonymous" if partition is None else partition,
                 "credentials": credentials,
-                "credential_values": sha256(
-                    canonical_json([(name, headers.get_all(name)) for name in sorted(self.credential_headers)])
-                ).hexdigest(),
+                "credential_values": [
+                    (name, headers.get_all(name)) for name in sorted(self.credential_headers) if name in headers
+                ],
                 "varied": sorted(implicit),
             })
         ).digest()
@@ -538,8 +538,8 @@ def _checked(
 def _run(
     plan: CachePlan[T],
     action: Literal["get", "set", "delete"],
-    run: Callable[[], V],
-) -> V:
+    run: Callable[[], object],
+) -> object:
     """Run a store method, raising its failure as a cache store error that keeps the cause."""
     try:
         return run()
@@ -552,8 +552,8 @@ def _run(
 async def _arun(
     plan: CachePlan[T],
     action: Literal["get", "set", "delete"],
-    run: Callable[[], Awaitable[V]],
-) -> V:
+    run: Callable[[], Awaitable[object]],
+) -> object:
     """Await a store method, raising its failure as a cache store error that keeps the cause."""
     try:
         return await run()
