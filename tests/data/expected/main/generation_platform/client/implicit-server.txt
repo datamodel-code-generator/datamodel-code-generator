@@ -31,4 +31,4 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/0 default.get_status()
     exports client.types.default.GetStatusResponse client.types.default.GetStatusErrorData client.types.default.GetStatusHTTPError
     exports client.types.default.GetStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
