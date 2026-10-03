@@ -369,6 +369,7 @@ def _rejections(hooks: Webhooks) -> None:
         hooks.check("Stripe changed body", vector, body=vector.body + b"\n")
         signature = vector.headers[-1][1]
         for label, header in (
+            ("Stripe incomplete field", signature + ",v1"),
             ("Stripe repeated timestamp", signature + ",t=1614265330"),
             ("Stripe no timestamp", signature.split(",", 1)[1]),
             ("Stripe no signature", "t=1614265330"),

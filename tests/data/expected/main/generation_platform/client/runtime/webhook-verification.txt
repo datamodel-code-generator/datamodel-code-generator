@@ -24,6 +24,7 @@
   printf '{"side": 2}' | openssl dgst -sha256 -hmac shape-secret = Shape Shape(root=Square(side=2.0)) delivery_id=None timestamp=None matched_key_id='active'
   printf '1614265330.{"test": 2432232314}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Message Message(test=2432232314) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   Stripe changed body = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Stripe incomplete field = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
   Stripe repeated timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
   Stripe no timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
   Stripe no signature = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
