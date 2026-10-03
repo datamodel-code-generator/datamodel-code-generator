@@ -103,10 +103,10 @@ render pydantic_v2.BaseModel default
     FieldBinding(field_id='models:Other.extra', native_name='extra', wire_name='extra', validation_key='extra', validation_keys=('extra',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_3 symbol='models:Sibling', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Sibling', root=UnionNode(members=(ModelNode(symbol='models:Sibling1'), ModelNode(symbol='models:Sibling2')))
-  _model_4 symbol='models:Sibling1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Sibling/anyOf/0'
+  _model_4 symbol='models:Sibling1', native_kind='model', schema_id=None
     FieldBinding(field_id='models:Sibling1.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Sibling1.open', native_name='open', wire_name='open', validation_key='open', validation_keys=('open',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_5 symbol='models:Sibling2', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Sibling/anyOf/1'
+  _model_5 symbol='models:Sibling2', native_kind='model', schema_id=None
     FieldBinding(field_id='models:Sibling2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Sibling2.open', native_name='open', wire_name='open', validation_key='open', validation_keys=('open',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Sibling2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
@@ -125,12 +125,12 @@ render pydantic_v2.BaseModel default
   _model_13 symbol='models:Thing2', native_kind='model', schema_id=None
     FieldBinding(field_id='models:Thing2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Thing2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_14 symbol='models:Thing3', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Thing/anyOf/0'
+  _model_14 symbol='models:Thing3', native_kind='model', schema_id=None
     FieldBinding(field_id='models:Thing3.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_15 symbol='models:ThingBase', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ThingBase', root=UnionNode(members=(ModelNode(symbol='models:ThingBase1'), ModelNode(symbol='models:ThingBase2')))
-  _model_16 symbol='models:ThingBase1', native_kind='model', schema_id=None
+  _model_16 symbol='models:ThingBase1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ThingBase/anyOf/0'
     FieldBinding(field_id='models:ThingBase1.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_17 symbol='models:ThingBase2', native_kind='model', schema_id=None
+  _model_17 symbol='models:ThingBase2', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ThingBase/anyOf/1'
     FieldBinding(field_id='models:ThingBase2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:ThingBase2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Combined]
@@ -282,10 +282,10 @@ render pydantic_v2.dataclass default
     FieldBinding(field_id='models:Other.shared', native_name='shared', wire_name='shared', validation_key='shared', validation_keys=('shared',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Other.extra', native_name='extra', wire_name='extra', validation_key='extra', validation_keys=('extra',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:Sibling1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Sibling/anyOf/0'
+  _model_3 symbol='models:Sibling1', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Sibling1.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Sibling1.open', native_name='open', wire_name='open', validation_key='open', validation_keys=('open',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_4 symbol='models:Sibling2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Sibling/anyOf/1'
+  _model_4 symbol='models:Sibling2', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Sibling2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Sibling2.open', native_name='open', wire_name='open', validation_key='open', validation_keys=('open',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Sibling2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
@@ -301,11 +301,11 @@ render pydantic_v2.dataclass default
   _model_9 symbol='models:Thing2', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Thing2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Thing2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_10 symbol='models:Thing3', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Thing/anyOf/0'
+  _model_10 symbol='models:Thing3', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Thing3.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_11 symbol='models:ThingBase1', native_kind='dataclass', schema_id=None
+  _model_11 symbol='models:ThingBase1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ThingBase/anyOf/0'
     FieldBinding(field_id='models:ThingBase1.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_12 symbol='models:ThingBase2', native_kind='dataclass', schema_id=None
+  _model_12 symbol='models:ThingBase2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ThingBase/anyOf/1'
     FieldBinding(field_id='models:ThingBase2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:ThingBase2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Combined]
@@ -455,10 +455,10 @@ render dataclasses.dataclass default
     FieldBinding(field_id='models:Other.shared', native_name='shared', wire_name='shared', validation_key='shared', validation_keys=('shared',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Other.extra', native_name='extra', wire_name='extra', validation_key='extra', validation_keys=('extra',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:Sibling1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Sibling/anyOf/0'
+  _model_3 symbol='models:Sibling1', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Sibling1.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Sibling1.open', native_name='open', wire_name='open', validation_key='open', validation_keys=('open',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_4 symbol='models:Sibling2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Sibling/anyOf/1'
+  _model_4 symbol='models:Sibling2', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Sibling2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Sibling2.open', native_name='open', wire_name='open', validation_key='open', validation_keys=('open',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Sibling2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
@@ -474,11 +474,11 @@ render dataclasses.dataclass default
   _model_9 symbol='models:Thing2', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Thing2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Thing2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_10 symbol='models:Thing3', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Thing/anyOf/0'
+  _model_10 symbol='models:Thing3', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Thing3.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_11 symbol='models:ThingBase1', native_kind='dataclass', schema_id=None
+  _model_11 symbol='models:ThingBase1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ThingBase/anyOf/0'
     FieldBinding(field_id='models:ThingBase1.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_12 symbol='models:ThingBase2', native_kind='dataclass', schema_id=None
+  _model_12 symbol='models:ThingBase2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ThingBase/anyOf/1'
     FieldBinding(field_id='models:ThingBase2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:ThingBase2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Combined]
@@ -614,10 +614,10 @@ render typing.TypedDict default
     FieldBinding(field_id='models:Other.shared', native_name='shared', wire_name='shared', validation_key='shared', validation_keys=('shared',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Other.extra', native_name='extra', wire_name='extra', validation_key='extra', validation_keys=('extra',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:Sibling1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Sibling/anyOf/0'
+  _model_3 symbol='models:Sibling1', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:Sibling1.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Sibling1.open', native_name='open', wire_name='open', validation_key='open', validation_keys=('open',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_4 symbol='models:Sibling2', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Sibling/anyOf/1'
+  _model_4 symbol='models:Sibling2', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:Sibling2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Sibling2.open', native_name='open', wire_name='open', validation_key='open', validation_keys=('open',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Sibling2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -633,11 +633,11 @@ render typing.TypedDict default
   _model_9 symbol='models:Thing2', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:Thing2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Thing2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_10 symbol='models:Thing3', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Thing/anyOf/0'
+  _model_10 symbol='models:Thing3', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:Thing3.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_11 symbol='models:ThingBase1', native_kind='typed_dict', schema_id=None
+  _model_11 symbol='models:ThingBase1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ThingBase/anyOf/0'
     FieldBinding(field_id='models:ThingBase1.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_12 symbol='models:ThingBase2', native_kind='typed_dict', schema_id=None
+  _model_12 symbol='models:ThingBase2', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ThingBase/anyOf/1'
     FieldBinding(field_id='models:ThingBase2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:ThingBase2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Combined]
@@ -774,10 +774,10 @@ render msgspec.Struct default
     FieldBinding(field_id='models:Other.shared', native_name='shared', wire_name='shared', validation_key='shared', validation_keys=('shared',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Other.extra', native_name='extra', wire_name='extra', validation_key='extra', validation_keys=('extra',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:Sibling1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Sibling/anyOf/0'
+  _model_3 symbol='models:Sibling1', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:Sibling1.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Sibling1.open', native_name='open', wire_name='open', validation_key='open', validation_keys=('open',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_4 symbol='models:Sibling2', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Sibling/anyOf/1'
+  _model_4 symbol='models:Sibling2', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:Sibling2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Sibling2.open', native_name='open', wire_name='open', validation_key='open', validation_keys=('open',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Sibling2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -793,11 +793,11 @@ render msgspec.Struct default
   _model_9 symbol='models:Thing2', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:Thing2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Thing2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_10 symbol='models:Thing3', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Thing/anyOf/0'
+  _model_10 symbol='models:Thing3', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:Thing3.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_11 symbol='models:ThingBase1', native_kind='struct', schema_id=None
+  _model_11 symbol='models:ThingBase1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ThingBase/anyOf/0'
     FieldBinding(field_id='models:ThingBase1.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_12 symbol='models:ThingBase2', native_kind='struct', schema_id=None
+  _model_12 symbol='models:ThingBase2', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ThingBase/anyOf/1'
     FieldBinding(field_id='models:ThingBase2.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:ThingBase2.b', native_name='b', wire_name='b', validation_key='b', validation_keys=('b',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Combined]

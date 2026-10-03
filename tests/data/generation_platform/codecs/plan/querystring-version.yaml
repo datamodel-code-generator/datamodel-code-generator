@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info: {title: Querystring under a forced schema version, version: "1"}
+paths:
+  /search:
+    get:
+      parameters:
+        - name: filter
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema: {type: object, properties: {term: {type: string}}}
+      responses:
+        "204": {description: none}

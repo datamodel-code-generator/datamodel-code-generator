@@ -20,7 +20,7 @@ CASES = json.loads((DATA / "generation_platform/attempts.json").read_text())
 
 @pytest.mark.parametrize("case", CASES, ids=operator.itemgetter("name"))
 def test_generation_attempt_lifetime(case: dict[str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Preserve the independent S01 trace oracle with real S03 session ownership."""
+    """Preserve the independent S01 trace oracle with real target session ownership."""
     failure = case.get("failure", "")
     source = (DATA / "generation_platform" / case["input"]).resolve()
     if failure in {"source_change", "discard"}:
@@ -33,7 +33,7 @@ def test_generation_attempt_lifetime(case: dict[str, str], tmp_path: Path, monke
         blocked.write_text("not a directory")
         output = blocked / "models.py"
     observation, retained = run_generation_session(
-        source, failure=failure, monkeypatch=monkeypatch, output=output, api_scope=case.get("api") == "true"
+        source, failure=failure, monkeypatch=monkeypatch, output=output, api_scope=case.get("api") != "false"
     )
     expected = EXPECTED / ("windows" if sys.platform == "win32" and failure == "emit" else "")
     assert_output(json.dumps(observation, indent=2) + "\n", expected / f"attempt_{case['name']}.txt")

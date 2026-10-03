@@ -5,11 +5,23 @@ render pydantic_v2.BaseModel schemas
   #   filename:  session-schema-callback-referenced.json
   
   from __future__ import annotations
-  from pydantic import BaseModel
+  from pydantic import BaseModel, RootModel
   
   
   class Item(BaseModel):
       id: int
+  
+  
+  class FieldItemsPostOnDoneCallback1PostQueryQParameter(RootModel[int]):
+      root: int
+  
+  
+  class FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter(RootModel[str]):
+      root: str
+  
+  
+  class FieldItemsPostOnDoneCallback1PostRequest(BaseModel):
+      event: str
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -48,12 +60,27 @@ render pydantic_v2.dataclass schemas
   
   from __future__ import annotations
   from pydantic.dataclasses import dataclass
+  from typing_extensions import TypeAliasType
   
   
   
   @dataclass
   class Item:
       id: int
+  
+  
+  
+  FieldItemsPostOnDoneCallback1PostQueryQParameter = TypeAliasType("FieldItemsPostOnDoneCallback1PostQueryQParameter", int)
+  
+  
+  
+  FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter = TypeAliasType("FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter", str)
+  
+  
+  
+  @dataclass
+  class FieldItemsPostOnDoneCallback1PostRequest:
+      event: str
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -97,12 +124,27 @@ render dataclasses.dataclass schemas
   
   from __future__ import annotations
   from dataclasses import dataclass
+  from typing import TypeAlias
   
   
   
   @dataclass
   class Item:
       id: int
+  
+  
+  
+  FieldItemsPostOnDoneCallback1PostQueryQParameter: TypeAlias = int
+  
+  
+  
+  FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter: TypeAlias = str
+  
+  
+  
+  @dataclass
+  class FieldItemsPostOnDoneCallback1PostRequest:
+      event: str
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -145,12 +187,25 @@ render typing.TypedDict schemas
   #   filename:  session-schema-callback-referenced.json
   
   from __future__ import annotations
-  from typing import TypedDict
+  from typing import TypeAlias, TypedDict
   
   
   
   class Item(TypedDict):
       id: int
+  
+  
+  
+  FieldItemsPostOnDoneCallback1PostQueryQParameter: TypeAlias = int
+  
+  
+  
+  FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter: TypeAlias = str
+  
+  
+  
+  class FieldItemsPostOnDoneCallback1PostRequest(TypedDict):
+      event: str
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -191,11 +246,25 @@ render msgspec.Struct schemas
   
   from __future__ import annotations
   from msgspec import Struct
+  from typing import TypeAlias
   
   
   
   class Item(Struct):
       id: int
+  
+  
+  
+  FieldItemsPostOnDoneCallback1PostQueryQParameter: TypeAlias = int
+  
+  
+  
+  FieldItemsPostOnDoneCallback1PostHeaderPathTokenParameter: TypeAlias = str
+  
+  
+  
+  class FieldItemsPostOnDoneCallback1PostRequest(Struct):
+      event: str
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())

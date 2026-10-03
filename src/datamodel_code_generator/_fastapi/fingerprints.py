@@ -14,10 +14,10 @@ from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 if TYPE_CHECKING:
     from datamodel_code_generator._api_manifest import DocumentTable
     from datamodel_code_generator._fastapi.plan import OperationSpec
-    from datamodel_code_generator._generation_contract import TypeUseBinding, TypeUseId
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
 
 _FIELDS: Final[dict[type, tuple[str, ...] | None]] = {}
 
