@@ -214,13 +214,11 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | `CacheOptions` | `max_entry_bytes` | `2097152` | Positive integer: the largest body a fetch stores |
 | | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
 | `WSOptions` | `open_timeout`, `idle_timeout`, `send_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
-| | `close_timeout`, `resume_ack_timeout` | `5` and `30` seconds | Positive duration |
+| | `close_timeout` | `5` seconds | Positive duration |
 | | `max_message_bytes`, `max_queue` | `1048576` and `16` | Positive integer |
-| | `max_ack_buffer_messages`, `max_ack_buffer_bytes`, `max_unacked` | `16`, `16777216`, and `100` | Positive integer |
 | | `compression` | `None` | `"deflate"` or `None` |
-| | `reconnect` | `False` | `bool` |
-| | `max_reconnects` | `5` | Nonnegative integer or `None` |
 | `QueueOptions` | `max_entries`, `parallelism`, and the entry policy fields | See [queue limits](#limits-and-policies) | Positive integers and durations; `max_delivery_timeout` at most 300 |
+
 
 `ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
 nonsecret credential partition of helper state and the origins permitted in addition to the same origin. The
@@ -1962,16 +1960,18 @@ never imports the WebSocket library.
 
 ### Handshakes
 
-The handshake is one logical call of the operation, with its retries, `Retry-After`, redirects, authentication and
-token refresh, limiter, hooks, and deadline, as any call has. Only a 101 response whose headers validate opens the
-session: any other response is read up to `max_error_body_bytes` and raises the operation's typed `HTTPStatusError`,
-or `UnexpectedStatusError` for an undeclared status, so 101 need not be declared. The handshake's limiter permit is
-held for the whole session and released when it closes or fails. URLs keep their `https` or `http` server and are
-opened as `wss` or `ws`; a redirect to a `wss` or `ws` location follows the shared redirect policy as the `https` or
-`http` URL it names. When the helper offers subprotocols, the server must select one of them, or
-`connect` raises `WebSocketHandshakeError` with the condition `negotiation`; `session.subprotocol` is the selected one
-and `session.response` the 101 response. Credentials are sent as the operation's security declares, on every attempt
-and only to the server's origin or the security context's allowed origins. Headers the handshake manages, such as
+The handshake is one logical call of the operation, with initial authentication, limiter, hooks, and deadline.
+Only a 101 response whose headers validate opens the session: any other response is read up to `max_error_body_bytes`
+and raises the operation's typed `HTTPStatusError`, or `UnexpectedStatusError` for an undeclared status, so 101 need not
+be declared. Received refusals are terminal, including redirects and 401s; a refused upgrade never invalidates or
+refreshes credentials. Only an initial transport failure proven `NOT_SENT` before session handover may use the call's
+existing retry policy. A handshake that may have reached the server is never sent again.
+
+The handshake's limiter permit is held for the whole session and released when it closes or fails. URLs keep their
+`https` or `http` server and are opened as `wss` or `ws`. When the helper offers subprotocols, the server must select one
+of them, or `connect` raises `WebSocketHandshakeError` with the condition `negotiation`; `session.subprotocol` is the
+selected one and `session.response` the 101 response. Credentials are sent as the operation's security declares,
+only to the server's origin or the security context's allowed origins. Headers the handshake manages, such as
 `Upgrade`, `Connection`, and `Sec-WebSocket-*`, given through request options or parameters raise `ConfigurationError`
 with the condition `managed` before anything is sent. The handshake's hooks end with the call outcome `handed_off`, and
 the session's end emits `stream_end`.
@@ -1986,7 +1986,7 @@ the session's end emits `stream_end`.
 | `ping(payload=b"")` | Sends a ping of at most 125 bytes and returns a `PingReceipt` with the pong's `latency` in seconds |
 | `close(code=1000, reason="")`, `aclose` | Closes with 1000, 1001, or a code from 3000 to 4999 and a reason of at most 123 UTF-8 bytes; repeats do nothing |
 | `with`, `async with` | Closes the session on exit |
-| `progress` | `reconnects`, the session's network sends, `messages_sent`, and `messages_received` |
+| `progress` | The session's network sends, `messages_sent`, and `messages_received` |
 
 The session owns the connection until it closes or fails, and closing the client closes it after the client's cleanup
 wait. One `receive` waits at a time: another raises `ConcurrentReceiveError`, while one send may run beside it, and
@@ -2023,10 +2023,9 @@ A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `mes
 bounds every wait and raises `DeadlineExceededError`. A send that sent nothing before its timeout raises
 `PhaseTimeoutError` with the phase `write` and keeps the session open; one that may have reached the server raises
 `DeliveryUnknownError` with the delivery state `MAYBE_SENT`, closes the session, and is never sent again. A send to a
-connection the server closed raises `WebSocketClosedError`. Sessions never reconnect yet, so
-`WSOptions(reconnect=True)` raises `ProtocolConfigurationError` with the condition `missing_metadata`, as `compression`
-does for a helper that does not permit it with `invalid_value`; the resume and acknowledgment limits have no effect
-yet. Options of another type raise `ProtocolConfigurationError`.
+connection the server closed raises `WebSocketClosedError`. Sessions never reconnect.
+`WSOptions(compression="deflate")` for a helper that does not permit it raises `ProtocolConfigurationError` with
+`invalid_value`. Options of another type raise `ProtocolConfigurationError`.
 
 ### Connectors and transports
 
