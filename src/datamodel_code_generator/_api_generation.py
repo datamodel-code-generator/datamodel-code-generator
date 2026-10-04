@@ -48,9 +48,10 @@ from datamodel_code_generator._api_types import (
     Diagnostic,
     GeneratedArtifact,
     GeneratedProject,
+    OperationRef,
+    SchemaRef,
     attach_diagnostic,
 )
-from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -81,14 +82,13 @@ if TYPE_CHECKING:
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
-Strategy: TypeAlias = Literal["native", "envelope", "adapter"]
+Strategy: TypeAlias = Literal["native", "envelope"]
 ConverterStrategy: TypeAlias = Literal[
     "pydantic_type_adapter",
     "dataclass_structural",
     "typeddict_structural",
     "msgspec_convert",
     "msgspec_structural",
-    "registered_adapter",
 ]
 Exclusion: TypeAlias = "tuple[OperationContract, str]"
 
@@ -574,9 +574,10 @@ class _Planner:
         return None
 
     def refer(self, reference: OperationRef | SchemaRef) -> JSONValue:
-        """Return the manifest reference of a configured operation or schema, which validation already resolved."""
-        if isinstance(reference, SchemaRef):
-            return {"document": self.documents.pointer(reference.document, self.cwd), "pointer": reference.pointer}
+        """Return the manifest reference of a configured operation, which validation already resolved.
+
+        No target setting holds a schema reference, so every reference is a validated root operation.
+        """
         return self.documents.operation(self.operations[reference.pointer].id)
 
     def portable(self, value: object, option_path: str) -> JSONValue:

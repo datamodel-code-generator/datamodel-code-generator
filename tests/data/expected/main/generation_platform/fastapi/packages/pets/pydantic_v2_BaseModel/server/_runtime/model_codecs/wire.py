@@ -120,11 +120,6 @@ def _index(digits: str, size: int) -> bool:
     return digits.isascii() and digits.isdecimal() and (digits == "0" or digits[0] != "0") and int(digits) < size
 
 
-def select_present(value: WireValue, presence: PresenceTree) -> WireValue:
-    """Copy only the members and elements a presence tree names, rejecting trees that do not fit the value."""
-    return freeze_wire(_selected(value, presence))
-
-
 def check_array_presence(presence: PresenceTree | None, length: int, pointer: str) -> None:
     """Require a presence tree for an array to name every element in order."""
     if presence is not None and (
@@ -242,21 +237,6 @@ def _snapshot_presence(value: WireValue, pointer: str) -> PresenceTree:
             ),
         )
     return PresenceTree(pointer, "value")
-
-
-def _selected(value: WireValue, presence: PresenceTree) -> JSONValue:
-    match value:
-        case tuple():
-            check_array_presence(presence, len(value), presence.pointer)
-            return [_selected(item, child) for item, (_, child) in zip(value, presence.members, strict=True)]
-        case Mapping():
-            check_object_presence(presence, set(value), presence.pointer)
-            return {str(key): _selected(value[str(key)], child) for key, child in presence.members}
-        case _ if presence.container == "value":
-            return value
-        case _:
-            msg = f"The presence tree does not describe a scalar at {presence.pointer or '/'}"
-            raise CodecBindingError(msg)
 
 
 def _presence(value: JSONValue | WireValue, pointer: str, active: set[int]) -> PresenceTree:

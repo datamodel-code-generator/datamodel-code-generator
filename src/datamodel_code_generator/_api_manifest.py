@@ -18,8 +18,7 @@ from urllib.request import url2pathname
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_types import APIGenerationError, ArtifactAction, Diagnostic
-from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
+from datamodel_code_generator._api_types import APIGenerationError, ArtifactAction, Diagnostic, OperationRef, SchemaRef
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_types import TargetKind

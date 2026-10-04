@@ -13,7 +13,7 @@ from typing_extensions import TypeVar
 
 from ..client.operations import BodyMedia, ParameterSpec
 from ..client.paths import dot_segment, path_segments
-from ..model_codecs.errors import CodecAdapterError, ParameterEncodingError
+from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.unset import UNSET
 from .records import BodyTarget, ParameterTarget, QuerystringTarget
 from .values import Patch, written
@@ -139,9 +139,7 @@ def targeted(
                 queries.add(target.name)
         spec = parameters[index]
         parameters[index] = (
-            replace(spec, encoder=None)
-            if pointer is None
-            else PatchedParameter(plan=spec.plan, encoder=spec.encoder, adapter=spec.adapter)
+            replace(spec, encoder=None) if pointer is None else PatchedParameter(plan=spec.plan, encoder=spec.encoder)
         )
         writes.append((index, pointer))
     body = call.body
@@ -209,17 +207,16 @@ def dotted_read(
 ) -> Selector | None:
     """Return the selector of a read value written to a path segment that encodes to a dot segment, or None.
 
-    The caller's own path arguments in the segment keep the texts `callers` gives, and each text is the request's,
-    through the parameter's registered adapter when it has one. The first read value whose encoded text is non-empty
-    is blamed, or else the first read value. A value its parameter or adapter cannot encode is left to the request,
-    which refuses it.
+    The caller's own path arguments in the segment keep the texts `callers` gives, and each text is the request's.
+    The first read value whose encoded text is non-empty is blamed, or else the first read value. A value its
+    parameter cannot encode is left to the request, which refuses it.
     """
     try:
         texts = {
             name: callers()[name] if index is None else parameters[position].path_text(written[index])
             for name, index, _, position in parts
         }
-    except (ParameterEncodingError, CodecAdapterError):
+    except ParameterEncodingError:
         return None
     if not dot_segment(segment, texts):
         return None

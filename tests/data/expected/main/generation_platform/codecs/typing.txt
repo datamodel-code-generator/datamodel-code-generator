@@ -1,55 +1,6 @@
 mypy positive samples: clean
 pyright positive samples: clean
 ty positive samples: clean
-samples/adapters_negative.py: 5 marked lines
-mypy samples/adapters_negative.py: 5/5 marked lines with one error, 0 elsewhere, 0 in other files
-  62 assignment
-  63 assignment
-  64 assignment
-  65 assignment
-  66 call-arg
-pyright samples/adapters_negative.py: 5/5 marked lines with one error, 0 elsewhere, 0 in other files
-  62 reportAssignmentType
-  63 reportAssignmentType
-  64 reportAssignmentType
-  65 reportAssignmentType
-  66 reportCallIssue
-ty samples/adapters_negative.py: 5/5 marked lines with one error, 0 elsewhere, 0 in other files
-  62 invalid-assignment
-  63 invalid-assignment
-  64 invalid-assignment
-  65 invalid-assignment
-  66 missing-argument
-samples/bindings_negative.py: 8 marked lines
-mypy samples/bindings_negative.py: 8/8 marked lines with one error, 0 elsewhere, 0 in other files
-  9 assignment
-  10 assignment
-  11 arg-type
-  12 assignment
-  13 assignment
-  14 assignment
-  15 attr-defined
-  16 attr-defined
-pyright samples/bindings_negative.py: 6/8 marked lines with one error, 0 elsewhere, 0 in other files
-  9 reportAssignmentType
-  10 reportAssignmentType
-  11 reportArgumentType
-  12 reportAssignmentType
-  13 reportAssignmentType
-  14 reportAssignmentType
-  15 reportAttributeAccessIssue
-  15 reportUnknownMemberType
-  16 reportAttributeAccessIssue
-  16 reportUnknownMemberType
-ty samples/bindings_negative.py: 8/8 marked lines with one error, 0 elsewhere, 0 in other files
-  9 invalid-assignment
-  10 invalid-assignment
-  11 invalid-argument-type
-  12 invalid-assignment
-  13 invalid-assignment
-  14 invalid-assignment
-  15 unresolved-attribute
-  16 unresolved-attribute
 samples/codecs_negative.py: 13 marked lines
 mypy samples/codecs_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
   26 assignment

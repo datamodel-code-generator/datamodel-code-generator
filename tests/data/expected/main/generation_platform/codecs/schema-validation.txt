@@ -53,12 +53,11 @@ non-schema-target: CodecConfigurationError A bundled schema reference from https
 non-string-reference: CodecConfigurationError A bundled schema reference at https://dcg.invalid/inputs/root must be a string
 dialect-pattern: CodecConfigurationError A bundled schema pattern at https://dcg.invalid/inputs/root is outside the builtin grammar
 program-size-pattern: CodecConfigurationError A compiled pattern exceeds the program size limit of 4096
-dynamic-reference: CodecConfigurationError A dynamic schema reference at https://dcg.invalid/inputs/root requires an explicit schema adapter
+dynamic-reference: CodecConfigurationError A dynamic schema reference at https://dcg.invalid/inputs/root is not supported
 zero-multiple: CodecConfigurationError A bundled schema at https://dcg.invalid/inputs/root has a non-positive multipleOf
 boolean-multiple: CodecConfigurationError A bundled schema at https://dcg.invalid/inputs/root has a non-positive multipleOf
 unknown-schema: CodecConfigurationError Schema https://dcg.invalid/inputs/documents/0#/$defs/Missing is not bundled
 container-root: CodecConfigurationError Schema https://dcg.invalid/inputs/root# does not identify a bundled schema
-adapted-pattern: CodecConfigurationError A pattern that only a schema adapter evaluates reached the builtin validator
 cached-validator: True
 deep-instance: CodecResourceLimitError The wire value is nested beyond the validator recursion limit
 deep-exclusions: CodecResourceLimitError The wire value is nested beyond the validator recursion limit

@@ -67,7 +67,7 @@ if TYPE_CHECKING:
 
     from .bindings import Representation, TypeNode, UseBinding
     from .patterns import MatchBudget
-    from .schema import SchemaBundle, WireValidator
+    from .schema import SchemaBundle
 
     _Check: TypeAlias = tuple[Callable[[Any, MatchBudget], bool], "_Failure"]
 
@@ -643,8 +643,6 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         native_type: type[T],
         models: Mapping[str, type],
         bundle: Callable[[], SchemaBundle],
-        *,
-        validator: WireValidator | None = None,
     ) -> None: ...
     @overload
     def __init__(
@@ -653,8 +651,6 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         native_type: object,
         models: Mapping[str, type],
         bundle: Callable[[], SchemaBundle],
-        *,
-        validator: WireValidator | None = None,
     ) -> None: ...
     def __init__(
         self,
@@ -662,17 +658,11 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         native_type: object,
         models: Mapping[str, type],
         bundle: Callable[[], SchemaBundle],
-        *,
-        validator: WireValidator | None = None,
     ) -> None:
-        """Build the converters of the binding's type graph from the final annotations, before any value is processed.
-
-        A schema adapter's validator replaces the bundle's builtin validator of the use's schema.
-        """
+        """Build the converters of the binding's type graph from the final annotations before any value is processed."""
         super().__init__(
             binding,
             bundle,
-            validator,
             selects=_STRATEGIES.get(binding.converter_strategy) == binding.backend,
             converter="a structural converter",
         )

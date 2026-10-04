@@ -1,7 +1,0 @@
-use /paths/~1cats/post request_body: codec_0 outbound_0 None msgspec_convert native
-binding /paths/~1cats/post request_body: adapted_models:Cat struct msgspec_convert native
-use /paths/~1pairs/post request_body: codec_1 outbound_1 None msgspec_convert native
-binding /paths/~1pairs/post request_body: adapted_models:FieldPairsPostRequest alias msgspec_convert native
-cat-outbound: model Cat Cat(kind='cat') wire={"kind":"cat"} presence=['', '/kind']
-cat-snapshot: model Cat Cat(kind='cat') wire={"kind":"cat"} presence=['', '/kind']
-pair-encode: wire=["a","b"]

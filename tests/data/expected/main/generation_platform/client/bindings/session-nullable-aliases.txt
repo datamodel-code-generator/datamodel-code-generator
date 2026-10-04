@@ -382,37 +382,37 @@ render pydantic_v2.dataclass annotated-remapped
   codec_0 -> PydanticModelCodec[models.Model]
 render dataclasses.dataclass plain
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render dataclasses.dataclass collapsed
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render dataclasses.dataclass annotated-remapped
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/required_any: The typing_extensions.Any type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_value: The typing_extensions.Any type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_chain: The typing_extensions.Any type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/required_any: The typing_extensions.Any type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_value: The typing_extensions.Any type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_chain: The typing_extensions.Any type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render typing.TypedDict plain
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render typing.TypedDict collapsed
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render typing.TypedDict annotated-remapped
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_value: The typing_extensions.Any type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_chain: The typing_extensions.Any type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/required_any: The typing_extensions.Any type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_value: The typing_extensions.Any type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_chain: The typing_extensions.Any type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/required_any: The typing_extensions.Any type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render msgspec.Struct plain
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render msgspec.Struct collapsed
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render msgspec.Struct annotated-remapped
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/required_any: The typing_extensions.Any type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_value: The typing_extensions.Any type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_chain: The typing_extensions.Any type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/required_any: The typing_extensions.Any type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_value: The typing_extensions.Any type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/any_chain: The typing_extensions.Any type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion

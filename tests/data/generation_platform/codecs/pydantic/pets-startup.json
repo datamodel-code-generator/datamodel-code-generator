@@ -8,7 +8,7 @@
      "models": {"models:Pet": "tests.data.python.model_codec_base:AliasPet"}},
     {"name": "aliases-refused", "use": "/paths/~1pets/post response_body 201",
      "models": {"models:Pet": "tests.data.python.model_codec_base:NamePet"}},
-    {"name": "converter", "use": "/paths/~1pets/post response_body 201", "binding": {"converter_strategy": "registered_adapter"}},
+    {"name": "converter", "use": "/paths/~1pets/post response_body 201", "binding": {"converter_strategy": "dataclass_structural"}},
     {"name": "backend", "use": "/paths/~1pets/post response_body 201", "binding": {"backend": "msgspec.Struct"}},
     {"name": "bundle-direction", "use": "/paths/~1pets/post response_body 201", "bundle": "request", "surface": "client", "decode": {}},
     {"name": "missing-model", "use": "/paths/~1pets/post response_body 201", "models": {"models:Owner": ""}},

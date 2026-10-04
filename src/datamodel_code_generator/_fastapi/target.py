@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_manifest import canonical_bytes, sha256
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
-from datamodel_code_generator._codec_declarations import OperationRef
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
 from datamodel_code_generator._fastapi.fingerprints import Fingerprints

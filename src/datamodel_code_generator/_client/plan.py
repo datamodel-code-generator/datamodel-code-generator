@@ -13,7 +13,7 @@ from urllib.parse import urljoin, urlsplit
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_types import Diagnostic
+from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.config import absolute
 from datamodel_code_generator._client.naming import (
     RESERVED_ARGUMENTS,
@@ -24,7 +24,6 @@ from datamodel_code_generator._client.naming import (
     snake,
 )
 from datamodel_code_generator._client.security import SecurityPlanner
-from datamodel_code_generator._codec_declarations import OperationRef
 from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
@@ -340,18 +339,13 @@ def _tags(operation: OperationContract) -> tuple[str, ...]:
 class Planner:
     """Plan every selected operation of one client target from the accepted batch and its wire plan."""
 
-    def __init__(
-        self, request: TargetRequest, config: ClientGenerationConfig, wire: WirePlan, adapted: frozenset[TypeUseId]
-    ) -> None:
-        """Index the batch and the wire plan, and resolve the per-operation settings to operation keys.
-
-        The parameters whose uses `adapted` holds go through their registered parameter adapters.
-        """
+    def __init__(self, request: TargetRequest, config: ClientGenerationConfig, wire: WirePlan) -> None:
+        """Index the batch and the wire plan, and resolve the per-operation settings to operation keys."""
         self.request = request
         self.config = config
         self.wire = wire
         self.uses = {use.id: use for use in request.batch.type_uses}
-        self.parameter_plans = parameter_plans(wire, request.operations, adapted)
+        self.parameter_plans = parameter_plans(wire)
         self.header_plans = dict(wire.headers)
         self.forms = {use: (fields, additional, encoded) for use, fields, additional, encoded in wire.forms}
         self.styles = {use: {plan.name: plan for plan in plans} for use, plans in wire.styles}
@@ -679,7 +673,7 @@ class Planner:
                 case types if _file(self.wire, members[name]):
                     media_of[name] = types
                 case _:
-                    message = f"{label} needs a media adapter for a member holding no files"
+                    message = f"{label} has no builtin encoding for a member holding no files"
                     self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
         return media_of, headers_of
 

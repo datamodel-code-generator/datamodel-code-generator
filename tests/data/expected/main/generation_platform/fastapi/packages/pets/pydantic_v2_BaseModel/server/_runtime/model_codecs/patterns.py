@@ -51,7 +51,7 @@ _ADAPTER_ESCAPES: Final = frozenset("pPkc" + string.digits)
 
 
 class PatternDialectError(ValueError):
-    """Report syntax outside the builtin grammar, requiring an explicit schema adapter."""
+    """Report syntax outside the builtin grammar."""
 
 
 class PatternResourceError(ValueError):
@@ -236,7 +236,7 @@ class _Parser:
         self.index += 1
         if self.peek() == "?":
             if self.peek(1) != ":":
-                raise self.error(message="Lookaround, named groups, and flags require a schema adapter")
+                raise self.error(message="Lookaround, named groups, and flags are not supported")
             self.index += 2
         self.depth += 1
         if self.depth > MAX_GROUP_DEPTH:
@@ -275,7 +275,7 @@ class _Parser:
                 return ord(char)
             case _ if char in _ADAPTER_ESCAPES:
                 self.index -= 1
-                raise self.error(message="Property, back-reference, control, and NUL escapes require a schema adapter")
+                raise self.error(message="Property, back-reference, control, and NUL escapes are not supported")
             case _:
                 self.index -= 1
                 raise self.error(message="Unsupported identity escape")

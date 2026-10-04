@@ -1,4 +1,4 @@
 # edge-legacy-path-item-reference
 render pydantic_v2.BaseModel default
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/pathItems/Pets/get/responses/200/content/application~1json/schema/items: Array-form items requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/pathItems/Pets/get/responses/200/content/application~1json/schema/items: Array-form items is not supported

@@ -1,4 +1,4 @@
-"""Public records, errors, selections, and codec registrations of the generation targets.
+"""Public records, errors, and selections of the generation targets.
 
 The FastAPI server target re-exports the same objects from `datamodel_code_generator.fastapi`.
 """
@@ -12,37 +12,21 @@ from datamodel_code_generator._api_types import (
     GeneratedArtifact,
     GeneratedProject,
     GenerationReport,
+    OperationRef,
     OperationSelection,
     PublicationRollbackError,
-)
-from datamodel_code_generator._codec_declarations import (
-    CodecAdapterRegistration,
-    OperationRef,
-    SchemaDirectionalUse,
     SchemaRef,
-    TypeUseRef,
-)
-from datamodel_code_generator._runtime.model_codecs.capabilities import (
-    CodecCapabilities,
-    ParameterCodecCapabilities,
-    SchemaCodecCapabilities,
 )
 
 __all__ = [
     "APIGenerationError",
     "ArtifactRecord",
-    "CodecAdapterRegistration",
-    "CodecCapabilities",
     "Diagnostic",
     "GeneratedArtifact",
     "GeneratedProject",
     "GenerationReport",
     "OperationRef",
     "OperationSelection",
-    "ParameterCodecCapabilities",
     "PublicationRollbackError",
-    "SchemaCodecCapabilities",
-    "SchemaDirectionalUse",
     "SchemaRef",
-    "TypeUseRef",
 ]

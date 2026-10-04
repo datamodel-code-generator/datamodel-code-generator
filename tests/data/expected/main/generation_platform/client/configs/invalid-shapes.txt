@@ -3,4 +3,3 @@ APIGenerationError
   E_CONFIG_VALUE config operations: operations must be a tuple of ClientOperationConfig records
   E_CONFIG_VALUE config default_base_url: default_base_url must be an absolute http or https URL without userinfo, query, or fragment
   E_CONFIG_VALUE config server_base_url: server_base_url must be an absolute http or https URL without userinfo, query, or fragment
-  E_CONFIG_VALUE config codec_adapters: codec_adapters must be a tuple of registrations

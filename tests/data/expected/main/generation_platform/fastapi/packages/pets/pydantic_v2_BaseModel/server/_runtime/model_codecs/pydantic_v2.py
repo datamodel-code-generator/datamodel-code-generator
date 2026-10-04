@@ -72,7 +72,7 @@ if TYPE_CHECKING:
     from pydantic.fields import FieldInfo
     from typing_extensions import TypeIs
 
-    from .schema import SchemaBundle, WireValidator
+    from .schema import SchemaBundle
 
 T = TypeVar("T")
 
@@ -137,8 +137,6 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         native_type: type[T],
         models: Mapping[str, type],
         bundle: Callable[[], SchemaBundle],
-        *,
-        validator: WireValidator | None = None,
     ) -> None: ...
     @overload
     def __init__(
@@ -147,8 +145,6 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         native_type: object,
         models: Mapping[str, type],
         bundle: Callable[[], SchemaBundle],
-        *,
-        validator: WireValidator | None = None,
     ) -> None: ...
     def __init__(
         self,
@@ -156,17 +152,11 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         native_type: object,
         models: Mapping[str, type],
         bundle: Callable[[], SchemaBundle],
-        *,
-        validator: WireValidator | None = None,
     ) -> None:
-        """Check the binding against the native types once, before any value is processed.
-
-        A schema adapter's validator replaces the bundle's builtin validator of the use's schema.
-        """
+        """Check the binding against the native types once, before any value is processed."""
         super().__init__(
             binding,
             bundle,
-            validator,
             selects=binding.converter_strategy == "pydantic_type_adapter" and binding.backend in _BACKENDS,
             converter="a Pydantic v2 type adapter",
         )

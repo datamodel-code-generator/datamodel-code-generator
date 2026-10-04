@@ -20,11 +20,10 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import Diagnostic
+    from datamodel_code_generator._api_types import Diagnostic, SchemaRef
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._codec_declarations import SchemaRef
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import SourceLocation
@@ -148,7 +147,7 @@ def plan_sockets(
         found = problems[helper.name]
         for (_, where, _), use in zip(_references(helper), spec.uses, strict=True):
             binding = bindings[use.id]
-            if binding.projection_mode != "native" or binding.converter_strategy == "registered_adapter":
+            if binding.projection_mode != "native":
                 message = (
                     f"The WebSocket helper {helper.name!r} codes an envelope-projected message, which is not supported "
                     "yet"

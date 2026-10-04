@@ -27,7 +27,7 @@ from ..model_codecs.media import (
     percent_decode,
     split_form,
 )
-from ..model_codecs.parameters import FragmentContribution, path_text, query_pairs
+from ..model_codecs.parameters import path_text, query_pairs
 from ..model_codecs.selectors import MediaSelector, RequestMedia
 from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire
@@ -58,7 +58,6 @@ from .multipart import (
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Mapping, Sequence
 
-    from ..model_codecs.adapters import AdapterParameterCodec
     from ..model_codecs.context import CodecContext
     from ..model_codecs.media import FieldPlan
     from ..model_codecs.parameters import ParameterPlan
@@ -189,14 +188,10 @@ class ServerPlan:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterSpec:
-    """One effective parameter: its wire plan and, when it has a schema, the codec that validates its argument.
-
-    A parameter a registered parameter adapter carries encodes its validated wire value through that adapter.
-    """
+    """One effective parameter: its wire plan and, when it has a schema, the codec that validates its argument."""
 
     plan: ParameterPlan
     encoder: Encoder | None = None
-    adapter: tuple[Callable[[], AdapterParameterCodec], CodecContext] | None = None
 
     def encode(self, value: object, mode: RequestValidation) -> WireValue:
         """Return the wire value of a present argument."""
@@ -207,13 +202,8 @@ class ParameterSpec:
         return checked_wire(wire) if self.encoder is None else self.encoder.restored(wire)
 
     def path_text(self, wire: WireValue) -> str:
-        """Return the text a path parameter's wire value substitutes for its placeholder, through its adapter if any."""
-        if (adapter := self.adapter) is None:
-            return path_text(self.plan, wire)
-        get, context = adapter
-        contribution = get().encode(wire, context)
-        fragments = contribution.ordered_fragments if isinstance(contribution, FragmentContribution) else ()
-        return "".join(fragment.value.decode("ascii") for fragment in fragments)
+        """Return the text a path parameter's wire value substitutes for its placeholder."""
+        return path_text(self.plan, wire)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

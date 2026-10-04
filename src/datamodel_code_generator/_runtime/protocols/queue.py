@@ -26,7 +26,6 @@ from ..client.errors import (
     ProtocolConfigurationError,
     ProtocolSizeError,
     RequestCancelledError,
-    RequestEncodingError,
     SDKError,
     add_secondary,
 )
@@ -160,7 +159,6 @@ class _Send:
     options: RequestOptions | None
     deadline: Deadline
     lease: QueueLease
-    identity: WireValue
 
 
 _Step = _Store | _Send
@@ -584,19 +582,17 @@ def _ended(  # noqa: PLR0913, PLR0917
 ) -> _Ended:
     """Classify a failed delivery by whether any request was sent and how it ended.
 
-    A response with a success status succeeded, whatever failed after it. Nothing sent defers the entry, except a
-    configuration or encoding error. A status the shared retry policy retries, or a request proven unsent, waits for
-    another delivery; an HTTP error the policy does not retry is dead; any other failed response, such as one whose
-    body failed, and a request that may have arrived are of unknown delivery. A cancellation or a closed client is
-    raised once the entry is saved.
+    A response with a success status succeeded, whatever failed after it. Nothing sent defers the entry. A status the
+    shared retry policy retries, or a request proven unsent, waits for another delivery; an HTTP error the policy does
+    not retry is dead; any other failed response, such as one whose body failed, and a request that may have arrived
+    are of unknown delivery. A configuration error, a cancellation, or a closed client is raised once the entry is
+    saved.
     """
     info, code = error.info, error.reason_code
     stop = error if isinstance(error, _STOPS) else None
     if info is not None and _SUCCESS_MIN <= info.status_code <= _SUCCESS_MAX:
         return _Ended("succeeded", "succeeded", QueueOutcome(category="success"), response=info, failure=stop)
     if not error.resource_attempt_count and not error.redirect_count:
-        if isinstance(error, RequestEncodingError):
-            return _dead(code)
         return _Ended(
             "pending", "deferred", reverted=True, failure=error if isinstance(error, ConfigurationError) else stop
         )
@@ -939,7 +935,7 @@ class _Drain:
         try:
             info = cast(
                 "ResponseInfo",
-                (yield _Send(queued.call, arguments, body, media_type, options, deadline, lease, identity)),
+                (yield _Send(queued.call, arguments, body, media_type, options, deadline, lease)),
             )
         except SDKError as error:
             ended = _ended(error, current, queued, _now(clock), self.retry[queued.alias], clock)
@@ -1129,7 +1125,6 @@ def _driven(
                     options=step.options,
                     session=session,
                     deadline=step.deadline,
-                    replay_identity=step.identity,
                     admission=admission,
                 ).info
             else:
@@ -1177,7 +1172,6 @@ async def _adriven(
                         options=step.options,
                         session=session,
                         deadline=step.deadline,
-                        replay_identity=step.identity,
                         admission=admission,
                     )
                 ).info

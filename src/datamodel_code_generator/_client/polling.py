@@ -32,11 +32,11 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
+    from datamodel_code_generator._api_types import OperationRef
     from datamodel_code_generator._client.pagination import _Types
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._codec_declarations import OperationRef
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
@@ -134,8 +134,7 @@ class _Polls:
         """Return the native model binding of a response's one JSON media, or None for any other response."""
         if (use := _page_use([response])) is None or (binding := self.pages.bindings.get(use.id)) is None:
             return None
-        native = binding.projection_mode == "native" and binding.converter_strategy != "registered_adapter"
-        return binding if native else None
+        return binding if binding.projection_mode == "native" else None
 
     def helper(self, helper: Helper) -> tuple[PollingSpec | None, list[Diagnostic]]:
         """Check one enabled helper against its operations, and plan it when every check passes."""

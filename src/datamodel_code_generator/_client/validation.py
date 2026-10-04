@@ -58,7 +58,7 @@ def _label(use: TypeUseId) -> str:
     return f"{' '.join(word for word in described if word)} of {method.upper()} {path}"
 
 
-def _refusal(use: TypeUseId, binding: UseBinding, axis: str, mode: str, *, adapted: bool) -> str | None:
+def _refusal(use: TypeUseId, binding: UseBinding, axis: str, mode: str) -> str | None:
     """Return why a use cannot take a request or response mode, or None when it can.
 
     A part header takes native requests without a validation entry, since they only read it as its type.
@@ -66,8 +66,6 @@ def _refusal(use: TypeUseId, binding: UseBinding, axis: str, mode: str, *, adapt
     if mode == "schema" or use.role not in _ROLES or binding.direction != axis:
         return None
     match axis, mode:
-        case _, _ if adapted:
-            return "goes through a registered adapter that validates it against its schema"
         case "request", "native" if (
             binding.converter_strategy not in _ENTRIES and use.role != "request_encoding_header"
         ):
@@ -79,10 +77,8 @@ def _refusal(use: TypeUseId, binding: UseBinding, axis: str, mode: str, *, adapt
     return None
 
 
-def _unchecked(binding: UseBinding, *, adapted: bool) -> str | None:
+def _unchecked(binding: UseBinding) -> str | None:
     """Return why Pydantic cannot validate an argument a call takes as a native value, or None when it can."""
-    if adapted:
-        return "goes through a registered adapter that gives Pydantic no schema"
     if binding.backend == "msgspec.Struct" and has_models(binding.type):
         return "holds msgspec Structs that Pydantic cannot validate"
     return None
@@ -114,14 +110,13 @@ def admission_problems(
         ("response", "response_overrides", allowed(validation.response, validation.response_overrides)),
         ("arguments", "argument_overrides", allowed(validation.arguments, validation.argument_overrides)),
     )
-    adapted = {plan.use for plan in codecs.adapters}
     for use, binding in codecs.bindings:
         for axis, overrides, modes in axes:
             for mode in modes:
                 if axis != "arguments":
-                    reason, alternative = _refusal(use, binding, axis, mode, adapted=use in adapted), "schema"
+                    reason, alternative = _refusal(use, binding, axis, mode), "schema"
                 elif mode == "pydantic" and use in arguments:
-                    reason, alternative = _unchecked(binding, adapted=use in adapted), "none"
+                    reason, alternative = _unchecked(binding), "none"
                 else:
                     continue
                 if reason is None:

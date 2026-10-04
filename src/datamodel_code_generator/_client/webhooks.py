@@ -29,11 +29,10 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import DiagnosticStage
+    from datamodel_code_generator._api_types import DiagnosticStage, SchemaRef
     from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._codec_declarations import SchemaRef
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_codec_render import UseAccessors
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
@@ -231,7 +230,7 @@ def plan_webhooks(
         helper, planned = spec.helper, []
         for event in spec.events:
             binding = bindings[event.use.id]
-            if binding.projection_mode != "native" or binding.converter_strategy == "registered_adapter":
+            if binding.projection_mode != "native":
                 at = f"{helper.at}.event_schema" + ("" if event.name is None else f".mapping[{event.name!r}]")
                 message = (
                     f"The webhook helper {helper.name!r} decodes an envelope-projected event, which is not supported "

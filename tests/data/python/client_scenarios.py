@@ -51,7 +51,6 @@ from tests.data.python.client_pagination_targets import (
     pagination_targets,
     path_arguments,
 )
-from tests.data.python.client_parameter_adapters import parameter_adapters
 from tests.data.python.client_polling import polling
 from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
@@ -794,7 +793,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
-    "parameter-adapters": ("parameter-adapters", ("pydantic_v2.BaseModel",), parameter_adapters),
     "signatures": ("pets", BACKENDS, signatures),
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
