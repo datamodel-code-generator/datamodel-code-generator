@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import base64
 import collections.abc
 import copy
-import hashlib
 import importlib
 import inspect
 import json
@@ -13,7 +11,6 @@ import pickle
 import subprocess
 import sys
 from dataclasses import fields
-from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from types import MappingProxyType
@@ -24,8 +21,6 @@ from tests.data.python.client_runtime import Exchange, arecord, json_response, r
 if TYPE_CHECKING:
     from types import ModuleType
 
-_LIMIT: Final = 16 * 1024 * 1024
-_FUTURE: Final = datetime(2999, 1, 1, 9, tzinfo=timezone(timedelta(hours=9)))
 _IMPORT_PROBE: Final = """
 import importlib
 import sys
@@ -55,7 +50,7 @@ print('pagination optional imports=' + repr([name for name in optional if name i
 print('client protocols=' + repr(hasattr(importlib.import_module(sys.argv[2]).Client, 'protocols')))
 runtime = importlib.import_module(sys.argv[2] + '._runtime.protocols.options')
 print('option identities=' + repr((options.ProtocolClientOptions is runtime.ProtocolClientOptions, module.ProtocolDefaults is runtime.ProtocolDefaults)))
-state = module.ResumeState(helper_fingerprint='helper', security_fingerprint='security', state={'page': 1})
+state = module.ResumeState(helper='helper', state={'page': 1})
 print('resume round trip=' + repr(module.import_state(state.export()).export() == state.export()))
 print('construction threads unchanged=' + repr(threading.active_count() == before))
 """
@@ -111,14 +106,7 @@ _OPTION_FIELDS: Final = (
     ("StreamOptions", "max_reconnects", _COUNTS),
     ("StreamOptions", "max_reconnect_wait", _DURATIONS),
 )
-_VALID: Final = {
-    "expires_at": None,
-    "helper_fingerprint": "helper-secret",
-    "payload": base64.b64encode(b"payload-secret").decode(),
-    "security_fingerprint": "security-secret",
-    "state": {"cursor": "state-secret", "page": 2},
-    "version": 1,
-}
+_VALID: Final = {"helper": "helper-secret", "state": {"cursor": "state-secret", "page": 2}, "version": 1}
 
 
 def protocol_contracts(package: ModuleType, lines: list[str]) -> None:
@@ -409,7 +397,7 @@ def _canonical(protocols: ModuleType, records: ModuleType, value: object) -> tup
     """Return a continuation's canonical JSON, whether it survives a decode, and whether resume state shares it."""
     media = importlib.import_module(records.__name__.replace("protocols.records", "model_codecs.media"))
     encoded = records.continuation_json(protocols.Continuation(kind="cursor", value=value))
-    state = protocols.ResumeState(helper_fingerprint="", security_fingerprint="", state=value).export()
+    state = protocols.ResumeState(helper="", state=value).export()
     return encoded, records.canonical_json(media.decode_json(encoded)) == encoded, b'"state":' + encoded + b"," in state
 
 
@@ -452,83 +440,51 @@ def _snapshots(protocols: ModuleType, responses: ModuleType, lines: list[str]) -
 
 
 def _resume_states(protocols: ModuleType, lines: list[str]) -> None:
-    """Keep resume state opaque, validate its fields, and export the documented envelope."""
-    state = protocols.ResumeState(
-        helper_fingerprint="helper-secret",
-        security_fingerprint="security-secret",
-        state={"z": [1, 2.5, None, True], "a": "é", "n": 1e100},
-        payload=b"\x00\xffpayload-secret",
-        expires_at=_FUTURE,
-    )
+    """Keep a resume token opaque, validate its fields, and export the documented JSON."""
+    state = protocols.ResumeState(helper="helper-secret", state={"z": [1, 2.5, None, True], "a": "é", "n": 1e100})
     exported = state.export()
-    envelope = json.loads(exported)
-    body = exported.replace(f',"sha256":"{envelope["sha256"]}"'.encode(), b"")
-    digest = hashlib.sha256(body).hexdigest()
     lines.extend((
         f"  resume repr={state!r} str={state} secret={'secret' in repr(state) + str(state)}",
         f"  resume export={exported.decode()}",
-        f"  resume independent checksum={envelope['sha256'] == digest} body={body.decode()}",
-        f"  resume payload={base64.b64decode(envelope['payload'])!r}",
         f"  resume export stable={state.export() == exported}",
         f"  resume identity equality={state == state}/{state == protocols.import_state(exported)}",
         f"  resume dict={hasattr(state, '__dict__')} public={[name for name in dir(state) if not name.startswith('_')]}",
     ))
     imported = protocols.import_state(exported)
     lines.append(f"  resume round trip={imported!r} distinct={imported is not state} same={imported.export() == exported}")
-    minimal = protocols.ResumeState(helper_fingerprint="", security_fingerprint="", state=None)
+    minimal = protocols.ResumeState(helper="", state=None)
     record(lines, "resume minimal export", lambda: minimal.export())
     record(lines, "resume set state", lambda: setattr(state, "_state_json", b"{}"))
     record(lines, "resume set new", lambda: setattr(state, "version", 2))
     record(lines, "resume delete state", lambda: delattr(state, "_state_json"))
     lines.append(f"  resume copies={copy.copy(state) is state}/{copy.deepcopy(state) is state}")
     record(lines, "resume pickle", lambda: pickle.dumps(state))
-    oversized = protocols.ResumeState(helper_fingerprint="", security_fingerprint="", state="x" * _LIMIT)
-    record(lines, "resume export over limit", lambda: oversized.export())
-    valid = {"helper_fingerprint": "h", "security_fingerprint": "s", "state": {"page": 1}}
+    valid = {"helper": "h", "state": {"page": 1}}
     for label, changes in (
-        ("helper None", {"helper_fingerprint": None}),
-        ("helper surrogate", {"helper_fingerprint": "\ud800"}),
-        ("security surrogate", {"security_fingerprint": "tenant\udfff"}),
+        ("helper None", {"helper": None}),
+        ("helper surrogate", {"helper": "\ud800"}),
         ("state integer over conversion limit", {"state": {"page": 10**5000}}),
-        ("security bytes", {"security_fingerprint": b"s"}),
-        ("payload bytearray", {"payload": bytearray(b"x")}),
-        ("payload string", {"payload": "x"}),
-        ("expiry naive", {"expires_at": datetime(2999, 1, 1)}),
-        ("expiry string", {"expires_at": "2999-01-01T00:00:00+00:00"}),
-        ("expiry past", {"expires_at": datetime(2000, 1, 1, tzinfo=timezone.utc)}),
         ("state object", {"state": object()}),
         ("state set", {"state": {1, 2}}),
         ("state deeply nested", {"state": _deep()}),
     ):
         record(lines, f"resume {label}", lambda changes=changes: protocols.ResumeState(**{**valid, **changes}))
-    record(lines, "resume missing state", lambda: protocols.ResumeState(helper_fingerprint="h", security_fingerprint="s"))
-    record(lines, "resume positional", lambda: protocols.ResumeState("h", "s", {}))
+    record(lines, "resume missing state", lambda: protocols.ResumeState(helper="h"))
+    record(lines, "resume positional", lambda: protocols.ResumeState("h", {}))
 
 
-def _envelope(changes: dict[str, Any], digest: object = None, *, drop: str | None = None) -> bytes:
-    """Build an envelope by the documented algorithm, independently of the generated runtime."""
+def _token(changes: dict[str, Any], *, drop: str | None = None) -> bytes:
+    """Build a token by the documented form, independently of the generated runtime."""
     body = {name: value for name, value in {**_VALID, **changes}.items() if name != drop}
-    text = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    return json.dumps(
-        {**body, "sha256": hashlib.sha256(text.encode()).hexdigest() if digest is None else digest},
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-    ).encode()
+    return json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
 
 def _imported_states(protocols: ModuleType, lines: list[str]) -> None:
-    """Reject size, form, version, checksum, and expiry in that order, never revealing the state."""
-    valid = _envelope({})
-    wrong = "0" * 64
-    padded = valid + b" " * (_LIMIT - len(valid))
+    """Reject form, version, and members in that order, never revealing the state."""
+    valid = _token({})
     outcomes: list[str] = []
     for label, data in (
         ("valid", valid),
-        ("valid future expiry", _envelope({"expires_at": "2999-01-01T00:00:00+09:00"})),
-        ("exact limit", padded),
-        ("over limit", padded + b" "),
-        ("over limit malformed", b"{" * (_LIMIT + 1)),
         ("not JSON", b"{"),
         ("array", b"[]"),
         ("invalid UTF-8", b"\xff"),
@@ -536,42 +492,23 @@ def _imported_states(protocols: ModuleType, lines: list[str]) -> None:
         ("NaN", valid.replace(b'"page":2', b'"page":NaN')),
         ("string input", valid.decode()),
         ("bytearray input", bytearray(valid)),
-        ("extra field", _envelope({"extra": 1})),
-        ("missing field", _envelope({}, drop="payload")),
-        ("version string", _envelope({"version": "1"})),
-        ("version bool", _envelope({"version": True})),
-        ("version float", _envelope({"version": 1.0})),
-        ("helper type", _envelope({"helper_fingerprint": 1})),
-        ("security type", _envelope({"security_fingerprint": None})),
-        ("payload alphabet", _envelope({"payload": "!!!!"})),
-        ("payload padding", _envelope({"payload": "YQ"})),
-        ("payload type", _envelope({"payload": None})),
-        ("expiry naive", _envelope({"expires_at": "2999-01-01T00:00:00"})),
-        ("expiry text", _envelope({"expires_at": "tomorrow"})),
-        ("expiry number", _envelope({"expires_at": 5})),
-        ("expiry UTC designator", _envelope({"expires_at": "2999-01-01T00:00:00Z"})),
-        ("expiry basic format", _envelope({"expires_at": "29990101T000000+0000"})),
-        ("expiry fraction", _envelope({"expires_at": "2999-01-01T00:00:00.000+00:00"})),
-        ("payload noncanonical", _envelope({"payload": "QR=="})),
+        ("extra field", _token({"extra": 1})),
+        ("missing field", _token({}, drop="state")),
+        ("version string", _token({"version": "1"})),
+        ("version bool", _token({"version": True})),
+        ("version float", _token({"version": 1.0})),
+        ("helper type", _token({"helper": 1})),
         ("deeply nested state", valid.replace(b'{"cursor":"state-secret","page":2}', b"[" * 100_000 + b"]" * 100_000)),
-        ("digest uppercase", _envelope({}, "A" * 64)),
-        ("digest short", _envelope({}, "0" * 63)),
-        ("digest type", _envelope({}, 1)),
-        ("version 2", _envelope({"version": 2})),
-        ("version 0", _envelope({"version": 0})),
-        ("version 2 extra field", _envelope({"version": 2, "extra": 1})),
-        ("version 2 missing field", _envelope({"version": 2}, drop="payload")),
-        ("version missing", _envelope({}, drop="version")),
-        ("version 2 wrong checksum", _envelope({"version": 2}, wrong)),
-        ("wrong checksum", _envelope({}, wrong)),
-        ("tampered state", _envelope({}, json.loads(_envelope({"state": {"page": 3}}))["sha256"])),
-        ("expired", _envelope({"expires_at": "2000-01-01T00:00:00+00:00"})),
-        ("expired wrong checksum", _envelope({"expires_at": "2000-01-01T00:00:00+00:00"}, wrong)),
+        ("version 2", _token({"version": 2})),
+        ("version 0", _token({"version": 0})),
+        ("version 2 extra field", _token({"version": 2, "extra": 1})),
+        ("version 2 missing field", _token({"version": 2}, drop="state")),
+        ("version missing", _token({}, drop="version")),
     ):
         record(outcomes, f"import {label}", lambda data=data: protocols.import_state(data))
     lines.extend(outcomes)
     lines.append(f"  import secret={any('secret' in line for line in outcomes)}")
-    lines.append(f"  import exported independent envelope={protocols.import_state(valid).export() == valid}")
+    lines.append(f"  import exported independent token={protocols.import_state(valid).export() == valid}")
 
 
 def _option_matrix(protocols: ModuleType, options: ModuleType, lines: list[str]) -> None:
