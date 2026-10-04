@@ -12,6 +12,9 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['errors.values'].create.size.in: protocols.helpers['errors.values'].create.size.in must be 'path', 'query', 'header', 'cookie', 'querystring' or 'body'
   E_CONFIG_VALUE config protocols.helpers['errors.values'].probe.remote_offset: protocols.helpers['errors.values'].probe needs 'remote_offset'
   E_CONFIG_VALUE config protocols.helpers['errors.values'].append.offset: protocols.helpers['errors.values'].append needs 'offset'
+  E_CONFIG_VALUE config protocols.helpers['errors.values'].append.checksum.algorithm: protocols.helpers['errors.values'].append.checksum.algorithm must be 'md5', 'sha1', 'sha256' or 'sha512'
+  E_CONFIG_VALUE config protocols.helpers['errors.values'].append.checksum.encoding: protocols.helpers['errors.values'].append.checksum.encoding must be 'base64' or 'hex'
+  E_CONFIG_VALUE config protocols.helpers['errors.values'].append.checksum.algorithm_prefix: protocols.helpers['errors.values'].append.checksum.algorithm_prefix must be a boolean
   E_CONFIG_VALUE config protocols.helpers['errors.values'].max_chunk_bytes: protocols.helpers['errors.values'].max_chunk_bytes must be a positive integer
   E_CONFIG_VALUE config protocols.helpers['errors.values'].partial_commit: protocols.helpers['errors.values'].partial_commit must be 'allowed' or 'forbidden'
   E_CONFIG_VALUE config protocols.helpers['errors.values'].completion.kind: protocols.helpers['errors.values'].completion.kind must be 'length' or 'operation'
