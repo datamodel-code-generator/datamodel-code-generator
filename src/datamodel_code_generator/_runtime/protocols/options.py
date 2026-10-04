@@ -58,7 +58,6 @@ _STREAM: Final = (
 _UPLOAD: Final = (
     ("chunk_bytes", False, False, False),
     ("max_parts", False, True, False),
-    ("parallelism", False, False, False),
     ("max_uncertain_probes", False, False, True),
 )
 _WS: Final = (
@@ -196,14 +195,10 @@ class StreamOptions:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class UploadOptions:
-    """Upload limits; only max_parts takes None, and only max_uncertain_probes takes 0.
-
-    The offset profile always sends one chunk at a time, whatever the parallelism.
-    """
+    """Upload limits; only max_parts takes None, and only max_uncertain_probes takes 0."""
 
     chunk_bytes: int | Unset = UNSET
     max_parts: int | Unset | None = UNSET
-    parallelism: int | Unset = UNSET
     max_uncertain_probes: int | Unset = UNSET
 
     def __post_init__(self) -> None:
