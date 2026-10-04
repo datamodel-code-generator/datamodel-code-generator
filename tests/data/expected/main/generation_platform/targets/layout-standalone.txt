@@ -11,7 +11,6 @@ generate
   written target server/src/example/server/_generated/__init__.py (target)
   written target server/src/example/server/_generated/contract.py (target)
   written target server/src/example/server/errors.py (target)
-  written target server/src/example/server/auth_types.py (target)
   written target server/src/example/server/services.py (target)
   written target server/README.md (target)
   written target server/src/example/server/py.typed (target)
@@ -29,7 +28,6 @@ tree
   server/src/example/server/_generated/__init__.py
   server/src/example/server/_generated/contract.py
   server/src/example/server/application.py
-  server/src/example/server/auth_types.py
   server/src/example/server/errors.py
   server/src/example/server/py.typed
   server/src/example/server/routers/__init__.py
@@ -68,7 +66,6 @@ generate
   unchanged target server/src/example/server/_generated/__init__.py (target)
   unchanged target server/src/example/server/_generated/contract.py (target)
   unchanged target server/src/example/server/errors.py (target)
-  unchanged target server/src/example/server/auth_types.py (target)
   unchanged target server/src/example/server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/src/example/server/py.typed (target)

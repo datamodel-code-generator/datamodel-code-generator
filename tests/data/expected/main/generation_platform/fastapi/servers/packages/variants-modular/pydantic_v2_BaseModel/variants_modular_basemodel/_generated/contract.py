@@ -9,7 +9,6 @@ from typing import Final, Literal, TypeAlias, TypedDict
 import variants_modular_basemodel_models.field_owners_get_response as variants_modular_basemodel_models_field_owners_get_response
 import variants_modular_basemodel_models.pet as variants_modular_basemodel_models_pet
 from pydantic import TypeAdapter
-from typing_extensions import Never
 
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
@@ -19,7 +18,6 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1pets~1{id}/get',
     '/paths/~1owners/get',
 ]
-SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
@@ -29,7 +27,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = ()
 
 
 class CreatePet:

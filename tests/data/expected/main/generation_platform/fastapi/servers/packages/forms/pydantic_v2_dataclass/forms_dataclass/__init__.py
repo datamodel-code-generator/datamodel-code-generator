@@ -4,16 +4,14 @@
 from ._runtime.model_codecs.unset import UNSET, Unset
 from ._runtime.server.responses import HTTPResult
 from .application import (
-    AsyncAuthorizer,
-    AsyncCredentialExtractor,
-    Authorizer,
-    CredentialExtractor,
-    CredentialExtractors,
+    AsyncAuthorize,
+    Authorize,
+    Credentials,
     Dependency,
     FastAPIOptions,
     OperationDependencies,
     OperationKey,
-    SchemeKey,
+    RequirementSets,
     build_router,
     create_app,
 )
@@ -25,12 +23,10 @@ from .errors import (
 
 __all__ = [
     "UNSET",
-    "AsyncAuthorizer",
-    "AsyncCredentialExtractor",
+    "AsyncAuthorize",
     "AuthConfigurationError",
-    "Authorizer",
-    "CredentialExtractor",
-    "CredentialExtractors",
+    "Authorize",
+    "Credentials",
     "Dependency",
     "FastAPIOptions",
     "HTTPResult",
@@ -38,7 +34,7 @@ __all__ = [
     "OpenAPIConfigurationError",
     "OperationDependencies",
     "OperationKey",
-    "SchemeKey",
+    "RequirementSets",
     "Unset",
     "build_router",
     "create_app",

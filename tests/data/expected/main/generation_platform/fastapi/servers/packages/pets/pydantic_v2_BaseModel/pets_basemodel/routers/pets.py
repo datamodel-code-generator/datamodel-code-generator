@@ -201,7 +201,6 @@ def build_router(
     """Check the service and settings, then register the pets operations on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
-        contract.SCHEMES,
         services={'pets': pets},
         dependencies=dependencies,
         operation_dependencies=operation_dependencies,

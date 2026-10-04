@@ -6,21 +6,19 @@ from typing import Final
 
 from fastapi import APIRouter, FastAPI
 
-from ._generated import contract
-from ._generated.contract import OperationDependencies, OperationKey, SchemeKey
+from ._generated.contract import OperationDependencies, OperationKey
 from ._runtime.server.application import (
     Dependency,
     FastAPIOptions,
     application_options,
     build,
 )
-from ._runtime.server.security import PrincipalT, SecretT
-from .auth_types import (
-    AsyncAuthorizer,
-    AsyncCredentialExtractor,
-    Authorizer,
-    CredentialExtractor,
-    CredentialExtractors,
+from ._runtime.server.security import (
+    AsyncAuthorize,
+    Authorize,
+    Credentials,
+    PrincipalT,
+    RequirementSets,
 )
 from .routers import untagged
 from .services import UntaggedService
@@ -32,8 +30,7 @@ INFO: Final[FastAPIOptions] = {'title': 'Scheme names', 'version': '1.0'}
 def build_router(
     *,
     untagged: UntaggedService[PrincipalT],
-    authorizer: Authorizer[SecretT, PrincipalT] | AsyncAuthorizer[SecretT, PrincipalT],
-    credential_extractors: CredentialExtractors[SecretT] | None = None,
+    authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
     dependencies: Sequence[Dependency] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
@@ -41,10 +38,8 @@ def build_router(
     """Check the services and settings, then register every operation, literal paths first."""
     return build(
         ROUTES,
-        contract.SCHEMES,
         services={'untagged': untagged},
-        authorizer=authorizer,
-        credential_extractors=credential_extractors,
+        authorize=authorize,
         dependencies=dependencies,
         operation_dependencies=operation_dependencies,
         prefix=prefix,
@@ -54,8 +49,7 @@ def build_router(
 def create_app(
     *,
     untagged: UntaggedService[PrincipalT],
-    authorizer: Authorizer[SecretT, PrincipalT] | AsyncAuthorizer[SecretT, PrincipalT],
-    credential_extractors: CredentialExtractors[SecretT] | None = None,
+    authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
     dependencies: Sequence[Dependency] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
@@ -66,8 +60,7 @@ def create_app(
     app.include_router(
         build_router(
             untagged=untagged,
-            authorizer=authorizer,
-            credential_extractors=credential_extractors,
+            authorize=authorize,
             dependencies=dependencies,
             operation_dependencies=operation_dependencies,
             prefix=prefix,
@@ -77,16 +70,14 @@ def create_app(
 
 
 __all__ = [
-    'AsyncAuthorizer',
-    'AsyncCredentialExtractor',
-    'Authorizer',
-    'CredentialExtractor',
-    'CredentialExtractors',
+    'AsyncAuthorize',
+    'Authorize',
+    'Credentials',
     'Dependency',
     'FastAPIOptions',
     'OperationDependencies',
     'OperationKey',
-    'SchemeKey',
+    'RequirementSets',
     'build_router',
     'create_app',
 ]

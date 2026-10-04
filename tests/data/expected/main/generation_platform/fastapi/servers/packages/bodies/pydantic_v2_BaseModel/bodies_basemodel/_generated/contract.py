@@ -8,7 +8,6 @@ from typing import Final, Literal, TypeAlias, TypedDict
 
 import bodies_basemodel_models
 from pydantic import TypeAdapter
-from typing_extensions import Never
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.server.application import Dependency, OperationPlan
@@ -29,7 +28,6 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1checks/post',
     '/paths/~1raw/post',
 ]
-SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
@@ -48,7 +46,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = ()
 
 
 class PostItem:

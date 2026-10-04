@@ -8,7 +8,6 @@ from typing import Final, Literal, TypeAlias, TypedDict
 
 import responses_dataclass_models
 from pydantic import TypeAdapter
-from typing_extensions import Never
 
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
@@ -18,7 +17,6 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1documents~1{id}/get',
     '/paths/~1pets~1{id}/get',
 ]
-SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
@@ -28,7 +26,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = ()
 
 
 class GetGreeting:

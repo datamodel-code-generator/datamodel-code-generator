@@ -4,22 +4,38 @@
 from collections.abc import Sequence
 from typing import Annotated, Final
 
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Depends, Path, Query, Security
 from fastapi.responses import Response
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBasicCredentials
 
+from .. import security
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
 from .._runtime.server.requests import absent, present
 from .._runtime.server.responses import dispatch
-from .._runtime.server.security import PrincipalT, SecretT
-from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
+from .._runtime.server.security import (
+    AsyncAuthorize,
+    Authorize,
+    PrincipalT,
+    authenticate,
+)
 from ..services import UntaggedService
 
 
 def _add_get_maybe(router: APIRouter, wiring: Wiring) -> None:
     get_maybe_handler = wiring.async_handlers['get_maybe']
-    get_maybe_principal = wiring.authenticators['/paths/~1maybe/get']
+
+    async def get_maybe_principal(
+        *,
+        bearer: Annotated[HTTPAuthorizationCredentials | None, Security(security.bearer)],
+    ) -> object:
+        return await authenticate(
+            ((), (('bearer', ()),)),
+            {'bearer': bearer},
+            wiring.authorize,
+            'Bearer',
+        )
 
     async def get_maybe(
         *,
@@ -53,7 +69,22 @@ def _add_get_maybe(router: APIRouter, wiring: Wiring) -> None:
 
 def _add_put_pet(router: APIRouter, wiring: Wiring) -> None:
     put_pet_handler = wiring.handlers['put_pet']
-    put_pet_principal = wiring.authenticators['/paths/~1pets~1{petId}/put']
+
+    async def put_pet_principal(
+        *,
+        oauth: Annotated[str | None, Security(security.oauth, scopes=['write:pets', 'read:pets'])],
+        query_key: Annotated[str | None, Security(security.query_key)],
+        basic: Annotated[HTTPBasicCredentials | None, Security(security.basic)],
+    ) -> object:
+        return await authenticate(
+            (
+                (('oauth', ('write:pets', 'read:pets')),),
+                (('query_key', ()), ('basic', ())),
+            ),
+            {'oauth': oauth, 'query_key': query_key, 'basic': basic},
+            wiring.authorize,
+            'Bearer, APIKey, Basic',
+        )
 
     def put_pet(
         *,
@@ -81,7 +112,19 @@ def _add_put_pet(router: APIRouter, wiring: Wiring) -> None:
 
 def _add_get_session(router: APIRouter, wiring: Wiring) -> None:
     get_session_handler = wiring.handlers['get_session']
-    get_session_principal = wiring.authenticators['/paths/~1session/get']
+
+    async def get_session_principal(
+        *,
+        cookie_key: Annotated[str | None, Security(security.cookie_key)],
+        oidc: Annotated[str | None, Security(security.oidc, scopes=['openid'])],
+        api_key: Annotated[str | None, Security(security.api_key)],
+    ) -> object:
+        return await authenticate(
+            ((('cookie_key', ()),), (('oidc', ('openid',)),), (('api_key', ()),)),
+            {'cookie_key': cookie_key, 'oidc': oidc, 'api_key': api_key},
+            wiring.authorize,
+            'APIKey, Bearer',
+        )
 
     def get_session(
         *,
@@ -108,7 +151,19 @@ def _add_get_session(router: APIRouter, wiring: Wiring) -> None:
 
 def _add_get_custom(router: APIRouter, wiring: Wiring) -> None:
     get_custom_handler = wiring.async_handlers['get_custom']
-    get_custom_principal = wiring.authenticators['/paths/~1custom/get']
+
+    async def get_custom_principal(
+        *,
+        digest: Annotated[HTTPAuthorizationCredentials | None, Security(security.digest)],
+        mtls: Annotated[object, Security(security.mtls)],
+        query_key: Annotated[str | None, Security(security.query_key)],
+    ) -> object:
+        return await authenticate(
+            ((('digest', ()),), (('mtls', ()),), (('query_key', ()),)),
+            {'digest': digest, 'mtls': mtls, 'query_key': query_key},
+            wiring.authorize,
+            'Digest, APIKey',
+        )
 
     async def get_custom(
         *,
@@ -144,8 +199,7 @@ TEMPLATED_ROUTES: Final = ((contract.PutPet.OPERATION, _add_put_pet),)
 def build_router(
     *,
     untagged: UntaggedService[PrincipalT],
-    authorizer: Authorizer[SecretT, PrincipalT] | AsyncAuthorizer[SecretT, PrincipalT],
-    credential_extractors: CredentialExtractors[SecretT] | None = None,
+    authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
     dependencies: Sequence[Dependency] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
@@ -153,10 +207,8 @@ def build_router(
     """Check the service and settings, then register the untagged operations on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
-        contract.SCHEMES,
         services={'untagged': untagged},
-        authorizer=authorizer,
-        credential_extractors=credential_extractors,
+        authorize=authorize,
         dependencies=dependencies,
         operation_dependencies=operation_dependencies,
         prefix=prefix,

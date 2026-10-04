@@ -8,20 +8,14 @@ from typing import Final, Literal, TypeAlias, TypedDict
 
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
-from .._runtime.server.security import SchemePlan, SecurityPlan
 
 OperationKey: TypeAlias = Literal['/paths/~1keys/get']
-SchemeKey: TypeAlias = Literal['api-key', 'api_key']
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
         '/paths/~1keys/get': Sequence[Dependency]
     },
     total=False,
-)
-SCHEMES: Final = (
-    SchemePlan(name='api-key', kind='api_key', location='header', parameter='X-Key'),
-    SchemePlan(name='api_key', kind='api_key', location='query', parameter='key'),
 )
 
 
@@ -33,6 +27,6 @@ class GetKeys:
         key='/paths/~1keys/get',
         service='untagged',
         keywords=('principal',),
-        security=SecurityPlan(requirements=((('api-key', ()),), (('api_key', ()),))),
+        secured=True,
     )
     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)

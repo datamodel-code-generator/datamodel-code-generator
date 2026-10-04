@@ -5,20 +5,35 @@ from collections.abc import Sequence
 from typing import Annotated, Final
 
 import security_basemodel_models
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
 
+from .. import security
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
 from .._runtime.server.responses import dispatch
-from .._runtime.server.security import PrincipalT, SecretT
-from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
+from .._runtime.server.security import (
+    AsyncAuthorize,
+    Authorize,
+    PrincipalT,
+    authenticate,
+)
 from ..services import PetsService
 
 
 def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     list_pets_handler = wiring.handlers['list_pets']
-    list_pets_principal = wiring.authenticators['/paths/~1pets/get']
+
+    async def list_pets_principal(
+        *,
+        api_key: Annotated[str | None, Security(security.api_key)],
+    ) -> object:
+        return await authenticate(
+            ((('api_key', ()),),),
+            {'api_key': api_key},
+            wiring.authorize,
+            'APIKey',
+        )
 
     def list_pets(
         *,
@@ -51,8 +66,7 @@ TEMPLATED_ROUTES: Final = ()
 def build_router(
     *,
     pets: PetsService[PrincipalT],
-    authorizer: Authorizer[SecretT, PrincipalT] | AsyncAuthorizer[SecretT, PrincipalT],
-    credential_extractors: CredentialExtractors[SecretT] | None = None,
+    authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
     dependencies: Sequence[Dependency] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
@@ -60,10 +74,8 @@ def build_router(
     """Check the service and settings, then register the pets operations on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
-        contract.SCHEMES,
         services={'pets': pets},
-        authorizer=authorizer,
-        credential_extractors=credential_extractors,
+        authorize=authorize,
         dependencies=dependencies,
         operation_dependencies=operation_dependencies,
         prefix=prefix,

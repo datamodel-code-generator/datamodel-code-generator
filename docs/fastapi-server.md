@@ -86,7 +86,7 @@ Because `Pets` subclasses `PetsService`, type checkers report a missing method o
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
 one service for each group, under the group's name, and checks every method when the application starts; any
 object with the right methods works, and type checkers check it where you pass it. The generated
-`server/README.md` lists the operations of each service and shows how to connect an authorizer and your own
+`server/README.md` lists the operations of each service and shows how to connect an `authorize` callback and your own
 `FastAPI` application.
 
 ## Requirements
@@ -189,13 +189,13 @@ callable = "rename"
 | `__init__.py`, `application.py` | generator | `create_app`, `build_router`, and the public types |
 | `services.py` | generator | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | generator | Route registrations |
-| `errors.py`, `auth_types.py` | generator | Errors and authentication types |
+| `errors.py`, `security.py` | generator | Errors, and one FastAPI security dependency for each scheme |
 | `_generated/`, `_runtime/` | generator | Plans and the runtime the package imports |
 | `README.md`, `py.typed` | generator | Documentation and typing marker |
 | `.dcg-target-manifest.json`, `.dcg-state/` | generator | What the last generation wrote, to regenerate and check safely |
 
 The generator owns every file of the package and rewrites them on every generation, as it does the models,
-restoring any you edited or deleted. Keep the service implementations, the authorizer, and the application in your
+restoring any you edited or deleted. Keep the service implementations, the `authorize` callback, and the application in your
 own modules; a file the generator never wrote at a path it needs stops the run (`E_OUTPUT_CONFLICT`). In standalone
 mode the package lives under `output/src/<package>` next to `pyproject.toml` and `README.md`, the `pyproject.toml`
 declares the runtime dependencies, and generation prints the `uv add --editable` command that adds the distribution
@@ -246,6 +246,24 @@ route's `response_model` when the response is JSON (`by_alias=True`, `exclude_un
 validates and serializes with the declared response's model and default media type; or a Starlette `Response`,
 sent as it is, for anything else, such as another media type or repeated headers. A `pydantic_v2.dataclass`
 cannot tell an omitted field from one set to `None`, so its responses send optional fields as `null`.
+
+## Security
+
+`security.py` declares one FastAPI dependency for each security scheme the selected operations use: `APIKeyHeader`,
+`APIKeyQuery`, or `APIKeyCookie` for an API key, `HTTPBasic`, `HTTPBearer`, or `HTTPDigest` for an HTTP scheme,
+`OAuth2` with the declared flows, and `OpenIdConnect`, each with `auto_error=False`. A scheme no FastAPI class reads,
+such as `mutualTLS`, is a function that returns `None`; replace it, or any other scheme, with
+`app.dependency_overrides[security.<scheme>]`. The credentials are what the dependencies return: a string for an API
+key and for the `Authorization` header OAuth2 and OpenID Connect read, `HTTPBasicCredentials`, or
+`HTTPAuthorizationCredentials`.
+
+`create_app` and `build_router` of a package with secured operations take an
+`authorize(requirement_sets, credentials)` callback, which may be a coroutine function. Each secured operation calls
+it once with its security requirement sets whose every scheme presented a credential, in declaration order, and the
+credentials by scheme name; the handler receives the principal it returns, and it rejects a request by raising
+`HTTPException`. A request that presents no complete requirement set answers `401`, unless the operation also
+accepts no credentials, in which case the handler receives `None`. FastAPI's document lists each operation's
+schemes as one requirement, since FastAPI cannot document alternatives.
 
 ## Served OpenAPI document
 

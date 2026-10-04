@@ -271,6 +271,11 @@
       "get": {
         "summary": "Get Secure",
         "operationId": "getSecure",
+        "security": [
+          {
+            "signature": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "The animal.",
@@ -478,6 +483,13 @@
           "callbackUrl"
         ],
         "title": "Subscription"
+      }
+    },
+    "securitySchemes": {
+      "signature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Signature"
       }
     }
   }

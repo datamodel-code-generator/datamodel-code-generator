@@ -11,7 +11,6 @@ from pydantic import TypeAdapter
 
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
-from .._runtime.server.security import SchemePlan, SecurityPlan
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1pets/get',
@@ -20,17 +19,6 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1pets~1{petId}/put',
     '/paths/~1session/get',
     '/paths/~1custom/get',
-]
-SchemeKey: TypeAlias = Literal[
-    'api_key',
-    'bearer',
-    'oauth',
-    'query_key',
-    'basic',
-    'cookie_key',
-    'oidc',
-    'digest',
-    'mtls',
 ]
 OperationDependencies = TypedDict(
     'OperationDependencies',
@@ -44,27 +32,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = (
-    SchemePlan(
-        name='api_key',
-        kind='api_key',
-        location='header',
-        parameter='X-API-Key',
-    ),
-    SchemePlan(name='bearer', kind='bearer'),
-    SchemePlan(name='oauth', kind='bearer'),
-    SchemePlan(name='query_key', kind='api_key', location='query', parameter='key'),
-    SchemePlan(name='basic', kind='basic'),
-    SchemePlan(
-        name='cookie_key',
-        kind='api_key',
-        location='cookie',
-        parameter='session',
-    ),
-    SchemePlan(name='oidc', kind='bearer'),
-    SchemePlan(name='digest', kind='custom'),
-    SchemePlan(name='mtls', kind='custom'),
-)
 
 
 class ListPets:
@@ -75,7 +42,7 @@ class ListPets:
         key='/paths/~1pets/get',
         service='pets',
         keywords=('principal',),
-        security=SecurityPlan(requirements=((('api_key', ()),),)),
+        secured=True,
     )
     RESPONSES: Final = OperationResponses(
         responses={
@@ -107,7 +74,7 @@ class GetMaybe:
         service='untagged',
         keywords=('principal', 'query_principal'),
         asynchronous=True,
-        security=SecurityPlan(requirements=((), (('bearer', ()),))),
+        secured=True,
     )
     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
@@ -120,12 +87,7 @@ class PutPet:
         key='/paths/~1pets~1{petId}/put',
         service='untagged',
         keywords=('principal', 'pet_id'),
-        security=SecurityPlan(
-            requirements=(
-                (('oauth', ('write:pets', 'read:pets')),),
-                (('query_key', ()), ('basic', ())),
-            ),
-        ),
+        secured=True,
     )
     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
@@ -138,13 +100,7 @@ class GetSession:
         key='/paths/~1session/get',
         service='untagged',
         keywords=('principal',),
-        security=SecurityPlan(
-            requirements=(
-                (('cookie_key', ()),),
-                (('oidc', ('openid',)),),
-                (('api_key', ()),),
-            ),
-        ),
+        secured=True,
     )
     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
@@ -158,8 +114,6 @@ class GetCustom:
         service='untagged',
         keywords=('principal',),
         asynchronous=True,
-        security=SecurityPlan(
-            requirements=((('digest', ()),), (('mtls', ()),), (('query_key', ()),)),
-        ),
+        secured=True,
     )
     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)

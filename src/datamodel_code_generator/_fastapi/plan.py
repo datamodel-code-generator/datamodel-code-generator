@@ -85,7 +85,7 @@ Reason: TypeAlias = Literal[
     "response_empty",
 ]
 ArgumentKind: TypeAlias = Literal["request", "principal", "native", "adapter", "body", "media_type"]
-SchemeKind: TypeAlias = Literal["api_key", "basic", "bearer", "custom"]
+SchemeKind: TypeAlias = Literal["api_key", "basic", "bearer", "digest", "oauth2", "openid", "custom"]
 Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Cookie"]
 ValueKind: TypeAlias = Literal["scalar", "sequence"]
@@ -115,7 +115,8 @@ CONSTRAINED: Final = frozenset({
     ("pydantic", "conint"),
     ("pydantic", "constr"),
 })
-_HTTP_SCHEMES: Final[dict[str, SchemeKind]] = {"basic": "basic", "bearer": "bearer"}
+_HTTP_SCHEMES: Final[dict[str, SchemeKind]] = {"basic": "basic", "bearer": "bearer", "digest": "digest"}
+_FLOWS: Final[dict[object, SchemeKind]] = {"oauth2": "oauth2", "openIdConnect": "openid"}
 _API_KEY_LOCATIONS: Final = frozenset({"header", "query", "cookie"})
 _INFO: Final = (
     ("info", "title", "title", "text"),
@@ -235,10 +236,11 @@ class PrimarySpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class SchemeSpec:
-    """One declared security scheme the selected operations use, and how its credential is read."""
+    """One declared security scheme the selected operations use: the FastAPI class that reads it, and its facts."""
 
     name: str
     kind: SchemeKind
+    declaration: WireDeclaration
     location: str | None = None
     parameter: str | None = None
 
@@ -1029,16 +1031,18 @@ def _scopes(value: FrozenLiteral) -> tuple[str, ...] | None:
 def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
     match fact(declaration, "type"), fact(declaration, "in"), fact(declaration, "name"), fact(declaration, "scheme"):
         case "apiKey", str() as location, str() as parameter, _ if parameter and location in _API_KEY_LOCATIONS:
-            return SchemeSpec(name=name, kind="api_key", location=location, parameter=parameter)
+            return SchemeSpec(
+                name=name, kind="api_key", declaration=declaration, location=location, parameter=parameter
+            )
         case "apiKey", _, _, _:
             return None
         case "http", _, _, str() as scheme if (kind := _HTTP_SCHEMES.get(scheme.lower())) is not None:
-            return SchemeSpec(name=name, kind=kind)
-        case "oauth2" | "openIdConnect", _, _, _:
-            return SchemeSpec(name=name, kind="bearer")
+            return SchemeSpec(name=name, kind=kind, declaration=declaration)
+        case kind, _, _, _ if kind in _FLOWS:
+            return SchemeSpec(name=name, kind=_FLOWS[kind], declaration=declaration)
         case _:
             pass
-    return SchemeSpec(name=name, kind="custom")
+    return SchemeSpec(name=name, kind="custom", declaration=declaration)
 
 
 def _member(source: object, key: str) -> WireValue | None:

@@ -8,7 +8,6 @@ from typing import Final, Literal, TypeAlias, TypedDict
 
 import customized_basemodel_models
 from pydantic import TypeAdapter
-from typing_extensions import Never
 
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
@@ -19,7 +18,6 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1pets~1{petId}~1moves/post',
     '/paths/~1health/get',
 ]
-SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
@@ -30,7 +28,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = ()
 
 
 class HandleListPets:

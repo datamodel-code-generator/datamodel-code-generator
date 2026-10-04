@@ -17,7 +17,7 @@ from starlette.routing import BaseRoute
 from typing_extensions import TypeIs
 
 from ..model_codecs.wire import JSONValue, checked_wire, thaw_wire
-from .security import Authenticator, SchemePlan, SecurityPlan, asynchronous, authenticators, coroutine_function
+from .security import awaited, checked_authorize, coroutine_function
 
 Dependency: TypeAlias = Depends
 ValueT = TypeVar("ValueT")
@@ -93,16 +93,16 @@ class OperationPlan:
     service: str
     keywords: tuple[str, ...] = ()
     asynchronous: bool = False
-    security: SecurityPlan | None = None
+    secured: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Wiring:
-    """What route adders connect: the checked handlers, authentication dependencies, and operation dependencies."""
+    """What route adders connect: the checked handlers, the authorize callback, and operation dependencies."""
 
     handlers: Mapping[str, Callable[..., object]]
     async_handlers: Mapping[str, Callable[..., Awaitable[object]]]
-    authenticators: Mapping[str, Authenticator]
+    authorize: Callable[..., object]
     dependencies: Mapping[str, tuple[Dependency, ...]]
 
 
@@ -111,33 +111,32 @@ Route: TypeAlias = tuple[OperationPlan, Callable[[APIRouter, Wiring], None]]
 
 def build(  # noqa: PLR0913
     routes: tuple[Route, ...],
-    schemes: tuple[SchemePlan, ...],
     *,
     services: Mapping[str, object],
-    authorizer: object = None,
-    credential_extractors: object = None,
+    authorize: object = None,
     dependencies: object,
     operation_dependencies: object,
     prefix: object,
 ) -> APIRouter:
     """Check the services and settings of the routes' operations, then register the routes in order."""
     operations = tuple(operation for operation, _ in routes)
-    secured = tuple(
-        (operation.key, security) for operation in operations if (security := operation.security) is not None
-    )
     checked = checked_services(services, operations)
     wiring = Wiring(
         handlers=checked,
         async_handlers=MappingProxyType({
-            name: handler for name, value in checked.items() if (handler := asynchronous(value)) is not None
+            name: handler for name, value in checked.items() if (handler := awaited(value)) is not None
         }),
-        authenticators=authenticators(schemes, secured, authorizer, credential_extractors),
+        authorize=checked_authorize(authorize) if any(operation.secured for operation in operations) else _unused,
         dependencies=checked_operation_dependencies(operation_dependencies, operations),
     )
     router = APIRouter(prefix=checked_prefix(prefix), dependencies=_dependencies(dependencies, "dependencies"))
     for _, add in routes:
         add(router, wiring)
     return router
+
+
+def _unused(*_: object) -> None:
+    """Stand in for the authorize callback of a router without secured operations."""
 
 
 def checked_services(

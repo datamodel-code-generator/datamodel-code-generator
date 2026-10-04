@@ -10,7 +10,6 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
     """Check the services and settings, then register every operation, literal paths first."""
     return {{ build }}(
         ROUTES,
-        {{ schemes }},
         services={{ services }},
 {%- for name in settings %}
         {{ name }}={{ name }},

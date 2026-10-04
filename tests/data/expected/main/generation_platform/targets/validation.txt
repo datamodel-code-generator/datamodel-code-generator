@@ -17,7 +17,6 @@ render
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
   write target server/errors.py (target)
-  write target server/auth_types.py (target)
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)

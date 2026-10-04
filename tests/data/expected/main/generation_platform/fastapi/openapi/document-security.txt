@@ -40,7 +40,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/public": {
@@ -61,6 +66,11 @@
       "get": {
         "summary": "Get Maybe",
         "operationId": "getMaybe",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "principal",
@@ -97,7 +107,20 @@
           "204": {
             "description": "Done."
           }
-        }
+        },
+        "security": [
+          {
+            "cookie_key": []
+          },
+          {
+            "oidc": [
+              "openid"
+            ]
+          },
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/custom": {
@@ -108,13 +131,35 @@
           "204": {
             "description": "Done."
           }
-        }
+        },
+        "security": [
+          {
+            "digest": []
+          },
+          {
+            "query_key": []
+          }
+        ]
       }
     },
     "/pets/{petId}": {
       "put": {
         "summary": "Put Pet",
         "operationId": "putPet",
+        "security": [
+          {
+            "oauth": [
+              "write:pets",
+              "read:pets"
+            ]
+          },
+          {
+            "query_key": []
+          },
+          {
+            "basic": []
+          }
+        ],
         "parameters": [
           {
             "name": "petId",
@@ -205,6 +250,53 @@
           "type"
         ],
         "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "api_key": {
+        "type": "apiKey",
+        "description": "The caller's key.",
+        "in": "header",
+        "name": "X-API-Key"
+      },
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "cookie_key": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
+      },
+      "oidc": {
+        "type": "openIdConnect",
+        "openIdConnectUrl": "https://example.com/.well-known/openid-configuration"
+      },
+      "digest": {
+        "type": "http",
+        "scheme": "digest"
+      },
+      "query_key": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "key"
+      },
+      "oauth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "scopes": {
+              "write:pets": "Write pets.",
+              "read:pets": "Read pets."
+            },
+            "tokenUrl": "https://example.com/token"
+          }
+        }
+      },
+      "basic": {
+        "type": "http",
+        "scheme": "basic"
       }
     }
   },
