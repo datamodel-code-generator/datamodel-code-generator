@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.data.python.client_runtime import arecord, record, run
+from tests.data.python.client_sockets import arecord as handshake_arecord
+from tests.data.python.client_sockets import record as handshake_record
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -475,7 +477,7 @@ def _handshake_failures(harness: _Harness, connector: _Connector, api: Any) -> N
     bad_headers.handshake_headers = {"x-socket": "1"}
     bad_subprotocol = _Connection(harness, subprotocol=b"chat.v2")
     for label, items in (
-        ("status then 101", (harness.rejected(503), _Connection(harness, subprotocol="chat.v2"))),
+        ("terminal status", (harness.rejected(503),)),
         ("broken evidence with a status", (broken(harness.rejected(503)),)),
         ("refusal with 101", (harness.rejected(101),)),
         ("refusal with 103", (harness.rejected(103),)),
@@ -485,27 +487,64 @@ def _handshake_failures(harness: _Harness, connector: _Connector, api: Any) -> N
         ("unclassified failure", (RuntimeError("connector bug"),)),
     ):
         connector.queue.extend(items)
-        session = record(lines, label, lambda: chat.connect(room=harness.room))
+        session = handshake_record(lines, label, lambda: chat.connect(room=harness.room))
         if session is not None:
             session.close()
     options = harness.options
-    moved = harness.rejected(302, ("Location", "/rooms/r2/socket"))
-    connector.queue.extend((moved, moved))
-    record(
-        lines,
-        "redirect without a parent send slot",
-        lambda: chat.connect(
-            room=harness.room,
-            options=options.RequestOptions(redirects=options.RedirectOptions(enabled=True)),
-            session_options=options.SessionOptions(max_network_sends=1),
-        ),
-    )
-    record(
+    handshake_record(
         lines,
         "no call send slot",
         lambda: chat.connect(room=harness.room, options=options.RequestOptions(max_network_sends=0)),
     )
     connector.queue.clear()
+    for delivery in ("MAYBE_SENT", "RESPONSE_STARTED", "NOT_SENT"):
+        for kind in ("timeout", "transport"):
+            failure = (
+                harness.errors.PhaseTimeoutError(
+                    phase="connect", effective_timeout=5, delivery_state=harness.errors.DeliveryState[delivery]
+                )
+                if kind == "timeout"
+                else harness.errors.TransportError(phase="read", delivery_state=harness.errors.DeliveryState[delivery])
+            )
+            sentinel = _Connection(harness, subprotocol="chat.v2")
+            connector.queue.extend((failure, sentinel))
+            session = handshake_record(
+                lines,
+                f"initial {kind} {delivery}",
+                lambda: chat.connect(
+                    room=harness.room, options=options.RequestOptions(retry=options.RetryOptions(max_retries=1))
+                ),
+            )
+            if session is not None:
+                lines.append(
+                    f"    attempts={session.response.resource_attempt_count} "
+                    f"sends={session.response.network_send_count} "
+                    f"wire={session.response.wire_send_count}"
+                )
+                session.close()
+            lines.append(f"    sentinel pending={sentinel in connector.queue}")
+            connector.queue.clear()
+    for label, request, parent in (
+        ("retry disabled", options.RequestOptions(retry=options.RetryOptions(max_retries=0)), None),
+        (
+            "parent exhausted",
+            options.RequestOptions(retry=options.RetryOptions(max_retries=1)),
+            options.SessionOptions(max_network_sends=1),
+        ),
+    ):
+        connector.queue.append(
+            harness.errors.PhaseTimeoutError(
+                phase="connect", effective_timeout=5, delivery_state=harness.errors.DeliveryState.NOT_SENT
+            )
+        )
+        handshake_record(
+            lines,
+            label,
+            lambda request=request, parent=parent: chat.connect(
+                room=harness.room, options=request, session_options=parent
+            ),
+        )
+        connector.queue.clear()
 
 
 def _send_failures(harness: _Harness, connector: _Connector, api: Any) -> None:
@@ -672,6 +711,55 @@ async def _async_connectors(harness: _Harness) -> None:
         await session.send(harness.models.ClientMessage(text="hi"))
         lines.append(f"    async ping {await session.ping()!r}")
         await session.aclose()
+        options = harness.options
+        for delivery in ("MAYBE_SENT", "RESPONSE_STARTED", "NOT_SENT"):
+            for kind in ("timeout", "transport"):
+                failure = (
+                    errors.PhaseTimeoutError(
+                        phase="connect", effective_timeout=5, delivery_state=errors.DeliveryState[delivery]
+                    )
+                    if kind == "timeout"
+                    else errors.TransportError(phase="read", delivery_state=errors.DeliveryState[delivery])
+                )
+                sentinel = _AsyncConnection(harness)
+                connector.queue.extend((failure, sentinel))
+                session = await handshake_arecord(
+                    lines,
+                    f"async initial {kind} {delivery}",
+                    lambda: api.protocols.feed.text.connect(
+                        options=options.RequestOptions(retry=options.RetryOptions(max_retries=1))
+                    ),
+                )
+                if session is not None:
+                    lines.append(
+                        f"    attempts={session.response.resource_attempt_count} "
+                        f"sends={session.response.network_send_count} "
+                        f"wire={session.response.wire_send_count}"
+                    )
+                    await session.aclose()
+                lines.append(f"    sentinel pending={sentinel in connector.queue}")
+                connector.queue.clear()
+        for label, request, parent in (
+            ("async retry disabled", options.RequestOptions(retry=options.RetryOptions(max_retries=0)), None),
+            (
+                "async parent exhausted",
+                options.RequestOptions(retry=options.RetryOptions(max_retries=1)),
+                options.SessionOptions(max_network_sends=1),
+            ),
+        ):
+            connector.queue.append(
+                errors.PhaseTimeoutError(
+                    phase="connect", effective_timeout=5, delivery_state=errors.DeliveryState.NOT_SENT
+                )
+            )
+            await handshake_arecord(
+                lines,
+                label,
+                lambda request=request, parent=parent: api.protocols.feed.text.connect(
+                    options=request, session_options=parent
+                ),
+            )
+            connector.queue.clear()
         for label, failure in (
             ("async nothing sent before the timeout", TimeoutError()),
             ("async message that may have gone", harness.transport_error("MAYBE_SENT")),
@@ -719,17 +807,6 @@ async def _async_connectors(harness: _Harness) -> None:
             "async no call send slot",
             lambda: api.protocols.feed.text.connect(options=options.RequestOptions(max_network_sends=0)),
         )
-        moved = harness.rejected(302, ("Location", "/rooms/r2/socket"))
-        connector.queue.extend((moved, moved))
-        await arecord(
-            lines,
-            "async redirect without a parent send slot",
-            lambda: api.protocols.feed.text.connect(
-                options=options.RequestOptions(redirects=options.RedirectOptions(enabled=True)),
-                session_options=options.SessionOptions(max_network_sends=1),
-            ),
-        )
-        connector.queue.clear()
         connection = _AsyncConnection(harness)
         connection.hold = harness.transport_error("RESPONSE_STARTED")
         connector.queue.append(connection)

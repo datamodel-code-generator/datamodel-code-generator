@@ -64,7 +64,7 @@ from .websocket_types import WSFrame
 
 if TYPE_CHECKING:
     import socket
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable
 
     from websockets.client import ClientProtocol
     from websockets.datastructures import HeadersLike
@@ -76,7 +76,6 @@ if TYPE_CHECKING:
 
 __all__ = ("AsyncNativeConnection", "AsyncNativeConnector", "NativeConnection", "NativeConnector")
 
-_FRAGMENT: Final = 32768
 _WRITE_LIMIT: Final = 32768
 _TOO_BIG: Final = 1009
 _CONDITIONS: Final[tuple[tuple[type[InvalidHandshake], HandshakeCondition], ...]] = (
@@ -392,20 +391,11 @@ class AsyncNativeConnector(_Connector):
         return AsyncNativeConnection(connection, options.max_message_bytes)
 
 
-class _Overdue(Exception):  # noqa: N818 - An internal signal, never raised to callers.
-    """The deadline of a fragmented send passed between two fragments."""
-
-
-def _fragments(data: bytes, deadline: Deadline | None, sent: list[int]) -> Iterator[bytes]:
-    """Yield a message's fragments, refusing each after the first once the deadline passed, counting those handed over.
-
-    The first fragment goes regardless, since the send checked the deadline before it began.
-    """
-    for start in range(0, len(data), _FRAGMENT):
-        if start and deadline is not None and deadline.remaining() <= 0:
-            raise _Overdue
-        yield data[start : start + _FRAGMENT]
-        sent[0] += 1
+def _undelivered(error: ConnectionClosed, closed: Exception) -> Exception:
+    """Return a send's closed connection, retaining uncertainty when an I/O failure may have written it."""
+    if isinstance(error.__cause__, OSError):
+        return TransportError(delivery_state=DeliveryState.MAYBE_SENT, phase="write", cause=error)
+    return closed
 
 
 class NativeConnection:
@@ -430,25 +420,13 @@ class NativeConnection:
         return _closed(error, self._connection.protocol.parser_exc, self._limit)
 
     def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
-        """Send one message, in fragments of 32 KiB checked against the deadline when it is longer."""
+        """Send one whole message, refusing it when its deadline passed before writing."""
         if deadline is not None and deadline.remaining() <= 0:
             raise TimeoutError
-        sent = [0]
         try:
-            if len(data) <= _FRAGMENT:
-                self._connection.send(data, text=text)
-            else:
-                self._connection.send(_fragments(data, deadline, sent), text=text)
-        except _Overdue:
-            raise TransportError(delivery_state=DeliveryState.MAYBE_SENT, phase="write", cause=TimeoutError()) from None
+            self._connection.send(data, text=text)
         except ConnectionClosed as error:
-            raise self._undelivered(error, partial=bool(sent[0])) from None
-
-    def _undelivered(self, error: ConnectionClosed, *, partial: bool) -> Exception:
-        """Return a send's closed connection: a message that may have gone, or the closure when nothing was written."""
-        maybe = partial or isinstance(error.__cause__, OSError)
-        written = TransportError(delivery_state=DeliveryState.MAYBE_SENT, phase="write", cause=error)
-        return written if maybe else self._closed(error)
+            raise _undelivered(error, self._closed(error)) from None
 
     def receive(self, *, deadline: Deadline | None) -> WSFrame:
         """Return the next whole message, raising TimeoutError when the deadline passes first."""
@@ -520,9 +498,7 @@ class AsyncNativeConnection:
         try:
             await self._connection.send(data, text=text)
         except ConnectionClosed as error:
-            maybe = isinstance(error.__cause__, OSError)
-            written = TransportError(delivery_state=DeliveryState.MAYBE_SENT, phase="write", cause=error)
-            raise (written if maybe else self._closed(error)) from None
+            raise _undelivered(error, self._closed(error)) from None
 
     async def receive(self, *, deadline: Deadline | None) -> WSFrame:
         """Return the next whole message; the client bounds the await by the deadline itself."""

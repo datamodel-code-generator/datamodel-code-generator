@@ -1984,20 +1984,8 @@
       [
         "client",
         "webhooks",
-        "standard",
-        "rejecting.py"
-      ],
-      [
-        "client",
-        "webhooks",
         "github",
         "push.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "slack",
-        "command.py"
       ],
       [
         "client",
@@ -2010,18 +1998,6 @@
         "webhooks",
         "rfc",
         "sha512.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "keyed",
-        "event.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "framed",
-        "count.py"
       ],
       [
         "client",
@@ -2044,19 +2020,7 @@
       [
         "client",
         "webhooks",
-        "framed",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "webhooks",
         "github",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "keyed",
         "__init__.py"
       ],
       [
@@ -2074,14 +2038,20 @@
       [
         "client",
         "webhooks",
-        "slack",
+        "standard",
         "__init__.py"
       ],
       [
         "client",
         "webhooks",
-        "standard",
+        "stripe",
         "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "event.py"
       ]
     ]
   },
@@ -2166,18 +2136,6 @@
         "client",
         "webhooks",
         "wycheproof",
-        "rsa.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "standard",
-        "ed25519.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "keyed",
         "rsa.py"
       ],
       [
@@ -3448,51 +3406,6 @@
       }
     },
     "modules": false
-  },
-  "circuits": {
-    "input": "circuits.yaml",
-    "config": {
-      "operations": [
-        {
-          "ref": "/paths/~1status/get",
-          "runtime": {
-            "circuit_group": "backend"
-          }
-        },
-        {
-          "ref": "/paths/~1account/get",
-          "runtime": {
-            "circuit_group": "backend"
-          }
-        },
-        {
-          "ref": "/paths/~1search/get",
-          "runtime": {
-            "circuit_group": "search"
-          }
-        },
-        {
-          "ref": "/paths/~1uploads/post",
-          "runtime": {
-            "circuit_group": "backend"
-          }
-        }
-      ]
-    },
-    "modules": [
-      [
-        "client",
-        "_client.py"
-      ],
-      [
-        "client",
-        "_async_client.py"
-      ],
-      [
-        "client",
-        "_operations.py"
-      ]
-    ]
   },
   "compression": {
     "input": "compression.yaml",
