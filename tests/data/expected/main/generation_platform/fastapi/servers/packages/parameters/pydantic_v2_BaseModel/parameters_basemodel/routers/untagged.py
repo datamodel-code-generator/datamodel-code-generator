@@ -163,7 +163,13 @@ def _add_repeat(router: APIRouter, wiring: Wiring) -> None:
         openapi_extra={
             'parameters': [
                 {
-                    'name': 'id',
+                    'name': 'dcg_p0',
+                    'in': 'path',
+                    'required': True,
+                    'schema': {'type': 'integer'},
+                },
+                {
+                    'name': 'dcg_p1',
                     'in': 'path',
                     'required': True,
                     'schema': {'type': 'integer'},

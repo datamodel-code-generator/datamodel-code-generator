@@ -16,6 +16,23 @@ paths:
               meta: {contentType: application/json}
       responses:
         "204": {description: Done.}
+  /mixed-encoded:
+    post:
+      operationId: postMixedEncoded
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, properties: {ids: {type: array, items: {type: integer}}}}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                ids: {type: array, items: {type: integer}}
+            encoding:
+              ids: {style: spaceDelimited}
+      responses:
+        "204": {description: Done.}
   /delimited:
     post:
       operationId: postDelimited
