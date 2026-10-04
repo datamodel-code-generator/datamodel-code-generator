@@ -61,7 +61,7 @@ service UntaggedService without its methods: TypeError
 < 200 text/plain; charset=utf-8 abc
 > GET /plain?case=too-long
   get_plain(too-long)
-< 200 text/plain; charset=utf-8 abcd
+< ResponseValidationError: ['String should have at most 3 characters']
 > GET /plain?case=undeclared
   get_plain(undeclared)
 < 404 - b''
