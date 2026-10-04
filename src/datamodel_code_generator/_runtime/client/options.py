@@ -8,7 +8,6 @@ import re
 from collections.abc import Mapping
 from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from decimal import Decimal
 from ssl import SSLContext
 from types import MappingProxyType
@@ -465,41 +464,20 @@ def _key_value(value: object) -> None:
             raise ConfigurationError(field_path=("idempotency_key",), condition="invalid_value")
 
 
-def _key_time(value: object) -> None:
-    if value is None:
-        return
-    path = ("idempotency_key", "first_used_at")
-    if not isinstance(value, datetime):
-        raise ConfigurationError(field_path=path, condition="invalid_type")
-    try:
-        aware = value.utcoffset() is not None
-    except (TypeError, ValueError, OverflowError) as error:
-        raise ConfigurationError(field_path=path, condition="invalid_value", cause=error) from None
-    if not aware:
-        raise ConfigurationError(field_path=path, condition="invalid_value")
-
-
 @dataclass(frozen=True, slots=True)
 class IdempotencyKey:
-    """A stable key and its known first-use time; an unknown time cannot establish retry safety."""
+    """A stable idempotency key reused across retries of one logical call."""
 
     value: str = field(repr=False)
-    first_used_at: datetime | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
-        """Reject empty or unsafe header values and timestamps without a timezone offset."""
+        """Reject empty or unsafe header values."""
         _key_value(self.value)
-        _key_time(self.first_used_at)
 
     @staticmethod
     def new() -> IdempotencyKey:
-        """Create a UUID4 key whose first-use time is now in UTC."""
-        return new_key(SYSTEM_CLOCK)
-
-
-def new_key(clock: Clock) -> IdempotencyKey:
-    """Create a UUID4 key whose first-use time is now in UTC on the clock's wall time."""
-    return IdempotencyKey(str(uuid4()), first_used_at=datetime.fromtimestamp(clock.time(), timezone.utc))
+        """Create a UUID4 idempotency key."""
+        return IdempotencyKey(str(uuid4()))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
