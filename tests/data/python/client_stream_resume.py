@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import importlib
 import itertools
 import json
@@ -61,9 +60,8 @@ def _events(*frames: str) -> tuple[bytes, ...]:
 
 
 def _saved(lines: list[str], label: str, state: Any) -> None:
-    """Report what an exported state saved and its expiry."""
-    envelope = json.loads(state.export())
-    lines.append(f"  {label} saved {json.dumps(envelope['state'], sort_keys=True)} expires_at={envelope['expires_at']}")
+    """Report what an exported token saved, its expiry included."""
+    lines.append(f"  {label} saved {json.dumps(json.loads(state.export())['state'], sort_keys=True)}")
 
 
 def _kept(lines: list[str], error: BaseException) -> Any:
@@ -96,16 +94,9 @@ async def _adrained(lines: list[str], label: str, stream: AsyncIterator[Any]) ->
     return None
 
 
-def _crafted(harness: _Harness, state: Any, saved: dict[str, Any] | None = None, **fields: Any) -> Any:
-    """Return a state with another's fingerprints and a replaced protocol state or expiry."""
-    envelope = json.loads(state.export())
-    return harness.protocols.ResumeState(
-        helper_fingerprint=envelope["helper_fingerprint"],
-        security_fingerprint=envelope["security_fingerprint"],
-        state=envelope["state"] if saved is None else saved,
-        payload=fields.get("payload", base64.b64decode(envelope["payload"])),
-        expires_at=fields.get("expires_at"),
-    )
+def _crafted(harness: _Harness, state: Any, saved: dict[str, Any]) -> Any:
+    """Return a token of another's helper with a replaced protocol state."""
+    return harness.protocols.ResumeState(helper=json.loads(state.export())["helper"], state=saved)
 
 
 def _replaced(state: Any, **members: Any) -> dict[str, Any]:
@@ -221,7 +212,7 @@ def _clocked(package: ModuleType, lines: list[str]) -> None:
             lines,
             "expired on the client wall clock",
             lambda: helper.resume(
-                _crafted(resumes.harness, state, expires_at=datetime(1960, 1, 1, tzinfo=timezone.utc))
+                _crafted(resumes.harness, state, _replaced(state, expires_at="1960-01-01T00:00:00+00:00"))
             ),
         )
 
@@ -472,9 +463,9 @@ def _tracked(resumes: _Resumes, api: Any) -> None:
     _saved(lines, "tracked", state)
     resumes.reply(b"event: done\ndata: {}\n\n", headers=(("X-Resume-Token", "t4"),))
     _drained(lines, "resumed with the bindings", helper.resume(state))
-    expired = _crafted(harness, state, expires_at=_PAST)
+    expired = _crafted(harness, state, _replaced(state, expires_at=_PAST.isoformat()))
     record(lines, "resume an expired state", lambda: helper.resume(expired))
-    dotted = _crafted(harness, state, _replaced(state, bound=["..", "t1", "resume"]), expires_at=state_expiry(state))
+    dotted = _crafted(harness, state, _replaced(state, bound=["..", "t1", "resume"]))
     record(lines, "resume a dot segment", lambda: helper.resume(dotted))
     hooked = api.with_options(harness.options.RequestOptions(hooks=(_Ends(lines),))).protocols.events.tracked
     for label, headers in (
@@ -504,11 +495,6 @@ def _rooms(resumes: _Resumes, api: Any) -> None:
     _saved(lines, "shard", stream.checkpoint())
     resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', headers=(("X-Shard", "."),))
     record(lines, "open with a shard making a dot segment", lambda: helper.open(room=room("."), shard=shard("x")))
-
-
-def state_expiry(state: Any) -> datetime:
-    """Return the expiry an exported state carries."""
-    return datetime.fromisoformat(json.loads(state.export())["expires_at"])
 
 
 def _records(resumes: _Resumes, api: Any) -> None:
@@ -609,7 +595,7 @@ def _origins(lines: list[str], error: BaseException) -> None:
 
 
 def _refusals(resumes: _Resumes, api: Any) -> None:
-    """Refuse a state that is not one, another helper's, made under other security, or that does not fit."""
+    """Refuse a state that is not one, another helper's, or that does not fit."""
     lines, harness, helper = resumes.lines, resumes.harness, api.protocols.events.live
     lines.append("refusals")
     resumes.reply(*_events('id: 1\ndata: {"text": "a"}\n\n'))
@@ -625,28 +611,16 @@ def _refusals(resumes: _Resumes, api: Any) -> None:
     record(lines, "resume a string", lambda: helper.resume("state"))
     record(lines, "resume another helper's state", lambda: helper.resume(other))
     options = harness.options
-    context = options.ProtocolClientOptions(
-        security=harness.protocols.ProtocolSecurityContext(credential_partition="p")
-    )
-    with resumes_client(resumes, options.ClientOptions(protocols=context)) as partitioned:
-        record(lines, "resume under other security", lambda: partitioned.protocols.events.live.resume(state))
     for label, saved in (
         ("missing members", {"cursor": "1"}),
         ("cursor not a string", _replaced(state, cursor=5)),
         ("empty cursor", _replaced(state, cursor="")),
         ("bound values of another count", _replaced(state, bound=["x"])),
         ("a saved cookie", _replaced(state, arguments=[[], [], ["c"]])),
-        ("negative sequence", _replaced(state, sequence=-1)),
-        ("retry time over its limit", _replaced(state, retry_ms=10**18)),
+        ("an expiry of another form", _replaced(state, expires_at="soon")),
         ("cursor the reopen cannot encode", _replaced(state, cursor="5 ")),
     ):
         record(lines, f"resume {label}", lambda saved=saved: helper.resume(_crafted(harness, state, saved)))
-    record(lines, "resume a payload", lambda: helper.resume(_crafted(harness, state, payload=b"x")))
-    record(
-        lines,
-        "retry of NDJSON",
-        lambda: api.protocols.records.all.resume(_crafted(harness, other, _replaced(other, retry_ms=5))),
-    )
     record(
         lines,
         "object cursor",
@@ -674,8 +648,7 @@ def _cursor_refusals(resumes: _Resumes, api: Any) -> None:
     next(tracked)
     saved = tracked.checkpoint()
     tracked.close()
-    expires_at = state_expiry(saved)
-    crafted = _crafted(harness, saved, _replaced(saved, arguments=[[]]), expires_at=expires_at)
+    crafted = _crafted(harness, saved, _replaced(saved, arguments=[[]]))
     record(lines, "resume arguments of another operation", lambda: api.protocols.events.tracked.resume(crafted))
     query = harness.models.FeedQuery(topic="t")
     resumes.reply(*_events('event: tick\ndata: {"seq": 1}\n\n'))

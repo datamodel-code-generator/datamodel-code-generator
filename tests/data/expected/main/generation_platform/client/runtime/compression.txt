@@ -147,7 +147,9 @@
   > POST https://api.example.com/checks/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"id":"c1"}'
   check = Outcome(value='ok')
-  completed check resume ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  completed check resume = LroHandle(phase='pending', polls=0)
+  > POST https://api.example.com/checks/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 11] b'{"id":"c1"}'
   completed check inherited resume = Outcome(value='ok')
   > POST https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"text":"q"}'
@@ -210,7 +212,9 @@
   > POST https://api.example.com/checks/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"id":"c1"}'
   async check = Outcome(value='ok')
-  async completed check resume ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  async completed check resume = AsyncLroHandle(phase='pending', polls=0)
+  > POST https://api.example.com/checks/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"id":"c1"}'
   async inherited completed check = Outcome(value='ok')
   async helper header conflict ! ConfigurationError: ConfigurationError(operation_id='createJob', call_id='<call>', field_path='headers.Content-Encoding', condition='managed') [operation_id='createJob', field_path=('headers', 'Content-Encoding'), condition='managed'] configuration_error
   > POST https://api.example.com/events

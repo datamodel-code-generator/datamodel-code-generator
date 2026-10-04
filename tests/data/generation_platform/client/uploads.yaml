@@ -68,6 +68,9 @@ paths:
         - name: X-Chunk-Length
           in: header
           schema: {type: integer}
+        - name: Upload-Checksum
+          in: header
+          schema: {type: string}
       requestBody:
         required: true
         content:
@@ -91,6 +94,9 @@ paths:
           in: query
           required: true
           schema: {type: integer}
+        - name: checksum
+          in: query
+          schema: {type: string}
       requestBody:
         required: true
         content:

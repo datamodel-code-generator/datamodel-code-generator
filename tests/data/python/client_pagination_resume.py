@@ -1,11 +1,9 @@
-"""Checkpoint pagers and resume them: saved requests and pages, limits, sessions, security, and refused states."""
+"""Checkpoint pagers and resume them: saved requests and continuations, limits, sessions, and refused states."""
 
 from __future__ import annotations
 
-import base64
 import importlib
 import json
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.data.python.client_pagination import (
@@ -26,31 +24,21 @@ if TYPE_CHECKING:
 
 _SERVER: Final = "https://api.example.com/v1"
 _OTHER: Final = "https://other.example.com"
-_PAST: Final = datetime(2000, 1, 1, tzinfo=timezone.utc)
 
 
 def _envelope(state: Any) -> dict[str, Any]:
-    """Return the exported JSON envelope of a state."""
+    """Return the exported JSON of a token."""
     return json.loads(state.export())
 
 
 def _saved(lines: list[str], label: str, state: Any) -> None:
-    """Report what an exported state saved: its protocol state and its payload, never its fingerprints."""
-    envelope = _envelope(state)
-    payload = base64.b64decode(envelope["payload"])
-    lines.append(f"  {label} saved {json.dumps(envelope['state'], sort_keys=True)} payload={payload!r}")
+    """Report what an exported token saved: its protocol state, never its helper identity."""
+    lines.append(f"  {label} saved {json.dumps(_envelope(state)['state'], sort_keys=True)}")
 
 
-def _crafted(harness: Harness, state: Any, saved: object = None, **fields: Any) -> Any:
-    """Return a state with another's fingerprints and a replaced protocol state, payload, or expiry."""
-    envelope = _envelope(state)
-    return harness.protocols.ResumeState(
-        helper_fingerprint=envelope["helper_fingerprint"],
-        security_fingerprint=envelope["security_fingerprint"],
-        state=envelope["state"] if saved is None else saved,
-        payload=fields.get("payload", base64.b64decode(envelope["payload"])),
-        expires_at=fields.get("expires_at"),
-    )
+def _crafted(harness: Harness, state: Any, saved: object) -> Any:
+    """Return a token of another's helper with a replaced protocol state."""
+    return harness.protocols.ResumeState(helper=_envelope(state)["helper"], state=saved)
 
 
 def _replaced(state: Any, path: tuple[object, ...], value: object) -> dict[str, Any]:
@@ -81,20 +69,6 @@ def _failure(call: Callable[[], object]) -> BaseException | None:
     return None
 
 
-class _Signer:
-    """A request signer whose identity is its type; it is never asked to sign."""
-
-    def __init__(self, capabilities: object) -> None:
-        self.capabilities = capabilities
-
-    def sign(self, request: object) -> object:
-        return request
-
-
-class _OtherSigner(_Signer):
-    """A signer of another class that declares what another signer declares."""
-
-
 class _Checkpointing:
     """A hook that checkpoints a pager once, while one of its pages is being fetched."""
 
@@ -123,20 +97,17 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
         _validated(harness, api, exchange, lines)
         _credentials(harness, api, lines)
         _starts(harness, api, exchange, lines)
-    _security(harness, exchange, lines)
-    _clocked(harness, exchange, lines)
-    static = _identities(harness, exchange, lines)
-    run(lambda: _async_resume(harness, lines, static))
+    run(lambda: _async_resume(harness, lines))
 
 
 def _items(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Resume from the middle of a page: its saved body is decoded again and its items left come first."""
+    """Resume from the middle of a page: the page is fetched again and the items it delivered are skipped."""
     helper = api.protocols.users.all
     limit = harness.argument("users", "ListUsers", "query", "limit", 3)
     trace = harness.argument("users", "ListUsers", "header", "X-Trace", "t")
     pager = helper.iterate(limit=limit, x_trace=trace)
     _saved(lines, "before any page", pager.checkpoint())
-    exchange.respond(user_page("1", "2", "3", next_cursor="a"), user_page("4", next_cursor="b"), user_page("5"))
+    exchange.respond(user_page("1", "2", "3", next_cursor="a"))
     _taken(lines, "first items", pager, 1)
     state = pager.checkpoint()
     _saved(lines, "mid page", state)
@@ -144,11 +115,13 @@ def _items(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     resumed = helper.resume(harness.protocols.import_state(state.export()))
     lines.append(f"  resumed progress {progress(resumed)}")
     record(lines, "resumed pages", resumed.iter_pages)
+    exchange.respond(user_page("1", "2", "3", next_cursor="a"), user_page("4", next_cursor="b"), user_page("5"))
     drained(lines, "resumed items", resumed)
     lines.append(f"  resumed progress after {progress(resumed)}")
     exchange.respond(user_page("4", next_cursor="b"), user_page("5"))
     drained(lines, "original items", pager)
     again = helper.resume(state)
+    exchange.respond(user_page("1", "2", "3", next_cursor="a"))
     _taken(lines, "resumed again", again, 2)
     _saved(lines, "resumed checkpoint", again.checkpoint())
     exchange.respond(user_page("4"))
@@ -159,7 +132,13 @@ def _items(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     exchange.respond(user_page("1", "2"))
     last = helper.iterate()
     _taken(lines, "last page first", last, 1)
+    exchange.respond(user_page("1", "2"))
     drained(lines, "resumed last page", helper.resume(last.checkpoint()))
+    finished = helper.iterate()
+    exchange.respond(user_page("1"))
+    drained(lines, "finished", finished)
+    _saved(lines, "finished", finished.checkpoint())
+    drained(lines, "resumed after the last page", helper.resume(finished.checkpoint()))
     closed = helper.iterate()
     closed.close()
     _saved(lines, "closed", closed.checkpoint())
@@ -207,8 +186,9 @@ def _limits(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     lines.append(f"  item limit ! {describe(error)} {_resume_state(error)}")
     state = getattr(error, "resume_state", None)
     _saved(lines, "item limit", state)
+    exchange.respond(user_page("1", "2", "3", next_cursor="a"))
     drained(lines, "same item limit", helper.resume(state, pagination_options=protocols.PaginationOptions(max_items=2)))
-    exchange.respond(user_page("4"))
+    exchange.respond(user_page("1", "2", "3", next_cursor="a"), user_page("4"))
     raised = helper.resume(state, pagination_options=protocols.PaginationOptions(max_items=10))
     drained(lines, "raised item limit", raised)
     lines.append(f"    progress {progress(raised)}")
@@ -238,6 +218,7 @@ def _limits(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     cycling = helper.iterate()
     error = _failure(lambda: list(cycling))
     lines.append(f"  cycle ! {describe(error)} {_resume_state(error)}")
+    exchange.respond(user_page("3", next_cursor="a"))
     drained(lines, "resumed cycle", helper.resume(getattr(error, "resume_state", None)))
 
 
@@ -322,9 +303,11 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
         ("page number", users.numbered, "page", 3),
     ):
         for taken in (2, 1):
-            exchange.respond(user_page("1", "2", has_more=True), user_page("3", has_more=False))
+            exchange.respond(user_page("1", "2", has_more=True))
             pager = helper.iterate(**{name: harness.argument("users", "ListUsers", "query", name, start)})
             _taken(lines, f"{label} from {start} taking {taken}", pager, taken)
+            again = () if taken == 2 else (user_page("1", "2", has_more=True),)
+            exchange.respond(*again, user_page("3", has_more=False))
             drained(lines, f"{label} resumed after {taken}", helper.resume(pager.checkpoint()))
     options = harness.options.RequestOptions
     searches = api.protocols.searches.all
@@ -385,7 +368,7 @@ def _refusals(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     helper = api.protocols.users.all
     exchange.respond(user_page("1", "2", next_cursor="abcdef"))
     pager = helper.iterate()
-    _taken(lines, "long cursor first", pager, 1)
+    _taken(lines, "long cursor first", pager, 2)
     state = pager.checkpoint()
     record(
         lines,
@@ -405,32 +388,28 @@ def _refusals(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     state = started.checkpoint()
     other = _crafted(harness, state, _replaced(state, ("page", 2, 0), f"{_OTHER}/v1/users?cursor=2"))
     record(lines, "URL at another origin", lambda: follow.resume(other))
-    record(lines, "expired state", lambda: follow.resume(_crafted(harness, state, expires_at=_PAST)))
 
 
 def _malformed(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Refuse a state or saved page that does not fit the helper as malformed, before sending."""
+    """Refuse a state that does not fit the helper as malformed, before sending."""
     helper = api.protocols.users.all
     exchange.respond(user_page("1", "2", next_cursor="a"))
     pager = helper.iterate()
-    _taken(lines, "malformed source", pager, 1)
+    _taken(lines, "malformed source", pager, 2)
     state = pager.checkpoint()
+    saved = _envelope(state)["state"]
     session = ["secret"]
-    for label, saved, fields in (
-        ("unknown member", {**_envelope(state)["state"], "extra": 1}, {}),
-        ("arguments not an array", _replaced(state, ("arguments",), {}), {}),
-        ("negative page index", _replaced(state, ("page", 0), -1), {}),
-        ("bad history digest", _replaced(state, ("page", 5, 0, 0), "zz"), {}),
-        ("text status", _replaced(state, ("page", 6, 1), "200"), {}),
-        ("cookie value", _replaced(state, ("arguments", 4), session), {}),
-        ("undeclared body", _replaced(state, ("body",), [{}, "application/json", None]), {}),
-        ("too many items left", _replaced(state, ("page", 6, 0), 3), {}),
-        ("payload without items left", _replaced(state, ("page", 6), None), {}),
-        ("payload it cannot decode", None, {"payload": b"{"}),
+    for label, broken in (
+        ("unknown member", {**saved, "extra": 1}),
+        ("arguments not an array", _replaced(state, ("arguments",), {})),
+        ("negative page index", _replaced(state, ("page", 0), -1)),
+        ("page of three fields", _replaced(state, ("page",), [0, 2, ["a"]])),
+        ("negative skip", _replaced(state, ("skip",), -1)),
+        ("skip after the last page", {**saved, "page": [0, 2, [], []], "skip": 1}),
+        ("cookie value", _replaced(state, ("arguments", 4), session)),
+        ("undeclared body", _replaced(state, ("body",), [{}, "application/json", None])),
     ):
-        record(
-            lines, label, lambda saved=saved, fields=fields: helper.resume(_crafted(harness, state, saved, **fields))
-        )
+        record(lines, label, lambda broken=broken: helper.resume(_crafted(harness, state, broken)))
     searches = api.protocols.searches.all
     exchange.respond(user_page("1", next_cursor="c1"))
     search = searches.iterate(body=_body(harness, "searches", "Search", {"query": "a"}))
@@ -441,51 +420,6 @@ def _malformed(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
         ("short body", _replaced(saved, ("body",), [{}])),
     ):
         record(lines, label, lambda replaced=replaced: searches.resume(_crafted(harness, saved, replaced)))
-
-
-def _security(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
-    """Bind checkpoints to the credential partition and auth, exporting authenticated ones only under a partition."""
-    package, options, protocols = harness.package, harness.options, harness.protocols
-    auth = importlib.import_module(f"{package.__name__}.auth")
-    token = auth.StaticTokenProvider(auth.AccessToken("token"))
-    tenant = protocols.ProtocolSecurityContext(credential_partition="tenant")
-    other = protocols.ProtocolSecurityContext(credential_partition="other")
-    bearer = auth.AuthConfig({"bearer": token})
-    states: dict[str, Any] = {}
-    for label, settings in (
-        ("anonymous", options.ClientOptions()),
-        ("tenant", options.ClientOptions(protocols=options.ProtocolClientOptions(security=tenant))),
-        ("other tenant", options.ClientOptions(protocols=options.ProtocolClientOptions(security=other))),
-        ("bearer", options.ClientOptions(auth=bearer)),
-        ("bearer tenant", options.ClientOptions(auth=bearer, protocols=options.ProtocolClientOptions(security=tenant))),
-    ):
-        with exchange.client() as native, package.Client(http_client=native, options=settings) as api:
-            helper = api.protocols.secure.users
-            states[label] = state = helper.iterate().checkpoint()
-            record(lines, f"{label} export", lambda state=state: len(state.export()) > 0)
-            for source, saved in states.items():
-                record(
-                    lines, f"{label} resumes {source}", lambda saved=saved, helper=helper: helper.resume(saved).progress
-                )
-            if label.startswith("bearer"):
-                exchange.respond(user_page("1"))
-                drained(lines, f"{label} resumed", helper.resume(state))
-
-
-def _clocked(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
-    """Check a state's expiry by the resuming client's wall clock, refusing it once that clock reaches the expiry."""
-    options = harness.options
-    expiry = _PAST.timestamp()
-    for label, now in (("before", expiry - 1), ("at", expiry)):
-        settings = harness.client_options(clock=options.Clock(time=lambda now=now: now))
-        with exchange.client() as native, harness.package.Client(http_client=native, options=settings) as api:
-            helper = api.protocols.users.all
-            state = _crafted(harness, helper.iterate().checkpoint(), expires_at=_PAST)
-            record(
-                lines,
-                f"expiry {label} the client's wall clock",
-                lambda helper=helper, state=state: helper.resume(state).progress,
-            )
 
 
 def _validated(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -560,16 +494,6 @@ def _validated(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
                 _crafted(harness, position, _replaced(position, ("page", 2, 0), value))
             ),
         )
-    exchange.respond(user_page("1", "2", next_cursor="a"))
-    pager = users.all.iterate()
-    _taken(lines, "page size source", pager, 1)
-    record(
-        lines,
-        "saved page over the resumed page limit",
-        lambda: users.all.resume(
-            pager.checkpoint(), pagination_options=harness.protocols.PaginationOptions(max_page_bytes=10)
-        ),
-    )
 
 
 def _credentials(harness: Harness, api: Any, lines: list[str]) -> None:
@@ -597,68 +521,18 @@ def _credentials(harness: Harness, api: Any, lines: list[str]) -> None:
     )
 
 
-def _identities(harness: Harness, exchange: Exchange, lines: list[str]) -> Any:
-    """Bind checkpoints to the auth's identity under one partition: grants, origins, selection, and signers.
-
-    A provider's or signer's class is no part of it; the static token's checkpoint is returned for asyncio clients.
-    """
-    package, options, protocols = harness.package, harness.options, harness.protocols
-    auth = importlib.import_module(f"{package.__name__}.auth")
-    token = auth.StaticTokenProvider(auth.AccessToken("token"))
-
-    def granted(**grant: Any) -> Any:
-        return auth.ClientCredentialsProvider(
-            "https://auth.example.com/token",
-            client_id="client",
-            client_secret=auth.StaticCredentialProvider(auth.ApiKeyCredential("secret")),
-            **grant,
-        )
-
-    capabilities = auth.SignerCapabilities(("https://api.example.com",), ("X-Signature",), (), False)
-    signer, other = _Signer(capabilities), _OtherSigner(capabilities)
-    managed = _Signer(auth.SignerCapabilities(("https://api.example.com",), ("X-Other",), (), False))
-    configurations = (
-        ("audience a", True, auth.AuthConfig({"bearer": granted(audience="a", scopes=("read",))})),
-        ("audience a again", False, auth.AuthConfig({"bearer": granted(audience="a", scopes=("read",))})),
-        ("audience b", False, auth.AuthConfig({"bearer": granted(audience="b", scopes=("read",))})),
-        ("other scopes", False, auth.AuthConfig({"bearer": granted(audience="a", scopes=("write",))})),
-        ("static token", True, auth.AuthConfig({"bearer": token})),
-        ("static token again", False, auth.AuthConfig({"bearer": token})),
-        ("auth origins", False, auth.AuthConfig({"bearer": token}, allowed_origins=("https://other.example.com",))),
-        ("selection", False, auth.AuthConfig({"bearer": token}, selection=0)),
-        ("anonymous schemes", False, auth.AuthConfig({"bearer": token}, anonymous_schemes=("bearer",))),
-        ("signer", False, auth.AuthConfig({"bearer": token}, signers=(signer,))),
-        ("signer baseline", True, auth.AuthConfig({"bearer": token}, signers=(signer,))),
-        ("signer of another class", False, auth.AuthConfig({"bearer": token}, signers=(other,))),
-        ("signer managing another header", False, auth.AuthConfig({"bearer": token}, signers=(managed,))),
-    )
-    tenant = options.ProtocolClientOptions(security=protocols.ProtocolSecurityContext(credential_partition="tenant"))
-    source: Any = None
-    static: Any = None
-    for label, starts, configuration in configurations:
-        settings = options.ClientOptions(auth=configuration, protocols=tenant)
-        with exchange.client() as native, package.Client(http_client=native, options=settings) as api:
-            helper = api.protocols.secure.users
-            if starts:
-                source = helper.iterate().checkpoint()
-                static = static if label != "static token" else source
-                lines.append(f"  {label} checkpointed")
-                continue
-            record(lines, f"{label} resumes", lambda helper=helper, source=source: helper.resume(source).progress)
-    return static
-
-
-async def _async_resume(harness: Harness, lines: list[str], static: Any) -> None:
+async def _async_resume(harness: Harness, lines: list[str]) -> None:
     """Checkpoint and resume asyncio pagers, in items and in pages, without awaiting either."""
     exchange = Exchange(lines)
     async with exchange.async_client() as native, harness.package.AsyncClient(http_client=native) as api:
         helper = api.protocols.users.all
-        exchange.respond(user_page("1", "2", next_cursor="a"), user_page("3"))
+        exchange.respond(user_page("1", "2", next_cursor="a"))
         pager = helper.iterate()
         first = await anext(aiter(pager))
         lines.append(f"  async first {item_id(first)}")
         state = pager.checkpoint()
         _saved(lines, "async mid page", state)
+        exchange.respond(user_page("1", "2", next_cursor="a"), user_page("3"))
         await adrained(lines, "async resumed items", helper.resume(state))
         exchange.respond(user_page("1", next_cursor="a"), user_page("2"))
         pages = helper.iterate()
@@ -672,33 +546,3 @@ async def _async_resume(harness: Harness, lines: list[str], static: Any) -> None
         state = followed.checkpoint()
         _saved(lines, "async followed without the echoed key", state)
         await adrained(lines, "async resumed without the echoed key", follow.resume(state))
-    auth = importlib.import_module(f"{harness.package.__name__}.auth")
-    secret = auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("secret"))
-    grant = auth.AsyncClientCredentialsProvider(
-        "https://auth.example.com/token", client_id="client", client_secret=secret, audience="a"
-    )
-    options = harness.options
-    settings = options.ClientOptions(
-        auth=auth.AuthConfig({"bearer": grant}),
-        protocols=options.ProtocolClientOptions(
-            security=harness.protocols.ProtocolSecurityContext(credential_partition="tenant")
-        ),
-    )
-    async with (
-        exchange.async_client() as native,
-        harness.package.AsyncClient(http_client=native, options=settings) as api,
-    ):
-        helper = api.protocols.secure.users
-        saved = helper.iterate().checkpoint()
-        record(lines, "async granted checkpoint resumes", lambda: helper.resume(saved).progress)
-    token = auth.AsyncStaticTokenProvider(auth.AccessToken("token"))
-    settings = options.ClientOptions(auth=auth.AuthConfig({"bearer": token}), protocols=settings.protocols)
-    async with (
-        exchange.async_client() as native,
-        harness.package.AsyncClient(http_client=native, options=settings) as api,
-    ):
-        record(
-            lines,
-            "async static token resumes a synchronous one",
-            lambda: api.protocols.secure.users.resume(static).progress,
-        )
