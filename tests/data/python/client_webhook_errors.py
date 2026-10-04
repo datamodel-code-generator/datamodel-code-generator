@@ -121,7 +121,7 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
         lines.append(f"  verification condition: {error.condition}")
     for action in (
         "lookup", "fingerprint_vary", "compare_exchange", "delete", "invalidate", "claim", "put", "get",
-        "open", "read", "close", "purge_terminal", "admit", "record", "reset", "snapshot",
+        "open", "read", "close", "purge_terminal",
     ):
         error = errors.ProtocolStoreError(action=action)
         lines.append(f"  store action: {error.action} entry={error.entry_id}")
