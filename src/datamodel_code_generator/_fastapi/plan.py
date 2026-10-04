@@ -795,7 +795,11 @@ class Planner:  # noqa: PLR0904
             return replace(spec, decision=replace(spec.decision, transport="raw_request", reason="explicit_raw"))
         if len(media) != 1:
             self.unsupported(operation, (item for item in media if item.kind == "multipart"))
-            return spec
+            for item in media:
+                if item.kind == "form" and (encoded := _encoded(item)) is not None:
+                    self.unsupported(operation, (item,), f"the {encoded.name} encoding of ")
+            form = next((item.use for item in media if item.kind == "form" and item.use is not None), None)
+            return spec if form is None else replace(spec, form_fields=self.form_plans(form.type))
         item = media[0]
         match item.kind:
             case "json":

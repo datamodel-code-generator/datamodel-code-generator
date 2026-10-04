@@ -2,6 +2,7 @@
 render pydantic_v2.BaseModel
   APIGenerationError
   F_MEDIA_UNSUPPORTED target /paths/~1encoded/post/requestBody/content/multipart~1form-data: POST /encoded needs body_mode='request' for the meta encoding of multipart/form-data
+  F_MEDIA_UNSUPPORTED target /paths/~1mixed-encoded/post/requestBody/content/application~1x-www-form-urlencoded: POST /mixed-encoded needs body_mode='request' for the ids encoding of application/x-www-form-urlencoded
   F_MEDIA_UNSUPPORTED target /paths/~1delimited/post/requestBody/content/application~1x-www-form-urlencoded: POST /delimited needs body_mode='request' for the ids encoding of application/x-www-form-urlencoded
   F_MEDIA_UNSUPPORTED target /paths/~1piped/post/requestBody/content/application~1x-www-form-urlencoded: POST /piped needs body_mode='request' for the ids encoding of application/x-www-form-urlencoded
   F_MEDIA_UNSUPPORTED target /paths/~1reserved/post/requestBody/content/application~1x-www-form-urlencoded: POST /reserved needs body_mode='request' for the path encoding of application/x-www-form-urlencoded

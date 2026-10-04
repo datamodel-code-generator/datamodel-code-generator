@@ -57,7 +57,7 @@ class UntaggedService(Protocol):
     def post_variant(
         self,
         *,
-        body: bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | Unset,
+        body: bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | bodies_basemodel_models.FieldVariantsPostRequest2 | Unset,
         media_type: str | None,
     ) -> None | HTTPResult[PostVariantResponsePayload] | Response: ...
 

@@ -120,7 +120,7 @@ def _add_post_variant(router: APIRouter, wiring: Wiring) -> None:
 
     def post_variant(
         *,
-        body: Annotated[tuple[str | None, bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | Unset], Depends(contract.PostVariant.BODY.receive)],
+        body: Annotated[tuple[str | None, bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | bodies_basemodel_models.FieldVariantsPostRequest2 | Unset], Depends(contract.PostVariant.BODY.receive)],
     ) -> Response:
         return respond(
             post_variant_handler(body=body[1], media_type=body[0]),

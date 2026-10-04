@@ -508,6 +508,14 @@
         "content": "{\"a\": 1}"
       },
       {
+        "method": "POST",
+        "url": "/variants",
+        "content": "tags=a&tags=b",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
         "method": "PUT",
         "url": "/documents"
       },
