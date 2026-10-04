@@ -2992,7 +2992,8 @@ Generated clients send and read model values through their model backend, with n
   conversion of dates, decimals, enums, and media follow the models, and a read-only member is left out. A value is
   checked only as far as its model's constructor already checked it, and what the serializer cannot represent fails
   with `RequestEncodingError` before anything is sent. An empty array or object in a style-encoded parameter or a form
-  member is left out as an omitted value is: it writes no query pair, header, cookie, or part, and an empty path text.
+  member is left out as an omitted value is: it writes no query pair, header, cookie, or part. A path segment cannot be
+  left out, so an empty array or object in a path parameter fails with `RequestEncodingError` before anything is sent.
 - **Responses.** Bodies, parts, stream events, and socket messages are converted by the model backend into the declared
   types, which check what those types declare and coerce as the backend does; a value the type refuses raises
   `ResponseValidationError`, and a write-only member is refused.
