@@ -28,11 +28,11 @@
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 19
+  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload b54828e09b09ced695bff454b906aa43d74a89622afd3b49f47aceb0026e39e2
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload bfa5f09926aca2368315d9bbf4a142578ba0a1451822c4752b7a0b585bf947ee
   helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish f4e80e660ad3f3695e4277b7fd960a499ed809b326e26be4f87fa47610b8c8a1
-  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 6c7344a5c9a3b46acc6e4f33414cdce38dca96ed39a71f05a94570ffbe1ec02c
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put be3a96ffbd0f2aece9738265d01afbc694adf23ee7e75d730ff52b1a5015cf24
   {
     "helpers": {
       "files.finish": {
@@ -158,6 +158,15 @@
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha256",
+            "algorithm_prefix": false,
+            "encoding": "hex",
+            "target": {
+              "in": "query",
+              "name": "checksum"
+            }
+          },
           "offset": {
             "in": "query",
             "name": "offset"
@@ -243,6 +252,15 @@
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha1",
+            "algorithm_prefix": true,
+            "encoding": "base64",
+            "target": {
+              "in": "header",
+              "name": "Upload-Checksum"
+            }
+          },
           "length": {
             "in": "header",
             "name": "X-Chunk-Length"
@@ -324,10 +342,10 @@
   /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
     exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
     exports client.types.files.ProbeFileRequestCodecs client.types.files.decode_probe_file_header
-  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length, header:Upload-Checksum=upload_checksum)
     exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
     exports client.types.files.AppendFileRequestCodecs client.types.files.decode_append_file_header
-  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset, query:checksum=checksum)
     exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
     exports client.types.files.PutFileChunkRequestCodecs None
   /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)
@@ -662,9 +680,8 @@ call, every probe, append, and the completion are logical calls of their own, wi
 and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
 `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
 
-- `client.protocols`: `UploadOptions`, `UploadSource`, `AsyncUploadSource`, `UploadIdentity`,
-  `UploadProgress`, `UploadHandle`, `AsyncUploadHandle`, and the builtin `BytesUploadSource`, `FileUploadSource`,
-  `AsyncBytesUploadSource`, and `AsyncFileUploadSource`
+- `client.protocols`: `UploadOptions`, `UploadSource`, `UploadProgress`, `UploadHandle`, and
+  `AsyncUploadHandle`
 - `client.options`: `SessionOptions`
 
 | Limit | Effective default |
@@ -672,15 +689,16 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
 | chunks per upload | 10000; None removes it |
 | probes after an append of unknown outcome | 3; 0 probes none |
-| session total timeout | None (no limit), including reading the source at `start` or `resume` |
+| session total timeout | None (no limit) |
 | network sends per session | 10000; None removes it |
 
-A source has an immutable identity, its size and SHA-256 digest, and opens an independent reader for each range. Before
-anything is sent, `start` and `resume` read the whole source once and record each chunk's digest; each append reads
-its chunk again into one buffer and sends it only when it matches, so a source whose content changed raises
-`UploadSourceChangedError` and the handle sends nothing more. A one-shot stream or iterator is no source and raises
-`NonResumableSourceError`; send it as an ordinary upload. Sources a call is given are borrowed and never closed, and
-every reader the client opens is closed.
+A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
+to its end; sync and asyncio clients take the same sources and read one chunk at a time. `start` measures its size and
+creates the upload without reading it. Each append seeks to the confirmed offset and reads the rest of its chunk into
+one buffer; content shorter or longer than the upload's size raises `UploadSourceChangedError` and the handle sends
+nothing more. The content is not hashed: keep it unchanged while it is uploaded. A one-shot stream, iterator, or a
+reader that cannot seek raises `NonResumableSourceError`; send it as an ordinary upload. Sources are borrowed and never
+closed.
 
 `start` sends the create request once, resent only as shared retries allow. `advance` appends the chunk holding the
 confirmed offset, and `run` appends every remaining chunk and completes the upload: by length, returning None, or with
@@ -690,11 +708,12 @@ confirms it, and an offset inside it confirms its bytes only when partial commit
 passes the content, or commits part of a chunk that may not be raises `UploadOffsetError`, and probes that never answer
 raise `UploadDeliveryUnknownError`; so does a completion whose outcome is unknown, which is never sent again.
 
-`checkpoint()` saves the confirmed offset, the chunk layout and digests, and the values later calls write, sending
-nothing. `resume` checks it, then the source, then probes the server's offset once; it never creates the upload again.
-A checkpoint past the server's declared expiry raises `UploadExpiredError`. `advance` and `run` at once raise
-`ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local uploading. A call's
-options must not fix an idempotency key or patch a header or query parameter the helper writes.
+`checkpoint()` saves the content's size, the chunk size, the confirmed offset, the values later calls write, and a
+completion of unknown outcome, sending nothing; a complete upload has no checkpoint. `resume` checks it and the
+source's size, then probes the server's offset once; it never creates the upload again, and a completion of unknown
+outcome raises again. A checkpoint past the server's declared expiry raises `UploadExpiredError`. `advance` and `run`
+at once raise `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local
+uploading. A call's options must not fix an idempotency key or patch a header or query parameter the helper writes.
 
 ## Request compression
 

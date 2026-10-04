@@ -3,26 +3,26 @@ event ID cursors
   > GET https://api.example.com/events?topic=news last-event-id='0'
   checkpoint before any event ! ProtocolStateError: ProtocolStateError(state='uncursored', action='checkpoint') [] protocol_state_error
   1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
-  after one event saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "1", "reconnects": 0, "retry_ms": null, "sequence": 1} expires_at=None
+  after one event saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
   2 message id='1' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
-  after an event without an ID saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "1", "reconnects": 0, "retry_ms": null, "sequence": 2} expires_at=None
+  after an event without an ID saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
   rest
     3 message id='2' retry=2500 data=Message{'text': 'c'} raw='{"text": "c"}'
   < closed
     end
-  after the end saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "2", "reconnects": 0, "retry_ms": 2500, "sequence": 3} expires_at=None
+  after the end saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "2", "expires_at": null}
   state repr ResumeState(version=1)
   > GET https://api.example.com/events?topic=news last-event-id='2'
   resumed response 200 progress {'reconnects': 0, 'network_send_count': 1, 'network_send_budget_used': 1}
   resumed
-    4 message id='2' retry=2500 data=Message{'text': 'd'} raw='{"text": "d"}'
-    5 message id=None retry=2500 data=Message{'text': 'cleared'} raw='{"text": "cleared"}'
+    1 message id='2' retry=None data=Message{'text': 'd'} raw='{"text": "d"}'
+    2 message id=None retry=None data=Message{'text': 'cleared'} raw='{"text": "cleared"}'
   < closed
     end
-  cleared saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": null, "reconnects": 0, "retry_ms": 2500, "sequence": 5} expires_at=None
+  cleared saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": null, "expires_at": null}
   > GET https://api.example.com/events?topic=news last-event-id=None
   resumed without a cursor
-    6 message id='9' retry=2500 data=Message{'text': 'fresh'} raw='{"text": "fresh"}'
+    1 message id='9' retry=None data=Message{'text': 'fresh'} raw='{"text": "fresh"}'
   < closed
     end
 checkpoints
@@ -38,10 +38,10 @@ checkpoints
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error resume_state=NoneType
-  failed saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": "1", "reconnects": 0, "retry_ms": null, "sequence": 2} expires_at=None
+  failed saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
   > GET https://api.example.com/events last-event-id=None
   < closed
-  closed saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": "1", "reconnects": 0, "retry_ms": null, "sequence": 1} expires_at=None
+  closed saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
   > GET https://api.example.com/events last-event-id=None
   checkpoint of a call giving a cookie ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'cookie', 'session'), condition='wrong_capability'] protocol_configuration_error
   < closed
@@ -82,10 +82,10 @@ reconnections
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
     ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', cause=TransportError()] stream_interrupted_error resume_state=ResumeState
-  interruption saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "1", "reconnects": 0, "retry_ms": null, "sequence": 1} expires_at=None
+  interruption saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
   > GET https://api.example.com/events?topic=news last-event-id='1'
   resumed after the interruption
-    2 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
+    1 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
   < closed
     end
   > GET https://api.example.com/events last-event-id=None
@@ -153,7 +153,7 @@ failures that never reconnect
   > GET https://api.example.com/events last-event-id='1'
   < closed
     ! StreamEventsHTTPError: StreamEventsHTTPError(status_code=404, operation_id='streamEvents', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='streamEvents', status_code=404, error_decoded=True, error_data=Problem(detail='gone'), body_bytes=b'{"detail": "gone"}', truncated=False] stream_events_http_error resume_state=NoneType
-  after the failed reopen saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": "1", "reconnects": 1, "retry_ms": null, "sequence": 1} expires_at=None
+  after the failed reopen saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
   > GET https://api.example.com/events last-event-id=None
   error event
     1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
@@ -222,7 +222,7 @@ another reopen operation
   < closed
     end
     progress {'reconnects': 2, 'network_send_count': 3, 'network_send_budget_used': 3}
-  tracked saved {"arguments": [], "body": [], "bound": ["s1", "t3", "resume"], "cursor": "2", "reconnects": 2, "retry_ms": null, "sequence": 3} expires_at=2999-01-01T00:00:00+00:00
+  tracked saved {"arguments": [], "body": [], "bound": ["s1", "t3", "resume"], "cursor": "2", "expires_at": "2999-01-01T00:00:00+00:00"}
   > GET https://api.example.com/streams/s1?token=t3&mode=resume last-event-id='2'
   resumed with the bindings
   < closed
@@ -271,18 +271,18 @@ bound path values
     2 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
   < closed
     end
-  shard saved {"arguments": [["r"], ["0"], []], "body": [], "bound": ["2"], "cursor": "2", "reconnects": 1, "retry_ms": null, "sequence": 2} expires_at=None
+  shard saved {"arguments": [["r"], ["0"], []], "body": [], "bound": ["2"], "cursor": "2", "expires_at": null}
   > GET https://api.example.com/rooms/.x last-event-id=None
   < closed
   open with a shard making a dot segment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Shard', occurrence='single')] protocol_data_error
 NDJSON body cursors
   > GET https://api.example.com/records last-event-id=None
   1  id=None retry=None data=Record{'id': 'r1', 'text': 'a'} raw='{"id": "r1", "text": "a"}'
-  record saved {"arguments": [[]], "body": [], "bound": [], "cursor": "r1", "reconnects": 0, "retry_ms": null, "sequence": 1} expires_at=None
+  record saved {"arguments": [[]], "body": [], "bound": [], "cursor": "r1", "expires_at": null}
   2  id=None retry=None data=Record{'id': None, 'text': 'no ID'} raw='{"text": "no ID"}'
-  record saved {"arguments": [[]], "body": [], "bound": [], "cursor": "r1", "reconnects": 0, "retry_ms": null, "sequence": 2} expires_at=None
+  record saved {"arguments": [[]], "body": [], "bound": [], "cursor": "r1", "expires_at": null}
   3  id=None retry=None data=Record{'id': None, 'text': 'cleared'} raw='{"id": null, "text": "cleared"}'
-  record saved {"arguments": [[]], "body": [], "bound": [], "cursor": null, "reconnects": 0, "retry_ms": null, "sequence": 3} expires_at=None
+  record saved {"arguments": [[]], "body": [], "bound": [], "cursor": null, "expires_at": null}
   rest
     4  id=None retry=None data=Record{'id': 'r2', 'text': 'b'} raw='{"id": "r2", "text": "b"}'
   < closed
@@ -299,7 +299,7 @@ NDJSON body cursors
     end
   > GET https://api.example.com/records last-event-id=None
   resumed without a cursor
-    4  id=None retry=None data=Record{'id': 'r4', 'text': 'd'} raw='{"id": "r4", "text": "d"}'
+    1  id=None retry=None data=Record{'id': 'r4', 'text': 'd'} raw='{"id": "r4", "text": "d"}'
   < closed
     end
 SSE body cursors
@@ -317,7 +317,7 @@ SSE body cursors
     1 tick id=None retry=None data=Tick{'seq': 1} raw='{"seq": 1}'
   < closed
     ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='transport', sequence=1) [operation_id='streamFeed', condition='transport', cause=TransportError()] stream_interrupted_error resume_state=ResumeState
-  ticks saved {"arguments": [], "body": [{"topic": "t"}, "application/json", null], "bound": [], "cursor": 1, "reconnects": 0, "retry_ms": null, "sequence": 1} expires_at=None
+  ticks saved {"arguments": [], "body": [{"topic": "t"}, "application/json", null], "bound": [], "cursor": 1, "expires_at": null}
   > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t","after":1}'
   resumed writing the body
   < closed
@@ -352,14 +352,14 @@ cursors a reopen cannot encode
 cursors written as exploded query fields
   > GET https://api.example.com/marks last-event-id=None
   1 message id=None retry=None data=Mark{'scope': {'after': '5'}} raw='{"scope": {"after": "5"}}'
-  scope saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": {"after": "5"}, "reconnects": 0, "retry_ms": null, "sequence": 1} expires_at=None
+  scope saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": {"after": "5"}, "expires_at": null}
   2 message id=None retry=None data=Mark{'scope': {'api_key': 'k'}} raw='{"scope": {"api_key": "k"}}'
   checkpoint of a credential field ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='streamMarks', condition='wrong_capability') [operation_id='streamMarks', field_path=('arguments', 'query', 'scope'), condition='wrong_capability'] protocol_configuration_error
   < closed
   resume a credential field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   > GET https://api.example.com/marks?after=5 last-event-id=None
   resumed after the scope
-    2 message id=None retry=None data=Mark{'scope': {'after': '6'}} raw='{"scope": {"after": "6"}}'
+    1 message id=None retry=None data=Mark{'scope': {'after': '6'}} raw='{"scope": {"after": "6"}}'
   < closed
     end
 refusals
@@ -369,17 +369,13 @@ refusals
   < closed
   resume a string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('state',), condition='invalid_value'] protocol_configuration_error
   resume another helper's state ! ResumeStateError: ResumeStateError(condition='fingerprint') [condition='fingerprint'] resume_state_error
-  resume under other security ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
   resume missing members ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume cursor not a string ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume empty cursor ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume bound values of another count ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume a saved cookie ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  resume negative sequence ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  resume retry time over its limit ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  resume an expiry of another form ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume cursor the reopen cannot encode ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  resume a payload ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  retry of NDJSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   object cursor ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   > GET https://api.example.com/events last-event-id=None
   < closed
@@ -394,7 +390,7 @@ refusals
   resume redirected past the sends ! SessionLimitError: SessionLimitError(operation_id='streamEvents', call_id='<call>', kind='network_sends', limit=1) [operation_id='streamEvents', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error
   > GET https://api.example.com/events?topic=news last-event-id='1'
   resume after the refusals
-    2 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
+    1 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
   < closed
     end
 asyncio
@@ -408,10 +404,10 @@ asyncio
   < closed
     hook stream_end outcome=success
     end
-  async saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "2", "reconnects": 1, "retry_ms": 1, "sequence": 2} expires_at=None
+  async saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "2", "expires_at": null}
   > GET https://api.example.com/events?topic=news last-event-id='2'
   async resumed
-    3 message id='3' retry=1 data=Message{'text': 'c'} raw='{"text": "c"}'
+    1 message id='3' retry=None data=Message{'text': 'c'} raw='{"text": "c"}'
   < closed
     end
   > GET https://api.example.com/events last-event-id=None
@@ -462,13 +458,13 @@ stepped client clock
   < closed
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   resumed and reconnected
-    2 created id='2' retry=6000 data=Created{'id': '2'} raw='{"id": "2"}'
+    1 created id='2' retry=6000 data=Created{'id': '2'} raw='{"id": "2"}'
   < closed
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='2'
-    3 created id='3' retry=6000 data=Created{'id': '3'} raw='{"id": "3"}'
+    2 created id='3' retry=6000 data=Created{'id': '3'} raw='{"id": "3"}'
   < closed
     end
-  clock checkpoint saved {"arguments": [], "body": [], "bound": ["s1", "t1", "resume"], "cursor": "3", "reconnects": 1, "retry_ms": 6000, "sequence": 4} expires_at=2000-01-01T00:00:00+00:00
+  clock checkpoint saved {"arguments": [], "body": [], "bound": ["s1", "t1", "resume"], "cursor": "3", "expires_at": "2000-01-01T00:00:00+00:00"}
   clock progress {'reconnects': 1, 'network_send_count': 2, 'network_send_budget_used': 2}
   expired on the client wall clock ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error
 async stepped client clock
@@ -477,13 +473,13 @@ async stepped client clock
   < closed
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   resumed and reconnected
-    2 created id='2' retry=6000 data=Created{'id': '2'} raw='{"id": "2"}'
+    1 created id='2' retry=6000 data=Created{'id': '2'} raw='{"id": "2"}'
   < closed
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='2'
-    3 created id='3' retry=6000 data=Created{'id': '3'} raw='{"id": "3"}'
+    2 created id='3' retry=6000 data=Created{'id': '3'} raw='{"id": "3"}'
   < closed
     end
-  clock checkpoint saved {"arguments": [], "body": [], "bound": ["s1", "t1", "resume"], "cursor": "3", "reconnects": 1, "retry_ms": 6000, "sequence": 4} expires_at=2000-01-01T00:00:00+00:00
+  clock checkpoint saved {"arguments": [], "body": [], "bound": ["s1", "t1", "resume"], "cursor": "3", "expires_at": "2000-01-01T00:00:00+00:00"}
   clock progress {'reconnects': 1, 'network_send_count': 2, 'network_send_budget_used': 2}
 stream write guards
   > GET https://api.example.com/marks last-event-id=None
