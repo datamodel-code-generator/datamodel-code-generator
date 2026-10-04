@@ -4,11 +4,9 @@
 from ._operations import (
     ListUsersErrorData,
     ListUsersHTTPError,
-    ListUsersRequestCodecs,
     ListUsersResponse,
     SearchUsersErrorData,
     SearchUsersHTTPError,
-    SearchUsersRequestCodecs,
     SearchUsersResponse,
     decode_list_users_header,
 )
@@ -16,11 +14,9 @@ from ._operations import (
 __all__ = [
     'ListUsersErrorData',
     'ListUsersHTTPError',
-    'ListUsersRequestCodecs',
     'ListUsersResponse',
     'SearchUsersErrorData',
     'SearchUsersHTTPError',
-    'SearchUsersRequestCodecs',
     'SearchUsersResponse',
     'decode_list_users_header',
 ]

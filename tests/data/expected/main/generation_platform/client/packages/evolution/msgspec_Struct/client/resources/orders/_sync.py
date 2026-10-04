@@ -12,7 +12,7 @@ from models import FieldOrdersOrderIdGetQueryViewParameter as _dcg_type_1
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue, ResponseMedia
+from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.orders import GetOrderResponse
@@ -45,7 +45,7 @@ class OrdersResource:
         *,
         order_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         view: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[GetOrderResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetOrderResponse:
         """Call GET /orders/{orderId}."""
@@ -69,7 +69,7 @@ class OrdersWithResponse:
         *,
         order_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         view: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[GetOrderResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetOrderResponse]:
         """Call GET /orders/{orderId}."""
@@ -93,7 +93,7 @@ class OrdersWithRawResponse:
         *,
         order_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         view: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[GetOrderResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /orders/{orderId}."""
@@ -117,7 +117,7 @@ class OrdersWithStreamingResponse:
         *,
         order_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         view: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[GetOrderResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /orders/{orderId}."""

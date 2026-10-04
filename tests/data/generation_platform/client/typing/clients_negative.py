@@ -32,8 +32,7 @@ from pets.options import (
 )
 from pets.responses import RawResponse, ResponseInfo
 from pets.transports import OwnedTransportAdapter
-from pets.types.pets import CreatePetRequestCodecs, decode_list_pets_header
-from pets.types.pets.photos import UploadRequestCodecs
+from pets.types.pets import decode_list_pets_header
 from pets_models import (
     FieldPetsGetHeaderXTraceParameter,
     FieldPetsPetIdFilesGetPathPetIdParameter,
@@ -87,15 +86,6 @@ async def misuse_bodies(client: Client, aclient: AsyncClient, file: BinaryIO, ph
     StreamBody(["text"])  # error
     FileBody(file, ownership="shared")  # error
     BodyFactory(lambda: b"")  # error
-
-
-def misuse_selectors(client: Client) -> None:
-    body = CreatePetRequestCodecs.body(media_type="application/json").from_wire({"name": "dog"})
-    sent = UploadRequestCodecs.select_request_media(
-        declared_media="application/octet-stream", concrete_media="application/octet-stream"
-    )
-    UploadRequestCodecs.select_request_media(declared_media="image/png", concrete_media="image/png")  # error
-    client.pets.create_pet(body=body, media_type=sent)  # error
 
 
 def misuse_multipart(client: Client, file: BinaryIO, pet: FieldPetsPetIdFilesPostPathPetIdParameter, files: FieldPetsPetIdFilesGetPathPetIdParameter) -> None:

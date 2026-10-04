@@ -9,8 +9,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...bodies import AsyncBinaryBody, SyncBinaryBody
-from ...model_codecs import RequestMedia, ResponseMedia
+from ...bodies import AsyncBinaryBody
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.retry import (
@@ -51,7 +50,7 @@ class AsyncRetryResource:
     async def get_safe(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetSafeResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetSafeResponse:
         """Call GET /safe."""
@@ -66,8 +65,8 @@ class AsyncRetryResource:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostUnsafeResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostUnsafeResponse:
         """Call POST /unsafe."""
@@ -84,8 +83,8 @@ class AsyncRetryResource:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostIdempotentResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostIdempotentResponse:
         """Call POST /idempotent."""
@@ -102,8 +101,8 @@ class AsyncRetryResource:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostKeyedResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostKeyedResponse:
         """Call POST /keyed."""
@@ -120,8 +119,8 @@ class AsyncRetryResource:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostKeyOnlyResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostKeyOnlyResponse:
         """Call POST /key-only."""
@@ -137,7 +136,7 @@ class AsyncRetryResource:
     async def get_never(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetNeverResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetNeverResponse:
         """Call GET /never."""
@@ -152,8 +151,8 @@ class AsyncRetryResource:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostNeverResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostNeverResponse:
         """Call POST /never."""
@@ -169,7 +168,7 @@ class AsyncRetryResource:
     async def get_vendor(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetVendorResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetVendorResponse:
         """Call GET /vendor."""
@@ -183,7 +182,7 @@ class AsyncRetryResource:
     async def get_keyed_safe(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetKeyedSafeResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetKeyedSafeResponse:
         """Call GET /keyed-safe."""
@@ -205,7 +204,7 @@ class AsyncRetryWithResponse:
     async def get_safe(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetSafeResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetSafeResponse]:
         """Call GET /safe."""
@@ -220,8 +219,8 @@ class AsyncRetryWithResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostUnsafeResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostUnsafeResponse]:
         """Call POST /unsafe."""
@@ -238,8 +237,8 @@ class AsyncRetryWithResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostIdempotentResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostIdempotentResponse]:
         """Call POST /idempotent."""
@@ -256,8 +255,8 @@ class AsyncRetryWithResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostKeyedResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostKeyedResponse]:
         """Call POST /keyed."""
@@ -274,8 +273,8 @@ class AsyncRetryWithResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostKeyOnlyResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostKeyOnlyResponse]:
         """Call POST /key-only."""
@@ -291,7 +290,7 @@ class AsyncRetryWithResponse:
     async def get_never(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetNeverResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetNeverResponse]:
         """Call GET /never."""
@@ -306,8 +305,8 @@ class AsyncRetryWithResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostNeverResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostNeverResponse]:
         """Call POST /never."""
@@ -323,7 +322,7 @@ class AsyncRetryWithResponse:
     async def get_vendor(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetVendorResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetVendorResponse]:
         """Call GET /vendor."""
@@ -337,7 +336,7 @@ class AsyncRetryWithResponse:
     async def get_keyed_safe(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetKeyedSafeResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetKeyedSafeResponse]:
         """Call GET /keyed-safe."""
@@ -359,7 +358,7 @@ class AsyncRetryWithRawResponse:
     async def get_safe(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetSafeResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /safe."""
@@ -374,8 +373,8 @@ class AsyncRetryWithRawResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostUnsafeResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /unsafe."""
@@ -392,8 +391,8 @@ class AsyncRetryWithRawResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostIdempotentResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /idempotent."""
@@ -410,8 +409,8 @@ class AsyncRetryWithRawResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostKeyedResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /keyed."""
@@ -428,8 +427,8 @@ class AsyncRetryWithRawResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostKeyOnlyResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /key-only."""
@@ -445,7 +444,7 @@ class AsyncRetryWithRawResponse:
     async def get_never(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetNeverResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /never."""
@@ -460,8 +459,8 @@ class AsyncRetryWithRawResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostNeverResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /never."""
@@ -477,7 +476,7 @@ class AsyncRetryWithRawResponse:
     async def get_vendor(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetVendorResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /vendor."""
@@ -491,7 +490,7 @@ class AsyncRetryWithRawResponse:
     async def get_keyed_safe(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetKeyedSafeResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /keyed-safe."""
@@ -513,7 +512,7 @@ class AsyncRetryWithStreamingResponse:
     def get_safe(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetSafeResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /safe."""
@@ -528,8 +527,8 @@ class AsyncRetryWithStreamingResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostUnsafeResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /unsafe."""
@@ -546,8 +545,8 @@ class AsyncRetryWithStreamingResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostIdempotentResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /idempotent."""
@@ -564,8 +563,8 @@ class AsyncRetryWithStreamingResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostKeyedResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /keyed."""
@@ -582,8 +581,8 @@ class AsyncRetryWithStreamingResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostKeyOnlyResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /key-only."""
@@ -599,7 +598,7 @@ class AsyncRetryWithStreamingResponse:
     def get_never(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetNeverResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /never."""
@@ -614,8 +613,8 @@ class AsyncRetryWithStreamingResponse:
         self,
         *,
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: Literal['text/plain'] | ResponseMedia[PostNeverResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /never."""
@@ -631,7 +630,7 @@ class AsyncRetryWithStreamingResponse:
     def get_vendor(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetVendorResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /vendor."""
@@ -645,7 +644,7 @@ class AsyncRetryWithStreamingResponse:
     def get_keyed_safe(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[GetKeyedSafeResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /keyed-safe."""

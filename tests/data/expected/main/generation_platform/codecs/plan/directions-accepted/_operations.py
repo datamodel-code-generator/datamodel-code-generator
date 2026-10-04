@@ -15,12 +15,7 @@ from ._runtime.client.operations import (
     ServerPlan,
     envelope_branch,
 )
-from .types.default import (
-    PostItemsErrorData,
-    PostItemsHTTPError,
-    PostItemsRequestCodecs,
-    PostItemsResponse,
-)
+from .types.default import PostItemsErrorData, PostItemsHTTPError, PostItemsResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://codecs.invalid'),)
 
@@ -51,5 +46,4 @@ OPERATION_0: Final[OperationPlan[PostItemsResponse, PostItemsErrorData]] = Opera
         ),
         default='application/json',
     ),
-    codecs=PostItemsRequestCodecs,
 )

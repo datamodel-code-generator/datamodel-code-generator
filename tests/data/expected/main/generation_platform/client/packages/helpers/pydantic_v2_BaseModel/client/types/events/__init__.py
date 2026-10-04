@@ -4,13 +4,11 @@
 from ._operations import (
     StreamEventsErrorData,
     StreamEventsHTTPError,
-    StreamEventsRequestCodecs,
     StreamEventsResponse,
 )
 
 __all__ = [
     'StreamEventsErrorData',
     'StreamEventsHTTPError',
-    'StreamEventsRequestCodecs',
     'StreamEventsResponse',
 ]

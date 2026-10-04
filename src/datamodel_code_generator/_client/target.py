@@ -594,7 +594,6 @@ class _TargetData:
                 "response": f"{types}.{spec.pascal}Response",
                 "error_data": f"{types}.{spec.pascal}ErrorData",
                 "http_error": f"{types}.{spec.pascal}HTTPError",
-                "request_codecs": f"{types}.{spec.pascal}RequestCodecs",
                 "header_decoder": f"{types}.decode_{spec.name}_header" if headers else None,
             },
         }

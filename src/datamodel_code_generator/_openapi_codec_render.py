@@ -65,7 +65,6 @@ _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
             "CodecConfigurationError",
             "CodecError",
             "CodecResourceLimitError",
-            "CodecSelectionError",
             "ModelProjectionError",
             "NativeIssue",
             "NativeValidationError",
@@ -91,8 +90,8 @@ _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
     ("wire", ("JSONValue", "PresenceTree", "WireValue", "freeze_wire", "presence_of", "thaw_wire")),
 )
 _SURFACE_PUBLIC: Final[dict[Surface, tuple[tuple[str, str], ...]]] = {
-    "client": (("selectors", "RequestMedia"), ("selectors", "ResponseMedia")),
-    "server": (),
+    "client": (),
+    "server": (("errors", "CodecSelectionError"),),
 }
 
 

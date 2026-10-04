@@ -37,7 +37,7 @@ from .._runtime.protocols.streams import (
     open_events,
     resume_events,
 )
-from ..model_codecs import ModelValue, RequestMedia
+from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import StreamOptions, _plans
 
@@ -409,7 +409,7 @@ class FeedTicksSse:
         self,
         *,
         body: _dcg_type_10 | ModelValue[_dcg_type_10],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

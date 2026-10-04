@@ -22,107 +22,81 @@ from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.auth import (
     AliasAuthErrorData,
     AliasAuthHTTPError,
-    AliasAuthRequestCodecs,
     AliasAuthResponse,
     AndAuthErrorData,
     AndAuthHTTPError,
-    AndAuthRequestCodecs,
     AndAuthResponse,
     AnonymousErrorData,
     AnonymousHTTPError,
-    AnonymousRequestCodecs,
     AnonymousResponse,
     ApiKeyCookieErrorData,
     ApiKeyCookieHTTPError,
-    ApiKeyCookieRequestCodecs,
     ApiKeyCookieResponse,
     ApiKeyHeaderErrorData,
     ApiKeyHeaderHTTPError,
-    ApiKeyHeaderRequestCodecs,
     ApiKeyHeaderResponse,
     ApiKeyQueryErrorData,
     ApiKeyQueryHTTPError,
-    ApiKeyQueryRequestCodecs,
     ApiKeyQueryResponse,
     AuthorizationOrErrorData,
     AuthorizationOrHTTPError,
-    AuthorizationOrRequestCodecs,
     AuthorizationOrResponse,
     BasicErrorData,
     BasicHTTPError,
-    BasicRequestCodecs,
     BasicResponse,
     BearerErrorData,
     BearerHTTPError,
-    BearerRequestCodecs,
     BearerResponse,
     ChallengeLessErrorData,
     ChallengeLessHTTPError,
-    ChallengeLessRequestCodecs,
     ChallengeLessResponse,
     CookieParametersErrorData,
     CookieParametersHTTPError,
-    CookieParametersRequestCodecs,
     CookieParametersResponse,
     EmptySecurityErrorData,
     EmptySecurityHTTPError,
-    EmptySecurityRequestCodecs,
     EmptySecurityResponse,
     IdempotentAuthErrorData,
     IdempotentAuthHTTPError,
-    IdempotentAuthRequestCodecs,
     IdempotentAuthResponse,
     InheritedAuthErrorData,
     InheritedAuthHTTPError,
-    InheritedAuthRequestCodecs,
     InheritedAuthResponse,
     NeverAuthErrorData,
     NeverAuthHTTPError,
-    NeverAuthRequestCodecs,
     NeverAuthResponse,
     OauthEmptyErrorData,
     OauthEmptyHTTPError,
-    OauthEmptyRequestCodecs,
     OauthEmptyResponse,
     OauthReadErrorData,
     OauthReadHTTPError,
-    OauthReadRequestCodecs,
     OauthReadResponse,
     OauthScopesErrorData,
     OauthScopesHTTPError,
-    OauthScopesRequestCodecs,
     OauthScopesResponse,
     OpenidReadErrorData,
     OpenidReadHTTPError,
-    OpenidReadRequestCodecs,
     OpenidReadResponse,
     OptionalAuthErrorData,
     OptionalAuthHTTPError,
-    OptionalAuthRequestCodecs,
     OptionalAuthResponse,
     OptionalTokenFirstErrorData,
     OptionalTokenFirstHTTPError,
-    OptionalTokenFirstRequestCodecs,
     OptionalTokenFirstResponse,
     OrAuthErrorData,
     OrAuthHTTPError,
-    OrAuthRequestCodecs,
     OrAuthResponse,
     SignedBodyErrorData,
     SignedBodyHTTPError,
-    SignedBodyRequestCodecs,
     SignedBodyResponse,
     SignedMultipartErrorData,
     SignedMultipartHTTPError,
-    SignedMultipartRequestCodecs,
     SignedMultipartResponse,
     UnsafeAuthErrorData,
     UnsafeAuthHTTPError,
-    UnsafeAuthRequestCodecs,
     UnsafeAuthResponse,
     VendorAuthErrorData,
     VendorAuthHTTPError,
-    VendorAuthRequestCodecs,
     VendorAuthResponse,
 )
 
@@ -142,7 +116,6 @@ OPERATION_0: Final[OperationPlan[InheritedAuthResponse, InheritedAuthErrorData]]
         InheritedAuthHTTPError,
     ),
     security=security.OPERATION_0,
-    codecs=InheritedAuthRequestCodecs,
 )
 
 OPERATION_1: Final[OperationPlan[AnonymousResponse, AnonymousErrorData]] = OperationPlan(
@@ -159,7 +132,6 @@ OPERATION_1: Final[OperationPlan[AnonymousResponse, AnonymousErrorData]] = Opera
         AnonymousHTTPError,
     ),
     security=security.OPERATION_1,
-    codecs=AnonymousRequestCodecs,
 )
 
 OPERATION_2: Final[OperationPlan[EmptySecurityResponse, EmptySecurityErrorData]] = OperationPlan(
@@ -176,7 +148,6 @@ OPERATION_2: Final[OperationPlan[EmptySecurityResponse, EmptySecurityErrorData]]
         EmptySecurityHTTPError,
     ),
     security=security.OPERATION_2,
-    codecs=EmptySecurityRequestCodecs,
 )
 
 OPERATION_3: Final[OperationPlan[OptionalAuthResponse, OptionalAuthErrorData]] = OperationPlan(
@@ -193,7 +164,6 @@ OPERATION_3: Final[OperationPlan[OptionalAuthResponse, OptionalAuthErrorData]] =
         OptionalAuthHTTPError,
     ),
     security=security.OPERATION_3,
-    codecs=OptionalAuthRequestCodecs,
 )
 
 OPERATION_4: Final[OperationPlan[OptionalTokenFirstResponse, OptionalTokenFirstErrorData]] = OperationPlan(
@@ -210,7 +180,6 @@ OPERATION_4: Final[OperationPlan[OptionalTokenFirstResponse, OptionalTokenFirstE
         OptionalTokenFirstHTTPError,
     ),
     security=security.OPERATION_4,
-    codecs=OptionalTokenFirstRequestCodecs,
 )
 
 OPERATION_5: Final[OperationPlan[AndAuthResponse, AndAuthErrorData]] = OperationPlan(
@@ -227,7 +196,6 @@ OPERATION_5: Final[OperationPlan[AndAuthResponse, AndAuthErrorData]] = Operation
         AndAuthHTTPError,
     ),
     security=security.OPERATION_5,
-    codecs=AndAuthRequestCodecs,
 )
 
 OPERATION_6: Final[OperationPlan[OrAuthResponse, OrAuthErrorData]] = OperationPlan(
@@ -244,7 +212,6 @@ OPERATION_6: Final[OperationPlan[OrAuthResponse, OrAuthErrorData]] = OperationPl
         OrAuthHTTPError,
     ),
     security=security.OPERATION_6,
-    codecs=OrAuthRequestCodecs,
 )
 
 OPERATION_7: Final[OperationPlan[AuthorizationOrResponse, AuthorizationOrErrorData]] = OperationPlan(
@@ -261,7 +228,6 @@ OPERATION_7: Final[OperationPlan[AuthorizationOrResponse, AuthorizationOrErrorDa
         AuthorizationOrHTTPError,
     ),
     security=security.OPERATION_7,
-    codecs=AuthorizationOrRequestCodecs,
 )
 
 OPERATION_8: Final[OperationPlan[ApiKeyHeaderResponse, ApiKeyHeaderErrorData]] = OperationPlan(
@@ -278,7 +244,6 @@ OPERATION_8: Final[OperationPlan[ApiKeyHeaderResponse, ApiKeyHeaderErrorData]] =
         ApiKeyHeaderHTTPError,
     ),
     security=security.OPERATION_8,
-    codecs=ApiKeyHeaderRequestCodecs,
 )
 
 OPERATION_9: Final[OperationPlan[ApiKeyQueryResponse, ApiKeyQueryErrorData]] = OperationPlan(
@@ -295,7 +260,6 @@ OPERATION_9: Final[OperationPlan[ApiKeyQueryResponse, ApiKeyQueryErrorData]] = O
         ApiKeyQueryHTTPError,
     ),
     security=security.OPERATION_9,
-    codecs=ApiKeyQueryRequestCodecs,
 )
 
 OPERATION_10: Final[OperationPlan[ApiKeyCookieResponse, ApiKeyCookieErrorData]] = OperationPlan(
@@ -312,7 +276,6 @@ OPERATION_10: Final[OperationPlan[ApiKeyCookieResponse, ApiKeyCookieErrorData]] 
         ApiKeyCookieHTTPError,
     ),
     security=security.OPERATION_10,
-    codecs=ApiKeyCookieRequestCodecs,
 )
 
 OPERATION_11: Final[OperationPlan[CookieParametersResponse, CookieParametersErrorData]] = OperationPlan(
@@ -376,7 +339,6 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse, CookieParametersErro
         ),
     ),
     security=security.OPERATION_11,
-    codecs=CookieParametersRequestCodecs,
 )
 
 OPERATION_12: Final[OperationPlan[BasicResponse, BasicErrorData]] = OperationPlan(
@@ -393,7 +355,6 @@ OPERATION_12: Final[OperationPlan[BasicResponse, BasicErrorData]] = OperationPla
         BasicHTTPError,
     ),
     security=security.OPERATION_12,
-    codecs=BasicRequestCodecs,
 )
 
 OPERATION_13: Final[OperationPlan[BearerResponse, BearerErrorData]] = OperationPlan(
@@ -410,7 +371,6 @@ OPERATION_13: Final[OperationPlan[BearerResponse, BearerErrorData]] = OperationP
         BearerHTTPError,
     ),
     security=security.OPERATION_13,
-    codecs=BearerRequestCodecs,
 )
 
 OPERATION_14: Final[OperationPlan[AliasAuthResponse, AliasAuthErrorData]] = OperationPlan(
@@ -427,7 +387,6 @@ OPERATION_14: Final[OperationPlan[AliasAuthResponse, AliasAuthErrorData]] = Oper
         AliasAuthHTTPError,
     ),
     security=security.OPERATION_14,
-    codecs=AliasAuthRequestCodecs,
 )
 
 OPERATION_15: Final[OperationPlan[OauthReadResponse, OauthReadErrorData]] = OperationPlan(
@@ -444,7 +403,6 @@ OPERATION_15: Final[OperationPlan[OauthReadResponse, OauthReadErrorData]] = Oper
         OauthReadHTTPError,
     ),
     security=security.OPERATION_15,
-    codecs=OauthReadRequestCodecs,
 )
 
 OPERATION_16: Final[OperationPlan[OauthScopesResponse, OauthScopesErrorData]] = OperationPlan(
@@ -461,7 +419,6 @@ OPERATION_16: Final[OperationPlan[OauthScopesResponse, OauthScopesErrorData]] = 
         OauthScopesHTTPError,
     ),
     security=security.OPERATION_16,
-    codecs=OauthScopesRequestCodecs,
 )
 
 OPERATION_17: Final[OperationPlan[OauthEmptyResponse, OauthEmptyErrorData]] = OperationPlan(
@@ -478,7 +435,6 @@ OPERATION_17: Final[OperationPlan[OauthEmptyResponse, OauthEmptyErrorData]] = Op
         OauthEmptyHTTPError,
     ),
     security=security.OPERATION_17,
-    codecs=OauthEmptyRequestCodecs,
 )
 
 OPERATION_18: Final[OperationPlan[OpenidReadResponse, OpenidReadErrorData]] = OperationPlan(
@@ -495,7 +451,6 @@ OPERATION_18: Final[OperationPlan[OpenidReadResponse, OpenidReadErrorData]] = Op
         OpenidReadHTTPError,
     ),
     security=security.OPERATION_18,
-    codecs=OpenidReadRequestCodecs,
 )
 
 OPERATION_19: Final[OperationPlan[ChallengeLessResponse, ChallengeLessErrorData]] = OperationPlan(
@@ -513,7 +468,6 @@ OPERATION_19: Final[OperationPlan[ChallengeLessResponse, ChallengeLessErrorData]
     ),
     security=security.OPERATION_19,
     auth_challenge_less_401=True,
-    codecs=ChallengeLessRequestCodecs,
 )
 
 OPERATION_20: Final[OperationPlan[UnsafeAuthResponse, UnsafeAuthErrorData]] = OperationPlan(
@@ -534,7 +488,6 @@ OPERATION_20: Final[OperationPlan[UnsafeAuthResponse, UnsafeAuthErrorData]] = Op
         default='application/octet-stream',
     ),
     security=security.OPERATION_20,
-    codecs=UnsafeAuthRequestCodecs,
 )
 
 OPERATION_21: Final[OperationPlan[IdempotentAuthResponse, IdempotentAuthErrorData]] = OperationPlan(
@@ -556,7 +509,6 @@ OPERATION_21: Final[OperationPlan[IdempotentAuthResponse, IdempotentAuthErrorDat
     ),
     retry_safety='idempotent',
     security=security.OPERATION_21,
-    codecs=IdempotentAuthRequestCodecs,
 )
 
 OPERATION_22: Final[OperationPlan[NeverAuthResponse, NeverAuthErrorData]] = OperationPlan(
@@ -574,7 +526,6 @@ OPERATION_22: Final[OperationPlan[NeverAuthResponse, NeverAuthErrorData]] = Oper
     ),
     retry_safety='never',
     security=security.OPERATION_22,
-    codecs=NeverAuthRequestCodecs,
 )
 
 OPERATION_23: Final[OperationPlan[VendorAuthResponse, VendorAuthErrorData]] = OperationPlan(
@@ -593,7 +544,6 @@ OPERATION_23: Final[OperationPlan[VendorAuthResponse, VendorAuthErrorData]] = Op
     retry_after_ms_header='X-Retry-In-Ms',
     should_retry_header='X-Retry-Permitted',
     security=security.OPERATION_23,
-    codecs=VendorAuthRequestCodecs,
 )
 
 OPERATION_24: Final[OperationPlan[SignedBodyResponse, SignedBodyErrorData]] = OperationPlan(
@@ -614,7 +564,6 @@ OPERATION_24: Final[OperationPlan[SignedBodyResponse, SignedBodyErrorData]] = Op
         default='application/octet-stream',
     ),
     security=security.OPERATION_24,
-    codecs=SignedBodyRequestCodecs,
 )
 
 OPERATION_25: Final[OperationPlan[SignedMultipartResponse, SignedMultipartErrorData]] = OperationPlan(
@@ -649,5 +598,4 @@ OPERATION_25: Final[OperationPlan[SignedMultipartResponse, SignedMultipartErrorD
     ),
     retry_safety='idempotent',
     security=security.OPERATION_25,
-    codecs=SignedMultipartRequestCodecs,
 )

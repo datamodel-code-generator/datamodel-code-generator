@@ -8,7 +8,6 @@ from ._runtime.model_codecs.errors import (
     CodecConfigurationError,
     CodecError,
     CodecResourceLimitError,
-    CodecSelectionError,
     ModelProjectionError,
     NativeIssue,
     NativeValidationError,
@@ -30,7 +29,6 @@ from ._runtime.model_codecs.parameters import (
     QueryStringContribution,
     RawParameter,
 )
-from ._runtime.model_codecs.selectors import RequestMedia, ResponseMedia
 from ._runtime.model_codecs.unset import UNSET, Unset
 from ._runtime.model_codecs.values import (
     DecodedValue,
@@ -54,7 +52,6 @@ __all__ = [
     'CodecContext',
     'CodecError',
     'CodecResourceLimitError',
-    'CodecSelectionError',
     'ConverterStrategy',
     'DecodedValue',
     'EncodedParameterContribution',
@@ -77,8 +74,6 @@ __all__ = [
     'ProjectionIssue',
     'QueryStringContribution',
     'RawParameter',
-    'RequestMedia',
-    'ResponseMedia',
     'UNSET',
     'Unset',
     'WireIssue',

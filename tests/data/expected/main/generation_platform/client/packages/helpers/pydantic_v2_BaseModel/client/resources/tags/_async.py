@@ -12,7 +12,7 @@ from models import FieldTagsGetQueryItemsParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue, ResponseMedia
+from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.tags import ListTagsResponse
@@ -45,7 +45,7 @@ class AsyncTagsResource:
         *,
         items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
         cursor: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListTagsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListTagsResponse:
         """Call GET /tags."""
@@ -69,7 +69,7 @@ class AsyncTagsWithResponse:
         *,
         items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
         cursor: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListTagsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListTagsResponse]:
         """Call GET /tags."""
@@ -93,7 +93,7 @@ class AsyncTagsWithRawResponse:
         *,
         items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
         cursor: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListTagsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /tags."""
@@ -117,7 +117,7 @@ class AsyncTagsWithStreamingResponse:
         *,
         items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
         cursor: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListTagsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /tags."""

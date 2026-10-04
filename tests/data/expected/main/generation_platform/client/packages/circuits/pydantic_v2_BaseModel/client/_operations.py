@@ -18,27 +18,18 @@ from ._runtime.client.operations import (
 from .types.backend import (
     GetAccountErrorData,
     GetAccountHTTPError,
-    GetAccountRequestCodecs,
     GetAccountResponse,
     GetHealthErrorData,
     GetHealthHTTPError,
-    GetHealthRequestCodecs,
     GetHealthResponse,
     GetStatusErrorData,
     GetStatusHTTPError,
-    GetStatusRequestCodecs,
     GetStatusResponse,
     UploadErrorData,
     UploadHTTPError,
-    UploadRequestCodecs,
     UploadResponse,
 )
-from .types.search import (
-    SearchErrorData,
-    SearchHTTPError,
-    SearchRequestCodecs,
-    SearchResponse,
-)
+from .types.search import SearchErrorData, SearchHTTPError, SearchResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
@@ -73,7 +64,6 @@ OPERATION_0: Final[OperationPlan[GetStatusResponse, GetStatusErrorData]] = Opera
         GetStatusHTTPError,
     ),
     circuit_group='backend',
-    codecs=GetStatusRequestCodecs,
 )
 
 OPERATION_1: Final[OperationPlan[GetAccountResponse, GetAccountErrorData]] = OperationPlan(
@@ -95,7 +85,6 @@ OPERATION_1: Final[OperationPlan[GetAccountResponse, GetAccountErrorData]] = Ope
     ),
     security=security.OPERATION_1,
     circuit_group='backend',
-    codecs=GetAccountRequestCodecs,
 )
 
 OPERATION_2: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPlan(
@@ -116,7 +105,6 @@ OPERATION_2: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
         SearchHTTPError,
     ),
     circuit_group='search',
-    codecs=SearchRequestCodecs,
 )
 
 OPERATION_3: Final[OperationPlan[UploadResponse, UploadErrorData]] = OperationPlan(
@@ -131,7 +119,6 @@ OPERATION_3: Final[OperationPlan[UploadResponse, UploadErrorData]] = OperationPl
         required=True,
     ),
     circuit_group='backend',
-    codecs=UploadRequestCodecs,
 )
 
 OPERATION_4: Final[OperationPlan[GetHealthResponse, GetHealthErrorData]] = OperationPlan(
@@ -151,5 +138,4 @@ OPERATION_4: Final[OperationPlan[GetHealthResponse, GetHealthErrorData]] = Opera
         (),
         GetHealthHTTPError,
     ),
-    codecs=GetHealthRequestCodecs,
 )

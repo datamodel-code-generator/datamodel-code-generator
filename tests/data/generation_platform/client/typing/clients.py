@@ -33,7 +33,7 @@ from pets.bodies import (
     StreamBody,
     SyncBinaryBody,
 )
-from pets.model_codecs import JSONValue, ModelValue, NativeOutboundCodec, RequestMedia, ResponseMedia, WireValue
+from pets.model_codecs import JSONValue, ModelValue, WireValue
 from pets.errors import (
     BudgetExceededError,
     DeadlineExceededError,
@@ -69,9 +69,7 @@ from pets.transports import (
     TransportCapabilities,
     TransportResponse,
 )
-from pets.types.pets.photos import UploadRequestCodecs, UploadResponse
 from pets.types.pets import (
-    AttachFilesRequestCodecs,
     CreatePetResponse,
     ListPetsErrorData,
     ListPetsHTTPError,
@@ -217,9 +215,6 @@ def file_parts(client: Client, file: BinaryIO, pet: FieldPetsPetIdFilesPostPathP
     labels = FieldPart("labels", ["a", "b"])
     assert_type(labels, FieldPart[list[str]])
     client.pets.attach_files(pet_id=pet, body=MultipartBody((note, labels, FilePart("file", FileBody(file)))))
-    codec = AttachFilesRequestCodecs.part(name="note", media_type="multipart/form-data")
-    assert_type(codec, NativeOutboundCodec[str])
-    assert_type(AttachFilesRequestCodecs.part(name="file"), NativeOutboundCodec[str] | NativeOutboundCodec[list[str]])
     files = client.pets.read_files(pet_id=read)
     assert_type(files, MultipartData[str | bytes])
     for part in files.parts:
@@ -236,29 +231,6 @@ def multipart_data(data: MultipartData[bytes]) -> None:
         assert_type(part.headers, HeadersView)
     widened: MultipartData[bytes | str] = data
     del widened
-
-
-def media_selectors(client: Client, file: BinaryIO) -> None:
-    photo = UploadRequestCodecs.parameter(location="path", name="petId").from_wire(1)
-    sent = UploadRequestCodecs.select_request_media(
-        declared_media="application/octet-stream", concrete_media="application/octet-stream"
-    )
-    assert_type(sent, RequestMedia[SyncBinaryBody, AsyncBinaryBody])
-    accepted = UploadRequestCodecs.select_response_media(declared_media="image/*", concrete_media="image/png")
-    assert_type(accepted, ResponseMedia[UploadResponse])
-    assert_type(accepted.concrete_media, str)
-    stored = client.pets.photos.upload(
-        pet_id=photo, body=FileBody(file), media_type=sent, response_media_type=accepted
-    )
-    assert_type(stored, UploadResponse)
-
-
-async def media_selectors_async(client: AsyncClient) -> None:
-    photo = UploadRequestCodecs.parameter(location="path", name="petId").from_wire(1)
-    sent = UploadRequestCodecs.select_request_media(
-        declared_media="application/octet-stream", concrete_media="application/octet-stream"
-    )
-    await client.pets.photos.upload(pet_id=photo, body=AsyncFileBody.from_path("a.png"), media_type=sent)
 
 
 async def multipart_async(client: AsyncClient) -> None:

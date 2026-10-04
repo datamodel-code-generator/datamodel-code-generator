@@ -28,7 +28,6 @@ from typing_extensions import Self, TypeIs, cast  # noqa: UP035 - Preserve the e
 
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
-from ..model_codecs.selectors import MediaSelector, ResponseMedia
 from ..model_codecs.unset import UNSET, Unset
 from .bodies import (
     AsyncBodyFactory,
@@ -1868,22 +1867,10 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         return url
 
     @staticmethod
-    def _decoder(
-        operation: OperationPlan[T, object], response_media_type: str | MediaSelector | None
-    ) -> ResponseDecoder[T, object]:
-        """Return the operation's decoder, narrowed to the call's response media or else the operation's.
-
-        A response media selector of the operation narrows it to the selector's concrete media type.
-        """
+    def _decoder(operation: OperationPlan[T, object], response_media_type: str | None) -> ResponseDecoder[T, object]:
+        """Return the operation's decoder, narrowed to the call's response media or else the operation's."""
         decoder = operation.responses
-        media_type: str | None
-        match response_media_type:
-            case None:
-                media_type = operation.response_media_type
-            case MediaSelector():
-                _, media_type = ResponseMedia.chosen(response_media_type, operation.codecs)
-            case _:
-                media_type = response_media_type or operation.response_media_type
+        media_type = response_media_type or operation.response_media_type
         return decoder if media_type is None else decoder.narrowed(operation.operation_id, media_type)
 
     def _call_settings(self, options: object, operation_id: str | None, origin: CompressionOrigin = "call") -> Settings:
@@ -1965,7 +1952,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         settings: Settings,
         *,
         body: object,
-        media_type: str | MediaSelector | None,
+        media_type: str | None,
         options: RequestOptions | None,
         accept: str | None,
         narrowed: bool,
@@ -1978,11 +1965,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         gave replaces the one the operation's path and query build, without the query patches.
         """
         request = _parameters(operation, arguments)
-        encoded = (
-            None
-            if operation.body is None
-            else operation.body.encode(operation.operation_id, body, media_type, operation.codecs)
-        )
+        encoded = None if operation.body is None else operation.body.encode(operation.operation_id, body, media_type)
         if url is None:
             base = self._base(operation, settings)
             path = request.path
@@ -2222,7 +2205,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         operation: OperationPlan[object, object],
         arguments: tuple[object, ...],
         body: object,
-        media_type: str | MediaSelector | None,
+        media_type: str | None,
         options: RequestOptions | None,
     ) -> WireValue:
         """Prepare the non-auth request a queue binds, using the ordinary encoding and patch rules."""
@@ -2262,14 +2245,13 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         operation: OperationPlan[object, object],
         arguments: tuple[object, ...],
         body: object,
-        media_type: str | MediaSelector | None,
+        media_type: str | None,
         options: RequestOptions | None,
-    ) -> tuple[tuple[WireValue | Unset, ...], tuple[WireValue, str, str | None] | None]:
+    ) -> tuple[tuple[WireValue | Unset, ...], tuple[WireValue, str, None] | None]:
         """Return the wire values of a helper call's arguments, and of its JSON body with its declared media type.
 
-        They are encoded and checked as the call's first request encodes them; a body sent through a media selector
-        also gives the selector's concrete media type. An argument `unsaved_argument` names is never saved, so a call
-        giving one cannot be checkpointed.
+        They are encoded and checked as the call's first request encodes them, and the body's third item is always None.
+        An argument `unsaved_argument` names is never saved, so a call giving one cannot be checkpointed.
         """
         self._call_settings(options, operation.operation_id)
         saved = tuple(
@@ -2281,24 +2263,23 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         request = operation.body
         if request is None or isinstance(body, Unset):
             return saved, None
-        media = request.selected(operation.operation_id, media_type, operation.codecs)[0]
+        media = request.selected(operation.operation_id, media_type)
         try:
             wire = media.wire(body)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation.operation_id, cause=error) from None
-        concrete = media_type.concrete_media if isinstance(media_type, MediaSelector) else None
-        return saved, (wire, media.media_type, concrete)
+        return saved, (wire, media.media_type, None)
 
     @staticmethod
     def restored_request(
         operation: OperationPlan[object, object],
         arguments: tuple[WireValue | Unset, ...],
         body: tuple[WireValue, str, str | None] | None,
-    ) -> tuple[tuple[object, ...], object, str | MediaSelector | None]:
+    ) -> tuple[tuple[object, ...], object, str | None]:
         """Return the arguments, body, and media type of a request a checkpoint saved, built from their wire values.
 
-        Each value is validated and built as its codec builds a caller's wire value, and a concrete media type is
-        selected as the operation's select method selects it; a value that does not fit raises RequestEncodingError.
+        Each value is validated and built as its codec builds a caller's wire value; a value that does not fit raises
+        RequestEncodingError, and so does a body whose third item names a concrete media type, which nothing saves now.
         """
         restored = tuple(
             value if isinstance(value, Unset) else _coded(operation, spec, partial(spec.restored, value))
@@ -2306,11 +2287,10 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         )
         if body is None or (request := operation.body) is None:
             return restored, UNSET, None
-        from .codecs import request_media  # noqa: PLC0415 - Only a resumed request selects saved media.
-
-        wire, declared, concrete = body
-        media_type = declared if concrete is None else request_media(operation.codecs, declared, concrete)
-        media = request.selected(operation.operation_id, media_type, operation.codecs)[0]
+        wire, media_type, concrete = body
+        if concrete is not None:
+            raise RequestEncodingError(location=("body",), operation_id=operation.operation_id)
+        media = request.selected(operation.operation_id, media_type)
         try:
             return restored, media.restored(wire), media_type
         except (*DATA_ERRORS, ValueError, TypeError) as error:
@@ -2320,7 +2300,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         self,
         operation: OperationPlan[object, object],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
-        media_type: str | MediaSelector | None,
+        media_type: str | None,
         options: RequestOptions | None,
     ) -> tuple[str, HeadersView]:
         """Prepare a helper's request as its page's call prepares it, without sending, raising what that raises.
@@ -2390,7 +2370,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         self,
         call: _SessionCall,
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
-        media_type: str | MediaSelector | None,
+        media_type: str | None,
         options: RequestOptions | None,
         read_request: Callable[[str, HeadersView], None] | None,
     ) -> tuple[PreparedRequest[EncodedAttempt], object]:
@@ -2898,9 +2878,9 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         *,
         body: object = UNSET,
         fields: tuple[object, ...] = (),
-        media_type: str | MediaSelector | None = None,
+        media_type: str | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | MediaSelector | None = None,
+        response_media_type: str | None = None,
         session: OperationSession | None = None,
         deadline: Deadline | None = None,
         admission: Callable[[], object] | None = None,
@@ -2970,7 +2950,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         build: Callable[[T, WireValue, bytes, ResponseInfo, str, frozenset[str]], R],
         *,
         body: object,
-        media_type: str | MediaSelector | None,
+        media_type: str | None,
         options: RequestOptions | None,
         session: OperationSession,
         max_page_bytes: int | None,
@@ -3074,9 +3054,9 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         *,
         body: object = UNSET,
         fields: tuple[object, ...] = (),
-        media_type: str | MediaSelector | None = None,
+        media_type: str | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | MediaSelector | None = None,
+        response_media_type: str | None = None,
         stream: bool = False,
         session: OperationSession | None = None,
     ) -> RawResponse:
@@ -3148,9 +3128,9 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         *,
         body: object = UNSET,
         fields: tuple[object, ...] = (),
-        media_type: str | MediaSelector | None = None,
+        media_type: str | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | MediaSelector | None = None,
+        response_media_type: str | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends one call on entry and yields its streaming response until exit.
 
@@ -3904,9 +3884,9 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         *,
         body: object = UNSET,
         fields: tuple[object, ...] = (),
-        media_type: str | MediaSelector | None = None,
+        media_type: str | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | MediaSelector | None = None,
+        response_media_type: str | None = None,
         session: OperationSession | None = None,
         deadline: Deadline | None = None,
         admission: Callable[[], object] | None = None,
@@ -3977,7 +3957,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         build: Callable[[T, WireValue, bytes, ResponseInfo, str, frozenset[str]], R],
         *,
         body: object,
-        media_type: str | MediaSelector | None,
+        media_type: str | None,
         options: RequestOptions | None,
         session: OperationSession,
         max_page_bytes: int | None,
@@ -4085,9 +4065,9 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         *,
         body: object = UNSET,
         fields: tuple[object, ...] = (),
-        media_type: str | MediaSelector | None = None,
+        media_type: str | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | MediaSelector | None = None,
+        response_media_type: str | None = None,
         stream: bool = False,
         session: OperationSession | None = None,
     ) -> AsyncRawResponse:
@@ -4162,9 +4142,9 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         *,
         body: object = UNSET,
         fields: tuple[object, ...] = (),
-        media_type: str | MediaSelector | None = None,
+        media_type: str | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | MediaSelector | None = None,
+        response_media_type: str | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends one call on entry and yields its streaming response until exit.
 

@@ -15,7 +15,7 @@ from models import Message as _dcg_type_2
 
 from .._runtime.client.client import ClientCore
 from .._runtime.protocols.streams import EventStream, UnknownEvent, open_events
-from ..model_codecs import ModelValue, RequestMedia
+from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import StreamOptions, _plans
 
@@ -166,7 +166,7 @@ class FeedAllSse:
         self,
         *,
         body: _dcg_type_5 | ModelValue[_dcg_type_5],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

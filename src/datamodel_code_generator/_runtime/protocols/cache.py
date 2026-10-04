@@ -35,7 +35,6 @@ if TYPE_CHECKING:
     from ..client.bodies import EncodedAttempt
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.operations import OperationPlan
-    from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .caches import AsyncCacheStore, CacheStore
     from .references import OperationRef
@@ -761,7 +760,7 @@ def mutate(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     options: RequestOptions | None = None,
 ) -> T:
     """Call the mutation's operation as its method does, then remove the entries its tags name after it succeeds.
@@ -787,7 +786,7 @@ async def amutate(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     options: RequestOptions | None = None,
 ) -> T:
     """Call the mutation as `mutate` does, awaiting the asyncio call and the asynchronous store."""
