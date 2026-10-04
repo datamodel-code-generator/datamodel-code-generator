@@ -197,7 +197,7 @@
   path argument '.' ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   path argument '..' ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   body its schema refuses ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  media type its selector refuses ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  concrete media type a saved body no longer carries ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   unparsable media type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   media type with a line break ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   > GET https://api.example.com/v1/users
