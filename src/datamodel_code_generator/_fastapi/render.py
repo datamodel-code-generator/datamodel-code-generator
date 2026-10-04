@@ -97,7 +97,11 @@ _CHALLENGES: Final[dict[SchemeKind, str]] = {
     "oauth2": "Bearer",
     "openid": "Bearer",
 }
-_SCHEME_FACTS: Final = ("bearerFormat", "openIdConnectUrl", "flows", "description")
+_SCHEME_FACTS: Final[dict[SchemeKind, tuple[str, ...]]] = {
+    "bearer": ("bearerFormat", "description"),
+    "oauth2": ("flows", "description"),
+    "openid": ("openIdConnectUrl", "description"),
+}
 
 
 def _python(value: object) -> str:
@@ -497,18 +501,22 @@ class ServerRenderer:  # noqa: PLR0904
         schemes = {scheme.name: scheme for scheme in self.plan.schemes}
         security = module.local("", "security")
         annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Security")
+        authenticate = module.local("_runtime.server.security", "authenticate")
+        taken = {"wiring", authenticate}
+        names: dict[str, str] = {}
         parameters: list[Doc] = []
         for scheme, needed in scopes.items():
+            taken.add(local := names.setdefault(scheme, _unique(self.scheme_names[scheme], taken)))
             arguments = f"{security}.{self.scheme_names[scheme]}" + (f", scopes={list(needed)!r}" if needed else "")
             kind = _credential_type(module, schemes[scheme])
-            parameters.append(f"{self.scheme_names[scheme]}: {annotated}[{kind}, {depends}({arguments})]")
+            parameters.append(f"{local}: {annotated}[{kind}, {depends}({arguments})]")
         signature = Group(f"async def {name}(", _items(("*", *parameters)), ") -> object:")
-        credentials = Group("{", tuple((f"{scheme!r}: ", self.scheme_names[scheme]) for scheme in scopes), "}")
+        credentials = Group("{", tuple((f"{scheme!r}: ", names[scheme]) for scheme in scopes), "}")
         challenge = ", ".join(
             dict.fromkeys(_CHALLENGES[kind] for scheme in scopes if (kind := schemes[scheme].kind) in _CHALLENGES)
         )
         call = Group(
-            f"return await {module.local('_runtime.server.security', 'authenticate')}(",
+            f"return await {authenticate}(",
             (
                 ("", Group("(", _items(_requirement(item) for item in requirements), ")", ",")),
                 ("", credentials),
@@ -1069,7 +1077,7 @@ def _scheme_dependency(module: Module, scheme: SchemeSpec, name: str) -> str:
         cls = _SCHEME_CLASSES[scheme.kind]
     keywords.extend(
         (f"{keyword}=", _json_literal(value))
-        for keyword in _SCHEME_FACTS
+        for keyword in _SCHEME_FACTS.get(scheme.kind, ("description",))
         if (fact_value := facts.get(keyword)) is not None and (value := documentation(fact_value)) is not None
     )
     keywords.extend((("scheme_name=", repr(scheme.name)), ("auto_error=", "False")))

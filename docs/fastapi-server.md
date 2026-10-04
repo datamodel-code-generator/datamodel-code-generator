@@ -263,8 +263,8 @@ key and for the `Authorization` header OAuth2 and OpenID Connect read, `HTTPBasi
 it once with its security requirement sets whose every scheme presented a credential, in declaration order, and the
 credentials by scheme name; the handler receives the principal it returns, and it rejects a request by raising
 `HTTPException`. A request that presents no complete requirement set answers `401`, unless the operation also
-accepts no credentials, in which case the handler receives `None`. FastAPI's document lists each operation's
-schemes as one requirement, since FastAPI cannot document alternatives.
+accepts no credentials, in which case the handler receives `None`. FastAPI's document lists each scheme of an
+operation as a separate alternative, since FastAPI cannot document a requirement that combines several schemes.
 
 ## Served OpenAPI document
 

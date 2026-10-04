@@ -6,6 +6,7 @@ from typing import Annotated, Final
 
 from fastapi import APIRouter, Depends, Security
 from fastapi.responses import Response
+from fastapi.security import HTTPBasicCredentials
 
 from .. import security
 from .._generated import contract
@@ -28,12 +29,13 @@ def _add_get_keys(router: APIRouter, wiring: Wiring) -> None:
         *,
         api_key: Annotated[str | None, Security(security.api_key)],
         api_key_1: Annotated[str | None, Security(security.api_key_1)],
+        wiring_1: Annotated[HTTPBasicCredentials | None, Security(security.wiring)],
     ) -> object:
         return await authenticate(
-            ((('api-key', ()),), (('api_key', ()),)),
-            {'api-key': api_key, 'api_key': api_key_1},
+            ((('api-key', ()),), (('api_key', ()),), (('wiring', ()),)),
+            {'api-key': api_key, 'api_key': api_key_1, 'wiring': wiring_1},
             wiring.authorize,
-            'APIKey',
+            'APIKey, Basic',
         )
 
     def get_keys(
