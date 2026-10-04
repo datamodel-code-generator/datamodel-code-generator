@@ -7,4 +7,3 @@ formatters = ["nope"]
 custom_formatters = ["ok", 1]
 custom_formatter_kwargs = 1
 selection = 1
-export_bindings = {}

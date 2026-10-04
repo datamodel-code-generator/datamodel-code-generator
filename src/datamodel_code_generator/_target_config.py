@@ -11,24 +11,15 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar
 
-from typing_extensions import TypeIs
-
 from datamodel_code_generator._api_manifest import document_identity
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationSelection
-from datamodel_code_generator._codec_declarations import (
-    BuiltinCodecCompatibility,
-    ModelExportBinding,
-    OperationRef,
-    SchemaRef,
-)
+from datamodel_code_generator._codec_declarations import OperationRef
 from datamodel_code_generator._format_types import Formatter
-from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
 
 ModelMode: TypeAlias = Literal["generate", "verify"]
-Direction: TypeAlias = Literal["request", "response", "neutral"]
 PackageMode: TypeAlias = Literal["embedded", "standalone"]
 Converter: TypeAlias = Callable[[object, Path, str], object]
 ConfigT = TypeVar("ConfigT", bound="TargetConfig")
@@ -113,8 +104,6 @@ class TargetConfig:
     package_version: str | None = None
     distribution_name: str | None = None
     model_dependency: str | None = None
-    builtin_codec_compatibility: tuple[BuiltinCodecCompatibility, ...] = ()
-    export_bindings: tuple[ModelExportBinding, ...] = ()
 
     toml_converters: ClassVar[Mapping[str, Converter]] = MappingProxyType({})
     manifest_exclusions: ClassVar[frozenset[str]] = frozenset({"selection"})
@@ -237,19 +226,6 @@ def _operation(value: object, base: Path, option_path: str) -> OperationRef | st
     return OperationRef(pointer=pointer, document=document)
 
 
-def _schema(value: object, base: Path, option_path: str) -> SchemaRef:
-    pointer, document = _reference(value, base, option_path)
-    return SchemaRef(pointer=pointer, document=document)
-
-
-def _is_contract(value: str) -> TypeIs[Literal["builtin-v1"]]:
-    return value == "builtin-v1"
-
-
-def _is_direction(value: str) -> TypeIs[Direction]:
-    return value in {"request", "response", "neutral"}
-
-
 def _selection(value: object, base: Path, option_path: str) -> OperationSelection:
     table = _table(value, option_path, frozenset({*_SELECTION_COLLECTIONS, "reason"}))
     reason = table.get("reason")
@@ -270,47 +246,6 @@ def _selection(value: object, base: Path, option_path: str) -> OperationSelectio
         exclude_tags=_strings(table.get("exclude_tags", []), base, f"{option_path}.exclude_tags"),
         reason=None if reason is None else _string(reason, base, f"{option_path}.reason"),
     )
-
-
-def _compatibility(value: object, base: Path, option_path: str) -> BuiltinCodecCompatibility:
-    table = _table(
-        value,
-        option_path,
-        frozenset({"name", "backend", "schemas", "contract", "dependencies", "python_requires"}),
-    )
-    at = f"{option_path}.contract"
-    if not _is_contract(contract := _string(table.get("contract", "builtin-v1"), base, at)):
-        raise _ConfigValueError(at, "The only compatibility contract is 'builtin-v1'")
-    try:
-        return BuiltinCodecCompatibility(
-            name=_string(table.get("name"), base, f"{option_path}.name"),
-            backend=DataModelType(_string(table.get("backend"), base, f"{option_path}.backend")),
-            schemas=tuple(
-                _schema(item, base, f"{option_path}.schemas[{index}]")
-                for index, item in enumerate(_array(table.get("schemas", []), f"{option_path}.schemas"))
-            ),
-            contract=contract,
-            dependencies=_strings(table.get("dependencies", []), base, f"{option_path}.dependencies"),
-            python_requires=_string(table.get("python_requires", ">=3.11"), base, f"{option_path}.python_requires"),
-        )
-    except ValueError as error:
-        raise _ConfigValueError(option_path, str(error)) from None
-
-
-def _export(value: object, base: Path, option_path: str) -> ModelExportBinding:
-    table = _table(value, option_path, frozenset({"schema", "module", "symbol", "direction"}))
-    at = f"{option_path}.direction"
-    if not _is_direction(direction := _string(table.get("direction", "neutral"), base, at)):
-        raise _ConfigValueError(at, "direction must be 'request', 'response', or 'neutral'")
-    try:
-        return ModelExportBinding(
-            schema=_schema(table.get("schema"), base, f"{option_path}.schema"),
-            module=_string(table.get("module"), base, f"{option_path}.module"),
-            symbol=_string(table.get("symbol"), base, f"{option_path}.symbol"),
-            direction=direction,
-        )
-    except ValueError as error:
-        raise _ConfigValueError(option_path, str(error)) from None
 
 
 def _records(convert: Converter) -> Converter:
@@ -339,8 +274,6 @@ SHARED_TOML_CONVERTERS: Final[Mapping[str, Converter]] = MappingProxyType({
     "package_version": _string,
     "distribution_name": _string,
     "model_dependency": _string,
-    "builtin_codec_compatibility": _records(_compatibility),
-    "export_bindings": _records(_export),
 })
 
 

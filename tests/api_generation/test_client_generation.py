@@ -95,7 +95,6 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "stream-resume",
         "sockets",
         "caching",
-        "compatibility",
         "circuits",
         "compression",
     ],

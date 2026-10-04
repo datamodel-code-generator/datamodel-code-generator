@@ -1,5 +1,0 @@
-use /paths/~1visits/post request_body: codec_0 None None pydantic_type_adapter native
-binding /paths/~1visits/post request_body: adapted_models:FieldVisitsPostRequestRequest model pydantic_type_adapter native
-visit: model FieldVisitsPostRequestRequest {'pet': {'name': 'Rex'}, 'clinic': {'city': 'Oslo'}} wire={"pet":{"name":"Rex"},"clinic":{"city":"Oslo"}} presence=['', '/pet', '/pet/name', '/clinic', '/clinic/city']
-visit-read-only: WireValidationError schema.readOnly@/pet/id
-visit-missing-pet: WireValidationError schema.required@/pet

@@ -1,2 +1,0 @@
-APIGenerationError
-diagnostic BND_SYMBOL_NOT_EMITTED /components/schemas/Scope: adapted_models does not define or export Scope

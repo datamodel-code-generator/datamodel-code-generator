@@ -14,8 +14,6 @@ package_mode='standalone'
 package_version='1.0.0'
 distribution_name='example-server'
 model_dependency='example-models>=1'
-builtin_codec_compatibility=()
-export_bindings=()
 layout='routers'
 handler_mode='sync'
 handler_modes=mappingproxy({})

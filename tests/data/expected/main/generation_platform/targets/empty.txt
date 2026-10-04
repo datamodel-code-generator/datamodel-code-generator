@@ -178,13 +178,11 @@ render
       "public_options": {
         "body_mode": "typed",
         "body_modes": {},
-        "builtin_codec_compatibility": [],
         "codec_adapters": [],
         "custom_formatter_kwargs": {},
         "custom_formatters": [],
         "distribution_name": null,
         "encoding": "utf-8",
-        "export_bindings": [],
         "formatter_settings": null,
         "formatters": [
           "builtin"

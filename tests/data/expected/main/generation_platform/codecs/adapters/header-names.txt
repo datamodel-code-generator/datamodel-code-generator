@@ -1,1 +1,0 @@
-use /paths/~1scopes/post request_body: codec_0 None None pydantic_type_adapter native
