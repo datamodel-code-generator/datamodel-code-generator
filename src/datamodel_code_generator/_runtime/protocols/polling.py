@@ -24,7 +24,7 @@ from ..client.responses import ResponseInfo
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .errors import (
     OperationCancelledError,
     OperationFailedError,
@@ -38,7 +38,6 @@ from .errors import (
 from .options import PollOptions, layered
 from .records import (
     BodySelector,
-    BodyTarget,
     CancelReceipt,
     PollSnapshot,
     StatusSelector,
@@ -1212,28 +1211,6 @@ class AsyncLroHandle(_Operation[T, P]):
         self._close("aclose", quiet=exc is not None)
 
 
-def _coded(plan: PollingPlan[T, P, C], limits: _Limits, body: object, *, polling: bool = True) -> None:
-    """Refuse a coding the helper call selects unless one of its requests sends a body its operation accepts.
-
-    The create request sends the caller's body, which a resumed handle never sends again; a poll or the result fetch
-    sends a body only where one of its bindings writes into it.
-    """
-    if (options := limits.options) is not None and isinstance(selected := options.compression, str):
-        from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
-
-        polls = (
-            ()
-            if not polling
-            else ((plan.poll, any(isinstance(binding.target, BodyTarget) for binding in plan.bindings)),)
-        )
-        fetches = (
-            ()
-            if plan.fetch is None
-            else ((plan.fetch, any(isinstance(binding.target, BodyTarget) for binding in plan.fetch_bindings)),)
-        )
-        helper_children(selected, ((plan.create, not isinstance(body, Unset)), *polls, *fetches))
-
-
 def _session(limits: _Limits) -> OperationSession:
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
 
@@ -1273,7 +1250,6 @@ def _restored(
         raise _resume_error(plan, "malformed") from None
     if (expires_at := handle._expires_at) is not None and expires_at.timestamp() <= limits.clock.time():  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
         raise _resume_error(plan, "expired")
-    _coded(plan, limits, UNSET, polling=handle._phase is _Phase.PENDING)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
 
@@ -1325,7 +1301,6 @@ def start_operation(  # noqa: PLR0913
     A helper that declares a remote cancellation passes its own handle class.
     """
     limits = _limits(core, plan, poll_options, options, session_options)
-    _coded(plan, limits, body)
     created = handle(core, plan, limits, _session(limits))
     created._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return created
@@ -1379,7 +1354,6 @@ async def astart_operation(  # noqa: PLR0913
     A helper that declares a remote cancellation passes its own handle class.
     """
     limits = _limits(core, plan, poll_options, options, session_options)
-    _coded(plan, limits, body)
     created = handle(core, plan, limits, _session(limits))
     await created._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return created
