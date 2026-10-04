@@ -11,7 +11,7 @@ from typing_extensions import TypeIs, TypeVar
 
 from ..client.responses import HeadersView, ResponseInfo
 
-__all__ = ("AsyncCacheStore", "CacheEntry", "CacheResult", "CacheSource", "CacheStore", "bytes_tuple", "string_tuple")
+__all__ = ("AsyncCacheStore", "CacheEntry", "CacheResult", "CacheSource", "CacheStore", "string_tuple")
 
 T_co = TypeVar("T_co", covariant=True, default=object)
 
@@ -41,11 +41,6 @@ def string_tuple(value: object) -> TypeIs[tuple[str, ...]]:
     return _tuple(value) and all(isinstance(item, str) for item in value)
 
 
-def bytes_tuple(value: object) -> TypeIs[tuple[bytes, ...]]:
-    """Return whether a value is a tuple of bytes."""
-    return _tuple(value) and all(isinstance(item, bytes) for item in value)
-
-
 def _range(valid: bool, message: str) -> None:  # noqa: FBT001
     if not valid:
         raise ValueError(message)
@@ -53,15 +48,14 @@ def _range(valid: bool, message: str) -> None:  # noqa: FBT001
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CacheEntry:
-    """One stored representation: its validated response, timing, Vary fingerprints, tags, and schema fingerprint.
+    """One stored representation, its timing, plain request Vary values, and schema fingerprint.
 
-    The body is the representation after content decoding and the headers are its effective headers. The version is
-    opaque; a cache helper gives every entry it writes a new one. The representation names only the status.
+    The body is content-decoded and the headers are effective representation headers. Header values remain private
+    process memory and are excluded from the representation.
     """
 
-    version: str = field(repr=False)
     vary: tuple[str, ...] = field(repr=False)
-    vary_fingerprints: tuple[bytes, ...] = field(repr=False)
+    vary_values: tuple[tuple[str, ...], ...] = field(repr=False)
     status_code: int
     headers: HeadersView = field(repr=False)
     body: bytes = field(repr=False)
@@ -70,21 +64,18 @@ class CacheEntry:
     stored_at: datetime = field(repr=False)
     freshness_seconds: float = field(repr=False)
     initial_age_seconds: float = field(repr=False)
-    tags: tuple[str, ...] = field(repr=False)
     schema_fingerprint: str = field(repr=False)
 
     def __post_init__(self) -> None:
-        """Refuse wrong types with TypeError, and a status, time, duration, or fingerprint count out of range."""
-        for name in ("version", "schema_fingerprint"):
-            _typed(getattr(self, name), str, name)
+        """Refuse wrong types with TypeError, and a status, time, duration, or Vary value count out of range."""
+        _typed(self.schema_fingerprint, str, "schema_fingerprint")
         _kind(string_tuple(self.vary), "vary")
-        _kind(bytes_tuple(self.vary_fingerprints), "vary_fingerprints")
-        _kind(string_tuple(self.tags), "tags")
+        _kind(_tuple(self.vary_values) and all(string_tuple(item) for item in self.vary_values), "vary_values")
         _typed(self.status_code, int, "status_code")
         _typed(self.headers, HeadersView, "headers")
         _typed(self.body, bytes, "body")
         _range(_MIN_STATUS <= self.status_code <= _MAX_STATUS, "status_code must be from 100 to 599")
-        _range(len(self.vary_fingerprints) == len(self.vary), "vary_fingerprints must match vary one to one")
+        _range(len(self.vary_values) == len(self.vary), "vary_values must match vary one to one")
         for name in ("request_time", "response_time", "stored_at"):
             _typed(instant := getattr(self, name), datetime, name)
             _range(instant.utcoffset() is not None, f"{name} must be timezone-aware")
@@ -118,48 +109,28 @@ class CacheResult(Generic[T_co]):
 
 
 class CacheStore(Protocol):
-    """A borrowed store of cache entries by base key, evaluating Vary and replacing entries by compare-and-exchange."""
+    """A borrowed store with one representation per key and last-write replacement."""
 
-    def lookup(self, base_key: bytes, request_headers: HeadersView) -> CacheEntry | None:
-        """Return the entry of the base key whose Vary fingerprints match the request's headers, or None."""
+    def get(self, key: bytes) -> CacheEntry | None:
+        """Return the key's representation, or None."""
         ...
 
-    def fingerprint_vary(self, names: tuple[str, ...], request_headers: HeadersView) -> tuple[bytes, ...]:
-        """Return the store's keyed fingerprint of each named request header's values, in order."""
-        ...
+    def set(self, key: bytes, entry: CacheEntry) -> None:
+        """Replace the key's representation."""
 
-    def compare_exchange(self, base_key: bytes, expected_version: str | None, entry: CacheEntry) -> bool:
-        """Store the entry when its slot holds the expected version, None meaning an empty slot, else return False."""
-        ...
-
-    def delete(self, base_key: bytes, version: str) -> bool:
-        """Remove the base key's entry of that version, returning whether one was removed."""
-        ...
-
-    def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove every entry carrying any of the tags, returning how many were removed."""
-        ...
+    def delete(self, key: bytes) -> None:
+        """Remove the key's representation, if present."""
 
 
 class AsyncCacheStore(Protocol):
     """A borrowed asynchronous store with the same contract as CacheStore."""
 
-    async def lookup(self, base_key: bytes, request_headers: HeadersView) -> CacheEntry | None:
-        """Return the entry of the base key whose Vary fingerprints match the request's headers, or None."""
+    async def get(self, key: bytes) -> CacheEntry | None:
+        """Return the key's representation, or None."""
         ...
 
-    async def fingerprint_vary(self, names: tuple[str, ...], request_headers: HeadersView) -> tuple[bytes, ...]:
-        """Return the store's keyed fingerprint of each named request header's values, in order."""
-        ...
+    async def set(self, key: bytes, entry: CacheEntry) -> None:
+        """Replace the key's representation."""
 
-    async def compare_exchange(self, base_key: bytes, expected_version: str | None, entry: CacheEntry) -> bool:
-        """Store the entry when its slot holds the expected version, None meaning an empty slot, else return False."""
-        ...
-
-    async def delete(self, base_key: bytes, version: str) -> bool:
-        """Remove the base key's entry of that version, returning whether one was removed."""
-        ...
-
-    async def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove every entry carrying any of the tags, returning how many were removed."""
-        ...
+    async def delete(self, key: bytes) -> None:
+        """Remove the key's representation, if present."""
