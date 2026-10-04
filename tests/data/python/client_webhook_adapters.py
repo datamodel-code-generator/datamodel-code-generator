@@ -19,6 +19,7 @@ import warnings
 from base64 import b64decode
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone, tzinfo
+from itertools import starmap
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
@@ -26,8 +27,6 @@ from tests.data.python.client_runtime import describe, record
 from tests.data.python.client_webhooks import (
     GITHUB,
     STANDARD,
-    AsyncRecordingStore,
-    RecordingStore,
     Vector,
     failure,
     reachable,
@@ -287,7 +286,7 @@ def outcome(call: Callable[[], Any]) -> str:
     """Describe a verification's result, or its failure with its delivery state when it has one."""
     try:
         result = call()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         return describe(error)
     return shown(result)
 
@@ -316,7 +315,7 @@ class Adapters:
 
     def key_set(self, *keys: tuple[str, bytes]) -> Any:
         """Return a key set of application keys given as name and secret pairs."""
-        return self.protocols.KeySet(keys=tuple(AppKey(name, secret) for name, secret in keys))
+        return self.protocols.KeySet(keys=tuple(starmap(AppKey, keys)))
 
     def signature(self, delivery_id: object, timestamp: object, matched_key_id: object = "scripted") -> Any:
         """Return a verified signature record with any field values, as a verifier might."""
@@ -324,7 +323,7 @@ class Adapters:
             delivery_id=delivery_id, timestamp=timestamp, matched_key_id=matched_key_id
         )
 
-    def check(  # noqa: PLR0913
+    def check(
         self,
         label: str,
         vector: Vector,
@@ -371,7 +370,7 @@ def imports(package: ModuleType, lines: list[str], modules: tuple[str, ...]) -> 
 
 
 def webhook_adapters(package: ModuleType, lines: list[str]) -> None:
-    """Verify through adapters: vectors, rejections, windows, the contract fence, call contract, limits, and replay."""
+    """Verify through adapters: vectors, rejections, windows, the contract fence, call contract, and limits."""
     hooks = Adapters(package, lines)
     imports(
         package,
@@ -387,7 +386,6 @@ def webhook_adapters(package: ModuleType, lines: list[str]) -> None:
     _verifier_errors(hooks)
     _calls(hooks)
     _limits(hooks)
-    _replay(hooks)
     _secrecy(hooks)
 
 
@@ -479,26 +477,29 @@ def _fence(hooks: Adapters) -> None:
     plain = replace(GITHUB_MESSAGE, body=b"not JSON")
     _fenced(hooks, "undeclared timestamp", plain, Scripted(signature(None, _STAMP)))
     _fenced(hooks, "undeclared delivery id", plain, Scripted(signature("msg_1", None)))
-    _fenced(hooks, "control: no facts declared or returned", plain, Scripted(signature(None, None)), store=False)
+    _fenced(hooks, "control: no facts declared or returned", plain, Scripted(signature(None, None)))
 
 
-def _fenced(hooks: Adapters, label: str, vector: Vector, verifier: Any, *, store: bool = True) -> None:
-    """Verify in both modes, with a store unless told otherwise, reporting the outcome, claims, and warnings."""
+def _fenced(hooks: Adapters, label: str, vector: Vector, verifier: Any) -> None:
+    """Verify in both modes, reporting the outcome and coroutine disposal warnings."""
     helper, keys = hooks.helper(vector.helper), hooks.key_set(("scripted", b"secret"))
     results = []
     for asynchronous in (False, True):
-        recording = (AsyncRecordingStore if asynchronous else RecordingStore)(True)
+        arguments = {"verifier": verifier, "now": vector.now}
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            arguments = {"verifier": verifier, "now": vector.now, "replay_store": recording if store else None}
             if asynchronous:
                 result = outcome(
-                    lambda: asyncio.run(helper.verify_async(vector.body, list(vector.headers), keys, **arguments))
+                    lambda arguments=arguments: asyncio.run(
+                        helper.verify_async(vector.body, list(vector.headers), keys, **arguments)
+                    )
                 )
             else:
-                result = outcome(lambda: helper.verify(vector.body, list(vector.headers), keys, **arguments))
+                result = outcome(
+                    lambda arguments=arguments: helper.verify(vector.body, list(vector.headers), keys, **arguments)
+                )
             gc.collect()
-        results.append(f"{result} claims {len(recording.claims)} warnings {[str(item.message) for item in caught]}")
+        results.append(f"{result} warnings {[str(item.message) for item in caught]}")
     hooks.lines.append(f"  {label} = {results[0]}")
     if results[1] != results[0]:
         hooks.lines.append(f"  {label} async = {results[1]}")
@@ -616,8 +617,7 @@ def _zones(hooks: Adapters) -> None:
         for asynchronous in (False, True):
             current = zone() if callable(zone) else zone
             moment = stamp() if stamp is not None else datetime(*local, tzinfo=current)
-            store = (AsyncRecordingStore if asynchronous else RecordingStore)(True)
-            arguments = {"verifier": Scripted(hooks.signature("msg_1", moment)), "now": _STAMP, "replay_store": store}
+            arguments = {"verifier": Scripted(hooks.signature("msg_1", moment)), "now": _STAMP}
             call = (
                 (lambda arguments=arguments: asyncio.run(helper.verify_async(b'{"test": 1}', [], keys, **arguments)))
                 if asynchronous
@@ -625,11 +625,11 @@ def _zones(hooks: Adapters) -> None:
             )
             try:
                 result = shown(call())
-            except Exception as error:  # noqa: BLE001
+            except Exception as error:  # ruff: ignore[blind-except]
                 result = f"{describe(error)} context={error.__context__!r}"
             reads = f" offset reads={current.reads}" if isinstance(current, _Zone) else ""
             mode = " async" if asynchronous else ""
-            hooks.lines.append(f"  {label}{mode} = {result} claims {store.claims}{reads}")
+            hooks.lines.append(f"  {label}{mode} = {result}{reads}")
 
 
 def _verifier_errors(hooks: Adapters) -> None:
@@ -648,7 +648,7 @@ def _verifier_errors(hooks: Adapters) -> None:
                     asyncio.run(helper.verify_async(body, headers, keys, verifier=verifier, now=_STAMP))
                 else:
                     helper.verify(body, headers, keys, verifier=verifier, now=_STAMP)
-            except (Exception, asyncio.CancelledError) as raised:  # noqa: BLE001
+            except (Exception, asyncio.CancelledError) as raised:  # ruff: ignore[blind-except]
                 mode = " async" if asynchronous else ""
                 hooks.lines.append(
                     f"  {label}{mode} propagated={raised is error} calls={len(verifier.calls)} "
@@ -661,7 +661,7 @@ def _calls(hooks: Adapters) -> None:
     helper = hooks.helper("stripe.event")
     keys = hooks.key_set(("stripe-2026", _STRIPE_SECRET))
     headers = list(STRIPE_INVOICE.headers)
-    options = hooks.protocols.WebhookOptions(max_signatures=2, replay_ttl=60)
+    options = hooks.protocols.WebhookOptions(max_signatures=2)
     for asynchronous in (False, True):
         verifier = Recording(hooks.verifier(StripeVerifier))
         call = (
@@ -699,7 +699,6 @@ def _limits(hooks: Adapters) -> None:
     options = hooks.protocols.WebhookOptions
     many = hooks.key_set(*((f"key-{index}", _STRIPE_SECRET) for index in range(9)))
     octets = sum(len(name) + len(value) for name, value in STRIPE_INVOICE.headers)
-    stores = (hooks.protocols.MemoryReplayStore(), hooks.protocols.AsyncMemoryReplayStore())
     for label, changes in (
         ("body over limit", {"options": options(max_body_bytes=len(_INVOICE) - 1)}),
         ("headers over limit", {"options": options(max_header_bytes=octets - 1)}),
@@ -727,78 +726,12 @@ def _limits(hooks: Adapters) -> None:
                 _INVOICE, list(STRIPE_INVOICE.headers), keys, verifier=verifier, now=_STAMP
             ),
         )
-    record(
-        hooks.lines,
-        "synchronous store in verify_async",
-        lambda: asyncio.run(
-            helper.verify_async(
-                _INVOICE,
-                list(STRIPE_INVOICE.headers),
-                keys,
-                verifier=hooks.verifier(StripeVerifier),
-                now=_STAMP,
-                replay_store=stores[0],
-            )
-        ),
-    )
-    record(
-        hooks.lines,
-        "asyncio store in verify",
-        lambda: helper.verify(
-            _INVOICE,
-            list(STRIPE_INVOICE.headers),
-            keys,
-            verifier=hooks.verifier(StripeVerifier),
-            now=_STAMP,
-            replay_store=stores[1],
-        ),
-    )
 
 
 class _NotCallable:
     """A verifier whose verify attribute is not callable."""
 
     verify = "verify"
-
-
-def _replay(hooks: Adapters) -> None:
-    """Claim verified delivery ids in stores until the timestamp window closes, or refuse a store without them."""
-    standard = hooks.verifier(StandardVerifier)
-    for label, vector, verifier, answers, options in (
-        ("claimed", STANDARD_ADAPTED, standard, (True,), None),
-        ("duplicate", STANDARD_ADAPTED, standard, (False,), None),
-        ("claimed with tolerances", STANDARD_ADAPTED, standard, (True,), {"past_tolerance": 1, "future_tolerance": 2}),
-        ("no delivery id to claim", STRIPE_INVOICE, hooks.verifier(StripeVerifier), (), None),
-        ("no facts to claim", GITHUB_MESSAGE, hooks.verifier(GithubVerifier), (), None),
-    ):
-        for asynchronous in (False, True):
-            store = (AsyncRecordingStore if asynchronous else RecordingStore)(*answers)
-            helper = hooks.helper(vector.helper)
-            keys = hooks.key_set((vector.key_id, vector.secret))
-            arguments = {
-                "verifier": verifier,
-                "now": vector.now,
-                "replay_store": store,
-                "options": None if options is None else hooks.protocols.WebhookOptions(**options),
-            }
-            body, headers = vector.body, list(vector.headers)
-            result = outcome(
-                (lambda: asyncio.run(helper.verify_async(body, headers, keys, **arguments)))
-                if asynchronous
-                else (lambda: helper.verify(body, headers, keys, **arguments))
-            )
-            mode = " async" if asynchronous else ""
-            hooks.lines.append(f"  {label}{mode} = {result} claims {store.claims}")
-    memory, helper = hooks.protocols.MemoryReplayStore(), hooks.helper("adapted.message")
-    keys, year_3000 = hooks.key_set(("scripted", b"secret")), datetime(3000, 1, 1, tzinfo=_UTC)
-    scripted = Scripted(hooks.signature("msg_memory", year_3000))
-    for attempt in ("first", "second"):
-        hooks.lines.append(
-            f"  memory {attempt} = "
-            + outcome(
-                lambda: helper.verify(b'{"test": 1}', [], keys, verifier=scripted, now=year_3000, replay_store=memory)
-            )
-        )
 
 
 def _secrecy(hooks: Adapters) -> None:
@@ -819,7 +752,7 @@ def _secrecy(hooks: Adapters) -> None:
                 module.decode_unverified(body)
             else:
                 module.verify(body, headers, keys, verifier=verifier, now=now)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             hooks.lines.append(f"  {label} ! {describe(error)} context={error.__context__!r}")
             texts.extend(reachable(error, set()))
     hooks.lines.append(f"  markers shown={[text for text in texts if 'MARKER' in text]}")

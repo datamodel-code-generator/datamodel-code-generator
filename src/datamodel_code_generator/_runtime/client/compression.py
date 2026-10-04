@@ -1,4 +1,4 @@
-"""Request content coding: the gzip a call selects, applied to declared operations' bodies exactly once per attempt.
+"""Gzip declared request bodies unless the client disables compression.
 
 A body encoded once is compressed once and replayed as those bytes; a body that builds its own attempts is compressed
 as each attempt streams, so a one-shot body stays one-shot. The builtin encoder uses level 6, no file name, and a zero
@@ -12,15 +12,12 @@ from typing import TYPE_CHECKING, Final
 
 from .bodies import EncodedAttempt
 from .coding import CHUNK
-from .errors import ConfigurationError
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator
 
     from .bodies import AsyncBodyAttempt, BodyAttempt, BodyAttemptContext
     from .body_sources import AsyncBodySource, BodySource
-    from .operations import OperationPlan
-    from .options import ResolvedCompression
 
 _LEVEL: Final = 6
 _WBITS: Final = 16 + zlib.MAX_WBITS
@@ -53,11 +50,6 @@ def gzipped_attempt(attempt: EncodedAttempt, check: Callable[[], None]) -> Encod
         output.append(compressor.compress(content[offset : offset + CHUNK]))
     output.append(compressor.flush())
     return EncodedAttempt(b"".join(output), attempt.content_type)
-
-
-def applies(resolved: ResolvedCompression, operation: OperationPlan[object, object] | None, *, body: bool) -> bool:
-    """Return whether a call's selected coding applies: it has a body and its operation accepts the coding."""
-    return body and operation is not None and resolved.token in operation.accepted_content_encodings
 
 
 class _GzipAttempt:
@@ -153,12 +145,3 @@ class AsyncGzipSource:
     async def aclose(self) -> None:
         """Release the wrapped source."""
         await self._source.aclose()
-
-
-def helper_children(selected: str, children: Iterable[tuple[OperationPlan[object, object], bool]]) -> None:
-    """Refuse a helper call whose selected coding no child request can apply: none has a body and accepts it.
-
-    Only a coding the helper call itself selects is checked; an inherited one turns off where it does not apply.
-    """
-    if not any(body and selected in operation.accepted_content_encodings for operation, body in children):
-        raise ConfigurationError(field_path=("options", "compression"), condition="no_applicable_helper_child")
