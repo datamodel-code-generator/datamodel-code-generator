@@ -3,5 +3,6 @@
   "capture-observation",
   "capture-replacements",
   "session-reuse",
-  "capture-split"
+  "capture-split",
+  "trusted-template-cycle"
 ]
