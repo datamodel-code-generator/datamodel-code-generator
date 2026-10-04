@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from typing import TYPE_CHECKING
 
 from tests.data.python.client_generation import SOURCE, render_client
@@ -12,8 +13,10 @@ if TYPE_CHECKING:
 
 def shared_fields_report(root: Path) -> str:
     """Report the generated models and sync/async field methods of a shared allOf request body."""
+    root.mkdir(parents=True, exist_ok=True)
+    source = shutil.copy2(SOURCE / "fields-shared-refs.yaml", root / "fields-shared-refs.yaml")
     diagnostics, modules = render_client(
-        SOURCE / "fields-shared-refs.yaml",
+        source,
         root,
         "pydantic_v2.BaseModel",
         {},
