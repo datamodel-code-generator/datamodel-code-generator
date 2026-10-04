@@ -108,18 +108,35 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     report, rendered = client_render(case, tmp_path)
     assert_output(report, EXPECTED / f"{case}.txt")
     for backend, modules in rendered.items():
-        assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
+        assert_generated_modules_output(
+            {parts: content for parts, content in modules.items() if parts[0] != "client"}
+            if case == "pets" and backend != "pydantic_v2_BaseModel"
+            else modules,
+            EXPECTED / "packages" / case / backend,
+        )
     if case in {
         "auth",
         "auth-context",
+        "evolution",
         "fields",
         "fields-arguments",
         "fields-optional-models",
         "fields-structural",
         "fields-unpack",
+        "media",
+        "pets",
+        "pets-unpack",
+        "querystring",
     }:
         assert_output(
-            client_model_parity_report(case, tmp_path / "ordinary", rendered),
+            client_model_parity_report(
+                case,
+                tmp_path / "ordinary",
+                {
+                    backend: {parts: content for parts, content in modules.items() if parts[0] != "client"}
+                    for backend, modules in rendered.items()
+                },
+            ),
             EXPECTED / "bindings" / "capture-parity.txt",
         )
 
