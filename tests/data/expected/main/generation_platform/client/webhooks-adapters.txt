@@ -41,16 +41,15 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['stripe.event', 'adapted.message', 'adapted.plain', 'mapped.event', 'unsigned.event', 'unsigned.message'] bindings 3
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper stripe.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/stripe.event 0434b67d911b627b09150cfad4c24254f12c1b0214310736788cb479db821f5f
-  helper adapted.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.message d72eda6646e7654d29846d73bb20ce39c97ee63d3eca7552ff274f8b7d23c028
-  helper adapted.plain webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.plain 06c2f369d5c8012689232fac92405a0c3921b4f422ac5819dbb186fb9998377d
-  helper mapped.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/mapped.event ddc47949706ad6e1c07be1e47e38c9d9f660f184daa83490d20130c62c88abae
-  helper unsigned.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.event 677d1b23b8b1ea92682ddb8174d85d04e15ac5a0048d7c10fe37a3392df751ca
-  helper unsigned.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.message dd33a9d84b14e2e5e24d129ed7ee3d59dce1489835d3aad8777280305c5984e1
+  helper stripe.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/stripe.event 487cb65ff3ca314dce5d6507f31ee15f87cb4dabd7fa65dcf7a32f49e3fe8ce7
+  helper adapted.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.message 81efee472e838ef0726ff2ce562440fa740d43fb52fc34d2232ddc11ad6d4e39
+  helper adapted.plain webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.plain d2642b39fcd198abd9835fa23b554ca11d8913e10a6bb95086b5ae2441eb7b99
+  helper mapped.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/mapped.event d5ac1f2656addccb89a16114adee22a23a58c9a8ad4ee79e17ffe115b3f82320
+  helper unsigned.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.event a0e9d2619836b57965ad389f9f3c5bd6053aa37423f4171043dcd6d082353f03
+  helper unsigned.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.message e6be987f0fc6552e58d15575d42208c5305fd6ac4a837dc45d4534de274f2d66
   {
     "helpers": {
       "adapted.message": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "document": "/inputs/root",
@@ -64,7 +63,6 @@ render pydantic_v2.BaseModel
         }
       },
       "adapted.plain": {
-        "duplicates": "reject",
         "enabled": true,
         "event_schema": {
           "document": "/inputs/root",
@@ -78,7 +76,6 @@ render pydantic_v2.BaseModel
         }
       },
       "mapped.event": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "discriminator": {
@@ -98,22 +95,14 @@ render pydantic_v2.BaseModel
         },
         "kind": "webhook",
         "signature": {
-          "delivery_id": "none",
+          "algorithm": "hmac-sha256",
           "encoding": "hex",
-          "field_constraints": {},
           "header": "X-Signature",
-          "key_id": "none",
-          "kind": "hmac-sha256",
-          "prefix": "",
-          "separator": "none",
-          "signed_parts": [
-            "raw-body"
-          ],
-          "timestamp": "none"
+          "kind": "body_hmac",
+          "prefix": ""
         }
       },
       "stripe.event": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "discriminator": {
@@ -143,7 +132,6 @@ render pydantic_v2.BaseModel
         }
       },
       "unsigned.event": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "discriminator": {
@@ -167,7 +155,6 @@ render pydantic_v2.BaseModel
         }
       },
       "unsigned.message": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "document": "/inputs/root",

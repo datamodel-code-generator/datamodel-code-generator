@@ -571,19 +571,6 @@ def _limits(
     )
 
 
-def _coded(plan: EventPlan[T], limits: _Limits, body: object, *, reopened: bool = False) -> None:
-    """Refuse a coding unless an initial or reachable reopen request has a body its operation accepts."""
-    if (options := limits.options) is not None and isinstance(selected := options.compression, str):
-        from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
-
-        present = not isinstance(body, Unset)
-        children = [] if reopened else [(plan.call, present)]
-        if (resume := plan.resume) is not None and (reopened or (limits.reconnect and limits.max_reconnects != 0)):
-            bound_body = any(position is None for position, _ in resume.writes)
-            children.append((resume.reopened, (resume.own and present) or bound_body))
-        helper_children(selected, children)
-
-
 def _unpatched(
     core: ClientCore | AsyncClientCore, plan: EventPlan[T], resume: StreamResumePlan, request: RequestOptions | None
 ) -> None:
@@ -1847,7 +1834,6 @@ def open_events(  # noqa: PLR0913
     A helper declaring resumption first reads the bindings' values and the server's expiry from the response.
     """
     limits = _limits(core, plan, stream_options, options, session_options)
-    _coded(plan, limits, body)
     session = _session(plan, limits, plan.operation, plan.call.operation_id)
     given = (arguments, body, media_type)
     try:
@@ -1877,7 +1863,6 @@ async def aopen_events(  # noqa: PLR0913
 ) -> AsyncEventStream[T]:
     """Open a helper's stream with asyncio, returning once its response is a declared success, as `open_events` does."""
     limits = _limits(core, plan, stream_options, options, session_options)
-    _coded(plan, limits, body)
     session = _session(plan, limits, plan.operation, plan.call.operation_id)
     given = (arguments, body, media_type)
     try:
@@ -1911,7 +1896,6 @@ def resume_events(  # noqa: PLR0913
     limits = _limits(core, plan, stream_options, options, session_options)
     resume, position = _restored(core, plan, state, limits)
     request = _reopen_request(core, plan, resume, position)
-    _coded(plan, limits, request[1], reopened=True)
     session = _session(plan, limits, resume.operation, resume.call.operation_id)
     try:
         response = _sent(core, resume.reopened, request, limits, session, resume.media)
@@ -1936,7 +1920,6 @@ async def aresume_events(  # noqa: PLR0913
     limits = _limits(core, plan, stream_options, options, session_options)
     resume, position = _restored(core, plan, state, limits)
     request = _reopen_request(core, plan, resume, position)
-    _coded(plan, limits, request[1], reopened=True)
     session = _session(plan, limits, resume.operation, resume.call.operation_id)
     try:
         response = await _asent(core, resume.reopened, request, limits, session, resume.media)

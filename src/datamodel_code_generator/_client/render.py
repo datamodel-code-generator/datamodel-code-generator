@@ -231,7 +231,6 @@ _ERROR_NAMES: Final = (
     "BodyNotReplayableError",
     "BodyProtocolError",
     "BudgetExceededError",
-    "CircuitStoreError",
     "CleanupError",
     "ClientClosedError",
     "ConfigurationError",
@@ -250,7 +249,6 @@ _ERROR_NAMES: Final = (
     "ProtocolSizeError",
     "ProtocolStoreError",
     "RedirectPolicyError",
-    "ReplayStoreFullError",
     "RequestEncodingError",
     "RequestCancelledError",
     "ResponseConsumedError",
@@ -269,16 +267,12 @@ _ERROR_NAMES: Final = (
     "UnexpectedStatusError",
     "UnsupportedAsyncBackendError",
     "UnsupportedContentCodingError",
-    "WebhookReplayError",
-    "WebhookStoreError",
     "WebhookVerificationError",
 )
 _PROTOCOL_ERROR_NAMES: Final = (
-    "CacheInvalidationError",
     "CacheProtocolError",
     "CacheStoreError",
     "CacheValidatorConflictError",
-    "CircuitOpenError",
     "ConcurrentReceiveError",
     "DeliveryUnknownError",
     "HandshakeResponse",
@@ -348,18 +342,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._runtime.protocols.caches import AsyncCacheStore, CacheEntry, CacheResult, CacheStore
-from .._runtime.protocols.circuit_records import CircuitKey, CircuitPermit, CircuitSnapshot
 from .._runtime.protocols.options import (
-    AsyncCircuitStore,
     CacheOptions,
-    CircuitBreakerOptions,
-    CircuitStore,
     PaginationOptions,
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
     QueueOptions,
-    ResolvedCircuitBreakerOptions,
     StreamOptions,
     UploadOptions,
     WebSocketTransportOptions,
@@ -396,9 +385,7 @@ from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.resume import ResumeState, import_state
 from .._runtime.protocols.sources import UploadProgress, UploadSource
 from .._runtime.protocols.webhooks import (
-    AsyncReplayStore,
     KeySet,
-    ReplayStore,
     ResolvedWebhookOptions,
     VerifiedSignature,
     VerifiedWebhook,
@@ -420,27 +407,21 @@ from .._runtime.protocols.websocket_types import (
 
 if TYPE_CHECKING:
     from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
-    from .._runtime.protocols.circuits import AsyncMemoryCircuitStore, MemoryCircuitStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
-    from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
     from .._runtime.protocols.uploads import AsyncUploadHandle, UploadHandle
     from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
     "AsyncCacheStore",
-    "AsyncCircuitStore",
     "AsyncEventStream",
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
-    "AsyncMemoryCircuitStore",
     "AsyncMemoryQueueStore",
-    "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncQueueStore",
-    "AsyncReplayStore",
     "AsyncUploadHandle",
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
@@ -453,11 +434,6 @@ __all__ = [
     "CacheResult",
     "CacheStore",
     "CancelReceipt",
-    "CircuitBreakerOptions",
-    "CircuitKey",
-    "CircuitPermit",
-    "CircuitSnapshot",
-    "CircuitStore",
     "Continuation",
     "DrainReport",
     "EventStream",
@@ -465,9 +441,7 @@ __all__ = [
     "KeySet",
     "LroHandle",
     "MemoryCacheStore",
-    "MemoryCircuitStore",
     "MemoryQueueStore",
-    "MemoryReplayStore",
     "Message",
     "OperationRef",
     "Origin",
@@ -489,9 +463,7 @@ __all__ = [
     "QueueOutcome",
     "QueueReceipt",
     "QueueStore",
-    "ReplayStore",
     "RequestTarget",
-    "ResolvedCircuitBreakerOptions",
     "ResolvedQueueOptions",
     "ResolvedWSOptions",
     "ResolvedWebSocketTransportOptions",
@@ -539,10 +511,6 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
-    if name in {"AsyncMemoryCircuitStore", "MemoryCircuitStore"}:
-        from .._runtime.protocols import circuits
-
-        return getattr(circuits, name)
     if name in {"AsyncUploadHandle", "UploadHandle"}:
         from .._runtime.protocols import uploads
 
@@ -555,14 +523,6 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import queue_stores
 
         return getattr(queue_stores, name)
-    if name == "MemoryReplayStore":
-        from .._runtime.protocols.replay import MemoryReplayStore
-
-        return MemoryReplayStore
-    if name == "AsyncMemoryReplayStore":
-        from .._runtime.protocols.replay import AsyncMemoryReplayStore
-
-        return AsyncMemoryReplayStore
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
 '''
@@ -989,11 +949,6 @@ class Module:
         ))
 
 
-def circuit_groups(plan: ClientPlan) -> tuple[str, ...]:
-    """Return the circuit groups a client's operations declare, sorted."""
-    return tuple(sorted({group for spec in plan.operations if (group := spec.circuit_group) is not None}))
-
-
 class _Typing:
     """Spell the payload types of a planned client: model types, or schema-less surfaces."""
 
@@ -1130,18 +1085,10 @@ class _Resources(_Typing):
             entries.append(("security_schemes=", f"{module.local('_generated', 'security')}.ROOT_SCHEMES"))
         name = module.local("_runtime.client.client", "ClientDefaults")
         helpers = (*self.helpers, *self.streams, *self.sockets)
-        if not helpers and not self.circuit_groups:
+        if not helpers:
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
-        if helpers:
-            entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
-        if groups := self.circuit_groups:
-            entries.append(("circuit_groups=", f"frozenset({{{', '.join(map(repr, groups))}}})"))
+        entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
-
-    @cached_property
-    def circuit_groups(self) -> tuple[str, ...]:
-        """Return the circuit groups the package's operations declare, sorted."""
-        return circuit_groups(self.plan)
 
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
@@ -1158,10 +1105,6 @@ class _Resources(_Typing):
         helpers_module = f".protocols.{_helpers_module(asynchronous=asynchronous)}"
         if protocols is not None:
             lazy.append((protocols, helpers_module))
-        circuit_groups = None
-        if groups := self.circuit_groups:
-            lazy.append(("Origin", ".protocols"))
-            circuit_groups = f"{module.name('typing', 'Literal')}[{', '.join(map(repr, groups))}]"
         values = {
             "defaults": self.defaults(module),
             "options": module.local("options", "ClientOptions"),
@@ -1199,7 +1142,6 @@ class _Resources(_Typing):
             ],
             protocols=protocols,
             protocols_module=helpers_module,
-            circuit_groups=circuit_groups,
             **values,
         )
 
@@ -1802,10 +1744,8 @@ class _Registry(_Typing):
 
     @staticmethod
     def protection_metadata(spec: OperationSpec) -> list[tuple[str, Doc]]:
-        """Return an operation's circuit group and accepted request codings, when it declares them."""
+        """Return an operation's accepted request codings, when it declares them."""
         entries: list[tuple[str, Doc]] = []
-        if spec.circuit_group is not None:
-            entries.append(("circuit_group=", repr(spec.circuit_group)))
         if spec.accepted_content_encodings:
             entries.append(("accepted_content_encodings=", _tuple(map(repr, spec.accepted_content_encodings))))
         return entries
@@ -2124,12 +2064,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         module = Module(
             {
                 *(name.format(index) for index in range(len(self.helpers)) for name in names),
-                *(
-                    f"MUTATION_{index}_{position}"
-                    for index, spec in enumerate(self.helpers)
-                    if isinstance(spec, CacheSpec)
-                    for position in range(len(spec.mutations))
-                ),
                 *(f"STREAM_{index}" for index in range(len(streams))),
                 *(f"SOCKET_{index}" for index in range(len(sockets))),
             },
@@ -2165,7 +2099,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         )
 
     def cache(self, module: Module, index: int, spec: CacheSpec) -> list[str]:
-        """Return a cache helper's plan and the plans of its mutations, each naming only settings it declares."""
+        """Return a cache helper's plan, naming only settings it declares."""
         helper, operations = spec.helper, module.root("_operations")
         tree = helper.tree
         plan = module.local(_CACHE, "CachePlan")
@@ -2181,27 +2115,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             entries.append(("statuses=", _call("frozenset", (("", _tuple(map(repr, statuses))),))))
         if names := sorted({name.lower() for name in tree["vary_allowlist"]}):
             entries.append(("vary_allowlist=", _call("frozenset", (("", _tuple(map(repr, names))),))))
-        if spec.tags:
-            entries.append(("tags=", _tuple(map(repr, spec.tags))))
         head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{self.response(module, spec.operation)}]] = "
-        sections = [head + layout(_call(plan, entries), 0, len(head), WIDTH)]
-        mutation = module.local(_CACHE, "CacheMutationPlan")
-        for position, item in enumerate(spec.mutations):
-            head = (
-                f"MUTATION_{index}_{position}: {module.name('typing', 'Final')}"
-                f"[{mutation}[{self.response(module, item.operation)}]] = "
-            )
-            value = _call(
-                mutation,
-                (
-                    ("helper_id=", repr(helper.name)),
-                    ("operation=", self.reference(module, item.operation)),
-                    ("call=", f"{operations}.OPERATION_{item.operation.index}"),
-                    ("tags=", _tuple(map(repr, item.tags))),
-                ),
-            )
-            sections.append(head + layout(value, 0, len(head), WIDTH))
-        return sections
+        return [head + layout(_call(plan, entries), 0, len(head), WIDTH)]
 
     def items(self, module: Module, index: int, spec: PaginationSpec) -> str:
         """Return a pagination helper's typed items accessor."""
@@ -2471,7 +2386,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             root,
             *(name for children in nodes.values() for name, _ in children.values()),
             *handles.values(),
-            *(f"{name}Mutations" for name, spec in leaves.items() if isinstance(spec, CacheSpec) and spec.mutations),
             *(name for operations, aliases in queued.values() for name in (operations, *aliases)),
         }
         module = Module(names, self.resources.symbols, level=2)
@@ -2535,11 +2449,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         handle: str | None,
         asynchronous: bool,
     ) -> list[str]:
-        """Return a helper's class, then a polling helper's own handle class or a cache helper's mutations class.
-
-        A polling helper has its own handle class when it cancels remotely, and a cache helper a mutations class when
-        it declares mutations.
-        """
+        """Return a helper's class and a polling helper's handle class when it cancels remotely."""
         route = f"{spec.operation.contract.method.upper()} {spec.operation.contract.path}"
         what = f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {route}"
         if isinstance(spec, PollingSpec):
@@ -2560,24 +2470,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 self.node(name, what, core, self.methods(module, index, spec, asynchronous=asynchronous), leaf=True)
             ]
         members = self.fetch(module, index, spec, asynchronous=asynchronous)
-        if not spec.mutations:
-            return [self.node(name, what, core, members, leaf=True)]
-        mutations = f"{name}Mutations"
-        members.append(
-            f"    @{module.name('functools', 'cached_property')}\n    def mutations(self) -> {mutations}:\n"
-            f'        """The mutations that invalidate entries of this helper."""\n'
-            f"        return {mutations}(self._core)"
-        )
-        return [
-            self.node(name, what, core, members, leaf=True),
-            self.node(
-                mutations,
-                f"the mutations of the {spec.helper.name} cache helper",
-                core,
-                self.mutations(module, index, spec, asynchronous=asynchronous),
-                leaf=True,
-            ),
-        ]
+        return [self.node(name, what, core, members, leaf=True)]
 
     @staticmethod
     def node(name: str, what: str, core: str, members: list[str], *, leaf: bool = False) -> str:
@@ -2711,7 +2604,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
 
     def fetch(self, module: Module, index: int, spec: CacheSpec, *, asynchronous: bool) -> list[str]:
-        """Return a cache helper's fetch and invalidate methods."""
+        """Return a cache helper's fetch method."""
         operation = spec.operation
         arguments = [self.resources.parameter(module, parameter) for parameter in operation.parameters]
         options = [
@@ -2726,56 +2619,17 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *((f"{name}=", name) for name, _, _ in _CACHE_OPTIONS),
         ]
         result = f"{module.local('_runtime.protocols.caches', 'CacheResult')}[{self.response(module, operation)}]"
-        fetch, invalidate = (
-            module.local(_CACHE, name)
-            for name in (("afetch", "ainvalidate") if asynchronous else ("fetch", "invalidate"))
-        )
+        fetch = module.local(_CACHE, "afetch" if asynchronous else "fetch")
         route = f"{operation.contract.method.upper()} {operation.contract.path}"
         signature = tuple(argument.parameter(module) for argument in (*arguments, *options))
-        wait, coroutine = ("await ", "async ") if asynchronous else ("", "")
+        wait = "await " if asynchronous else ""
         return [
             "\n".join((
                 _signature("fetch", signature, result, asynchronous=asynchronous, stub=False),
                 f'        """Fetch {route} through the helper\'s cache, revalidating a stale entry."""',
                 f"        return {wait}{layout(_call(fetch, passed), 8, 7 + len(wait), WIDTH)}",
             )),
-            "\n".join((
-                f"    {coroutine}def invalidate(self, tags: tuple[str, ...]) -> int:",
-                '        """Remove the stored entries that carry any of the tags, returning how many."""',
-                f"        return {wait}{invalidate}(self._core, {plan}, tags)",
-            )),
         ]
-
-    def mutations(self, module: Module, index: int, spec: CacheSpec, *, asynchronous: bool) -> list[str]:
-        """Return a method per mutation of a cache helper, taking its operation's parameters, body, and options."""
-        resources = self.resources
-        methods: list[str] = []
-        call = module.local(_CACHE, "amutate" if asynchronous else "mutate")
-        wait = "await " if asynchronous else ""
-        for position, item in enumerate(spec.mutations):
-            operation = replace(item.operation, fields=())
-            arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
-            body = resources.requests(module, operation, asynchronous=asynchronous)[1]
-            options = _Argument("options", f"{module.namespace.name('..options', 'RequestOptions')} | None", "none")
-            passed = [
-                ("", "self._core"),
-                ("", f"{module.namespace.name('.', '_plans')}.MUTATION_{index}_{position}"),
-                ("", _tuple(parameter.python_name for parameter in operation.parameters)),
-                *((f"{argument.name}=", argument.name) for argument in body),
-                ("options=", "options"),
-            ]
-            route = f"{operation.contract.method.upper()} {operation.contract.path}"
-            signature = tuple(argument.parameter(module) for argument in (*arguments, *body, options))
-            methods.append(
-                "\n".join((
-                    _signature(
-                        item.name, signature, self.response(module, operation), asynchronous=asynchronous, stub=False
-                    ),
-                    f'        """Call {route}, then remove the cached entries its tags name once it succeeds."""',
-                    f"        return {wait}{layout(_call(call, passed), 8, 7 + len(wait), WIDTH)}",
-                ))
-            )
-        return methods
 
     def handle(self, module: Module, index: int, spec: PollingSpec, name: str, *, asynchronous: bool) -> str:
         """Return a polling helper's own handle class, which also cancels its operation remotely."""
@@ -3400,7 +3254,7 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ```json
 {json.dumps(metadata, indent=2, ensure_ascii=True)}
 ```
-{self.helper_readme()}{self._circuit_readme()}{self._compression_readme()}"""
+{self.helper_readme()}{self._compression_readme()}"""
 
     def _compression_readme(self) -> str:
         """List the operations that accept compressed request bodies, or nothing when none declares a coding."""
@@ -3409,8 +3263,8 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
         return f"""
 ## Request compression
 
-These operations accept the request content codings listed; `compression="gzip"` in `ClientOptions`, a view, or a
-call's `RequestOptions` compresses their bodies. See the runtime reference.
+These operations declare request compression. Their bodies are gzipped by default;
+`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
 
 ```json
 {json.dumps(accepted, indent=2, ensure_ascii=True)}
@@ -3424,25 +3278,6 @@ call's `RequestOptions` compresses their bodies. See the runtime reference.
             for spec in self.plan.operations
             if spec.accepted_content_encodings
         }
-
-    def _circuit_readme(self) -> str:
-        """Describe the package's circuit groups, or nothing when no operation declares one."""
-        if not (groups := circuit_groups(self.plan)):
-            return ""
-        members = {
-            group: [f"{spec.resource}.{spec.name}" for spec in self.plan.operations if spec.circuit_group == group]
-            for group in groups
-        }
-        return f"""
-## Circuit groups
-
-Calls of these operations pass a circuit of their group when `ProtocolClientOptions(circuit=CircuitBreakerOptions(
-enabled=True))` enables the breaker; `Client.reset_circuit(group, origin=...)` closes one. See the runtime reference.
-
-```json
-{json.dumps(members, indent=2, ensure_ascii=True)}
-```
-"""
 
     def helper_readme(self) -> str:
         """Describe the package's protocol helpers, or nothing when it has none."""
@@ -3517,7 +3352,7 @@ holds. `close()` or `aclose()` stops only local uploading. See the runtime refer
         caching = (
             """
 A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry; `invalidate` and its `mutations` remove tagged entries. See the runtime
+sends the request, revalidating a stale entry. See the runtime
 reference for their limits."""
             if "cache" in kinds
             else ""
@@ -3723,7 +3558,7 @@ A limiter permit is acquired before opening a body and released when its respons
 bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
-{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._circuit_runtime()}{self._compression_runtime()}"""  # noqa: S608
+{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""  # noqa: S608
 
     def _compression_runtime(self) -> str:
         """Describe request compression, or that no operation of the package accepts a request coding."""
@@ -3731,74 +3566,26 @@ wait for retained cleanup; it does not authorize another send or restore an expi
             return """
 ## Request compression
 
-No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
-off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.
+No operation of this package declares request compression, so every request is sent without SDK compression.
 """
         return """
 ## Request compression
 
-`compression: str | None` in `ClientOptions`, `RequestOptions` views, and calls selects a request content coding;
-`gzip` is the only coding with an encoder, `UNSET` inherits, and `None` turns compression off. Another value raises
-`ConfigurationError` when the options are made. A selected coding applies to a call only when it sends a body,
-including empty bytes and JSON null, and its operation accepts the coding; then the body is sent gzip-compressed
-(level 6, no file name, zero modification time) with `Content-Encoding: gzip`, and a Content-Encoding header the call
-already sends raises `ConfigurationError`. A coding the client or a view selects turns off for other calls, including
-`request_raw`; one a call selects raises `ConfigurationError` before sending for a call it cannot apply to.
+`ClientOptions(compression="gzip")` is the default. The SDK gzips only bodies of operations that declare gzip;
+`ClientOptions(compression=None)` disables it. Views and calls inherit the client setting. Undeclared operations,
+bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
+when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
 Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
 multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
 uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
 accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
 
-A protocol helper given a coding in its `options` checks once, before sending anything, that one of its requests can
-apply it, or raises `ConfigurationError(field_path=('options', 'compression'),
-condition='no_applicable_helper_child')`; then only its requests with a body whose operation accepts the coding are
-compressed, and its bodyless polls and followed URLs are not. Token requests are never compressed.
+Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
+followed URLs stay uncompressed. Token requests are never compressed.
 
-Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Queue
-`drain` refuses an explicit coding with `no_applicable_helper_child` before claiming entries or sending. Entries
-save no coding; inherited client or view codings apply only to declared queued operations with bodies.
-"""
-
-    def _circuit_runtime(self) -> str:
-        """Describe circuit breaking, or nothing for a package whose operations declare no circuit group."""
-        if not circuit_groups(self.plan):
-            return ""
-        return f"""
-## Circuit breakers
-
-Import `CircuitBreakerOptions` and the circuit store types from `{self.config.package}.protocols`. A circuit breaker
-runs only for operations with a circuit group and only when `ProtocolClientOptions(circuit=CircuitBreakerOptions(
-enabled=True))` is passed in `ClientOptions(protocols=...)`; otherwise calls take no circuit step.
-
-| Setting | Default |
-|---|---|
-| `enabled` | False |
-| `failure_threshold` | 5 consecutive failed calls |
-| `cooldown` | 30 seconds |
-| half-open probes | 1 at a time, fixed |
-| `circuit_store` | None: a memory store of this client, shared with its views |
-
-Each call of a grouped operation passes the circuit of its group, the origin of its URL, and the client's
-`ProtocolSecurityContext.credential_partition` (`anonymous` without a context) once its request is encoded and before
-any credential, limiter permit, or send. An authenticated call needs a security context, and a view or call with
-other auth than the client's is refused, each with `ProtocolConfigurationError` before sending. An open circuit
-raises `CircuitOpenError` with its `key` and the monotonic `retry_at` of its next admission; the call consumes no
-send, attempt, or token exchange, and is never retried.
-
-A call's outcome is recorded once, after its redirects and retries. Connect, read, and write transport failures and a
-final 500, 502, 503, or 504 response are failures; any other response is a success, which resets the count. Pool
-timeouts, 429, cancellation, deadlines, auth and token failures, and configuration, encoding, decoding, and validation
-errors leave the circuit unchanged. A streaming call completes when its response is handed over. The threshold of
-consecutive failures opens the circuit for the cooldown; then one call probes it, closing it on success and reopening
-it on failure, while other calls raise `CircuitOpenError`; a cancelled or neutral probe frees the slot.
-
-`circuit_store` borrows a `CircuitStore` (an `AsyncCircuitStore` for `AsyncClient`) and never closes it; clients
-sharing one store share circuits with the same key. Its methods receive `now` from the monotonic source of the
-client's clock, `ClientOptions(clock=...)`, which is process local. A store failure raises `CircuitStoreError`, or
-becomes a secondary error of a call that already failed; no request is resent because of it.
-`reset_circuit(group, origin=Origin(...))` closes one circuit of this client's partition without sending anything,
-and permits admitted before it cannot change the state after it.
+Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Entries save
+no coding; at drain, the client setting applies to declared queued operations with bodies.
 """
 
     def helper_runtime(self) -> str:
@@ -4045,7 +3832,7 @@ another kind's options, fail construction. The session types are imported from:
 {self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""
 
     def cache_runtime(self) -> str:
-        """Describe cache helpers' stores, keys, freshness, revalidation, and invalidation, or nothing without them."""
+        """Describe cache helpers' stores, keys, freshness, and revalidation, or nothing without them."""
         if not any(isinstance(spec, CacheSpec) for spec in self.helpers):
             return ""
         return f"""
@@ -4053,7 +3840,7 @@ another kind's options, fail construction. The session types are imported from:
 
 A cache helper keeps entries only in the store `ProtocolClientOptions.cache_stores` lends it under its name, a
 `MemoryCacheStore` or `AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the
-client's mode; a client without one refuses `fetch`, `invalidate`, and the mutations with
+client's mode; a client without one refuses `fetch` with
 `ProtocolConfigurationError` before sending. The client never creates or closes a store. The types are imported from
 `{self.config.package}.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
 stores.
@@ -4074,9 +3861,11 @@ cannot see, such as a client certificate, need a partition of their own. Freshne
 only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
 `CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
 `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
-removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request. A mutation removes
-the entries its tags name only after it succeeds; a store failure then raises `CacheInvalidationError`, whose
-`require_result()` returns the mutation's result.
+removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request.
+The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
+Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
+Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.
+Concurrent custom-store writes use last-completing replacement.
 """
 
     @staticmethod
@@ -4159,10 +3948,9 @@ stream open raises `CleanupError` once its cleanup timeout passes.
 ## WebSocket sessions
 
 A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
-the call's retries, redirects, authentication, limiter, and hooks: a 101 hands the connection to the session, and any
-other response raises the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the
-call's options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are
-imported from:
+initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises
+the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the call's options, then
+`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
 
 - `{package}.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,
   `Message`, `PingReceipt`, and the connector contracts `WebSocketConnector`, `AsyncWebSocketConnector`,
@@ -4190,8 +3978,12 @@ raises `ProtocolSizeError` after the connection closed with 1009. A receive that
 raises `PhaseTimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
 reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises `PhaseTimeoutError`
 and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`, closes the session,
-and is never sent again. Sessions never reconnect, so `WSOptions(reconnect=True)` raises `ProtocolConfigurationError`,
-as does `WSOptions(compression="deflate")` for a helper that does not permit compression.
+and is never sent again. Messages are written whole: in a `WebSocketSession`, the send timeout is checked before the
+write starts, and a started write runs until it completes or the connection fails. Sessions never reconnect.
+`WSOptions(compression="deflate")` raises `ProtocolConfigurationError` for a helper that does not permit compression.
+Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or invalidated
+by a refused upgrade. Only a transport failure proven `NOT_SENT` before handover may use the call's existing retry
+policy.
 
 `ProtocolClientOptions(websocket_connector=...)` borrows a connector, which is never closed; without one, the client
 opens its connections with the `websockets` library, a dependency of this package. `websocket_transport` sets the TLS

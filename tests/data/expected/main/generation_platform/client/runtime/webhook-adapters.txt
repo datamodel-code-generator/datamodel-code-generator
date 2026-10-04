@@ -4,72 +4,72 @@
   import <package>.webhooks.unsigned.message loads ['webhook_events']
     decode_unverified hints=['options', 'raw_body', 'return']
   import <package>.webhooks.stripe.event loads ['webhook_events', 'adapters']
-    verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return', 'verifier']
-    verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return', 'verifier']
+    verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return', 'verifier']
+    verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return', 'verifier']
   import <package>.webhooks.mapped.event loads ['webhook_events', 'adapters', 'verification', 'signatures', 'webhook_keys', 'hmac']
-    verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
-    verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
-  printf '1614265330.{"type": "invoice.paid", "id": "in_1", "amount": 1200}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
-  printf '1614265330.{"type": "customer.created", "id": "cus_1", "email": "a@example.com"}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
-  printf '1614265330.{"type": "invoice.updated", "id": "in_1", "amount": 1500}' | openssl dgst -sha256 -hmac whsec_retired_secret, then printf '1614265330.{"type": "invoice.updated", "id": "in_1", "amount": 1500}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
+    verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return']
+    verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return']
+  printf '1614265330.{"type": "invoice.paid", "id": "in_1", "amount": 1200}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
+  printf '1614265330.{"type": "customer.created", "id": "cus_1", "email": "a@example.com"}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
+  printf '1614265330.{"type": "invoice.updated", "id": "in_1", "amount": 1500}' | openssl dgst -sha256 -hmac whsec_retired_secret, then printf '1614265330.{"type": "invoice.updated", "id": "in_1", "amount": 1500}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   printf '1614265330.{"type": "invoice.voided", "id": "in_2", "amount": 1}' | openssl dgst -sha256 -hmac whsec_adapter_secret = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type')] protocol_data_error
-  Standard Webhooks specification example, also in Svix's 'Verifying Webhooks Manually' documentation = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
-  printf '{"test": 5}' | openssl dgst -sha256 -hmac "It's a Secret to Everybody" = Message Message(test=5) delivery_id=None timestamp=None matched_key_id='active' duplicate=False
+  Standard Webhooks specification example, also in Svix's 'Verifying Webhooks Manually' documentation = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
+  printf '{"test": 5}' | openssl dgst -sha256 -hmac "It's a Secret to Everybody" = Message Message(test=5) delivery_id=None timestamp=None matched_key_id='active'
   GitHub 'Validating webhook deliveries', the test values for verifying an implementation, not JSON = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
-  printf '{"type": "invoice.paid", "id": "in_1", "amount": 1200}' | openssl dgst -sha256 -hmac mapped-secret = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=None matched_key_id='mapped' duplicate=False
-  printf '{"type": "customer.created", "id": "cus_1", "email": "a@example.com"}' | openssl dgst -sha256 -hmac mapped-secret = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=None matched_key_id='mapped' duplicate=False
+  printf '{"type": "invoice.paid", "id": "in_1", "amount": 1200}' | openssl dgst -sha256 -hmac mapped-secret = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=None matched_key_id='mapped'
+  printf '{"type": "customer.created", "id": "cus_1", "email": "a@example.com"}' | openssl dgst -sha256 -hmac mapped-secret = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=None matched_key_id='mapped'
   printf '{"type": "invoice.voided", "id": "in_2", "amount": 1}' | openssl dgst -sha256 -hmac mapped-secret = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type')] protocol_data_error
   one changed body byte = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
   changed timestamp = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
   no signature header = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
   empty key set = WebhookVerificationError: WebhookVerificationError(condition='missing_key') [condition='missing_key'] webhook_verification_error
-  rotation tries the retired key first = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2025' duplicate=False
-  rotation with the active key only = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
+  rotation tries the retired key first = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2025'
+  rotation with the active key only = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   retired key only = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
   Standard Webhooks changed delivery id = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
-  300 seconds past = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
+  300 seconds past = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   past bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
-  30 seconds future = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
+  30 seconds future = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   future bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
   zero past tolerance exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
-  offset clock = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
-  verifier timestamp with an offset = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False
-  control: a kept contract decodes the body = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error claims 0 warnings []
-  mapping result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  None result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  missing timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  missing delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  empty delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  integer delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  bytes delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  text timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  date timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  naive timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  empty matched key id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  integer matched key id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  coroutine result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  undeclared timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  undeclared delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  control: no facts declared or returned = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error claims 0 warnings []
-  result subclass changing between reads = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  result spoofing its class = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  str subclass delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  empty str subclass claiming to be nonempty = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  matched key id whose truth test raises = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
-  +09:00 timestamp = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_1', '2021-02-25T15:07:40+00:00')]
-  +09:00 timestamp async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_1', '2021-02-25T15:07:40+00:00')]
-  offset changing from +09:00 to UTC = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_1', '2021-02-25T15:07:40+00:00')] offset reads=1
-  offset changing from +09:00 to UTC async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_1', '2021-02-25T15:07:40+00:00')] offset reads=1
-  offset changing from +09:00 to naive = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_1', '2021-02-25T15:07:40+00:00')] offset reads=1
-  offset changing from +09:00 to naive async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_1', '2021-02-25T15:07:40+00:00')] offset reads=1
-  naive offset = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
-  naive offset async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
-  offset raising = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
-  offset raising async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
-  offset beyond a day = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
-  offset beyond a day async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
-  datetime subclass overriding its offset = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims []
-  datetime subclass overriding its offset async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims []
+  offset clock = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
+  verifier timestamp with an offset = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
+  control: a kept contract decodes the body = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error warnings []
+  mapping result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  None result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  missing timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  missing delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  empty delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  integer delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  bytes delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  text timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  date timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  naive timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  empty matched key id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  integer matched key id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  coroutine result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  undeclared timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  undeclared delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  control: no facts declared or returned = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error warnings []
+  result subclass changing between reads = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  result spoofing its class = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  str subclass delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  empty str subclass claiming to be nonempty = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  matched key id whose truth test raises = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  +09:00 timestamp = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
+  +09:00 timestamp async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
+  offset changing from +09:00 to UTC = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
+  offset changing from +09:00 to UTC async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
+  offset changing from +09:00 to naive = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
+  offset changing from +09:00 to naive async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
+  naive offset = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  naive offset async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  offset raising = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  offset raising async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  offset beyond a day = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  offset beyond a day async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  datetime subclass overriding its offset = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None
+  datetime subclass overriding its offset async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None
   verification error propagated=True calls=1 cause=None
   verification error async propagated=True calls=1 cause=None
   programmer error propagated=True calls=1 cause=None
@@ -77,10 +77,10 @@
   cancellation propagated=True calls=1 cause=None
   cancellation async propagated=True calls=1 cause=None
   call: calls=1 body is given=True headers=(('Content-Type', 'application/json'), ('Stripe-Signature', 't=1614265330,v1=dc518e47589d1bfd353029d070e8cd3f2896fdfafd829e64996fcd51b6c6de7b')) keys are given=True now is given=True
-  limits=ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=2, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=60)
+  limits=ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=2, past_tolerance=300.0, future_tolerance=30.0)
   call async: calls=1 body is given=True headers=(('Content-Type', 'application/json'), ('Stripe-Signature', 't=1614265330,v1=dc518e47589d1bfd353029d070e8cd3f2896fdfafd829e64996fcd51b6c6de7b')) keys are given=True now is given=True
-  limits async=ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=2, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=60)
-  opaque keys = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False
+  limits async=ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=2, past_tolerance=300.0, future_tolerance=30.0)
+  opaque keys = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
   opaque key reads=[] keys passed are given=True
   body over limit = ProtocolSizeError: ProtocolSizeError(kind='body', limit=53, observed=54) [kind='body', unit='bytes', limit=53] protocol_size_error
     verifier calls in both modes=0
@@ -88,7 +88,7 @@
     verifier calls in both modes=0
   nine keys = ProtocolSizeError: ProtocolSizeError(kind='keys', limit=8, observed=9) [kind='keys', unit='items', limit=8] protocol_size_error
     verifier calls in both modes=0
-  nine keys allowed = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='key-0' duplicate=False
+  nine keys allowed = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='key-0'
     verifier calls in both modes=2
   two signatures over the adapter's limit = ProtocolSizeError: ProtocolSizeError(kind='signatures', limit=1, observed=2) [kind='signatures', unit='items', limit=1] protocol_size_error
     verifier calls in both modes=2
@@ -106,20 +106,6 @@
     verifier calls in both modes=0
   no verify ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('verifier',), condition='wrong_capability'] protocol_configuration_error
   verify not callable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('verifier',), condition='wrong_capability'] protocol_configuration_error
-  synchronous store in verify_async ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('replay_store',), condition='wrong_capability'] protocol_configuration_error
-  asyncio store in verify ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('replay_store',), condition='wrong_capability'] protocol_configuration_error
-  claimed = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_p5jXN8AQM9LWM0D4loKWxJek', '2021-02-25T15:07:40+00:00')]
-  claimed async = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_p5jXN8AQM9LWM0D4loKWxJek', '2021-02-25T15:07:40+00:00')]
-  duplicate = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=True claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_p5jXN8AQM9LWM0D4loKWxJek', '2021-02-25T15:07:40+00:00')]
-  duplicate async = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=True claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_p5jXN8AQM9LWM0D4loKWxJek', '2021-02-25T15:07:40+00:00')]
-  claimed with tolerances = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_p5jXN8AQM9LWM0D4loKWxJek', '2021-02-25T15:02:13+00:00')]
-  claimed with tolerances async = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False claims [('bc3d3f3f0b60714c418dd2ad10d3bd287ed0c60d7a842d9e07db3b47510b10d9', 'msg_p5jXN8AQM9LWM0D4loKWxJek', '2021-02-25T15:02:13+00:00')]
-  no delivery id to claim = WebhookVerificationError: WebhookVerificationError(condition='missing_delivery_id') [condition='missing_delivery_id'] webhook_verification_error claims []
-  no delivery id to claim async = WebhookVerificationError: WebhookVerificationError(condition='missing_delivery_id') [condition='missing_delivery_id'] webhook_verification_error claims []
-  no facts to claim = WebhookVerificationError: WebhookVerificationError(condition='missing_delivery_id') [condition='missing_delivery_id'] webhook_verification_error claims []
-  no facts to claim async = WebhookVerificationError: WebhookVerificationError(condition='missing_delivery_id') [condition='missing_delivery_id'] webhook_verification_error claims []
-  memory first = Message Message(test=1) delivery_id='msg_memory' timestamp=3000-01-01T00:00:00+00:00 matched_key_id='scripted' duplicate=False
-  memory second = Message Message(test=1) delivery_id='msg_memory' timestamp=3000-01-01T00:00:00+00:00 matched_key_id='scripted' duplicate=True
   marker event ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type')] protocol_data_error context=None
   marker JSON ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error context=None
   marker result ! AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None

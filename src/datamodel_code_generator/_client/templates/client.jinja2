@@ -69,15 +69,7 @@ class {{ name }}:
 
         return {{ protocols }}(self._core)
 {%- endif %}
-{%- if circuit_groups %}
 
-    {{ coroutine }}def reset_circuit(self, group: {{ circuit_groups }}, *, origin: Origin) -> None:
-        """Close a circuit group's circuit at an origin for this client's credential partition, sending nothing.
-
-        Calls admitted before the reset cannot reopen it; without an enabled breaker this does nothing.
-        """
-        {{ wait }}self._core.reset_circuit(group, origin)
-{%- endif %}
 
 {{ lifecycle }}
 

@@ -41,18 +41,17 @@
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['users.profile', 'users.dated', 'users.listing', 'carts.current', 'secure.profile'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper users.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/users.profile e1b2b99301d6d7fd06453703ecb3a6e8893d430d51ee7c5e9ac3d3b6d285db01
-  helper users.dated cache enabled True /inputs/target_config/protocol_metadata/helpers/users.dated 006901e61e15aff18e3bed8bf6509abf5d7b538a90084911bcdfd74432fe44b8
-  helper users.listing cache enabled True /inputs/target_config/protocol_metadata/helpers/users.listing 014c2e93fe9492d1710685952cddcb5802b3f1d7069226969bf86bcea831d59e
-  helper carts.current cache enabled True /inputs/target_config/protocol_metadata/helpers/carts.current 7778d2c01e9c12e85513b0d3c82ac92f43c7c6e0ef75964df7f479b3334cf379
-  helper secure.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/secure.profile 4864371aee8c7d347ee597612c3baaa69d489935f0fc7c8b8a945bbe751ba529
+  helper users.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/users.profile 6342e1625c9dc684b11fc028b40ec15d40ac70d846f75240d445db121b033f81
+  helper users.dated cache enabled True /inputs/target_config/protocol_metadata/helpers/users.dated b6f09f796547c1de7a8327348fa39fe02d769b59e9c2319a056726f939c73096
+  helper users.listing cache enabled True /inputs/target_config/protocol_metadata/helpers/users.listing 653a69dc4b44bae944acc8927e6d95ae44d937a71c6cea5341bacc8646fcf7b9
+  helper carts.current cache enabled True /inputs/target_config/protocol_metadata/helpers/carts.current 1522b44dac0fe179d5a8b26ad1cbe787dddbcad5e681c438ff03f1bd402fdf90
+  helper secure.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/secure.profile 9faeb29d8e8f3cd4ef4ccbc4539678d6dc217318775e602b17a51b7b0f159e42
   {
     "helpers": {
       "carts.current": {
         "authenticated": true,
         "enabled": true,
         "kind": "cache",
-        "mutations": {},
         "operation": {
           "document": "/inputs/root",
           "pointer": "/paths/~1carts~1current/get"
@@ -60,7 +59,6 @@
         "statuses": [
           200
         ],
-        "tags": [],
         "validator": "etag",
         "vary_allowlist": []
       },
@@ -68,7 +66,6 @@
         "authenticated": true,
         "enabled": true,
         "kind": "cache",
-        "mutations": {},
         "operation": {
           "document": "/inputs/root",
           "pointer": "/paths/~1secure~1users~1{userId}/get"
@@ -76,7 +73,6 @@
         "statuses": [
           200
         ],
-        "tags": [],
         "validator": "etag",
         "vary_allowlist": [
           "X-Signature"
@@ -86,7 +82,6 @@
         "authenticated": false,
         "enabled": true,
         "kind": "cache",
-        "mutations": {},
         "operation": {
           "document": "/inputs/root",
           "pointer": "/paths/~1users~1{userId}/get"
@@ -95,7 +90,6 @@
           200,
           203
         ],
-        "tags": [],
         "validator": "last_modified",
         "vary_allowlist": []
       },
@@ -103,26 +97,12 @@
         "authenticated": false,
         "enabled": true,
         "kind": "cache",
-        "mutations": {
-          "create": {
-            "invalidate_tags": [
-              "users"
-            ],
-            "operation": {
-              "document": "/inputs/root",
-              "pointer": "/paths/~1users/post"
-            }
-          }
-        },
         "operation": {
           "document": "/inputs/root",
           "pointer": "/paths/~1users/get"
         },
         "statuses": [
           200
-        ],
-        "tags": [
-          "users"
         ],
         "validator": "etag",
         "vary_allowlist": [
@@ -133,37 +113,12 @@
         "authenticated": false,
         "enabled": true,
         "kind": "cache",
-        "mutations": {
-          "remove": {
-            "invalidate_tags": [
-              "user:{userId}",
-              "users"
-            ],
-            "operation": {
-              "document": "/inputs/root",
-              "pointer": "/paths/~1users~1{userId}/delete"
-            }
-          },
-          "rename": {
-            "invalidate_tags": [
-              "user:{userId}"
-            ],
-            "operation": {
-              "document": "/inputs/root",
-              "pointer": "/paths/~1users~1{userId}/patch"
-            }
-          }
-        },
         "operation": {
           "document": "/inputs/root",
           "pointer": "/paths/~1users~1{userId}/get"
         },
         "statuses": [
           200
-        ],
-        "tags": [
-          "user:{userId}",
-          "users"
         ],
         "validator": "both",
         "vary_allowlist": [
@@ -335,7 +290,7 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
 A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry; `invalidate` and its `mutations` remove tagged entries. See the runtime
+sends the request, revalidating a stale entry. See the runtime
 reference for their limits.
 
 ```json
@@ -562,7 +517,7 @@ wait for retained cleanup; it does not authorize another send or restore an expi
 
 A cache helper keeps entries only in the store `ProtocolClientOptions.cache_stores` lends it under its name, a
 `MemoryCacheStore` or `AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the
-client's mode; a client without one refuses `fetch`, `invalidate`, and the mutations with
+client's mode; a client without one refuses `fetch` with
 `ProtocolConfigurationError` before sending. The client never creates or closes a store. The types are imported from
 `client.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
 stores.
@@ -583,11 +538,12 @@ cannot see, such as a client certificate, need a partition of their own. Freshne
 only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
 `CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
 `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
-removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request. A mutation removes
-the entries its tags name only after it succeeds; a store failure then raises `CacheInvalidationError`, whose
-`require_result()` returns the mutation's result.
+removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request.
+The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
+Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
+Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.
+Concurrent custom-store writes use last-completing replacement.
 
 ## Request compression
 
-No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
-off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.
+No operation of this package declares request compression, so every request is sent without SDK compression.

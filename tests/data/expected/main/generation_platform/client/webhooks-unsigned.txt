@@ -34,12 +34,11 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['unsigned.message', 'adapted.message'] bindings 1
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper unsigned.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.message f88b98ab28be4185662b89cf4ce4dc45e1d7130f65a4394e870151ab59c9f7c8
-  helper adapted.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.message 978530345c2ecd7874bc72ed3d34df3d51a1171d8d59f0ee5210a24ba5f1a374
+  helper unsigned.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.message 456f15685833e06189ec1a9c6a8a239d6b24ca7fdea46fe9106412c83ee24b0a
+  helper adapted.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.message a345988fb6f2def4425ac2db374b39379352c84ef92c3afd6d2b5b220772d446
   {
     "helpers": {
       "adapted.message": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "document": "/inputs/root",
@@ -53,7 +52,6 @@ render pydantic_v2.BaseModel
         }
       },
       "unsigned.message": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "document": "/inputs/root",

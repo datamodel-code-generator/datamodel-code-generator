@@ -35,8 +35,6 @@ def _resources() -> tuple[SchemaResource, ...]:
                             'required': ['radius'],
                             'properties': {'radius': {'type': 'number'}},
                         },
-                        'Command': {'type': 'object', 'properties': {'command': {'type': 'string'}}},
-                        'Count': {'type': 'integer'},
                         'Delivery': {'type': 'object', 'required': ['id'], 'properties': {'id': {'type': 'string'}}},
                         'Message': {
                             'type': 'object',
@@ -92,30 +90,6 @@ def _resources() -> tuple[SchemaResource, ...]:
                     },
                 },
                 'webhooks': {
-                    'command': {
-                        'post': {
-                            'requestBody': {
-                                'content': {
-                                    'application/json': {
-                                        'schema': {
-                                            '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Command',
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    'count': {
-                        'post': {
-                            'requestBody': {
-                                'content': {
-                                    'application/json': {
-                                        'schema': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Count'},
-                                    },
-                                },
-                            },
-                        },
-                    },
                     'message': {
                         'post': {
                             'requestBody': {
@@ -155,8 +129,6 @@ def _resources() -> tuple[SchemaResource, ...]:
             }),
             roots=(
                 '/components/schemas/Circle',
-                '/components/schemas/Command',
-                '/components/schemas/Count',
                 '/components/schemas/Delivery',
                 '/components/schemas/Message',
                 '/components/schemas/Push',
@@ -166,8 +138,6 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/paths/~1subscriptions/post/callbacks/delivered/{$request.body#~1url}/post/requestBody/content/application~1json/schema',
                 '/paths/~1subscriptions/post/parameters/0/schema',
                 '/paths/~1subscriptions/post/requestBody/content/application~1json/schema',
-                '/webhooks/command/post/requestBody/content/application~1json/schema',
-                '/webhooks/count/post/requestBody/content/application~1json/schema',
                 '/webhooks/message/post/requestBody/content/application~1json/schema',
                 '/webhooks/push/post/requestBody/content/application~1json/schema',
                 '/webhooks/shape/post/requestBody/content/application~1json/schema',
@@ -291,39 +261,6 @@ def _model_4() -> ModelBinding:
 @cache
 def _model_5() -> ModelBinding:
     return ModelBinding(
-        symbol='models:Command',
-        native_kind='model',
-        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Command',
-        fields=(
-            FieldBinding(
-                field_id='models:Command.command',
-                native_name='command',
-                wire_name='command',
-                validation_key='command',
-                validation_keys=('command',),
-                required=False,
-                read_only=False,
-                write_only=False,
-                omit_none=True,
-                type=LeafNode(),
-            ),
-        ),
-    )
-
-
-@cache
-def _model_6() -> ModelBinding:
-    return ModelBinding(
-        symbol='models:Count',
-        native_kind='root',
-        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Count',
-        root=LeafNode(),
-    )
-
-
-@cache
-def _model_7() -> ModelBinding:
-    return ModelBinding(
         symbol='models:Circle',
         native_kind='model',
         schema_id='https://dcg.invalid/inputs/root#/components/schemas/Circle',
@@ -345,7 +282,7 @@ def _model_7() -> ModelBinding:
 
 
 @cache
-def _model_8() -> ModelBinding:
+def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:Shape',
         native_kind='root',
@@ -355,7 +292,7 @@ def _model_8() -> ModelBinding:
 
 
 @cache
-def _model_9() -> ModelBinding:
+def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:Square',
         native_kind='model',
@@ -544,72 +481,6 @@ def codec_4() -> PydanticModelCodec[models.Push]:
 CONTEXT_5: Final = CodecContext(
     surface='client',
     direction='request',
-    schema_id='https://dcg.invalid/inputs/root#/webhooks/command/post/requestBody/content/application~1json/schema',
-    operation_id='/webhooks/command/post',
-    media_type='application/json',
-)
-
-
-@cache
-def codec_5() -> PydanticModelCodec[models.Command]:
-    """Codec of /webhooks/command/post request_body (request application/json)."""
-    return PydanticModelCodec(
-        UseBinding(
-            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Command|ModelNode(symbol='models:Command')",
-            direction='request',
-            schema_id='https://dcg.invalid/inputs/root#/webhooks/command/post/requestBody/content/application~1json/schema',
-            operation_id='/webhooks/command/post',
-            media_type='application/json',
-            backend='pydantic_v2.BaseModel',
-            native_kind='model',
-            native_export='models:Command',
-            projection_mode='native',
-            converter_strategy='pydantic_type_adapter',
-            type=ModelNode(symbol='models:Command'),
-            models=(_model_5(),),
-        ),
-        models.Command,
-        {'models:Command': models.Command},
-        request_bundle,
-    )
-
-
-CONTEXT_6: Final = CodecContext(
-    surface='client',
-    direction='request',
-    schema_id='https://dcg.invalid/inputs/root#/webhooks/count/post/requestBody/content/application~1json/schema',
-    operation_id='/webhooks/count/post',
-    media_type='application/json',
-)
-
-
-@cache
-def codec_6() -> PydanticModelCodec[models.Count]:
-    """Codec of /webhooks/count/post request_body (request application/json)."""
-    return PydanticModelCodec(
-        UseBinding(
-            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Count|ModelNode(symbol='models:Count')",
-            direction='request',
-            schema_id='https://dcg.invalid/inputs/root#/webhooks/count/post/requestBody/content/application~1json/schema',
-            operation_id='/webhooks/count/post',
-            media_type='application/json',
-            backend='pydantic_v2.BaseModel',
-            native_kind='root',
-            native_export='models:Count',
-            projection_mode='native',
-            converter_strategy='pydantic_type_adapter',
-            type=ModelNode(symbol='models:Count'),
-            models=(_model_6(),),
-        ),
-        models.Count,
-        {'models:Count': models.Count},
-        request_bundle,
-    )
-
-
-CONTEXT_7: Final = CodecContext(
-    surface='client',
-    direction='request',
     schema_id='https://dcg.invalid/inputs/root#/webhooks/shape/post/requestBody/content/application~1json/schema',
     operation_id='/webhooks/shape/post',
     media_type='application/json',
@@ -617,7 +488,7 @@ CONTEXT_7: Final = CodecContext(
 
 
 @cache
-def codec_7() -> PydanticModelCodec[models.Shape]:
+def codec_5() -> PydanticModelCodec[models.Shape]:
     """Codec of /webhooks/shape/post request_body (request application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -632,7 +503,7 @@ def codec_7() -> PydanticModelCodec[models.Shape]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Shape'),
-            models=(_model_7(), _model_8(), _model_9()),
+            models=(_model_5(), _model_6(), _model_7()),
         ),
         models.Shape,
         {'models:Circle': models.Circle, 'models:Shape': models.Shape, 'models:Square': models.Square},

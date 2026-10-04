@@ -18,9 +18,7 @@ from ..._generated import model_bindings
 from ..._runtime.protocols.adapters import AdapterPlan, averify_adapted, verify_adapted
 from ..._runtime.protocols.webhook_events import EventDecoder, MappedEventDecoder
 from ..._runtime.protocols.webhooks import (
-    AsyncReplayStore,
     KeySet,
-    ReplayStore,
     VerifiedWebhook,
     Verifier,
     WebhookOptions,
@@ -34,7 +32,6 @@ K = TypeVar("K")
 
 _PLAN: Final[AdapterPlan[_dcg_type_0 | _dcg_type_1]] = AdapterPlan(
     helper_id='stripe.event',
-    fingerprint='0434b67d911b627b09150cfad4c24254f12c1b0214310736788cb479db821f5f',
     timestamp=True,
     delivery_id=False,
     event=MappedEventDecoder(
@@ -57,7 +54,6 @@ _PLAN: Final[AdapterPlan[_dcg_type_0 | _dcg_type_1]] = AdapterPlan(
             ),
         },
     ),
-    duplicates='report',
 )
 
 
@@ -68,23 +64,16 @@ def verify(
     *,
     verifier: Verifier[K],
     now: datetime,
-    replay_store: ReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0 | _dcg_type_1]:
-    """Verify a delivery with verifier and decode its event, claiming it in a store.
+    """Verify a delivery with verifier and decode its event.
 
     The verifier is called once, synchronously in both functions, and must authenticate
     the whole raw body and every fact it returns; a result that is not a
     VerifiedSignature, lacks a fact this helper requires, returns one it does not
     declare, or has a naive timestamp raises AdapterContractError before decoding.
-    Deliveries outside the timestamp window are rejected. The window closes at the
-    timestamp plus past_tolerance, while a replay store keeps a claim until the
-    timestamp plus past_tolerance and future_tolerance. Duplicates are detected only
-    until the claim expires. The claim is made after decoding, before your code
-    processes the event: if processing then fails, a retried delivery is a duplicate, or
-    rejected under duplicates: reject, until the claim expires, so make processing
-    durable or idempotent before acknowledging, or use a store whose claims you can
-    release. Without a replay store, duplicate=False does not mean the delivery is new.
+    Deliveries outside the timestamp window are rejected. Verification retains no
+    delivery state; deduplicate in your application using delivery_id when present.
     """
     return verify_adapted(
         _PLAN,
@@ -93,7 +82,6 @@ def verify(
         keys,
         verifier=verifier,
         now=now,
-        replay_store=replay_store,
         options=options,
     )
 
@@ -105,23 +93,16 @@ async def verify_async(
     *,
     verifier: Verifier[K],
     now: datetime,
-    replay_store: AsyncReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0 | _dcg_type_1]:
-    """Verify a delivery with verifier and decode its event, claiming it in an asyncio store.
+    """Verify a delivery with verifier and decode its event.
 
     The verifier is called once, synchronously in both functions, and must authenticate
     the whole raw body and every fact it returns; a result that is not a
     VerifiedSignature, lacks a fact this helper requires, returns one it does not
     declare, or has a naive timestamp raises AdapterContractError before decoding.
-    Deliveries outside the timestamp window are rejected. The window closes at the
-    timestamp plus past_tolerance, while a replay store keeps a claim until the
-    timestamp plus past_tolerance and future_tolerance. Duplicates are detected only
-    until the claim expires. The claim is made after decoding, before your code
-    processes the event: if processing then fails, a retried delivery is a duplicate, or
-    rejected under duplicates: reject, until the claim expires, so make processing
-    durable or idempotent before acknowledging, or use a store whose claims you can
-    release. Without a replay store, duplicate=False does not mean the delivery is new.
+    Deliveries outside the timestamp window are rejected. Verification retains no
+    delivery state; deduplicate in your application using delivery_id when present.
     """
     return await averify_adapted(
         _PLAN,
@@ -130,6 +111,5 @@ async def verify_async(
         keys,
         verifier=verifier,
         now=now,
-        replay_store=replay_store,
         options=options,
     )
