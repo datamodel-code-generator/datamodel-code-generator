@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 import httpx2
 
 from tests.data.python.client_queues import _AsyncStore, _Static, _Store, _Time
-from tests.data.python.client_runtime import Exchange, raw_response, run
+from tests.data.python.client_runtime import Exchange, argument, raw_response, run
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -130,7 +130,6 @@ async def _mode(package: ModuleType, lines: list[str], asynchronous: bool) -> No
     public = import_module(f"{package.__name__}.protocols")
     options = import_module(f"{package.__name__}.options")
     auth = import_module(f"{package.__name__}.auth")
-    codecs = import_module(f"{package.__name__}.types.cases")
     native_type = package.AsyncClient if asynchronous else package.Client
     lines.append("async" if asynchronous else "sync")
     clock, exchange = _Time(), Exchange([])
@@ -176,9 +175,8 @@ async def _mode(package: ModuleType, lines: list[str], asynchronous: bool) -> No
                 )
             )
         )
-        title = "".join(part.title() for part in operation.split("_"))
-        codec = getattr(codecs, f"Get{title}RequestCodecs").parameter(location=location, name=name)
-        argument = codec.from_wire(control["value"])
+        operation_id = "get" + "".join(part.title() for part in operation.split("_"))
+        given = argument(package, operation_id, location, name, control["value"])
         argument_name = name.lower().replace("-", "_")
         for restored in (False, True) if control["refused"] or control.get("restore") else (False,):
             store = _Store(public)
@@ -194,7 +192,7 @@ async def _mode(package: ModuleType, lines: list[str], asynchronous: bool) -> No
                         else control["value"]
                     )
                     seed = (
-                        {argument_name: codec.from_wire(safe)}
+                        {argument_name: argument(package, operation_id, location, name, safe)}
                         if isinstance(safe, dict) and not control.get("seed_empty")
                         else {}
                     )
@@ -212,7 +210,7 @@ async def _mode(package: ModuleType, lines: list[str], asynchronous: bool) -> No
                     await _value(queue.drain())
                     status = (await _value(queue.inspect(receipt.entry_id))).state
                 else:
-                    receipt = await _value(getattr(queue.operations, operation).enqueue(**{argument_name: argument}))
+                    receipt = await _value(getattr(queue.operations, operation).enqueue(**{argument_name: given}))
                     exchange.respond(raw_response(204))
                     await _value(queue.drain())
                     status = (await _value(queue.inspect(receipt.entry_id))).state

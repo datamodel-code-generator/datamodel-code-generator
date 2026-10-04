@@ -1,9 +1,9 @@
 # queue-order pydantic_v2.BaseModel
 sync
-  deep-reverse saved={"zulu":"tea","alpha":"cake"}
+  deep-reverse saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
     replay=succeeded/succeeded providers=1 sends=1
-  > GET https://api.example.com/deep?patch=zulu&patch=alpha&filter%5Bzulu%5D=tea&filter%5Balpha%5D=cake
+  > GET https://api.example.com/deep?patch=zulu&patch=alpha&filter%5Balpha%5D=cake&filter%5Bzulu%5D=tea
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
   deep-alphabetical saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
@@ -15,10 +15,10 @@ sync
     replay=succeeded/succeeded providers=1 sends=1
   > GET https://api.example.com/deep?patch=zulu&patch=alpha&filter%5Bomega%5D=tea&filter%5Bbeta%5D=cake
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
-  form-reverse saved={"zulu":"tea","alpha":"cake"}
+  form-reverse saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
     replay=succeeded/succeeded providers=1 sends=1
-  > GET https://api.example.com/form?patch=zulu&patch=alpha&zulu=tea&alpha=cake
+  > GET https://api.example.com/form?patch=zulu&patch=alpha&alpha=cake&zulu=tea
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
   form-alphabetical saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
@@ -30,10 +30,10 @@ sync
     replay=succeeded/succeeded providers=1 sends=1
   > GET https://api.example.com/form?patch=zulu&patch=alpha&omega=tea&beta=cake
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
-  joined-reverse saved={"zulu":"tea","alpha":"cake"}
+  joined-reverse saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
     replay=succeeded/succeeded providers=1 sends=1
-  > GET https://api.example.com/joined?patch=zulu&patch=alpha&filter=zulu,tea,alpha,cake
+  > GET https://api.example.com/joined?patch=zulu&patch=alpha&filter=alpha,cake,zulu,tea
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
   joined-alphabetical saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
@@ -45,10 +45,10 @@ sync
     replay=succeeded/succeeded providers=1 sends=1
   > GET https://api.example.com/joined?patch=zulu&patch=alpha&filter=omega,tea,beta,cake
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
-  whole-reverse saved={"zulu":"tea","alpha":"cake"}
+  whole-reverse saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
     replay=succeeded/succeeded providers=1 sends=1
-  > GET https://api.example.com/whole?zulu=tea&alpha=cake
+  > GET https://api.example.com/whole?alpha=cake&zulu=tea
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
   whole-alphabetical saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
@@ -91,10 +91,10 @@ sync
   changed header-value: QueueBindingError providers=0 sends=0
   changed basepath: QueueBindingError providers=0 sends=0
 async
-  deep-reverse saved={"zulu":"tea","alpha":"cake"}
+  deep-reverse saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
     replay=succeeded/succeeded providers=1 sends=1
-  > GET https://api.example.com/deep?patch=zulu&patch=alpha&filter%5Bzulu%5D=tea&filter%5Balpha%5D=cake
+  > GET https://api.example.com/deep?patch=zulu&patch=alpha&filter%5Balpha%5D=cake&filter%5Bzulu%5D=tea
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
   deep-alphabetical saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
@@ -106,10 +106,10 @@ async
     replay=succeeded/succeeded providers=1 sends=1
   > GET https://api.example.com/deep?patch=zulu&patch=alpha&filter%5Bomega%5D=tea&filter%5Bbeta%5D=cake
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
-  form-reverse saved={"zulu":"tea","alpha":"cake"}
+  form-reverse saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
     replay=succeeded/succeeded providers=1 sends=1
-  > GET https://api.example.com/form?patch=zulu&patch=alpha&zulu=tea&alpha=cake
+  > GET https://api.example.com/form?patch=zulu&patch=alpha&alpha=cake&zulu=tea
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
   form-alphabetical saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
@@ -121,10 +121,10 @@ async
     replay=succeeded/succeeded providers=1 sends=1
   > GET https://api.example.com/form?patch=zulu&patch=alpha&omega=tea&beta=cake
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
-  joined-reverse saved={"zulu":"tea","alpha":"cake"}
+  joined-reverse saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
     replay=succeeded/succeeded providers=1 sends=1
-  > GET https://api.example.com/joined?patch=zulu&patch=alpha&filter=zulu,tea,alpha,cake
+  > GET https://api.example.com/joined?patch=zulu&patch=alpha&filter=alpha,cake,zulu,tea
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
   joined-alphabetical saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
@@ -136,10 +136,10 @@ async
     replay=succeeded/succeeded providers=1 sends=1
   > GET https://api.example.com/joined?patch=zulu&patch=alpha&filter=omega,tea,beta,cake
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
-  whole-reverse saved={"zulu":"tea","alpha":"cake"}
+  whole-reverse saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
     replay=succeeded/succeeded providers=1 sends=1
-  > GET https://api.example.com/whole?zulu=tea&alpha=cake
+  > GET https://api.example.com/whole?alpha=cake&zulu=tea
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
   whole-alphabetical saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0

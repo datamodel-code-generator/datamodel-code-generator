@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import importlib
 from functools import partial
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
 from tests.data.python.client_pagination import Harness, adrained, afetched, drained, fetched, users
-from tests.data.python.client_runtime import Exchange, json_response, record, run
+from tests.data.python.client_runtime import Exchange, argument, json_response, record, request_body, run
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -31,8 +30,7 @@ def _found(*ids: str, **members: object) -> Callable[[httpx2.Request], httpx2.Re
 
 def _search_body(harness: Harness, wire: object) -> object:
     """Return the search request body of a wire value, as its body codec builds it."""
-    types = importlib.import_module(f"{harness.package.__name__}.types.searches")
-    return types.SearchRequestCodecs.body().from_wire(wire)
+    return request_body(harness.package, "search", None, wire)
 
 
 def pagination_targets(package: ModuleType, lines: list[str]) -> None:
@@ -53,7 +51,7 @@ def _parameters(harness: Harness, api: Any, exchange: Exchange, lines: list[str]
     helpers = api.protocols.users
     exchange.respond(users("1", cursor="a"), users("2", cursor="b"), users("3"))
     drained(lines, "header cursor", helpers.by_header.iterate())
-    start = harness.argument("users", "ListUsers", "header", "X-Cursor", "start")
+    start = harness.argument("listUsers", "header", "X-Cursor", "start")
     exchange.respond(users("1", cursor="a"), users("2"))
     drained(lines, "header cursor over the caller's", helpers.by_header.iterate(x_cursor=start))
 
@@ -88,7 +86,7 @@ def _overrides(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
 def _paths(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Write the cursor to a path parameter, refusing a dot segment before the next page is sent."""
     helper = api.protocols.folders.all
-    folder = harness.argument("folders", "ListFolder", "path", "folder", "f1")
+    folder = harness.argument("listFolder", "path", "folder", "f1")
     exchange.respond(users("1", cursor="f2"), users("2"))
     drained(lines, "path cursor", helper.iterate(folder=folder))
     for segment in (".", ".."):
@@ -99,7 +97,7 @@ def _paths(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
 def _bindings(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Carry the first page's header, the last page's status and headers, and a literal into the next requests."""
     helper = api.protocols.users.bound
-    tags = harness.argument("users", "ListUsers", "query", "tags", ["mine"])
+    tags = harness.argument("listUsers", "query", "tags", ["mine"])
     exchange.respond(
         _tagged("1", cursor="a", headers=[("X-Snapshot", "s1"), ("X-Tag", "t1"), ("X-Tag", "t2")]),
         _tagged("2", cursor="b", headers=[("X-Snapshot", "s2"), ("X-Tag", "t3")]),
@@ -166,20 +164,19 @@ async def _async_targets(harness: Harness, lines: list[str]) -> None:
 
 _FIRST_PAGES: Final = (("labels", ""), ("reserved", "%2e"), ("files", "."))
 _PATH_CURSORS: Final = (
-    ("reserved", "ListReserved", {"name": "r1"}, ("%2e", "%2E.", "%2e%2f", "a")),
-    ("labels", "ListLabels", {"name": "l1"}, ("", ".", "..", "a")),
-    ("files", "ListFiles", {"name": "f1"}, (".", "..")),
-    ("pairs", "ListPairs", {"owner": "", "name": "p1"}, (".", "..")),
-    ("pairs", "ListPairs", {"owner": "o", "name": "p1"}, (".",)),
-    ("pairs", "ListPairs", {"owner": ".", "name": "p1"}, ("", "a")),
-    ("joined", "ListJoined", {"prefix": "p", "name": "j1"}, ("", "a")),
+    ("reserved", "listReserved", {"name": "r1"}, ("%2e", "%2E.", "%2e%2f", "a")),
+    ("labels", "listLabels", {"name": "l1"}, ("", ".", "..", "a")),
+    ("files", "listFiles", {"name": "f1"}, (".", "..")),
+    ("pairs", "listPairs", {"owner": "", "name": "p1"}, (".", "..")),
+    ("pairs", "listPairs", {"owner": "o", "name": "p1"}, (".",)),
+    ("pairs", "listPairs", {"owner": ".", "name": "p1"}, ("", "a")),
+    ("joined", "listJoined", {"prefix": "p", "name": "j1"}, ("", "a")),
 )
 
 
-def path_arguments(package: ModuleType, resource: str, operation: str, values: dict[str, object]) -> dict[str, object]:
-    """Return the path arguments of wire values, as the operation's request codecs build them."""
-    codecs = getattr(importlib.import_module(f"{package.__name__}.types.{resource}"), f"{operation}RequestCodecs")
-    return {name: codecs.parameter(location="path", name=name).from_wire(value) for name, value in values.items()}
+def path_arguments(package: ModuleType, operation_id: str, values: dict[str, object]) -> dict[str, object]:
+    """Return the path arguments of wire values, as the operation builds saved ones."""
+    return {name: argument(package, operation_id, "path", name, value) for name, value in values.items()}
 
 
 def pagination_paths(package: ModuleType, lines: list[str]) -> None:
@@ -194,21 +191,21 @@ def pagination_paths(package: ModuleType, lines: list[str]) -> None:
     with exchange.client() as native, package.Client(http_client=native) as api:
         for resource, operation, values, cursors in _PATH_CURSORS:
             helper = getattr(api.protocols, resource).all
-            arguments = path_arguments(harness.package, resource, operation, values)
+            arguments = path_arguments(harness.package, operation, values)
             for cursor in cursors:
                 exchange.respond(users("1", cursor=cursor), users("2"))
                 drained(lines, f"{resource} {values} cursor {cursor!r}", helper.iterate(**arguments))
                 exchange.responders.clear()
         exchange.respond(users("1", cursor="a"), users("2", cursor="b"), users("3"))
-        owner = path_arguments(package, "pairs", "ListPairs", {"owner": "o", "name": "p1"})
+        owner = path_arguments(package, "listPairs", {"owner": "o", "name": "p1"})
         drained(lines, "pairs with the owner on three pages", api.protocols.pairs.all.iterate(**owner))
-        tags = harness.argument("tags", "ListTags", "path", "tags", ["t"])
+        tags = harness.argument("listTags", "path", "tags", ["t"])
         for tag in ("a.b", "a"):
             exchange.respond(_tagged("1", cursor="c", headers=[("X-Tag", tag)]), users("2"))
             drained(lines, f"tag header {tag!r}", api.protocols.tags.all.iterate(tags=tags))
             exchange.responders.clear()
         for resource, value in _FIRST_PAGES:
-            arguments = path_arguments(harness.package, resource, f"List{resource.title()}", {"name": value})
+            arguments = path_arguments(harness.package, f"list{resource.title()}", {"name": value})
             exchange.respond(users("1"))
             fetched(
                 lines,
@@ -216,7 +213,7 @@ def pagination_paths(package: ModuleType, lines: list[str]) -> None:
                 partial(getattr(api.protocols, resource).all.page, **arguments),
             )
             exchange.responders.clear()
-        scope = harness.argument("scopes", "ListScoped", "path", "scope", "s1")
+        scope = harness.argument("listScoped", "path", "scope", "s1")
         exchange.respond(users("1", cursor="c"), users("2"))
         drained(lines, "literal label scope", api.protocols.scopes.all.iterate(scope=scope))
     run(lambda: _async_paths(harness, lines))
@@ -227,13 +224,13 @@ async def _async_paths(harness: Harness, lines: list[str]) -> None:
     async with exchange.async_client() as native, harness.package.AsyncClient(http_client=native) as api:
         for resource, cursor in (("reserved", "%2e"), ("labels", "..")):
             exchange.respond(users("1", cursor=cursor), users("2"))
-            arguments = path_arguments(harness.package, resource, f"List{resource.title()}", {"name": "x"})
+            arguments = path_arguments(harness.package, f"list{resource.title()}", {"name": "x"})
             await adrained(
                 lines, f"async {resource} cursor {cursor!r}", getattr(api.protocols, resource).all.iterate(**arguments)
             )
             exchange.responders.clear()
         for resource, value in _FIRST_PAGES:
-            arguments = path_arguments(harness.package, resource, f"List{resource.title()}", {"name": value})
+            arguments = path_arguments(harness.package, f"list{resource.title()}", {"name": value})
             exchange.respond(users("1"))
             page = partial(getattr(api.protocols, resource).all.page, **arguments)
             await afetched(lines, f"async {resource} first page {value!r}", page)
@@ -242,8 +239,7 @@ async def _async_paths(harness: Harness, lines: list[str]) -> None:
 
 def pagination_querystring(package: ModuleType, lines: list[str]) -> None:
     """Write the cursor and bindings into declared properties of a querystring encoded once, and end normally."""
-    types = importlib.import_module(f"{package.__name__}.types.default")
-    criteria = types.SearchRequestCodecs.parameter(location="querystring", name="criteria").from_wire({"term": "a b"})
+    criteria = argument(package, "search", "querystring", "criteria", {"term": "a b"})
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native) as api:
         search, lookup = api.protocols.search, api.protocols.lookup

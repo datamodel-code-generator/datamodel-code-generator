@@ -19,7 +19,7 @@ from tests.data.python.client_limiters import (
     _SemaphoreLimiter,
     _modules,
 )
-from tests.data.python.client_runtime import Exchange, aoutcome, arecord, outcome, raw_response, record, run
+from tests.data.python.client_runtime import Exchange, aoutcome, arecord, argument, outcome, raw_response, record, run
 from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response
 
 if TYPE_CHECKING:
@@ -186,7 +186,7 @@ def _sync_callbacks(package: ModuleType, lines: list[str]) -> None:
     exchange.respond(raw_response(200, _PNG, "image/png"))
     http = exchange.client()
     foreign = _ForeignAsyncPermit()
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     with package.Client(http_client=http) as api:
         for label, value in (("missing permit", None), ("async permit from sync limiter", foreign)):
             limiter = _ReturnedLimiter(value)
@@ -217,7 +217,7 @@ def _sync_response_cleanup(package: ModuleType, lines: list[str]) -> None:
     options, _, types = _modules(package)
     transports = importlib.import_module(f"{package.__name__}.transports")
     responses = importlib.import_module(f"{package.__name__}.responses")
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     for failure in (None, RuntimeError("Permit close failed")):
         limiter = _SemaphoreLimiter(release_failure=failure)
         adapter = Adapter(transports, lines)
@@ -285,7 +285,7 @@ async def _async_callbacks(package: ModuleType, lines: list[str]) -> None:
     exchange.respond(raw_response(200, _PNG, "image/png"))
     http = exchange.async_client()
     foreign = _ForeignPermit()
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     async with package.AsyncClient(http_client=http) as api:
         for label, value in (("async missing permit", None), ("sync permit from async limiter", foreign)):
             limiter = _AsyncReturnedLimiter(value)
@@ -320,7 +320,7 @@ async def _async_response_cleanup(package: ModuleType, lines: list[str]) -> None
     options, _, types = _modules(package)
     transports = importlib.import_module(f"{package.__name__}.transports")
     responses = importlib.import_module(f"{package.__name__}.responses")
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     for failure in (None, RuntimeError("Permit close failed")):
         limiter = _AsyncSemaphoreLimiter(release_failure=failure)
         adapter = AsyncAdapter(transports, lines)
@@ -398,7 +398,7 @@ async def _native_priority(package: ModuleType, lines: list[str]) -> None:
             async with package.AsyncClient(
                 http_client=http, options=options.ClientOptions(limiter=limiter, hooks=(_AsyncEvents(events),))
             ) as api:
-                pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+                pet = argument(package, "getPet", "path", "petId", 3)
                 match mode:
                     case "typed-send" | "typed-read":
                         caller = asyncio.create_task(api.pets.get_pet(pet_id=pet))
