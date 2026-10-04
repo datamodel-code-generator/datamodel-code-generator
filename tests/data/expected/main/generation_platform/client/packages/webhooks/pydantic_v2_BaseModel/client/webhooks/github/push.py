@@ -13,7 +13,7 @@ from typing import Final
 from models import Push as _dcg_type_0
 
 from ..._generated import model_bindings
-from ..._runtime.protocols.signatures import HMAC_SHA256, RAW_BODY, SignatureProfile
+from ..._runtime.protocols.signatures import HMAC_SHA256
 from ..._runtime.protocols.verification import (
     WebhookPlan,
     averify_webhook,
@@ -21,37 +21,23 @@ from ..._runtime.protocols.verification import (
 )
 from ..._runtime.protocols.webhook_events import EventDecoder
 from ..._runtime.protocols.webhook_keys import HmacKey
-from ..._runtime.protocols.webhooks import (
-    AsyncReplayStore,
-    KeySet,
-    ReplayStore,
-    VerifiedWebhook,
-    WebhookOptions,
-)
+from ..._runtime.protocols.webhooks import KeySet, VerifiedWebhook, WebhookOptions
 
 __all__ = ["verify", "verify_async"]
 
 
 _PLAN: Final[WebhookPlan[_dcg_type_0, HmacKey]] = WebhookPlan(
     helper_id='github.push',
-    fingerprint='db5dd04d96ec941efee24451300a154baf59aab8455fab1e755425f4e7fa8be3',
-    signature=SignatureProfile(
-        algorithm=HMAC_SHA256,
-        header='x-hub-signature-256',
-        encoding='hex',
-        prefix='sha256=',
-        separator=None,
-        key_id=None,
-        timestamp=None,
-        delivery_id=None,
-        parts=(RAW_BODY,),
-    ),
+    kind='body_hmac',
+    algorithm=HMAC_SHA256,
+    header='x-hub-signature-256',
+    encoding='hex',
+    prefix='sha256=',
     event=EventDecoder(
         model_bindings.codec_4,
         model_bindings.CONTEXT_4,
         validate=False,
     ),
-    duplicates='report',
 )
 
 
@@ -61,28 +47,14 @@ def verify(
     keys: KeySet[HmacKey],
     *,
     now: datetime,
-    replay_store: ReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0]:
-    """Verify a delivery and decode its event, claiming it in a store.
+    """Verify a delivery and decode its event.
 
-    This webhook has no timestamp, so replay protection has no time window: a replay
-    store keeps a claim for replay_ttl after now. Duplicates are detected only until the
-    claim expires. The claim is made after decoding, before your code processes the
-    event: if processing then fails, a retried delivery is a duplicate, or rejected
-    under duplicates: reject, until the claim expires, so make processing durable or
-    idempotent before acknowledging, or use a store whose claims you can release.
-    Without a replay store, duplicate=False does not mean the delivery is new.
+    Verification retains no delivery state; deduplicate in your application using
+    delivery_id when present.
     """
-    return verify_webhook(
-        _PLAN,
-        raw_body,
-        headers,
-        keys,
-        now=now,
-        replay_store=replay_store,
-        options=options,
-    )
+    return verify_webhook(_PLAN, raw_body, headers, keys, now=now, options=options)
 
 
 async def verify_async(
@@ -91,18 +63,12 @@ async def verify_async(
     keys: KeySet[HmacKey],
     *,
     now: datetime,
-    replay_store: AsyncReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0]:
-    """Verify a delivery and decode its event, claiming it in an asyncio store.
+    """Verify a delivery and decode its event.
 
-    This webhook has no timestamp, so replay protection has no time window: a replay
-    store keeps a claim for replay_ttl after now. Duplicates are detected only until the
-    claim expires. The claim is made after decoding, before your code processes the
-    event: if processing then fails, a retried delivery is a duplicate, or rejected
-    under duplicates: reject, until the claim expires, so make processing durable or
-    idempotent before acknowledging, or use a store whose claims you can release.
-    Without a replay store, duplicate=False does not mean the delivery is new.
+    Verification retains no delivery state; deduplicate in your application using
+    delivery_id when present.
     """
     return await averify_webhook(
         _PLAN,
@@ -110,6 +76,5 @@ async def verify_async(
         headers,
         keys,
         now=now,
-        replay_store=replay_store,
         options=options,
     )

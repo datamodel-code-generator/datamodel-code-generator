@@ -16,7 +16,7 @@ parameters, bodies, and responses of the operations. Custom templates and custom
 field names of the models: the client binds each operation to the names in the generated model graph and does not read
 the rendered model source.
 
-## Webhook contracts and replay stores
+## Webhook contracts
 
 Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where `pkg` is
 the generated package name. These imports need no HTTP or cryptography library. The
@@ -33,7 +33,7 @@ from its representation.
 | `OperationRef` | `pointer: str`, `document: str \| None = None` |
 | `KeySet[K]` | `keys: tuple[K, ...]`; an empty tuple is valid; a list or another iterable raises `TypeError` |
 | `VerifiedSignature` | `delivery_id: str \| None`, `timestamp: datetime \| None`, `matched_key_id: str`; all fields are required |
-| `VerifiedWebhook[T]` | `data: T`, `delivery_id: str \| None`, `timestamp: datetime \| None`, `matched_key_id: str`, `duplicate: bool`; all fields are required |
+| `VerifiedWebhook[T]` | `data: T`, `delivery_id: str \| None`, `timestamp: datetime \| None`, `matched_key_id: str`; all fields are required |
 
 `Verifier[K]` is a borrowed, synchronous protocol with this method:
 
@@ -66,49 +66,20 @@ validate `WebhookOptions` before constructing this record and passing it to an a
 | `max_signatures` | `int \| Unset` | `8` | Positive integer |
 | `past_tolerance` | `float \| Unset` | `300` seconds | Finite, nonnegative number |
 | `future_tolerance` | `float \| Unset` | `30` seconds | Finite, nonnegative number |
-| `replay_ttl` | `float \| Unset` | `300` seconds | Finite, positive number |
 
-Options reject `None`, booleans, negative values, nonfinite durations, zero count limits, and zero `replay_ttl`
-with `ProtocolConfigurationError`. For example, `WebhookOptions(past_tolerance=0)` is valid, while
-`WebhookOptions(max_keys=0)` and `WebhookOptions(replay_ttl=None)` are invalid.
-
-`ReplayStore.claim(namespace: str, delivery_id: str, expires_at: datetime) -> bool` atomically returns `True`
-for a new claim and `False` for an unexpired duplicate. `AsyncReplayStore` declares the same method as `async def`.
-The store retains the claim until its aware datetime expires. Namespaces separate applications that share a store.
-
-```python
-from datetime import datetime, timedelta, timezone
-
-from pkg.protocols import AsyncMemoryReplayStore, MemoryReplayStore
-
-store = MemoryReplayStore(max_entries=10000)
-expiry = datetime.now(timezone.utc) + timedelta(minutes=5)
-first = store.claim("application", "delivery-42", expiry)
-duplicate = store.claim("application", "delivery-42", expiry)
-
-
-async def claim_delivery() -> bool:
-    async_store = AsyncMemoryReplayStore(max_entries=10000)
-    return await async_store.claim("application", "delivery-42", expiry)
-```
-
-The memory stores are loaded when their public classes are requested and allocated only by explicit construction.
-Each instance is independent. Both constructors accept `max_entries: int = 10000`, which must be a positive
-integer, excluding booleans. They retain live entries at capacity and raise `ReplayStoreFullError` for another
-new live claim. Expired entries release capacity. Claims whose expiry has already passed are not retained.
-These stores coordinate callers in one process; a shared external adapter supplies multiprocess atomicity.
-They create no HTTP clients, workers, or background tasks and require no close method.
+Options reject `None`, booleans, negative values, nonfinite durations, and zero count limits with
+`ProtocolConfigurationError`. For example, `WebhookOptions(past_tolerance=0)` is valid, while
+`WebhookOptions(max_keys=0)` is invalid. Verification retains no delivery state. Applications can deduplicate
+using the authenticated `delivery_id` when a signature scheme supplies one.
 
 Webhook exceptions have keyword-only constructors and the following additional fields:
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.error-fields -->
 | Exception | Direct base | Fields |
 |---|---|---|
 | `ProtocolConfigurationError` | `ConfigurationError` | `field_path: tuple[str, ...]`, `condition: Literal['unknown_field', 'invalid_value', 'missing_metadata', 'missing_adapter', 'wrong_capability', 'security_partition', 'binding_mismatch']` |
-| `WebhookVerificationError` | `ProtocolError` | `condition: Literal['malformed_signature', 'invalid_signature', 'missing_key', 'timestamp_window', 'missing_delivery_id']` |
-| `WebhookReplayError` | `ProtocolError` | `delivery_id: str`, `namespace: str` |
-| `ProtocolStoreError` | `ProtocolError` | `action: Literal['lookup', 'fingerprint_vary', 'compare_exchange', 'delete', 'invalidate', 'claim', 'put', 'get', 'open', 'read', 'close', 'purge_terminal', 'admit', 'record', 'reset', 'snapshot']`, `entry_id: str \| None = None` |
-| `WebhookStoreError` | `ProtocolStoreError` | No additional fields |
-| `ReplayStoreFullError` | `WebhookStoreError` | `max_entries: int` |
+| `WebhookVerificationError` | `ProtocolError` | `condition: Literal['malformed_signature', 'invalid_signature', 'missing_key', 'timestamp_window']` |
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.error-fields -->
 
 All fields without a displayed default are required. They also accept the shared context fields
 `helper_id: str | None = None`, `operation: OperationRef | None = None`, `info: ResponseInfo | None = None`,
@@ -243,12 +214,10 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | `CacheOptions` | `max_entry_bytes` | `2097152` | Positive integer: the largest body a fetch stores |
 | | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
 | `WSOptions` | `open_timeout`, `idle_timeout`, `send_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
-| | `close_timeout`, `resume_ack_timeout` | `5` and `30` seconds | Positive duration |
+| | `close_timeout` | `5` seconds | Positive duration |
 | | `max_message_bytes`, `max_queue` | `1048576` and `16` | Positive integer |
-| | `max_ack_buffer_messages`, `max_ack_buffer_bytes`, `max_unacked` | `16`, `16777216`, and `100` | Positive integer |
 | | `compression` | `None` | `"deflate"` or `None` |
-| | `reconnect` | `False` | `bool` |
-| | `max_reconnects` | `5` | Nonnegative integer or `None` |
+
 
 `ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
 nonsecret credential partition of helper state and the origins permitted in addition to the same origin. The
@@ -289,8 +258,6 @@ client = Client(options=options)
 | `ProtocolClientOptions.cache_stores` | `Mapping[str, CacheStore \| AsyncCacheStore]`, default `UNSET` | The store each [cache helper](#cache-helpers) keeps its entries in, by helper name. The mapping is copied into a read-only mapping that keeps each store's identity; the client borrows the stores and never closes them |
 | `ProtocolClientOptions.websocket_connector` | `WebSocketConnector \| AsyncWebSocketConnector \| None`, default `UNSET` | A borrowed connector that opens WebSocket connections; see [connectors and transports](#connectors-and-transports) |
 | `ProtocolClientOptions.websocket_transport` | `WebSocketTransportOptions`, default `UNSET` | TLS contexts, proxy, and `trust_env` of WebSocket connections |
-| `ProtocolClientOptions.circuit` | `CircuitBreakerOptions`, default `UNSET` | `UNSET` leaves circuit breaking off; see [Circuit breakers](#circuit-breakers) |
-| `ProtocolClientOptions.circuit_store` | `CircuitStore \| AsyncCircuitStore \| None`, default `UNSET` | A borrowed store of circuit states; `None` or `UNSET` gives the client a memory store of its own when the breaker is enabled |
 
 Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ProtocolConfigurationError`. Explicit
 call options take precedence over these defaults, which take precedence over the effective defaults above.
@@ -318,17 +285,14 @@ Invalid field values raise `ValueError`.
 | `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`; `condition` is always `eof` |
 | `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
 | `CacheStoreError` | `ProtocolStoreError` | `action`, the store method that failed, and `entry_id: str \| None = None` |
-| `CircuitStoreError` | `ProtocolStoreError` | `action`, the store method that failed; see [Circuit breakers](#circuit-breakers) |
 | `CacheProtocolError` | `ProtocolDataError` | No other fields; `condition` is always `inconsistent` |
 | `CacheValidatorConflictError` | `ProtocolConfigurationError` | `header_name: Literal['If-None-Match', 'If-Modified-Since']`; `field_path` is the header's name and `condition` is always `binding_mismatch` |
-| `CacheInvalidationError[T]` | `CacheStoreError` | `tags: tuple[str, ...]`, `completed_result: T \| Unset = UNSET`, a read-only property; `has_completed_result` and `require_result()`, which raises `ResultUnavailableError` without a result; `action` is always `invalidate` |
 | `ConcurrentReceiveError` | `ProtocolStateError` | None; `state` is always `receiving` and `action` always `receive` |
 | `WebSocketClosedError` | `ProtocolError` | `code: int \| None`, `reason: str` of at most 123 UTF-8 bytes, `clean: bool` |
 | `WebSocketHandshakeError` | `TransportError` | `condition: Literal['invalid_message', 'invalid_header', 'upgrade', 'negotiation', 'security', 'size']`, `delivery_state`, `retry_stop_reason = None`; `phase` is always `connect` |
 | `WebSocketProxyError` | `TransportError` | `proxy_status_code: int \| None = None`, `retry_stop_reason = None`; `phase` is always `connect` and `delivery_state` `NOT_SENT` |
 | `HandshakeResponse` | `ProtocolError` | `status_code: int`, `headers: HeadersView`, `body_prefix: bytes` of at most 65536 bytes, `truncated: bool`; raised only by connectors |
 | `DeliveryUnknownError` | `ProtocolError` | `delivery_state`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
-| `CircuitOpenError` | `ProtocolError` | `key: CircuitKey`, `retry_at: float`, the nonnegative monotonic time of the circuit's next admission |
 | `NonResumableSourceError` | `ProtocolConfigurationError` | `source_kind: Literal['iterable', 'iterator', 'stream', 'reader']`; `field_path` is always `('source',)` and `condition` `wrong_capability` |
 | `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` |
 | `UploadSourceChangedError` | `ProtocolDataError` | `expected_size: int`, the upload's size, and `actual_size: int`, the size the source has now; `condition` is always `inconsistent` |
@@ -501,9 +465,13 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `polling` | `create`, `accepted_statuses`, `poll`, `bindings` (create to poll), `state`, `pending`, `succeeded`, `result` | `failed` and `cancelled` (`[]`), `interval` (`{seconds: 1, retry_after_header: null}`), `remote_cancel` (`{operation, bindings?}`), `immediate_result` (`{statuses, selector, schema}`), `expires_at` |
 | `sse`, `ndjson` | `operation`, `media`, `event_schema`, `completion`, and for `ndjson` `final_line` (`require_newline` or `allow_eof`) | `unknown` (`error`, the default, or `raw`), `error_events` (`{}`), `resume` (`{enabled: false}`) |
 | `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `compression` (`false`) |
-| `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
-| `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`), `tags` (`[]`), `mutations` (`{}`); see [cache helpers](#cache-helpers) |
+| `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | None |
+| `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`); see [cache helpers](#cache-helpers) |
 | `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, checksum?, bindings?}`, a `checksum` being `{target, algorithm, encoding?, algorithm_prefix?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.fields -->
+Cache helper fields: `operation`, `validator`, `authenticated`, `statuses`, `vary_allowlist`, `enabled`. See [cache helpers](#cache-helpers).
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.fields -->
 
 A pagination `continuation` is one of these:
 
@@ -555,12 +523,12 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 `WebSocketHelper`, whose `send` and `receive` are `WebSocketMessage` records, `WebhookHelper`, `CacheHelper`, and
 `ResumableUploadHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`,
 and they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`.
-A webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`)
-has the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records,
-or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`;
-`AdapterSignature(timestamp=..., delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()`
+A webhook uses `StandardWebhooksSignature()`, `StripeStyleSignature(header="Stripe-Signature")`, or
+`BodyHmacSignature(header="X-Signature", algorithm="hmac-sha256", encoding="hex", prefix="")`.
+`PublicKeySignature(kind="ed25519", header="X-Signature")` verifies raw-body public-key signatures.
+`AdapterSignature(timestamp="required", delivery_id="none")` declares application verification, and `NoSignature()`
 declares an unsigned webhook. An event mapping is an `EventMapping` with an `EventDiscriminator(from_="body",
-pointer=...)`, a cache mutation a `CacheMutation(operation=..., invalidate_tags=(...))`, and an upload takes
+pointer=...)`, and an upload takes
 `UploadCreate`, `UploadProbe`, `UploadAppend` with an optional `UploadChecksum`, `LengthCompletion()` or
 `OperationCompletion`, and `UploadAbort` records. They are validated as the file is, with the same diagnostics,
 when the client configuration is constructed.
@@ -1986,16 +1954,18 @@ never imports the WebSocket library.
 
 ### Handshakes
 
-The handshake is one logical call of the operation, with its retries, `Retry-After`, redirects, authentication and
-token refresh, limiter, hooks, and deadline, as any call has. Only a 101 response whose headers validate opens the
-session: any other response is read up to `max_error_body_bytes` and raises the operation's typed `HTTPStatusError`,
-or `UnexpectedStatusError` for an undeclared status, so 101 need not be declared. The handshake's limiter permit is
-held for the whole session and released when it closes or fails. URLs keep their `https` or `http` server and are
-opened as `wss` or `ws`; a redirect to a `wss` or `ws` location follows the shared redirect policy as the `https` or
-`http` URL it names. When the helper offers subprotocols, the server must select one of them, or
-`connect` raises `WebSocketHandshakeError` with the condition `negotiation`; `session.subprotocol` is the selected one
-and `session.response` the 101 response. Credentials are sent as the operation's security declares, on every attempt
-and only to the server's origin or the security context's allowed origins. Headers the handshake manages, such as
+The handshake is one logical call of the operation, with initial authentication, limiter, hooks, and deadline.
+Only a 101 response whose headers validate opens the session: any other response is read up to `max_error_body_bytes`
+and raises the operation's typed `HTTPStatusError`, or `UnexpectedStatusError` for an undeclared status, so 101 need not
+be declared. Received refusals are terminal, including redirects and 401s; a refused upgrade never invalidates or
+refreshes credentials. Only an initial transport failure proven `NOT_SENT` before session handover may use the call's
+existing retry policy. A handshake that may have reached the server is never sent again.
+
+The handshake's limiter permit is held for the whole session and released when it closes or fails. URLs keep their
+`https` or `http` server and are opened as `wss` or `ws`. When the helper offers subprotocols, the server must select one
+of them, or `connect` raises `WebSocketHandshakeError` with the condition `negotiation`; `session.subprotocol` is the
+selected one and `session.response` the 101 response. Credentials are sent as the operation's security declares,
+only to the server's origin or the security context's allowed origins. Headers the handshake manages, such as
 `Upgrade`, `Connection`, and `Sec-WebSocket-*`, given through request options or parameters raise `ConfigurationError`
 with the condition `managed` before anything is sent. The handshake's hooks end with the call outcome `handed_off`, and
 the session's end emits `stream_end`.
@@ -2010,7 +1980,7 @@ the session's end emits `stream_end`.
 | `ping(payload=b"")` | Sends a ping of at most 125 bytes and returns a `PingReceipt` with the pong's `latency` in seconds |
 | `close(code=1000, reason="")`, `aclose` | Closes with 1000, 1001, or a code from 3000 to 4999 and a reason of at most 123 UTF-8 bytes; repeats do nothing |
 | `with`, `async with` | Closes the session on exit |
-| `progress` | `reconnects`, the session's network sends, `messages_sent`, and `messages_received` |
+| `progress` | The session's network sends, `messages_sent`, and `messages_received` |
 
 The session owns the connection until it closes or fails, and closing the client closes it after the client's cleanup
 wait. One `receive` waits at a time: another raises `ConcurrentReceiveError`, while one send may run beside it, and
@@ -2046,11 +2016,12 @@ A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `mes
 1001, and a missed pong closes with 1011 and raises `WebSocketClosedError` with `clean` false. The session deadline
 bounds every wait and raises `DeadlineExceededError`. A send that sent nothing before its timeout raises
 `PhaseTimeoutError` with the phase `write` and keeps the session open; one that may have reached the server raises
-`DeliveryUnknownError` with the delivery state `MAYBE_SENT`, closes the session, and is never sent again. A send to a
-connection the server closed raises `WebSocketClosedError`. Sessions never reconnect yet, so
-`WSOptions(reconnect=True)` raises `ProtocolConfigurationError` with the condition `missing_metadata`, as `compression`
-does for a helper that does not permit it with `invalid_value`; the resume and acknowledgment limits have no effect
-yet. Options of another type raise `ProtocolConfigurationError`.
+`DeliveryUnknownError` with the delivery state `MAYBE_SENT`, closes the session, and is never sent again. A message is
+written whole: in a `WebSocketSession`, the send timeout bounds the wait for earlier sends and is checked before the
+write starts, and a write that started runs until it completes or the connection fails. A send to a connection the
+server closed raises `WebSocketClosedError`. Sessions never reconnect.
+`WSOptions(compression="deflate")` for a helper that does not permit it raises `ProtocolConfigurationError` with
+`invalid_value`. Options of another type raise `ProtocolConfigurationError`.
 
 ### Connectors and transports
 
@@ -2116,14 +2087,6 @@ helpers:
     validator: both
     authenticated: false
     vary_allowlist: [Accept-Language]
-    tags: ["user:{userId}", users]
-    mutations:
-      rename:
-        operation: /paths/~1users~1{userId}/patch
-        invalidate_tags: ["user:{userId}"]
-      remove:
-        operation: /paths/~1users~1{userId}/delete
-        invalidate_tags: ["user:{userId}", users]
 ```
 
 <!-- fmt: on -->
@@ -2136,12 +2099,9 @@ helpers:
 | `authenticated` | Whether the fetch carries credentials. It must match every call: a call that the auth, a credential or cookie header, or a security scheme's field authenticates needs `true` and a credential partition, and any other call `false` |
 | `statuses` | The cacheable statuses, distinct, from 100 to 599 |
 | `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. A header credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, or a declared security scheme's header) fails generation with `E_CONFIG_VALUE`. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
-| `tags` | Text the stored entries carry; each `{name}` is replaced by the wire value of the required path or query parameter of that name, as text |
-| `mutations` | Method names mapped to `{operation, invalidate_tags}`: a POST, PUT, PATCH, or DELETE operation and the tags its success removes |
 
-`fetch` takes the operation's parameters as keywords, then `cache_options` and `options`, and returns a `CacheResult`;
-`invalidate(tags)` removes the entries carrying any of the tags and returns how many, and `mutations.<name>(...)` takes
-its operation's parameters and body like its method and returns its result. With asyncio, the three are coroutines:
+`fetch` takes the operation's parameters as keywords, then `cache_options` and `options`, and returns a `CacheResult`.
+With asyncio, `fetch` is a coroutine:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.helper -->
 <!-- fmt: off -->
@@ -2164,19 +2124,14 @@ its operation's parameters and body like its method and returns its result. With
             cache_options=cache_options,
             options=options,
         )
-
-    def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return invalidate(self._core, _plans.PLAN_0, tags)
 ```
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.helper -->
 
-A helper needs the store `ProtocolClientOptions.cache_stores` lends it under its name, or `fetch`, `invalidate`, and the
-mutations raise `ProtocolConfigurationError(condition='missing_adapter')` before sending. The client checks the stores
+A helper needs the store `ProtocolClientOptions.cache_stores` lends it under its name, or `fetch` raises `ProtocolConfigurationError(condition='missing_adapter')` before sending. The client checks the stores
 when it is constructed: a name that is no cache helper of the package fails with `unknown_field`, and an object without
-the five store methods, or whose methods are coroutines for a `Client` or plain functions for an `AsyncClient`, with
+the three store methods, or whose methods are coroutines for a `Client` or plain functions for an `AsyncClient`, with
 `wrong_capability`. The client borrows a store: it never creates, closes, or keeps one after a call.
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.usage -->
@@ -2185,7 +2140,7 @@ the five store methods, or whose methods are coroutines for a `Client` or plain 
 ```python
 def cached_client() -> Client:
     """Lend a bounded memory store to the users.profile helper, which keeps its entries there."""
-    store = MemoryCacheStore(max_entries=1000, max_bytes=8 * 1024 * 1024)
+    store = MemoryCacheStore(max_entries=1000)
     return Client(options=ClientOptions(protocols=ProtocolClientOptions(cache_stores={"users.profile": store})))
 ```
 
@@ -2225,19 +2180,24 @@ and no `no-store`, its `Vary` names only allowlisted headers, and it is fresh or
 cannot be stored removes the entry it supersedes, and errors and decoding failures store nothing and keep the entry.
 Entries hold the body after content decoding and the headers without `Content-Encoding` or hop-by-hop fields.
 
-An entry's key is a SHA-256 digest of the method, the URL as the client interprets it, the `Accept` header, the
-credential partition, which is `anonymous` without a security context, and what identifies the credentials the call
-carries: each credential's scheme, kind, and required scopes, the audience of an SDK OAuth provider, and each signer's
-declared capabilities, never a secret. Calls with different partitions, schemes, scopes, or audiences never share an
-entry; give each tenant or permission set its own `ProtocolSecurityContext.credential_partition`. Token refreshes keep
-the key. Among the entries of one key, the store selects the one whose `Vary` fingerprints match the request's headers
-before auth; the store computes the fingerprints as keyed hashes, so header values never become keys. Besides the
-response's `Vary`, an entry varies on every header a client, view, or call header patch names, every declared header
-parameter, and `Cookie` when the operation declares a cookie parameter, except `Cache-Control`, `If-None-Match`, and
-`If-Modified-Since`. The key names these headers too, so a caller's own `X-Api-Key` or `X-On-Behalf-Of` patch keeps
-callers apart whichever of them fetched first. A header patch whose value is new on every call, such as a request ID or
-a `traceparent`, therefore disables caching for that helper: each fetch misses and stores an entry no other fetch can
-use.
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->
+`fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
+events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
+time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the credentials the
+auth binds, and selected by the request headers its `Vary` names and those a header patch or a declared parameter fills.
+A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper declared authenticated,
+and the client's own auth, not a view's or a call's; anything else raises `ProtocolConfigurationError`. A response whose
+`Vary` names a header the auth manages is never stored, and one partition is one permission set: credentials the client
+cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
+only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
+`CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
+`no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
+removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request.
+The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
+Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
+Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.
+Concurrent custom-store writes use last-completing replacement.
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->
 
 !!! warning "Credentials the cache cannot see"
     The auth adds its credentials after the cache looks a request up, so a response whose `Vary` names a header the
@@ -2251,40 +2211,27 @@ use.
 
 ### Stores
 
-`CacheStore` and `AsyncCacheStore` are the store protocols: `lookup(base_key, request_headers) -> CacheEntry | None`,
-`fingerprint_vary(names, request_headers) -> tuple[bytes, ...]`, `compare_exchange(base_key, expected_version, entry)
--> bool`, `delete(base_key, version) -> bool`, and `invalidate(tags) -> int`. `compare_exchange` stores an entry only
-when the slot of its key and Vary fingerprints holds `expected_version`, `None` for an empty slot; a fetch whose entry
-another fetch replaced first keeps the newer entry and returns its own network result. Every entry a fetch writes has a
-new `version`. A store's exception, or a result of another type, raises `CacheStoreError` with the store method as
-`action`, keeping the exception as `cause`; the request is never sent again for it.
+`CacheStore` and `AsyncCacheStore` provide `get(key) -> CacheEntry | None`, `set(key, entry) -> None`, and
+`delete(key) -> None`, using byte keys. Each key holds one representation. A Vary mismatch is a miss, and a successful
+cacheable response replaces the representation. Concurrent custom-store writes use last-completing replacement.
+A store exception or a result of another type raises `CacheStoreError` with the method as `action` and the exception
+as `cause`; the request is never sent again for it.
 
-`CacheEntry` has `version`, `vary`, `vary_fingerprints`, `status_code`, `headers`, `body`, `request_time`,
-`response_time`, `stored_at`, `freshness_seconds`, `initial_age_seconds`, `tags`, and `schema_fingerprint`, the helper's
-fingerprint; a looked-up entry of another fingerprint or status is not used, and the next stored response replaces it.
-Its representation names only the status.
+`CacheEntry` has `vary`, `vary_values`, `status_code`, `headers`, `body`, `request_time`, `response_time`, `stored_at`,
+`freshness_seconds`, `initial_age_seconds`, and `schema_fingerprint`. Plain Vary values preserve each named header's
+ordered values, including the distinction between a missing header and an empty value. Credential headers and cookies
+are excluded from these values and isolated by the opaque cache key. Values stay in private process memory and the
+entry's representation names only its status. A mismatched fingerprint or status cannot serve a fetch or a 304.
 
-`MemoryCacheStore(max_entries=128, max_bytes=16 MiB)` and `AsyncMemoryCacheStore` keep entries in the process, with a
-secret of their own for the fingerprints. A lookup fingerprints the request once for each set of `Vary` names among the
-key's entries. When an entry needs room, expired entries are evicted first, the earliest expired first, then the least
-recently used ones; an entry larger than `max_bytes`, counted in body bytes and header characters, is not stored.
-A store may be shared by clients on different clocks, so it judges which entries have expired for eviction by the
-system wall clock. Whether a fetch may use an entry is decided by the fetching client's clock.
-
-### Invalidation
-
-Only explicit calls remove entries. A mutation runs its operation as its method does and, after it returns a success,
-removes the entries carrying its rendered `invalidate_tags`; a failed call removes nothing. When the store then fails,
-`CacheInvalidationError` keeps the mutation's result, which `require_result()` returns, and the mutation is not sent
-again. `invalidate(tags)` raises `CacheInvalidationError` without a result.
+`MemoryCacheStore(max_entries=128)` and `AsyncMemoryCacheStore(max_entries=128)` bound entries by count. Reads and
+writes mark a key recently used, replacement keeps the count unchanged, and adding a key evicts the least recently
+used key when needed. Deletion is idempotent. Freshness and revalidation use the fetching client's clock.
 
 ### Cache generation checks
 
 The operation must be a GET without a request body; other methods fail with `E_CONFIG_VALUE`, and HEAD is not
 supported yet. Each cacheable status must be a declared 2xx success with one natively decoded JSON body, a helper
-declared anonymous cannot fetch an operation that requires credentials, a tag's placeholder must name one required
-path or query parameter whose values are strings, numbers, integers, or booleans, and a mutation's operation must be a
-POST, PUT, PATCH, or DELETE:
+declared anonymous cannot fetch an operation that requires credentials:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.diagnostics -->
 <!-- fmt: off -->
@@ -2303,13 +2250,6 @@ E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[1] /paths/~1u
 E_CONFIG_VALUE config protocols.helpers['secure.anonymous'].authenticated /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.anonymous' is declared anonymous, but GET /secure/users/{userId} requires credentials
 E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[1] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'authorization', which credentials travel in; the auth adds it after the cache looks a request up
 E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[2] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'Cookie', which credentials travel in; the auth adds it after the cache looks a request up
-E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[0] /paths/~1users/get: The tag '{fields}' of 'users.tagged' names no path or query parameter 'fields' of GET /users
-E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[1] /paths/~1users/get: The tag 'page:{page}' of 'users.tagged' names the optional parameter 'page' of GET /users
-E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[2] /paths/~1users/get: The tag '{role}' of 'users.tagged' names the optional parameter 'role' of GET /users
-E_CONFIG_VALUE config protocols.helpers['users.tagged'].mutations['refetch'].operation /paths/~1users~1{userId}/get: The mutation 'refetch' of 'users.tagged' calls GET /users/{userId}; only POST, PUT, PATCH, and DELETE invalidate
-E_CONFIG_VALUE config protocols.helpers['users.tagged'].mutations['create'].invalidate_tags[0] /paths/~1users/post: The tag '{userId}' of 'users.tagged' names no path or query parameter 'userId' of POST /users
-E_CONFIG_VALUE config protocols.helpers['items.ambiguous'].tags[0] /paths/~1items~1{id}/get: The tag 'item:{id}' of 'items.ambiguous' names more than one path or query parameter 'id' of GET /items/{id}
-E_CONFIG_VALUE config protocols.helpers['items.ambiguous'].tags[1] /paths/~1items~1{id}/get: The tag '{kinds}' of 'items.ambiguous' names the parameter 'kinds' of GET /items/{id}, which is not always a string, number, integer, or boolean
 ```
 
 <!-- fmt: on -->
@@ -3430,127 +3370,7 @@ Use the returned view in a `with` block and call an operation with the matching 
 first-use time, not the time of the newest retry. An attached key whose retention has expired stops replay even for
 a normally safe method.
 
-## Circuit breakers
-
-A circuit breaker stops calls to a failing backend before they send anything. It applies only to operations whose
-generation settings name a circuit group, and only when the client enables it; ordinary calls of other operations and
-packages without groups take no circuit step, load no circuit code, and read no clock.
-
-### Declare circuit groups
-
-`RuntimeOperationMetadata.circuit_group: str | None = None` puts an operation into a group. A group is a nonsecret
-name with non-whitespace text and no control characters; several operations may share one. With the internal
-generator entry point shown in [Declare API guarantees during generation](#declare-api-guarantees-during-generation):
-
-```python
-ClientOperationConfig(ref="/paths/~1status/get", runtime=RuntimeOperationMetadata(circuit_group="backend"))
-```
-
-The flat target-file entry is:
-
-```toml
-[[operations]]
-ref = "/paths/~1status/get"
-
-[operations.runtime]
-circuit_group = "backend"
-```
-
-An invalid group receives `E_CONFIG_VALUE`. The generated README lists each group's operations. Only a package that
-declares a group gets `Client.reset_circuit` and
-`AsyncClient.reset_circuit`, whose `group` parameter is a `Literal` of its groups.
-
-### Enable the breaker
-
-```python
-from pkg import Client
-from pkg.options import ClientOptions, ProtocolClientOptions
-from pkg.protocols import CircuitBreakerOptions, ProtocolSecurityContext
-
-options = ClientOptions(
-    protocols=ProtocolClientOptions(
-        circuit=CircuitBreakerOptions(enabled=True),
-        security=ProtocolSecurityContext(credential_partition="tenant-a"),
-    ),
-)
-client = Client(options=options)
-```
-
-`CircuitBreakerOptions(*, enabled: bool = False, failure_threshold: int = 5, cooldown: float = 30)` is immutable.
-`failure_threshold` is a positive integer and `cooldown` positive finite seconds; booleans are refused, and an invalid
-value raises `ProtocolConfigurationError(condition='invalid_value')`. Only one half-open probe runs at a time, and no
-field changes that. `resolved()` returns the `ResolvedCircuitBreakerOptions(failure_threshold, cooldown)` a store
-receives. These types come from `pkg.protocols`; importing and constructing them sends nothing and creates no store.
-
-### Circuits, outcomes, and states
-
-Each circuit is keyed by `CircuitKey(origin, credential_partition, group)`: the `Origin` of the call's URL before any
-redirect, the client's `ProtocolSecurityContext.credential_partition` (`"anonymous"` without a context), and the
-operation's group. A call that authenticates needs a security context, or it raises
-`ProtocolConfigurationError(field_path=('protocols', 'security'), condition='security_partition')` before any
-credential or send. A view or call that authenticates with other auth than the client's would share the client's
-partition, so it raises `ProtocolConfigurationError(field_path=('options', 'auth'), condition='security_partition')`
-before admission; use a client of its own, with its own partition, for other credentials. `request_raw` has no
-operation, so it never passes a circuit.
-
-A call passes its circuit once its request is encoded, before credentials, limiter permits, and sends. Its outcome is
-recorded once, after its redirects and retries, so a call that retried three times counts once:
-
-| Outcome | Calls |
-|---|---|
-| Failure | Connect, read, and write transport failures, including their phase timeouts and broken connections, and a final 500, 502, 503, or 504 response, typed or raw |
-| Success | Any other final response, such as 2xx, 3xx, 404, or 501 |
-| Neutral | Pool timeouts and other transport failures, 429, cancellation, deadlines, client closing, authentication and token failures, configuration, encoding, decoding, and validation errors |
-
-A streaming call completes when its response is handed over; a later read failure is not recorded.
-
-| State | Admission | Transitions |
-|---|---|---|
-| Closed | Every call | A success resets the consecutive failures to 0; reaching `failure_threshold` opens the circuit for `cooldown` seconds |
-| Open | `CircuitOpenError` until the cooldown ends, then one probe | The first call after the cooldown becomes the probe and the circuit half-open |
-| Half-open | `CircuitOpenError` while the probe runs | A successful probe closes the circuit; a failed probe reopens it for another cooldown; a neutral or cancelled probe frees the slot for the next call |
-
-`CircuitOpenError` keeps the circuit's `key` and `retry_at`, the monotonic time of its next admission; while a probe
-runs, `retry_at` is the time of the refusal. The refused call consumes no send, attempt, token exchange, or limiter
-permit, and is never retried. Every transition and reset advances the circuit's generation, and an outcome of a call
-admitted in an earlier generation is ignored, so a call admitted before the circuit opened cannot close it.
-
-### Stores and resets
-
-Without `circuit_store`, each client creates one memory store when it is constructed with the breaker enabled; its
-views share it, and other clients do not. `MemoryCircuitStore()` and `AsyncMemoryCircuitStore()` from
-`pkg.protocols` can be passed to several clients to share their circuits. A custom store implements `CircuitStore`
-with synchronous methods for `Client`, or `AsyncCircuitStore` with coroutine methods for `AsyncClient`:
-
-| Method | Contract |
-|---|---|
-| `admit(key, *, now, options) -> CircuitPermit` | Atomically admit a call, or raise `CircuitOpenError`; take the single half-open slot when due |
-| `record(permit, outcome, *, now) -> None` | Apply `'success'`, `'failure'`, or `'neutral'` once; ignore a permit of another generation |
-| `reset(key) -> None` | Close the circuit and advance its generation |
-| `snapshot(key) -> CircuitSnapshot` | Return `state`, `consecutive_failures`, `retry_at`, and `generation` |
-
-`CircuitPermit(key, generation, probe, permit_id)` and `CircuitSnapshot(state, consecutive_failures, retry_at,
-generation)` are immutable records; a wrong field type raises `TypeError` and an invalid value `ValueError`. `now` is
-read from the monotonic source of the client's clock, `ClientOptions(clock=Clock(...))`, so the cooldown and the
-half-open admission follow an injected clock; that time is local to the process, and a store shared across processes
-must map its callers into one clock domain. A store is borrowed and never closed. A store missing a method, or whose
-methods do not match the client's mode, raises `ProtocolConfigurationError(field_path=('protocols', 'circuit_store'),
-condition='wrong_capability')` when the client is constructed. A store failure raises `CircuitStoreError` with the
-failure as its cause, or becomes a secondary error of a call that already failed; an admission that is not a permit
-for the key, and a `CircuitOpenError` from any method but `admit`, are also a `CircuitStoreError`. No request is resent
-because of a store failure. The client records the outcome of every call it admits, even when the call is cancelled,
-after releasing its body; the builtin stores keep one probe until it is recorded. A custom store shared beyond one
-process must itself recover a probe whose outcome never arrives, such as after that process stops.
-
-`client.reset_circuit(group, origin=Origin(...))`, awaited on `AsyncClient`, closes one circuit of this client's
-partition without sending anything. A group the package does not declare raises
-`ProtocolConfigurationError(field_path=('group',), condition='unknown_field')`, and an origin that is not an `Origin`
-raises one with `condition='invalid_value'`. Without an enabled breaker, a reset does nothing.
-
 ## Request compression
-
-A client can send request bodies gzip-compressed to operations whose API accepts them. Compression needs two things:
-the generation settings declare that an operation accepts the coding, and a client, view, or call selects it.
 
 ### Declare accepted codings
 
@@ -3581,65 +3401,19 @@ The generated README lists the operations that accept a coding.
 
 ### Select a coding
 
-`compression: str | None` exists on `ClientOptions` and `RequestOptions`, for views and calls alike. `UNSET` inherits,
-`None` turns compression off at that layer, and a string is lowercased; any value other than `gzip` raises
-`ConfigurationError(field_path=('compression',), condition='invalid_value')`, and a value of another type one with
-`condition='invalid_type'`, when the options are constructed.
+`ClientOptions(compression="gzip")` is the default. The SDK gzips only bodies of operations that declare gzip;
+`ClientOptions(compression=None)` disables it. Views and calls inherit the client setting. Undeclared operations,
+bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
+when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
-```python
-from pkg import Client
-from pkg.options import ClientOptions, RequestOptions
+Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
+multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
+uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
+accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
 
-client = Client(options=ClientOptions(compression="gzip"))
-plain = client.with_options(RequestOptions(compression=None))
-```
+Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
+followed URLs stay uncompressed. Token requests are never compressed.
 
-A selected coding applies to a call only when the call sends a body and its operation accepts the coding. A body is
-present when the call gives one, including empty bytes and a JSON `null`; an omitted optional body is absent. Where
-both hold, the body is compressed and the request carries `Content-Encoding: gzip`. Elsewhere:
-
-| Selected by | Without a body, for an operation that does not accept it, or for `request_raw` |
-|---|---|
-| `ClientOptions` or a `with_options` view | Compression turns off and the call is sent uncompressed |
-| The call's own `RequestOptions` | `ConfigurationError(field_path=('compression',), condition='not_applicable')` before anything is sent |
-
-`with_raw_response` and `with_streaming_response` follow the rules of their operation. A `Content-Encoding` header
-the call already sends conflicts with a coding that applies and raises
-`ConfigurationError(field_path=('headers', 'Content-Encoding'), condition='managed')`. Token requests of OAuth providers
-are never compressed.
-
-### Bodies, retries, and redirects
-
-The encoder uses gzip level 6 with no file name and a zero modification time, and feeds at most 64 KiB at a time. A
-body encoded once, such as bytes or a JSON model, is compressed once, and every retry sends the same compressed bytes.
-File, stream, factory, and multipart bodies are compressed as each attempt streams, without a `Content-Length`; they
-replay exactly as they would uncompressed, so a one-shot stream is never resent. A signer that needs a body digest
-digests the bytes sent: a body encoded once works, while a compressed file, stream, or factory body raises
-`BodyNotReplayableError(condition='digest_unavailable')` before sending. A redirect that drops the body, such as an
-allowed 303, also drops `Content-Encoding`; a redirect that keeps the body keeps the coding.
-
-### Protocol helpers
-
-A coding passed in a helper call's `options` is checked once, when the helper call is made and before anything is
-sent: at least one request the helper may send for that call must have a body whose operation accepts the coding, or
-the call raises `ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')`.
-Then each request the helper sends is compressed only when it has such a body:
-
-| Helper | Requests that can be compressed |
-|---|---|
-| Pagination `page` and `iterate` | The first request, and later ones that send the body again, or a body their bindings or cursor write, with the same operation; Next-URL and Link requests are `GET`s without a body unless `repeat_request_body` is set |
-| Pagination `next_page` and `resume` | Only the next request; a call after the last page, or with `max_items=0`, has none |
-| Polling `start` | The create request, and a poll or the result fetch whose bindings write into its body |
-| Polling `resume` | Only a poll or result fetch whose bindings write into its body: a resumed handle never creates the operation again |
-| SSE and NDJSON `open` | The stream's request |
-| WebSocket `connect` | None: a handshake sends no body |
-
-A cache helper's `fetch` sends a bodyless GET, so a coding its call selects raises
-`ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')` before the cache is
-looked up, whether the entry is stored or not; its mutations follow their operation.
-
-
-A coding the helper inherits from the client or a view is not checked and turns off where it does not apply.
 
 ## Body replay and resource ownership
 
@@ -4055,7 +3829,7 @@ applications construct providers explicitly.
 ## Webhook verification helpers
 
 An enabled `webhook` helper generates the module `pkg.webhooks.<name>`, where each dotted part of the helper's name is a
-package or the module. It verifies one received delivery, with a builtin `hmac-sha256`, `hmac-sha512`, `ed25519`, or
+package or the module. It verifies one received delivery, with a builtin `standard_webhooks`, `stripe_style`, `body_hmac`, `ed25519`, or
 `rsa-pss-sha256` signature or through your verifier for an [`adapter` signature](#adapter-signatures), and decodes its
 JSON event; a helper whose signature is [`none`](#unsigned-webhooks) only decodes. It creates no client, server, or
 route. The key types of builtin signatures are in `pkg.webhooks.keys`, which exists only when a helper has a builtin
@@ -4066,10 +3840,10 @@ With the package `pets` and the `standard.message` helper below:
 <!-- fmt: off -->
 
 ```python
-def receive(raw_body: bytes, headers: list[tuple[str, str]], secret: bytes, store: MemoryReplayStore) -> Message:
-    """Verify one delivery with the active key, claim its delivery id once, and return its event."""
+def receive(raw_body: bytes, headers: list[tuple[str, str]], secret: bytes) -> Message:
+    """Verify one delivery with the active key, return its event."""
     keys = KeySet(keys=(HmacKey(id="2026-09", secret=secret),))
-    verified = message.verify(raw_body, headers, keys, now=datetime.now(timezone.utc), replay_store=store)
+    verified = message.verify(raw_body, headers, keys, now=datetime.now(timezone.utc))
     return verified.data
 ```
 
@@ -4088,40 +3862,25 @@ def verify(
     keys: KeySet[HmacKey],
     *,
     now: datetime,
-    replay_store: ReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0]:
-    """Verify a delivery and decode its event, claiming it in a store.
+    """Verify a delivery and decode its event.
 
-    Deliveries outside the timestamp window are rejected. The window closes at the
-    timestamp plus past_tolerance, while a replay store keeps a claim until the
-    timestamp plus past_tolerance and future_tolerance. Duplicates are detected only
-    until the claim expires. The claim is made after decoding, before your code
-    processes the event: if processing then fails, a retried delivery is a duplicate, or
-    rejected under duplicates: reject, until the claim expires, so make processing
-    durable or idempotent before acknowledging, or use a store whose claims you can
-    release. Without a replay store, duplicate=False does not mean the delivery is new.
+    Deliveries outside the timestamp window are rejected. Verification retains no
+    delivery state; deduplicate in your application using delivery_id when present.
     """
-    return verify_webhook(
-        _PLAN,
-        raw_body,
-        headers,
-        keys,
-        now=now,
-        replay_store=replay_store,
-        options=options,
-    )
+    return verify_webhook(_PLAN, raw_body, headers, keys, now=now, options=options)
 ```
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.helper -->
 
-`verify(raw_body, headers, keys, *, now, replay_store=None, options=None)` returns `VerifiedWebhook[Event]`, where
-`Event` is the event schema's model type; `async def verify_async(...)` takes an `AsyncReplayStore` instead and returns
-the same facts. `raw_body` is the exact received `bytes`, `headers` a list or tuple of `(name, value)` string pairs in
-received order, and `now` an aware datetime. `HmacKey(*, id: str, secret: bytes)` passes the secret to HMAC unchanged;
-the id is a nonempty string without NUL, CR, or LF, the secret must be `bytes`, and its representation names the id
-only. Keys cannot be changed, copied into new objects, or pickled.
+`verify(raw_body, headers, keys, *, now, options=None)` returns `VerifiedWebhook[Event]`, where `Event` is the
+event schema's model type. `async def verify_async(...)` takes the same arguments and returns the same facts.
+`raw_body` is the exact received `bytes`, `headers` a list or tuple of `(name, value)` string pairs in received order,
+and `now` an aware datetime. `HmacKey(*, id: str, secret: bytes)` passes the secret to HMAC unchanged; the id is a
+nonempty string without NUL, CR, or LF, the secret must be `bytes`, and its representation names the id only. Keys
+cannot be changed, copied into new objects, or pickled.
 
 ### Public-key signatures
 
@@ -4164,38 +3923,24 @@ same as for HMAC:
 ```yaml
 schema_version: 1
 helpers:
-  standard.ed25519:
+  rfc8032.ed25519:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
+    event_schema:
+      pointer: /components/schemas/Push
     signature:
       kind: ed25519
-      header: webhook-signature
-      encoding: base64
-      prefix: "v1a,"
-      separator: " "
-      key_id: none
-      timestamp: {header: webhook-timestamp, unit: seconds}
-      delivery_id: {header: webhook-id}
-      signed_parts: [delivery-id, {literal: "."}, timestamp, {literal: "."}, raw-body]
-      field_constraints:
-        delivery-id: {ascii_bytes: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"}
-        timestamp: {ascii_bytes: "0123456789"}
-  keyed.rsa:
+      header: X-Signature
+      encoding: hex
+      prefix: ''
+  wycheproof.rsa:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
+    event_schema:
+      pointer: /components/schemas/Count
     signature:
       kind: rsa-pss-sha256
       header: X-Signature
-      encoding: base64url
-      prefix: "v1="
-      separator: ","
-      key_id: {header: X-Key-Id}
-      timestamp: {header: X-Timestamp, unit: milliseconds}
-      delivery_id: {header: X-Delivery}
-      signed_parts: [timestamp, {literal: "."}, delivery-id, {literal: "."}, raw-body]
-      field_constraints:
-        timestamp: {ascii_bytes: "0123456789"}
-        delivery-id: {ascii_bytes: "abcdefghijklmnopqrstuvwxyz0123456789-"}
+      encoding: hex
+      prefix: ''
 ```
 
 <!-- fmt: on -->
@@ -4211,71 +3956,53 @@ schema_version: 1
 helpers:
   standard.message:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
+    event_schema:
+      pointer: /components/schemas/Message
     signature:
-      kind: hmac-sha256
-      header: webhook-signature
-      encoding: base64
-      prefix: "v1,"
-      separator: " "
-      key_id: none
-      timestamp: {header: webhook-timestamp, unit: seconds}
-      delivery_id: {header: webhook-id}
-      signed_parts: [delivery-id, {literal: "."}, timestamp, {literal: "."}, raw-body]
-      field_constraints:
-        delivery-id: {ascii_bytes: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"}
-        timestamp: {ascii_bytes: "0123456789"}
+      kind: standard_webhooks
 ```
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.yaml -->
 
-| Setting | Values |
+| Signature kind | Authenticated bytes and configuration |
 |---|---|
-| `event_schema` | A schema reference to the JSON request body schema of a webhook or callback operation of the input, directly or through `$ref`, whose request-body model decodes the event; or an [event mapping](#event-mappings) |
-| `header` | The signature header; every occurrence is read, in order |
-| `encoding` | `hex` (either case), `base64` (padded), or `base64url` (padding optional) |
-| `prefix` | Visible ASCII text each signature starts with, possibly empty |
-| `separator` | `none`, or one printable ASCII character that splits each header value into signatures |
-| `key_id` | `none`, or `{header}` whose value selects the keys with exactly that id |
-| `timestamp` | `none`, or `{header, unit}` with `unit` `seconds` or `milliseconds`; the value is 1 to 19 digits |
-| `delivery_id` | `none`, or `{header}`; the value is visible ASCII |
-| `signed_parts` | The signed bytes in order: `raw-body`, the original bytes of `timestamp` and `delivery-id`, and `{literal}` visible ASCII text |
-| `field_constraints` | For each signed `timestamp` and `delivery-id`, `{fixed_bytes: <positive integer>}` or `{ascii_bytes: <its printable ASCII characters>}`; default `{}` |
+| `standard_webhooks` | `webhook-id.webhook-timestamp.body`; fixed HMAC-SHA256, `webhook-signature` with space-separated `v1,<base64>` signatures |
+| `stripe_style` | `timestamp.body`; one decimal `t` and hex `v1` candidates in a comma-separated header, default `Stripe-Signature` |
+| `body_hmac` | Raw body; required `header`, `algorithm` (`hmac-sha256` or `hmac-sha512`, default SHA256), `encoding` (`hex` or `base64`, default hex), and optional `prefix` (default empty) |
+| `ed25519`, `rsa-pss-sha256` | Raw body; required `header`, optional `encoding` (`hex`, `base64`, or `base64url`, default hex) and `prefix` (default empty) |
 
-Every setting is required except `field_constraints`, `enabled`, and `duplicates`; a missing timestamp, delivery id, or
-key id is declared with `none`. The signed parts must determine each part from the bytes alone: `raw-body` appears once
-and only literals follow it, each signed fact has exactly one constraint, and a fact with `ascii_bytes` is followed by a
-literal whose first character is outside its set. A declared timestamp or delivery id must be signed, a signed one
-declared, the four header names distinct, and the separator outside the encoding's alphabet and the prefix; otherwise
-generation fails with `E_CONFIG_CONFLICT`:
+Standard Webhooks returns an authenticated delivery id and timestamp. Stripe-style signatures return the timestamp
+and no delivery id. Body HMAC and public-key signatures return neither fact. Other signature formats use an adapter.
+Each helper's `event_schema` selects a webhook or callback JSON request-body model, or an [event mapping](#event-mappings).
+Header names are case insensitive; prefixes match exactly. Hex accepts either case, base64 requires padding, and
+public-key base64url allows optional padding.
+
+Invalid configuration is rejected during generation:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.diagnostics -->
 <!-- fmt: off -->
 
 ```text
-E_CONFIG_CONFLICT config protocols.helpers['conflict.headers'].signature.delivery_id: protocols.helpers['conflict.headers'].signature.delivery_id names the same header as protocols.helpers['conflict.headers'].signature.header
-E_CONFIG_CONFLICT config protocols.helpers['conflict.facts'].signature.timestamp: protocols.helpers['conflict.facts'].signature.timestamp names the same header as protocols.helpers['conflict.facts'].signature.key_id
-E_CONFIG_CONFLICT config protocols.helpers['conflict.alphabet'].signature.separator: protocols.helpers['conflict.alphabet'].signature.separator '+' can occur in a signature
-E_CONFIG_CONFLICT config protocols.helpers['conflict.prefix'].signature.separator: protocols.helpers['conflict.prefix'].signature.separator ',' can occur in a signature
-E_CONFIG_CONFLICT config protocols.helpers['conflict.no_body'].signature.signed_parts: protocols.helpers['conflict.no_body'].signature.signed_parts must name 'raw-body' exactly once
-E_CONFIG_CONFLICT config protocols.helpers['conflict.two_bodies'].signature.signed_parts: protocols.helpers['conflict.two_bodies'].signature.signed_parts must name 'raw-body' exactly once
-E_CONFIG_CONFLICT config protocols.helpers['conflict.after_body'].signature.signed_parts[2]: protocols.helpers['conflict.after_body'].signature.signed_parts[2] follows 'raw-body', after which only literals may come
-E_CONFIG_CONFLICT config protocols.helpers['conflict.unsigned'].signature.timestamp: protocols.helpers['conflict.unsigned'].signature.timestamp names a header that protocols.helpers['conflict.unsigned'].signature.signed_parts does not sign
-E_CONFIG_CONFLICT config protocols.helpers['conflict.undeclared'].signature.signed_parts: protocols.helpers['conflict.undeclared'].signature.signed_parts signs 'delivery-id' without a header in protocols.helpers['conflict.undeclared'].signature.delivery_id
-E_CONFIG_CONFLICT config protocols.helpers['conflict.unused'].signature.field_constraints['timestamp']: protocols.helpers['conflict.unused'].signature.field_constraints constrains 'timestamp', which protocols.helpers['conflict.unused'].signature.signed_parts does not sign
-E_CONFIG_CONFLICT config protocols.helpers['conflict.unconstrained'].signature.field_constraints: protocols.helpers['conflict.unconstrained'].signature.field_constraints needs one constraint of 'delivery-id', which protocols.helpers['conflict.unconstrained'].signature.signed_parts signs before 'raw-body'
-E_CONFIG_CONFLICT config protocols.helpers['conflict.adjacent'].signature.signed_parts[0]: protocols.helpers['conflict.adjacent'].signature.signed_parts[0] must be followed by a literal starting outside its ascii_bytes
-E_CONFIG_CONFLICT config protocols.helpers['conflict.delimiter'].signature.signed_parts[0]: protocols.helpers['conflict.delimiter'].signature.signed_parts[0] must be followed by a literal starting outside its ascii_bytes
-E_CONFIG_CONFLICT config protocols.helpers['conflict.facts_adjacent'].signature.signed_parts[0]: protocols.helpers['conflict.facts_adjacent'].signature.signed_parts[0] must be followed by a literal starting outside its ascii_bytes
+E_CONFIG_VALUE config protocols.helpers['shape.missing'].signature: protocols.helpers['shape.missing'] needs 'signature'
+E_CONFIG_VALUE config protocols.helpers['shape.values'].signature: protocols.helpers['shape.values'].signature must be a signature
+E_CONFIG_VALUE config protocols.helpers['shape.kind'].signature.kind: protocols.helpers['shape.kind'].signature.kind must be 'standard_webhooks', 'stripe_style', 'body_hmac', 'ed25519', 'rsa-pss-sha256', 'adapter' or 'none'
+E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.header: protocols.helpers['shape.ed25519'].signature needs 'header'
+E_CONFIG_VALUE config protocols.helpers['shape.adapter'].signature.timestamp: protocols.helpers['shape.adapter'].signature needs 'timestamp'
+E_CONFIG_VALUE config protocols.helpers['shape.adapter'].signature.delivery_id: protocols.helpers['shape.adapter'].signature needs 'delivery_id'
+E_CONFIG_VALUE config protocols.helpers['shape.adapter_facts'].signature.timestamp: protocols.helpers['shape.adapter_facts'].signature.timestamp must be 'required' or 'none'
+E_CONFIG_VALUE config protocols.helpers['shape.adapter_facts'].signature.delivery_id: protocols.helpers['shape.adapter_facts'].signature.delivery_id must be 'required' or 'none'
+E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.header: protocols.helpers['shape.settings'].signature.header must be a header name
+E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.encoding: protocols.helpers['shape.settings'].signature.encoding must be 'hex' or 'base64'
+E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.prefix: protocols.helpers['shape.settings'].signature.prefix must be visible ASCII text
 ```
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.diagnostics -->
 
 An event whose model needs an envelope fails with `E_CLIENT_UNSUPPORTED` when the helper is enabled. A header value is
-read as ASCII; a format that keeps its timestamp and signatures in one header, such as `t=...,v1=...`, or signs in any
-other way the settings cannot describe, needs an [adapter signature](#adapter-signatures).
+read as ASCII; a scheme that signs in any way the presets cannot describe needs an
+[adapter signature](#adapter-signatures).
 
 ### Event mappings
 
@@ -4296,20 +4023,33 @@ helpers:
   stripe.event:
     kind: webhook
     event_schema:
-      discriminator: {from: body, pointer: /type}
+      discriminator:
+        from: body
+        pointer: /type
       mapping:
-        invoice.paid: {pointer: /components/schemas/Invoice}
-        invoice.updated: {pointer: /components/schemas/Invoice}
-        customer.created: {pointer: /components/schemas/Customer}
-    signature: {kind: adapter, timestamp: required, delivery_id: none}
+        invoice.paid:
+          pointer: /components/schemas/Invoice
+        invoice.updated:
+          pointer: /components/schemas/Invoice
+        customer.created:
+          pointer: /components/schemas/Customer
+    signature:
+      kind: adapter
+      timestamp: required
+      delivery_id: none
   unsigned.event:
     kind: webhook
     event_schema:
-      discriminator: {from: body, pointer: /meta/type}
+      discriminator:
+        from: body
+        pointer: /meta/type
       mapping:
-        invoice.paid: {pointer: /components/schemas/Invoice}
-        customer.created: {pointer: /components/schemas/Customer}
-    signature: {kind: none}
+        invoice.paid:
+          pointer: /components/schemas/Invoice
+        customer.created:
+          pointer: /components/schemas/Customer
+    signature:
+      kind: none
 ```
 
 <!-- fmt: on -->
@@ -4380,17 +4120,16 @@ def receive_stripe(raw_body: bytes, headers: list[tuple[str, str]], secret: byte
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter -->
 
-`verify_async` calls the same synchronous verifier, once, and awaits only the replay store. After the helper checks its
+`verify_async` calls the same synchronous verifier, once. After the helper checks its
 arguments, including that `verifier` has a callable `verify` (or `ProtocolConfigurationError` with
 `field_path=("verifier",)`), and the body, header, and key-count limits, it passes the exact body, the headers as a
 tuple of pairs in received order, the key set, `now`, and the resolved limits; it never reads the keys. The verifier
 must authenticate the whole body and every fact it returns, honor `max_signatures`, and raise `WebhookVerificationError`
 when verification fails; every error it raises, including cancellation, propagates unchanged. Before decoding, the helper
-raises `AdapterContractError` with `delivery_state=NOT_SENT`, without decoding or claiming, when the result is not a
+raises `AdapterContractError` with `delivery_state=NOT_SENT`, without decoding, when the result is not a
 `VerifiedSignature` (an awaitable result is closed unawaited), its `matched_key_id` is not a nonempty string, a
 `required` fact is missing, not a nonempty string delivery id, or not an aware datetime, or a `none` fact is not
-`None`. A returned timestamp is then checked against the timestamp window, and the delivery id is claimed, as for
-builtin signatures.
+`None`. A returned timestamp is then checked against the timestamp window, as for builtin signatures.
 
 ### Unsigned webhooks
 
@@ -4399,18 +4138,16 @@ refused, so omitting it never means unsigned. The module has only
 `decode_unverified(raw_body, *, options=None) -> Event`, which refuses a body that is not `bytes`
 (`ProtocolConfigurationError`) or is over `max_body_bytes` (`ProtocolSizeError`), the only option it reads, and decodes
 the event. Nothing authenticates who sent the delivery or whether it was changed or replayed, and the result is the
-event alone, with no facts or duplicate information: treat it as untrusted input. `duplicates: reject` fails with
-`E_CONFIG_CONFLICT`.
+event alone, with no facts: treat it as untrusted input.
 
 ### Verification order and limits
 
-A call first checks its arguments, raising `ProtocolConfigurationError` with the field path of the first wrong one
-(`raw_body`, `headers`, `keys`, `now`, `options`, `replay_store`, then each key: `("keys", "<index>")` for another key
-type, `("keys", "<index>", "id")` for a repeated id or one a key-id header cannot carry). It then checks sizes, raising
-`ProtocolSizeError`, header syntax, the timestamp window, and the signatures, raising `WebhookVerificationError`, before
-it decodes the event, raising `ProtocolDataError`, and finally claims the delivery. An adapter helper checks
-`verifier` after `replay_store`, and the body, header, and key-count limits before calling the verifier, then the
-returned facts and the window. Errors keep no key, signature, header value, or body.
+A call checks `raw_body`, `headers`, `keys`, `now`, and `options`, then each builtin key's type and unique id.
+Invalid arguments raise `ProtocolConfigurationError` with their field path. Body, header, key, and signature counts
+are bounded by `ProtocolSizeError`. The helper checks signature syntax, timestamp tolerance when present, and
+cryptographic authenticity before decoding the model. Decoding errors raise `ProtocolDataError`. An adapter checks
+that `verifier.verify` is callable, then sizes, its returned facts, and the timestamp tolerance before decoding.
+Errors keep no key, signature, header value, or body.
 
 | Limit (`WebhookOptions`) | Default |
 |---|---|
@@ -4418,29 +4155,17 @@ returned facts and the window. Errors keep no key, signature, header value, or b
 | `max_header_bytes`, counting each name and value | 16 KiB |
 | `max_keys`, `max_signatures` | 8 |
 | `past_tolerance`, `future_tolerance` | 300 and 30 seconds; 0 is allowed |
-| `replay_ttl` | 300 seconds |
 
-- `malformed_signature`: no signature, a signature without the exact prefix, an empty, misencoded, or wrong-size one, or
-  a timestamp, delivery-id, or key-id header that is missing, repeated, outside its syntax, or breaks its constraint.
-  One malformed signature fails the call even when another would verify.
+- `malformed_signature`: a missing, empty, misencoded, or wrong-size signature, an incorrect prefix, or a missing,
+  repeated, or invalid required timestamp or delivery id. A malformed candidate fails even if another would verify.
 - `timestamp_window`: the timestamp lies outside `now - past_tolerance` to `now + future_tolerance`, both inclusive,
   compared in exact microseconds.
-- `missing_key`: no key is eligible, such as an empty key set or a key id no key has.
-- `invalid_signature`: keys are tried in key-set order and signatures in header order, and none verifies; HMAC digests
-  are compared in constant time, and public keys verify with cryptography. The first key that verifies gives `matched_key_id`.
-- `missing_delivery_id`: a replay store was given to a helper without a delivery id.
+- `missing_key`: the active key set is empty.
+- `invalid_signature`: no active key verifies. Keys and signatures are tried in order; HMAC digests are compared in
+  constant time, and public keys verify with cryptography. The first matching key supplies `matched_key_id`.
 
-### Replay detection
+### Application deduplication
 
-With a replay store, a verified and decoded delivery is claimed with the helper's contract fingerprint as namespace,
-until `timestamp + past_tolerance + future_tolerance`, or `now + replay_ttl` without a timestamp, which the helper's
-documentation states. A duplicate returns `duplicate=True`, or raises `WebhookReplayError` with `duplicates: reject`.
-A store failure raises `WebhookStoreError`, with the store's own `WebhookStoreError` raised as it is, and native
-cancellation propagates unchanged; no failure is treated as a success. Regenerating a helper with another contract
-changes its namespace. `MemoryReplayStore` expires claims by the wall clock, not by `now`. Without a replay store,
-`duplicate=False` guarantees nothing: the delivery may have been received before.
-
-Duplicate detection is guaranteed only until a claim expires, and a claim is at most once: it is made after the event
-decodes and before your code processes it. If processing fails afterwards, a retried delivery of the same id is reported
-as a duplicate, or rejected under `duplicates: reject`, until the claim expires. Make processing durable or idempotent
-before acknowledging the delivery, or use a store whose claims you can release.
+Verification retains no delivery state and returns every authenticated event independently. Use an authenticated
+`delivery_id` to deduplicate in application storage when the scheme supplies one. Keep processing and deduplication
+consistent with your application's transaction and acknowledgment rules.
