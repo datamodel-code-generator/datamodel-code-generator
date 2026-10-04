@@ -951,8 +951,9 @@ handle, a declared immediate status a handle that already holds the result, and 
 `ProtocolConfigurationError` before the create request. Each poll waits until the interval after the last response, an
 error response included, has passed, or the longer delay the helper's declared delay header gives, and a result fetch
 after a failed one waits the same way; nothing is sent early: a server delay longer than the allowed wait, or not
-shorter than what remains of the session, raises `PollWaitLimitError` without sending. A poll's state must equal a
-declared state value, JSON type included; any other value raises `PollingStateError`, and success is never inferred.
+shorter than what remains of the session, raises `PollWaitLimitError` without sending. A resumed handle polls at
+once, since a checkpoint keeps no server delay. A poll's state must equal a declared state value, JSON type included;
+any other value raises `PollingStateError`, and success is never inferred.
 
 `wait` returns the result: read from the final poll, fetched once by the result operation, or None. A failed or
 cancelled operation raises `OperationFailedError` or `OperationCancelledError` with its last poll, on every later
@@ -962,18 +963,20 @@ succeeded with its result fetch still due, which a later `wait` retries alone. `
 `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local polling. A call's
 options must not fix an idempotency key or patch a header or query parameter the helper writes.
 
-`checkpoint()` returns a `ResumeState` without sending, also after closing and while another thread or task polls:
-the phase, the polls so far, the wait left before the next poll or result fetch, the values the next requests write,
-and a settled operation's final poll and result bodies, never model objects, the session, or the call's options. The
-helper's `resume` is never awaited and returns a handle in a session of its own that sends nothing until `status` or
-`wait`; polls count on, while the session's timeout, deadline, and sends start afresh. Before returning, it refuses
-another helper's state, one made under other security, an expired one, and one that does not fit the helper with
-`ResumeStateError`, a saved dot segment for a path parameter with `ProtocolDataError`, and a saved body over the call's
-response size limit with `ProtocolSizeError`; a saved value the result fetch writes into its querystring or body is
-checked when the fetch request is built. `PollWaitLimitError` and a `SessionLimitError` of a created operation keep a
-checkpoint as `resume_state`. A helper that declares `expires_at` reads the server's expiry, an RFC 3339 date-time with
-an offset or an HTTP date, from the accepted create response, and its checkpoints expire then; a create response
-without a valid one fails `start` with `ProtocolDataError`, though the remote operation was created.
+`checkpoint()` returns a `ResumeState` without sending, also after closing and while another thread or task polls: a
+pending handle's values the next poll and a remote cancel write and those the create response gave the result fetch,
+or the values a due result fetch writes, and the server's expiry, never polls, results, model objects, the session, or
+the call's options; a settled operation has nothing left to continue, and its `checkpoint()` raises
+`ProtocolStateError`. The helper's `resume` is never awaited and returns a handle in a session of its own that sends
+nothing until `status` or `wait`: a pending one polls again at once, and one whose fetch is due fetches the result;
+polls, the session's timeout, deadline, and sends start afresh. Before returning,
+it refuses another helper's state, an expired one, and one that does not fit the helper with `ResumeStateError`, and a
+saved dot segment for a path parameter with `ProtocolDataError`; a saved value the result fetch writes into its
+querystring or body is checked when the fetch request is built. `PollWaitLimitError` and a `SessionLimitError` of a
+created operation keep a checkpoint as `resume_state`. A helper that declares `expires_at` reads the server's expiry,
+an RFC 3339 date-time with an offset or an HTTP date, from the accepted create response, and its checkpoints expire
+then; a create response without a valid one fails `start` with `ProtocolDataError`, though the remote operation was
+created.
 
 A helper that declares `remote_cancel` returns a handle of its own class whose `cancel_remote()` sends the cancel
 request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
