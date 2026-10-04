@@ -3392,15 +3392,14 @@ cannot change it. Each of the three sources is a function that takes no argument
 
 | Source | Default | Read for |
 |---|---|---|
-| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, idempotency key retention, token expiry, hook event durations, and protocol helper sessions, poll intervals, and stream deadlines |
-| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt, an idempotency key's `first_used_at` at call entry, and an access token's `expires_at`; a polling, stream, or upload helper's `resume` check of its state's `expires_at`; and a cache fetch's request, response, and age times |
+| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, token expiry, hook event durations, and protocol helper sessions, poll intervals, and stream deadlines |
+| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt and an access token's `expires_at`; a polling, stream, or upload helper's `resume` check of its state's `expires_at`; and a cache fetch's request, response, and age times |
 | `random` | A secure uniform draw | The fraction in `[0, 1)` of a full-jitter backoff, drawn only when a retry needs one |
 
 A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
 and flows keep their own time through `OAuthProviderOptions(clock=...)`, since one provider can serve several clients.
 A client and the providers it uses must agree on wall time, because an access token's `expires_at` passes between them
-as a UTC datetime. A key from `IdempotencyKey.new()` takes its first use from the system clock; pass `first_used_at`
-yourself for a client with another clock. A helper's `resume` checks a token's expiry by its client's wall clock.
+as a UTC datetime. A helper's `resume` checks a token's expiry by its client's wall clock.
 
 A deadline remembers its clock. `Deadline.after(seconds, clock=clock)` creates it on that clock, the system clock by
 default, and `remaining()` reads that clock, so an adapter, limiter, or provider that receives it measures it
