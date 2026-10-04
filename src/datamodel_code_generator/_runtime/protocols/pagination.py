@@ -37,7 +37,6 @@ from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError,
 from .options import PaginationOptions, layered
 from .records import (
     BodySelector,
-    BodyTarget,
     Continuation,
     HeaderSelector,
     ParameterTarget,
@@ -1105,37 +1104,6 @@ def _line(link: _Link | None) -> _History:
     return _History({digest: index for digest, index in history.seen.items() if index <= link.index}, link.index)
 
 
-def _coded(walk: _Walk[T, P]) -> _Walk[T, P]:
-    """Refuse a coding the helper call selects that no request the walk may still send can apply, sending nothing.
-
-    The first request sends the caller's body with the helper's operation, and each continuation sends it again, or
-    the body its bindings or cursor write, only with an operation that keeps a body; a walk past its last page or
-    limited to no items sends nothing.
-    """
-    if (options := walk.limits.options) is None or not isinstance(selected := options.compression, str):
-        return walk
-    from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
-
-    plan, link = walk.plan, walk.link
-    body = not isinstance(walk.request.body, Unset)
-    rule = plan.continuation
-    written = (
-        *(binding.target for binding in plan.bindings),
-        *(() if isinstance(rule, (NextUrlPlan, LinkPlan)) else (rule.write,)),
-    )
-    writes = any(isinstance(target, BodyTarget) for target in written)
-    continued = (plan.continued, (body or writes) and plan.continued.body is not None)
-    children: tuple[tuple[OperationPlan[P, object], bool], ...]
-    if walk.limits.max_items == 0:
-        children = ()
-    elif link is None:
-        children = ((plan.call, body), continued)
-    else:
-        children = () if link.digest is None else (continued,)
-    helper_children(selected, children)
-    return walk
-
-
 def _page_link(plan: PaginationPlan[T, P], page: object) -> _Link:
     """Return the link of a page this helper fetched, refusing any other page."""
     link = page._link if isinstance(page, Page) else None  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
@@ -1661,7 +1629,7 @@ def first_page(  # noqa: PLR0913
 ) -> Page[T, P]:
     """Fetch the first page of a helper in a session of its own."""
     limits = _limits(core, plan, pagination_options, options, session_options)
-    walk = _coded(_Walk(plan, _Request(arguments, body, media_type), limits, core))
+    walk = _Walk(plan, _Request(arguments, body, media_type), limits, core)
     if (session := walk.ready()) is None:
         raise walk.limit(0, "items")
     with walk.mapped():
@@ -1681,7 +1649,7 @@ async def afirst_page(  # noqa: PLR0913
 ) -> Page[T, P]:
     """Fetch the first page of a helper with asyncio, in a session of its own."""
     limits = _limits(core, plan, pagination_options, options, session_options)
-    walk = _coded(_Walk(plan, _Request(arguments, body, media_type), limits, core))
+    walk = _Walk(plan, _Request(arguments, body, media_type), limits, core)
     if (session := walk.ready()) is None:
         raise walk.limit(0, "items")
     with walk.mapped():
@@ -1701,7 +1669,7 @@ def iterate_pages(  # noqa: PLR0913
 ) -> Pager[T, P]:
     """Return a pager over a helper's items, checking its options now; it sends nothing until it is iterated."""
     limits = _limits(core, plan, pagination_options, options, session_options)
-    return Pager(core, _coded(_Walk(plan, _Request(arguments, body, media_type), limits, core)))
+    return Pager(core, _Walk(plan, _Request(arguments, body, media_type), limits, core))
 
 
 def aiterate_pages(  # noqa: PLR0913
@@ -1717,7 +1685,7 @@ def aiterate_pages(  # noqa: PLR0913
 ) -> AsyncPager[T, P]:
     """Return an asyncio pager over a helper's items, checking its options now; it sends nothing until iterated."""
     limits = _limits(core, plan, pagination_options, options, session_options)
-    return AsyncPager(core, _coded(_Walk(plan, _Request(arguments, body, media_type), limits, core)))
+    return AsyncPager(core, _Walk(plan, _Request(arguments, body, media_type), limits, core))
 
 
 def following_page(  # noqa: PLR0913
@@ -1735,7 +1703,7 @@ def following_page(  # noqa: PLR0913
     """
     limits = _limits(core, plan, pagination_options, options, session_options)
     link = _page_link(plan, page)
-    walk = _coded(_Walk(plan, link.request, limits, core, link))
+    walk = _Walk(plan, link.request, limits, core, link)
     if (session := walk.ready()) is None:
         return None
     with walk.mapped():
@@ -1757,7 +1725,7 @@ async def afollowing_page(  # noqa: PLR0913
     """
     limits = _limits(core, plan, pagination_options, options, session_options)
     link = _page_link(plan, page)
-    walk = _coded(_Walk(plan, link.request, limits, core, link))
+    walk = _Walk(plan, link.request, limits, core, link)
     if (session := walk.ready()) is None:
         return None
     with walk.mapped():
@@ -1779,7 +1747,7 @@ def resume_pages(  # noqa: PLR0913
     delivered of it.
     """
     limits = _limits(core, plan, pagination_options, options, session_options)
-    walk = _coded(_restored(core, plan, state, limits))
+    walk = _restored(core, plan, state, limits)
     return Pager(core, walk)._resumed()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
@@ -1798,5 +1766,5 @@ def aresume_pages(  # noqa: PLR0913
     delivered of it.
     """
     limits = _limits(core, plan, pagination_options, options, session_options)
-    walk = _coded(_restored(core, plan, state, limits))
+    walk = _restored(core, plan, state, limits)
     return AsyncPager(core, walk)._resumed()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001

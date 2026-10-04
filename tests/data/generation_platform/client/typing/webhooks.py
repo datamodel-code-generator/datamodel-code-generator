@@ -5,15 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from pets.errors import ProtocolConfigurationError, WebhookReplayError
+from pets.errors import ProtocolConfigurationError
 from pets.options import UNSET, Unset
 from pets.protocols import (
-    AsyncMemoryReplayStore,
-    AsyncReplayStore,
     KeySet,
-    MemoryReplayStore,
     OperationRef,
-    ReplayStore,
     ResolvedWebhookOptions,
     VerifiedSignature,
     VerifiedWebhook,
@@ -55,9 +51,7 @@ def contracts(now: datetime, limits: ResolvedWebhookOptions) -> None:
     assert_type(keys.keys, tuple[ApplicationKey, ...])
     verifier: Verifier[ApplicationKey] = ApplicationVerifier()
     assert_type(verifier.verify(b"event", (), keys, now, limits), VerifiedSignature)
-    event = VerifiedWebhook[str](
-        data="event", delivery_id=None, timestamp=None, matched_key_id="active", duplicate=False
-    )
+    event = VerifiedWebhook[str](data="event", delivery_id=None, timestamp=None, matched_key_id="active")
     assert_type(event.data, str)
     accepts_event(event)
     options = WebhookOptions(max_keys=2, past_tolerance=0, future_tolerance=UNSET)
@@ -68,24 +62,8 @@ def contracts(now: datetime, limits: ResolvedWebhookOptions) -> None:
     assert_type(operation.document, str | None)
     failure = ProtocolConfigurationError(field_path=("keys",), condition="invalid_value", operation=operation)
     assert_type(failure.operation, OperationRef | None)
-    duplicate = WebhookReplayError(delivery_id="delivery", namespace="application")
-    assert_type(duplicate.namespace, str)
 
 
 def accepts_event(event: VerifiedWebhook[object]) -> None:
     """Accept a more specific immutable event through the covariant result contract."""
     assert_type(event.data, object)
-
-
-def claim(now: datetime, store: ReplayStore) -> None:
-    """Use a memory store wherever a synchronous borrowed store is accepted."""
-    assert_type(store.claim("application", "delivery", now), bool)
-    memory: ReplayStore = MemoryReplayStore(max_entries=2)
-    assert_type(memory.claim("application", "delivery", now), bool)
-
-
-async def claim_async(now: datetime, store: AsyncReplayStore) -> None:
-    """Await one asynchronous claim and retain its boolean result."""
-    assert_type(await store.claim("application", "delivery", now), bool)
-    memory: AsyncReplayStore = AsyncMemoryReplayStore(max_entries=2)
-    assert_type(await memory.claim("application", "delivery", now), bool)

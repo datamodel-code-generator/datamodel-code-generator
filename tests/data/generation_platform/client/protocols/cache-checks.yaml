@@ -33,22 +33,3 @@ helpers:
     validator: etag
     authenticated: true
     vary_allowlist: [Accept, authorization, Cookie]
-  users.tagged:
-    kind: cache
-    operation: /paths/~1users/get
-    validator: etag
-    authenticated: false
-    tags: ["{fields}", "page:{page}", "{role}", plain]
-    mutations:
-      refetch:
-        operation: /paths/~1users~1{userId}/get
-        invalidate_tags: ["user:{userId}"]
-      create:
-        operation: /paths/~1users/post
-        invalidate_tags: ["{userId}"]
-  items.ambiguous:
-    kind: cache
-    operation: /paths/~1items~1{id}/get
-    validator: etag
-    authenticated: false
-    tags: ["item:{id}", "{kinds}"]
