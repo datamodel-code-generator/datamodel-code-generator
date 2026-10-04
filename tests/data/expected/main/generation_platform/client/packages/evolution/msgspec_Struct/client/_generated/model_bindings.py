@@ -17,7 +17,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import NativeOutboundCodec
 from .._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
 from .._runtime.model_codecs.structural import StructuralModelCodec
 from .._runtime.model_codecs.wire import freeze_wire
@@ -312,11 +311,6 @@ def codec_0() -> StructuralModelCodec[models.FieldOrdersOrderIdGetPathOrderIdPar
     )
 
 
-@cache
-def outbound_0() -> NativeOutboundCodec[models.FieldOrdersOrderIdGetPathOrderIdParameter]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
-
-
 CONTEXT_1: Final = CodecContext(
     surface='client',
     direction='request',
@@ -347,11 +341,6 @@ def codec_1() -> StructuralModelCodec[models.FieldOrdersOrderIdGetQueryViewParam
         {},
         request_bundle,
     )
-
-
-@cache
-def outbound_1() -> NativeOutboundCodec[models.FieldOrdersOrderIdGetQueryViewParameter]:
-    return NativeOutboundCodec(codec_1(), CONTEXT_1)
 
 
 CONTEXT_2: Final = CodecContext(

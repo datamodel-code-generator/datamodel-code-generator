@@ -7,10 +7,6 @@
     {"name": "record-client-decode-gap", "use": "/paths/~1records/put response_body 200", "surface": "client", "op": "decode",
      "value": {"name": "a", "stamp": "s"}},
     {"name": "record-client-decode", "use": "/paths/~1records/put response_body 200", "surface": "client", "op": "decode",
-     "value": {"name": "a", "stamp": "s", "hint": "h"}},
-    {"name": "record-server-encode-envelope", "use": "/paths/~1records/put response_body 200", "op": "encode",
-     "value": {"result": "record-client-decode-gap"}},
-    {"name": "record-client-require-gap", "use": "/paths/~1records/put response_body 200", "op": "require",
-     "target": "record-client-decode-gap"}
+     "value": {"name": "a", "stamp": "s", "hint": "h"}}
   ]
 }

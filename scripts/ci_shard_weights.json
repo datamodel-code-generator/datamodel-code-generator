@@ -3185,7 +3185,6 @@
         "tests/api_generation/test_client_runtime.py::test_client_runtime[retry-options]": 9034,
         "tests/api_generation/test_client_runtime.py::test_client_runtime[retry-ownership]": 3194,
         "tests/api_generation/test_client_runtime.py::test_client_runtime[retry-policy]": 4835,
-        "tests/api_generation/test_client_runtime.py::test_client_runtime[selectors]": 2692,
         "tests/api_generation/test_client_runtime.py::test_client_runtime[signatures-unpack]": 4229,
         "tests/api_generation/test_client_runtime.py::test_client_runtime[signatures]": 4108,
         "tests/api_generation/test_client_runtime.py::test_client_runtime[stream-backends]": 3999,

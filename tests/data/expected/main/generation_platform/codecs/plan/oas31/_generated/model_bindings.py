@@ -18,7 +18,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
 from .._runtime.model_codecs.wire import freeze_wire
@@ -432,11 +431,6 @@ def codec_0() -> PydanticModelCodec[plan_oas31_models.FieldPetsPetIdGetQueryTags
     )
 
 
-@cache
-def outbound_0() -> NativeOutboundCodec[plan_oas31_models.FieldPetsPetIdGetQueryTagsParameter]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
-
-
 CONTEXT_1: Final = CodecContext(
     surface='client',
     direction='request',
@@ -467,11 +461,6 @@ def codec_1() -> PydanticModelCodec[plan_oas31_models.Filter]:
         {'plan_oas31_models:Filter': plan_oas31_models.Filter},
         request_bundle,
     )
-
-
-@cache
-def outbound_1() -> NativeOutboundCodec[plan_oas31_models.Filter]:
-    return NativeOutboundCodec(codec_1(), CONTEXT_1)
 
 
 CONTEXT_2: Final = CodecContext(
@@ -508,11 +497,6 @@ def codec_2() -> PydanticModelCodec[plan_oas31_models.FieldPetsPetIdGetHeaderXTr
     )
 
 
-@cache
-def outbound_2() -> NativeOutboundCodec[plan_oas31_models.FieldPetsPetIdGetHeaderXTraceParameter]:
-    return NativeOutboundCodec(codec_2(), CONTEXT_2)
-
-
 CONTEXT_3: Final = CodecContext(
     surface='client',
     direction='request',
@@ -545,11 +529,6 @@ def codec_3() -> PydanticModelCodec[plan_oas31_models.FieldPetsPetIdGetCookieSes
         },
         request_bundle,
     )
-
-
-@cache
-def outbound_3() -> NativeOutboundCodec[plan_oas31_models.FieldPetsPetIdGetCookieSessionParameter]:
-    return NativeOutboundCodec(codec_3(), CONTEXT_3)
 
 
 CONTEXT_4: Final = CodecContext(
@@ -585,11 +564,6 @@ def codec_4() -> PydanticModelCodec[plan_oas31_models.Coords]:
     )
 
 
-@cache
-def outbound_4() -> NativeOutboundCodec[plan_oas31_models.Coords]:
-    return NativeOutboundCodec(codec_4(), CONTEXT_4)
-
-
 CONTEXT_5: Final = CodecContext(
     surface='client',
     direction='request',
@@ -620,11 +594,6 @@ def codec_5() -> PydanticModelCodec[plan_oas31_models.FieldPetsPetIdGetQueryIdsP
         {'plan_oas31_models:FieldPetsPetIdGetQueryIdsParameter': plan_oas31_models.FieldPetsPetIdGetQueryIdsParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_5() -> NativeOutboundCodec[plan_oas31_models.FieldPetsPetIdGetQueryIdsParameter]:
-    return NativeOutboundCodec(codec_5(), CONTEXT_5)
 
 
 CONTEXT_6: Final = CodecContext(
@@ -661,11 +630,6 @@ def codec_6() -> PydanticModelCodec[plan_oas31_models.FieldPetsPetIdGetQueryWhen
     )
 
 
-@cache
-def outbound_6() -> NativeOutboundCodec[plan_oas31_models.FieldPetsPetIdGetQueryWhenParameter]:
-    return NativeOutboundCodec(codec_6(), CONTEXT_6)
-
-
 CONTEXT_7: Final = CodecContext(
     surface='client',
     direction='request',
@@ -698,11 +662,6 @@ def codec_7() -> PydanticModelCodec[plan_oas31_models.FieldPetsPetIdGetPathPetId
         },
         request_bundle,
     )
-
-
-@cache
-def outbound_7() -> NativeOutboundCodec[plan_oas31_models.FieldPetsPetIdGetPathPetIdParameter]:
-    return NativeOutboundCodec(codec_7(), CONTEXT_7)
 
 
 CONTEXT_8: Final = CodecContext(

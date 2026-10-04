@@ -8,7 +8,16 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, arecord, json_response, raw_response, record, run
+from tests.data.python.client_runtime import (
+    Exchange,
+    arecord,
+    argument,
+    json_response,
+    raw_response,
+    record,
+    request_body,
+    run,
+)
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -31,19 +40,18 @@ def headers(package: ModuleType, lines: list[str]) -> None:
     http = exchange.client()
     patch = (("User-Agent", "custom/1"), ("X-Client", "c"), ("Accept-Encoding", "gzip;q=0.5, identity"))
     with package.Client(http_client=http, options=options.ClientOptions(headers=patch)) as api:
-        _layers(api, exchange, lines, options, types)
-        _framing(api, exchange, lines, options, bodies, types)
+        _layers(api, exchange, lines, options, package)
+        _framing(api, exchange, lines, options, bodies, package)
     http.close()
     _malformed(lines, options)
     run(lambda: _async_headers(package, lines))
     lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]
 
 
-def _layers(api: Any, exchange: Exchange, lines: list[str], options: ModuleType, types: ModuleType) -> None:
+def _layers(api: Any, exchange: Exchange, lines: list[str], options: ModuleType, package: ModuleType) -> None:
     """Replace each name's values where they first came, remove them with None, and append new names in order."""
-    codecs = types.ListPetsRequestCodecs
-    trace = codecs.parameter(location="header", name="X-Trace").from_wire("t1").value
-    session = codecs.parameter(location="cookie", name="session").from_wire("s1")
+    trace = argument(package, "listPets", "header", "X-Trace", "t1")
+    session = argument(package, "listPets", "cookie", "session", "s1")
     pets = json_response(200, [], **{"X-Rate": "1"})
     exchange.respond(pets)
     record(lines, "client headers", lambda: api.pets.list_pets(x_trace=trace))
@@ -64,11 +72,11 @@ def _layers(api: Any, exchange: Exchange, lines: list[str], options: ModuleType,
 
 
 def _framing(  # noqa: PLR0913, PLR0917
-    api: Any, exchange: Exchange, lines: list[str], options: ModuleType, bodies: ModuleType, types: ModuleType
+    api: Any, exchange: Exchange, lines: list[str], options: ModuleType, bodies: ModuleType, package: ModuleType
 ) -> None:
     """Keep the body's media type and a narrowed Accept, which a patch may only repeat, and label raw bytes freely."""
-    fox = types.CreatePetRequestCodecs.body(media_type="application/json").from_wire({"name": "fox"})
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    fox = request_body(package, "createPet", "application/json", {"name": "fox"})
+    pet = argument(package, "getPet", "path", "petId", 3)
     exchange.respond(json_response(201, {"id": 1, "name": "fox"}))
     record(
         lines,
@@ -135,7 +143,7 @@ async def _async_headers(package: ModuleType, lines: list[str]) -> None:
     options, _, types = _modules(package)
     exchange = Exchange(lines)
     http = exchange.async_client()
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     async with package.AsyncClient(http_client=http, options=options.ClientOptions(headers=(("X-Client", "c"),))) as api:
         exchange.respond(json_response(200, {"id": 3, "name": "fox"}))
         await arecord(

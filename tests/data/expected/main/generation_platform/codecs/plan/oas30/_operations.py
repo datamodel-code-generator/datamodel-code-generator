@@ -16,12 +16,7 @@ from ._runtime.client.operations import (
 )
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
-from .types.default import (
-    GetItemsErrorData,
-    GetItemsHTTPError,
-    GetItemsRequestCodecs,
-    GetItemsResponse,
-)
+from .types.default import GetItemsErrorData, GetItemsHTTPError, GetItemsResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://codecs.invalid'),)
 
@@ -113,5 +108,4 @@ OPERATION_0: Final[OperationPlan[GetItemsResponse, GetItemsErrorData]] = Operati
             encoder=Encoder(model_bindings.codec_5, model_bindings.CONTEXT_5),
         ),
     ),
-    codecs=GetItemsRequestCodecs,
 )

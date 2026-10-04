@@ -49,7 +49,6 @@ if TYPE_CHECKING:
     from ..client.options import ResolvedRetryOptions
     from ..client.responses import ResponseInfo
     from ..client.timing import Clock
-    from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .queues import AsyncQueueStore, QueueState, QueueStore, ResolvedQueueOptions
     from .references import OperationRef
@@ -155,7 +154,7 @@ class _Send:
     call: OperationPlan[object, object]
     arguments: tuple[object, ...]
     body: object
-    media_type: str | MediaSelector | None
+    media_type: str | None
     options: RequestOptions | None
     deadline: Deadline
     lease: QueueLease
@@ -295,7 +294,7 @@ def _new_entry(  # noqa: PLR0913, PLR0917
     index: int,
     arguments: tuple[object, ...],
     body: object,
-    media_type: str | MediaSelector | None,
+    media_type: str | None,
     queue_options: object,
 ) -> QueueEntry:
     """Return a new pending entry saving a call, encoded and checked as the call would be, without credentials.
@@ -376,7 +375,7 @@ def _require(condition: bool) -> None:  # noqa: FBT001
 
 def _restored(
     core: ClientCore | AsyncClientCore, call: OperationPlan[object, object], entry: QueueEntry
-) -> tuple[tuple[object, ...], object, str | MediaSelector | None, WireValue]:
+) -> tuple[tuple[object, ...], object, str | None, WireValue]:
     """Return the arguments, body, and media type a payload saved, built and checked as a caller's are.
 
     A payload of another shape or version, an argument a payload never saves, a missing required argument or body, and
@@ -1228,7 +1227,7 @@ def enqueue_entry(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     queue_options: object = None,
 ) -> QueueReceipt:
     """Save a call of one queued operation as a new pending entry, sending nothing."""
@@ -1245,7 +1244,7 @@ async def aenqueue_entry(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     queue_options: object = None,
 ) -> QueueReceipt:
     """Save a call as `enqueue_entry` does, awaiting the asynchronous store."""

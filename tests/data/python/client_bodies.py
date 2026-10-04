@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, aoutcome, arecord, outcome, raw_response, record, run
+from tests.data.python.client_runtime import Exchange, aoutcome, arecord, argument, outcome, raw_response, record, run
 from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response, Stop
 
 if TYPE_CHECKING:
@@ -23,8 +23,7 @@ _PNG = b"\x89PNG"
 
 
 def _photo(package: ModuleType) -> object:
-    types = importlib.import_module(f"{package.__name__}.types.pets.photos")
-    return types.UploadRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    return argument(package, "uploadPhoto", "path", "petId", 1)
 
 
 class _Unseekable(io.BytesIO):

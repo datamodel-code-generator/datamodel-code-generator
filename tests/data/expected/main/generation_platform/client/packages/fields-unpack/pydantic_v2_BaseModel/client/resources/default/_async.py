@@ -40,6 +40,8 @@ from ..._generated.client_arguments import (
     Operation5Arguments,
     Operation6Arguments1,
     Operation7Arguments,
+    Operation7Arguments1,
+    Operation7Arguments2,
 )
 from ..._runtime.client.client import AsyncClientCore
 from ...options import UNSET
@@ -253,16 +255,27 @@ class AsyncDefaultResource:
             options=kwargs.get('options'),
         )).data
 
+    @overload
     async def replace_pet(
         self,
         **kwargs: Unpack[Operation7Arguments],
+    ) -> ReplacePetResponse: ...
+    @overload
+    async def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments1],
+    ) -> ReplacePetResponse: ...
+    async def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments2],
     ) -> ReplacePetResponse:
         """Call PUT /pets/{petId}/records."""
         KEYWORDS_7.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_7,
             (kwargs['pet_id'],),
-            body=kwargs['body'],
+            body=kwargs.get('body', UNSET),
+            fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )).data
@@ -450,16 +463,27 @@ class AsyncDefaultWithResponse:
             options=kwargs.get('options'),
         )
 
+    @overload
     async def replace_pet(
         self,
         **kwargs: Unpack[Operation7Arguments],
+    ) -> Response[ReplacePetResponse]: ...
+    @overload
+    async def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments1],
+    ) -> Response[ReplacePetResponse]: ...
+    async def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments2],
     ) -> Response[ReplacePetResponse]:
         """Call PUT /pets/{petId}/records."""
         KEYWORDS_7.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_7,
             (kwargs['pet_id'],),
-            body=kwargs['body'],
+            body=kwargs.get('body', UNSET),
+            fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -647,16 +671,27 @@ class AsyncDefaultWithRawResponse:
             options=kwargs.get('options'),
         )
 
+    @overload
     async def replace_pet(
         self,
         **kwargs: Unpack[Operation7Arguments],
+    ) -> AsyncRawResponse: ...
+    @overload
+    async def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments1],
+    ) -> AsyncRawResponse: ...
+    async def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments2],
     ) -> AsyncRawResponse:
         """Call PUT /pets/{petId}/records."""
         KEYWORDS_7.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_7,
             (kwargs['pet_id'],),
-            body=kwargs['body'],
+            body=kwargs.get('body', UNSET),
+            fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -844,16 +879,27 @@ class AsyncDefaultWithStreamingResponse:
             options=kwargs.get('options'),
         )
 
+    @overload
     def replace_pet(
         self,
         **kwargs: Unpack[Operation7Arguments],
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
+    @overload
+    def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments1],
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
+    def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments2],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call PUT /pets/{petId}/records."""
         KEYWORDS_7.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_7,
             (kwargs['pet_id'],),
-            body=kwargs['body'],
+            body=kwargs.get('body', UNSET),
+            fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )

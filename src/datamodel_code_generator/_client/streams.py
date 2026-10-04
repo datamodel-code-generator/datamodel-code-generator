@@ -282,21 +282,12 @@ def plan_streams(  # noqa: PLR0913, PLR0917
     """
     if protocols is None or not specs:
         return ()
-    bindings = dict(codecs.bindings)
     pages = _Pages(protocols, plan, codecs, wire, request)
     polls = _Polls(pages, {spec.contract.id: spec for spec in plan.operations}, codecs, protocols)
     planned: list[StreamSpec] = []
     for spec in specs:
-        helper, operation = spec.helper, spec.operation
+        helper = spec.helper
         found = problems[helper.name]
-        for (where, _), use in zip(_references(helper), spec.uses, strict=True):
-            binding = bindings[use.id]
-            if binding.projection_mode != "native":
-                message = (
-                    f"The {_LABELS[helper.kind]} helper {helper.name!r} decodes an envelope-projected event, which is "
-                    "not supported yet"
-                )
-                found.append(_problem("E_CLIENT_UNSUPPORTED", "target", where, message, operation))
         found.extend(_discriminated(helper, spec, pages))
         found.extend(_resumed(helper, spec, pages, polls))
         if not found:

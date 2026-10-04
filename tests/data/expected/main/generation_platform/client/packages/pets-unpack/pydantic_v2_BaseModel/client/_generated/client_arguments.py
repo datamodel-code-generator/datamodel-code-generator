@@ -9,66 +9,61 @@ from models import FieldPetsGetCookieSessionParameter as _dcg_type_3
 from models import FieldPetsGetHeaderXTraceParameter as _dcg_type_2
 from models import FieldPetsGetQueryLimitParameter as _dcg_type_0
 from models import FieldPetsGetQueryTagsParameter as _dcg_type_1
-from models import FieldPetsPetIdFilesGetPathPetIdParameter as _dcg_type_11
-from models import FieldPetsPetIdFilesPostPathPetIdParameter as _dcg_type_10
+from models import FieldPetsPetIdFilesGetPathPetIdParameter as _dcg_type_9
+from models import FieldPetsPetIdFilesPostPathPetIdParameter as _dcg_type_8
 from models import FieldPetsPetIdGetPathPetIdParameter as _dcg_type_6
-from models import FieldPetsPetIdGetResponse as _dcg_type_8
-from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_9
+from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_7
 from models import FieldPetsPostRequest as _dcg_type_5
 from models import NewPet as _dcg_type_4
-from models import Pet as _dcg_type_7
 from typing_extensions import NotRequired, TypedDict
 
 from .._runtime.client.arguments import Keywords
 from ..bodies import AsyncBinaryBody, AsyncMultipartBody, MultipartBody, SyncBinaryBody
-from ..model_codecs import ModelValue, RequestMedia, ResponseMedia
 from ..options import RequestOptions, Unset
-from ..types.pets import CreatePetResponse, ListPetsResponse, ReadFilesResponse
-from ..types.pets.photos import UploadResponse
 
 
 class Operation0Arguments(TypedDict):
     """The keyword arguments of one signature of list_pets."""
 
-    limit: NotRequired[_dcg_type_0 | ModelValue[_dcg_type_0] | Unset]
-    labels: NotRequired[_dcg_type_1 | ModelValue[_dcg_type_1] | Unset]
-    x_trace: _dcg_type_2 | ModelValue[_dcg_type_2]
-    session: NotRequired[_dcg_type_3 | ModelValue[_dcg_type_3] | Unset]
-    response_media_type: NotRequired[Literal['application/json'] | ResponseMedia[ListPetsResponse] | None]
+    limit: NotRequired[_dcg_type_0 | Unset]
+    labels: NotRequired[_dcg_type_1 | Unset]
+    x_trace: _dcg_type_2
+    session: NotRequired[_dcg_type_3 | Unset]
+    response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 class Operation1Arguments(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_4 | ModelValue[_dcg_type_4]
-    media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]]
-    response_media_type: NotRequired[Literal['application/json'] | ResponseMedia[CreatePetResponse] | None]
+    body: _dcg_type_4
+    media_type: Literal['application/json']
+    response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 class Operation1Arguments1(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_5 | ModelValue[_dcg_type_5]
-    media_type: Literal['text/plain'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]]
-    response_media_type: NotRequired[Literal['application/json'] | ResponseMedia[CreatePetResponse] | None]
+    body: _dcg_type_5
+    media_type: Literal['text/plain']
+    response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 class Operation1Arguments2(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_5 | ModelValue[_dcg_type_5]
-    media_type: NotRequired[Literal['application/json', 'text/plain'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None]
-    response_media_type: NotRequired[Literal['application/json'] | ResponseMedia[CreatePetResponse] | None]
+    body: _dcg_type_4 | _dcg_type_5
+    media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
+    response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 class Operation2Arguments(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
+    pet_id: _dcg_type_6
     response_media_type: NotRequired[None]
     options: NotRequired[RequestOptions | None]
 
@@ -76,84 +71,82 @@ class Operation2Arguments(TypedDict):
 class Operation2Arguments1(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
-    response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_7]
+    pet_id: _dcg_type_6
+    response_media_type: Literal['application/json']
     options: NotRequired[RequestOptions | None]
 
 
 class Operation2Arguments2(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
-    response_media_type: Literal['text/plain'] | ResponseMedia[_dcg_type_8]
+    pet_id: _dcg_type_6
+    response_media_type: Literal['text/plain']
     options: NotRequired[RequestOptions | None]
 
 
 class Operation2Arguments3(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
-    response_media_type: NotRequired[Literal['application/json', 'text/plain'] | ResponseMedia[_dcg_type_7] | ResponseMedia[_dcg_type_8] | None]
+    pet_id: _dcg_type_6
+    response_media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 class Operation3Arguments(TypedDict):
     """The keyword arguments of one signature of delete_pets_by_pet_id."""
 
-    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
+    pet_id: _dcg_type_6
     options: NotRequired[RequestOptions | None]
 
 
 class Operation4Arguments(TypedDict):
     """The keyword arguments of one signature of head_pet."""
 
-    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
+    pet_id: _dcg_type_6
     options: NotRequired[RequestOptions | None]
 
 
 class Operation5Arguments(TypedDict):
     """The keyword arguments of one signature of upload."""
 
-    pet_id: _dcg_type_9 | ModelValue[_dcg_type_9]
+    pet_id: _dcg_type_7
     body: NotRequired[SyncBinaryBody | Unset]
-    media_type: NotRequired[Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None]
-    response_media_type: NotRequired[ResponseMedia[UploadResponse] | None]
+    media_type: NotRequired[Literal['application/octet-stream'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 class Operation5Arguments1(TypedDict):
     """The keyword arguments of one signature of upload."""
 
-    pet_id: _dcg_type_9 | ModelValue[_dcg_type_9]
+    pet_id: _dcg_type_7
     body: NotRequired[AsyncBinaryBody | Unset]
-    media_type: NotRequired[Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None]
-    response_media_type: NotRequired[ResponseMedia[UploadResponse] | None]
+    media_type: NotRequired[Literal['application/octet-stream'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 class Operation6Arguments(TypedDict):
     """The keyword arguments of one signature of attach_files."""
 
-    pet_id: _dcg_type_10 | ModelValue[_dcg_type_10]
-    body: MultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]]
-    media_type: NotRequired[Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]], AsyncMultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]]] | None]
+    pet_id: _dcg_type_8
+    body: MultipartBody[str | list[str]]
+    media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 class Operation6Arguments1(TypedDict):
     """The keyword arguments of one signature of attach_files."""
 
-    pet_id: _dcg_type_10 | ModelValue[_dcg_type_10]
-    body: AsyncMultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]]
-    media_type: NotRequired[Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]], AsyncMultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]]] | None]
+    pet_id: _dcg_type_8
+    body: AsyncMultipartBody[str | list[str]]
+    media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 class Operation7Arguments(TypedDict):
     """The keyword arguments of one signature of read_files."""
 
-    pet_id: _dcg_type_11 | ModelValue[_dcg_type_11]
-    response_media_type: NotRequired[Literal['multipart/form-data'] | ResponseMedia[ReadFilesResponse] | None]
+    pet_id: _dcg_type_9
+    response_media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
 
 
@@ -190,7 +183,7 @@ KEYWORDS_4: Final = Keywords('head_pet', ('pet_id', 'options'), ('pet_id',))
 
 KEYWORDS_5: Final = Keywords(
     'upload',
-    ('pet_id', 'body', 'media_type', 'response_media_type', 'options'),
+    ('pet_id', 'body', 'media_type', 'options'),
     ('pet_id',),
 )
 

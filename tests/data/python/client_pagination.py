@@ -7,7 +7,16 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, describe, json_response, raw_response, record, run
+from tests.data.python.client_runtime import (
+    Exchange,
+    argument,
+    describe,
+    json_response,
+    raw_response,
+    record,
+    request_body,
+    run,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable
@@ -123,14 +132,13 @@ class Harness:
             importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "protocols", "errors")
         )
 
-    def argument(self, resource: str, operation: str, location: str, name: str, wire: object) -> object:
-        """Return the value an argument takes for a wire value, as its request codec builds it."""
-        types = importlib.import_module(f"{self.package.__name__}.types.{resource}")
-        return getattr(types, f"{operation}RequestCodecs").parameter(location=location, name=name).from_wire(wire)
+    def argument(self, operation_id: str, location: str, name: str, wire: object) -> object:
+        """Return the value an argument takes for a wire value, as its operation builds a saved one."""
+        return argument(self.package, operation_id, location, name, wire)
 
     def cursor(self, wire: str) -> object:
         """Return a starting cursor of the users listing."""
-        return self.argument("users", "ListUsers", "query", "cursor", wire)
+        return self.argument("listUsers", "query", "cursor", wire)
 
     def client_options(self, **settings: Any) -> Any:
         """Return client options that retry at once, with any other settings."""
@@ -158,7 +166,7 @@ def pagination(package: ModuleType, lines: list[str]) -> None:
 def _traversals(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Fetch pages lazily, one at a time, through empty pages and a retried page, stopping at the last one."""
     helper = api.protocols.users.all
-    limit = harness.argument("users", "ListUsers", "query", "limit", 2)
+    limit = harness.argument("listUsers", "query", "limit", 2)
     pager = helper.iterate(limit=limit)
     lines.append(f"  created pager {progress(pager)}")
     exchange.respond(users("1", "2", cursor="a"), users(cursor="b"), users("3"))
@@ -359,7 +367,7 @@ def _targets(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -
     drained(
         lines,
         "path cursor",
-        api.protocols.archive.all.iterate(cursor=harness.argument("archive", "ListArchive", "path", "cursor", "a1")),
+        api.protocols.archive.all.iterate(cursor=harness.argument("listArchive", "path", "cursor", "a1")),
     )
     exchange.respond(raw_response(206, b'{"data":[{"id":"1"}]}', "application/json"), users("2"))
     drained(lines, "status cursor", api.protocols.statuses.all.iterate())
@@ -377,8 +385,7 @@ def _targets(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -
 
 
 def _query(harness: Harness) -> object:
-    types = importlib.import_module(f"{harness.package.__name__}.types.users")
-    return types.SearchUsersRequestCodecs.body().from_wire({"name": "a"})
+    return request_body(harness.package, "searchUsers", None, {"name": "a"})
 
 
 async def _async_pagination(harness: Harness, lines: list[str]) -> None:
@@ -489,6 +496,6 @@ def pagination_limits(package: ModuleType, lines: list[str]) -> None:
             json_response(200, {"data": [{"id": "1"}], "next": "longer"}), json_response(200, {"data": [{"id": "2"}]})
         )
         drained(lines, "a long server cursor", helper.iterate())
-        start = type(harness.argument("codes", "ListCodes", "query", "cursor", "ab").value).model_construct("longer")
+        start = type(harness.argument("listCodes", "query", "cursor", "ab")).model_construct("longer")
         exchange.respond(json_response(200, {"data": [{"id": "1"}]}))
         drained(lines, "a long start cursor", helper.iterate(cursor=start))

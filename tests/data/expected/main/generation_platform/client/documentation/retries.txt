@@ -29,31 +29,31 @@
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 retry.get_safe()
     exports client.types.retry.GetSafeResponse client.types.retry.GetSafeErrorData client.types.retry.GetSafeHTTPError
-    exports client.types.retry.GetSafeRequestCodecs None
+    exports None
   /selection/selected_operations/1 retry.post_unsafe()
     exports client.types.retry.PostUnsafeResponse client.types.retry.PostUnsafeErrorData client.types.retry.PostUnsafeHTTPError
-    exports client.types.retry.PostUnsafeRequestCodecs None
+    exports None
   /selection/selected_operations/2 retry.post_idempotent()
     exports client.types.retry.PostIdempotentResponse client.types.retry.PostIdempotentErrorData client.types.retry.PostIdempotentHTTPError
-    exports client.types.retry.PostIdempotentRequestCodecs None
+    exports None
   /selection/selected_operations/3 retry.post_keyed()
     exports client.types.retry.PostKeyedResponse client.types.retry.PostKeyedErrorData client.types.retry.PostKeyedHTTPError
-    exports client.types.retry.PostKeyedRequestCodecs None
+    exports None
   /selection/selected_operations/4 retry.post_key_only()
     exports client.types.retry.PostKeyOnlyResponse client.types.retry.PostKeyOnlyErrorData client.types.retry.PostKeyOnlyHTTPError
-    exports client.types.retry.PostKeyOnlyRequestCodecs None
+    exports None
   /selection/selected_operations/5 retry.get_never()
     exports client.types.retry.GetNeverResponse client.types.retry.GetNeverErrorData client.types.retry.GetNeverHTTPError
-    exports client.types.retry.GetNeverRequestCodecs None
+    exports None
   /selection/selected_operations/6 retry.post_never()
     exports client.types.retry.PostNeverResponse client.types.retry.PostNeverErrorData client.types.retry.PostNeverHTTPError
-    exports client.types.retry.PostNeverRequestCodecs None
+    exports None
   /selection/selected_operations/7 retry.get_vendor()
     exports client.types.retry.GetVendorResponse client.types.retry.GetVendorErrorData client.types.retry.GetVendorHTTPError
-    exports client.types.retry.GetVendorRequestCodecs None
+    exports None
   /selection/selected_operations/8 retry.get_keyed_safe()
     exports client.types.retry.GetKeyedSafeResponse client.types.retry.GetKeyedSafeErrorData client.types.retry.GetKeyedSafeHTTPError
-    exports client.types.retry.GetKeyedSafeRequestCodecs None
+    exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md
