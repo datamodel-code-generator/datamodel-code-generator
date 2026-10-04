@@ -13,15 +13,7 @@ from typing import Final
 from models import Message as _dcg_type_0
 
 from ..._generated import model_bindings
-from ..._runtime.protocols.signatures import (
-    DELIVERY_ID,
-    HMAC_SHA256,
-    RAW_BODY,
-    TIMESTAMP,
-    FactField,
-    SignatureProfile,
-    TimestampField,
-)
+from ..._runtime.protocols.signatures import HMAC_SHA256
 from ..._runtime.protocols.verification import (
     WebhookPlan,
     averify_webhook,
@@ -29,43 +21,19 @@ from ..._runtime.protocols.verification import (
 )
 from ..._runtime.protocols.webhook_events import EventDecoder
 from ..._runtime.protocols.webhook_keys import HmacKey
-from ..._runtime.protocols.webhooks import (
-    AsyncReplayStore,
-    KeySet,
-    ReplayStore,
-    VerifiedWebhook,
-    WebhookOptions,
-)
+from ..._runtime.protocols.webhooks import KeySet, VerifiedWebhook, WebhookOptions
 
 __all__ = ["verify", "verify_async"]
 
 
 _PLAN: Final[WebhookPlan[_dcg_type_0, HmacKey]] = WebhookPlan(
     helper_id='standard.message',
-    fingerprint='197ae2bcab18203b20bd1c926e759357f88ed6aac18148ec339776bd978fe686',
-    signature=SignatureProfile(
-        algorithm=HMAC_SHA256,
-        header='webhook-signature',
-        encoding='base64',
-        prefix='v1,',
-        separator=' ',
-        key_id=None,
-        timestamp=TimestampField(
-            header='webhook-timestamp',
-            unit='seconds',
-            ascii_bytes=b'0123456789',
-        ),
-        delivery_id=FactField(
-            header='webhook-id',
-            ascii_bytes=(
-                b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuv'
-                + b'wxyz0123456789_'
-            ),
-        ),
-        parts=(DELIVERY_ID, b'.', TIMESTAMP, b'.', RAW_BODY),
-    ),
+    kind='standard_webhooks',
+    algorithm=HMAC_SHA256,
+    header='webhook-signature',
+    encoding='base64',
+    prefix='v1,',
     event=EventDecoder(model_bindings.codec_3, model_bindings.CONTEXT_3, validate=True),
-    duplicates='report',
 )
 
 
@@ -75,29 +43,14 @@ def verify(
     keys: KeySet[HmacKey],
     *,
     now: datetime,
-    replay_store: ReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0]:
-    """Verify a delivery and decode its event, claiming it in a store.
+    """Verify a delivery and decode its event.
 
-    Deliveries outside the timestamp window are rejected. The window closes at the
-    timestamp plus past_tolerance, while a replay store keeps a claim until the
-    timestamp plus past_tolerance and future_tolerance. Duplicates are detected only
-    until the claim expires. The claim is made after decoding, before your code
-    processes the event: if processing then fails, a retried delivery is a duplicate, or
-    rejected under duplicates: reject, until the claim expires, so make processing
-    durable or idempotent before acknowledging, or use a store whose claims you can
-    release. Without a replay store, duplicate=False does not mean the delivery is new.
+    Deliveries outside the timestamp window are rejected. Verification retains no
+    delivery state; deduplicate in your application using delivery_id when present.
     """
-    return verify_webhook(
-        _PLAN,
-        raw_body,
-        headers,
-        keys,
-        now=now,
-        replay_store=replay_store,
-        options=options,
-    )
+    return verify_webhook(_PLAN, raw_body, headers, keys, now=now, options=options)
 
 
 async def verify_async(
@@ -106,19 +59,12 @@ async def verify_async(
     keys: KeySet[HmacKey],
     *,
     now: datetime,
-    replay_store: AsyncReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0]:
-    """Verify a delivery and decode its event, claiming it in an asyncio store.
+    """Verify a delivery and decode its event.
 
-    Deliveries outside the timestamp window are rejected. The window closes at the
-    timestamp plus past_tolerance, while a replay store keeps a claim until the
-    timestamp plus past_tolerance and future_tolerance. Duplicates are detected only
-    until the claim expires. The claim is made after decoding, before your code
-    processes the event: if processing then fails, a retried delivery is a duplicate, or
-    rejected under duplicates: reject, until the claim expires, so make processing
-    durable or idempotent before acknowledging, or use a store whose claims you can
-    release. Without a replay store, duplicate=False does not mean the delivery is new.
+    Deliveries outside the timestamp window are rejected. Verification retains no
+    delivery state; deduplicate in your application using delivery_id when present.
     """
     return await averify_webhook(
         _PLAN,
@@ -126,6 +72,5 @@ async def verify_async(
         headers,
         keys,
         now=now,
-        replay_store=replay_store,
         options=options,
     )

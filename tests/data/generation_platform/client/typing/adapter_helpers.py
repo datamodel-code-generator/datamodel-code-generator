@@ -8,9 +8,7 @@ from datetime import datetime, timezone
 
 from pets.errors import ProtocolSizeError, WebhookVerificationError
 from pets.protocols import (
-    AsyncMemoryReplayStore,
     KeySet,
-    MemoryReplayStore,
     ResolvedWebhookOptions,
     VerifiedSignature,
     VerifiedWebhook,
@@ -81,11 +79,11 @@ def decode(raw_body: bytes) -> Invoice | Customer:
     return unsigned_event.decode_unverified(raw_body)
 
 
-def adapted(body: bytes, headers: list[tuple[str, str]], now: datetime, store: MemoryReplayStore) -> None:
+def adapted(body: bytes, headers: list[tuple[str, str]], now: datetime) -> None:
     """Keep the helpers' event types with the application's key type in both modes."""
     keys = KeySet(keys=(StripeKey(name="active", secret=b"secret"),))
     verifier = StripeVerifier()
-    result = event.verify(body, headers, keys, verifier=verifier, now=now, replay_store=store)
+    result = event.verify(body, headers, keys, verifier=verifier, now=now)
     assert_type(result, VerifiedWebhook[Invoice | Customer])
     assert_type(result.data, Invoice | Customer)
     assert_type(message.verify(body, (), keys, verifier=verifier, now=now), VerifiedWebhook[Message])
@@ -97,9 +95,7 @@ def adapted(body: bytes, headers: list[tuple[str, str]], now: datetime, store: M
 
 
 async def awaited(body: bytes, headers: list[tuple[str, str]], now: datetime) -> None:
-    """Await the asyncio helper with the same synchronous verifier and an asyncio store."""
+    """Await the asyncio helper with the same synchronous verifier."""
     keys = KeySet(keys=(StripeKey(name="active", secret=b"secret"),))
-    result = await event.verify_async(
-        body, headers, keys, verifier=StripeVerifier(), now=now, replay_store=AsyncMemoryReplayStore()
-    )
+    result = await event.verify_async(body, headers, keys, verifier=StripeVerifier(), now=now)
     assert_type(result, VerifiedWebhook[Invoice | Customer])

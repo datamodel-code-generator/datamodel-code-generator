@@ -1,21 +1,17 @@
 """Plan the cache helpers of a client target and the checks they must pass.
 
-A cache helper fetches a GET operation without a body whose cacheable statuses are JSON successes, and its tags and its
-mutations' tags fill their braces with required scalar path or query parameters of the operation each renders for.
+A cache helper fetches a GET operation without a body whose cacheable statuses are JSON successes.
 """
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.pagination import _Pages
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
-
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
@@ -25,37 +21,17 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import TypeUseBinding
 
-Tag: TypeAlias = tuple[str | int, ...]
-
-_PLACEHOLDER: Final = re.compile(r"\{([^{}]+)\}")
-_UNSAFE: Final = frozenset({"post", "put", "patch", "delete"})
-_SCALARS: Final = frozenset({"string", "integer", "number", "boolean"})
-_TAGGED: Final = frozenset({"path", "query"})
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class MutationSpec:
-    """A mutation of a cache helper ready to render: its method name, operation, and invalidated tags."""
-
-    name: str
-    operation: OperationSpec
-    tags: tuple[Tag, ...]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class CacheSpec:
-    """A cache helper ready to render: its operation, the use of its cacheable response, its tags, and mutations.
-
-    A tag is literal text and the positions of the parameters whose wire values fill it in.
-    """
+    """A cache helper ready to render, with its operation and cacheable response use."""
 
     helper: Helper
     operation: OperationSpec
     response: TypeUseBinding
-    tags: tuple[Tag, ...]
-    mutations: tuple[MutationSpec, ...]
 
 
 def _label(spec: OperationSpec) -> str:
@@ -81,15 +57,13 @@ class _Caches:
     def __init__(
         self, protocols: Protocols, codecs: CodecPlan, wire: WirePlan, request: TargetRequest, plan: ClientPlan
     ) -> None:
-        """Index the use bindings, the schema reader that types parameters, and the headers credentials travel in."""
+        """Index the response bindings and the headers credentials travel in."""
         self.pages = _Pages(protocols, plan, codecs, wire, request)
         self.bindings = dict(codecs.bindings)
         self.credential_headers = self.pages.secret_headers
 
-    def helper(
-        self, helper: Helper, spec: OperationSpec, mutations: Mapping[str, OperationSpec]
-    ) -> tuple[CacheSpec | None, list[Diagnostic]]:
-        """Check one enabled helper against its operation and its mutations', and plan it when every check passes."""
+    def helper(self, helper: Helper, spec: OperationSpec) -> tuple[CacheSpec | None, list[Diagnostic]]:
+        """Check one enabled helper against its operation, and plan it when every check passes."""
         at, name, label, tree = helper.at, helper.name, _label(spec), helper.tree
         problems: list[Diagnostic] = []
         method = spec.contract.method
@@ -114,23 +88,9 @@ class _Caches:
                     "adds it after the cache looks a request up"
                 )
                 problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.vary_allowlist[{index}]", message, spec))
-        tags = tuple(self.tags(helper, spec, tree["tags"], f"{at}.tags", problems))
-        planned: list[MutationSpec] = []
-        for key, mutation in tree["mutations"].items():
-            where, target = f"{at}.mutations[{key!r}]", mutations[key]
-            if target.contract.method not in _UNSAFE:
-                message = (
-                    f"The mutation {key!r} of {name!r} calls {_label(target)}; only POST, PUT, PATCH, and DELETE "
-                    "invalidate"
-                )
-                problems.append(_problem("E_CONFIG_VALUE", "config", f"{where}.operation", message, target))
-            invalidated = self.tags(helper, target, mutation["invalidate_tags"], f"{where}.invalidate_tags", problems)
-            planned.append(MutationSpec(name=key, operation=target, tags=tuple(invalidated)))
         if response is None or problems:
             return None, problems
-        return CacheSpec(
-            helper=helper, operation=spec, response=response, tags=tags, mutations=tuple(planned)
-        ), problems
+        return CacheSpec(helper=helper, operation=spec, response=response), problems
 
     def responses(self, helper: Helper, spec: OperationSpec, problems: list[Diagnostic]) -> TypeUseBinding | None:
         """Check that each cacheable status is a declared success with one natively decoded JSON body.
@@ -159,48 +119,6 @@ class _Caches:
             found.append(use)
         return found[0] if found else None
 
-    def tags(
-        self, helper: Helper, spec: OperationSpec, templates: list[str], at: str, problems: list[Diagnostic]
-    ) -> Iterator[Tag]:
-        """Compile each tag template into literal text and parameter positions, reporting unusable placeholders.
-
-        A placeholder names exactly one required path or query parameter by wire name, typed only as scalars.
-        """
-        parameters = spec.parameters
-        for index, template in enumerate(templates):
-            where, parts, position = f"{at}[{index}]", [], 0
-            for match in _PLACEHOLDER.finditer(template):
-                parts.extend((template[position : match.start()],) if match.start() > position else ())
-                position = match.end()
-                found = [
-                    place
-                    for place, item in enumerate(parameters)
-                    if item.location in _TAGGED and item.wire_name == match[1]
-                ]
-                wanted, label = match[1], _label(spec)
-                problem = None
-                if len(found) != 1:
-                    many = "more than one" if found else "no"
-                    problem = f"names {many} path or query parameter {wanted!r} of {label}"
-                elif not (parameter := parameters[found[0]]).required:
-                    problem = f"names the optional parameter {wanted!r} of {label}"
-                elif (
-                    (use := parameter.use) is None
-                    or use.schema is None
-                    or not _SCALARS.issuperset(self.pages.types(use.schema) or {"object"})
-                ):
-                    problem = (
-                        f"names the parameter {wanted!r} of {label}, which is not always a string, number, integer, or "
-                        "boolean"
-                    )
-                if problem is not None:
-                    message = f"The tag {template!r} of {helper.name!r} {problem}"
-                    problems.append(_problem("E_CONFIG_VALUE", "config", where, message, spec))
-                    continue
-                parts.append(found[0])
-            parts.extend((template[position:],) if position < len(template) else ())
-            yield tuple(parts)
-
 
 def plan_caches(
     protocols: Protocols | None, plan: ClientPlan, codecs: CodecPlan, wire: WirePlan, request: TargetRequest
@@ -215,13 +133,9 @@ def plan_caches(
     for helper in protocols.helpers:
         if not helper.enabled or helper.kind != "cache":
             continue
-        entry, *others = helper.links
+        entry = helper.links[0]
         spec = operations[protocols.operations[entry.ref].id]
-        mutations = {
-            name: operations[protocols.operations[link.ref].id]
-            for name, link in zip(helper.tree["mutations"], others, strict=True)
-        }
-        planned, problems[helper.name] = caches.helper(helper, spec, mutations)
+        planned, problems[helper.name] = caches.helper(helper, spec)
         if planned is not None:
             specs.append(planned)
     return tuple(specs), problems

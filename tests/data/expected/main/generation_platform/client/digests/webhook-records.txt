@@ -1,12 +1,9 @@
 # webhooks and webhooks-python
   standard.message same True
-  standard.rejecting same True
+  stripe.event same True
   github.push same True
-  slack.command same True
   rfc.sha256 same True
   rfc.sha512 same True
-  keyed.event same True
-  framed.count same True
   shapes.drawn same True
   callbacks.delivered same True
   disabled.hook same True

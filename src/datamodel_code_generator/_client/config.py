@@ -107,7 +107,6 @@ class RuntimeOperationMetadata:
     retry_after_ms_header: str | None = None
     should_retry_header: str | None = None
     auth_challenge_less_401: bool = False
-    circuit_group: str | None = None
     accepted_content_encodings: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -362,12 +361,6 @@ def _runtime_problems(runtime: object, at: str) -> Iterator[Diagnostic]:
             "E_CONFIG_VALUE", f"{at}.auth_challenge_less_401", "auth_challenge_less_401 must be a boolean"
         )
     yield from _encoding_problems(runtime.accepted_content_encodings, f"{at}.accepted_content_encodings")
-    if runtime.circuit_group is not None and not _group(runtime.circuit_group):
-        yield _diagnostic(
-            "E_CONFIG_VALUE",
-            f"{at}.circuit_group",
-            "circuit_group must be a string with non-whitespace text and no control characters",
-        )
     if (
         isinstance(runtime.retry_after_ms_header, str)
         and isinstance(runtime.should_retry_header, str)
@@ -394,10 +387,6 @@ def _encoding_problems(value: object, at: str) -> Iterator[Diagnostic]:
         yield _diagnostic("E_CONFIG_CONFLICT", at, "accepted_content_encodings names a coding twice")
     elif any(item != "gzip" for item in value):
         yield _diagnostic("E_CONFIG_VALUE", at, "accepted_content_encodings may name only gzip, the builtin encoder")
-
-
-def _group(value: object) -> bool:
-    return isinstance(value, str) and bool(value.strip()) and value.isprintable()
 
 
 def _idempotency_problems(value: object, at: str) -> Iterator[Diagnostic]:
@@ -487,7 +476,6 @@ def _runtime(value: object, base: Path, option_path: str) -> RuntimeOperationMet
             "retry_after_ms_header",
             "should_retry_header",
             "auth_challenge_less_401",
-            "circuit_group",
             "accepted_content_encodings",
         }),
     )
@@ -511,7 +499,6 @@ def _runtime(value: object, base: Path, option_path: str) -> RuntimeOperationMet
         auth_challenge_less_401=_boolean(
             table.get("auth_challenge_less_401", False), base, f"{option_path}.auth_challenge_less_401"
         ),
-        circuit_group=_optional(table, "circuit_group", base, option_path),
         accepted_content_encodings=_strings(
             table.get("accepted_content_encodings", []), base, f"{option_path}.accepted_content_encodings"
         ),
