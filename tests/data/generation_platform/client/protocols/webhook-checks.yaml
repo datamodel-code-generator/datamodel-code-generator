@@ -2,130 +2,97 @@ schema_version: 1
 helpers:
   ok.message:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
+    event_schema:
+      pointer: /components/schemas/Message
     signature:
-      kind: hmac-sha256
+      kind: body_hmac
       header: X-Signature
-      encoding: hex
-      prefix: ""
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
   keys.message:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
+    event_schema:
+      pointer: /components/schemas/Message
     signature:
-      kind: hmac-sha256
+      kind: body_hmac
       header: X-Signature
-      encoding: hex
-      prefix: ""
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
   Cased.first:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
+    event_schema:
+      pointer: /components/schemas/Message
     signature:
-      kind: hmac-sha256
+      kind: body_hmac
       header: X-Signature
-      encoding: hex
-      prefix: ""
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
   cased.second:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
+    event_schema:
+      pointer: /components/schemas/Message
     signature:
-      kind: hmac-sha256
+      kind: body_hmac
       header: X-Signature
-      encoding: hex
-      prefix: ""
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
   missing.schema:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Missing}
+    event_schema:
+      pointer: /components/schemas/Missing
     signature:
-      kind: hmac-sha256
+      kind: body_hmac
       header: X-Signature
-      encoding: hex
-      prefix: ""
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
   unused.schema:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Unused}
+    event_schema:
+      pointer: /components/schemas/Unused
     signature:
-      kind: hmac-sha256
+      kind: body_hmac
       header: X-Signature
-      encoding: hex
-      prefix: ""
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
   form.event:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Form}
+    event_schema:
+      pointer: /components/schemas/Form
     signature:
-      kind: hmac-sha256
+      kind: body_hmac
       header: X-Signature
-      encoding: hex
-      prefix: ""
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
   mapped.event:
     kind: webhook
-    event_schema: {discriminator: {from: body, pointer: /kind}, mapping: {circle: {pointer: /components/schemas/Circle}}}
+    event_schema:
+      discriminator:
+        from: body
+        pointer: /kind
+      mapping:
+        circle:
+          pointer: /components/schemas/Circle
     signature:
-      kind: hmac-sha256
+      kind: body_hmac
       header: X-Signature
-      encoding: hex
-      prefix: ""
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
   audit.event:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Audit}
+    event_schema:
+      pointer: /components/schemas/Audit
     signature:
-      kind: hmac-sha256
+      kind: body_hmac
       header: X-Signature
-      encoding: hex
-      prefix: ""
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
   mapped.audit:
     kind: webhook
     event_schema:
-      discriminator: {from: body, pointer: /kind}
-      mapping: {message: {pointer: /components/schemas/Message}, audit: {pointer: /components/schemas/Audit}}
-    signature: {kind: none}
+      discriminator:
+        from: body
+        pointer: /kind
+      mapping:
+        message:
+          pointer: /components/schemas/Message
+        audit:
+          pointer: /components/schemas/Audit
+    signature:
+      kind: none
   mapped.missing:
     kind: webhook
     event_schema:
-      discriminator: {from: body, pointer: /kind}
-      mapping: {message: {pointer: /components/schemas/Message}, missing: {pointer: /components/schemas/Missing}}
-    signature: {kind: adapter, timestamp: none, delivery_id: none}
+      discriminator:
+        from: body
+        pointer: /kind
+      mapping:
+        message:
+          pointer: /components/schemas/Message
+        missing:
+          pointer: /components/schemas/Missing
+    signature:
+      kind: adapter
+      timestamp: none
+      delivery_id: none

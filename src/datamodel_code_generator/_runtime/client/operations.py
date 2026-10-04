@@ -1022,7 +1022,6 @@ class OperationPlan(Generic[T_co, E_co]):
     should_retry_header: str | None = None
     security: SecurityBinding | None = None
     auth_challenge_less_401: bool = False
-    circuit_group: str | None = None
     accepted_content_encodings: tuple[str, ...] = ()
 
     def bound(self, body: object, values: tuple[object, ...], media_type: str | MediaSelector | None) -> object:
