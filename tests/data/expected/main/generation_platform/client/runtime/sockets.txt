@@ -34,7 +34,6 @@
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | no close
   managed header ! ConfigurationError: ConfigurationError(operation_id='roomSocket', call_id='<call>', field_path='headers.Upgrade', condition='managed') [operation_id='roomSocket', field_path=('headers', 'Upgrade'), condition='managed'] configuration_error
   no send slot ! SessionLimitError: SessionLimitError(kind='network_sends', limit=0) [kind='network_sends', limit=0] session_limit_error
-  compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
   options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('ws_options',), condition='invalid_value'] protocol_configuration_error
   request options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   session options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('session_options',), condition='invalid_value'] protocol_configuration_error

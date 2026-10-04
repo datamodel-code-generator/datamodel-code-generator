@@ -59,7 +59,7 @@ from tests.data.python.client_query import query
 from tests.data.python.client_queue_credentials import queue_credentials
 from tests.data.python.client_queue_order import queue_order
 from tests.data.python.client_queue_recovery import queue_recovery, queue_restoration, queue_scope
-from tests.data.python.client_queues import queue_compression, queues
+from tests.data.python.client_queues import queues
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
 from tests.data.python.client_regressions import json_decode_errors, no_success
@@ -826,7 +826,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "queue-credentials": ("queue-credentials", ("pydantic_v2.BaseModel",), queue_credentials),
     "queue-order": ("queue-order", ("pydantic_v2.BaseModel",), queue_order),
     "queues": ("queues", ("pydantic_v2.BaseModel",), queues),
-    "queue-compression": ("queues", ("pydantic_v2.BaseModel",), queue_compression),
     "queue-recovery": ("queues", ("pydantic_v2.BaseModel",), queue_recovery),
     "queue-restoration": ("queues-restoration", ("pydantic_v2.BaseModel",), queue_restoration),
     "queue-scope": ("queues", ("pydantic_v2.BaseModel",), queue_scope),

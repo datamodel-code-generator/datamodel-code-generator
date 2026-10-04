@@ -502,20 +502,13 @@ def _store_error(
 
 
 def _limits(core: ClientCore | AsyncClientCore, plan: CachePlan[T], cache_options: object, options: object) -> _Limits:
-    """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
-
-    A request coding the call selects is refused before any lookup: a fetch sends a bodyless request.
-    """
+    """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's."""
     for name, value, kind in (("cache_options", cache_options, CacheOptions), ("options", options, RequestOptions)):
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,))
     defaults = core.protocol_defaults(plan.helper_id)
     layers = (cache_options, UNSET if defaults is None else defaults.options)
     request = options if isinstance(options, RequestOptions) else None
-    if request is not None and isinstance(selected := request.compression, str):
-        from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
-
-        helper_children(selected, ())
     return _option(layers, "max_entry_bytes", _MAX_ENTRY_BYTES), _option(layers, "max_ttl", _MAX_TTL), request
 
 

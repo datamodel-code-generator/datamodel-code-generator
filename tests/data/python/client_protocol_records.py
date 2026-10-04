@@ -8,10 +8,8 @@ from typing import TYPE_CHECKING
 
 from datamodel_code_generator._client.protocols import (
     AdapterSignature,
-    BodyHmacSignature,
-    StandardWebhooksSignature,
-    StripeStyleSignature,
     Binding,
+    BodyHmacSignature,
     CacheHelper,
     CountContinuation,
     CursorContinuation,
@@ -35,9 +33,11 @@ from datamodel_code_generator._client.protocols import (
     QueueHelper,
     RemoteCancel,
     SourceValue,
+    StandardWebhooksSignature,
     StreamCompletion,
     StreamHelper,
     StreamResume,
+    StripeStyleSignature,
     WebhookHelper,
 )
 from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
@@ -309,8 +309,12 @@ INVALID = ProtocolConfiguration(
             ),
         ),
         "jobs.run": object(),  # ty: ignore[invalid-argument-type]
-        "hooks.hmac": WebhookHelper(event_schema=USER, signature=BodyHmacSignature(header="X-Signature", algorithm="ed25519")),
-        "hooks.public": WebhookHelper(event_schema=USER, signature=PublicKeySignature(kind="hmac-sha256", header="X-Signature")),
+        "hooks.hmac": WebhookHelper(
+            event_schema=USER, signature=BodyHmacSignature(header="X-Signature", algorithm="ed25519")
+        ),
+        "hooks.public": WebhookHelper(
+            event_schema=USER, signature=PublicKeySignature(kind="hmac-sha256", header="X-Signature")
+        ),
     },
 )
 
@@ -320,22 +324,35 @@ STANDARD = StandardWebhooksSignature()
 BODY_ONLY = BodyHmacSignature(header="X-Signature")
 MESSAGE = SchemaRef(pointer="/components/schemas/Message")
 PUSH = SchemaRef(pointer="/components/schemas/Push")
-WEBHOOKS = ProtocolConfiguration(helpers={
-    "standard.message": WebhookHelper(event_schema=MESSAGE, signature=STANDARD),
-    "stripe.event": WebhookHelper(event_schema=MESSAGE, signature=StripeStyleSignature()),
-    "github.push": WebhookHelper(event_schema=PUSH, signature=replace(BODY_ONLY, header="X-Hub-Signature-256", prefix="sha256=")),
-    "rfc.sha256": WebhookHelper(event_schema=PUSH, signature=BODY_ONLY),
-    "rfc.sha512": WebhookHelper(event_schema=PUSH, signature=replace(BODY_ONLY, algorithm="hmac-sha512")),
-    "shapes.drawn": WebhookHelper(event_schema=SchemaRef(pointer="/components/schemas/Shape"), signature=BODY_ONLY),
-    "callbacks.delivered": WebhookHelper(event_schema=SchemaRef(pointer="/components/schemas/Delivery"), signature=BODY_ONLY),
-    "disabled.hook": WebhookHelper(enabled=False, event_schema=SchemaRef(pointer="/components/schemas/Unused"), signature=BODY_ONLY),
-})
+WEBHOOKS = ProtocolConfiguration(
+    helpers={
+        "standard.message": WebhookHelper(event_schema=MESSAGE, signature=STANDARD),
+        "stripe.event": WebhookHelper(event_schema=MESSAGE, signature=StripeStyleSignature()),
+        "github.push": WebhookHelper(
+            event_schema=PUSH, signature=replace(BODY_ONLY, header="X-Hub-Signature-256", prefix="sha256=")
+        ),
+        "rfc.sha256": WebhookHelper(event_schema=PUSH, signature=BODY_ONLY),
+        "rfc.sha512": WebhookHelper(event_schema=PUSH, signature=replace(BODY_ONLY, algorithm="hmac-sha512")),
+        "shapes.drawn": WebhookHelper(event_schema=SchemaRef(pointer="/components/schemas/Shape"), signature=BODY_ONLY),
+        "callbacks.delivered": WebhookHelper(
+            event_schema=SchemaRef(pointer="/components/schemas/Delivery"), signature=BODY_ONLY
+        ),
+        "disabled.hook": WebhookHelper(
+            enabled=False, event_schema=SchemaRef(pointer="/components/schemas/Unused"), signature=BODY_ONLY
+        ),
+    }
+)
 ED25519_BODY = PublicKeySignature(kind="ed25519", header="X-Signature")
-PUBLIC_KEYS = ProtocolConfiguration(helpers={
-    "rfc8032.ed25519": WebhookHelper(event_schema=PUSH, signature=ED25519_BODY),
-    "wycheproof.rsa": WebhookHelper(event_schema=SchemaRef(pointer="/components/schemas/Count"), signature=replace(ED25519_BODY, kind="rsa-pss-sha256")),
-    "github.push": WEBHOOKS.helpers["github.push"],
-})
+PUBLIC_KEYS = ProtocolConfiguration(
+    helpers={
+        "rfc8032.ed25519": WebhookHelper(event_schema=PUSH, signature=ED25519_BODY),
+        "wycheproof.rsa": WebhookHelper(
+            event_schema=SchemaRef(pointer="/components/schemas/Count"),
+            signature=replace(ED25519_BODY, kind="rsa-pss-sha256"),
+        ),
+        "github.push": WEBHOOKS.helpers["github.push"],
+    }
+)
 
 INVOICE = SchemaRef(pointer="/components/schemas/Invoice")
 CUSTOMER = SchemaRef(pointer="/components/schemas/Customer")
