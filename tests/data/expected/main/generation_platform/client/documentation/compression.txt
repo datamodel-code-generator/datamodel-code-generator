@@ -473,8 +473,8 @@ See the [runtime reference](runtime.md) for defaults, ownership, cancellation, r
 ## Selected operation contracts
 
 These declarations come from the finalized operation selection and generation configuration. A key contract does
-not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
-No vendor retry-header name is inferred. Security requirements preserve ordered OR
+not guarantee exactly-once execution. A null idempotency declaration or a false replay guarantee cannot make an
+unsafe method replay-safe. No vendor retry-header name is inferred. Security requirements preserve ordered OR
 alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
 credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
 `operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
@@ -703,8 +703,8 @@ the runtime reference for their limits and checkpoints.
 
 ## Request compression
 
-These operations accept the request content codings listed; `compression="gzip"` in `ClientOptions`, a view, or a
-call's `RequestOptions` compresses their bodies. See the runtime reference.
+These operations declare request compression. Their bodies are gzipped by default;
+`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
 
 ```json
 {
@@ -795,12 +795,12 @@ phase cap still applies. Close an abandoned stream to release its response and l
 
 ## Idempotency and replayable input
 
-`IdempotencyKey(value)` supplies a caller's stable key; `IdempotencyKey.new()` creates a UUID4 value.
-`idempotency_key=None` disables automatic creation; `UNSET` permits it for an operation with a declared key header.
-The key is created once per logical call and reused across eligible retries. Caller keys are sent unchanged.
-An effective caller key on an operation without a declared header fails before sending, including inherited keys.
-One logical call retains its key, origin, encoded body, and multipart boundary across eligible attempts.
-
+`IdempotencyKey(value, first_used_at=aware_datetime)` retains a caller's key and known first-use time.
+`IdempotencyKey.new()` creates a UUID4 value with a UTC timestamp. `idempotency_key=None` disables automatic creation;
+`UNSET` permits it for an operation with declared idempotency metadata, including `replay_safe_with_key=False`.
+A false replay-safety flag does not make an unsafe operation eligible for retries. The key is created once and never
+replaced to retry. Unknown prior-use time or expired retention does not establish retry safety. One logical call
+retains its key, origin, scope, encoded body, and multipart boundary across eligible attempts.
 
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
 `FileBody(file)` remembers the entry offset and seeks there for replay when possible. Borrowed files stay open and
@@ -1084,24 +1084,18 @@ reopen are delivered again.
 
 ## Request compression
 
-`compression: str | None` in `ClientOptions`, `RequestOptions` views, and calls selects a request content coding;
-`gzip` is the only coding with an encoder, `UNSET` inherits, and `None` turns compression off. Another value raises
-`ConfigurationError` when the options are made. A selected coding applies to a call only when it sends a body,
-including empty bytes and JSON null, and its operation accepts the coding; then the body is sent gzip-compressed
-(level 6, no file name, zero modification time) with `Content-Encoding: gzip`, and a Content-Encoding header the call
-already sends raises `ConfigurationError`. A coding the client or a view selects turns off for other calls, including
-`request_raw`; one a call selects raises `ConfigurationError` before sending for a call it cannot apply to.
+`ClientOptions(compression="gzip")` is the default. The SDK gzips only bodies of operations that declare gzip;
+`ClientOptions(compression=None)` disables it. Views and calls inherit the client setting. Undeclared operations,
+bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
+when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
 Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
 multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
 uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
 accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
 
-A protocol helper given a coding in its `options` checks once, before sending anything, that one of its requests can
-apply it, or raises `ConfigurationError(field_path=('options', 'compression'),
-condition='no_applicable_helper_child')`; then only its requests with a body whose operation accepts the coding are
-compressed, and its bodyless polls and followed URLs are not. Token requests are never compressed.
+Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
+followed URLs stay uncompressed. Token requests are never compressed.
 
-Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Queue
-`drain` refuses an explicit coding with `no_applicable_helper_child` before claiming entries or sending. Entries
-save no coding; inherited client or view codings apply only to declared queued operations with bodies.
+Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Entries save
+no coding; at drain, the client setting applies to declared queued operations with bodies.
