@@ -1950,7 +1950,6 @@ class ProtocolSizeError(ProtocolError):
             "keys",
             "signatures",
             "ack_buffer",
-            "part_manifest",
             "content_layers",
             "expanded_content",
         ],
