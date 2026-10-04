@@ -152,22 +152,28 @@ def run_generation_session(
     session = _session(source, session_type)
     if failure and monkeypatch is not None:
         _inject_session_failure(monkeypatch, failure, source)
-    previous = sys.getprofile()
-    sys.setprofile(observer.record)
-    result = None
-    accepted = None
-    error = None
-    try:
-        result = _run_generation(source, config, Path.cwd(), use_output_cwd=False, capture=session)
-        batch = session.take_accepted_batch()
-        accepted = (batch.attempt, observer.hashes[batch.attempt])
-        session.close()
-    except (RuntimeError, OSError) as exc:
-        error = [type(exc).__name__, str(exc) if not isinstance(exc, OSError) else str(exc.errno)]
-    finally:
-        sys.setprofile(previous)
-        with suppress(RuntimeError):
+
+    def capture_result() -> tuple[Any, Any, list[str] | None]:
+        """Finish the profiled frame before collecting its cached exception locals."""
+        previous = sys.getprofile()
+        sys.setprofile(observer.record)
+        result = None
+        accepted = None
+        error = None
+        try:
+            result = _run_generation(source, config, Path.cwd(), use_output_cwd=False, capture=session)
+            batch = session.take_accepted_batch()
+            accepted = (batch.attempt, observer.hashes[batch.attempt])
             session.close()
+        except (RuntimeError, OSError) as exc:
+            error = [type(exc).__name__, str(exc) if not isinstance(exc, OSError) else str(exc.errno)]
+        finally:
+            sys.setprofile(previous)
+            with suppress(RuntimeError):
+                session.close()
+        return result, accepted, error
+
+    result, accepted, error = capture_result()
     gc.collect()
     observation = {
         "events": observer.events,
