@@ -16,6 +16,7 @@ from tests.data.python.client_bindings import (
     DATA,
     MODEL,
     _document,
+    binding_model_options,
     client_binding_report,
     client_binding_rewrite_report,
 )
@@ -53,17 +54,20 @@ def test_capture_preserves_ordinary_model_bytes(
     """Compare ordinary models with captured models for each target's supported backends."""
     settings = BINDING_CASES[case]
     source = _document(DATA / settings["source"], tmp_path, settings)
-    options = {
-        "input_file_type": "openapi",
-        "target_python_version": "3.11",
-        "openapi_scopes": ["schemas", "api"],
-        "output_model_type": backend,
-        "disable_timestamp": True,
-        **MODEL,
-        **settings.get("model", {}),
-        **settings.get("backend_model", {}).get(backend, {}),
-        **settings.get("variants", {"default": {}})[variant],
-    }
+    options = binding_model_options(
+        {
+            "input_file_type": "openapi",
+            "target_python_version": "3.11",
+            "openapi_scopes": ["schemas", "api"],
+            "output_model_type": backend,
+            "disable_timestamp": True,
+            **MODEL,
+            **settings.get("model", {}),
+            **settings.get("backend_model", {}).get(backend, {}),
+            **settings.get("variants", {"default": {}})[variant],
+        },
+        tmp_path,
+    )
     models = settings.get("models", "models.py")
     ordinary = tmp_path / "ordinary"
     captured = tmp_path / "captured"
