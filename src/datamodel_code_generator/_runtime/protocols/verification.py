@@ -94,7 +94,42 @@ def _matches(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
     raise configuration_error(("keys", str(index)), "wrong_capability", helper_id)
 
 
-def _authenticate(  # ruff: ignore[too-many-arguments, too-many-locals, too-many-branches, too-many-statements]
+def _signed(
+    plan: WebhookPlan[T, K], raw_body: bytes, headers: Sequence[tuple[str, str]], values: list[str]
+) -> tuple[str | None, str | None, tuple[bytes, ...], list[str]]:
+    """Return a preset's signed timestamp, delivery id, authenticated parts, and signature candidates."""
+    helper_id = plan.helper_id
+    stamp: str | None = None
+    delivery: str | None = None
+    parts: tuple[bytes, ...] = (raw_body,)
+    elements = values
+    match plan.kind:
+        case "standard_webhooks":
+            stamp = _header(headers, "webhook-timestamp", helper_id)
+            delivery = _header(headers, "webhook-id", helper_id)
+            if not _VISIBLE.fullmatch(delivery):
+                reject("malformed_signature", helper_id)
+            elements = [element for value in values for element in value.split(" ")]
+            parts = (delivery.encode("ascii"), b".", _ascii(stamp), b".", raw_body)
+        case "stripe_style":
+            fields = [
+                field.strip(" \t").partition("=") for field in _header(headers, plan.header, helper_id).split(",")
+            ]
+            if any(not separator or not name or not value for name, separator, value in fields):
+                reject("malformed_signature", helper_id)
+            if len(timestamps := [value for name, _, value in fields if name == "t"]) != 1:
+                reject("malformed_signature", helper_id)
+            stamp = timestamps[0]
+            elements = [value for name, _, value in fields if name == "v1"]
+            parts = (_ascii(stamp), b".", raw_body)
+    return stamp, delivery, parts, elements
+
+
+def _ascii(text: str) -> bytes:
+    return text.encode("ascii") if text.isascii() else b""
+
+
+def _authenticate(  # ruff: ignore[too-many-arguments]
     plan: WebhookPlan[T, K],
     raw_body: bytes,
     headers: Sequence[tuple[str, str]],
@@ -108,38 +143,13 @@ def _authenticate(  # ruff: ignore[too-many-arguments, too-many-locals, too-many
     now_us, limits = local_arguments(helper_id, raw_body, headers, keys, now=now, options=options)
     candidates = _checked_keys(keys, algorithm, helper_id)
     sizes(limits, raw_body, headers, len(candidates), helper_id)
-    values = [value for name, value in headers if _named(name, plan.header)]
-    if not values:
+    if not (values := [value for name, value in headers if _named(name, plan.header)]):
         reject("malformed_signature", helper_id)
-    stamp: str | None = None
-    delivery: str | None = None
-    parts: tuple[bytes, ...] = (raw_body,)
-    encoding, prefix = plan.encoding, plan.prefix
-    elements = values
-    if plan.kind == "standard_webhooks":
-        stamp = _header(headers, "webhook-timestamp", helper_id)
-        delivery = _header(headers, "webhook-id", helper_id)
-        if not _VISIBLE.fullmatch(delivery):
-            reject("malformed_signature", helper_id)
-        elements = [element for value in values for element in value.split(" ")]
-        parts = (delivery.encode("ascii"), b".", stamp.encode("ascii") if stamp.isascii() else b"", b".", raw_body)
-        encoding, prefix = "base64", "v1,"
-    elif plan.kind == "stripe_style":
-        header = _header(headers, plan.header, helper_id)
-        fields = [field.strip(" \t").partition("=") for field in header.split(",")]
-        if any(not separator or not name or not value for name, separator, value in fields):
-            reject("malformed_signature", helper_id)
-        timestamps = [value for name, _, value in fields if name == "t"]
-        if len(timestamps) != 1:
-            reject("malformed_signature", helper_id)
-        stamp = timestamps[0]
-        elements = [value for name, _, value in fields if name == "v1"]
-        parts = (stamp.encode("ascii") if stamp.isascii() else b"", b".", raw_body)
-        encoding, prefix = "hex", ""
+    stamp, delivery, parts, elements = _signed(plan, raw_body, headers, values)
     if not elements:
         reject("malformed_signature", helper_id)
     size("signatures", limits.max_signatures, len(elements), helper_id)
-    signatures = tuple(signature_bytes(encoding, prefix, algorithm.size, element) for element in elements)
+    signatures = tuple(signature_bytes(plan.encoding, plan.prefix, algorithm.size, element) for element in elements)
     if None in signatures:
         reject("malformed_signature", helper_id)
     moment = None

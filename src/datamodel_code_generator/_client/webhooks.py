@@ -90,6 +90,11 @@ _EVENTS: Final = "_runtime.protocols.webhook_events"
 _WEBHOOKS: Final = "_runtime.protocols.webhooks"
 
 
+def _algorithm(signature: Mapping[str, Any]) -> _Algorithm:
+    """Return the builtin algorithm of a signature, the configured one for a body HMAC."""
+    return _ALGORITHMS[signature.get("algorithm", signature["kind"])]
+
+
 def key_class(kind: str) -> str | None:
     """Return the name of the key class of a builtin signature kind, None for an adapter or no signature."""
     return None if (algorithm := _ALGORITHMS.get(kind)) is None else algorithm.key
@@ -352,23 +357,23 @@ class _Webhooks:
                 ("delivery_id=", repr(signature["delivery_id"] == "required")),
             ]
         else:
-            algorithm = _ALGORITHMS[signature.get("algorithm", "hmac-sha256") if kind == "body_hmac" else kind]
+            algorithm = _algorithm(signature)
             key = module.local(algorithm.key_module, algorithm.key)
             plan = module.local("_runtime.protocols.verification", "WebhookPlan")
             arguments = f"{event}, {key}"
-            header = "webhook-signature" if kind == "standard_webhooks" else signature.get("header", "Stripe-Signature")
+            standard = kind == "standard_webhooks"
             entries = [
                 ("kind=", repr(kind)),
                 ("algorithm=", module.local(algorithm.module, algorithm.name)),
-                ("header=", repr((header or signature["header"]).lower())),
-                ("encoding=", repr(signature.get("encoding", "base64" if kind == "standard_webhooks" else "hex"))),
-                ("prefix=", repr(signature.get("prefix", ""))),
+                ("header=", repr(signature.get("header", "webhook-signature").lower())),
+                ("encoding=", repr(signature.get("encoding", "base64" if standard else "hex"))),
+                ("prefix=", repr(signature.get("prefix", "v1," if standard else ""))),
             ]
         value = _call(plan, [("helper_id=", repr(helper.name)), *entries, ("event=", decoder)])
         head = f"_PLAN: {module.name('typing', 'Final')}[{plan}[{arguments}]] = "
         return key, head + layout(value, 0, len(head), WIDTH)
 
-    def module(self, spec: WebhookSpec) -> str:  # ruff: ignore[too-many-locals]
+    def module(self, spec: WebhookSpec) -> str:
         """Return a helper's module: its plan and its sync and asyncio verify functions, or its decode function."""
         helper = spec.helper
         signature = helper.tree["signature"]
@@ -398,8 +403,7 @@ class _Webhooks:
             sections = [variable, plan, *self.functions(module, event, None, signature)]
         else:
             summary = "Verify the signed deliveries of one webhook helper, then decode their events."
-            algorithm = _ALGORITHMS[signature.get("algorithm", "hmac-sha256") if kind == "body_hmac" else kind]
-            text = f"The helper is {helper.name}, whose deliveries are signed with {algorithm.display}."
+            text = f"The helper is {helper.name}, whose deliveries are signed with {_algorithm(signature).display}."
             sections = [plan, *self.functions(module, event, key, signature)]
         docstring = _docstring(summary, text, "")
         exported = ", ".join(f'"{name}"' for name in sorted(names - {"_PLAN"}))
