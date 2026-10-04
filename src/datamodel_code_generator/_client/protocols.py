@@ -105,7 +105,6 @@ KINDS: Final = (
     "cache",
     "resumable_upload",
 )
-_LATER: Final = frozenset({"batch"})
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SOURCES: Final = ("input", "initial", "previous")
 _BRACKETED: Final = frozenset({"helpers", "mapping", "error_events"})
