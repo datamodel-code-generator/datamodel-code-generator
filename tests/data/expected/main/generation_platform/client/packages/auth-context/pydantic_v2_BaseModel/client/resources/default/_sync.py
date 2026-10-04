@@ -11,7 +11,6 @@ from models import FieldInheritedPostHeaderXIdempotencyParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.default import (
@@ -51,7 +50,7 @@ class DefaultResource:
     def inherited(
         self,
         *,
-        x_idempotency: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        x_idempotency: _dcg_type_0 | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> InheritedResponse:
         """Call POST /inherited."""
@@ -64,7 +63,7 @@ class DefaultResource:
     def explicit(
         self,
         *,
-        x_idempotency: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        x_idempotency: _dcg_type_1 | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> ExplicitResponse:
         """Call POST /explicit."""
@@ -133,7 +132,7 @@ class DefaultWithResponse:
     def inherited(
         self,
         *,
-        x_idempotency: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        x_idempotency: _dcg_type_0 | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[InheritedResponse]:
         """Call POST /inherited."""
@@ -146,7 +145,7 @@ class DefaultWithResponse:
     def explicit(
         self,
         *,
-        x_idempotency: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        x_idempotency: _dcg_type_1 | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[ExplicitResponse]:
         """Call POST /explicit."""
@@ -215,7 +214,7 @@ class DefaultWithRawResponse:
     def inherited(
         self,
         *,
-        x_idempotency: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        x_idempotency: _dcg_type_0 | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /inherited."""
@@ -228,7 +227,7 @@ class DefaultWithRawResponse:
     def explicit(
         self,
         *,
-        x_idempotency: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        x_idempotency: _dcg_type_1 | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /explicit."""
@@ -297,7 +296,7 @@ class DefaultWithStreamingResponse:
     def inherited(
         self,
         *,
-        x_idempotency: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        x_idempotency: _dcg_type_0 | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /inherited."""
@@ -310,7 +309,7 @@ class DefaultWithStreamingResponse:
     def explicit(
         self,
         *,
-        x_idempotency: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        x_idempotency: _dcg_type_1 | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /explicit."""

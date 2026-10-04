@@ -10,14 +10,7 @@ from typing import TYPE_CHECKING, Any
 import httpx2
 
 from tests.data.python.client_pagination import adrained, drained
-from tests.data.python.client_runtime import (
-    Exchange,
-    arecord,
-    json_response,
-    raw_response,
-    record,
-    run,
-)
+from tests.data.python.client_runtime import Exchange, arecord, argument, json_response, raw_response, record, run
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -34,7 +27,6 @@ class _Harness:
         self.bodies = importlib.import_module(f"{package.__name__}.bodies")
         self.protocols = importlib.import_module(f"{package.__name__}.protocols")
         self.models = importlib.import_module(f"{package.__name__}_models")
-        self.codecs = importlib.import_module(f"{package.__name__}.types.items").PutBlobRequestCodecs
 
     def settings(self, compression: object = None, **options: Any) -> Any:
         options.setdefault("retry", self.options.RetryOptions(max_retries=1, initial_delay=0))
@@ -60,7 +52,7 @@ class _Harness:
 
     def length(self, value: int) -> Any:
         """Return a typed Content-Length parameter whose value compression must replace."""
-        return self.codecs.parameter(location="header", name="Content-Length").from_wire(value)
+        return argument(self.package, "putBlob", "header", "Content-Length", value)
 
     def query(self, text: str = "q") -> Any:
         return self.models.Query(text=text)

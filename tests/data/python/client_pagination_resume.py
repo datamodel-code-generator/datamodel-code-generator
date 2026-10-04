@@ -18,7 +18,7 @@ from tests.data.python.client_pagination import (
     progress,
     user_page,
 )
-from tests.data.python.client_runtime import Exchange, describe, json_response, record, run
+from tests.data.python.client_runtime import Exchange, describe, json_response, record, request_body, run
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -132,8 +132,8 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
 def _items(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Resume from the middle of a page: its saved body is decoded again and its items left come first."""
     helper = api.protocols.users.all
-    limit = harness.argument("users", "ListUsers", "query", "limit", 3)
-    trace = harness.argument("users", "ListUsers", "header", "X-Trace", "t")
+    limit = harness.argument("listUsers", "query", "limit", 3)
+    trace = harness.argument("listUsers", "header", "X-Trace", "t")
     pager = helper.iterate(limit=limit, x_trace=trace)
     _saved(lines, "before any page", pager.checkpoint())
     exchange.respond(user_page("1", "2", "3", next_cursor="a"), user_page("4", next_cursor="b"), user_page("5"))
@@ -276,7 +276,7 @@ def _continuations(harness: Harness, api: Any, exchange: Exchange, lines: list[s
     drained(lines, "resumed linked", users.linked.resume(state))
     _echoed(harness, users, exchange, lines)
     searches = api.protocols.searches.all
-    body = _body(harness, "searches", "Search", {"query": "a"})
+    body = _body(harness, "search", {"query": "a"})
     exchange.respond(user_page("1", next_cursor="c1"), user_page("2", next_cursor="c2"), user_page("3"))
     search = searches.iterate(body=body)
     _taken(lines, "search first", search, 1)
@@ -285,7 +285,7 @@ def _continuations(harness: Harness, api: Any, exchange: Exchange, lines: list[s
     drained(lines, "resumed search", searches.resume(state))
     exchange.respond(user_page("1", next_cursor="a"), user_page("2"))
     archive = api.protocols.archive.all
-    path = archive.iterate(cursor=harness.argument("archive", "ListArchive", "path", "cursor", "start"))
+    path = archive.iterate(cursor=harness.argument("listArchive", "path", "cursor", "start"))
     _taken(lines, "archive first", path, 1)
     drained(lines, "resumed archive", archive.resume(path.checkpoint()))
 
@@ -323,16 +323,16 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     ):
         for taken in (2, 1):
             exchange.respond(user_page("1", "2", has_more=True), user_page("3", has_more=False))
-            pager = helper.iterate(**{name: harness.argument("users", "ListUsers", "query", name, start)})
+            pager = helper.iterate(**{name: harness.argument("listUsers", "query", name, start)})
             _taken(lines, f"{label} from {start} taking {taken}", pager, taken)
             drained(lines, f"{label} resumed after {taken}", helper.resume(pager.checkpoint()))
     options = harness.options.RequestOptions
     searches = api.protocols.searches.all
-    saved = searches.iterate(body=_body(harness, "searches", "Search", {"query": "a"})).checkpoint()
+    saved = searches.iterate(body=_body(harness, "search", {"query": "a"})).checkpoint()
     framed = options(headers=(("Content-Type", "text/plain"),))
     record(lines, "resumed with another body media type", lambda: searches.resume(saved, options=framed))
     queries = api.protocols.queries.all
-    filtered = queries.iterate(filter=harness.argument("queries", "Query", "querystring", "filter", {"term": "a"}))
+    filtered = queries.iterate(filter=harness.argument("query", "querystring", "filter", {"term": "a"}))
     patched = options(query=(("debug", "1"),))
     record(lines, "resumed with a query patch", lambda: queries.resume(filtered.checkpoint(), options=patched))
     defaults = harness.client_options(query=(("offset", "40"),))
@@ -344,19 +344,18 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
         drained(lines, "offset from a client default resumed", offsets.resume(pager.checkpoint()))
 
 
-def _body(harness: Harness, resource: str, operation: str, wire: object) -> object:
-    """Return the request body of a wire value, as its body codec builds it."""
-    types = importlib.import_module(f"{harness.package.__name__}.types.{resource}")
-    return getattr(types, f"{operation}RequestCodecs").body().from_wire(wire)
+def _body(harness: Harness, operation_id: str, wire: object) -> object:
+    """Return the request body of a wire value, as the operation builds a saved one."""
+    return request_body(harness.package, operation_id, None, wire)
 
 
 def _requests(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Save encoded arguments and selected media, and refuse cookies."""
+    """Save encoded arguments, and refuse cookies."""
     protocols = harness.protocols
     helper = api.protocols.users.all
-    limit = harness.argument("users", "ListUsers", "query", "limit", 2)
+    limit = harness.argument("listUsers", "query", "limit", 2)
     _saved(lines, "arguments", helper.iterate(limit=limit).checkpoint())
-    session = harness.argument("users", "ListUsers", "cookie", "session", "secret")
+    session = harness.argument("listUsers", "cookie", "session", "secret")
     record(lines, "cookie argument", helper.iterate(session=session).checkpoint)
     exchange.respond(user_page("1", next_cursor="a"))
     error = _failure(
@@ -365,16 +364,6 @@ def _requests(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     lines.append(f"  cookie limit ! {describe(error)} {_resume_state(error)}")
     searches = api.protocols.searches.all
     record(lines, "body its codec refuses", searches.iterate(body=5).checkpoint)
-    types = importlib.import_module(f"{harness.package.__name__}.types.searches")
-    selector = types.SearchRequestCodecs.select_request_media(
-        declared_media="application/json", concrete_media="application/json; charset=utf-8"
-    )
-    exchange.respond(user_page("1", next_cursor="c1"), user_page("2"))
-    selected = searches.iterate(body=_body(harness, "searches", "Search", {"query": "a"}), media_type=selector)
-    _taken(lines, "selected media first", selected, 1)
-    state = selected.checkpoint()
-    _saved(lines, "selected media", state)
-    drained(lines, "resumed selected media", searches.resume(state))
     record(lines, "not a state", lambda: helper.resume(b"state"))
     record(lines, "another helper's state", lambda: api.protocols.users.snapshot.resume(helper.iterate().checkpoint()))
 
@@ -394,7 +383,7 @@ def _refusals(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     )
     exchange.respond(user_page("1", next_cursor="a"))
     archive = api.protocols.archive.all
-    path = archive.iterate(cursor=harness.argument("archive", "ListArchive", "path", "cursor", "start"))
+    path = archive.iterate(cursor=harness.argument("listArchive", "path", "cursor", "start"))
     _taken(lines, "archive", path, 1)
     dotted = _crafted(harness, path.checkpoint(), _replaced(path.checkpoint(), ("page", 2, 0), ".."))
     record(lines, "dot segment cursor", lambda: archive.resume(dotted))
@@ -433,7 +422,7 @@ def _malformed(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
         )
     searches = api.protocols.searches.all
     exchange.respond(user_page("1", next_cursor="c1"))
-    search = searches.iterate(body=_body(harness, "searches", "Search", {"query": "a"}))
+    search = searches.iterate(body=_body(harness, "search", {"query": "a"}))
     _taken(lines, "search source", search, 1)
     saved = search.checkpoint()
     for label, replaced in (
@@ -509,7 +498,7 @@ def _validated(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
             ),
         )
     archive = api.protocols.archive.all
-    start = archive.iterate(cursor=harness.argument("archive", "ListArchive", "path", "cursor", "start")).checkpoint()
+    start = archive.iterate(cursor=harness.argument("listArchive", "path", "cursor", "start")).checkpoint()
     for value in (".", ".."):
         record(
             lines,
@@ -517,10 +506,10 @@ def _validated(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
             lambda value=value: archive.resume(_crafted(harness, start, _replaced(start, ("arguments", 0), [value]))),
         )
     searches = api.protocols.searches.all
-    saved = searches.iterate(body=_body(harness, "searches", "Search", {"query": "a"})).checkpoint()
+    saved = searches.iterate(body=_body(harness, "search", {"query": "a"})).checkpoint()
     for label, path, value in (
         ("body its schema refuses", ("body", 0), {"query": 5, "extra": "x"}),
-        ("media type its selector refuses", ("body", 2), "text/plain"),
+        ("concrete media type a saved body no longer carries", ("body", 2), "text/plain"),
         ("unparsable media type", ("body", 2), "%%%"),
         ("media type with a line break", ("body", 2), "application/json\r\nX-Injected: 1"),
     ):
@@ -580,11 +569,11 @@ def _credentials(harness: Harness, api: Any, lines: list[str]) -> None:
         ("header key argument", "header", "X-Api-Key", "k"),
         ("proxy credential argument", "header", "Proxy-Authorization", "Basic x"),
     ):
-        argument = harness.argument("keyed", "ListKeyedUsers", location, name, value)
+        argument = harness.argument("listKeyedUsers", location, name, value)
         record(lines, label, keyed.iterate(**{name.lower().replace("-", "_"): argument}).checkpoint)
     queries = api.protocols.queries.all
-    keyless = harness.argument("queries", "Query", "querystring", "filter", {"term": "a"})
-    keyed_filter = harness.argument("queries", "Query", "querystring", "filter", {"term": "a", "api_key": "k"})
+    keyless = harness.argument("query", "querystring", "filter", {"term": "a"})
+    keyed_filter = harness.argument("query", "querystring", "filter", {"term": "a", "api_key": "k"})
     record(lines, "querystring with a key field", queries.iterate(filter=keyed_filter).checkpoint)
     state = queries.iterate(filter=keyless).checkpoint()
     _saved(lines, "querystring", state)

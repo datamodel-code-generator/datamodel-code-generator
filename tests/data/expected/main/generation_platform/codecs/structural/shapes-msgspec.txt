@@ -1,14 +1,14 @@
-use /paths/~1animals~1any/put request_body: envelope alias models:FieldAnimalsAnyPutRequest msgspec_structural models=[('models:Cat', 'struct', 'ignore', False), ('models:Dog', 'struct', 'ignore', True)]
-use /paths/~1kin/put request_body: envelope alias models:FieldKinPutRequest msgspec_structural models=[('models:Animal', 'struct', 'ignore', True), ('models:Cat', 'struct', 'ignore', False)]
+use /paths/~1animals~1any/put request_body: native alias models:FieldAnimalsAnyPutRequest msgspec_structural models=[('models:Cat', 'struct', 'ignore', False), ('models:Dog', 'struct', 'ignore', True)]
+use /paths/~1kin/put request_body: native alias models:FieldKinPutRequest msgspec_structural models=[('models:Animal', 'struct', 'ignore', True), ('models:Cat', 'struct', 'ignore', False)]
 use /paths/~1tree/put request_body: native struct models:Node msgspec_convert models=[('models:Node', 'struct', 'ignore', True)]
 use /paths/~1tree/put response_body 200: native struct models:Node msgspec_convert models=[('models:Node', 'struct', 'ignore', True)]
 use /paths/~1mixed/post request_body: native alias models:Mixed msgspec_convert models=[('models:Large', 'struct', 'ignore', True), ('models:Small', 'struct', 'ignore', True)]
 use /paths/~1values/post request_body: native struct models:Values msgspec_convert models=[('models:Values', 'struct', 'ignore', True)]
 use /paths/~1values/post response_body 200: native struct models:Values msgspec_convert models=[('models:Values', 'struct', 'ignore', True)]
-animal-client-cat: input issues=DIRECTIONAL_REQUIRED@/id:models:Cat.id wire={"meow":true} extras={}
-animal-server-dog: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"bark":1,"name":"Rex"} extras={}
-animal-any-decode-cat: input issues=DIRECTIONAL_REQUIRED@/id:models:Cat.id wire={"meow":true,"nick-name":"Tom"} extras={}
-animal-any-decode-dog: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"bark":3,"x":1} extras={"/x":1}
+animal-client-cat: ModelProjectionError The native use has an unplanned projection gap at /id
+animal-server-dog: ModelProjectionError The native use has an unplanned projection gap at /id
+animal-any-decode-cat: ModelProjectionError The native use has an unplanned projection gap at /id
+animal-any-decode-dog: ModelProjectionError The native use has an unplanned projection gap at /id
 animal-any-encode-cat: wire={"nick-name":"Tom","meow":true}
 kin-client-encode-cat: wire={"meow":true}
 kin-client-encode-dog: wire={}

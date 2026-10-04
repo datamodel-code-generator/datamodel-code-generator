@@ -11,7 +11,6 @@ from models import FieldNestedGetQueryCursorParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue, ResponseMedia
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.nested import ListNestedResponse
@@ -42,8 +41,8 @@ class AsyncNestedResource:
     async def list_nested(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListNestedResponse] | None = None,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListNestedResponse:
         """Call GET /nested."""
@@ -65,8 +64,8 @@ class AsyncNestedWithResponse:
     async def list_nested(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListNestedResponse] | None = None,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListNestedResponse]:
         """Call GET /nested."""
@@ -88,8 +87,8 @@ class AsyncNestedWithRawResponse:
     async def list_nested(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListNestedResponse] | None = None,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /nested."""
@@ -111,8 +110,8 @@ class AsyncNestedWithStreamingResponse:
     def list_nested(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListNestedResponse] | None = None,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /nested."""

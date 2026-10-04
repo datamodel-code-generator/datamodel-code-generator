@@ -1,5 +1,5 @@
 use /paths/~1holders/post request_body: native struct models:Holder msgspec_structural models=[('models:Holder', 'struct', 'forbid', True), ('models:Large', 'struct', 'ignore', True), ('models:Small', 'struct', 'ignore', True)]
-use /paths/~1limits/post request_body: envelope struct models:Limits msgspec_convert models=[('models:Limits', 'struct', 'forbid', True)]
+use /paths/~1limits/post request_body: native struct models:Limits msgspec_convert models=[('models:Limits', 'struct', 'forbid', True)]
 use /paths/~1limits/post response_body 200: native struct models:Limits msgspec_convert models=[('models:Limits', 'struct', 'forbid', True)]
 use /paths/~1coded/post request_body: native struct models:Coded msgspec_convert models=[('models:Coded', 'struct', 'ignore', True)]
 use /paths/~1coded/post response_body 200: native struct models:Coded msgspec_convert models=[('models:Coded', 'struct', 'ignore', True)]
@@ -10,7 +10,7 @@ use /paths/~1rated/post request_body: native struct models:Rated msgspec_structu
 use /paths/~1moments/post request_body: native struct models:Moment msgspec_convert models=[('models:Moment', 'struct', 'ignore', True)]
 use /paths/~1worded/post request_body: native struct models:Worded msgspec_convert models=[('models:Worded', 'struct', 'ignore', True)]
 use /paths/~1wallets/post request_body: native struct models:Wallet msgspec_structural models=[('models:Dime', 'struct', 'ignore', True), ('models:Penny', 'struct', 'ignore', True), ('models:Wallet', 'struct', 'ignore', True)]
-limits-server-decode-unknown: input issues=DIRECTIONAL_REQUIRED@/id:models:Limits.id wire={"low":2,"zz":1} extras={}
+limits-server-decode-unknown: ModelProjectionError The native use has an unplanned projection gap at /id
 limits-client-decode-unknown: NativeValidationError native.extra_forbidden@/zz['zz']
 holder-server-decode-unknown: NativeValidationError native.extra_forbidden@/zz['zz']
 batch-server-decode: model Batch(entries=[Entry(amount=Decimal('1.5'))], index=UNSET, a_b=Decimal('3')) wire={"entries":[{"amount":"1.5"}],"a.b":"3"} presence=['', '/entries', '/entries/0', '/entries/0/amount', '/a.b'] extras={}

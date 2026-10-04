@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, arecord, json_response, raw_response, record, run
+from tests.data.python.client_runtime import Exchange, arecord, argument, json_response, raw_response, record, run
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -20,10 +20,9 @@ def query(package: ModuleType, lines: list[str]) -> None:
     options, types = (importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "types.pets"))
     exchange = Exchange(lines)
     http = exchange.client()
-    codecs = types.ListPetsRequestCodecs
-    trace = codecs.parameter(location="header", name="X-Trace").from_wire("t1").value
-    limit = codecs.parameter(location="query", name="limit").from_wire(5).value
-    labels = codecs.parameter(location="query", name="tags").from_wire(["a", "b"])
+    trace = argument(package, "listPets", "header", "X-Trace", "t1")
+    limit = argument(package, "listPets", "query", "limit", 5)
+    labels = argument(package, "listPets", "query", "tags", ["a", "b"])
     pets = json_response(200, [], **{"X-Rate": "1"})
     client = options.ClientOptions(query=(("api-version", "1"), ("limit", "9")))
     with package.Client(http_client=http, options=client) as api:
@@ -51,7 +50,7 @@ async def _async_query(package: ModuleType, lines: list[str]) -> None:
     options, types = (importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "types.pets"))
     exchange = Exchange(lines)
     http = exchange.async_client()
-    trace = types.ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t1").value
+    trace = argument(package, "listPets", "header", "X-Trace", "t1")
     api: Any
     async with package.AsyncClient(http_client=http, options=options.ClientOptions(query=(("api-version", "1"),))) as api:
         exchange.respond(json_response(200, [], **{"X-Rate": "1"}), raw_response(200, b"ok", "text/plain"))

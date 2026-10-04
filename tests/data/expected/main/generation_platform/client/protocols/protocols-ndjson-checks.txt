@@ -4,5 +4,4 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['checks.media'].media /paths/~1records/get: The media type 'application/json' of 'checks.media' is not one of application/jsonl, application/jsonlines, application/ndjson, application/x-jsonl, application/x-jsonlines, or application/x-ndjson
   E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1status/get: GET /status declares no application/x-ndjson success response for the NDJSON helper 'checks.response'
   E_CONFIG_VALUE config protocols.helpers['checks.other_media'].operation /paths/~1search/post: POST /search declares no application/x-ndjson success response for the NDJSON helper 'checks.other_media'
-  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].event_schema /paths/~1records/get: The NDJSON helper 'checks.envelope' decodes an envelope-projected event, which is not supported yet
   E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1records/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'

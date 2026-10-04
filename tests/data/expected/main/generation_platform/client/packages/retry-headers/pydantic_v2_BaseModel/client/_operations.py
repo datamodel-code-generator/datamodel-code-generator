@@ -19,43 +19,33 @@ from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.headers import (
     ApiKeyErrorData,
     ApiKeyHTTPError,
-    ApiKeyRequestCodecs,
     ApiKeyResponse,
     BearerErrorData,
     BearerHTTPError,
-    BearerRequestCodecs,
     BearerResponse,
     CookieErrorData,
     CookieHTTPError,
-    CookieRequestCodecs,
     CookieResponse,
     DirectionErrorData,
     DirectionHTTPError,
-    DirectionRequestCodecs,
     DirectionResponse,
     IgnoredErrorData,
     IgnoredHTTPError,
-    IgnoredRequestCodecs,
     IgnoredResponse,
     OauthErrorData,
     OauthHTTPError,
-    OauthRequestCodecs,
     OauthResponse,
     OpenidErrorData,
     OpenidHTTPError,
-    OpenidRequestCodecs,
     OpenidResponse,
     ParameterErrorData,
     ParameterHTTPError,
-    ParameterRequestCodecs,
     ParameterResponse,
     QueryErrorData,
     QueryHTTPError,
-    QueryRequestCodecs,
     QueryResponse,
     UnusedErrorData,
     UnusedHTTPError,
-    UnusedRequestCodecs,
     UnusedResponse,
 )
 
@@ -84,7 +74,6 @@ OPERATION_0: Final[OperationPlan[ParameterResponse, ParameterErrorData]] = Opera
             encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
         ),
     ),
-    codecs=ParameterRequestCodecs,
 )
 
 OPERATION_1: Final[OperationPlan[ApiKeyResponse, ApiKeyErrorData]] = OperationPlan(
@@ -105,7 +94,6 @@ OPERATION_1: Final[OperationPlan[ApiKeyResponse, ApiKeyErrorData]] = OperationPl
         ApiKeyHTTPError,
     ),
     security=security.OPERATION_1,
-    codecs=ApiKeyRequestCodecs,
 )
 
 OPERATION_2: Final[OperationPlan[BearerResponse, BearerErrorData]] = OperationPlan(
@@ -126,7 +114,6 @@ OPERATION_2: Final[OperationPlan[BearerResponse, BearerErrorData]] = OperationPl
         BearerHTTPError,
     ),
     security=security.OPERATION_2,
-    codecs=BearerRequestCodecs,
 )
 
 OPERATION_3: Final[OperationPlan[OauthResponse, OauthErrorData]] = OperationPlan(
@@ -147,7 +134,6 @@ OPERATION_3: Final[OperationPlan[OauthResponse, OauthErrorData]] = OperationPlan
         OauthHTTPError,
     ),
     security=security.OPERATION_3,
-    codecs=OauthRequestCodecs,
 )
 
 OPERATION_4: Final[OperationPlan[OpenidResponse, OpenidErrorData]] = OperationPlan(
@@ -168,7 +154,6 @@ OPERATION_4: Final[OperationPlan[OpenidResponse, OpenidErrorData]] = OperationPl
         OpenidHTTPError,
     ),
     security=security.OPERATION_4,
-    codecs=OpenidRequestCodecs,
 )
 
 OPERATION_5: Final[OperationPlan[CookieResponse, CookieErrorData]] = OperationPlan(
@@ -195,7 +180,6 @@ OPERATION_5: Final[OperationPlan[CookieResponse, CookieErrorData]] = OperationPl
         scope='orders-v1',
     ),
     security=security.OPERATION_5,
-    codecs=CookieRequestCodecs,
 )
 
 OPERATION_6: Final[OperationPlan[QueryResponse, QueryErrorData]] = OperationPlan(
@@ -222,7 +206,6 @@ OPERATION_6: Final[OperationPlan[QueryResponse, QueryErrorData]] = OperationPlan
         scope='orders-v1',
     ),
     security=security.OPERATION_6,
-    codecs=QueryRequestCodecs,
 )
 
 OPERATION_7: Final[OperationPlan[IgnoredResponse, IgnoredErrorData]] = OperationPlan(
@@ -248,7 +231,6 @@ OPERATION_7: Final[OperationPlan[IgnoredResponse, IgnoredErrorData]] = Operation
         retention_seconds=86400.0,
         scope='orders-v1',
     ),
-    codecs=IgnoredRequestCodecs,
 )
 
 OPERATION_8: Final[OperationPlan[DirectionResponse, DirectionErrorData]] = OperationPlan(
@@ -287,7 +269,6 @@ OPERATION_8: Final[OperationPlan[DirectionResponse, DirectionErrorData]] = Opera
     ),
     retry_after_ms_header='X-Idempotency',
     should_retry_header='X-Retry-Control',
-    codecs=DirectionRequestCodecs,
 )
 
 OPERATION_9: Final[OperationPlan[UnusedResponse, UnusedErrorData]] = OperationPlan(
@@ -314,5 +295,4 @@ OPERATION_9: Final[OperationPlan[UnusedResponse, UnusedErrorData]] = OperationPl
         scope='orders-v1',
     ),
     security=security.OPERATION_9,
-    codecs=UnusedRequestCodecs,
 )

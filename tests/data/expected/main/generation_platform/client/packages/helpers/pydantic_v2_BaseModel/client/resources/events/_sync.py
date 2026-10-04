@@ -11,7 +11,6 @@ from models import FieldEventsGetHeaderLastEventIDParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue, ResponseMedia
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.events import StreamEventsResponse
@@ -42,8 +41,8 @@ class EventsResource:
     def stream_events(
         self,
         *,
-        last_event_id: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['text/event-stream'] | ResponseMedia[StreamEventsResponse] | None = None,
+        last_event_id: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['text/event-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> StreamEventsResponse:
         """Call GET /events."""
@@ -65,8 +64,8 @@ class EventsWithResponse:
     def stream_events(
         self,
         *,
-        last_event_id: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['text/event-stream'] | ResponseMedia[StreamEventsResponse] | None = None,
+        last_event_id: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['text/event-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StreamEventsResponse]:
         """Call GET /events."""
@@ -88,8 +87,8 @@ class EventsWithRawResponse:
     def stream_events(
         self,
         *,
-        last_event_id: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['text/event-stream'] | ResponseMedia[StreamEventsResponse] | None = None,
+        last_event_id: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['text/event-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /events."""
@@ -111,8 +110,8 @@ class EventsWithStreamingResponse:
     def stream_events(
         self,
         *,
-        last_event_id: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['text/event-stream'] | ResponseMedia[StreamEventsResponse] | None = None,
+        last_event_id: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['text/event-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /events."""

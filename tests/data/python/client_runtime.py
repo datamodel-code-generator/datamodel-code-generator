@@ -134,6 +134,35 @@ class Exchange:
         return self.handle(request)
 
 
+def _operation(package: ModuleType, operation: str) -> Any:
+    """Return the plan of a generated package's operation by its operation id, or by `METHOD /path` without one."""
+    plans = importlib.import_module(f"{package.__name__}._runtime.client.operations").OperationPlan
+    return next(
+        plan
+        for plan in vars(importlib.import_module(f"{package.__name__}._operations")).values()
+        if isinstance(plan, plans) and operation in {plan.operation_id, f"{plan.method} {plan.path}"}
+    )
+
+
+def argument(package: ModuleType, operation_id: str, location: str, name: str, wire: object) -> object:
+    """Return the native argument a parameter's wire value builds, as a resumed call builds a saved one."""
+    specs = _operation(package, operation_id).parameters
+    return next(spec for spec in specs if (spec.plan.location, spec.plan.name) == (location, name)).restored(wire)
+
+
+def request_body(package: ModuleType, operation_id: str, media_type: str | None, wire: object) -> object:
+    """Return the native body a declared media type's wire value builds, as a resumed call builds a saved one."""
+    return _operation(package, operation_id).body.select(operation_id, media_type).restored(wire)
+
+
+def form_part(
+    package: ModuleType, operation_id: str, name: str, wire: object, media_type: str | None = None
+) -> object:
+    """Return the native value a form-data member's wire value builds: a declared member's, or another part's."""
+    media = _operation(package, operation_id).body.select(operation_id, media_type)
+    return next((plan for plan in media.parts if plan.name == name), media.additional_part).encoder.restored(wire)
+
+
 def describe(value: object) -> str:
     """Describe a call outcome: an error with its safe fields, a response with its metadata, or a value."""
     match value:

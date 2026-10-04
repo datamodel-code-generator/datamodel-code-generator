@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import httpx2
 
 from tests.data.python.client_retry_policy import _response
-from tests.data.python.client_runtime import Exchange, arecord, raw_response, record, run
+from tests.data.python.client_runtime import Exchange, arecord, argument, raw_response, record, run
 from tests.data.python.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
@@ -462,8 +462,7 @@ class _HeadEvents:
 
 
 async def _async_head_redirects(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    types = importlib.import_module(f"{package.__name__}.types.pets")
-    pet = types.HeadPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "headPet", "path", "petId", 3)
     exchange, events = Exchange(lines), _HeadEvents()
     async with (
         exchange.async_client() as native,
@@ -525,8 +524,7 @@ async def _async_head_redirects(package: ModuleType, options: ModuleType, lines:
 def head_redirects(package: ModuleType, lines: list[str]) -> None:
     """Keep HEAD's typed bodyless declaration after the prescribed 303 conversion to GET."""
     options = importlib.import_module(f"{package.__name__}.options")
-    types = importlib.import_module(f"{package.__name__}.types.pets")
-    pet = types.HeadPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "headPet", "path", "petId", 3)
     exchange, events = Exchange(lines), _HeadEvents()
     with (
         exchange.client() as native,

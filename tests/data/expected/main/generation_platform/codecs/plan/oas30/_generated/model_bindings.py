@@ -17,7 +17,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
 from .._runtime.model_codecs.wire import freeze_wire
@@ -350,11 +349,6 @@ def codec_0() -> PydanticModelCodec[plan_oas30_models.FieldItemsGetQueryLimitPar
     )
 
 
-@cache
-def outbound_0() -> NativeOutboundCodec[plan_oas30_models.FieldItemsGetQueryLimitParameter]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
-
-
 CONTEXT_1: Final = CodecContext(
     surface='client',
     direction='request',
@@ -385,11 +379,6 @@ def codec_1() -> PydanticModelCodec[plan_oas30_models.FieldItemsGetQueryQParamet
         {'plan_oas30_models:FieldItemsGetQueryQParameter': plan_oas30_models.FieldItemsGetQueryQParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_1() -> NativeOutboundCodec[plan_oas30_models.FieldItemsGetQueryQParameter]:
-    return NativeOutboundCodec(codec_1(), CONTEXT_1)
 
 
 CONTEXT_2: Final = CodecContext(
@@ -424,11 +413,6 @@ def codec_2() -> PydanticModelCodec[plan_oas30_models.FieldItemsGetQueryFlagsPar
     )
 
 
-@cache
-def outbound_2() -> NativeOutboundCodec[plan_oas30_models.FieldItemsGetQueryFlagsParameter]:
-    return NativeOutboundCodec(codec_2(), CONTEXT_2)
-
-
 CONTEXT_3: Final = CodecContext(
     surface='client',
     direction='request',
@@ -459,11 +443,6 @@ def codec_3() -> PydanticModelCodec[plan_oas30_models.FieldItemsGetQueryPagePara
         {'plan_oas30_models:FieldItemsGetQueryPageParameter': plan_oas30_models.FieldItemsGetQueryPageParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_3() -> NativeOutboundCodec[plan_oas30_models.FieldItemsGetQueryPageParameter]:
-    return NativeOutboundCodec(codec_3(), CONTEXT_3)
 
 
 CONTEXT_4: Final = CodecContext(
@@ -498,11 +477,6 @@ def codec_4() -> PydanticModelCodec[plan_oas30_models.FieldItemsGetHeaderXIdPara
     )
 
 
-@cache
-def outbound_4() -> NativeOutboundCodec[plan_oas30_models.FieldItemsGetHeaderXIdParameter]:
-    return NativeOutboundCodec(codec_4(), CONTEXT_4)
-
-
 CONTEXT_5: Final = CodecContext(
     surface='client',
     direction='request',
@@ -533,11 +507,6 @@ def codec_5() -> PydanticModelCodec[plan_oas30_models.FieldItemsGetCookiePrefPar
         {'plan_oas30_models:FieldItemsGetCookiePrefParameter': plan_oas30_models.FieldItemsGetCookiePrefParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_5() -> NativeOutboundCodec[plan_oas30_models.FieldItemsGetCookiePrefParameter]:
-    return NativeOutboundCodec(codec_5(), CONTEXT_5)
 
 
 CONTEXT_6: Final = CodecContext(

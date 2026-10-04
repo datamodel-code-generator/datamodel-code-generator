@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, raw_response, record, run
+from tests.data.python.client_runtime import Exchange, argument, raw_response, record, run
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -363,9 +363,8 @@ class _Offset(tzinfo):
 
 
 def _cookie_arguments(package: ModuleType) -> dict[str, object]:
-    codecs = importlib.import_module(f"{package.__name__}.types.auth").CookieParametersRequestCodecs
     return {
-        name: codecs.parameter(location=location, name=wire).from_wire(value).value
+        name: argument(package, "cookie_parameters", location, wire, value)
         for name, (location, wire, value) in {
             "theme": ("cookie", "theme", "dark"),
             "page": ("query", "page", 2),

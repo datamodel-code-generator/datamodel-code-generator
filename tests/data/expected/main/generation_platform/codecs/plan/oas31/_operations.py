@@ -19,7 +19,6 @@ from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.default import (
     GetPetsByPetIdErrorData,
     GetPetsByPetIdHTTPError,
-    GetPetsByPetIdRequestCodecs,
     GetPetsByPetIdResponse,
 )
 
@@ -121,5 +120,4 @@ OPERATION_0: Final[OperationPlan[GetPetsByPetIdResponse, GetPetsByPetIdErrorData
         ),
     ),
     security=security.OPERATION_0,
-    codecs=GetPetsByPetIdRequestCodecs,
 )

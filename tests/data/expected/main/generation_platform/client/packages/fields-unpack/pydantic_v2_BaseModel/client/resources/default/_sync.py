@@ -40,6 +40,8 @@ from ..._generated.client_arguments import (
     Operation5Arguments,
     Operation6Arguments,
     Operation7Arguments,
+    Operation7Arguments1,
+    Operation7Arguments2,
 )
 from ..._runtime.client.client import ClientCore
 from ...options import UNSET
@@ -247,16 +249,27 @@ class DefaultResource:
             options=kwargs.get('options'),
         ).data
 
+    @overload
     def replace_pet(
         self,
         **kwargs: Unpack[Operation7Arguments],
+    ) -> ReplacePetResponse: ...
+    @overload
+    def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments1],
+    ) -> ReplacePetResponse: ...
+    def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments2],
     ) -> ReplacePetResponse:
         """Call PUT /pets/{petId}/records."""
         KEYWORDS_7.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_7,
             (kwargs['pet_id'],),
-            body=kwargs['body'],
+            body=kwargs.get('body', UNSET),
+            fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         ).data
@@ -444,16 +457,27 @@ class DefaultWithResponse:
             options=kwargs.get('options'),
         )
 
+    @overload
     def replace_pet(
         self,
         **kwargs: Unpack[Operation7Arguments],
+    ) -> Response[ReplacePetResponse]: ...
+    @overload
+    def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments1],
+    ) -> Response[ReplacePetResponse]: ...
+    def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments2],
     ) -> Response[ReplacePetResponse]:
         """Call PUT /pets/{petId}/records."""
         KEYWORDS_7.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_7,
             (kwargs['pet_id'],),
-            body=kwargs['body'],
+            body=kwargs.get('body', UNSET),
+            fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -605,13 +629,24 @@ class DefaultWithRawResponse:
             options=kwargs.get('options'),
         )
 
-    def replace_pet(self, **kwargs: Unpack[Operation7Arguments]) -> RawResponse:
+    @overload
+    def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments],
+    ) -> RawResponse: ...
+    @overload
+    def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments1],
+    ) -> RawResponse: ...
+    def replace_pet(self, **kwargs: Unpack[Operation7Arguments2]) -> RawResponse:
         """Call PUT /pets/{petId}/records."""
         KEYWORDS_7.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_7,
             (kwargs['pet_id'],),
-            body=kwargs['body'],
+            body=kwargs.get('body', UNSET),
+            fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -799,16 +834,27 @@ class DefaultWithStreamingResponse:
             options=kwargs.get('options'),
         )
 
+    @overload
     def replace_pet(
         self,
         **kwargs: Unpack[Operation7Arguments],
+    ) -> AbstractContextManager[RawResponse]: ...
+    @overload
+    def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments1],
+    ) -> AbstractContextManager[RawResponse]: ...
+    def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments2],
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /pets/{petId}/records."""
         KEYWORDS_7.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_7,
             (kwargs['pet_id'],),
-            body=kwargs['body'],
+            body=kwargs.get('body', UNSET),
+            fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
