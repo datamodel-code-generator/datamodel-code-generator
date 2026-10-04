@@ -73,8 +73,11 @@ def wire_records(error: WireValidationError | CodecResourceLimitError, location:
 
 
 def model_records(error: ValidationError, location: tuple[str, ...]) -> list[Record]:
-    """Return the records of a value the model rejects, located as FastAPI locates its own."""
-    return [{**item, "loc": (*location, *item["loc"])} for item in error.errors(include_url=False)]
+    """Return the records of a value the model rejects, located as FastAPI locates its own, without the value."""
+    return [
+        {**item, "loc": (*location, *item["loc"])}
+        for item in error.errors(include_url=False, include_context=False, include_input=False)
+    ]
 
 
 def response_failure(message: str) -> ResponseValidationError:

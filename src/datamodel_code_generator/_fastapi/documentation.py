@@ -76,11 +76,15 @@ class Documentation:
         contract = spec.contract
         extra: JSONObject = {}
         declarations = {(_fact(item, "in"), item.name): item for item in contract.parameters}
-        adapters: list[JSONValue] = [
-            self.parameter(declarations[parameter.location, parameter.wire_name])
-            for parameter in spec.parameters
-            if parameter.native is None
-        ]
+        slots: dict[str, list[str]] = {}
+        for slot in spec.route.slots:
+            slots.setdefault(slot.wire_name, []).append(slot.slot)
+        adapters: list[JSONValue] = []
+        for parameter in spec.parameters:
+            if parameter.native is None:
+                documented = self.parameter(declarations[parameter.location, parameter.wire_name])
+                names = slots.get(parameter.wire_name, ()) if parameter.location == "path" else ()
+                adapters.extend([{**documented, "name": name} for name in names] or [documented])
         if adapters:
             extra["parameters"] = adapters
         if (body := spec.body) is not None and body.decision.transport != "fastapi_native":

@@ -369,7 +369,15 @@
         },
         "parameters": [
           {
-            "name": "id",
+            "name": "dcg_p0",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "dcg_p1",
             "in": "path",
             "required": true,
             "schema": {
