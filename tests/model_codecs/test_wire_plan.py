@@ -1,4 +1,4 @@
-"""Generate client packages from wire plan fixtures, pinning their schema bundles or reporting each refused rule."""
+"""Generate server packages from wire plan fixtures, pinning their schema bundles or reporting each refused rule."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def test_wire_plan_bundles_validate(name: str, tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("name", ["dialects", "dialects32", "directions", "querystring-version"])
 def test_wire_plan_rules(name: str, tmp_path: Path) -> None:
-    """Refuse to generate a client while any schema or parameter rule needs an explicit adapter."""
+    """Refuse to generate a server while any schema or parameter rule needs an explicit adapter."""
     assert_output(wire_plan_report(name, tmp_path)[0], EXPECTED / f"{name}.txt")
 
 

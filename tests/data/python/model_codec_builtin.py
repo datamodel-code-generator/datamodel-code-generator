@@ -1,4 +1,4 @@
-"""Run the builtin model codecs of generated client packages over fixture cases, rendering each result as text."""
+"""Run the builtin model codecs of generated client or server packages over fixture cases, rendering each result."""
 
 from __future__ import annotations
 
@@ -17,7 +17,9 @@ from pydantic import BaseModel
 
 from datamodel_code_generator import SchemaParseError
 from datamodel_code_generator.api_types import APIGenerationError
-from tests.data.python.client_generation import generate_client
+from datamodel_code_generator.fastapi import generate_fastapi
+from tests.data.python.client_generation import generate_client, model_config
+from tests.data.python.fastapi_generation import fastapi_config
 from tests.data.python.generated_packages import generated_root, import_generated_codecs
 
 if TYPE_CHECKING:
@@ -54,17 +56,31 @@ def copied_input(source: Path, root: Path) -> Path:
 
 
 def generate_package(
-    source: Path, fixture: dict[str, Any], root: Path, backend: str, config: dict[str, Any]
+    source: Path, fixture: dict[str, Any], root: Path, backend: str, config: dict[str, Any], *, server: bool = False
 ) -> list[str]:
-    """Generate a fixture's client package, returning the diagnostics of a refusal or the error, or nothing."""
+    """Generate a fixture's client or FastAPI server package, returning a refusal's diagnostics, the error, or nothing.
+
+    A server package keeps the models module and the model codec layout of a client package, so the same reports read
+    either; `config` holds the settings of the chosen target.
+    """
     options = dict(fixture.get("options", {}))
     if "extra_template_data" in options:
         options["extra_template_data"] = defaultdict(dict, options["extra_template_data"])
     if "scopes" in fixture:
         options["openapi_scopes"] = fixture["scopes"]
     root.mkdir(parents=True, exist_ok=True)
+    package = fixture["package"]
     try:
-        generate_client(source, root, fixture["package"], backend, options, {**CLIENT, **config})
+        if server:
+            generate_fastapi(
+                source,
+                model_config=model_config(root / f"{package}_models.py", backend, options),
+                config=fastapi_config(
+                    {"output": package, "package": package, "model_package": f"{package}_models", **config}, root
+                ),
+            )
+        else:
+            generate_client(source, root, package, backend, options, {**CLIENT, **config})
     except APIGenerationError as error:
         return [
             "APIGenerationError",
@@ -76,7 +92,7 @@ def generate_package(
 
 
 class GeneratedCodecs:
-    """A generated client package imported for its model codecs, with the runtime modules its reports read."""
+    """A generated client or server package imported for its model codecs, with the runtime modules its reports read."""
 
     def __init__(self, name: str, root: Path) -> None:
         """Import the package generated under a root, its bindings, and the runtime modules reports read."""
@@ -312,21 +328,21 @@ def _codecs(package: GeneratedCodecs, lines: list[str] | None = None, *, strateg
     return codecs
 
 
-def builtin_codec_report(source: Path, cases: Path, root: Path) -> str:
-    """Generate a client package, import it, and run every case through the generated codec of its use.
+def builtin_codec_report(source: Path, cases: Path, root: Path, *, server: bool = False) -> str:
+    """Generate a client or server package, import it, and run every case through the generated codec of its use.
 
     A fixture's `refusal` configuration first reports the diagnostics of a generation the target refuses; its
     `config` then generates the package that runs the cases.
     """
     source = copied_input(source, root)
     fixture = json.loads(cases.read_text(encoding="utf-8"))
-    package = fixture["package"]
+    package, backend = fixture["package"], fixture["backend"]
     lines: list[str] = []
     if isinstance(refusal_config := fixture.get("refusal"), dict):
-        refused = generate_package(source, fixture, root / "refused", fixture["backend"], refusal_config)
+        refused = generate_package(source, fixture, root / "refused", backend, refusal_config, server=server)
         lines.extend(f"refused {line}" for line in refused or ["nothing"])
     accepted = root / "accepted"
-    if diagnostics := generate_package(source, fixture, accepted, fixture["backend"], fixture.get("config", {})):
+    if diagnostics := generate_package(source, fixture, accepted, backend, fixture.get("config", {}), server=server):
         return _text([*lines, *diagnostics], package)
     with imported(accepted, package) as generated:
         codecs = _codecs(generated, lines, strategies=bool(fixture.get("strategies")))
@@ -497,17 +513,17 @@ def _startup(generated: Path, root: Path, package: str, case: dict[str, Any], va
     return "built"
 
 
-def builtin_codec_startup_report(source: Path, cases: Path, root: Path) -> str:
-    """Generate a client package, then edit a copy per case out of sync with itself and build the edited codec.
+def builtin_codec_startup_report(source: Path, cases: Path, root: Path, *, server: bool = False) -> str:
+    """Generate a client or server package, then edit a copy per case out of sync with itself and build its codec.
 
     Each case edits the generated files as a stale or hand-edited package would: it rebinds model names in the
     models module, or changes the binding, models, bundle, or directional view of one generated codec.
     """
     source = copied_input(source, root)
     fixture = json.loads(cases.read_text(encoding="utf-8"))
-    package = fixture["package"]
+    package, backend = fixture["package"], fixture["backend"]
     generated = root / "generated"
-    if diagnostics := generate_package(source, fixture, generated, fixture["backend"], fixture.get("config", {})):
+    if diagnostics := generate_package(source, fixture, generated, backend, fixture.get("config", {}), server=server):
         return _text(diagnostics, package)
     with imported(generated, package) as codecs:
         values = codecs.load(cases)["startup"]

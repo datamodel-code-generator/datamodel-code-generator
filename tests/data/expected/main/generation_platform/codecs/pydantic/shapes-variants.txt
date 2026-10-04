@@ -1,5 +1,8 @@
+use /paths/~1animals/post request_body: native root models:FieldAnimalsPostRequestRequest models=[('models:CatRequest', 'model', 'forbid', False), ('models:DogRequest', 'model', 'ignore', True), ('models:FieldAnimalsPostRequestRequest', 'root', 'ignore', True)]
+use /paths/~1animals/post response_body 200: native root models:FieldAnimalsPostResponseResponse models=[('models:CatResponse', 'model', 'forbid', False), ('models:DogResponse', 'model', 'ignore', True), ('models:FieldAnimalsPostResponseResponse', 'root', 'ignore', True)]
 use /paths/~1animals~1any/put request_body: native root models:FieldAnimalsAnyPutRequestRequest models=[('models:CatRequest', 'model', 'forbid', False), ('models:DogRequest', 'model', 'ignore', True), ('models:FieldAnimalsAnyPutRequestRequest', 'root', 'ignore', True)]
 use /paths/~1kin/put request_body: native root models:FieldKinPutRequestRequest models=[('models:AnimalRequest', 'model', 'ignore', True), ('models:CatRequest', 'model', 'forbid', False), ('models:FieldKinPutRequestRequest', 'root', 'ignore', True)]
+use /paths/~1kin/get response_body 200: native root models:FieldKinGetResponseResponse models=[('models:AnimalResponse', 'model', 'ignore', True), ('models:CatResponse', 'model', 'forbid', False), ('models:FieldKinGetResponseResponse', 'root', 'ignore', True)]
 use /paths/~1tree/put request_body: native model models:Node models=[('models:Node', 'model', 'ignore', True)]
 use /paths/~1tree/put response_body 200: native model models:Node models=[('models:Node', 'model', 'ignore', True)]
 use /paths/~1mixed/post request_body: native root models:Mixed models=[('models:Large', 'model', 'ignore', True), ('models:Mixed', 'root', 'ignore', True), ('models:Small', 'model', 'ignore', True)]

@@ -1,4 +1,4 @@
-"""Generate client packages from wire plan fixtures, reporting refusals and validating instances offline."""
+"""Generate FastAPI server packages from wire plan fixtures, reporting refusals and validating instances offline."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from tests.data.python.model_codec_builtin import failure, generate_package, imp
 
 PLANS = Path(__file__).parents[1] / "generation_platform" / "codecs" / "plan"
 BACKEND = "pydantic_v2.BaseModel"
-PINNED = (("_generated", "model_bindings.py"), ("_operations.py",))
+PINNED = (("_generated", "model_bindings.py"), ("_generated", "contract.py"))
 
 
 def _validation(package: Any, case: dict[str, Any]) -> str:
@@ -29,10 +29,10 @@ def _validation(package: Any, case: dict[str, Any]) -> str:
 
 
 def wire_plan_report(name: str, root: Path) -> tuple[str, dict[tuple[str, ...], str]]:
-    """Generate one fixture's client package, reporting a refusal or instances validated by its bundles.
+    """Generate one fixture's server package, reporting a refusal or instances validated by its bundles.
 
     A fixture's `refusal` configuration first reports the diagnostics of a generation the target refuses; its
-    `config` then generates the package whose bindings and operations the second value holds.
+    `config` then generates the package whose bindings and route contract the second value holds.
     """
     case = json.loads((PLANS / "cases.json").read_text(encoding="utf-8"))[name]
     shutil.copytree(PLANS, root / "inputs")
@@ -40,13 +40,14 @@ def wire_plan_report(name: str, root: Path) -> tuple[str, dict[tuple[str, ...], 
     fixture = {"package": (package := f"plan_{name.replace('-', '_')}"), "options": case.get("model", {})}
     lines = [f"# {name}"]
     if isinstance(refusal_config := case.get("refusal"), dict):
-        refused = generate_package(source, fixture, root / "refused", BACKEND, refusal_config)
+        refused = generate_package(source, fixture, root / "refused", BACKEND, refusal_config, server=True)
         lines.extend(f"refused {line}" for line in refused or ["nothing"])
-    if diagnostics := generate_package(source, fixture, root / "accepted", BACKEND, case.get("config", {})):
+    accepted = root / "accepted"
+    if diagnostics := generate_package(source, fixture, accepted, BACKEND, case.get("config", {}), server=True):
         return "\n".join([*lines, *diagnostics]) + "\n", {}
-    directory = root / "accepted" / package
+    directory = accepted / package
     modules = {parts: directory.joinpath(*parts).read_text(encoding="utf-8") for parts in PINNED}
     if "instances" in case:
-        with imported(root / "accepted", package) as generated:
+        with imported(accepted, package) as generated:
             lines.extend(_validation(generated, item) for item in generated.load(PLANS / case["instances"]))
     return "\n".join(lines) + "\n", modules

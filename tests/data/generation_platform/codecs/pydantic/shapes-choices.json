@@ -1,7 +1,6 @@
 {
   "backend": "pydantic_v2.BaseModel",
   "package": "codec_shapes_choices",
-  "config": {"selection": {"exclude_operations": ["/paths/~1animals/post", "/paths/~1kin/get"], "reason": "The client cannot convert its unions whose members only their schemas tell apart."}},
   "options": {"aliases": {"nick-name": ["nick-name", "nickName"]}},
   "cases": [
     {"name": "animals-any-decode", "use": "/paths/~1animals~1any/put request_body", "op": "decode",

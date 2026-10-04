@@ -1,4 +1,4 @@
-"""Run the Pydantic v2 BaseModel and dataclass model codecs of generated client packages."""
+"""Run the Pydantic v2 BaseModel and dataclass model codecs of generated FastAPI server packages."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
 def test_pydantic_codecs(source: str, cases: str, tmp_path: PathType) -> None:
     """Decode, project, snapshot, and encode through generated codecs with presence and direction rules."""
     assert_output(
-        builtin_codec_report(CODECS / f"{source}.yaml", CODECS / f"{cases}.json", tmp_path),
+        builtin_codec_report(CODECS / f"{source}.yaml", CODECS / f"{cases}.json", tmp_path, server=True),
         EXPECTED / f"{cases}.txt",
     )
 
@@ -67,6 +67,6 @@ def test_pydantic_codecs(source: str, cases: str, tmp_path: PathType) -> None:
 def test_pydantic_codec_startup(cases: str, tmp_path: PathType) -> None:
     """Refuse edited bindings, bundles, and native types that disagree before any value is processed."""
     assert_output(
-        builtin_codec_startup_report(CODECS / "pets.yaml", CODECS / f"{cases}.json", tmp_path),
+        builtin_codec_startup_report(CODECS / "pets.yaml", CODECS / f"{cases}.json", tmp_path, server=True),
         EXPECTED / f"{cases}.txt",
     )
