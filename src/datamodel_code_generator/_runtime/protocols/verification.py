@@ -122,6 +122,8 @@ def _signed(
             stamp = timestamps[0]
             elements = [value for name, _, value in fields if name == "v1"]
             parts = (_ascii(stamp), b".", raw_body)
+        case _:
+            pass
     return stamp, delivery, parts, elements
 
 
