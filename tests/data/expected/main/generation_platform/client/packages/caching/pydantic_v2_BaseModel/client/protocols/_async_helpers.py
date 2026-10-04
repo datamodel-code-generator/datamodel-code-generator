@@ -4,30 +4,22 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import Literal
 
-from models import FieldCartsCurrentGetCookieCartParameter as _dcg_type_6
-from models import FieldSecureUsersUserIdGetPathUserIdParameter as _dcg_type_7
-from models import FieldUsersGetQueryPageParameter as _dcg_type_4
-from models import FieldUsersGetQueryRoleParameter as _dcg_type_5
+from models import FieldCartsCurrentGetCookieCartParameter as _dcg_type_5
+from models import FieldSecureUsersUserIdGetPathUserIdParameter as _dcg_type_6
+from models import FieldUsersGetQueryPageParameter as _dcg_type_3
+from models import FieldUsersGetQueryRoleParameter as _dcg_type_4
 from models import FieldUsersUserIdGetHeaderAcceptLanguageParameter as _dcg_type_1
 from models import FieldUsersUserIdGetPathUserIdParameter as _dcg_type_2
 from models import FieldUsersUserIdGetQueryFieldsParameter as _dcg_type_0
-from models import UserPatch as _dcg_type_3
 
 from .._runtime.client.client import AsyncClientCore
-from .._runtime.protocols.cache import afetch, ainvalidate, amutate
+from .._runtime.protocols.cache import afetch
 from .._runtime.protocols.caches import CacheResult
 from ..options import UNSET, RequestOptions, Unset
 from ..types.carts import GetCurrentCartResponse
 from ..types.secure import GetSecureUserResponse
-from ..types.users import (
-    CreateUserResponse,
-    DeleteUserResponse,
-    GetUserResponse,
-    ListUsersResponse,
-    RenameUserResponse,
-)
+from ..types.users import GetUserResponse, ListUsersResponse
 from . import CacheOptions, _plans
 
 
@@ -128,55 +120,6 @@ class AsyncUsersProfileCache:
             options=options,
         )
 
-    async def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return await ainvalidate(self._core, _plans.PLAN_0, tags)
-
-    @cached_property
-    def mutations(self) -> AsyncUsersProfileCacheMutations:
-        """The mutations that invalidate entries of this helper."""
-        return AsyncUsersProfileCacheMutations(self._core)
-
-
-class AsyncUsersProfileCacheMutations:
-    """The mutations of the users.profile cache helper."""
-
-    def __init__(self, core: AsyncClientCore) -> None:
-        """Keep the client core the helper sends through."""
-        self._core = core
-
-    async def rename(
-        self,
-        *,
-        user_id: _dcg_type_2,
-        body: _dcg_type_3,
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> RenameUserResponse:
-        """Call PATCH /users/{userId}, then remove the cached entries its tags name once it succeeds."""
-        return await amutate(
-            self._core,
-            _plans.MUTATION_0_0,
-            (user_id,),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )
-
-    async def remove(
-        self,
-        *,
-        user_id: _dcg_type_2,
-        options: RequestOptions | None = None,
-    ) -> DeleteUserResponse:
-        """Call DELETE /users/{userId}, then remove the cached entries its tags name once it succeeds."""
-        return await amutate(
-            self._core,
-            _plans.MUTATION_0_1,
-            (user_id,),
-            options=options,
-        )
-
 
 class AsyncUsersDatedCache:
     """The users.dated cache helper of GET /users/{userId}."""
@@ -203,10 +146,6 @@ class AsyncUsersDatedCache:
             options=options,
         )
 
-    async def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return await ainvalidate(self._core, _plans.PLAN_1, tags)
-
 
 class AsyncUsersListingCache:
     """The users.listing cache helper of GET /users."""
@@ -218,8 +157,8 @@ class AsyncUsersListingCache:
     async def fetch(
         self,
         *,
-        page: _dcg_type_4 | Unset = UNSET,
-        role: _dcg_type_5 | Unset = UNSET,
+        page: _dcg_type_3 | Unset = UNSET,
+        role: _dcg_type_4 | Unset = UNSET,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[ListUsersResponse]:
@@ -229,40 +168,6 @@ class AsyncUsersListingCache:
             _plans.PLAN_2,
             (page, role),
             cache_options=cache_options,
-            options=options,
-        )
-
-    async def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return await ainvalidate(self._core, _plans.PLAN_2, tags)
-
-    @cached_property
-    def mutations(self) -> AsyncUsersListingCacheMutations:
-        """The mutations that invalidate entries of this helper."""
-        return AsyncUsersListingCacheMutations(self._core)
-
-
-class AsyncUsersListingCacheMutations:
-    """The mutations of the users.listing cache helper."""
-
-    def __init__(self, core: AsyncClientCore) -> None:
-        """Keep the client core the helper sends through."""
-        self._core = core
-
-    async def create(
-        self,
-        *,
-        body: _dcg_type_3,
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> CreateUserResponse:
-        """Call POST /users, then remove the cached entries its tags name once it succeeds."""
-        return await amutate(
-            self._core,
-            _plans.MUTATION_2_0,
-            (),
-            body=body,
-            media_type=media_type,
             options=options,
         )
 
@@ -277,7 +182,7 @@ class AsyncCartsCurrentCache:
     async def fetch(
         self,
         *,
-        cart: _dcg_type_6,
+        cart: _dcg_type_5,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetCurrentCartResponse]:
@@ -290,10 +195,6 @@ class AsyncCartsCurrentCache:
             options=options,
         )
 
-    async def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return await ainvalidate(self._core, _plans.PLAN_3, tags)
-
 
 class AsyncSecureProfileCache:
     """The secure.profile cache helper of GET /secure/users/{userId}."""
@@ -305,7 +206,7 @@ class AsyncSecureProfileCache:
     async def fetch(
         self,
         *,
-        user_id: _dcg_type_7,
+        user_id: _dcg_type_6,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetSecureUserResponse]:
@@ -317,7 +218,3 @@ class AsyncSecureProfileCache:
             cache_options=cache_options,
             options=options,
         )
-
-    async def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return await ainvalidate(self._core, _plans.PLAN_4, tags)

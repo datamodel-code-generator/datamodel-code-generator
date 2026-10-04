@@ -28,22 +28,24 @@ render pydantic_v2.BaseModel
   write client/webhooks/callbacks/__init__.py
   write client/webhooks/github/__init__.py
   write client/webhooks/standard/__init__.py
+  write client/webhooks/stripe/__init__.py
   write client/webhooks/standard/message.py
   write client/webhooks/github/push.py
   write client/webhooks/callbacks/delivered.py
+  write client/webhooks/stripe/event.py
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['standard.message', 'github.push', 'callbacks.delivered'] bindings 5
+  namespace client helpers ['standard.message', 'github.push', 'callbacks.delivered', 'stripe.event'] bindings 5
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper standard.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.message c503090b917f44a9542091e0b5cdea7e7f14703e165e10e7e7e0f8cf704bb938
-  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push db5dd04d96ec941efee24451300a154baf59aab8455fab1e755425f4e7fa8be3
-  helper callbacks.delivered webhook enabled True /inputs/target_config/protocol_metadata/helpers/callbacks.delivered da8e47fc89f3060d55142819de3ce9d0dfa43e28e9f9ad72c3f1262fc148f10c
+  helper standard.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.message f84be255923be7411ea6edea1859666894a284d3255c1d17e2661afed38d4b76
+  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push 20b48f273efc814fa68f9183fc60e299c6453d1e8fe4cb6fc8fbd7b3cf4e6d78
+  helper callbacks.delivered webhook enabled True /inputs/target_config/protocol_metadata/helpers/callbacks.delivered dfa099f14eceac05a919414411394d9f0711cbad7d5fe0e5efa19ea728d9a6d2
+  helper stripe.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/stripe.event 2a3426969bbace7d44b94defde8031979493d6b8245fb944b879670dd918d323
   {
     "helpers": {
       "callbacks.delivered": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "document": "/inputs/root",
@@ -51,25 +53,14 @@ render pydantic_v2.BaseModel
         },
         "kind": "webhook",
         "signature": {
-          "delivery_id": "none",
+          "algorithm": "hmac-sha256",
           "encoding": "hex",
-          "field_constraints": {},
           "header": "X-Signature",
-          "key_id": "none",
-          "kind": "hmac-sha256",
-          "prefix": "",
-          "separator": "none",
-          "signed_parts": [
-            "raw-body",
-            {
-              "literal": "!"
-            }
-          ],
-          "timestamp": "none"
+          "kind": "body_hmac",
+          "prefix": ""
         }
       },
       "github.push": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "document": "/inputs/root",
@@ -77,22 +68,14 @@ render pydantic_v2.BaseModel
         },
         "kind": "webhook",
         "signature": {
-          "delivery_id": "none",
+          "algorithm": "hmac-sha256",
           "encoding": "hex",
-          "field_constraints": {},
           "header": "X-Hub-Signature-256",
-          "key_id": "none",
-          "kind": "hmac-sha256",
-          "prefix": "sha256=",
-          "separator": "none",
-          "signed_parts": [
-            "raw-body"
-          ],
-          "timestamp": "none"
+          "kind": "body_hmac",
+          "prefix": "sha256="
         }
       },
       "standard.message": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "document": "/inputs/root",
@@ -100,38 +83,19 @@ render pydantic_v2.BaseModel
         },
         "kind": "webhook",
         "signature": {
-          "delivery_id": {
-            "header": "webhook-id"
-          },
-          "encoding": "base64",
-          "field_constraints": {
-            "delivery-id": {
-              "ascii_bytes": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-            },
-            "timestamp": {
-              "ascii_bytes": "0123456789"
-            }
-          },
-          "header": "webhook-signature",
-          "key_id": "none",
-          "kind": "hmac-sha256",
-          "prefix": "v1,",
-          "separator": " ",
-          "signed_parts": [
-            "delivery-id",
-            {
-              "literal": "."
-            },
-            "timestamp",
-            {
-              "literal": "."
-            },
-            "raw-body"
-          ],
-          "timestamp": {
-            "header": "webhook-timestamp",
-            "unit": "seconds"
-          }
+          "kind": "standard_webhooks"
+        }
+      },
+      "stripe.event": {
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "webhook",
+        "signature": {
+          "header": "Stripe-Signature",
+          "kind": "stripe_style"
         }
       }
     },
