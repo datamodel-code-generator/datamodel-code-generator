@@ -199,6 +199,26 @@ def _file_example(
     )
 
 
+def render_webhook_error_fields() -> str:
+    """Render the kept webhook exception fields from their constructor annotations."""
+    from typing import get_type_hints  # noqa: PLC0415
+
+    from datamodel_code_generator._runtime.client.errors import (  # noqa: PLC0415, PLC2701 - Generate runtime field docs.
+        ProtocolConfigurationError,
+        WebhookVerificationError,
+    )
+
+    rows = ["", "| Exception | Direct base | Fields |", "|---|---|---|"]
+    for error, field_names in (
+        (ProtocolConfigurationError, ("field_path", "condition")),
+        (WebhookVerificationError, ("condition",)),
+    ):
+        hints = get_type_hints(error.__init__)
+        annotations = ", ".join(f"`{name}: {str(hints[name]).removeprefix('typing.')}`" for name in field_names)
+        rows.append(f"| `{error.__name__}` | `{error.__bases__[0].__name__}` | {annotations} |")
+    return "\n".join(rows) + "\n"
+
+
 def docs_examples() -> tuple[DocsExample, ...]:
     """Return all generated docs example sections."""
     return (
@@ -633,6 +653,11 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.webhooks.error-fields",
+            path=DOCS / "python-client.md",
+            render=render_webhook_error_fields,
+        ),
+        DocsExample(
             example_id="python-client.webhooks.usage",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
@@ -677,7 +702,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "yaml",
-                yaml_helpers(CLIENT_DATA / "protocols" / "webhook-public-keys.yaml", "standard.ed25519", "keyed.rsa"),
+                yaml_helpers(
+                    CLIENT_DATA / "protocols" / "webhook-public-keys.yaml", "rfc8032.ed25519", "wycheproof.rsa"
+                ),
             ),
         ),
         DocsExample(
@@ -710,7 +737,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 "\n".join(
                     line.strip()
                     for line in read_text(EXPECTED_CLIENT / "protocols" / "protocols-webhook-errors.txt").splitlines()
-                    if line.lstrip().startswith("E_CONFIG_CONFLICT") and ".signature" in line
+                    if line.lstrip().startswith("E_CONFIG_VALUE") and ".signature" in line
                 ),
             ),
         ),

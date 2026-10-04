@@ -37,7 +37,6 @@ from ._runtime.client.errors import (
     ProtocolSizeError,
     ProtocolStoreError,
     RedirectPolicyError,
-    ReplayStoreFullError,
     RequestCancelledError,
     RequestEncodingError,
     ResponseConsumedError,
@@ -56,8 +55,6 @@ from ._runtime.client.errors import (
     UnexpectedStatusError,
     UnsupportedAsyncBackendError,
     UnsupportedContentCodingError,
-    WebhookReplayError,
-    WebhookStoreError,
     WebhookVerificationError,
 )
 
@@ -150,7 +147,6 @@ __all__ = [
     'QueuePolicyConflictError',
     'QueueStoreError',
     'RedirectPolicyError',
-    'ReplayStoreFullError',
     'RequestCancelledError',
     'RequestEncodingError',
     'ResponseConsumedError',
@@ -182,8 +178,6 @@ __all__ = [
     'WebSocketClosedError',
     'WebSocketHandshakeError',
     'WebSocketProxyError',
-    'WebhookReplayError',
-    'WebhookStoreError',
     'WebhookVerificationError',
 ]
 _PROTOCOL_ERRORS = frozenset({

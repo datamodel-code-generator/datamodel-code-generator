@@ -2004,9 +2004,7 @@ class WebhookVerificationError(ProtocolError):
     def __init__(  # noqa: PLR0913
         self,
         *,
-        condition: Literal[
-            "malformed_signature", "invalid_signature", "missing_key", "timestamp_window", "missing_delivery_id"
-        ],
+        condition: Literal["malformed_signature", "invalid_signature", "missing_key", "timestamp_window"],
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
@@ -2019,7 +2017,7 @@ class WebhookVerificationError(ProtocolError):
         """Keep only the safe rejection category and shared context, never signature or key material."""
         error_choice(
             condition,
-            ("malformed_signature", "invalid_signature", "missing_key", "timestamp_window", "missing_delivery_id"),
+            ("malformed_signature", "invalid_signature", "missing_key", "timestamp_window"),
             "condition",
         )
         super().__init__(
@@ -2036,40 +2034,6 @@ class WebhookVerificationError(ProtocolError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("condition", self.condition))
-
-
-class WebhookReplayError(ProtocolError):
-    """A previously claimed webhook delivery that the helper's duplicate policy rejects."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        delivery_id: str,
-        namespace: str,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the delivery and namespace for explicit inspection, excluding both from its message."""
-        for field, value in (("delivery_id", delivery_id), ("namespace", namespace)):
-            error_string(value, field)
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.delivery_id = delivery_id
-        self.namespace = namespace
 
 
 class ProtocolStoreError(ProtocolError):
@@ -2124,50 +2088,6 @@ class ProtocolStoreError(ProtocolError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("action", self.action))
-
-
-class WebhookStoreError(ProtocolStoreError):
-    """A replay store operation that failed, so the webhook cannot be accepted."""
-
-
-class ReplayStoreFullError(WebhookStoreError):
-    """A replay store with no space for a new claim while every retained entry is still live."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        max_entries: int,
-        action: _StoreAction,
-        entry_id: str | None = None,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the store capacity and action without discarding an existing claim."""
-        if type(max_entries) is not int or max_entries < 0:
-            msg = "max_entries must be a nonnegative integer"
-            raise ValueError(msg)
-        super().__init__(
-            action=action,
-            entry_id=entry_id,
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.max_entries = max_entries
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("max_entries", self.max_entries))
 
 
 class UnsupportedContentCodingError(ProtocolError):
