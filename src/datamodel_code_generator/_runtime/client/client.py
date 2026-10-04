@@ -472,36 +472,6 @@ def _encoding_error(
     return RequestEncodingError(location=location, operation_id=operation.operation_id, cause=error)
 
 
-def _auth_identity(auth: AuthConfig) -> WireValue:
-    """Return what identifies an auth configuration without its secrets or its providers' classes.
-
-    It is the schemes it gives credentials for, with the audience and requested scopes of an OAuth grant, the
-    selection, the anonymous settings, the origins credentials may go to, and what each signer declares it manages.
-    """
-    from .auth import OwnedCredentialProvider  # noqa: PLC0415 - Only a checkpoint identifies the auth.
-    from .grants import grant_identity  # noqa: PLC0415 - Only a checkpoint identifies the auth.
-
-    capabilities = (signer.capabilities for signer in auth.signers)
-    return {
-        "credentials": tuple(
-            (name, grant_identity(provider.provider if isinstance(provider, OwnedCredentialProvider) else provider))
-            for name, provider in sorted(auth.credentials.items())
-        ),
-        "selection": None if isinstance(auth.selection, Unset) else auth.selection,
-        "anonymous": (auth.send_on_anonymous, tuple(sorted(auth.anonymous_schemes))),
-        "origins": tuple(sorted(auth.allowed_origins)),
-        "signers": tuple(
-            (
-                tuple(sorted(item.allowed_origins)),
-                tuple(sorted(item.managed_headers)),
-                tuple(sorted(item.managed_query)),
-                item.requires_body_digest,
-            )
-            for item in capabilities
-        ),
-    }
-
-
 def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
     """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field.
 
@@ -2088,37 +2058,6 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         if (context := self._security_context()) is not None:
             origins.update((origin.scheme, origin.host, origin.port) for origin in context.allowed_origins)
         return frozenset(origins)
-
-    def checkpoint_security(
-        self, operation: OperationPlan[object, object], options: RequestOptions | None
-    ) -> tuple[WireValue, bool]:
-        """Return what a helper's checkpoint is bound to, and whether it may leave the process.
-
-        It is the credential partition and allowed origins of the client's protocol security context, the origin of the
-        operation's server, the security schemes, kinds, and scopes the operation requires, and the identity of the
-        call's auth, never a secret. A checkpoint of a call that may authenticate leaves only under a partition.
-        """
-        settings = self._call_settings(options, operation.operation_id)
-        context = self._security_context()
-        declared, auth = operation.security, settings.auth
-        facts: WireValue = {
-            "partition": None if context is None else context.credential_partition,
-            "origins": ()
-            if context is None
-            else tuple(sorted((origin.scheme, origin.host, origin.port) for origin in context.allowed_origins)),
-            "server": request_origin(self._base(operation, settings)),
-            "requirements": None
-            if declared is None
-            else tuple(
-                tuple(
-                    (requirement.scheme.name, requirement.scheme.kind, *requirement.required_scopes)
-                    for requirement in alternative
-                )
-                for alternative in declared.alternatives
-            ),
-            "auth": None if auth is None else _auth_identity(auth),
-        }
-        return facts, context is not None or (declared is None and auth is None)
 
     def _secret_positions(
         self, operation: OperationPlan[object, object] | None, options: RequestOptions | None
