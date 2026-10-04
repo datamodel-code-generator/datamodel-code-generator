@@ -37,13 +37,6 @@
     counters=(2, 1, 1, 3, 4, 1, ('refresh-1',), 1, 3)
     hints=True/True/True retained=True progress copied=True
     str=ResumeStateError(operation_id='protocol', call_id='call-1', condition='fingerprint') repr=ResumeStateError() secret=False progress shown=False
-  ResumeStateTooLargeError: base=ResumeStateError sdk=True reason=resume_state_too_large_error
-    chain=['ResumeStateTooLargeError', 'ResumeStateError', 'ProtocolError', 'SDKError']
-    fields=call_id,cause,condition,helper_id,info,limit,observed_bytes,operation,operation_id,parent_session_id,secondary_errors
-    context=True/True/True/True/True call=protocol/call-1/session-1
-    counters=(2, 1, 1, 3, 4, 1, ('refresh-1',), 1, 3)
-    hints=True/True/True retained=True progress copied=True
-    str=ResumeStateTooLargeError(operation_id='protocol', call_id='call-1', condition='size', limit=16777216, observed_bytes=16777217) repr=ResumeStateTooLargeError() secret=False progress shown=False
   PaginationCycleError: base=ProtocolDataError sdk=True reason=pagination_cycle_error
     chain=['PaginationCycleError', 'ProtocolDataError', 'ProtocolError', 'SDKError']
     fields=call_id,cause,condition,first_seen_page_index,helper_id,info,location,operation,operation_id,page_index,parent_session_id,resume_state,secondary_errors
@@ -174,7 +167,6 @@
   session limit defaults: (None, None, None, None, None, None, None, (), '-', None, 0, None) SessionLimitError(kind='network_sends', limit=0)
   resume exhausted defaults: (None, None, None, None, None, None, None, (), '-', None, 0, None) StreamResumeExhaustedError(kind='network_sends', limit=16)
   resume defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) ResumeStateError(condition='malformed')
-  resume size defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) ResumeStateTooLargeError(condition='size', limit=0, observed_bytes=0)
   cycle defaults: (None, None, None, None, None, None, None, (), None, None, 0, None) PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0)
   polling defaults: (None, None, None, None, None, None, None, (), None, '-', 0, None) PollingStateError(condition='value')
   wait defaults: (None, None, None, None, None, None, None, (), '-', None, 0, None) PollWaitLimitError(kind='deadline', required_wait=0.0, limit=0.0)
@@ -187,12 +179,12 @@
   ProtocolDataError condition: ['missing', 'null', 'type', 'value', 'malformed', 'inconsistent']
   SessionLimitError kind: ['network_sends', 'pages', 'items', 'polls', 'reconnects', 'parts']
   StreamResumeExhaustedError kind: ['reconnects', 'network_sends']
-  ResumeStateError condition: ['version', 'fingerprint', 'security', 'expired', 'malformed', 'checksum', 'size']
+  ResumeStateError condition: ['version', 'fingerprint', 'expired', 'malformed']
   PollingStateError condition: ['type', 'value']
   PollWaitLimitError kind: ['wait', 'deadline']
   StreamDecodeError condition: ['missing', 'null', 'type', 'value', 'malformed', 'inconsistent']
   StreamInterruptedError condition: ['eof', 'transport']
-  fixed and default conditions: ('size', 'inconsistent', 'eof', 'malformed', 'value')
+  fixed and default conditions: ('inconsistent', 'eof', 'malformed', 'value')
   data condition unknown ! ValueError: condition must be one of its declared values []
   data condition None ! ValueError: condition must be one of its declared values []
   data location pointer ! ValueError: location must be a selector, a request target, or None []
@@ -215,9 +207,6 @@
   exhausted kind pages ! ValueError: kind must be one of its declared values []
   resume condition unknown ! ValueError: condition must be one of its declared values []
   resume missing condition ! TypeError: ResumeStateError.__init__() missing 1 required keyword-only argument: 'condition' []
-  size fixed condition ! TypeError: ResumeStateTooLargeError.__init__() got an unexpected keyword argument 'condition' []
-  size negative ! ValueError: observed_bytes must be a nonnegative integer []
-  size bool ! ValueError: limit must be a nonnegative integer []
   cycle fixed condition ! TypeError: PaginationCycleError.__init__() got an unexpected keyword argument 'condition' []
   cycle negative ! ValueError: page_index must be a nonnegative integer []
   cycle cursor field ! TypeError: PaginationCycleError.__init__() got an unexpected keyword argument 'continuation' []
