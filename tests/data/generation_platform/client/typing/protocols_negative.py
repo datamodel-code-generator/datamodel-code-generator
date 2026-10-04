@@ -8,7 +8,6 @@ from pets.errors import (
     PaginationCycleError,
     PollWaitLimitError,
     ProtocolDataError,
-    ResumeStateTooLargeError,
     SessionLimitError,
     StreamDecodeError,
     StreamInterruptedError,
@@ -71,7 +70,7 @@ def wrong_resume(state: ResumeState) -> None:
     """Keep resume state opaque bytes on export and bytes on import."""
     exported: str = state.export()  # error
     import_state("state")  # error
-    ResumeState(helper_fingerprint="helper", security_fingerprint="security", state=object())  # error
+    ResumeState(helper="helper", state=object())  # error
     del exported
 
 
@@ -80,7 +79,6 @@ def wrong_errors(snapshot: PollSnapshot[Pet], failure: OperationFailedError[Pet]
     SessionLimitError(kind="bytes", limit=1, progress={})  # error
     SessionLimitError(kind="pages", limit=1, progress={"bytes": 1})  # error
     StreamResumeExhaustedError(kind="pages", limit=1, progress={})  # error
-    ResumeStateTooLargeError(condition="size", limit=1, observed_bytes=2)  # error
     PaginationCycleError(page_index=1, first_seen_page_index=0, condition="inconsistent")  # error
     IncompleteFrameError(buffered_bytes=1, sequence=0, condition="eof")  # error
     PollWaitLimitError(kind="interval", required_wait=1, limit=0)  # error
