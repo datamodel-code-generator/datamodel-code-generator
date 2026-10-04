@@ -4,8 +4,6 @@
   miss = network 3:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"v1"'), ('cache-control', 'max-age=60'), ('x-request-id', 'r1'), ('content-length', '21'), ('content-type', 'application/json')]
   fresh hit = fresh_cache 3:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('etag', '"v1"'), ('cache-control', 'max-age=60'), ('x-request-id', 'r1'), ('content-type', 'application/json'), ('Content-Length', '21')]
   fresh hit over the response limit ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getUser', call_id='<call>') [operation_id='getUser', representation='decoded', limit=5, observed_bytes=21] response_too_large_error
-  fresh hit with a coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
-  miss with a coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
   > GET https://api.example.com/users/30
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   aged past max-age stored = network 30:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"e"'), ('cache-control', 'max-age=60'), ('age', '100'), ('content-length', '22'), ('content-type', 'application/json')]
@@ -119,18 +117,44 @@
   > GET https://api.example.com/users/9
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, accept-language: fr] b''
   french stored = network 9:french status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-length', '24'), ('content-type', 'application/json')]
-  english hit = fresh_cache 9:english status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-type', 'application/json'), ('Content-Length', '25')]
-  french hit = fresh_cache 9:french status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-type', 'application/json'), ('Content-Length', '24')]
+  > GET https://api.example.com/users/9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, accept-language: en] b''
+  english replacement = network 9:english status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-length', '25'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, accept-language: fr] b''
+  french replacement = network 9:french status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-length', '24'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/9
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   no language = network 9:none status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  Vary absent replacement = network 9:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-length', '21'), ('content-type', 'application/json')]
+  Vary absent hit = fresh_cache 9:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  > GET https://api.example.com/users/9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, accept-language: ] b''
+  Vary empty replacement = network 9:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-length', '21'), ('content-type', 'application/json')]
+  Vary empty hit = fresh_cache 9:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  > GET https://api.example.com/users/9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, accept-language: en, accept-language: fr] b''
+  Vary repeated replacement = network 9:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-length', '21'), ('content-type', 'application/json')]
+  Vary repeated hit = fresh_cache 9:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  > GET https://api.example.com/users/9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, accept-language: fr, accept-language: en] b''
+  Vary reordered replacement = network 9:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-length', '21'), ('content-type', 'application/json')]
+  Vary reordered hit = fresh_cache 9:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-type', 'application/json'), ('Content-Length', '21')]
   > GET https://api.example.com/users/43
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: a] b''
   alice key = network 43:alice status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '24'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/43
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: b] b''
   bob key = network 43:bob status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
-  alice key again = fresh_cache 43:alice status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '24')]
+  > GET https://api.example.com/users/43
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: a] b''
+  > GET https://api.example.com/users/43
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: a] b''
+  > GET https://api.example.com/users/43
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: a] b''
+  alice key again ! TransportError: TransportError(operation_id='getUser', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getUser', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('Server disconnected without sending a response.')] transport_error
   bob key again = fresh_cache 43:bob status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
   > GET https://api.example.com/users/40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -154,180 +178,150 @@
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
   no-store = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'no-store, max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
-  no-store left = 0
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  no-store next = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   set-cookie after stale = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
   set-cookie = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('set-cookie', 'a=1'), ('content-length', '21'), ('content-type', 'application/json')]
-  set-cookie left = 0
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  set-cookie next = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   extension after stale = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
   extension = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60, stale-while-revalidate=5'), ('content-length', '21'), ('content-type', 'application/json')]
-  extension left = 0
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  extension next = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   malformed after stale = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
   malformed = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=soon'), ('content-length', '21'), ('content-type', 'application/json')]
-  malformed left = 0
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  malformed next = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   repeated after stale = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
   repeated = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=1, max-age=2'), ('content-length', '21'), ('content-type', 'application/json')]
-  repeated left = 0
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  repeated next = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   valued public after stale = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
   valued public = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'public=1, max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
-  valued public left = 0
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  valued public next = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   unquoted private after stale = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
   unquoted private = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private=x, max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
-  unquoted private left = 0
+  > GET https://api.example.com/users/10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  unquoted private next = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   quoted private after stale = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
   quoted private = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
-  quoted private left = 1
-  > GET https://api.example.com/users/10
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  bad quoting after stale = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
-  > GET https://api.example.com/users/10
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
-  bad quoting = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private="a'), ('content-length', '21'), ('content-type', 'application/json')]
-  bad quoting left = 0
-  > GET https://api.example.com/users/10
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  too large after stale = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
-  > GET https://api.example.com/users/10
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
-  too large = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
-  too large left = 0
-  > GET https://api.example.com/users/10
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  unlisted status after stale = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
-  > GET https://api.example.com/users/10
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
-  unlisted status = network 1:cat status=203 network=203 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
-  unlisted status left = 0
-  > GET https://api.example.com/users/10
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  no freshness or validator after stale = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
-  > GET https://api.example.com/users/10
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
-  no freshness or validator = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '21'), ('content-type', 'application/json')]
-  no freshness or validator left = 0
+  quoted private next = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  bad quoting after stale = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  bad quoting = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  bad quoting next = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  too large after stale = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  too large = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  too large next = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  unlisted status after stale = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  unlisted status = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  unlisted status next = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  no freshness or validator after stale = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  no freshness or validator = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  no freshness or validator next = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'private="a, b", max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
   > GET https://api.example.com/users/11
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  kept stored = network 11:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('etag', '"k"'), ('content-length', '22'), ('content-type', 'application/json')]
+  kept stored = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/11
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "k"] b''
-  error keeps the entry ! GetUserHTTPError: GetUserHTTPError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', status_code=404, error_decoded=True, error_data=Error(message='gone'), body_bytes=b'{"message":"gone"}', truncated=False] get_user_http_error
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  error keeps the entry = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/11
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "k"] b''
-  decode failure keeps the entry ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getUser', call_id='<call>') [operation_id='getUser', body_bytes=b'{"id":"x"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.int_parsing) at /id')] response_validation_error
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
+  decode failure keeps the entry = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private="a'), ('content-length', '21'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/11
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "k"] b''
-  entry still revalidates = revalidated 11:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('content-type', 'application/json'), ('etag', '"k"'), ('Content-Length', '22')]
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  entry still revalidates = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/12
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/users/13
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  redirected = network 13:cat status=200 network=200 sends=2 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
+  redirected = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/12
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/users/13
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  redirected again = network 13:cat status=200 network=200 sends=2 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "s"] b''
+  redirected again = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/14
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  stored before a redirect = network 14:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"r"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+  stored before a redirect = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/14
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "r"] b''
-  > GET https://api.example.com/users/15
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "r"] b''
-  304 after a redirect ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  304 after a redirect = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/16
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  directives stored = network 16:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"f"'), ('cache-control', 'max-age=60'), ('age', '30'), ('content-length', '22'), ('content-type', 'application/json')]
+  directives stored = network 1:cat status=203 network=203 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/16
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: max-age=10, if-none-match: "f"] b''
-  request max-age=10 = revalidated 16:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('etag', '"f"'), ('Content-Length', '22')]
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: max-age=10] b''
+  request max-age=10 = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/16
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: no-cache, if-none-match: "f"] b''
-  request no-cache = revalidated 16:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('etag', '"f"'), ('Content-Length', '22')]
-  request max-age=3600 = fresh_cache 16:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('etag', '"f"'), ('Content-Length', '22')]
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: no-cache] b''
+  request no-cache = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/16
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: max-age=3600, if-none-match: "s"] b''
+  request max-age=3600 = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '21'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/16
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: no-store] b''
-  request no-store = network 16:other status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '24'), ('content-type', 'application/json')]
+  request no-store = network 10:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/16
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: no-store, if-none-match: "f"] b''
-  request no-store 304 ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error
+  request no-store 304 = network 11:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('etag', '"k"'), ('content-length', '22'), ('content-type', 'application/json')]
   request only-if-cached ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('headers', 'Cache-Control'), condition='invalid_value'] protocol_configuration_error
   request no-cache value ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('headers', 'Cache-Control'), condition='invalid_value'] protocol_configuration_error
   request bad max-age ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('headers', 'Cache-Control'), condition='invalid_value'] protocol_configuration_error
   request malformed ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('headers', 'Cache-Control'), condition='invalid_value'] protocol_configuration_error
   request range ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('headers', 'Range'), condition='invalid_value'] protocol_configuration_error
   request if-match ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('headers', 'If-Match'), condition='invalid_value'] protocol_configuration_error
-  still fresh = fresh_cache 16:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('etag', '"f"'), ('Content-Length', '22')]
+  > GET https://api.example.com/users/16
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  still fresh ! GetUserHTTPError: GetUserHTTPError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', status_code=404, error_decoded=True, error_data=Error(message='gone'), body_bytes=b'{"message":"gone"}', truncated=False] get_user_http_error
   > GET https://api.example.com/users/17
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  validators stored = network 17:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"g"'), ('cache-control', 'max-age=0'), ('last-modified', 'Wed, 21 Oct 2015 07:28:00 GMT'), ('content-length', '22'), ('content-type', 'application/json')]
+  validators stored ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getUser', call_id='<call>') [operation_id='getUser', body_bytes=b'{"id":"x"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.int_parsing) at /id')] response_validation_error
   > GET https://api.example.com/users/17
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "g"] b''
-  matching caller validator = revalidated 17:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('last-modified', 'Wed, 21 Oct 2015 07:28:00 GMT'), ('content-type', 'application/json'), ('etag', '"g"'), ('Content-Length', '22')]
+  matching caller validator ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error
   > GET https://api.example.com/users/17
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-modified-since: Wed, 21 Oct 2015 07:28:00 GMT, if-none-match: "g"] b''
-  matching caller date = revalidated 17:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('last-modified', 'Wed, 21 Oct 2015 07:28:00 GMT'), ('content-type', 'application/json'), ('etag', '"g"'), ('Content-Length', '22')]
-  other caller validator ! CacheValidatorConflictError: CacheValidatorConflictError(condition='binding_mismatch') [field_path=('If-None-Match',), condition='binding_mismatch'] cache_validator_conflict_error
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-modified-since: Wed, 21 Oct 2015 07:28:00 GMT] b''
+  matching caller date ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='getUser', call_id='<call>') [operation_id='getUser', status_code=302, body_bytes=b'', truncated=False] unexpected_status_error
+  > GET https://api.example.com/users/17
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+  other caller validator = network 13:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
   other caller date ! CacheValidatorConflictError: CacheValidatorConflictError(condition='binding_mismatch') [field_path=('If-Modified-Since',), condition='binding_mismatch'] cache_validator_conflict_error
   caller validator twice ! CacheValidatorConflictError: CacheValidatorConflictError(condition='binding_mismatch') [field_path=('If-None-Match',), condition='binding_mismatch'] cache_validator_conflict_error
   > GET https://api.example.com/users/18
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "g"] b''
-  cold 304 ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error
-  > GET https://api.example.com/users/19
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  tagged stored = network 19:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
-  > PATCH https://api.example.com/users/19
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
-  failed rename ! RenameUserHTTPError: RenameUserHTTPError(status_code=409, operation_id='renameUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='renameUser', status_code=409, error_decoded=True, error_data=Error(message='taken'), body_bytes=b'{"message":"taken"}', truncated=False] rename_user_http_error
-  kept after a failure = fresh_cache 19:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
-  > PATCH https://api.example.com/users/19
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
-  rename = User(id=19, name='dog')
-  > GET https://api.example.com/users/19
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  removed by the rename = network 19:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
-  > GET https://api.example.com/users?page=3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  list stored = network [] status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '11'), ('content-type', 'application/json')]
-  > DELETE https://api.example.com/users/19
-    [host: api.example.com, accept-encoding: gzip, deflate] b''
-  remove = None
-  > GET https://api.example.com/users?page=3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  list removed = network [] status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '11'), ('content-type', 'application/json')]
-  > GET https://api.example.com/users/19
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  tagged again = network 19:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
-  manual invalidation = 1
-  manual invalidation of a list ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('tags',), condition='invalid_value'] protocol_configuration_error
-  manual invalidation of numbers ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('tags',), condition='invalid_value'] protocol_configuration_error
+  cold 304 ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='getUser', call_id='<call>') [operation_id='getUser', status_code=302, body_bytes=b'', truncated=False] unexpected_status_error
   > GET https://api.example.com/users/20
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async miss = network 20:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
@@ -335,11 +329,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
   async revalidated = revalidated 20:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '22')]
   async fresh = fresh_cache 20:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '22')]
-  > PATCH https://api.example.com/users/20
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
-  async rename = User(id=20, name='dog')
   > GET https://api.example.com/users/20
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: no-cache, if-none-match: "a"] b''
   async removed = network 20:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'no-store'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/20
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -347,8 +338,12 @@
   > GET https://api.example.com/users/20
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: no-store] b''
   async request no-store = network 20:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
-  async manual invalidation = 0
-  async manual invalidation of a list ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('tags',), condition='invalid_value'] protocol_configuration_error
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async no validator or freshness = network 21:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async uncacheable fetched again = network 21:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
 freshness on the client clock
   > GET https://api.example.com/users/50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
