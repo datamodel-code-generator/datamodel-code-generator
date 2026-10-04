@@ -1,8 +1,4 @@
 complete: sent ['204']; calls ["upload(b'file body', str)"]; files closed [True]
 parse error: sent ['400']; calls []; files closed []
-disconnect in the file headers: ClientDisconnect, sent ['500']; calls []; files closed []
-disconnect in the file body: ClientDisconnect, sent ['500']; calls []; files closed []
 anyio cancellation in the file headers: cancelled True, sent []; calls []; files closed []
 anyio cancellation in the file body: cancelled True, sent []; calls []; files closed []
-task cancellation in the file headers: CancelledError, sent []; calls []; files closed []
-task cancellation in the file body: CancelledError, sent []; calls []; files closed []

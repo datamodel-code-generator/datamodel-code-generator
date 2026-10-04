@@ -130,18 +130,13 @@ show server/__init__.py
   |     Authorize,
   |     Credentials,
   |     Dependency,
-  |     FastAPIOptions,
   |     OperationDependencies,
   |     OperationKey,
   |     RequirementSets,
   |     build_router,
   |     create_app,
   | )
-  | from .errors import (
-  |     AuthConfigurationError,
-  |     HandlerConfigurationError,
-  |     OpenAPIConfigurationError,
-  | )
+  | from .errors import AuthConfigurationError, HandlerConfigurationError
   | 
   | __all__ = [
   |     "UNSET",
@@ -150,10 +145,8 @@ show server/__init__.py
   |     "Authorize",
   |     "Credentials",
   |     "Dependency",
-  |     "FastAPIOptions",
   |     "HTTPResult",
   |     "HandlerConfigurationError",
-  |     "OpenAPIConfigurationError",
   |     "OperationDependencies",
   |     "OperationKey",
   |     "RequirementSets",

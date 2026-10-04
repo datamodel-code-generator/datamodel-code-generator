@@ -114,24 +114,22 @@ def settings(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             "authorize": AsyncAuthorize(),
             "operation_dependencies": {"/paths/~1public/get": (Depends(teapot),)},
             "prefix": "/api",
-            "fastapi_options": {
-                "debug": False,
-                "title": "Renamed pets",
-                "summary": None,
-                "openapi_tags": [{"name": "pets", "description": "Renamed."}],
-                "servers": None,
-                "swagger_ui_parameters": {"deepLinking": False},
-                "contact": {"name": "Other team"},
-                "responses": {418: {"description": "Teapot."}, "default": {"description": "Anything."}},
-                "dependencies": [Depends(dependency("app"))],
-                "middleware": [Middleware(GZipMiddleware)],
-                "routes": [],
-                "callbacks": None,
-                "webhooks": APIRouter(),
-                "default_response_class": JSONResponse,
-                "deprecated": None,
-                "generate_unique_id_function": lambda route: f"{route.name}-id",
-            },
+            "debug": False,
+            "title": "Renamed pets",
+            "summary": None,
+            "openapi_tags": [{"name": "pets", "description": "Renamed."}],
+            "servers": None,
+            "swagger_ui_parameters": {"deepLinking": False},
+            "contact": {"name": "Other team"},
+            "responses": {418: {"description": "Teapot."}, "default": {"description": "Anything."}},
+            "dependencies": [Depends(dependency("app"))],
+            "middleware": [Middleware(GZipMiddleware)],
+            "routes": [],
+            "callbacks": None,
+            "webhooks": APIRouter(),
+            "default_response_class": JSONResponse,
+            "deprecated": None,
+            "generate_unique_id_function": lambda route: f"{route.name}-id",
         },
         "awaitables": {"authorize": authorize},
     }
@@ -165,22 +163,6 @@ def builds(server: ModuleType, models: ModuleType, calls: list[str]) -> Iterator
     routers = server.routers
     yield "group public", partial(routers.public.build_router, public=default["public"])
     yield "group pets", partial(routers.pets.build_router, pets=default["pets"], **secured)
-    for label, options in (
-        ("options-list", [("title", "x")]),
-        ("options-unknown", {"lifespan": None}),
-        ("options-flag", {"debug": "yes"}),
-        ("options-text", {"title": None}),
-        ("options-json", {"contact": {"weight": float("nan")}}),
-        ("options-object", {"license_info": ["MIT"]}),
-        ("options-objects", {"servers": {"url": "https://example.com"}}),
-        ("options-object-items", {"openapi_tags": ["pets"]}),
-        ("options-responses", {"responses": [418]}),
-        ("options-response-code", {"responses": {True: {}}}),
-        ("options-dependencies", {"dependencies": [object()]}),
-        ("options-response-class", {"default_response_class": dict}),
-        ("options-unique-id-type", {"generate_unique_id_function": "route"}),
-    ):
-        yield label, partial(create, fastapi_options=options)
     for label, generate in (("unique-id", lambda route: f"{route.name}-id"), ("unique-id-result", lambda route: 7)):
-        app = create(fastapi_options={"generate_unique_id_function": generate})
+        app = create(generate_unique_id_function=generate)
         yield f"options-{label}", partial(app.add_api_route, "/extra", lambda: None)

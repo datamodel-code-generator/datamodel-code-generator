@@ -68,7 +68,6 @@ _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
     ("_generated.contract", "OperationKey"),
     ("_runtime.server.application", "Dependency"),
-    ("_runtime.server.application", "FastAPIOptions"),
     ("_runtime.server.security", "AsyncAuthorize"),
     ("_runtime.server.security", "Authorize"),
     ("_runtime.server.security", "Credentials"),
@@ -361,7 +360,7 @@ class ServerRenderer:  # noqa: PLR0904
         routes = (*(f"*{name}.LITERAL_ROUTES" for name in modules), *(f"*{name}.TEMPLATED_ROUTES" for name in modules))
         secured = bool(self.plan.schemes)
         final = module.name("typing", "Final")
-        options = module.local("_runtime.server.application", "FastAPIOptions")
+        options = f"dict[str, {module.name('typing', 'Any')}]"
         info = Group("{", tuple((f"{key!r}: ", _python(value)) for key, value in self.plan.info), "}")
         router = module.name("fastapi", "APIRouter")
         fastapi = module.name("fastapi", "FastAPI")
@@ -384,12 +383,12 @@ class ServerRenderer:  # noqa: PLR0904
                 "create_app",
                 fastapi,
                 groups,
-                ("fastapi_options", f"{options} | None", " = None"),
+                ("**fastapi_kwargs", module.name("typing", "Any"), ""),
                 secured=secured,
+                dependencies=False,
             ),
-            arguments=(*services, *_settings(secured=secured)),
+            arguments=(*services, *_settings(secured=secured, dependencies=False)),
             fastapi=fastapi,
-            application_options=module.local("_runtime.server.application", "application_options"),
             exports=exports,
             imports=module.imports(),
         )
@@ -977,8 +976,9 @@ def _raw_path(module: Module, spec: OperationSpec, adapters: list[Argument]) -> 
     )
 
 
-def _settings(*, secured: bool) -> tuple[str, ...]:
-    return ("authorize", *_SETTINGS) if secured else _SETTINGS
+def _settings(*, secured: bool, dependencies: bool = True) -> tuple[str, ...]:
+    settings = _SETTINGS if dependencies else _SETTINGS[1:]
+    return ("authorize", *settings) if secured else settings
 
 
 def _services(services: list[str]) -> str:
@@ -987,13 +987,19 @@ def _services(services: list[str]) -> str:
     )
 
 
-def _builder(
-    module: Module, name: str, returns: str, groups: Iterable[GroupSpec], *extra: tuple[str, Doc, str], secured: bool
+def _builder(  # noqa: PLR0913
+    module: Module,
+    name: str,
+    returns: str,
+    groups: Iterable[GroupSpec],
+    *extra: tuple[str, Doc, str],
+    secured: bool,
+    dependencies: bool = True,
 ) -> str:
     parameters: tuple[tuple[str, Doc, str], ...] = (
         *((group.stem, _service(module, group), "") for group in groups),
         *(_security(module) if secured else ()),
-        ("dependencies", _dependency_sequence(module), " = ()"),
+        *((("dependencies", _dependency_sequence(module), " = ()"),) if dependencies else ()),
         ("operation_dependencies", f"{module.local('_generated.contract', 'OperationDependencies')} | None", " = None"),
         ("prefix", "str", ' = ""'),
         *extra,
@@ -1099,14 +1105,13 @@ from .application import (
     Authorize,
     Credentials,
     Dependency,
-    FastAPIOptions,
     OperationDependencies,
     OperationKey,
     RequirementSets,
     build_router,
     create_app,
 )
-from .errors import AuthConfigurationError, HandlerConfigurationError, OpenAPIConfigurationError
+from .errors import AuthConfigurationError, HandlerConfigurationError
 from ._runtime.model_codecs.unset import UNSET, Unset
 from ._runtime.server.responses import HTTPResult
 
@@ -1117,10 +1122,8 @@ __all__ = [
     "Authorize",
     "Credentials",
     "Dependency",
-    "FastAPIOptions",
     "HTTPResult",
     "HandlerConfigurationError",
-    "OpenAPIConfigurationError",
     "OperationDependencies",
     "OperationKey",
     "RequirementSets",
@@ -1131,8 +1134,8 @@ __all__ = [
 '''
 _ERRORS: Final = '''"""Errors a generated server raises while it builds routers and applications."""
 
-from ._runtime.server.application import HandlerConfigurationError, OpenAPIConfigurationError
+from ._runtime.server.application import HandlerConfigurationError
 from ._runtime.server.security import AuthConfigurationError
 
-__all__ = ["AuthConfigurationError", "HandlerConfigurationError", "OpenAPIConfigurationError"]
+__all__ = ["AuthConfigurationError", "HandlerConfigurationError"]
 '''

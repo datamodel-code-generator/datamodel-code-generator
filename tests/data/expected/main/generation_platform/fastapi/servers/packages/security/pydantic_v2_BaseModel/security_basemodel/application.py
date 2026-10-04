@@ -2,17 +2,12 @@
 """Build the router and the application of every selected operation from the services that implement them."""
 
 from collections.abc import Sequence
-from typing import Final
+from typing import Any, Final
 
 from fastapi import APIRouter, FastAPI
 
 from ._generated.contract import OperationDependencies, OperationKey
-from ._runtime.server.application import (
-    Dependency,
-    FastAPIOptions,
-    application_options,
-    build,
-)
+from ._runtime.server.application import Dependency, build
 from ._runtime.server.security import (
     AsyncAuthorize,
     Authorize,
@@ -31,7 +26,7 @@ ROUTES: Final = (
     *public.TEMPLATED_ROUTES,
     *untagged.TEMPLATED_ROUTES,
 )
-INFO: Final[FastAPIOptions] = {
+INFO: Final[dict[str, Any]] = {
     'title': 'Secured pets',
     'summary': 'Pets behind every builtin credential helper.',
     'description': 'Each operation names its own alternatives.',
@@ -71,20 +66,18 @@ def create_app(
     public: PublicService,
     untagged: UntaggedService[PrincipalT],
     authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
-    dependencies: Sequence[Dependency] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
-    fastapi_options: FastAPIOptions | None = None,
+    **fastapi_kwargs: Any,
 ) -> FastAPI:
-    """Create the application with every operation."""
-    app = FastAPI(**application_options(fastapi_options, INFO))
+    """Create the application with every operation, passing the other keyword arguments to FastAPI."""
+    app = FastAPI(**{**INFO, **fastapi_kwargs})
     app.include_router(
         build_router(
             pets=pets,
             public=public,
             untagged=untagged,
             authorize=authorize,
-            dependencies=dependencies,
             operation_dependencies=operation_dependencies,
             prefix=prefix,
         )
@@ -97,7 +90,6 @@ __all__ = [
     'Authorize',
     'Credentials',
     'Dependency',
-    'FastAPIOptions',
     'OperationDependencies',
     'OperationKey',
     'RequirementSets',

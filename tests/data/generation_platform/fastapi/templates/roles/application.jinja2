@@ -19,7 +19,7 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
 
 {{ app_signature }}
     """Create the application with every operation."""
-    app = {{ fastapi }}(**{{ application_options }}(fastapi_options, INFO))
+    app = {{ fastapi }}(**{**INFO, **fastapi_kwargs})
     app.include_router(
         build_router(
 {%- for name in arguments %}

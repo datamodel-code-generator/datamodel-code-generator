@@ -44,7 +44,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
 
 def settings(_server: ModuleType, _models: ModuleType, _calls: list[str]) -> dict[str, dict[str, object]]:
     """Give the plain application a plain-text default response class."""
-    return {"plain": {"fastapi_options": {"default_response_class": PlainTextResponse}}}
+    return {"plain": {"default_response_class": PlainTextResponse}}
 
 
 def applications(server: ModuleType, sets: dict[str, dict[str, object]]) -> dict[str, FastAPI]:

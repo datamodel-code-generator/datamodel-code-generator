@@ -84,7 +84,8 @@ prints the lines of a requirements file instead, for pip or `uv pip`.
 
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
-one service for each group, under the group's name, and checks every method when the application starts; any
+one service for each group, under the group's name, passes its other keyword arguments, such as `lifespan` or
+`middleware`, to `FastAPI`, and checks every method when the application starts; any
 object with the right methods works, and type checkers check it where you pass it. The generated
 `server/README.md` lists the operations of each service and shows how to connect an `authorize` callback and your own
 `FastAPI` application.

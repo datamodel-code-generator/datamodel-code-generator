@@ -60,7 +60,8 @@ render pydantic_v2.BaseModel
     | ```
     |
     | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
-    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router:
+    | `create_app` passes its other keyword arguments, such as `lifespan`, `middleware`, or `dependencies`, to `FastAPI`, over the title, version, and other metadata of the source document.
+    | To keep your own `FastAPI` application, include the router:
     |
     | ```python
     | from fastapi import FastAPI
