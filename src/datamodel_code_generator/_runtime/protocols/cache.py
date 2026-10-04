@@ -1,4 +1,4 @@
-"""Conditional fetches through a private response cache, and the explicit invalidation of its entries.
+"""Conditional fetches through a private response cache.
 
 A fetch answers from a fresh stored representation without sending, revalidates a stale one with its validator, or
 sends its request as an ordinary call; a stored body is decoded again at every use. Entries live only in the store the
@@ -24,8 +24,8 @@ from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
 from ..client.transports import PreparedRequest
 from ..model_codecs.unset import UNSET, Unset
-from .caches import CacheEntry, CacheResult, CacheSource, bytes_tuple, string_tuple
-from .errors import CacheInvalidationError, CacheProtocolError, CacheStoreError, CacheValidatorConflictError
+from .caches import CacheEntry, CacheResult, CacheSource
+from .errors import CacheProtocolError, CacheStoreError, CacheValidatorConflictError
 from .options import CacheOptions
 from .records import canonical_json
 
@@ -35,27 +35,14 @@ if TYPE_CHECKING:
     from ..client.bodies import EncodedAttempt
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.operations import OperationPlan
-    from ..client.options import Settings
-    from ..model_codecs.selectors import MediaSelector
-    from ..model_codecs.wire import WireValue
     from .caches import AsyncCacheStore, CacheStore
     from .references import OperationRef
 
-__all__ = (
-    "CacheMutationPlan",
-    "CachePlan",
-    "afetch",
-    "ainvalidate",
-    "amutate",
-    "fetch",
-    "invalidate",
-    "mutate",
-)
+__all__ = ("CachePlan", "afetch", "fetch")
 
 T = TypeVar("T")
 V = TypeVar("V")
 
-Tag = tuple[str | int, ...]
 _Limits = tuple[int, float, RequestOptions | None]
 
 _HOP_BY_HOP: Final = frozenset({
@@ -108,9 +95,9 @@ _NOT_MODIFIED: Final = 304
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CachePlan(Generic[T]):
-    """Everything fixed about one generated cache helper: its identity, call, validators, statuses, Vary, and tags.
+    """Everything fixed about one generated cache helper: its identity, call, validators, statuses, and Vary.
 
-    A tag is literal text and the positions of the arguments whose wire values fill it in. Vary names are lowercase.
+    Vary names are lowercase.
     """
 
     helper_id: str
@@ -121,18 +108,6 @@ class CachePlan(Generic[T]):
     fingerprint: str
     statuses: frozenset[int] = frozenset({200})
     vary_allowlist: frozenset[str] = frozenset()
-    tags: tuple[Tag, ...] = ()
-
-
-@final
-@dataclass(frozen=True, slots=True, kw_only=True)
-class CacheMutationPlan(Generic[T]):
-    """One explicit mutation of a cache helper: the operation it calls and the tags its success invalidates."""
-
-    helper_id: str
-    operation: OperationRef
-    call: OperationPlan[T, object]
-    tags: tuple[Tag, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -197,10 +172,6 @@ def _well_formed(directives: dict[str, str | None]) -> bool:
         )
         for name, value in directives.items()
     )
-
-
-def _text(value: WireValue) -> str:
-    return value if isinstance(value, str) else canonical_json(value).decode()
 
 
 def _opaque(etag: str | None) -> str | None:
@@ -295,7 +266,7 @@ class _Fetch(Generic[T]):
             for spec in plan.call.parameters
             if spec.plan.location in _VARIED_LOCATIONS
         }
-        self.implicit = implicit = frozenset(patched | declared) - _NOT_VARIED
+        self.implicit = implicit = frozenset(patched | declared) - _NOT_VARIED - self.credential_headers
         url = prepared.url
         self.base_key = sha256(
             canonical_json({
@@ -304,6 +275,9 @@ class _Fetch(Generic[T]):
                 "accept": headers.get("accept"),
                 "partition": "anonymous" if partition is None else partition,
                 "credentials": credentials,
+                "credential_values": [
+                    (name, headers.get_all(name)) for name in sorted(self.credential_headers) if name in headers
+                ],
                 "varied": sorted(implicit),
             })
         ).digest()
@@ -314,11 +288,13 @@ class _Fetch(Generic[T]):
         A usable entry refuses a validator header the caller gave other than once with the entry's value.
         """
         if entry is not None and not isinstance(entry, CacheEntry):
-            raise _store_error(self.plan, "lookup")
+            raise _store_error(self.plan, "get")
         self.entry, plan = entry, self.plan
         if entry is None or entry.schema_fingerprint != plan.fingerprint or entry.status_code not in plan.statuses:
             return None
         headers = self.request.headers
+        if entry.vary_values != tuple(headers.get_all(name) for name in entry.vary):
+            return None
         for header, stored in _VALIDATORS:
             if (given := headers.get_all(header)) and given != (entry.headers.get(stored),):
                 raise CacheValidatorConflictError(
@@ -403,8 +379,8 @@ class _Fetch(Generic[T]):
         response = Response(data=stored_value(plan.call, merged, entry.body, self.settings), info=merged)
         return response, _Received(response, entry.body, headers, "revalidated", info.headers)
 
-    def stored(self, received: _Received[T], arguments: tuple[object, ...]) -> dict[str, Any] | None:
-        """Return the fields of the entry a response becomes but its Vary fingerprints, or None to store nothing.
+    def stored(self, received: _Received[T]) -> dict[str, Any] | None:
+        """Return the fields of the entry a response becomes including its plain Vary values, or None to store nothing.
 
         It is refused for an unlisted status, a redirect, a body over the limit, a Set-Cookie, an unsupported or
         malformed Cache-Control, no-store, a Vary outside the allowlist or `*`, a Vary naming a header credentials
@@ -437,9 +413,10 @@ class _Fetch(Generic[T]):
             return None
         age = _delta(origin.get("age")) if "age" in origin else 0
         initial = max(now - date, (_MAX_DELTA if age is None else age) + (now - self.requested_at), 0.0)
+        names = tuple(sorted(self.implicit.union(vary)))
         return {
-            "version": uuid4().hex,
-            "vary": tuple(sorted(self.implicit.union(vary))),
+            "vary": names,
+            "vary_values": tuple(self.request.headers.get_all(name) for name in names),
             "status_code": received.response.info.status_code,
             "headers": headers,
             "body": received.body,
@@ -448,7 +425,6 @@ class _Fetch(Generic[T]):
             "stored_at": _instant(now),
             "freshness_seconds": freshness,
             "initial_age_seconds": initial,
-            "tags": _tags(plan.call, plan.tags, arguments, self.settings),
             "schema_fingerprint": plan.fingerprint,
         }
 
@@ -462,13 +438,6 @@ class _Fetch(Generic[T]):
             and "set-cookie" not in received.headers
             and (received.source == "network" or usable is None or vary == _vary(usable.headers))
         )
-
-    def expected(self, vary: tuple[str, ...], fingerprints: tuple[bytes, ...]) -> str | None:
-        """Return the version a new entry's slot holds as far as the fetch knows: the looked-up entry's, if the same."""
-        current = self.entry
-        if current is None or (current.vary, current.vary_fingerprints) != (vary, fingerprints):
-            return None
-        return current.version
 
     @staticmethod
     def result(received: _Received[T]) -> CacheResult[T]:
@@ -499,35 +468,8 @@ def _validator(plan: CachePlan[T], headers: HeadersView) -> tuple[str, str] | No
     return None
 
 
-def _tags(  # noqa: PLR0913
-    call: OperationPlan[object, object],
-    templates: tuple[Tag, ...],
-    arguments: tuple[object, ...],
-    settings: Settings,
-    *,
-    body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
-) -> tuple[str, ...]:
-    """Return each tag with every argument position filled in by that argument's wire value as text.
-
-    The arguments are checked first, as the call checks them, when Pydantic validates a call's arguments.
-    """
-    if not templates:
-        return ()
-    if settings.validation.arguments == "pydantic":
-        arguments, _ = call.checked(arguments, body, media_type)
-    mode = settings.validation.request
-    return tuple(
-        "".join(
-            part if isinstance(part, str) else _text(call.parameters[part].encode(arguments[part], mode))
-            for part in template
-        )
-        for template in templates
-    )
-
-
 def _configuration(
-    plan: CachePlan[T] | CacheMutationPlan[T],
+    plan: CachePlan[T],
     path: tuple[str, ...],
     condition: Literal["invalid_value", "binding_mismatch", "security_partition", "missing_adapter"],
 ) -> ProtocolConfigurationError:
@@ -552,32 +494,25 @@ def _requested(plan: CachePlan[T], values: tuple[str, ...]) -> _Directives:
 
 
 def _store_error(
-    plan: CachePlan[T] | CacheMutationPlan[T],
-    action: Literal["lookup", "fingerprint_vary", "compare_exchange", "delete"],
+    plan: CachePlan[T],
+    action: Literal["get", "set", "delete"],
     cause: Exception | None = None,
 ) -> CacheStoreError:
     return CacheStoreError(action=action, helper_id=plan.helper_id, operation=plan.operation, cause=cause)
 
 
 def _limits(core: ClientCore | AsyncClientCore, plan: CachePlan[T], cache_options: object, options: object) -> _Limits:
-    """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
-
-    A request coding the call selects is refused before any lookup: a fetch sends a bodyless request.
-    """
+    """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's."""
     for name, value, kind in (("cache_options", cache_options, CacheOptions), ("options", options, RequestOptions)):
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,))
     defaults = core.protocol_defaults(plan.helper_id)
     layers = (cache_options, UNSET if defaults is None else defaults.options)
     request = options if isinstance(options, RequestOptions) else None
-    if request is not None and isinstance(selected := request.compression, str):
-        from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
-
-        helper_children(selected, ())
     return _option(layers, "max_entry_bytes", _MAX_ENTRY_BYTES), _option(layers, "max_ttl", _MAX_TTL), request
 
 
-def _store(core: ClientCore | AsyncClientCore, plan: CachePlan[T] | CacheMutationPlan[T]) -> Any:
+def _store(core: ClientCore | AsyncClientCore, plan: CachePlan[T]) -> Any:
     """Return the store the client lends the helper, refusing a client without one before anything is sent."""
     if (store := core.cache_store(plan.helper_id)) is None:
         raise _configuration(plan, ("protocols", "cache_stores", plan.helper_id), "missing_adapter")
@@ -586,46 +521,18 @@ def _store(core: ClientCore | AsyncClientCore, plan: CachePlan[T] | CacheMutatio
 
 def _checked(
     plan: CachePlan[T],
-    action: Literal["lookup", "fingerprint_vary", "compare_exchange", "delete"],
+    action: Literal["get", "set", "delete"],
     valid: bool,  # noqa: FBT001
 ) -> None:
     if not valid:
         raise _store_error(plan, action)
 
 
-def _fingerprints(plan: CachePlan[T], names: tuple[str, ...], value: object) -> tuple[bytes, ...]:
-    """Return a store's Vary fingerprints, refusing anything but one bytes value per name."""
-    if not bytes_tuple(value) or len(value) != len(names):
-        raise _store_error(plan, "fingerprint_vary")
-    return value
-
-
-def _tags_argument(plan: CachePlan[T], tags: object) -> tuple[str, ...]:
-    if not string_tuple(tags):
-        raise _invalid(plan, ("tags",))
-    return tags
-
-
-def _invalidation(
-    plan: CachePlan[T] | CacheMutationPlan[T], tags: tuple[str, ...], result: object, cause: Exception | None
-) -> CacheInvalidationError[object]:
-    return CacheInvalidationError(
-        tags=tags, completed_result=result, helper_id=plan.helper_id, operation=plan.operation, cause=cause
-    )
-
-
-def _removed(plan: CachePlan[T] | CacheMutationPlan[T], tags: tuple[str, ...], result: object, count: object) -> int:
-    """Return the number of entries an invalidation removed, refusing anything but a nonnegative integer."""
-    if type(count) is not int or count < 0:
-        raise _invalidation(plan, tags, result, None)
-    return count
-
-
 def _run(
     plan: CachePlan[T],
-    action: Literal["lookup", "fingerprint_vary", "compare_exchange", "delete"],
-    run: Callable[[], V],
-) -> V:
+    action: Literal["get", "set", "delete"],
+    run: Callable[[], object],
+) -> object:
     """Run a store method, raising its failure as a cache store error that keeps the cause."""
     try:
         return run()
@@ -637,9 +544,9 @@ def _run(
 
 async def _arun(
     plan: CachePlan[T],
-    action: Literal["lookup", "fingerprint_vary", "compare_exchange", "delete"],
-    run: Callable[[], Awaitable[V]],
-) -> V:
+    action: Literal["get", "set", "delete"],
+    run: Callable[[], Awaitable[object]],
+) -> object:
     """Await a store method, raising its failure as a cache store error that keeps the cause."""
     try:
         return await run()
@@ -665,10 +572,10 @@ def fetch(
     limits = _limits(core, plan, cache_options, options)
     store: CacheStore = _store(core, plan)
     state = _Fetch(core, plan, arguments, limits)
-    headers, key = state.request.headers, state.base_key
+    key = state.base_key
     found = None
     if not state.directives.no_store:
-        found = state.found(_run(plan, "lookup", lambda: store.lookup(key, headers)))
+        found = state.found(_run(plan, "get", lambda: store.get(key)))
     if (hit := state.fresh(found)) is not None:
         return hit
     try:
@@ -676,27 +583,19 @@ def fetch(
             plan.call, state.conditional(found), state.settings, state.modified, state.not_modified, state.options
         )
     except CacheProtocolError as error:
-        if (usable := state.usable) is not None:
-            version = usable.version
+        if state.usable is not None:
             try:
-                _checked(plan, "delete", type(_run(plan, "delete", lambda: store.delete(key, version))) is bool)
+                _checked(plan, "delete", _run(plan, "delete", lambda: store.delete(key)) is None)
             except CacheStoreError as failure:
                 add_secondary(error, failure)
         raise
     if state.directives.no_store:
         return state.result(received)
-    current, expected = state.entry, None
-    if (fields := state.stored(received, arguments)) is not None:
-        names = fields["vary"]
-        prints = _run(plan, "fingerprint_vary", lambda: store.fingerprint_vary(names, headers))
-        fingerprints = _fingerprints(plan, names, prints)
-        entry = CacheEntry(vary_fingerprints=fingerprints, **fields)
-        expected = state.expected(names, fingerprints)
-        stored = _run(plan, "compare_exchange", lambda: store.compare_exchange(key, expected, entry))
-        _checked(plan, "compare_exchange", type(stored) is bool)
-    if current is not None and expected is None:
-        version = current.version
-        _checked(plan, "delete", type(_run(plan, "delete", lambda: store.delete(key, version))) is bool)
+    if (fields := state.stored(received)) is not None:
+        entry = CacheEntry(**fields)
+        _checked(plan, "set", _run(plan, "set", lambda: store.set(key, entry)) is None)
+    elif state.entry is not None:
+        _checked(plan, "delete", _run(plan, "delete", lambda: store.delete(key)) is None)
     return state.result(received)
 
 
@@ -712,10 +611,10 @@ async def afetch(
     limits = _limits(core, plan, cache_options, options)
     store: AsyncCacheStore = _store(core, plan)
     state = _Fetch(core, plan, arguments, limits)
-    headers, key = state.request.headers, state.base_key
+    key = state.base_key
     found = None
     if not state.directives.no_store:
-        found = state.found(await _arun(plan, "lookup", lambda: store.lookup(key, headers)))
+        found = state.found(await _arun(plan, "get", lambda: store.get(key)))
     if (hit := state.fresh(found)) is not None:
         return hit
     try:
@@ -723,98 +622,17 @@ async def afetch(
             plan.call, state.conditional(found), state.settings, state.modified, state.not_modified, state.options
         )
     except CacheProtocolError as error:
-        if (usable := state.usable) is not None:
-            version = usable.version
+        if state.usable is not None:
             try:
-                _checked(plan, "delete", type(await _arun(plan, "delete", lambda: store.delete(key, version))) is bool)
+                _checked(plan, "delete", await _arun(plan, "delete", lambda: store.delete(key)) is None)
             except CacheStoreError as failure:
                 add_secondary(error, failure)
         raise
     if state.directives.no_store:
         return state.result(received)
-    current, expected = state.entry, None
-    if (fields := state.stored(received, arguments)) is not None:
-        names = fields["vary"]
-        prints = await _arun(plan, "fingerprint_vary", lambda: store.fingerprint_vary(names, headers))
-        fingerprints = _fingerprints(plan, names, prints)
-        entry = CacheEntry(vary_fingerprints=fingerprints, **fields)
-        expected = state.expected(names, fingerprints)
-        stored = await _arun(plan, "compare_exchange", lambda: store.compare_exchange(key, expected, entry))
-        _checked(plan, "compare_exchange", type(stored) is bool)
-    if current is not None and expected is None:
-        version = current.version
-        _checked(plan, "delete", type(await _arun(plan, "delete", lambda: store.delete(key, version))) is bool)
+    if (fields := state.stored(received)) is not None:
+        entry = CacheEntry(**fields)
+        _checked(plan, "set", await _arun(plan, "set", lambda: store.set(key, entry)) is None)
+    elif state.entry is not None:
+        _checked(plan, "delete", await _arun(plan, "delete", lambda: store.delete(key)) is None)
     return state.result(received)
-
-
-def invalidate(core: ClientCore, plan: CachePlan[T], tags: tuple[str, ...]) -> int:
-    """Remove every entry of the helper's store that carries any of the tags, returning how many were removed."""
-    checked = _tags_argument(plan, tags)
-    store: CacheStore = _store(core, plan)
-    try:
-        count = store.invalidate(checked)
-    except Exception as error:  # noqa: BLE001
-        raise _invalidation(plan, checked, UNSET, error) from None
-    return _removed(plan, checked, UNSET, count)
-
-
-async def ainvalidate(core: AsyncClientCore, plan: CachePlan[T], tags: tuple[str, ...]) -> int:
-    """Remove the tagged entries as `invalidate` does, awaiting the asynchronous store."""
-    checked = _tags_argument(plan, tags)
-    store: AsyncCacheStore = _store(core, plan)
-    try:
-        count = await store.invalidate(checked)
-    except Exception as error:  # noqa: BLE001
-        raise _invalidation(plan, checked, UNSET, error) from None
-    return _removed(plan, checked, UNSET, count)
-
-
-def mutate(  # noqa: PLR0913
-    core: ClientCore,
-    plan: CacheMutationPlan[T],
-    arguments: tuple[object, ...],
-    *,
-    body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
-    options: RequestOptions | None = None,
-) -> T:
-    """Call the mutation's operation as its method does, then remove the entries its tags name after it succeeds.
-
-    The tags are rendered before sending, so arguments that cannot fill them fail before the call. A failed call
-    removes nothing. A failed removal raises CacheInvalidationError keeping the call's result, which is
-    never sent again.
-    """
-    store: CacheStore = _store(core, plan)
-    tags = _tags(
-        plan.call, plan.tags, arguments, core.call_settings(options, plan.call), body=body, media_type=media_type
-    )
-    result = core.execute(plan.call, arguments, body=body, media_type=media_type, options=options).data
-    try:
-        count = store.invalidate(tags)
-    except Exception as error:  # noqa: BLE001
-        raise _invalidation(plan, tags, result, error) from None
-    _removed(plan, tags, result, count)
-    return result
-
-
-async def amutate(  # noqa: PLR0913
-    core: AsyncClientCore,
-    plan: CacheMutationPlan[T],
-    arguments: tuple[object, ...],
-    *,
-    body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
-    options: RequestOptions | None = None,
-) -> T:
-    """Call the mutation as `mutate` does, awaiting the asyncio call and the asynchronous store."""
-    store: AsyncCacheStore = _store(core, plan)
-    tags = _tags(
-        plan.call, plan.tags, arguments, core.call_settings(options, plan.call), body=body, media_type=media_type
-    )
-    result = (await core.execute(plan.call, arguments, body=body, media_type=media_type, options=options)).data
-    try:
-        count = await store.invalidate(tags)
-    except Exception as error:  # noqa: BLE001
-        raise _invalidation(plan, tags, result, error) from None
-    _removed(plan, tags, result, count)
-    return result
