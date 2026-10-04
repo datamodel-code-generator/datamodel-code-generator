@@ -45,6 +45,9 @@ service UntaggedService without its methods: TypeError
 > POST /variants
   post_variant(body=FieldVariantsPostRequest(a=1), media_type='application/json; profile=v1')
 < 204 - b''
+> POST /variants
+  post_variant(body=FieldVariantsPostRequest2(tags=['a', 'b']), media_type='application/x-www-form-urlencoded')
+< 204 - b''
 > PUT /documents
 < 422 application/json [{"type": "missing", "loc": ["body"]}]
 > PUT /documents

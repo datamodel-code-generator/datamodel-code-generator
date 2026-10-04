@@ -1034,7 +1034,7 @@ def _registration(module: Module, spec: OperationSpec, docs: Documentation) -> G
 def _responses(module: Module, spec: OperationSpec, documented: dict[str, dict[str, JSONValue]]) -> Group:
     """Return the responses a route documents; FastAPI documents a JSON body of a model from the model itself."""
     models = {
-        response.status: media.use.type
+        response.status: (str(media.declaration.name), media.use.type)
         for response in spec.responses
         for media in response.media
         if media.media_type == "application/json" and media.use is not None and media.use.type is not None
@@ -1043,8 +1043,8 @@ def _responses(module: Module, spec: OperationSpec, documented: dict[str, dict[s
     for status, response in documented.items():
         items: list[tuple[str, Doc]] = []
         content = response.get("content")
-        if (model := models.get(status)) is not None and isinstance(content, dict) and content.pop("application/json"):
-            items.append(("'model': ", module.annotation(model)))
+        if (model := models.get(status)) is not None and isinstance(content, dict) and content.pop(model[0]):
+            items.append(("'model': ", module.annotation(model[1])))
             if not content:
                 del response["content"]
         items.extend((f"{key!r}: ", _json_literal(item)) for key, item in response.items())

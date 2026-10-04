@@ -132,6 +132,12 @@ class PostVariant:
                 kind='json',
                 adapter=TypeAdapter(bodies_basemodel_models.FieldVariantsPostRequest1),
             ),
+            BodyMedia(
+                media_type='application/x-www-form-urlencoded',
+                kind='form',
+                adapter=TypeAdapter(bodies_basemodel_models.FieldVariantsPostRequest2),
+                fields=(FieldPlan('tags', 'string', repeated=True),),
+            ),
         ),
         required=False,
     )

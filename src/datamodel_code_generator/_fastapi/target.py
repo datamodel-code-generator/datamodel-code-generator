@@ -218,7 +218,10 @@ def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
 def _dependencies(plan: ServerPlan, wire: WirePlan, models: tuple[ModelArtifact, ...]) -> tuple[str, ...]:
     forms = any(
         (body := spec.body) is not None
-        and (body.form or (body.decision.transport == "codec_adapter" and body.media[0].kind == "multipart"))
+        and (
+            body.form
+            or (body.decision.transport == "codec_adapter" and any(item.kind == "multipart" for item in body.media))
+        )
         for spec in plan.operations
     )
     return (
