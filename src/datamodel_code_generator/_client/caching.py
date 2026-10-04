@@ -14,16 +14,16 @@ from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.pagination import _Pages
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Container, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage
+    from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._target_contract import TypeUseBinding
+    from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
 
 Tag: TypeAlias = tuple[str | int, ...]
 
@@ -78,12 +78,9 @@ def _problem(code: str, stage: DiagnosticStage, at: str, message: str, spec: Ope
 class _Caches:
     """Check and plan every enabled cache helper of a client target."""
 
-    def __init__(
-        self, protocols: Protocols, codecs: CodecPlan, wire: WirePlan, request: TargetRequest, plan: ClientPlan
-    ) -> None:
-        """Index the use bindings, the schema reader that types parameters, and the headers credentials travel in."""
-        self.pages = _Pages(protocols, plan, codecs, wire, request)
-        self.bindings = dict(codecs.bindings)
+    def __init__(self, pages: _Pages) -> None:
+        """Keep the uses with codecs, the schema reader that types parameters, and the headers credentials travel in."""
+        self.pages = pages
         self.credential_headers = self.pages.secret_headers
 
     def helper(
@@ -148,7 +145,7 @@ class _Caches:
                 continue
             media = response.media
             use = media[0].use if len(media) == 1 and media[0].kind == "json" else None
-            if use is None or use.id not in self.bindings:
+            if use is None or use.id not in self.pages.codecs:
                 message = (
                     f"The cacheable status {status} of {name!r} has a response other than one natively decoded JSON "
                     "body, which is not supported yet"
@@ -201,13 +198,18 @@ class _Caches:
             yield tuple(parts)
 
 
-def plan_caches(
-    protocols: Protocols | None, plan: ClientPlan, codecs: CodecPlan, wire: WirePlan, request: TargetRequest
+def plan_caches(  # noqa: PLR0913, PLR0917
+    protocols: Protocols | None,
+    plan: ClientPlan,
+    facts: ModelFacts,
+    codecs: Container[TypeUseId],
+    wire: WirePlan,
+    request: TargetRequest,
 ) -> tuple[tuple[CacheSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled cache helper, returning the planned ones and each checked helper's problems."""
     if protocols is None:
         return (), {}
-    caches = _Caches(protocols, codecs, wire, request, plan)
+    caches = _Caches(_Pages(protocols, plan, facts, codecs, wire, request))
     operations = {spec.contract.id: spec for spec in plan.operations}
     specs: list[CacheSpec] = []
     problems: dict[str, list[Diagnostic]] = {}

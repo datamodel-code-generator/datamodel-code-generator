@@ -36,8 +36,8 @@
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['orders.outbox', 'account.offline'] bindings 14
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper orders.outbox queue enabled True /inputs/target_config/protocol_metadata/helpers/orders.outbox 4894d495cc48cf4ceb7c5740b0350bde6a4df87fd0237c7f691442524b84acec
-  helper account.offline queue enabled True /inputs/target_config/protocol_metadata/helpers/account.offline 5cee3fa03194e3d5bc1ea01be463d5e69361ea429a04a13e79b1ee06486b7e61
+  helper orders.outbox queue enabled True /inputs/target_config/protocol_metadata/helpers/orders.outbox 8711e457a9ababba62036a2b2387cb4e70a7ac1f2bb8389f979b449ab8d92205
+  helper account.offline queue enabled True /inputs/target_config/protocol_metadata/helpers/account.offline a864c6e49191960dbcd7014a97126f12a9e82dab7bb48e64b00e7ebfeb54a2ac
   {
     "helpers": {
       "account.offline": {

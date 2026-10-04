@@ -34,7 +34,7 @@ __all__ = ["verify", "verify_async"]
 
 _PLAN: Final[WebhookPlan[_dcg_type_0, Ed25519Key]] = WebhookPlan(
     helper_id='rfc8032.ed25519',
-    fingerprint='8befb6939fe955a2bd8f665addce8d9a705268c1d9f4e124dd3276b6f47f5d4e',
+    fingerprint='8a5d43802aeb0e99f5827e3e4db58dbc666bfaf83263da9ec6390517f7c43bdd',
     signature=SignatureProfile(
         algorithm=ED25519,
         header='x-signature',

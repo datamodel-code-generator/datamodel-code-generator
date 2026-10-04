@@ -49,16 +49,16 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['standard.message', 'standard.rejecting', 'github.push', 'slack.command', 'rfc.sha256', 'rfc.sha512', 'keyed.event', 'framed.count', 'shapes.drawn', 'callbacks.delivered', 'disabled.hook'] bindings 8
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper standard.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.message c503090b917f44a9542091e0b5cdea7e7f14703e165e10e7e7e0f8cf704bb938
-  helper standard.rejecting webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.rejecting ce8ac54b67e41cbacbd5fa5596a13748c03911084089fb269d7e5332e537a94d
-  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push db5dd04d96ec941efee24451300a154baf59aab8455fab1e755425f4e7fa8be3
-  helper slack.command webhook enabled True /inputs/target_config/protocol_metadata/helpers/slack.command 49df2193c4f015ca78d2d8c22eb2437bf707b2da9b0421729026a88f6e62b4c8
-  helper rfc.sha256 webhook enabled True /inputs/target_config/protocol_metadata/helpers/rfc.sha256 cc4a383abddcfc3af415d3f7d15d04d453e7b571ca07de3ac9f1faeb5e0bee4f
-  helper rfc.sha512 webhook enabled True /inputs/target_config/protocol_metadata/helpers/rfc.sha512 d4f5a8c175d70503599961716decbd5a9f31fbc71d47f8f877885f4774c5fc27
-  helper keyed.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/keyed.event 30399ab8bb46e18f9574a12a8ec1f8ab2117b0f62b90699958792e8a2868a5fb
-  helper framed.count webhook enabled True /inputs/target_config/protocol_metadata/helpers/framed.count b15decc3b0adb1ff86855794114e76427c246a13c7db1c0b74f6f054cadc1f06
-  helper shapes.drawn webhook enabled True /inputs/target_config/protocol_metadata/helpers/shapes.drawn e4ab19960ae194d37660ac351926920176bd202f87fc1f7a2314e583cf4cfdde
-  helper callbacks.delivered webhook enabled True /inputs/target_config/protocol_metadata/helpers/callbacks.delivered da8e47fc89f3060d55142819de3ce9d0dfa43e28e9f9ad72c3f1262fc148f10c
+  helper standard.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.message b1b9f167b707d5e1c93249820f8527cf53a1e54de302d04017c75fbdca4b476f
+  helper standard.rejecting webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.rejecting 971f9f0327b66530eeb33a512a76b2fcf856955c2912c7182cd1425ef63b146d
+  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push c766c80ec70515f02a3f0ceea75c6cbd5ef3f353c787b89e07fd69bfebe3c33e
+  helper slack.command webhook enabled True /inputs/target_config/protocol_metadata/helpers/slack.command 13a14ff0cfac1b640dda5566f2e6f054e0e2f806cc5bcdf3e515f0fe0433d6df
+  helper rfc.sha256 webhook enabled True /inputs/target_config/protocol_metadata/helpers/rfc.sha256 3d5822c4a87e534ac8a7aaa83cc61ccd3f6f26ce1cea5636c9a597f63006bdd7
+  helper rfc.sha512 webhook enabled True /inputs/target_config/protocol_metadata/helpers/rfc.sha512 8f2fcb18c83486f2340637065099f250270f0e36627b7c69e9d5c481239675e1
+  helper keyed.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/keyed.event 8849a5be2f0972a5169b7739d9accc02b305a5109217c5bf990038c710d3a82e
+  helper framed.count webhook enabled True /inputs/target_config/protocol_metadata/helpers/framed.count 31916b0f7d7fa73e53c7d9fe1b162b7b0871f47f550fc86ac2338671324fa097
+  helper shapes.drawn webhook enabled True /inputs/target_config/protocol_metadata/helpers/shapes.drawn 46213456305c33bf063f7c6523d64fd5bb177f21caa7a4edfe92634e0532fcd1
+  helper callbacks.delivered webhook enabled True /inputs/target_config/protocol_metadata/helpers/callbacks.delivered b003f794e7368e799df6dd09cf847b8fabcb9f75559aab3b7357a2de1dbb8be0
   helper disabled.hook webhook enabled False /inputs/target_config/protocol_metadata/helpers/disabled.hook d468fea8a34e1c29a2702e39a91077d9174a7c55353f956bd4dc2af67acc2006
   {
     "helpers": {

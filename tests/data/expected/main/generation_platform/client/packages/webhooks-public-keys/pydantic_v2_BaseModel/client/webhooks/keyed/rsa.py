@@ -42,7 +42,7 @@ __all__ = ["verify", "verify_async"]
 
 _PLAN: Final[WebhookPlan[_dcg_type_0, RSAPSSKey]] = WebhookPlan(
     helper_id='keyed.rsa',
-    fingerprint='d53c275add719ccd967cf6fbff2a8b4f9a69d52211868b2c647351ca61a69ab6',
+    fingerprint='21191843754fced64576c457058cbaa8361a88f1198a3e505f5060510e4e913c',
     signature=SignatureProfile(
         algorithm=RSA_PSS_SHA256,
         header='x-signature',

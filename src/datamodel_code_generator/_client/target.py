@@ -15,6 +15,7 @@ from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.config import ClientGenerationConfig
 from datamodel_code_generator._client.fields import plan_fields
+from datamodel_code_generator._client.model_facts import ModelFacts
 from datamodel_code_generator._client.pagination import plan_pagination
 from datamodel_code_generator._client.plan import (
     PlanError,
@@ -138,15 +139,16 @@ class ClientTarget:
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
-        plan, named = plan_fields(plan, codecs, batch, wire)
-        pages, checked = plan_pagination(protocols, plan, codecs, wire, request)
-        polls, polled = plan_polling(protocols, plan, codecs, wire, request)
-        caches, cached = plan_caches(protocols, plan, codecs, wire, request)
-        uploads, uploaded = plan_uploads(protocols, plan, codecs, wire, request)
+        facts, coded = ModelFacts(batch), frozenset(use for use, _ in codecs.bindings)
+        plan, named = plan_fields(plan, facts, coded, wire)
+        pages, checked = plan_pagination(protocols, plan, facts, coded, wire, request)
+        polls, polled = plan_polling(protocols, plan, facts, coded, wire, request)
+        caches, cached = plan_caches(protocols, plan, facts, coded, wire, request)
+        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, wire, request)
         queues, queued = plan_queues(protocols, plan)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
         helpers = tuple(sorted((*pages, *polls, *caches, *uploads, *queues), key=lambda spec: order[spec.helper.name]))
-        streams = plan_streams(streamed, protocols, plan, codecs, wire, request, stream_problems)
+        streams = plan_streams(streamed, protocols, plan, facts, coded, wire, request, stream_problems)
         sockets = plan_sockets(opened, socket_problems)
         webhooks = plan_webhooks(events, codecs, hooked)
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
@@ -305,13 +307,12 @@ class _TargetData:
         codecs: CodecPlan,
         wire: WirePlan,
     ) -> None:
-        """Index the selected operations, the use bindings, and the import locations of the generated symbols."""
+        """Index the selected operations and the import locations of the generated symbols."""
         self.plan = plan
         self.config = config
         self.request = request
         self.codecs = codecs
         self.wire = wire
-        self.bindings = dict(codecs.bindings)
         self.selected = {operation.id: index for index, operation in enumerate(request.operations)}
         self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
 
@@ -351,7 +352,6 @@ class _TargetData:
             "operations": [self.request.documents.operation(operation.contract.id)],
             "schemas": [spec.item_schema],
             "type_uses": [self.contract(spec.page)],
-            "adapters": [],
         })
 
     def polling(self, spec: PollingSpec, settings: JSONValue) -> str:
@@ -388,7 +388,6 @@ class _TargetData:
             ],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in uses],
-            "adapters": [],
         })
 
     def upload(self, spec: UploadSpec, settings: JSONValue) -> str:
@@ -419,7 +418,6 @@ class _TargetData:
             "operations": [documents.operation(item.contract.id) for item in operations],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in uses],
-            "adapters": [],
         })
 
     def cache(self, spec: CacheSpec, settings: JSONValue) -> str:
@@ -451,7 +449,6 @@ class _TargetData:
             "operations": [self.request.documents.operation(item.contract.id) for item in operations],
             "schemas": [],
             "type_uses": [self.contract(spec.response)],
-            "adapters": [],
         })
 
     def queue(self, spec: QueueSpec, settings: JSONValue) -> dict[str, str]:
@@ -492,7 +489,6 @@ class _TargetData:
                 "operations": [documents.operation(operation.contract.id)],
                 "schemas": [],
                 "type_uses": [*(self.parameter(item) for item in operation.parameters), *uses],
-                "adapters": [],
             })
         digests[name] = _digest({
             "kind": spec.helper.kind,
@@ -500,7 +496,6 @@ class _TargetData:
             "operations": [documents.operation(queued.operation.contract.id) for queued in spec.operations],
             "schemas": [],
             "type_uses": [],
-            "adapters": [],
         })
         return digests
 
@@ -524,7 +519,6 @@ class _TargetData:
             "operations": [],
             "schemas": [event.schema for event in events],
             "type_uses": [self.contract(event.use) for event in events],
-            "adapters": [],
         })
 
     def stream(self, spec: StreamSpec, settings: JSONValue) -> str:
@@ -554,7 +548,6 @@ class _TargetData:
             ],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in spec.uses],
-            "adapters": [],
         })
 
     def socket(self, spec: SocketSpec, settings: JSONValue) -> str:
@@ -576,7 +569,6 @@ class _TargetData:
             "operations": [self.request.documents.operation(operation.contract.id)],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in spec.uses],
-            "adapters": [],
         })
 
     def operation(self, spec: OperationSpec) -> JSONValue:
@@ -607,10 +599,9 @@ class _TargetData:
         """Return a schema-bearing parameter's plan and contract."""
         return (parameter.plan, self.contract(parameter.use))
 
-    def contract(self, use: TypeUseBinding | None) -> tuple[object, ...]:
-        """Return a schema-bearing helper use's codec binding and normalized schema."""
-        use = cast("TypeUseBinding", use)
-        return (self.bindings.get(use.id), self.wire.schema(cast("SourceLocation", use.schema))[1])
+    def contract(self, use: TypeUseBinding | None) -> object:
+        """Return a schema-bearing helper use's normalized schema."""
+        return self.wire.schema(cast("SourceLocation", cast("TypeUseBinding", use).schema))[1]
 
 
 def _digest(value: object) -> str:

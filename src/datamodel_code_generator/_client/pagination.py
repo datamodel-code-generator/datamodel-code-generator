@@ -15,43 +15,41 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
+from datamodel_code_generator._client.model_facts import ItemStep
 from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
 from datamodel_code_generator._runtime.client.security import secret_names
-from datamodel_code_generator._runtime.model_codecs.bindings import ArrayNode, MapNode, ModelNode, UnionNode
 from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncodingError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.parameters import path_text
 from datamodel_code_generator._runtime.protocols.records import canonical_json
 from datamodel_code_generator._target_contract import (
+    BuiltinType,
     GeneratedSymbolType,
     GenericType,
     NoneType,
     SourceLocation,
-    SymbolId,
     UnionType,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Container, Iterator
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage, SchemaRef
+    from datamodel_code_generator._client.model_facts import ModelFacts, StepKind
     from datamodel_code_generator._client.plan import ClientPlan, HeaderSpec, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.bindings import ModelBinding, TypeNode, UseBinding
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
-    from datamodel_code_generator._target_contract import FieldUseBinding, FinalPythonType, TypeUseBinding
+    from datamodel_code_generator._target_contract import FieldUseBinding, FinalPythonType, TypeUseBinding, TypeUseId
 
-StepKind = Literal["attr", "key", "get", "root"]
 _INTEGER: Final = re.compile(r"-?[0-9]+")
 _MEMBERS: Final = ("anyOf", "oneOf")
 _NULL: Final = frozenset({"null"})
-_SEQUENCES: Final = frozenset({"list", "tuple"})
+_SETS: Final = frozenset({"set", "frozenset"})
 _POINTED: Final = frozenset({"body", "querystring"})
 _FOLLOWED: Final = frozenset({"next_url", "link"})
 _URL_TYPES: Final = frozenset({"string", "null"})
@@ -59,20 +57,6 @@ _RELATION: Final = re.compile(r"[A-Za-z][A-Za-z0-9.-]*|[A-Za-z][A-Za-z0-9+.-]*:[
 _WRITES: Final = MappingProxyType({"cursor": "cursor", "offset": "offset", "page": "page number"})
 _EVIDENCE: Final = MappingProxyType({"has_more": "boolean", "total": "integer"})
 _Types: TypeAlias = frozenset[str] | None
-
-
-@dataclass(frozen=True, slots=True)
-class ItemStep:
-    """One step of an items accessor: an attribute, a required or optional TypedDict key, or a root model's root.
-
-    `none` says the value it reads may be None, and `unset` that it may be msgspec's UNSET, as for an optional member
-    of a Struct.
-    """
-
-    kind: StepKind
-    name: str
-    none: bool = False
-    unset: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -104,11 +88,11 @@ def evidence(continuation: Mapping[str, Any]) -> Literal["has_more", "total"]:
 
 @dataclass(frozen=True, slots=True)
 class _Reached:
-    """Where a pointer through a page's model ends: the accessor steps, the last property's use, and its node."""
+    """Where a pointer through a page's model ends: the accessor steps, the last property's use, and its type."""
 
     steps: tuple[ItemStep, ...]
     member: FieldUseBinding | None
-    node: TypeNode
+    value: FinalPythonType
 
 
 def _label(spec: OperationSpec) -> str:
@@ -199,74 +183,75 @@ def _fits(kind: str, accepted: frozenset[str] | None) -> bool:
     return accepted is None or kind in accepted or (kind == "integer" and "number" in accepted)
 
 
-def _unwrapped(node: TypeNode, models: Mapping[str, ModelBinding], steps: list[ItemStep]) -> TypeNode:
-    """Return the node a root model or a single-member union stands for, adding each root step taken."""
-    while True:
-        if isinstance(node, ModelNode) and (root := models[node.symbol].root) is not None:
-            steps.append(ItemStep("root", "root"))
-            node = root
-        elif isinstance(node, UnionNode) and len(node.members) == 1:
-            node = node.members[0]
-        else:
-            return node
+def _branches(value: FinalPythonType) -> bool:
+    """Return whether a type is a union of several types or a mapping, which no accessor reads through."""
+    return isinstance(value, UnionType) or (
+        isinstance(value, GenericType) and value.tuple_form != "fixed" and len(value.arguments) == 2  # noqa: PLR2004
+    )
+
+
+def _sequence(value: FinalPythonType) -> bool:
+    """Return whether a type is a list or a tuple of one item type, as a JSON array decodes to."""
+    return (
+        isinstance(value, GenericType)
+        and value.tuple_form != "fixed"
+        and len(value.arguments) == 1
+        and not (isinstance(value.base, BuiltinType) and value.base.name in _SETS)
+    )
 
 
 class _Pages:
     """Check and plan every enabled pagination helper of a client target."""
 
-    def __init__(
-        self, protocols: Protocols, plan: ClientPlan, codecs: CodecPlan, wire: WirePlan, request: TargetRequest
+    def __init__(  # noqa: PLR0913, PLR0917
+        self,
+        protocols: Protocols,
+        plan: ClientPlan,
+        facts: ModelFacts,
+        codecs: Container[TypeUseId],
+        wire: WirePlan,
+        request: TargetRequest,
     ) -> None:
-        """Index the use bindings, the model fields by symbol and wire name, and the documents by manifest pointer.
+        """Keep the model facts and the uses with codecs, and index the documents by manifest pointer.
 
         The positions of the package's security schemes, with the credential headers, are where no helper writes.
         """
         self.protocols = protocols
         self.secret_headers, self.secret_queries = secret_names(plan.security_schemes)
+        self.facts = facts
+        self.codecs = codecs
         self.wire = wire
         self.request = request
-        self.bindings: Mapping[object, UseBinding] = dict(codecs.bindings)
-        self.symbols = {name: symbol for symbol, name in codecs.imports}
-        members = request.batch.fields
-        self.fields = {(member.consumer, member.wire_name): member for member in members}
-        self.roots = {member.consumer: member for member in members if member.member_kind == "root_value"}
         self.documents = {pointer: document for document, pointer in request.documents.pointers.items()}
 
-    def walk(self, binding: UseBinding, pointer: str) -> _Reached | Literal["absent", "unsupported"]:
+    def walk(self, value: FinalPythonType, pointer: str) -> _Reached | Literal["absent", "unsupported"]:
         """Follow a pointer through the fields of a page's models, or say why it names no field.
 
         A root model and a nullable single model are stepped through; a union of several members or a map is not.
         """
-        models = {model.symbol: model for model in binding.models}
+        facts = self.facts
         steps: list[ItemStep] = []
         member: FieldUseBinding | None = None
-        node = binding.type
         for token in _tokens(pointer):
-            node = _unwrapped(node, models, steps)
-            if isinstance(node, (UnionNode, MapNode)):
+            if _branches(value := facts.unwrapped(value, steps)):
                 return "unsupported"
-            if (
-                not isinstance(node, ModelNode)
-                or (field := next((item for item in models[node.symbol].fields if item.wire_name == token), None))
-                is None
-            ):
+            symbol = facts.symbol(value)
+            fields = () if symbol is None or symbol.kind != "model" else facts.fields(symbol.id)
+            if symbol is None or (field := next((item for item in fields if item.wire_name == token), None)) is None:
                 return "absent"
-            native = models[node.symbol].native_kind
-            nullable = isinstance(field.type, UnionNode) and field.type.nullable
-            kind: StepKind = ("key" if field.required else "get") if native == "typed_dict" else "attr"
-            struct = native == "struct"
+            kind: StepKind = ("key" if field.required else "get") if symbol.backend == "typeddict" else "attr"
+            struct = symbol.backend == "msgspec"
             steps.append(
                 ItemStep(
                     kind,
-                    field.native_name,
-                    none=nullable or (not field.required and not struct),
+                    field.name,
+                    none=facts.nullable(field.type) or (not field.required and not struct),
                     unset=struct and not field.required,
                 )
             )
-            member = self.fields[SymbolId(self.symbols[node.symbol]), token]
-            node = field.type
-        node = _unwrapped(node, models, steps)
-        return _Reached(tuple(steps), member, node)
+            member, value = field.member, field.type
+        value = facts.unwrapped(value, steps)
+        return _Reached(tuple(steps), member, value)
 
     def element(self, value: FinalPythonType | None) -> FinalPythonType:
         """Return the element type of a list or tuple type an array node binds, through None and generated roots."""
@@ -276,9 +261,9 @@ class _Pages:
                 value = next(member for member in value.members if not isinstance(member, NoneType))
             else:
                 assert isinstance(value, GeneratedSymbolType)
-                facts = self.roots[value.symbol].model_facts
-                assert facts is not None
-                value = facts.type
+                root = self.facts.root(value.symbol)
+                assert root is not None
+                value = root
         return value.arguments[0]
 
     def members(self, location: SourceLocation) -> tuple[SourceLocation, Mapping[str, object], list[SourceLocation]]:
@@ -366,17 +351,17 @@ class _Pages:
             message = f"The pagination helper {name!r} sends a request body other than JSON, which is not supported yet"
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec))
         successes = [response for response in spec.responses if response.success]
-        if (page := _page_use(successes)) is None or (binding := self.bindings.get(page.id)) is None:
+        if (page := _page_use(successes)) is None or page.id not in self.codecs or (body := page.type) is None:
             message = f"{label} must declare exactly one JSON success response for the pagination helper {name!r}"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
             return None, problems
-        planned = self.items(helper, spec, binding, page, problems)
+        planned = self.items(helper, spec, body, page, problems)
         headers = successes[0].headers
         check = {"cursor": self.cursor, "next_url": self.next_url, "link": self.link}.get(
             helper.tree["continuation"]["kind"], self.count
         )
-        problems.extend(check(helper, spec, binding, headers))
-        problems.extend(self.values(helper, spec, binding, headers))
+        problems.extend(check(helper, spec, body, headers))
+        problems.extend(self.values(helper, spec, body, headers))
         if planned is None or problems:
             return None, problems
         steps, item = planned
@@ -390,14 +375,14 @@ class _Pages:
         self,
         helper: Helper,
         spec: OperationSpec,
-        binding: UseBinding,
+        body: FinalPythonType,
         page: TypeUseBinding,
         problems: list[Diagnostic],
     ) -> tuple[tuple[ItemStep, ...], FinalPythonType] | None:
         """Check that the items pointer selects an array of the page whose items the item schema describes."""
         at, name, label = helper.at, helper.name, _label(spec)
         pointer = helper.tree["items"]["pointer"]
-        reached = self.walk(binding, pointer)
+        reached = self.walk(body, pointer)
         if reached == "unsupported":
             message = (
                 f"The items pointer {pointer!r} of {name!r} reads through a union or map, which is not supported yet"
@@ -408,7 +393,7 @@ class _Pages:
             message = f"The items pointer {pointer!r} of {name!r} names no property of the {label} response"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.items", message, spec))
             return None
-        if not isinstance(reached.node, ArrayNode) or reached.node.container not in _SEQUENCES:
+        if not _sequence(reached.value):
             message = f"The items pointer {pointer!r} of {name!r} selects no JSON array of the {label} response"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.items", message, spec))
             return None
@@ -433,7 +418,7 @@ class _Pages:
         self,
         helper: Helper,
         spec: OperationSpec,
-        binding: UseBinding,
+        body: FinalPythonType,
         headers: tuple[HeaderSpec, ...],
         read: Mapping[str, Any],
         at: str,
@@ -448,7 +433,7 @@ class _Pages:
         types: _Types = frozenset({"integer"})
         match read["from"]:
             case "body":
-                reached = self.walk(binding, pointer := read["pointer"])
+                reached = self.walk(body, pointer := read["pointer"])
                 if reached == "unsupported":
                     message = (
                         f"The {what} pointer {pointer!r} of {name!r} reads through a union or map, which is not "
@@ -516,12 +501,12 @@ class _Pages:
         return schemas, f"the property {pointer!r} of {place}" if pointer else place, carries
 
     def cursor(
-        self, helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
+        self, helper: Helper, spec: OperationSpec, body: FinalPythonType, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
         """Check that the cursor reads a declared value whose types its target accepts, and that its ends are typed."""
         at = f"{helper.at}.continuation"
         continuation = helper.tree["continuation"]
-        types = self.read(helper, spec, binding, headers, continuation["read"], f"{at}.read", "cursor")
+        types = self.read(helper, spec, body, headers, continuation["read"], f"{at}.read", "cursor")
         if isinstance(types, Diagnostic):
             yield types
             return
@@ -542,7 +527,7 @@ class _Pages:
                 yield _problem("E_CONFIG_VALUE", "config", f"{at}.end[{index}].value", message, spec)
 
     def next_url(
-        self, helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
+        self, helper: Helper, spec: OperationSpec, body: FinalPythonType, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
         """Check that the next URL reads strings, that its ends are typed, and that a repeated body may be sent again.
 
@@ -562,7 +547,7 @@ class _Pages:
                 )
             if message is not None:
                 yield _problem("E_CONFIG_VALUE", "config", f"{at}.repeat_request_body", message, spec)
-        types = self.read(helper, spec, binding, headers, continuation["read"], f"{at}.read", "next URL")
+        types = self.read(helper, spec, body, headers, continuation["read"], f"{at}.read", "next URL")
         if isinstance(types, Diagnostic):
             yield types
             return
@@ -573,10 +558,10 @@ class _Pages:
 
     @staticmethod
     def link(
-        helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
+        helper: Helper, spec: OperationSpec, body: FinalPythonType, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
         """Check that the page response declares the Link header and that the relation is one RFC 8288 relation type."""
-        del binding
+        del body
         at, name = f"{helper.at}.continuation", helper.name
         continuation = helper.tree["continuation"]
         if (header := continuation["header"]).lower() not in {item.name.lower() for item in headers}:
@@ -589,7 +574,7 @@ class _Pages:
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.rel", message, spec)
 
     def count(
-        self, helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
+        self, helper: Helper, spec: OperationSpec, body: FinalPythonType, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
         """Check that an offset or page number is an integer its target accepts and that its end evidence is typed.
 
@@ -611,7 +596,7 @@ class _Pages:
             message = f"The total of {name!r} reads the response status, which counts no items"
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec)
             return
-        types = self.read(helper, spec, binding, headers, read, where, chosen)
+        types = self.read(helper, spec, body, headers, read, where, chosen)
         if isinstance(types, Diagnostic):
             yield types
         elif types is not None and (others := sorted(types - {expected})):
@@ -650,7 +635,7 @@ class _Pages:
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
     def values(
-        self, helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
+        self, helper: Helper, spec: OperationSpec, body: FinalPythonType, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
         """Check each binding's value against its target, and that no two writes overlap.
 
@@ -693,7 +678,7 @@ class _Pages:
                     continue
                 types: _Types | Diagnostic = frozenset({_json_type(value["literal"])})
             else:
-                types = self.read(helper, spec, binding, headers, value["selector"], f"{at}.value.selector", what)
+                types = self.read(helper, spec, body, headers, value["selector"], f"{at}.value.selector", what)
             if isinstance(types, Diagnostic):
                 yield types
                 continue
@@ -787,8 +772,13 @@ def _child(location: SourceLocation, token: str) -> SourceLocation:
     return SourceLocation(location.document, f"{location.pointer}/{token}", location.role)
 
 
-def plan_pagination(
-    protocols: Protocols | None, plan: ClientPlan, codecs: CodecPlan, wire: WirePlan, request: TargetRequest
+def plan_pagination(  # noqa: PLR0913, PLR0917
+    protocols: Protocols | None,
+    plan: ClientPlan,
+    facts: ModelFacts,
+    codecs: Container[TypeUseId],
+    wire: WirePlan,
+    request: TargetRequest,
 ) -> tuple[tuple[PaginationSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled pagination helper, returning the planned ones and each checked helper's problems.
 
@@ -796,7 +786,7 @@ def plan_pagination(
     """
     if protocols is None:
         return (), {}
-    pages = _Pages(protocols, plan, codecs, wire, request)
+    pages = _Pages(protocols, plan, facts, codecs, wire, request)
     operations = {spec.contract.id: spec for spec in plan.operations}
     specs: list[PaginationSpec] = []
     problems: dict[str, list[Diagnostic]] = {}

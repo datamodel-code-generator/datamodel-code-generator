@@ -66,18 +66,18 @@
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['events.live', 'events.plain', 'events.tracked', 'rooms.live', 'records.all', 'feed.ticks', 'topics.marks', 'marks.scoped', 'marks.named', 'marks.deep', 'marks.bound', 'marks.deepbound'] bindings 48
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper events.live sse enabled True /inputs/target_config/protocol_metadata/helpers/events.live fe9d46bf6146c8ad370b9e120eebaa7a97ce69791b82e42dc42fb36df7d8d89b
-  helper events.plain sse enabled True /inputs/target_config/protocol_metadata/helpers/events.plain bb4bb5c8c5cbe3809e0cde61598b05446f9667463353a95c362eae717c7baaf9
-  helper events.tracked sse enabled True /inputs/target_config/protocol_metadata/helpers/events.tracked 232c5953c24399dd4c254772dababfe778d0e461afbd363f2ad354cafe88ccaf
-  helper rooms.live sse enabled True /inputs/target_config/protocol_metadata/helpers/rooms.live 43fcb00a6c594945f0cff5207c7f6b56715c2e167232866a8b2c3ecdb8fce84a
-  helper records.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.all 0be49633d4172954b6470e209d25f77bde0e1e664b68c1bc0afbc93ec6002286
-  helper feed.ticks sse enabled True /inputs/target_config/protocol_metadata/helpers/feed.ticks 25b1534b79b168ed861fcb9eb40248e67166dec73ec511b1d877f9dab321d951
-  helper topics.marks sse enabled True /inputs/target_config/protocol_metadata/helpers/topics.marks 229677d4f9f10623e0aa9378cbf121c4f7520d62042812013b68f342dbdd3e35
-  helper marks.scoped sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.scoped a01333878552febd3667547eec5aa2c095a1468476b1b1e316587674b40503d2
-  helper marks.named sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.named 17ebe9633ae00f38397b430af67dd1cd2cb5b78d7deae0c5292cfad0d38131a2
-  helper marks.deep sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.deep 8057681cc8f3e3c26dc367491ead6daa5b993c29143247624afb3c8e97fbbf43
-  helper marks.bound sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.bound 8db2caef70358490b9dc41878beef4e5ac47e2195d6b75a55061f02b13b0621e
-  helper marks.deepbound sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.deepbound e673f50f4d4d8dcb9295e638acd483b3241775fd060a70e6461d0c1c3a9c8d71
+  helper events.live sse enabled True /inputs/target_config/protocol_metadata/helpers/events.live aae3411d1e251d38f9a7baf70300294801c2b2a259595d622e7cfdd6736b72fe
+  helper events.plain sse enabled True /inputs/target_config/protocol_metadata/helpers/events.plain 80c34baaa42995dab35066fe12824d5d20006c3e98253a8093453eb1f9c70ffd
+  helper events.tracked sse enabled True /inputs/target_config/protocol_metadata/helpers/events.tracked 0a624a40c6dd7e04de6f101d13e9f812e4bf47c59668ce0e2c309ca9b00799e9
+  helper rooms.live sse enabled True /inputs/target_config/protocol_metadata/helpers/rooms.live eae7aec80a771ae54146e8511c5e9e33d00b1fb4bd6278a6c4e2e7fa0b85f6ac
+  helper records.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.all 975adb5b4744242bdfbe45f4235784f5c5fc9d70f52469440a763efdcd4a7f12
+  helper feed.ticks sse enabled True /inputs/target_config/protocol_metadata/helpers/feed.ticks edb61ded456f353cb7e50c894043f807e4c3123cbc82331a33e8c3e6891a503f
+  helper topics.marks sse enabled True /inputs/target_config/protocol_metadata/helpers/topics.marks b91009cd58106e803d7da22d7a0a9cc2f3013d75bed0e9705a50b18ef48533ee
+  helper marks.scoped sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.scoped 84e5d8e314cbd3ddbda65ae230fcafc57a0e9b7f16fedcddac0924b093dc0d2b
+  helper marks.named sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.named 9e4ab637e35440d4000aca638631f94d3792bdd8f159853f68e37d8fbdfd0d97
+  helper marks.deep sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.deep 6b8b52bc991bf859b090771a92fe18c1f7933ccab3cc7d5b1f2385ca5da31577
+  helper marks.bound sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.bound 406608586501fc36e87553d25a434d54e4781656e885ec2deb024eb92bf9721f
+  helper marks.deepbound sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.deepbound 4f433df465f8b0d6c90ee0f70529353def3135c220677dba4accad54ae630941
   {
     "helpers": {
       "events.live": {

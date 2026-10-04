@@ -23,15 +23,15 @@ from datamodel_code_generator._client.pagination import (
 from datamodel_code_generator._client.polling import _Polls, _Source
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Container, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
+    from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ParameterSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._target_contract import TypeUseBinding
+    from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
 
 __all__ = ("UploadSpec", "plan_uploads")
 
@@ -345,14 +345,19 @@ class _Uploads:
         return spec, use, schema
 
 
-def plan_uploads(
-    protocols: Protocols | None, plan: ClientPlan, codecs: CodecPlan, wire: WirePlan, request: TargetRequest
+def plan_uploads(  # noqa: PLR0913, PLR0917
+    protocols: Protocols | None,
+    plan: ClientPlan,
+    facts: ModelFacts,
+    codecs: Container[TypeUseId],
+    wire: WirePlan,
+    request: TargetRequest,
 ) -> tuple[tuple[UploadSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled upload helper, returning them and each checked helper's problems."""
     if protocols is None:
         return (), {}
     operations = {spec.contract.id: spec for spec in plan.operations}
-    uploads = _Uploads(_Checks(_Pages(protocols, plan, codecs, wire, request), operations, codecs, protocols))
+    uploads = _Uploads(_Checks(_Pages(protocols, plan, facts, codecs, wire, request), operations, protocols))
     specs: list[UploadSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
     for helper in protocols.helpers:

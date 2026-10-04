@@ -33,7 +33,7 @@ K = TypeVar("K")
 
 _PLAN: Final[AdapterPlan[_dcg_type_0]] = AdapterPlan(
     helper_id='adapted.message',
-    fingerprint='56bec9b4752c0dae8f962e829e9da69c2d8fb3a61687fa167319f874196a9aa2',
+    fingerprint='d72eda6646e7654d29846d73bb20ce39c97ee63d3eca7552ff274f8b7d23c028',
     timestamp=True,
     delivery_id=True,
     event=EventDecoder(

@@ -40,7 +40,7 @@ __all__ = ["verify", "verify_async"]
 
 _PLAN: Final[WebhookPlan[_dcg_type_0, HmacKey]] = WebhookPlan(
     helper_id='slack.command',
-    fingerprint='49df2193c4f015ca78d2d8c22eb2437bf707b2da9b0421729026a88f6e62b4c8',
+    fingerprint='13a14ff0cfac1b640dda5566f2e6f054e0e2f806cc5bcdf3e515f0fe0433d6df',
     signature=SignatureProfile(
         algorithm=HMAC_SHA256,
         header='x-slack-signature',

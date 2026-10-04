@@ -34,7 +34,7 @@ __all__ = ["verify", "verify_async"]
 
 _PLAN: Final[WebhookPlan[_dcg_type_0, HmacKey]] = WebhookPlan(
     helper_id='callbacks.delivered',
-    fingerprint='da8e47fc89f3060d55142819de3ce9d0dfa43e28e9f9ad72c3f1262fc148f10c',
+    fingerprint='b003f794e7368e799df6dd09cf847b8fabcb9f75559aab3b7357a2de1dbb8be0',
     signature=SignatureProfile(
         algorithm=HMAC_SHA256,
         header='x-signature',

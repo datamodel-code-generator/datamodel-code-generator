@@ -47,15 +47,15 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['items.search_all', 'items.feed_all', 'items.listing', 'jobs.run', 'events.watch', 'checks.run', 'events.resumable', 'events.tail', 'events.push'] bindings 25
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper items.search_all pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.search_all 82875108af8ecb1bcd16e0e968d16b1f5f9d55fcdbb08e1367da78ec112d20ae
-  helper items.feed_all pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.feed_all fd13cb9a239fb0be12362ed222cb4b2671841700ae9464ea9584f910a41c878a
-  helper items.listing pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.listing 8cc3e7115654f81cb07dfe3cf388eb738b322643e1a47e51485d8a4753acfa21
-  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run 999e15400d3718a2ce920cb75da4c727e585c9ee4cf0e0ea6e2d73feffcfb48e
-  helper events.watch sse enabled True /inputs/target_config/protocol_metadata/helpers/events.watch 666e3eceed15c0bfbbb24d239df356b1cd3cc9449b6b18d78899273fd4639e86
-  helper checks.run polling enabled True /inputs/target_config/protocol_metadata/helpers/checks.run 55e70eed26d3a11d793cb2836e16d3d036df3600b148803b70d224c9e73f712c
-  helper events.resumable sse enabled True /inputs/target_config/protocol_metadata/helpers/events.resumable 0e1f86fed55e81392cb7997f586de30ea24f99f58132207a7204aff451236f4c
-  helper events.tail sse enabled True /inputs/target_config/protocol_metadata/helpers/events.tail fd94ac1a851d966108c0507b9b0879d88e26ed1d2f3b2435680fbb7a13af0a11
-  helper events.push sse enabled True /inputs/target_config/protocol_metadata/helpers/events.push 77b3cbc5a9587aea853d1a1187019d7ed18bc4f52316b2e0b9063f399033439e
+  helper items.search_all pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.search_all 66d16f90695eb39605ddc48a96757cc51c5d80831f2ee1c3492706dea398f257
+  helper items.feed_all pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.feed_all 6afb18582fd1b3524efce7320de120cca1f8ff2bf48463d9064ecbaa9ca59835
+  helper items.listing pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.listing 5a6873a389ba60476d5ea76c124a10501865619bac4795b16148292118273fe3
+  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run b2c7ad6c3a3d5aa8c74ac3d48f48e544267e4b4370afc5d27ff89ac8385e3ab3
+  helper events.watch sse enabled True /inputs/target_config/protocol_metadata/helpers/events.watch 77641d687033a388eabc085eafb4b377a5d4848a95fe4423e6916b3f5cf567dc
+  helper checks.run polling enabled True /inputs/target_config/protocol_metadata/helpers/checks.run 6311bb172924e0f900fd3432e42950180633f47da910dee01892ac9232984ba8
+  helper events.resumable sse enabled True /inputs/target_config/protocol_metadata/helpers/events.resumable 63d8df2e0a159aabc1c318707022386803d56a7c533191cca9796e193b47a66c
+  helper events.tail sse enabled True /inputs/target_config/protocol_metadata/helpers/events.tail 19d3855e20d46864f1445ea7cdfce0821bb30cd0aaf8fbe1550f183529a49b79
+  helper events.push sse enabled True /inputs/target_config/protocol_metadata/helpers/events.push 040c3cc1f93f4908dba0369ea735bbe92a6705afe466973f6fd53169ea287e7c
   {
     "helpers": {
       "checks.run": {

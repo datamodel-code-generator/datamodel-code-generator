@@ -46,17 +46,17 @@
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['users.follow', 'users.nullable', 'users.loose', 'users.headed', 'users.linked', 'users.snapshot', 'users.related', 'searches.repeated', 'searches.fetched', 'secure.users', 'keyed.users'] bindings 12
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper users.follow pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.follow ac7d1b1f9ced702b7b4af7ec810ca88218325a6d3d1158bd112c2c8de4f73cd7
-  helper users.nullable pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.nullable 9b462a1d049e9cee0e058bac9c83be8edaf2d0cc2b22b6594cebd1ee58060440
-  helper users.loose pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.loose 1421d445bb2e91f52d44ec20dda049b87433c0a7a7f846e7978f5e5efc363a07
-  helper users.headed pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.headed eaebe03e0f98f3471564f74390d6cc4c422d73e73c208baec547752bff218901
-  helper users.linked pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.linked c8135fd1d69c5d1842ca1f397aa236b47033e1bded81688225caa770ceaa8ed9
-  helper users.snapshot pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.snapshot 9a761fc495025348eec14eb81923257b3f205521a26914583eeeda9187262818
-  helper users.related pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.related beb6c2eb77f86756c604739e542e8528aba3f5390b888fd71d78b7a6cd45f8e8
-  helper searches.repeated pagination enabled True /inputs/target_config/protocol_metadata/helpers/searches.repeated 55ba3a87c9134eaa7b0332f296c728c1c303c3a8b4f807c20f0a899a958c42f6
-  helper searches.fetched pagination enabled True /inputs/target_config/protocol_metadata/helpers/searches.fetched 66e31afc80065e11e20ee9d03bc5a9b2fb024f41f5c061ac136cf64508fe8a4a
-  helper secure.users pagination enabled True /inputs/target_config/protocol_metadata/helpers/secure.users 7c7c9854a463010de7459996c33129ec339bb1f57b3986e06f234c54ebdc65b9
-  helper keyed.users pagination enabled True /inputs/target_config/protocol_metadata/helpers/keyed.users c05fec416e000855bff4f9507463434cff477d57d72f3d68fa7636636385b830
+  helper users.follow pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.follow 82a191dd42a720027c619da1e5fcb3b2bf19f84ebf2701d4d1b98b0de99b373b
+  helper users.nullable pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.nullable f828f5daa0ce0951db633cb1a43efbfba7dfbe9a091b0fb24c3fbf0fa3fdae7c
+  helper users.loose pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.loose efe27843d966e44c1fcb4443d79e948ce2d7ead7c0f3ac544fb398dd865e60c3
+  helper users.headed pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.headed fa449cfccd0f384c938a166accf651857c41bc993524a4072f07a28551c9bbf1
+  helper users.linked pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.linked d390fc319566f0af5bc7e184d79534efbd193a5c939d0679453b63d0d877571a
+  helper users.snapshot pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.snapshot ad5a79470f0f54c88a7c767618aaae065cb87903b667832424249a1d672cff76
+  helper users.related pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.related ed0f97007c7fb7a17303a2f2221faf60b3a45173418426442bd5cf8648866951
+  helper searches.repeated pagination enabled True /inputs/target_config/protocol_metadata/helpers/searches.repeated f32519eef09548d49b8808603d211a9c4acc345501f8877e1be21b99b9657ea5
+  helper searches.fetched pagination enabled True /inputs/target_config/protocol_metadata/helpers/searches.fetched 0ed579111175c3a25c62f2ef7807a563f8a6a22dd008e1bf945c703558ce1d90
+  helper secure.users pagination enabled True /inputs/target_config/protocol_metadata/helpers/secure.users c8f6c9066bb7cfd3233af4382c27c8ac76d0a44481dc018a46c3e1461f0ffa84
+  helper keyed.users pagination enabled True /inputs/target_config/protocol_metadata/helpers/keyed.users 890cd7466356829f21583126daade660cce656004637c4f0a4171b5868d1f51d
   {
     "helpers": {
       "keyed.users": {

@@ -30,7 +30,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
     from datamodel_code_generator._client.config import ClientGenerationConfig
-    from datamodel_code_generator._client.pagination import ItemStep, PaginationSpec
+    from datamodel_code_generator._client.model_facts import ItemStep
+    from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import (
         ClientPlan,
         FieldBranch,

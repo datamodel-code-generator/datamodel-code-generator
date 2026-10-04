@@ -34,7 +34,7 @@ K = TypeVar("K")
 
 _PLAN: Final[AdapterPlan[_dcg_type_0 | _dcg_type_1]] = AdapterPlan(
     helper_id='stripe.event',
-    fingerprint='f7acef64453f78983fb772a0f68e7996a659f3b3a0f91c51a7ded6b7827cd088',
+    fingerprint='0434b67d911b627b09150cfad4c24254f12c1b0214310736788cb479db821f5f',
     timestamp=True,
     delivery_id=False,
     event=MappedEventDecoder(

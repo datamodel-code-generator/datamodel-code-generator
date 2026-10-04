@@ -43,11 +43,11 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['users.profile', 'users.dated', 'users.listing', 'carts.current', 'secure.profile'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper users.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/users.profile 8bc3cb12a7c197074fd9c76e454ce348b7992c59bb308418c3be811dea86f4ad
-  helper users.dated cache enabled True /inputs/target_config/protocol_metadata/helpers/users.dated 46268d7980b99b249a57f34340a625c3ae65fd090549291665170e054c80e2b9
-  helper users.listing cache enabled True /inputs/target_config/protocol_metadata/helpers/users.listing 7d3252dc3f8126e03c6df9096f89184192d1b2b773adf2197f3e86c95e8c9ca1
-  helper carts.current cache enabled True /inputs/target_config/protocol_metadata/helpers/carts.current a4259a7989ae081629e28007104f79281e69bc308a67a3944f9da1c7567be14d
-  helper secure.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/secure.profile 15df827e2b132c48312ba9808481c2d55962bbdc2709f3ca89123914cfee4521
+  helper users.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/users.profile e1b2b99301d6d7fd06453703ecb3a6e8893d430d51ee7c5e9ac3d3b6d285db01
+  helper users.dated cache enabled True /inputs/target_config/protocol_metadata/helpers/users.dated 006901e61e15aff18e3bed8bf6509abf5d7b538a90084911bcdfd74432fe44b8
+  helper users.listing cache enabled True /inputs/target_config/protocol_metadata/helpers/users.listing 014c2e93fe9492d1710685952cddcb5802b3f1d7069226969bf86bcea831d59e
+  helper carts.current cache enabled True /inputs/target_config/protocol_metadata/helpers/carts.current 7778d2c01e9c12e85513b0d3c82ac92f43c7c6e0ef75964df7f479b3334cf379
+  helper secure.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/secure.profile 4864371aee8c7d347ee597612c3baaa69d489935f0fc7c8b8a945bbe751ba529
   {
     "helpers": {
       "carts.current": {

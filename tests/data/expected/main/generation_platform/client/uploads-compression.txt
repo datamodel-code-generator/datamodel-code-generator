@@ -32,9 +32,9 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload bfa5f09926aca2368315d9bbf4a142578ba0a1451822c4752b7a0b585bf947ee
-  helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish f4e80e660ad3f3695e4277b7fd960a499ed809b326e26be4f87fa47610b8c8a1
-  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put be3a96ffbd0f2aece9738265d01afbc694adf23ee7e75d730ff52b1a5015cf24
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 0a32bf7a99d76237adb5039234749d9505eb4cd12b627bc793d84e49f6dc2ffb
+  helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish c87700e1a50afd44a538a5a171e7894d4357e1196ec1ec4146a4f8c5ccd9e3fb
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 7ff1a3d8c11c5429b2566ba4cc78604a346c51857b2f7c6ceb4b84e8cc681dcf
   {
     "helpers": {
       "files.finish": {

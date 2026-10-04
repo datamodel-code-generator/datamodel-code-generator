@@ -27,14 +27,14 @@ from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._target_contract import DeclarationId, SourceLocation, TypeUseBinding, TypeUseId
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Container, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import SchemaRef
+    from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
 
 __all__ = ("StreamSpec", "plan_streams", "stream_uses")
@@ -270,7 +270,8 @@ def plan_streams(  # noqa: PLR0913, PLR0917
     specs: tuple[StreamSpec, ...],
     protocols: Protocols | None,
     plan: ClientPlan,
-    codecs: CodecPlan,
+    facts: ModelFacts,
+    codecs: Container[TypeUseId],
     wire: WirePlan,
     request: TargetRequest,
     problems: dict[str, list[Diagnostic]],
@@ -282,8 +283,8 @@ def plan_streams(  # noqa: PLR0913, PLR0917
     """
     if protocols is None or not specs:
         return ()
-    pages = _Pages(protocols, plan, codecs, wire, request)
-    polls = _Polls(pages, {spec.contract.id: spec for spec in plan.operations}, codecs, protocols)
+    pages = _Pages(protocols, plan, facts, codecs, wire, request)
+    polls = _Polls(pages, {spec.contract.id: spec for spec in plan.operations}, protocols)
     planned: list[StreamSpec] = []
     for spec in specs:
         helper = spec.helper

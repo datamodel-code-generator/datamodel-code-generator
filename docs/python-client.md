@@ -595,8 +595,8 @@ ClientGenerationConfig(
 
 The manifest lists every helper in declaration order in `protocol_helpers`, disabled ones included, with its name,
 kind, `enabled`, the pointer of its metadata, and the digest of its contract. A generated helper's digest covers its
-signature and settings, its operation, its item schema, and the type use of its page; a disabled helper's contract is
-empty. `inputs.target_config.protocol_metadata` holds each helper's settings with the defaults filled in and each
+signature and settings, which spell its types, its operation, its item schema, and the schema of its page; a disabled
+helper's contract is empty. `inputs.target_config.protocol_metadata` holds each helper's settings with the defaults filled in and each
 reference replaced by the manifest's reference to the accepted input, so a file and the equal Python records record
 the same metadata. The `protocols` setting itself is not recorded among the public options.
 
