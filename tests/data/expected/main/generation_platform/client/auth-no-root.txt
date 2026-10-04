@@ -31,11 +31,11 @@ render pydantic_v2.BaseModel
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 auth.absent()
     exports client.types.auth.AbsentResponse client.types.auth.AbsentErrorData client.types.auth.AbsentHTTPError
-    exports client.types.auth.AbsentRequestCodecs None
+    exports None
   /selection/selected_operations/1 auth.empty()
     exports client.types.auth.EmptyResponse client.types.auth.EmptyErrorData client.types.auth.EmptyHTTPError
-    exports client.types.auth.EmptyRequestCodecs None
+    exports None
   /selection/selected_operations/2 auth.anonymous()
     exports client.types.auth.AnonymousResponse client.types.auth.AnonymousErrorData client.types.auth.AnonymousHTTPError
-    exports client.types.auth.AnonymousRequestCodecs None
+    exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']

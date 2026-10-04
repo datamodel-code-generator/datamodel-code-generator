@@ -17,7 +17,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import EnvelopeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import (
     DirectionalView,
@@ -357,7 +356,7 @@ def codec_0() -> PydanticModelCodec[plan_directions_accepted_models.Item]:
             backend='pydantic_v2.BaseModel',
             native_kind='model',
             native_export='plan_directions_accepted_models:Item',
-            projection_mode='envelope',
+            projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='plan_directions_accepted_models:Item'),
             models=(_model_0(), _model_1(), _model_2()),
@@ -370,11 +369,6 @@ def codec_0() -> PydanticModelCodec[plan_directions_accepted_models.Item]:
         },
         request_bundle,
     )
-
-
-@cache
-def outbound_0() -> EnvelopeOutboundCodec[plan_directions_accepted_models.Item]:
-    return EnvelopeOutboundCodec(codec_0(), CONTEXT_0)
 
 
 CONTEXT_1: Final = CodecContext(
@@ -399,7 +393,7 @@ def codec_1() -> PydanticModelCodec[plan_directions_accepted_models.Item]:
             backend='pydantic_v2.BaseModel',
             native_kind='model',
             native_export='plan_directions_accepted_models:Item',
-            projection_mode='envelope',
+            projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='plan_directions_accepted_models:Item'),
             models=(_model_0(), _model_1(), _model_2()),

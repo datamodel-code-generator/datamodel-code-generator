@@ -7,7 +7,6 @@ from typing import Protocol
 from typing_extensions import NotRequired, TypedDict
 
 from pets import Client
-from pets.model_codecs import ModelValue
 from pets.options import RequestOptions
 from pets.types.pets import ListPetsResponse
 from pets_models import FieldPetsGetHeaderXTraceParameter
@@ -16,7 +15,7 @@ from pets_models import FieldPetsGetHeaderXTraceParameter
 class ListArguments(TypedDict):
     """Keywords of list_pets that a caller declares for itself."""
 
-    x_trace: FieldPetsGetHeaderXTraceParameter | ModelValue[FieldPetsGetHeaderXTraceParameter]
+    x_trace: FieldPetsGetHeaderXTraceParameter
     options: NotRequired[RequestOptions | None]
 
 

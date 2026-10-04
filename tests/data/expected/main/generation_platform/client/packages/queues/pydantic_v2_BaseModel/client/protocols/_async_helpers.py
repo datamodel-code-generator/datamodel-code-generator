@@ -23,7 +23,6 @@ from .._runtime.protocols.queue import (
     apurge_entries,
     aretry_entry,
 )
-from ..model_codecs import ModelValue, RequestMedia
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import DrainReport, QueueEntry, QueueOptions, QueueReceipt, _plans
 
@@ -145,10 +144,10 @@ class _AsyncOrdersOutboxQueueOperation0:
     async def enqueue(
         self,
         *,
-        x_trace: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        session: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        body: _dcg_type_2 | ModelValue[_dcg_type_2],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
+        x_trace: _dcg_type_0 | Unset = UNSET,
+        session: _dcg_type_1 | Unset = UNSET,
+        body: _dcg_type_2,
+        media_type: Literal['application/json'] | None = None,
         queue_options: QueueOptions | None = None,
     ) -> QueueReceipt:
         """Save a call of POST /orders in the queue's store, sending nothing."""
@@ -173,8 +172,8 @@ class _AsyncOrdersOutboxQueueOperation1:
     async def enqueue(
         self,
         *,
-        order_id: _dcg_type_3 | ModelValue[_dcg_type_3],
-        verbose: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
+        order_id: _dcg_type_3,
+        verbose: _dcg_type_4 | Unset = UNSET,
         queue_options: QueueOptions | None = None,
     ) -> QueueReceipt:
         """Save a call of GET /orders/{orderId} in the queue's store, sending nothing."""
@@ -282,8 +281,8 @@ class _AsyncAccountOfflineQueueOperation1:
     async def enqueue(
         self,
         *,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        body: _dcg_type_5,
+        media_type: Literal['application/json'] | None = None,
         queue_options: QueueOptions | None = None,
     ) -> QueueReceipt:
         """Save a call of PATCH /account in the queue's store, sending nothing."""

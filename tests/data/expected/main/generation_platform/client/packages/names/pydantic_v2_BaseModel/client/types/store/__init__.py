@@ -4,13 +4,11 @@
 from ._operations import (
     GetFilesByFileNameByExtErrorData,
     GetFilesByFileNameByExtHTTPError,
-    GetFilesByFileNameByExtRequestCodecs,
     GetFilesByFileNameByExtResponse,
 )
 
 __all__ = [
     'GetFilesByFileNameByExtErrorData',
     'GetFilesByFileNameByExtHTTPError',
-    'GetFilesByFileNameByExtRequestCodecs',
     'GetFilesByFileNameByExtResponse',
 ]

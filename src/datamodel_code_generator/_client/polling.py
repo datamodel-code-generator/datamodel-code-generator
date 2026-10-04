@@ -132,9 +132,7 @@ class _Polls:
 
     def model(self, response: ResponseSpec) -> UseBinding | None:
         """Return the native model binding of a response's one JSON media, or None for any other response."""
-        if (use := _page_use([response])) is None or (binding := self.pages.bindings.get(use.id)) is None:
-            return None
-        return binding if binding.projection_mode == "native" else None
+        return None if (use := _page_use([response])) is None else self.pages.bindings.get(use.id)
 
     def helper(self, helper: Helper) -> tuple[PollingSpec | None, list[Diagnostic]]:
         """Check one enabled helper against its operations, and plan it when every check passes."""

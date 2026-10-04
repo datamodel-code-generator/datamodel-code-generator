@@ -12,7 +12,6 @@ from models import Record as _dcg_type_1
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue, ResponseMedia
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.records import StreamRecordsResponse
@@ -44,7 +43,7 @@ class RecordsResource:
     def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> StreamRecordsResponse: ...
@@ -52,23 +51,23 @@ class RecordsResource:
     def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/x-ndjson'] | ResponseMedia[bytes],
+        after: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/x-ndjson'],
         options: RequestOptions | None = None,
     ) -> bytes: ...
     @overload
     def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_1],
+        after: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_1: ...
     def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/x-ndjson', 'application/json'] | ResponseMedia[bytes] | ResponseMedia[_dcg_type_1] | None = None,
+        after: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/x-ndjson', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> StreamRecordsResponse:
         """Call GET /records."""
@@ -91,7 +90,7 @@ class RecordsWithResponse:
     def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[StreamRecordsResponse]: ...
@@ -99,23 +98,23 @@ class RecordsWithResponse:
     def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/x-ndjson'] | ResponseMedia[bytes],
+        after: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/x-ndjson'],
         options: RequestOptions | None = None,
     ) -> Response[bytes]: ...
     @overload
     def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_1],
+        after: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[_dcg_type_1]: ...
     def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/x-ndjson', 'application/json'] | ResponseMedia[bytes] | ResponseMedia[_dcg_type_1] | None = None,
+        after: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/x-ndjson', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StreamRecordsResponse]:
         """Call GET /records."""
@@ -137,8 +136,8 @@ class RecordsWithRawResponse:
     def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/x-ndjson', 'application/json'] | ResponseMedia[bytes] | ResponseMedia[_dcg_type_1] | None = None,
+        after: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/x-ndjson', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /records."""
@@ -160,8 +159,8 @@ class RecordsWithStreamingResponse:
     def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/x-ndjson', 'application/json'] | ResponseMedia[bytes] | ResponseMedia[_dcg_type_1] | None = None,
+        after: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/x-ndjson', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /records."""

@@ -20,7 +20,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import EnvelopeOutboundCodec, NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import (
     DirectionalView,
@@ -1456,11 +1455,6 @@ def codec_0() -> PydanticModelCodec[models.FieldFormsPostRequest]:
     )
 
 
-@cache
-def outbound_0() -> NativeOutboundCodec[models.FieldFormsPostRequest]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
-
-
 CONTEXT_1: Final = CodecContext(
     surface='client',
     direction='response',
@@ -1525,11 +1519,6 @@ def codec_2() -> PydanticModelCodec[models.FieldProfilesPostRequest]:
         {'models:Address': models.Address, 'models:FieldProfilesPostRequest': models.FieldProfilesPostRequest},
         request_bundle,
     )
-
-
-@cache
-def outbound_2() -> NativeOutboundCodec[models.FieldProfilesPostRequest]:
-    return NativeOutboundCodec(codec_2(), CONTEXT_2)
 
 
 CONTEXT_3: Final = CodecContext(
@@ -1598,11 +1587,6 @@ def codec_4() -> PydanticModelCodec[models.FieldAnythingPostRequest]:
     )
 
 
-@cache
-def outbound_4() -> NativeOutboundCodec[models.FieldAnythingPostRequest]:
-    return NativeOutboundCodec(codec_4(), CONTEXT_4)
-
-
 CONTEXT_5: Final = CodecContext(
     surface='client',
     direction='response',
@@ -1669,11 +1653,6 @@ def codec_6() -> PydanticModelCodec[models.Address]:
     )
 
 
-@cache
-def outbound_6() -> NativeOutboundCodec[models.Address]:
-    return NativeOutboundCodec(codec_6(), CONTEXT_6)
-
-
 CONTEXT_7: Final = CodecContext(
     surface='client',
     direction='request',
@@ -1707,11 +1686,6 @@ def codec_7() -> PydanticModelCodec[models.Address]:
     )
 
 
-@cache
-def outbound_7() -> NativeOutboundCodec[models.Address]:
-    return NativeOutboundCodec(codec_7(), CONTEXT_7)
-
-
 CONTEXT_8: Final = CodecContext(
     surface='client',
     direction='request',
@@ -1743,11 +1717,6 @@ def codec_8() -> PydanticModelCodec[models.FieldFilesPostRequest2]:
         {'models:FieldFilesPostRequest2': models.FieldFilesPostRequest2},
         request_bundle,
     )
-
-
-@cache
-def outbound_8() -> NativeOutboundCodec[models.FieldFilesPostRequest2]:
-    return NativeOutboundCodec(codec_8(), CONTEXT_8)
 
 
 CONTEXT_9: Final = CodecContext(
@@ -1820,11 +1789,6 @@ def codec_10() -> PydanticModelCodec[models.FieldSearchesPostRequest]:
     )
 
 
-@cache
-def outbound_10() -> NativeOutboundCodec[models.FieldSearchesPostRequest]:
-    return NativeOutboundCodec(codec_10(), CONTEXT_10)
-
-
 CONTEXT_11: Final = CodecContext(
     surface='client',
     direction='request',
@@ -1856,11 +1820,6 @@ def codec_11() -> PydanticModelCodec[models.FieldCardsPostRequest]:
         {'models:FieldCardsPostRequest': models.FieldCardsPostRequest},
         request_bundle,
     )
-
-
-@cache
-def outbound_11() -> NativeOutboundCodec[models.FieldCardsPostRequest]:
-    return NativeOutboundCodec(codec_11(), CONTEXT_11)
 
 
 CONTEXT_12: Final = CodecContext(
@@ -1900,11 +1859,6 @@ def codec_12() -> PydanticModelCodec[models.FieldStickersPostRequest]:
     )
 
 
-@cache
-def outbound_12() -> NativeOutboundCodec[models.FieldStickersPostRequest]:
-    return NativeOutboundCodec(codec_12(), CONTEXT_12)
-
-
 CONTEXT_13: Final = CodecContext(
     surface='client',
     direction='request',
@@ -1927,7 +1881,7 @@ def codec_13() -> PydanticModelCodec[models.Draft]:
             backend='pydantic_v2.BaseModel',
             native_kind='model',
             native_export='models:Draft',
-            projection_mode='envelope',
+            projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Draft'),
             models=(_model_13(),),
@@ -1936,11 +1890,6 @@ def codec_13() -> PydanticModelCodec[models.Draft]:
         {'models:Draft': models.Draft},
         request_bundle,
     )
-
-
-@cache
-def outbound_13() -> EnvelopeOutboundCodec[models.Draft]:
-    return EnvelopeOutboundCodec(codec_13(), CONTEXT_13)
 
 
 CONTEXT_14: Final = CodecContext(
@@ -1965,7 +1914,7 @@ def codec_14() -> PydanticModelCodec[models.Draft]:
             backend='pydantic_v2.BaseModel',
             native_kind='model',
             native_export='models:Draft',
-            projection_mode='envelope',
+            projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Draft'),
             models=(_model_13(),),
@@ -2009,11 +1958,6 @@ def codec_15() -> PydanticModelCodec[models.FieldDocumentsIdGetPathIdParameter]:
     )
 
 
-@cache
-def outbound_15() -> NativeOutboundCodec[models.FieldDocumentsIdGetPathIdParameter]:
-    return NativeOutboundCodec(codec_15(), CONTEXT_15)
-
-
 CONTEXT_16: Final = CodecContext(
     surface='client',
     direction='response',
@@ -2036,7 +1980,7 @@ def codec_16() -> PydanticModelCodec[models.Draft]:
             backend='pydantic_v2.BaseModel',
             native_kind='model',
             native_export='models:Draft',
-            projection_mode='envelope',
+            projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Draft'),
             models=(_model_13(),),
@@ -2068,7 +2012,7 @@ def codec_17() -> PydanticModelCodec[models.Draft]:
             backend='pydantic_v2.BaseModel',
             native_kind='model',
             native_export='models:Draft',
-            projection_mode='envelope',
+            projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Draft'),
             models=(_model_13(),),
@@ -2112,11 +2056,6 @@ def codec_18() -> PydanticModelCodec[int]:
     )
 
 
-@cache
-def outbound_18() -> NativeOutboundCodec[int]:
-    return NativeOutboundCodec(codec_18(), CONTEXT_18)
-
-
 CONTEXT_19: Final = CodecContext(
     surface='client',
     direction='request',
@@ -2148,11 +2087,6 @@ def codec_19() -> PydanticModelCodec[str]:
         {},
         request_bundle,
     )
-
-
-@cache
-def outbound_19() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_19(), CONTEXT_19)
 
 
 CONTEXT_20: Final = CodecContext(
@@ -2188,11 +2122,6 @@ def codec_20() -> PydanticModelCodec[int]:
     )
 
 
-@cache
-def outbound_20() -> NativeOutboundCodec[int]:
-    return NativeOutboundCodec(codec_20(), CONTEXT_20)
-
-
 CONTEXT_21: Final = CodecContext(
     surface='client',
     direction='request',
@@ -2224,11 +2153,6 @@ def codec_21() -> PydanticModelCodec[list[str]]:
         {},
         request_bundle,
     )
-
-
-@cache
-def outbound_21() -> NativeOutboundCodec[list[str]]:
-    return NativeOutboundCodec(codec_21(), CONTEXT_21)
 
 
 CONTEXT_22: Final = CodecContext(
@@ -2264,11 +2188,6 @@ def codec_22() -> PydanticModelCodec[models.Address]:
     )
 
 
-@cache
-def outbound_22() -> NativeOutboundCodec[models.Address]:
-    return NativeOutboundCodec(codec_22(), CONTEXT_22)
-
-
 CONTEXT_23: Final = CodecContext(
     surface='client',
     direction='request',
@@ -2300,11 +2219,6 @@ def codec_23() -> PydanticModelCodec[int]:
         {},
         request_bundle,
     )
-
-
-@cache
-def outbound_23() -> NativeOutboundCodec[int]:
-    return NativeOutboundCodec(codec_23(), CONTEXT_23)
 
 
 CONTEXT_24: Final = CodecContext(
@@ -2461,7 +2375,7 @@ def codec_28() -> PydanticModelCodec[models.Draft]:
             backend='pydantic_v2.BaseModel',
             native_kind='model',
             native_export='models:Draft',
-            projection_mode='envelope',
+            projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Draft'),
             models=(_model_13(),),
@@ -2604,11 +2518,6 @@ def codec_32() -> PydanticModelCodec[str]:
     )
 
 
-@cache
-def outbound_32() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_32(), CONTEXT_32)
-
-
 CONTEXT_33: Final = CodecContext(
     surface='client',
     direction='request',
@@ -2640,11 +2549,6 @@ def codec_33() -> PydanticModelCodec[str]:
         {},
         request_bundle,
     )
-
-
-@cache
-def outbound_33() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_33(), CONTEXT_33)
 
 
 CONTEXT_34: Final = CodecContext(
@@ -2680,11 +2584,6 @@ def codec_34() -> PydanticModelCodec[str]:
     )
 
 
-@cache
-def outbound_34() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_34(), CONTEXT_34)
-
-
 CONTEXT_35: Final = CodecContext(
     surface='client',
     direction='request',
@@ -2716,11 +2615,6 @@ def codec_35() -> PydanticModelCodec[str]:
         {},
         request_bundle,
     )
-
-
-@cache
-def outbound_35() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_35(), CONTEXT_35)
 
 
 CONTEXT_36: Final = CodecContext(
@@ -2756,11 +2650,6 @@ def codec_36() -> PydanticModelCodec[int]:
     )
 
 
-@cache
-def outbound_36() -> NativeOutboundCodec[int]:
-    return NativeOutboundCodec(codec_36(), CONTEXT_36)
-
-
 CONTEXT_37: Final = CodecContext(
     surface='client',
     direction='request',
@@ -2792,11 +2681,6 @@ def codec_37() -> PydanticModelCodec[models.Address]:
         {'models:Address': models.Address},
         request_bundle,
     )
-
-
-@cache
-def outbound_37() -> NativeOutboundCodec[models.Address]:
-    return NativeOutboundCodec(codec_37(), CONTEXT_37)
 
 
 CONTEXT_38: Final = CodecContext(
@@ -2832,11 +2716,6 @@ def codec_38() -> PydanticModelCodec[typing.Any]:
     )
 
 
-@cache
-def outbound_38() -> NativeOutboundCodec[typing.Any]:
-    return NativeOutboundCodec(codec_38(), CONTEXT_38)
-
-
 CONTEXT_39: Final = CodecContext(
     surface='client',
     direction='request',
@@ -2868,11 +2747,6 @@ def codec_39() -> PydanticModelCodec[models.Bounds]:
         {'models:Bounds': models.Bounds},
         request_bundle,
     )
-
-
-@cache
-def outbound_39() -> NativeOutboundCodec[models.Bounds]:
-    return NativeOutboundCodec(codec_39(), CONTEXT_39)
 
 
 CONTEXT_40: Final = CodecContext(
@@ -2908,11 +2782,6 @@ def codec_40() -> PydanticModelCodec[str]:
     )
 
 
-@cache
-def outbound_40() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_40(), CONTEXT_40)
-
-
 CONTEXT_41: Final = CodecContext(
     surface='client',
     direction='request',
@@ -2944,8 +2813,3 @@ def codec_41() -> PydanticModelCodec[list[str]]:
         {},
         request_bundle,
     )
-
-
-@cache
-def outbound_41() -> NativeOutboundCodec[list[str]]:
-    return NativeOutboundCodec(codec_41(), CONTEXT_41)

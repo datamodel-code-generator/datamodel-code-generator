@@ -4,21 +4,17 @@
 from ._operations import (
     GetRegionalErrorData,
     GetRegionalHTTPError,
-    GetRegionalRequestCodecs,
     GetRegionalResponse,
     GetStatusErrorData,
     GetStatusHTTPError,
-    GetStatusRequestCodecs,
     GetStatusResponse,
 )
 
 __all__ = [
     'GetRegionalErrorData',
     'GetRegionalHTTPError',
-    'GetRegionalRequestCodecs',
     'GetRegionalResponse',
     'GetStatusErrorData',
     'GetStatusHTTPError',
-    'GetStatusRequestCodecs',
     'GetStatusResponse',
 ]

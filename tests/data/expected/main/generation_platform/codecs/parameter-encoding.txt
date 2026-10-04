@@ -66,8 +66,8 @@ querystring qs application/x-www-form-urlencoded scalar/string: ?q=a+b%2Bc%7E*&t
 querystring qs application/json scalar/string: ?%7B%22a%22%3A%5B1%2C%22x%26y%22%5D%7D => {"a":[1,"x&y"]}
 querystring qs text/plain scalar/string: ?a%20b%2Bc => "a b+c"
 query q form* scalar/string: ParameterEncodingError JSON null cannot be written by a style-based parameter
-query q form* array/string: ParameterEncodingError An empty array or object cannot be distinguished from omission
-query q form* object/string: ParameterEncodingError An empty array or object cannot be distinguished from omission
+query q form* array/string: TypeError Unset is not a JSON value
+query q form* object/string: TypeError Unset is not a JSON value
 query q form* array/string: ParameterEncodingError The value does not have the parameter's declared shape
 query q form* array/string: ParameterEncodingError The tuple value does not have the string lexical kind
 query q form* object/string: ParameterEncodingError An object parameter member is not declared
@@ -91,7 +91,7 @@ querystring qs text/plain scalar/string: ParameterEncodingError An explicit quer
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError A URL-encoded form value must be an object
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError A URL-encoded form member is not declared
-querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError An empty array cannot be represented by repeated pairs
+querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError A repeated member must be an array
 invalid {'location': 'query', 'name': 'q', 'style': 'spaceDelimited', 'shape': 'scalar'}: ValueError query parameter style 'spaceDelimited' has no builtin form for scalar values
 invalid {'location': 'query', 'name': 'q', 'style': 'pipeDelimited', 'explode': True, 'shape': 'array'}: ValueError query parameter style 'pipeDelimited' has no builtin form for array values

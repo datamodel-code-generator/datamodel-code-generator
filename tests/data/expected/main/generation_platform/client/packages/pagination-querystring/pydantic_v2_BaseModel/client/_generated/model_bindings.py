@@ -18,7 +18,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
 from .._runtime.model_codecs.wire import freeze_wire
@@ -247,11 +246,6 @@ def codec_0() -> PydanticModelCodec[models.FieldSearchGetQuerystringCriteriaPara
     )
 
 
-@cache
-def outbound_0() -> NativeOutboundCodec[models.FieldSearchGetQuerystringCriteriaParameter]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
-
-
 CONTEXT_1: Final = CodecContext(
     surface='client',
     direction='response',
@@ -348,11 +342,6 @@ def codec_3() -> PydanticModelCodec[models.FieldLookupGetQuerystringFilterParame
         {'models:FieldLookupGetQuerystringFilterParameter': models.FieldLookupGetQuerystringFilterParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_3() -> NativeOutboundCodec[models.FieldLookupGetQuerystringFilterParameter]:
-    return NativeOutboundCodec(codec_3(), CONTEXT_3)
 
 
 CONTEXT_4: Final = CodecContext(

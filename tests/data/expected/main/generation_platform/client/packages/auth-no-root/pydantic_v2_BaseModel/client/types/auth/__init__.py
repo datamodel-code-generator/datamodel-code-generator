@@ -4,29 +4,23 @@
 from ._operations import (
     AbsentErrorData,
     AbsentHTTPError,
-    AbsentRequestCodecs,
     AbsentResponse,
     AnonymousErrorData,
     AnonymousHTTPError,
-    AnonymousRequestCodecs,
     AnonymousResponse,
     EmptyErrorData,
     EmptyHTTPError,
-    EmptyRequestCodecs,
     EmptyResponse,
 )
 
 __all__ = [
     'AbsentErrorData',
     'AbsentHTTPError',
-    'AbsentRequestCodecs',
     'AbsentResponse',
     'AnonymousErrorData',
     'AnonymousHTTPError',
-    'AnonymousRequestCodecs',
     'AnonymousResponse',
     'EmptyErrorData',
     'EmptyHTTPError',
-    'EmptyRequestCodecs',
     'EmptyResponse',
 ]

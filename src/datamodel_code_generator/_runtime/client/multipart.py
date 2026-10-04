@@ -69,7 +69,6 @@ _EXCLUDED: Final = "A form-data member that its direction excludes takes no part
 _KIND: Final = "A form-data file member takes FileParts, and any other member FieldParts"
 _REPEATED: Final = "A form-data body repeats a single-valued member"
 _MISSING: Final = "A form-data body lacks a required member"
-_EMPTY: Final = "An empty array cannot be represented by repeated parts"
 _MEDIA: Final = "A part's media type must fall within its member's encoding"
 _TEXT: Final = "A text part carries a scalar"
 _CLAIMED: Final = "Two form-data members write parts of the same name"
@@ -379,7 +378,7 @@ def encode_multipart(
     content_types: Mapping[str, str] | None = None,
     styled: Mapping[str, ParameterPlan] | None = None,
 ) -> bytes:
-    """Serialize an object as ordered form-data parts, repeating a part for each array member.
+    """Serialize an object as ordered form-data parts, repeating a part for each array member; an empty one writes none.
 
     A member with an encoding's media type is written in it. A member in `styled` writes a part for each name and
     value its query style gives, without percent-encoding, and no two members may then write parts of the same name.
@@ -400,8 +399,6 @@ def encode_multipart(
                 for piece in (multipart_head(boundary, key, None, None, ()), text.encode(), b"\r\n")
             )
             continue
-        if item == ():
-            raise ParameterEncodingError(_EMPTY)
         if styled and owners.setdefault(name, name) != name:
             raise ParameterEncodingError(_CLAIMED)
         declared = None if content_types is None else content_types.get(name)
@@ -439,8 +436,6 @@ def _field(part: FieldPart[object], boundary: str, plan: PartPlan, names: _Names
             names.claim(part.name, (part.name,))
         if not plan.repeated or not isinstance(wire, tuple):
             return _member(part, boundary, wire, plan)
-        if not wire:
-            raise ParameterEncodingError(_EMPTY)
         return b"".join([_member(part, boundary, item, plan) for item in wire])
     except (CodecError, TypeError, AttributeError) as error:
         raise _malformed(part.name, error) from None

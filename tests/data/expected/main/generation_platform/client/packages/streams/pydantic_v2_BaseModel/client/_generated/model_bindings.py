@@ -16,7 +16,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
 from .._runtime.model_codecs.wire import freeze_wire
@@ -413,11 +412,6 @@ def codec_0() -> PydanticModelCodec[models.FieldEventsGetQueryTopicParameter]:
     )
 
 
-@cache
-def outbound_0() -> NativeOutboundCodec[models.FieldEventsGetQueryTopicParameter]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
-
-
 CONTEXT_1: Final = CodecContext(
     surface='client',
     direction='request',
@@ -448,11 +442,6 @@ def codec_1() -> PydanticModelCodec[models.FieldEventsGetHeaderLastEventIDParame
         {'models:FieldEventsGetHeaderLastEventIDParameter': models.FieldEventsGetHeaderLastEventIDParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_1() -> NativeOutboundCodec[models.FieldEventsGetHeaderLastEventIDParameter]:
-    return NativeOutboundCodec(codec_1(), CONTEXT_1)
 
 
 CONTEXT_2: Final = CodecContext(
@@ -552,11 +541,6 @@ def codec_4() -> PydanticModelCodec[models.FeedQuery]:
         {'models:FeedQuery': models.FeedQuery},
         request_bundle,
     )
-
-
-@cache
-def outbound_4() -> NativeOutboundCodec[models.FeedQuery]:
-    return NativeOutboundCodec(codec_4(), CONTEXT_4)
 
 
 CONTEXT_5: Final = CodecContext(

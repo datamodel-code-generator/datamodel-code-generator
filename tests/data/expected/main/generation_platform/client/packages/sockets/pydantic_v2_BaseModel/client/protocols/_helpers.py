@@ -13,7 +13,6 @@ from models import ServerMessage as _dcg_type_3
 
 from .._runtime.client.client import ClientCore
 from .._runtime.protocols.websocket import WebSocketSession, connect_socket
-from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import WSOptions, _plans
 
@@ -90,12 +89,12 @@ class RoomsChatWebsocket:
     def connect(
         self,
         *,
-        room: _dcg_type_0 | ModelValue[_dcg_type_0],
-        since: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        room: _dcg_type_0,
+        since: _dcg_type_1 | Unset = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> WebSocketSession[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_3]:
+    ) -> WebSocketSession[_dcg_type_2, _dcg_type_3]:
         """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
         return connect_socket(
             self._core,
@@ -142,7 +141,7 @@ class SecureChatWebsocket:
     def connect(
         self,
         *,
-        x_trace: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
+        x_trace: _dcg_type_4 | Unset = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

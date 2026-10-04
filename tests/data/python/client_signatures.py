@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Final
 import httpx2
 import typing_extensions
 
-from tests.data.python.client_runtime import Exchange, json_response, record, run
+from tests.data.python.client_runtime import Exchange, argument, json_response, record, run
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -65,8 +65,8 @@ def _refused(lines: list[str], label: str, call: Callable[[], object], exchange:
 def signatures(package: ModuleType, lines: list[str]) -> None:
     """Expose, call, forward, and refuse the keyword arguments of the same operations in either style."""
     types, options = (importlib.import_module(f"{package.__name__}.{name}") for name in ("types.pets", "options"))
-    trace = types.ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t1").value
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    trace = argument(package, "listPets", "header", "X-Trace", "t1")
+    pet = argument(package, "getPet", "path", "petId", 3)
     exchange = Exchange(lines)
     http = exchange.client()
     with package.Client(http_client=http) as api:
@@ -112,9 +112,8 @@ async def _async_signatures(package: ModuleType, lines: list[str], trace: object
 
 def keywords(package: ModuleType, lines: list[str]) -> None:
     """Take keywords named like the collector, and return a model named like a TypedDict, which the binding keeps apart."""
-    codecs = importlib.import_module(f"{package.__name__}.types.search").SearchRequestCodecs
-    first, second = (codecs.parameter(location="query", name="kwargs").from_wire(value).value for value in ("a", "b"))
-    count = codecs.parameter(location="query", name="args").from_wire(2).value
+    first, second = (argument(package, "search", "query", "kwargs", value) for value in ("a", "b"))
+    count = argument(package, "search", "query", "args", 2)
     exchange = Exchange(lines)
     http = exchange.client()
     with package.Client(http_client=http) as api:

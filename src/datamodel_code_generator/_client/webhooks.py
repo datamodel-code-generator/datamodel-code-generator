@@ -221,22 +221,11 @@ def plan_webhooks(
     An event whose union members differ only by their schemas is always validated against its schema.
     """
     bindings = dict(codecs.bindings)
-    specs: list[WebhookSpec] = []
-    for spec in events:
-        helper, planned = spec.helper, []
-        for event in spec.events:
-            binding = bindings[event.use.id]
-            if binding.projection_mode != "native":
-                at = f"{helper.at}.event_schema" + ("" if event.name is None else f".mapping[{event.name!r}]")
-                message = (
-                    f"The webhook helper {helper.name!r} decodes an envelope-projected event, which is not supported "
-                    "yet"
-                )
-                problems[helper.name].append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message))
-            planned.append(replace(event, validate=needs_schema(binding)))
-        if not problems[helper.name]:
-            specs.append(replace(spec, events=tuple(planned)))
-    return tuple(specs)
+    return tuple(
+        replace(spec, events=tuple(replace(item, validate=needs_schema(bindings[item.use.id])) for item in spec.events))
+        for spec in events
+        if not problems[spec.helper.name]
+    )
 
 
 def _call(head: str, entries: list[tuple[str, Any]]) -> Group:

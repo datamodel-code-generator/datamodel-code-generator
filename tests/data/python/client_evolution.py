@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import importlib
 from typing import TYPE_CHECKING, Final
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, json_response, record
+from tests.data.python.client_runtime import Exchange, argument, json_response, record
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -17,9 +16,8 @@ _CARD: Final = {"kind": "card", "last4": "1234"}
 
 def evolution(package: ModuleType, lines: list[str]) -> None:
     """Decode what the schema still describes, refuse what it no longer does, and keep every body readable raw."""
-    codecs = importlib.import_module(f"{package.__name__}.types.orders").GetOrderRequestCodecs
-    order = codecs.parameter(location="path", name="orderId").from_wire(1)
-    brief = codecs.parameter(location="query", name="view").from_wire("brief")
+    order = argument(package, "getOrder", "path", "orderId", 1)
+    brief = argument(package, "getOrder", "query", "view", "brief")
     exchange = Exchange(lines)
     http = exchange.client()
     with package.Client(http_client=http) as api:

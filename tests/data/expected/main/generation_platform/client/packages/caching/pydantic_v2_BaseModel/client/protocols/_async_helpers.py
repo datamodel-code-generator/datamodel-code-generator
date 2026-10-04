@@ -18,7 +18,6 @@ from models import UserPatch as _dcg_type_3
 from .._runtime.client.client import AsyncClientCore
 from .._runtime.protocols.cache import afetch, ainvalidate, amutate
 from .._runtime.protocols.caches import CacheResult
-from ..model_codecs import ModelValue, RequestMedia
 from ..options import UNSET, RequestOptions, Unset
 from ..types.carts import GetCurrentCartResponse
 from ..types.secure import GetSecureUserResponse
@@ -114,9 +113,9 @@ class AsyncUsersProfileCache:
     async def fetch(
         self,
         *,
-        fields: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        accept_language: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        fields: _dcg_type_0 | Unset = UNSET,
+        accept_language: _dcg_type_1 | Unset = UNSET,
+        user_id: _dcg_type_2,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -149,9 +148,9 @@ class AsyncUsersProfileCacheMutations:
     async def rename(
         self,
         *,
-        user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
-        body: _dcg_type_3 | ModelValue[_dcg_type_3],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_3 | ModelValue[_dcg_type_3], _dcg_type_3 | ModelValue[_dcg_type_3]] | None = None,
+        user_id: _dcg_type_2,
+        body: _dcg_type_3,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RenameUserResponse:
         """Call PATCH /users/{userId}, then remove the cached entries its tags name once it succeeds."""
@@ -167,7 +166,7 @@ class AsyncUsersProfileCacheMutations:
     async def remove(
         self,
         *,
-        user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        user_id: _dcg_type_2,
         options: RequestOptions | None = None,
     ) -> DeleteUserResponse:
         """Call DELETE /users/{userId}, then remove the cached entries its tags name once it succeeds."""
@@ -189,9 +188,9 @@ class AsyncUsersDatedCache:
     async def fetch(
         self,
         *,
-        fields: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        accept_language: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        fields: _dcg_type_0 | Unset = UNSET,
+        accept_language: _dcg_type_1 | Unset = UNSET,
+        user_id: _dcg_type_2,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -219,8 +218,8 @@ class AsyncUsersListingCache:
     async def fetch(
         self,
         *,
-        page: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        role: _dcg_type_5 | ModelValue[_dcg_type_5] | Unset = UNSET,
+        page: _dcg_type_4 | Unset = UNSET,
+        role: _dcg_type_5 | Unset = UNSET,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[ListUsersResponse]:
@@ -253,8 +252,8 @@ class AsyncUsersListingCacheMutations:
     async def create(
         self,
         *,
-        body: _dcg_type_3 | ModelValue[_dcg_type_3],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_3 | ModelValue[_dcg_type_3], _dcg_type_3 | ModelValue[_dcg_type_3]] | None = None,
+        body: _dcg_type_3,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateUserResponse:
         """Call POST /users, then remove the cached entries its tags name once it succeeds."""
@@ -278,7 +277,7 @@ class AsyncCartsCurrentCache:
     async def fetch(
         self,
         *,
-        cart: _dcg_type_6 | ModelValue[_dcg_type_6],
+        cart: _dcg_type_6,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetCurrentCartResponse]:
@@ -306,7 +305,7 @@ class AsyncSecureProfileCache:
     async def fetch(
         self,
         *,
-        user_id: _dcg_type_7 | ModelValue[_dcg_type_7],
+        user_id: _dcg_type_7,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetSecureUserResponse]:

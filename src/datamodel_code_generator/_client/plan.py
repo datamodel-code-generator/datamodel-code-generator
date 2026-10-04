@@ -871,10 +871,10 @@ def _error(status: str) -> bool:
     return status in {"default", "4XX", "5XX"} or (status.isdigit() and _MIN_ERROR <= int(status) <= _MAX_ERROR)
 
 
-def success_media(responses: tuple[ResponseSpec, ...], *, ranges: bool = False) -> tuple[str, ...]:
-    """Return the media types of every success body, in response and media order without repeats.
+def success_media(responses: tuple[ResponseSpec, ...]) -> tuple[str, ...]:
+    """Return the concrete media types of every success body, in response and media order without repeats.
 
-    Media ranges such as image/* are left out unless `ranges` asks for them, as selectors do.
+    Media ranges such as image/* are left out, since a call never names one.
     """
     return tuple(
         dict.fromkeys(
@@ -882,26 +882,14 @@ def success_media(responses: tuple[ResponseSpec, ...], *, ranges: bool = False) 
             for response in responses
             if response.success and not response.bodyless
             for media in response.media
-            if ranges or not media_range(media.media_type)
+            if not media_range(media.media_type)
         )
     )
 
 
-def reachable(declared: str, media: tuple[str, ...]) -> tuple[str, ...]:
-    """Return the media types of one response that a concrete type within a declared one dispatches to.
-
-    A concrete type dispatches to its most specific declaration: itself, then type/*, then */*, so */* is left out
-    within type/* when the response declares type/* itself.
-    """
-    if not media_range(declared):
-        return tuple(found for found in (most_specific(declared, media),) if found is not None)
-    kind = declared.partition("/")[0]
-    if kind == "*":
-        return media
-    ranged = any(item.partition(";")[0] == f"{kind}/*" for item in media)
-    return tuple(
-        item for item in media if item.partition("/")[0] == kind or (not ranged and item.partition(";")[0] == "*/*")
-    )
+def reachable(concrete: str, media: tuple[str, ...]) -> tuple[str, ...]:
+    """Return the media type of one response a concrete type dispatches to: itself, then type/*, then */*."""
+    return tuple(found for found in (most_specific(concrete, media),) if found is not None)
 
 
 def media_range(media_type: str) -> bool:
