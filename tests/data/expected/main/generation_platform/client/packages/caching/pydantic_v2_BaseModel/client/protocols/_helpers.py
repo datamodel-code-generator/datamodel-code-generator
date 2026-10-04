@@ -18,7 +18,7 @@ from models import UserPatch as _dcg_type_3
 from .._runtime.client.client import ClientCore
 from .._runtime.protocols.cache import fetch, invalidate, mutate
 from .._runtime.protocols.caches import CacheResult
-from ..model_codecs import ModelValue, RequestMedia
+from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, Unset
 from ..types.carts import GetCurrentCartResponse
 from ..types.secure import GetSecureUserResponse
@@ -151,7 +151,7 @@ class UsersProfileCacheMutations:
         *,
         user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
         body: _dcg_type_3 | ModelValue[_dcg_type_3],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_3 | ModelValue[_dcg_type_3], _dcg_type_3 | ModelValue[_dcg_type_3]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RenameUserResponse:
         """Call PATCH /users/{userId}, then remove the cached entries its tags name once it succeeds."""
@@ -249,7 +249,7 @@ class UsersListingCacheMutations:
         self,
         *,
         body: _dcg_type_3 | ModelValue[_dcg_type_3],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_3 | ModelValue[_dcg_type_3], _dcg_type_3 | ModelValue[_dcg_type_3]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateUserResponse:
         """Call POST /users, then remove the cached entries its tags name once it succeeds."""

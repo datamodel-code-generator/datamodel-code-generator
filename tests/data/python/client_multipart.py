@@ -290,9 +290,8 @@ def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
 
 def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Send bodies with file parts: each member's values through its part codec, refusing parts the schema forbids."""
-    bodies, options, types = _modules(package)
+    bodies, options, _ = _modules(package)
     body, field, file = bodies.MultipartBody, bodies.FieldPart, bodies.FilePart
-    codecs = types.SubmitUploadRequestCodecs
     meta = form_part(package, "submitUpload", "meta", {"city": "Oslo", "codes": [7]})
     title, photo = field("title", "Notes"), file("photo", b"\x89PNG", filename="a.png", content_type="image/png")
     for label, parts in (
@@ -339,25 +338,6 @@ def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
     exchange.respond(raw_response(204))
     record(lines, "photos", lambda: api.forms.submit_photos(body=body((photo,))))
     record(lines, "photos of an extra part", lambda: api.forms.submit_photos(body=body((photo, file("x", b"")))))
-    for label, select in (
-        ("title codec", lambda: codecs.part(name="title").from_wire("t")),
-        ("extra codec", lambda: codecs.part(name="bonus", media_type="multipart/form-data").from_wire(3)),
-        ("photo codec", lambda: codecs.part(name="photo")),
-        ("title codec of another media type", lambda: codecs.part(name="title", media_type="application/json")),
-        ("caption codec without a media type", lambda: types.SubmitAvatarRequestCodecs.part(name="caption")),
-        (
-            "caption codec",
-            lambda: types.SubmitAvatarRequestCodecs.part(name="caption", media_type="multipart/form-data").from_wire(
-                "c"
-            ),
-        ),
-        (
-            "untyped extra codec",
-            lambda: types.SubmitAvatarRequestCodecs.part(name="style", media_type="multipart/form-data"),
-        ),
-        ("file extra codec", lambda: types.SubmitScansRequestCodecs.part(name="scan-1")),
-    ):
-        record(lines, label, select)
 
 
 def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:

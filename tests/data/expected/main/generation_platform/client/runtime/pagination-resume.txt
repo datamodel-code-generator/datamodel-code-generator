@@ -157,13 +157,6 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: session=secret] b''
   cookie limit ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [kind='pages', limit=1] session_limit_error resume_state=NoneType
   body its codec refuses ! RequestEncodingError: RequestEncodingError(operation_id='search', location='body') [operation_id='search', location=('body',), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
-  > POST https://api.example.com/v1/searches
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json; charset=utf-8, content-length: 13] b'{"query":"a"}'
-  selected media first = ['1']
-  selected media saved {"arguments": [], "body": [{"query": "a"}, "application/json", "application/json; charset=utf-8"], "page": [0, 1, ["c1"], [], null, [["b32a2bd4df0aed7e435a79c9ebbaa1a15f4d63c50208cd5b7b5ad8dbddd667ad", 0]], null]} payload=b''
-  > POST https://api.example.com/v1/searches
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json; charset=utf-8, content-length: 27] b'{"query":"a","cursor":"c1"}'
-  resumed selected media ['2']
   not a state ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('state',), condition='invalid_value'] protocol_configuration_error
   another helper's state ! ResumeStateError: ResumeStateError(condition='fingerprint') [condition='fingerprint'] resume_state_error
   > GET https://api.example.com/v1/users

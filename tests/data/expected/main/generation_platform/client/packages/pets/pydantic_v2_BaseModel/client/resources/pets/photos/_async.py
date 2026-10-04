@@ -11,8 +11,8 @@ from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_0
 
 from .... import _operations
 from ...._runtime.client.client import AsyncClientCore
-from ....bodies import AsyncBinaryBody, SyncBinaryBody
-from ....model_codecs import ModelValue, RequestMedia, ResponseMedia
+from ....bodies import AsyncBinaryBody
+from ....model_codecs import ModelValue
 from ....options import UNSET, RequestOptions, Unset
 from ....responses import AsyncRawResponse, Response
 from ....types.pets.photos import UploadResponse
@@ -45,8 +45,7 @@ class AsyncPetsPhotosResource:
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: ResponseMedia[UploadResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> UploadResponse:
         """Call PUT /pets/{petId}/photo."""
@@ -56,7 +55,6 @@ class AsyncPetsPhotosResource:
             body=body,
             media_type=media_type,
             options=options,
-            response_media_type=response_media_type,
         )).data
 
 
@@ -72,8 +70,7 @@ class AsyncPetsPhotosWithResponse:
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: ResponseMedia[UploadResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UploadResponse]:
         """Call PUT /pets/{petId}/photo."""
@@ -83,7 +80,6 @@ class AsyncPetsPhotosWithResponse:
             body=body,
             media_type=media_type,
             options=options,
-            response_media_type=response_media_type,
         )
 
 
@@ -99,8 +95,7 @@ class AsyncPetsPhotosWithRawResponse:
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: ResponseMedia[UploadResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call PUT /pets/{petId}/photo."""
@@ -110,7 +105,6 @@ class AsyncPetsPhotosWithRawResponse:
             body=body,
             media_type=media_type,
             options=options,
-            response_media_type=response_media_type,
         )
 
 
@@ -126,8 +120,7 @@ class AsyncPetsPhotosWithStreamingResponse:
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         body: AsyncBinaryBody | Unset = UNSET,
-        media_type: Literal['application/octet-stream'] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
-        response_media_type: ResponseMedia[UploadResponse] | None = None,
+        media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call PUT /pets/{petId}/photo."""
@@ -137,5 +130,4 @@ class AsyncPetsPhotosWithStreamingResponse:
             body=body,
             media_type=media_type,
             options=options,
-            response_media_type=response_media_type,
         )

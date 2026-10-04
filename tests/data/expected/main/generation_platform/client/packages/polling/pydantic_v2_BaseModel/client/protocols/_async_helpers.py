@@ -17,7 +17,7 @@ from .._runtime.protocols.polling import (
 )
 from .._runtime.protocols.records import CancelReceipt
 from .._runtime.protocols.resume import ResumeState
-from ..model_codecs import ModelValue, RequestMedia
+from ..model_codecs import ModelValue
 from ..options import RequestOptions, SessionOptions
 from ..types.exports import CancelExportsResponse, ExportStatusResponse
 from ..types.jobs import CancelJobResponse, GetJobResponse, GetReportResponse
@@ -100,7 +100,7 @@ class AsyncJobsRunPolling:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -147,7 +147,7 @@ class AsyncJobsInlinePolling:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -194,7 +194,7 @@ class AsyncJobsReportPolling:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -339,7 +339,7 @@ class AsyncJobsTrackedPolling:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

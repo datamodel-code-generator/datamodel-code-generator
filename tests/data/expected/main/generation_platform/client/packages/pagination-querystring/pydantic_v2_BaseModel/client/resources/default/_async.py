@@ -12,7 +12,7 @@ from models import FieldSearchGetQuerystringCriteriaParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue, ResponseMedia
+from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.default import LookupResponse, SearchResponse
@@ -44,7 +44,7 @@ class AsyncDefaultResource:
         self,
         *,
         criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchResponse:
         """Call GET /search."""
@@ -59,7 +59,7 @@ class AsyncDefaultResource:
         self,
         *,
         filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[LookupResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> LookupResponse:
         """Call GET /lookup."""
@@ -82,7 +82,7 @@ class AsyncDefaultWithResponse:
         self,
         *,
         criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchResponse]:
         """Call GET /search."""
@@ -97,7 +97,7 @@ class AsyncDefaultWithResponse:
         self,
         *,
         filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[LookupResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[LookupResponse]:
         """Call GET /lookup."""
@@ -120,7 +120,7 @@ class AsyncDefaultWithRawResponse:
         self,
         *,
         criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /search."""
@@ -135,7 +135,7 @@ class AsyncDefaultWithRawResponse:
         self,
         *,
         filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[LookupResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /lookup."""
@@ -158,7 +158,7 @@ class AsyncDefaultWithStreamingResponse:
         self,
         *,
         criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /search."""
@@ -173,7 +173,7 @@ class AsyncDefaultWithStreamingResponse:
         self,
         *,
         filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[LookupResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /lookup."""

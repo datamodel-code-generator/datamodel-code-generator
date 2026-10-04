@@ -4,13 +4,11 @@
 from ._operations import (
     ListStatusesErrorData,
     ListStatusesHTTPError,
-    ListStatusesRequestCodecs,
     ListStatusesResponse,
 )
 
 __all__ = [
     'ListStatusesErrorData',
     'ListStatusesHTTPError',
-    'ListStatusesRequestCodecs',
     'ListStatusesResponse',
 ]

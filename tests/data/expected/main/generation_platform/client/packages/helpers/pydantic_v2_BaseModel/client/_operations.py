@@ -21,53 +21,35 @@ from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.events import (
     StreamEventsErrorData,
     StreamEventsHTTPError,
-    StreamEventsRequestCodecs,
     StreamEventsResponse,
 )
 from .types.jobs import (
     CancelJobErrorData,
     CancelJobHTTPError,
-    CancelJobRequestCodecs,
     CancelJobResponse,
     GetJobErrorData,
     GetJobHTTPError,
-    GetJobRequestCodecs,
     GetJobResponse,
     GetJobResultErrorData,
     GetJobResultHTTPError,
-    GetJobResultRequestCodecs,
     GetJobResultResponse,
     RunJobErrorData,
     RunJobHTTPError,
-    RunJobRequestCodecs,
     RunJobResponse,
 )
-from .types.labels import (
-    ListLabelsErrorData,
-    ListLabelsHTTPError,
-    ListLabelsRequestCodecs,
-    ListLabelsResponse,
-)
+from .types.labels import ListLabelsErrorData, ListLabelsHTTPError, ListLabelsResponse
 from .types.records import (
     StreamRecordsErrorData,
     StreamRecordsHTTPError,
-    StreamRecordsRequestCodecs,
     StreamRecordsResponse,
 )
-from .types.tags import (
-    ListTagsErrorData,
-    ListTagsHTTPError,
-    ListTagsRequestCodecs,
-    ListTagsResponse,
-)
+from .types.tags import ListTagsErrorData, ListTagsHTTPError, ListTagsResponse
 from .types.users import (
     ListUsersErrorData,
     ListUsersHTTPError,
-    ListUsersRequestCodecs,
     ListUsersResponse,
     SearchUsersErrorData,
     SearchUsersHTTPError,
-    SearchUsersRequestCodecs,
     SearchUsersResponse,
 )
 
@@ -128,7 +110,6 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse, ListUsersErrorData]] = Opera
             encoder=Encoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
         ),
     ),
-    codecs=ListUsersRequestCodecs,
 )
 
 OPERATION_1: Final[OperationPlan[SearchUsersResponse, SearchUsersErrorData]] = OperationPlan(
@@ -159,7 +140,6 @@ OPERATION_1: Final[OperationPlan[SearchUsersResponse, SearchUsersErrorData]] = O
         default='application/json',
         required=True,
     ),
-    codecs=SearchUsersRequestCodecs,
 )
 
 OPERATION_2: Final[OperationPlan[ListTagsResponse, ListTagsErrorData]] = OperationPlan(
@@ -202,7 +182,6 @@ OPERATION_2: Final[OperationPlan[ListTagsResponse, ListTagsErrorData]] = Operati
             encoder=Encoder(model_bindings.codec_9, model_bindings.CONTEXT_9),
         ),
     ),
-    codecs=ListTagsRequestCodecs,
 )
 
 OPERATION_3: Final[OperationPlan[ListLabelsResponse, ListLabelsErrorData]] = OperationPlan(
@@ -234,7 +213,6 @@ OPERATION_3: Final[OperationPlan[ListLabelsResponse, ListLabelsErrorData]] = Ope
             encoder=Encoder(model_bindings.codec_11, model_bindings.CONTEXT_11),
         ),
     ),
-    codecs=ListLabelsRequestCodecs,
 )
 
 OPERATION_4: Final[OperationPlan[RunJobResponse, RunJobErrorData]] = OperationPlan(
@@ -265,7 +243,6 @@ OPERATION_4: Final[OperationPlan[RunJobResponse, RunJobErrorData]] = OperationPl
         default='application/json',
         required=True,
     ),
-    codecs=RunJobRequestCodecs,
 )
 
 OPERATION_5: Final[OperationPlan[GetJobResponse, GetJobErrorData]] = OperationPlan(
@@ -296,7 +273,6 @@ OPERATION_5: Final[OperationPlan[GetJobResponse, GetJobErrorData]] = OperationPl
             encoder=Encoder(model_bindings.codec_15, model_bindings.CONTEXT_15),
         ),
     ),
-    codecs=GetJobRequestCodecs,
 )
 
 OPERATION_6: Final[OperationPlan[CancelJobResponse, CancelJobErrorData]] = OperationPlan(
@@ -327,7 +303,6 @@ OPERATION_6: Final[OperationPlan[CancelJobResponse, CancelJobErrorData]] = Opera
             encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
         ),
     ),
-    codecs=CancelJobRequestCodecs,
 )
 
 OPERATION_7: Final[OperationPlan[GetJobResultResponse, GetJobResultErrorData]] = OperationPlan(
@@ -358,7 +333,6 @@ OPERATION_7: Final[OperationPlan[GetJobResultResponse, GetJobResultErrorData]] =
             encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
         ),
     ),
-    codecs=GetJobResultRequestCodecs,
 )
 
 OPERATION_8: Final[OperationPlan[StreamEventsResponse, StreamEventsErrorData]] = OperationPlan(
@@ -384,7 +358,6 @@ OPERATION_8: Final[OperationPlan[StreamEventsResponse, StreamEventsErrorData]] =
             encoder=Encoder(model_bindings.codec_22, model_bindings.CONTEXT_22),
         ),
     ),
-    codecs=StreamEventsRequestCodecs,
 )
 
 OPERATION_9: Final[OperationPlan[StreamRecordsResponse, StreamRecordsErrorData]] = OperationPlan(
@@ -416,5 +389,4 @@ OPERATION_9: Final[OperationPlan[StreamRecordsResponse, StreamRecordsErrorData]]
             encoder=Encoder(model_bindings.codec_24, model_bindings.CONTEXT_24),
         ),
     ),
-    codecs=StreamRecordsRequestCodecs,
 )

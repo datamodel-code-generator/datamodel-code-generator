@@ -27,37 +27,27 @@ from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.pets import (
     AttachFilesErrorData,
     AttachFilesHTTPError,
-    AttachFilesRequestCodecs,
     AttachFilesResponse,
     CreatePetErrorData,
     CreatePetHTTPError,
-    CreatePetRequestCodecs,
     CreatePetResponse,
     DeletePetsByPetIdErrorData,
     DeletePetsByPetIdHTTPError,
     DeletePetsByPetIdResponse,
     GetPetErrorData,
     GetPetHTTPError,
-    GetPetRequestCodecs,
     GetPetResponse,
     HeadPetErrorData,
     HeadPetHTTPError,
     HeadPetResponse,
     ListPetsErrorData,
     ListPetsHTTPError,
-    ListPetsRequestCodecs,
     ListPetsResponse,
     ReadFilesErrorData,
     ReadFilesHTTPError,
-    ReadFilesRequestCodecs,
     ReadFilesResponse,
 )
-from .types.pets.photos import (
-    UploadErrorData,
-    UploadHTTPError,
-    UploadRequestCodecs,
-    UploadResponse,
-)
+from .types.pets.photos import UploadErrorData, UploadHTTPError, UploadResponse
 
 _SERVERS_0: Final = (
     ServerPlan(
@@ -139,7 +129,6 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse, ListPetsErrorData]] = Operati
         ),
     ),
     request_id_header='X-Request-Id',
-    codecs=ListPetsRequestCodecs,
 )
 
 OPERATION_1: Final[OperationPlan[CreatePetResponse, CreatePetErrorData]] = OperationPlan(
@@ -181,7 +170,6 @@ OPERATION_1: Final[OperationPlan[CreatePetResponse, CreatePetErrorData]] = Opera
         ),
         required=True,
     ),
-    codecs=CreatePetRequestCodecs,
 )
 
 OPERATION_2: Final[OperationPlan[GetPetResponse, GetPetErrorData]] = OperationPlan(
@@ -220,7 +208,6 @@ OPERATION_2: Final[OperationPlan[GetPetResponse, GetPetErrorData]] = OperationPl
         ),
     ),
     response_media_type='application/json',
-    codecs=GetPetRequestCodecs,
 )
 
 OPERATION_3: Final[OperationPlan[DeletePetsByPetIdResponse, DeletePetsByPetIdErrorData]] = OperationPlan(
@@ -285,7 +272,6 @@ OPERATION_5: Final[OperationPlan[UploadResponse, UploadErrorData]] = OperationPl
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
         default='application/octet-stream',
     ),
-    codecs=UploadRequestCodecs,
 )
 
 OPERATION_6: Final[OperationPlan[AttachFilesResponse, AttachFilesErrorData]] = OperationPlan(
@@ -328,7 +314,6 @@ OPERATION_6: Final[OperationPlan[AttachFilesResponse, AttachFilesErrorData]] = O
         default='multipart/form-data',
         required=True,
     ),
-    codecs=AttachFilesRequestCodecs,
 )
 
 OPERATION_7: Final[OperationPlan[ReadFilesResponse, ReadFilesErrorData]] = OperationPlan(
@@ -374,5 +359,4 @@ OPERATION_7: Final[OperationPlan[ReadFilesResponse, ReadFilesErrorData]] = Opera
             encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
         ),
     ),
-    codecs=ReadFilesRequestCodecs,
 )

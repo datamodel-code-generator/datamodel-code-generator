@@ -85,7 +85,6 @@ from tests.data.python.client_runtime import (
     request_body,
     run,
 )
-from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_socket_connectors import socket_connector_outcomes, socket_connectors
 from tests.data.python.client_sockets import sockets
@@ -191,11 +190,10 @@ def _lifecycle(package: ModuleType, lines: list[str]) -> None:
 
 def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     (types,) = _modules(package, "types.pets")
-    codecs = types.ListPetsRequestCodecs
     limit = argument(package, "listPets", "query", "limit", 5)
     labels = argument(package, "listPets", "query", "tags", ["a b", "c"])
     trace = argument(package, "listPets", "header", "X-Trace", "t1")
-    session = codecs.parameter(location="cookie", name="session").from_wire("s1")
+    session = argument(package, "listPets", "cookie", "session", "s1")
     headers = {"X-Rate": "10", "X-Next": "abc", "X-Request-Id": "req-1"}
     pets = [{"id": 1, "name": "cat", "tag": None}]
     exchange.respond(json_response(200, pets, **headers))
@@ -258,12 +256,9 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     record(lines, "list missing", lambda: api.pets.list_pets(x_trace=options.UNSET))
     record(lines, "list invalid", lambda: api.pets.list_pets(x_trace=_trace(package, "line\nbreak")))
     record(lines, "list options", lambda: api.pets.list_pets(x_trace=trace, options="fast"))
-    record(lines, "list codec", lambda: codecs.parameter(location="query", name="missing"))
 
 
 def _create_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    (types,) = _modules(package, "types.pets")
-    codecs = types.CreatePetRequestCodecs
     text = request_body(package, "createPet", "text/plain", "bird")
     created = {"id": 2, "name": "dog"}
     exchange.respond(json_response(201, created), json_response(201, created), json_response(201, created))
@@ -280,8 +275,6 @@ def _create_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
     record(lines, "create invalid body", lambda: api.pets.create_pet(body=object(), media_type="application/json"))
     exchange.respond(json_response(422, {"code": 22}))
     record(lines, "create rejected", lambda: api.pets.create_pet(body=native, media_type="application/json"))
-    record(lines, "create codec default", codecs.body)
-    record(lines, "create codec media", lambda: codecs.body(media_type="text/csv"))
 
 
 def _get_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -481,11 +474,25 @@ def media(package: ModuleType, lines: list[str]) -> None:
         clash = request_body(package, "submitSearch", None, {"term": "a", "extra": {"term": "b"}})
         record(lines, "search of an extra named as another member", lambda: api.forms.submit_search(body=clash))
         _documents(package, api, exchange, lines, documents)
+        _files(package, api, exchange, lines)
+
+
+def _files(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Send only declared media types, never a range, and narrow a response to one concrete media type."""
+    address = request_body(package, "storeFile", "application/json", {"city": "Oslo"})
+    record(lines, "store file of a media range", lambda: api.files.store_file(body=address, media_type="image/*"))
+    exchange.respond(raw_response(201, b"png", "image/png"), raw_response(200, b"jpeg", "image/jpeg"))
+    for label in ("store file narrowed", "store file narrowed to another image"):
+        record(
+            lines,
+            label,
+            lambda: api.files.store_file(body=address, media_type="application/json", response_media_type="image/png"),
+        )
+    exchange.respond(raw_response(204))
+    record(lines, "replace file without a body", api.files.replace_file)
 
 
 def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[str], documents: ModuleType) -> None:
-    codecs = documents.StoreDocumentRequestCodecs
-    draft = codecs.body(media_type="application/vnd.api+json").from_wire({"title": "t", "secret": "s"})
     for label, responder, call in (
         ("store", json_response(200, {"stored": True}), lambda: api.documents.store_document(body={"x": [1, 2]})),
         (
@@ -497,11 +504,6 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             "store text of a charset named in capitals",
             raw_response(200, "caf\xe9".encode("latin-1"), "text/plain; CHARSET=latin-1"),
             lambda: api.documents.store_document(body="note", media_type="text/plain; charset=utf-16"),
-        ),
-        (
-            "store draft",
-            raw_response(202),
-            lambda: api.documents.store_document(body=draft, media_type="application/vnd.api+json"),
         ),
         ("store moved", json_response(302, {"id": 1, "title": "t"}), lambda: api.documents.store_document(body=1)),
         ("store moved invalid", json_response(302, {"title": 5}), lambda: api.documents.store_document(body=1)),
@@ -520,8 +522,6 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
         exchange.respond(responder)
         record(lines, label, call)
     record(lines, "store value", lambda: api.documents.store_document(body={1, 2}))
-    record(lines, "store codec", codecs.body)
-    record(lines, "store codec media", lambda: codecs.body(media_type="application/json"))
     read = argument(package, "readDocument", "path", "id", {"key": "a/b"})
     exchange.respond(
         raw_response(200, b'{"id":1,"title":"t"}', "application/vnd.api+json", **{"X-Draft": "id,1,title,h"})
@@ -781,7 +781,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
     "multipart-split": ("multipart-split", STRUCTURAL, split_parts),
-    "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
     "signatures": ("pets", BACKENDS, signatures),

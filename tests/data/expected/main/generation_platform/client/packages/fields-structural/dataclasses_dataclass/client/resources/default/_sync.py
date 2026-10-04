@@ -27,14 +27,8 @@ from models import Visit as _dcg_type_8
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...bodies import AsyncMultipartBody, MultipartBody
-from ...model_codecs import (
-    DecodedValue,
-    ModelValue,
-    RequestMedia,
-    ResponseMedia,
-    WireValue,
-)
+from ...bodies import MultipartBody
+from ...model_codecs import DecodedValue, ModelValue, WireValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.default import (
@@ -84,8 +78,8 @@ class DefaultResource:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreatePetResponse: ...
     @overload
@@ -100,8 +94,8 @@ class DefaultResource:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreatePetResponse: ...
     @overload
@@ -116,8 +110,8 @@ class DefaultResource:
         birth_date: str | Unset = UNSET,
         owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreatePetResponse: ...
     @overload
@@ -132,8 +126,8 @@ class DefaultResource:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreatePetResponse: ...
     def create_pet(
@@ -147,8 +141,8 @@ class DefaultResource:
         birth_date: str | Unset = UNSET,
         owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreatePetResponse:
         """Call POST /pets."""
@@ -170,7 +164,7 @@ class DefaultResource:
         body: _dcg_type_6 | ModelValue[_dcg_type_6],
         name: Unset = UNSET,
         tag: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
     @overload
@@ -181,7 +175,7 @@ class DefaultResource:
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
     @overload
@@ -192,7 +186,7 @@ class DefaultResource:
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
     @overload
@@ -213,7 +207,7 @@ class DefaultResource:
         body: _dcg_type_6 | ModelValue[_dcg_type_6] | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse:
         """Call PATCH /pets/{petId}."""
@@ -234,7 +228,7 @@ class DefaultResource:
         body: _dcg_type_8 | ModelValue[_dcg_type_8],
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> LogVisitResponse: ...
     @overload
@@ -245,7 +239,7 @@ class DefaultResource:
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
-        media_type: Literal['text/plain'] | RequestMedia[str, str],
+        media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> LogVisitResponse: ...
     @overload
@@ -256,7 +250,7 @@ class DefaultResource:
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> LogVisitResponse: ...
     def log_visit(
@@ -266,7 +260,7 @@ class DefaultResource:
         body: _dcg_type_8 | ModelValue[_dcg_type_8] | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
-        media_type: Literal['application/json', 'text/plain'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | RequestMedia[str, str] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> LogVisitResponse:
         """Call POST /pets/{petId}/visits."""
@@ -284,7 +278,7 @@ class DefaultResource:
         *,
         pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
         body: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SetOwnerResponse:
         """Call PUT /pets/{petId}/owner."""
@@ -303,7 +297,7 @@ class DefaultResource:
         body: _dcg_type_10 | ModelValue[_dcg_type_10],
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateOwnerResponse: ...
     @overload
@@ -313,7 +307,7 @@ class DefaultResource:
         body: Unset = UNSET,
         email: str,
         nick_name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateOwnerResponse: ...
     def create_owner(
@@ -322,7 +316,7 @@ class DefaultResource:
         body: _dcg_type_10 | ModelValue[_dcg_type_10] | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateOwnerResponse:
         """Call POST /owners."""
@@ -340,7 +334,7 @@ class DefaultResource:
         *,
         pet_id: _dcg_type_11 | ModelValue[_dcg_type_11],
         body: _dcg_type_12 | ModelValue[_dcg_type_12],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_12 | ModelValue[_dcg_type_12], _dcg_type_12 | ModelValue[_dcg_type_12]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutLabelsResponse:
         """Call PUT /pets/{petId}/labels."""
@@ -357,8 +351,8 @@ class DefaultResource:
         self,
         *,
         body: _dcg_type_13 | ModelValue[_dcg_type_13],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_13 | ModelValue[_dcg_type_13], _dcg_type_13 | ModelValue[_dcg_type_13]],
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchPetsResponse: ...
     @overload
@@ -366,16 +360,16 @@ class DefaultResource:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain'] | RequestMedia[str, str],
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['text/plain'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchPetsResponse: ...
     def search_pets(
         self,
         *,
         body: _dcg_type_13 | ModelValue[_dcg_type_13] | str,
-        media_type: Literal['application/json', 'text/plain'] | RequestMedia[_dcg_type_13 | ModelValue[_dcg_type_13], _dcg_type_13 | ModelValue[_dcg_type_13]] | RequestMedia[str, str] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchPetsResponse:
         """Call POST /search."""
@@ -393,7 +387,7 @@ class DefaultResource:
         *,
         pet_id: _dcg_type_14 | ModelValue[_dcg_type_14],
         body: MultipartBody[str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutPhotoResponse:
         """Call PUT /pets/{petId}/photo."""
@@ -410,7 +404,7 @@ class DefaultResource:
         *,
         pet_id: _dcg_type_15 | ModelValue[_dcg_type_15],
         body: _dcg_type_16 | DecodedValue[_dcg_type_16],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_16 | DecodedValue[_dcg_type_16], _dcg_type_16 | DecodedValue[_dcg_type_16]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplacePetResponse:
         """Call PUT /pets/{petId}/records."""
@@ -442,8 +436,8 @@ class DefaultWithResponse:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreatePetResponse]: ...
     @overload
@@ -458,8 +452,8 @@ class DefaultWithResponse:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreatePetResponse]: ...
     @overload
@@ -474,8 +468,8 @@ class DefaultWithResponse:
         birth_date: str | Unset = UNSET,
         owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreatePetResponse]: ...
     @overload
@@ -490,8 +484,8 @@ class DefaultWithResponse:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreatePetResponse]: ...
     def create_pet(
@@ -505,8 +499,8 @@ class DefaultWithResponse:
         birth_date: str | Unset = UNSET,
         owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreatePetResponse]:
         """Call POST /pets."""
@@ -528,7 +522,7 @@ class DefaultWithResponse:
         body: _dcg_type_6 | ModelValue[_dcg_type_6],
         name: Unset = UNSET,
         tag: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UpdatePetResponse]: ...
     @overload
@@ -539,7 +533,7 @@ class DefaultWithResponse:
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UpdatePetResponse]: ...
     @overload
@@ -550,7 +544,7 @@ class DefaultWithResponse:
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UpdatePetResponse]: ...
     @overload
@@ -571,7 +565,7 @@ class DefaultWithResponse:
         body: _dcg_type_6 | ModelValue[_dcg_type_6] | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UpdatePetResponse]:
         """Call PATCH /pets/{petId}."""
@@ -592,7 +586,7 @@ class DefaultWithResponse:
         body: _dcg_type_8 | ModelValue[_dcg_type_8],
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[LogVisitResponse]: ...
     @overload
@@ -603,7 +597,7 @@ class DefaultWithResponse:
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
-        media_type: Literal['text/plain'] | RequestMedia[str, str],
+        media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> Response[LogVisitResponse]: ...
     @overload
@@ -614,7 +608,7 @@ class DefaultWithResponse:
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[LogVisitResponse]: ...
     def log_visit(
@@ -624,7 +618,7 @@ class DefaultWithResponse:
         body: _dcg_type_8 | ModelValue[_dcg_type_8] | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
-        media_type: Literal['application/json', 'text/plain'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | RequestMedia[str, str] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[LogVisitResponse]:
         """Call POST /pets/{petId}/visits."""
@@ -642,7 +636,7 @@ class DefaultWithResponse:
         *,
         pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
         body: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SetOwnerResponse]:
         """Call PUT /pets/{petId}/owner."""
@@ -661,7 +655,7 @@ class DefaultWithResponse:
         body: _dcg_type_10 | ModelValue[_dcg_type_10],
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateOwnerResponse]: ...
     @overload
@@ -671,7 +665,7 @@ class DefaultWithResponse:
         body: Unset = UNSET,
         email: str,
         nick_name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateOwnerResponse]: ...
     def create_owner(
@@ -680,7 +674,7 @@ class DefaultWithResponse:
         body: _dcg_type_10 | ModelValue[_dcg_type_10] | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateOwnerResponse]:
         """Call POST /owners."""
@@ -698,7 +692,7 @@ class DefaultWithResponse:
         *,
         pet_id: _dcg_type_11 | ModelValue[_dcg_type_11],
         body: _dcg_type_12 | ModelValue[_dcg_type_12],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_12 | ModelValue[_dcg_type_12], _dcg_type_12 | ModelValue[_dcg_type_12]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutLabelsResponse]:
         """Call PUT /pets/{petId}/labels."""
@@ -715,8 +709,8 @@ class DefaultWithResponse:
         self,
         *,
         body: _dcg_type_13 | ModelValue[_dcg_type_13],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_13 | ModelValue[_dcg_type_13], _dcg_type_13 | ModelValue[_dcg_type_13]],
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchPetsResponse]: ...
     @overload
@@ -724,16 +718,16 @@ class DefaultWithResponse:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain'] | RequestMedia[str, str],
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['text/plain'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchPetsResponse]: ...
     def search_pets(
         self,
         *,
         body: _dcg_type_13 | ModelValue[_dcg_type_13] | str,
-        media_type: Literal['application/json', 'text/plain'] | RequestMedia[_dcg_type_13 | ModelValue[_dcg_type_13], _dcg_type_13 | ModelValue[_dcg_type_13]] | RequestMedia[str, str] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchPetsResponse]:
         """Call POST /search."""
@@ -751,7 +745,7 @@ class DefaultWithResponse:
         *,
         pet_id: _dcg_type_14 | ModelValue[_dcg_type_14],
         body: MultipartBody[str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutPhotoResponse]:
         """Call PUT /pets/{petId}/photo."""
@@ -768,7 +762,7 @@ class DefaultWithResponse:
         *,
         pet_id: _dcg_type_15 | ModelValue[_dcg_type_15],
         body: _dcg_type_16 | DecodedValue[_dcg_type_16],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_16 | DecodedValue[_dcg_type_16], _dcg_type_16 | DecodedValue[_dcg_type_16]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplacePetResponse]:
         """Call PUT /pets/{petId}/records."""
@@ -800,8 +794,8 @@ class DefaultWithRawResponse:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -816,8 +810,8 @@ class DefaultWithRawResponse:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -832,8 +826,8 @@ class DefaultWithRawResponse:
         birth_date: str | Unset = UNSET,
         owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -848,8 +842,8 @@ class DefaultWithRawResponse:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def create_pet(
@@ -863,8 +857,8 @@ class DefaultWithRawResponse:
         birth_date: str | Unset = UNSET,
         owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /pets."""
@@ -886,7 +880,7 @@ class DefaultWithRawResponse:
         body: _dcg_type_6 | ModelValue[_dcg_type_6],
         name: Unset = UNSET,
         tag: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -897,7 +891,7 @@ class DefaultWithRawResponse:
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -908,7 +902,7 @@ class DefaultWithRawResponse:
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -929,7 +923,7 @@ class DefaultWithRawResponse:
         body: _dcg_type_6 | ModelValue[_dcg_type_6] | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call PATCH /pets/{petId}."""
@@ -950,7 +944,7 @@ class DefaultWithRawResponse:
         body: _dcg_type_8 | ModelValue[_dcg_type_8],
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -961,7 +955,7 @@ class DefaultWithRawResponse:
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
-        media_type: Literal['text/plain'] | RequestMedia[str, str],
+        media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -972,7 +966,7 @@ class DefaultWithRawResponse:
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def log_visit(
@@ -982,7 +976,7 @@ class DefaultWithRawResponse:
         body: _dcg_type_8 | ModelValue[_dcg_type_8] | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
-        media_type: Literal['application/json', 'text/plain'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | RequestMedia[str, str] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /pets/{petId}/visits."""
@@ -1000,7 +994,7 @@ class DefaultWithRawResponse:
         *,
         pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
         body: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call PUT /pets/{petId}/owner."""
@@ -1019,7 +1013,7 @@ class DefaultWithRawResponse:
         body: _dcg_type_10 | ModelValue[_dcg_type_10],
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -1029,7 +1023,7 @@ class DefaultWithRawResponse:
         body: Unset = UNSET,
         email: str,
         nick_name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def create_owner(
@@ -1038,7 +1032,7 @@ class DefaultWithRawResponse:
         body: _dcg_type_10 | ModelValue[_dcg_type_10] | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /owners."""
@@ -1056,7 +1050,7 @@ class DefaultWithRawResponse:
         *,
         pet_id: _dcg_type_11 | ModelValue[_dcg_type_11],
         body: _dcg_type_12 | ModelValue[_dcg_type_12],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_12 | ModelValue[_dcg_type_12], _dcg_type_12 | ModelValue[_dcg_type_12]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call PUT /pets/{petId}/labels."""
@@ -1073,8 +1067,8 @@ class DefaultWithRawResponse:
         self,
         *,
         body: _dcg_type_13 | ModelValue[_dcg_type_13],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_13 | ModelValue[_dcg_type_13], _dcg_type_13 | ModelValue[_dcg_type_13]],
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -1082,16 +1076,16 @@ class DefaultWithRawResponse:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain'] | RequestMedia[str, str],
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['text/plain'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def search_pets(
         self,
         *,
         body: _dcg_type_13 | ModelValue[_dcg_type_13] | str,
-        media_type: Literal['application/json', 'text/plain'] | RequestMedia[_dcg_type_13 | ModelValue[_dcg_type_13], _dcg_type_13 | ModelValue[_dcg_type_13]] | RequestMedia[str, str] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /search."""
@@ -1109,7 +1103,7 @@ class DefaultWithRawResponse:
         *,
         pet_id: _dcg_type_14 | ModelValue[_dcg_type_14],
         body: MultipartBody[str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call PUT /pets/{petId}/photo."""
@@ -1126,7 +1120,7 @@ class DefaultWithRawResponse:
         *,
         pet_id: _dcg_type_15 | ModelValue[_dcg_type_15],
         body: _dcg_type_16 | DecodedValue[_dcg_type_16],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_16 | DecodedValue[_dcg_type_16], _dcg_type_16 | DecodedValue[_dcg_type_16]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call PUT /pets/{petId}/records."""
@@ -1158,8 +1152,8 @@ class DefaultWithStreamingResponse:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -1174,8 +1168,8 @@ class DefaultWithStreamingResponse:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -1190,8 +1184,8 @@ class DefaultWithStreamingResponse:
         birth_date: str | Unset = UNSET,
         owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -1206,8 +1200,8 @@ class DefaultWithStreamingResponse:
         birth_date: Unset = UNSET,
         owner: Unset = UNSET,
         secret: Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]],
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def create_pet(
@@ -1221,8 +1215,8 @@ class DefaultWithStreamingResponse:
         birth_date: str | Unset = UNSET,
         owner: _dcg_type_4 | Unset = UNSET,
         secret: str | Unset = UNSET,
-        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[CreatePetResponse] | None = None,
+        media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /pets."""
@@ -1244,7 +1238,7 @@ class DefaultWithStreamingResponse:
         body: _dcg_type_6 | ModelValue[_dcg_type_6],
         name: Unset = UNSET,
         tag: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -1255,7 +1249,7 @@ class DefaultWithStreamingResponse:
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -1266,7 +1260,7 @@ class DefaultWithStreamingResponse:
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -1287,7 +1281,7 @@ class DefaultWithStreamingResponse:
         body: _dcg_type_6 | ModelValue[_dcg_type_6] | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call PATCH /pets/{petId}."""
@@ -1308,7 +1302,7 @@ class DefaultWithStreamingResponse:
         body: _dcg_type_8 | ModelValue[_dcg_type_8],
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -1319,7 +1313,7 @@ class DefaultWithStreamingResponse:
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
-        media_type: Literal['text/plain'] | RequestMedia[str, str],
+        media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -1330,7 +1324,7 @@ class DefaultWithStreamingResponse:
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def log_visit(
@@ -1340,7 +1334,7 @@ class DefaultWithStreamingResponse:
         body: _dcg_type_8 | ModelValue[_dcg_type_8] | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
-        media_type: Literal['application/json', 'text/plain'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | RequestMedia[str, str] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /pets/{petId}/visits."""
@@ -1358,7 +1352,7 @@ class DefaultWithStreamingResponse:
         *,
         pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
         body: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /pets/{petId}/owner."""
@@ -1377,7 +1371,7 @@ class DefaultWithStreamingResponse:
         body: _dcg_type_10 | ModelValue[_dcg_type_10],
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -1387,7 +1381,7 @@ class DefaultWithStreamingResponse:
         body: Unset = UNSET,
         email: str,
         nick_name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def create_owner(
@@ -1396,7 +1390,7 @@ class DefaultWithStreamingResponse:
         body: _dcg_type_10 | ModelValue[_dcg_type_10] | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /owners."""
@@ -1414,7 +1408,7 @@ class DefaultWithStreamingResponse:
         *,
         pet_id: _dcg_type_11 | ModelValue[_dcg_type_11],
         body: _dcg_type_12 | ModelValue[_dcg_type_12],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_12 | ModelValue[_dcg_type_12], _dcg_type_12 | ModelValue[_dcg_type_12]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /pets/{petId}/labels."""
@@ -1431,8 +1425,8 @@ class DefaultWithStreamingResponse:
         self,
         *,
         body: _dcg_type_13 | ModelValue[_dcg_type_13],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_13 | ModelValue[_dcg_type_13], _dcg_type_13 | ModelValue[_dcg_type_13]],
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -1440,16 +1434,16 @@ class DefaultWithStreamingResponse:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain'] | RequestMedia[str, str],
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['text/plain'],
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def search_pets(
         self,
         *,
         body: _dcg_type_13 | ModelValue[_dcg_type_13] | str,
-        media_type: Literal['application/json', 'text/plain'] | RequestMedia[_dcg_type_13 | ModelValue[_dcg_type_13], _dcg_type_13 | ModelValue[_dcg_type_13]] | RequestMedia[str, str] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchPetsResponse] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /search."""
@@ -1467,7 +1461,7 @@ class DefaultWithStreamingResponse:
         *,
         pet_id: _dcg_type_14 | ModelValue[_dcg_type_14],
         body: MultipartBody[str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /pets/{petId}/photo."""
@@ -1484,7 +1478,7 @@ class DefaultWithStreamingResponse:
         *,
         pet_id: _dcg_type_15 | ModelValue[_dcg_type_15],
         body: _dcg_type_16 | DecodedValue[_dcg_type_16],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_16 | DecodedValue[_dcg_type_16], _dcg_type_16 | DecodedValue[_dcg_type_16]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /pets/{petId}/records."""

@@ -15,7 +15,7 @@ from models import FieldUsersSearchPostRequest as _dcg_type_4
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue, RequestMedia, ResponseMedia
+from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.users import ListUsersResponse, SearchUsersResponse
@@ -50,7 +50,7 @@ class AsyncUsersResource:
         offset: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
         page: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
         snapshot: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListUsersResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListUsersResponse:
         """Call GET /users."""
@@ -65,8 +65,8 @@ class AsyncUsersResource:
         self,
         *,
         body: _dcg_type_4 | ModelValue[_dcg_type_4],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchUsersResponse] | None = None,
+        media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchUsersResponse:
         """Call POST /users/search."""
@@ -94,7 +94,7 @@ class AsyncUsersWithResponse:
         offset: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
         page: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
         snapshot: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListUsersResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListUsersResponse]:
         """Call GET /users."""
@@ -109,8 +109,8 @@ class AsyncUsersWithResponse:
         self,
         *,
         body: _dcg_type_4 | ModelValue[_dcg_type_4],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchUsersResponse] | None = None,
+        media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchUsersResponse]:
         """Call POST /users/search."""
@@ -138,7 +138,7 @@ class AsyncUsersWithRawResponse:
         offset: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
         page: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
         snapshot: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListUsersResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /users."""
@@ -153,8 +153,8 @@ class AsyncUsersWithRawResponse:
         self,
         *,
         body: _dcg_type_4 | ModelValue[_dcg_type_4],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchUsersResponse] | None = None,
+        media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /users/search."""
@@ -182,7 +182,7 @@ class AsyncUsersWithStreamingResponse:
         offset: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
         page: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
         snapshot: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListUsersResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /users."""
@@ -197,8 +197,8 @@ class AsyncUsersWithStreamingResponse:
         self,
         *,
         body: _dcg_type_4 | ModelValue[_dcg_type_4],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchUsersResponse] | None = None,
+        media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /users/search."""

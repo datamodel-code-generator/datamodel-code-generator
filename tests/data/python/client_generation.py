@@ -186,7 +186,7 @@ def _public_api(content: bytes) -> list[str]:
         lines.extend((
             f"  {operation['operation_ref']} {operation['resource']}.{operation['method']}({parameters})",
             f"    exports {exports['response']} {exports['error_data']} {exports['http_error']}",
-            f"    exports {exports['request_codecs']} {exports['header_decoder']}",
+            f"    exports {exports['header_decoder']}",
         ))
     return lines
 

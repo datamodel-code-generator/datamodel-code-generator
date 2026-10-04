@@ -11,7 +11,7 @@ from models import FieldStatusesGetQueryCodeParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue, ResponseMedia
+from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.statuses import ListStatusesResponse
@@ -43,7 +43,7 @@ class StatusesResource:
         self,
         *,
         code: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListStatusesResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListStatusesResponse:
         """Call GET /statuses."""
@@ -66,7 +66,7 @@ class StatusesWithResponse:
         self,
         *,
         code: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListStatusesResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListStatusesResponse]:
         """Call GET /statuses."""
@@ -89,7 +89,7 @@ class StatusesWithRawResponse:
         self,
         *,
         code: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListStatusesResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /statuses."""
@@ -112,7 +112,7 @@ class StatusesWithStreamingResponse:
         self,
         *,
         code: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListStatusesResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /statuses."""

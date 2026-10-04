@@ -23,7 +23,7 @@ from .._runtime.protocols.queue import (
     purge_entries,
     retry_entry,
 )
-from ..model_codecs import ModelValue, RequestMedia
+from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import DrainReport, QueueEntry, QueueOptions, QueueReceipt, _plans
 
@@ -148,7 +148,7 @@ class _OrdersOutboxQueueOperation0:
         x_trace: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
         session: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
         body: _dcg_type_2 | ModelValue[_dcg_type_2],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         queue_options: QueueOptions | None = None,
     ) -> QueueReceipt:
         """Save a call of POST /orders in the queue's store, sending nothing."""
@@ -283,7 +283,7 @@ class _AccountOfflineQueueOperation1:
         self,
         *,
         body: _dcg_type_5 | ModelValue[_dcg_type_5],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         queue_options: QueueOptions | None = None,
     ) -> QueueReceipt:
         """Save a call of PATCH /account in the queue's store, sending nothing."""

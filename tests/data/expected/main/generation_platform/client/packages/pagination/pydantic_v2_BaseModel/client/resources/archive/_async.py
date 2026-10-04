@@ -11,7 +11,7 @@ from models import FieldArchiveCursorGetPathCursorParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue, ResponseMedia
+from ...model_codecs import ModelValue
 from ...options import RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.archive import ListArchiveResponse
@@ -43,7 +43,7 @@ class AsyncArchiveResource:
         self,
         *,
         cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
-        response_media_type: Literal['application/json'] | ResponseMedia[ListArchiveResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListArchiveResponse:
         """Call GET /archive/{cursor}."""
@@ -66,7 +66,7 @@ class AsyncArchiveWithResponse:
         self,
         *,
         cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
-        response_media_type: Literal['application/json'] | ResponseMedia[ListArchiveResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListArchiveResponse]:
         """Call GET /archive/{cursor}."""
@@ -89,7 +89,7 @@ class AsyncArchiveWithRawResponse:
         self,
         *,
         cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
-        response_media_type: Literal['application/json'] | ResponseMedia[ListArchiveResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /archive/{cursor}."""
@@ -112,7 +112,7 @@ class AsyncArchiveWithStreamingResponse:
         self,
         *,
         cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
-        response_media_type: Literal['application/json'] | ResponseMedia[ListArchiveResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /archive/{cursor}."""
