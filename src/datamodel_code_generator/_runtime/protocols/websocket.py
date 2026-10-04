@@ -1,9 +1,10 @@
 """WebSocket helpers: the handshake as one child call of a session of their own, and the sessions holding the socket.
 
 A helper opens its channel's operation through the client's call path with an adapter of its own, which hands the
-request to a WebSocket connector, so retries, redirects, authentication, limiters, hooks, and send budgets apply to the
-handshake as to any call. The 101 is handed over as a streaming handle whose close closes the connection; the session
-reads and writes whole messages through the connection and ends that handle once it closes or fails.
+request to a WebSocket connector, so authentication, limiters, hooks, and send budgets apply to the handshake as to any
+call; a refused handshake is never redirected or retried, and only a handshake proven unsent is retried. The 101 is
+handed over as a streaming handle whose close closes the connection; the session reads and writes whole messages through
+the connection and ends that handle once it closes or fails.
 """
 
 from __future__ import annotations
