@@ -20,14 +20,14 @@ deliveries
   first = receipt e5 pending ttl=1:00:00
   second = receipt e6 pending ttl=1 day, 0:00:00
   drain = succeeded=['e5', 'e6']
-  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k1 body={"item":"tea","quantity":2} duplicate=False
   server GET /orders/o1
   inspect = e5 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201
   drain again = empty
   retried = receipt e7 pending ttl=1:00:00
   drain with a retry = succeeded=['e7']
   server POST /orders key=k2 -> 503
-  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k2 body={"item":"tea","quantity":2} duplicate=False
   inspect retried = e7 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201
   refused = receipt e8 pending ttl=1:00:00
   drain refused = dead=['e8']
@@ -35,12 +35,12 @@ deliveries
   inspect refused = e8 create_order dead deliveries=1 intent=False cancel=False leased=False outcome=permanent/create_order_http_error/422
   lost = receipt e9 pending ttl=1:00:00
   drain lost = unknown=['e9']
-  server POST /orders key=k4 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k4 body={"item":"tea","quantity":2} duplicate=False
   inspect lost = e9 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=unknown/transport_error/None
   drain leaves unknown = empty
   retry unknown = e9 create_order pending deliveries=1 intent=True cancel=False leased=False outcome=unknown/transport_error/None
   drain retried unknown = succeeded=['e9']
-  server POST /orders key=k4 body={"item":"tea","quantity":2} duplicate=True
+  server POST /orders coding=gzip key=k4 body={"item":"tea","quantity":2} duplicate=True
   retry settled ! ProtocolStateError: ProtocolStateError(state='succeeded', action='retry_unknown') [] protocol_state_error action='retry_unknown'
   retry missing = None
   unsent = receipt e10 pending ttl=1:00:00
@@ -78,11 +78,11 @@ outcomes
   inspect unsaved = e18 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
   cancelled and taken = receipt e19 pending ttl=1:00:00
   drain cancelled and taken ! RequestCancelledError
-  server POST /orders key=k5 body={"item":"tea","quantity":2} duplicate=False
-  server POST /orders key=k6 body={"item":"tea","quantity":2} duplicate=False
-  server POST /orders key=k6 body={"item":"tea","quantity":2} duplicate=True
-  server POST /orders key=k7 body={"item":"tea","quantity":2} duplicate=False
-  server POST /orders key=k8 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k5 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k6 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k6 body={"item":"tea","quantity":2} duplicate=True
+  server POST /orders coding=gzip key=k7 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k8 body={"item":"tea","quantity":2} duplicate=False
   proven unsent = receipt e20 pending ttl=1 day, 0:00:00
   drain unsent = rescheduled=['e20']
   inspect unsent = e20 refresh pending deliveries=1 intent=False cancel=False leased=False outcome=retryable/transport_error/None
@@ -143,13 +143,13 @@ recovery
   inspect = e33 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
   lease held = empty
   after the lease = succeeded=['e33']
-  server POST /orders key=k16 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k16 body={"item":"tea","quantity":2} duplicate=False
   inspect recovered = e33 create_order succeeded deliveries=2 intent=False cancel=False leased=False outcome=success/None/201
   crash after response = receipt e34 pending ttl=1:00:00
   crashed before saving the response
-  server POST /orders key=k17 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k17 body={"item":"tea","quantity":2} duplicate=False
   redelivered = succeeded=['e34']
-  server POST /orders key=k17 body={"item":"tea","quantity":2} duplicate=True
+  server POST /orders coding=gzip key=k17 body={"item":"tea","quantity":2} duplicate=True
   inspect redelivered = e34 create_order succeeded deliveries=2 intent=False cancel=False leased=False outcome=success/None/201
   held by another worker = receipt e35 pending ttl=1 day, 0:00:00
   leased elsewhere = empty
@@ -175,7 +175,7 @@ cancelling
   cancel done ! ProtocolStateError: ProtocolStateError(state='succeeded', action='cancel') [] protocol_state_error action='cancel'
   during a send = receipt e40 pending ttl=1:00:00
   drain while cancelled = succeeded=['e40']
-  server POST /orders key=k18 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k18 body={"item":"tea","quantity":2} duplicate=False
   inspect sent = e40 create_order succeeded deliveries=1 intent=False cancel=True leased=False outcome=success/None/201
   during a failure = receipt e41 pending ttl=1:00:00
   drain refused while cancelled = unknown=['e41']
@@ -241,14 +241,14 @@ store failures
 conflicts
   entry = receipt e60 pending ttl=1:00:00
   one conflict = succeeded=['e60']
-  server POST /orders key=k21 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k21 body={"item":"tea","quantity":2} duplicate=False
   stuck = receipt e61 pending ttl=1:00:00
   endless conflicts ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e61'
   drain stuck = succeeded=['e61']
-  server POST /orders key=k22 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k22 body={"item":"tea","quantity":2} duplicate=False
   settled = receipt e62 pending ttl=1:00:00
   conflicts after the send ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e62'
-  server POST /orders key=k23 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k23 body={"item":"tea","quantity":2} duplicate=False
   inspect settled = e62 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
   pending = receipt e63 pending ttl=1:00:00
   cancel conflicts ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e63'
@@ -261,7 +261,7 @@ conflicts
   stolen = receipt e66 pending ttl=1:00:00
   lease taken before the send = empty
   lease taken during the send = empty
-  server POST /orders key=k24 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k24 body={"item":"tea","quantity":2} duplicate=False
   inspect stolen = e66 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
 limits
   one entry = succeeded=['e67']
@@ -348,12 +348,12 @@ asyncio
   drain = succeeded=['e76', 'e77', 'e78']
   server GET /orders/a0
   server GET /orders/a1
-  server POST /orders key=k25 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k25 body={"item":"tea","quantity":2} duplicate=False
   inspect = e76 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201
   purge = [e76 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201, e77 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200, e78 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200]
   lost = receipt e79 pending ttl=1:00:00
   drain lost = unknown=['e79']
-  server POST /orders key=k26 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k26 body={"item":"tea","quantity":2} duplicate=False
   retry unknown = e79 create_order pending deliveries=1 intent=True cancel=False leased=False outcome=unknown/transport_error/None
   cancel = e79 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=cancelled/None/None
   broken wave ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='<call>' secondary=['QueueBindingError']
@@ -363,8 +363,8 @@ asyncio
   inspect held = e80 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=cancelled/None/None
   retry held = e80 create_order pending deliveries=1 intent=True cancel=False leased=False outcome=cancelled/None/None
   redelivered = succeeded=['e80']
-  server POST /orders key=k27 body={"item":"tea","quantity":2} duplicate=False
-  server POST /orders key=k27 body={"item":"tea","quantity":2} duplicate=True
+  server POST /orders coding=gzip key=k27 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k27 body={"item":"tea","quantity":2} duplicate=True
   held unsaved = receipt e81 pending ttl=1:00:00
   drain cancelled with a failed save notes=1
   inspect unsaved = e81 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
@@ -376,7 +376,7 @@ asyncio
   ready again = receipt e83 pending ttl=1:00:00
   broken = receipt e84 pending ttl=1 day, 0:00:00
   release fails ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e84' secondary=['QueueStoreError']
-  server POST /orders key=k28 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k28 body={"item":"tea","quantity":2} duplicate=False
   server POST /orders key=k29 -> 503
   ignored leases = receipt e85 pending ttl=1 day, 0:00:00
   drain bounded = succeeded=['e85']
@@ -390,4 +390,4 @@ asyncio
   async recovery intent = True
   async expired intent drain = succeeded=['e87']
   async recovered intent = e87 create_order succeeded deliveries=2 intent=False cancel=False leased=False outcome=success/None/201
-  server POST /orders key=k30 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k30 body={"item":"tea","quantity":2} duplicate=False
