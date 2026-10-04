@@ -30,11 +30,11 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 19
+  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload b54828e09b09ced695bff454b906aa43d74a89622afd3b49f47aceb0026e39e2
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload bfa5f09926aca2368315d9bbf4a142578ba0a1451822c4752b7a0b585bf947ee
   helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish f4e80e660ad3f3695e4277b7fd960a499ed809b326e26be4f87fa47610b8c8a1
-  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 6c7344a5c9a3b46acc6e4f33414cdce38dca96ed39a71f05a94570ffbe1ec02c
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put be3a96ffbd0f2aece9738265d01afbc694adf23ee7e75d730ff52b1a5015cf24
   {
     "helpers": {
       "files.finish": {
@@ -160,6 +160,15 @@ render pydantic_v2.BaseModel
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha256",
+            "algorithm_prefix": false,
+            "encoding": "hex",
+            "target": {
+              "in": "query",
+              "name": "checksum"
+            }
+          },
           "offset": {
             "in": "query",
             "name": "offset"
@@ -245,6 +254,15 @@ render pydantic_v2.BaseModel
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha1",
+            "algorithm_prefix": true,
+            "encoding": "base64",
+            "target": {
+              "in": "header",
+              "name": "Upload-Checksum"
+            }
+          },
           "length": {
             "in": "header",
             "name": "X-Chunk-Length"
@@ -326,10 +344,10 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
     exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
     exports client.types.files.decode_probe_file_header
-  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length, header:Upload-Checksum=upload_checksum)
     exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
     exports client.types.files.decode_append_file_header
-  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset, query:checksum=checksum)
     exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
     exports None
   /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)

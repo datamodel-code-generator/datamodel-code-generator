@@ -1,9 +1,9 @@
-"""Webhook verification limits, borrowed keys, signature facts, and replay-store contracts."""
+"""Webhook verification limits, borrowed keys, and authenticated signature facts."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime  # noqa: TC003 - Public annotations support get_type_hints().
+from datetime import datetime  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
 from typing import Generic, Protocol
 
 from typing_extensions import TypeVar
@@ -43,13 +43,12 @@ class VerifiedSignature:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class VerifiedWebhook(Generic[T_co]):
-    """A decoded authenticated event and the outcome of its optional replay claim."""
+    """A decoded authenticated event and its facts; applications may deduplicate by delivery id."""
 
     data: T_co = field(repr=False)
     delivery_id: str | None
     timestamp: datetime | None
     matched_key_id: str
-    duplicate: bool
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -62,7 +61,6 @@ class WebhookOptions:
     max_signatures: int | Unset = UNSET
     past_tolerance: float | Unset = UNSET
     future_tolerance: float | Unset = UNSET
-    replay_ttl: float | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Reject invalid counts and durations without accepting bool or disabled limits."""
@@ -79,7 +77,6 @@ class ResolvedWebhookOptions:
     max_signatures: int
     past_tolerance: float
     future_tolerance: float
-    replay_ttl: float
 
 
 class Verifier(Protocol[K]):
@@ -94,20 +91,4 @@ class Verifier(Protocol[K]):
         limits: ResolvedWebhookOptions,
     ) -> VerifiedSignature:
         """Return signature facts only after verifying the complete received bytes."""
-        ...
-
-
-class ReplayStore(Protocol):
-    """A borrowed store that atomically retains delivery claims until their expiry."""
-
-    def claim(self, namespace: str, delivery_id: str, expires_at: datetime) -> bool:
-        """Return False for an unexpired duplicate, or claim it; full capacity raises an error."""
-        ...
-
-
-class AsyncReplayStore(Protocol):
-    """A borrowed asynchronous store with the same atomic replay-claim contract."""
-
-    async def claim(self, namespace: str, delivery_id: str, expires_at: datetime) -> bool:
-        """Return False for an unexpired duplicate, or claim it; full capacity raises an error."""
         ...

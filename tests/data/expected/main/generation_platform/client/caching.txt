@@ -43,18 +43,17 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['users.profile', 'users.dated', 'users.listing', 'carts.current', 'secure.profile'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper users.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/users.profile 8bc3cb12a7c197074fd9c76e454ce348b7992c59bb308418c3be811dea86f4ad
-  helper users.dated cache enabled True /inputs/target_config/protocol_metadata/helpers/users.dated 46268d7980b99b249a57f34340a625c3ae65fd090549291665170e054c80e2b9
-  helper users.listing cache enabled True /inputs/target_config/protocol_metadata/helpers/users.listing 7d3252dc3f8126e03c6df9096f89184192d1b2b773adf2197f3e86c95e8c9ca1
-  helper carts.current cache enabled True /inputs/target_config/protocol_metadata/helpers/carts.current a4259a7989ae081629e28007104f79281e69bc308a67a3944f9da1c7567be14d
-  helper secure.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/secure.profile 15df827e2b132c48312ba9808481c2d55962bbdc2709f3ca89123914cfee4521
+  helper users.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/users.profile a5c33bfc2387bfdeefda057abfbff7a1f816965cc5512d3d2b468bb79c88b2cf
+  helper users.dated cache enabled True /inputs/target_config/protocol_metadata/helpers/users.dated ffd35cfb8756376968bf9ead7dace1da61dfcd46b58850161aa98e447b5cb76a
+  helper users.listing cache enabled True /inputs/target_config/protocol_metadata/helpers/users.listing cc1a57a0fc4bda874f5c12c0eca99882e34a7347e60b6f5f0c9901fc9a560a2b
+  helper carts.current cache enabled True /inputs/target_config/protocol_metadata/helpers/carts.current 179b506923255b0a458c57b6b4e5dd4c6cf8dc95332912c11db7671b8c4e77bc
+  helper secure.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/secure.profile 84492f01958cc3bfa108dcb62e333bff90c15220dea56d425a45c2842fd94a1e
   {
     "helpers": {
       "carts.current": {
         "authenticated": true,
         "enabled": true,
         "kind": "cache",
-        "mutations": {},
         "operation": {
           "document": "/inputs/root",
           "pointer": "/paths/~1carts~1current/get"
@@ -62,7 +61,6 @@ render pydantic_v2.BaseModel
         "statuses": [
           200
         ],
-        "tags": [],
         "validator": "etag",
         "vary_allowlist": []
       },
@@ -70,7 +68,6 @@ render pydantic_v2.BaseModel
         "authenticated": true,
         "enabled": true,
         "kind": "cache",
-        "mutations": {},
         "operation": {
           "document": "/inputs/root",
           "pointer": "/paths/~1secure~1users~1{userId}/get"
@@ -78,7 +75,6 @@ render pydantic_v2.BaseModel
         "statuses": [
           200
         ],
-        "tags": [],
         "validator": "etag",
         "vary_allowlist": [
           "X-Signature"
@@ -88,7 +84,6 @@ render pydantic_v2.BaseModel
         "authenticated": false,
         "enabled": true,
         "kind": "cache",
-        "mutations": {},
         "operation": {
           "document": "/inputs/root",
           "pointer": "/paths/~1users~1{userId}/get"
@@ -97,7 +92,6 @@ render pydantic_v2.BaseModel
           200,
           203
         ],
-        "tags": [],
         "validator": "last_modified",
         "vary_allowlist": []
       },
@@ -105,26 +99,12 @@ render pydantic_v2.BaseModel
         "authenticated": false,
         "enabled": true,
         "kind": "cache",
-        "mutations": {
-          "create": {
-            "invalidate_tags": [
-              "users"
-            ],
-            "operation": {
-              "document": "/inputs/root",
-              "pointer": "/paths/~1users/post"
-            }
-          }
-        },
         "operation": {
           "document": "/inputs/root",
           "pointer": "/paths/~1users/get"
         },
         "statuses": [
           200
-        ],
-        "tags": [
-          "users"
         ],
         "validator": "etag",
         "vary_allowlist": [
@@ -135,37 +115,12 @@ render pydantic_v2.BaseModel
         "authenticated": false,
         "enabled": true,
         "kind": "cache",
-        "mutations": {
-          "remove": {
-            "invalidate_tags": [
-              "user:{userId}",
-              "users"
-            ],
-            "operation": {
-              "document": "/inputs/root",
-              "pointer": "/paths/~1users~1{userId}/delete"
-            }
-          },
-          "rename": {
-            "invalidate_tags": [
-              "user:{userId}"
-            ],
-            "operation": {
-              "document": "/inputs/root",
-              "pointer": "/paths/~1users~1{userId}/patch"
-            }
-          }
-        },
         "operation": {
           "document": "/inputs/root",
           "pointer": "/paths/~1users~1{userId}/get"
         },
         "statuses": [
           200
-        ],
-        "tags": [
-          "user:{userId}",
-          "users"
         ],
         "validator": "both",
         "vary_allowlist": [

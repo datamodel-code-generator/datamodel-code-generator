@@ -1,4 +1,4 @@
-"""Builtin signature profiles: their signed parts, signature encodings, and the HMAC algorithms.
+"""Signature encodings and builtin HMAC algorithms.
 
 Only generated webhook helpers import this module, so ordinary clients never load HMAC or base64. The public-key
 algorithms live in their own module, which alone imports cryptography.
@@ -10,7 +10,6 @@ import hmac
 import re
 from base64 import b64decode, urlsafe_b64decode
 from dataclasses import dataclass
-from enum import Enum
 from typing import TYPE_CHECKING, Final, Generic, Literal, TypeAlias, final
 
 from typing_extensions import TypeVar
@@ -21,18 +20,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
 __all__ = (
-    "DELIVERY_ID",
     "HMAC_SHA256",
     "HMAC_SHA512",
-    "RAW_BODY",
-    "TIMESTAMP",
-    "FactField",
     "SignatureAlgorithm",
-    "SignatureProfile",
-    "SignedPart",
-    "TimestampField",
     "UnsupportedKeyError",
-    "satisfied",
     "signature_bytes",
 )
 
@@ -40,17 +31,6 @@ K = TypeVar("K")
 Encoding: TypeAlias = Literal["hex", "base64", "base64url"]
 
 
-class SignedPart(Enum):
-    """A dynamic signed part: the raw body, or the original bytes of the timestamp or delivery-id header."""
-
-    RAW_BODY = "raw-body"
-    TIMESTAMP = "timestamp"
-    DELIVERY_ID = "delivery-id"
-
-
-RAW_BODY: Final = SignedPart.RAW_BODY
-TIMESTAMP: Final = SignedPart.TIMESTAMP
-DELIVERY_ID: Final = SignedPart.DELIVERY_ID
 _ENCODED: Final[Mapping[Encoding, re.Pattern[str]]] = {
     "hex": re.compile(r"(?:[0-9A-Fa-f]{2})+"),
     "base64": re.compile(r"(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?"),
@@ -102,60 +82,15 @@ HMAC_SHA256: Final = SignatureAlgorithm(key_type=HmacKey, size=32, key_id=_hmac_
 HMAC_SHA512: Final = SignatureAlgorithm(key_type=HmacKey, size=64, key_id=_hmac_id, matches=_hmac("sha512"))
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class FactField:
-    """A signed header fact: its lowercase name and the length or byte set its original bytes must have."""
-
-    header: str
-    fixed_bytes: int | None = None
-    ascii_bytes: bytes | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TimestampField(FactField):
-    """The signed timestamp header and the unit of its decimal value."""
-
-    unit: Literal["seconds", "milliseconds"]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class SignatureProfile(Generic[K]):
-    """How a helper's signature header, facts, and signed bytes are read; generated, so never validated again.
-
-    Header names are lowercase. A literal part is its ASCII bytes, and a None separator keeps each header value whole.
-    """
-
-    algorithm: SignatureAlgorithm[K]
-    header: str
-    encoding: Encoding
-    prefix: str
-    separator: str | None
-    key_id: str | None
-    timestamp: TimestampField | None
-    delivery_id: FactField | None
-    parts: tuple[SignedPart | bytes, ...]
-
-
-def signature_bytes(profile: SignatureProfile[K], element: str) -> bytes | None:
-    """Return the signature one header element carries, or None for an empty, unprefixed, or misencoded element.
-
-    Spaces and tabs around the element are ignored; the prefix must match exactly, and the decoded signature must have
-    the algorithm's size, or any nonzero size when each key decides its own.
-    """
+def signature_bytes(encoding: Encoding, prefix: str, size: int | None, element: str) -> bytes | None:
+    """Decode a prefixed signature, requiring the algorithm's size or a nonempty public-key signature."""
     text = element.strip(" \t")
-    if not text or not text.startswith(profile.prefix):
+    if not text or not text.startswith(prefix):
         return None
-    encoded = text[len(profile.prefix) :]
-    if not _ENCODED[profile.encoding].fullmatch(encoded):
+    encoded = text[len(prefix) :]
+    if not _ENCODED[encoding].fullmatch(encoded):
         return None
-    value = _DECODERS[profile.encoding](encoded)
-    if (size := profile.algorithm.size) is None:
+    value = _DECODERS[encoding](encoded)
+    if size is None:
         return value or None
     return value if len(value) == size else None
-
-
-def satisfied(field: FactField, value: bytes) -> bool:
-    """Return whether a fact's original bytes have its declared length and belong to its declared byte set."""
-    if field.fixed_bytes is not None and len(value) != field.fixed_bytes:
-        return False
-    return field.ascii_bytes is None or not value.translate(None, field.ascii_bytes)
