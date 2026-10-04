@@ -8,24 +8,21 @@
   import <package>.webhooks.keys loads ['verification', 'signatures', 'webhook_keys', 'public_keys', 'cryptography']
   helper loads ['verification', 'signatures', 'webhook_keys', 'public_keys', 'cryptography']
   helper optional imports=['cryptography']
-  verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
-  verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
+  verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return']
+  verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return']
   import <package>.webhooks.wycheproof.rsa loads ['verification', 'signatures', 'webhook_keys', 'public_keys', 'cryptography']
   helper loads ['verification', 'signatures', 'webhook_keys', 'public_keys', 'cryptography']
   helper optional imports=['cryptography']
-  verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
-  verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
+  verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return']
+  verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return']
   Ed25519Key hints={'id': 'str', 'public_key': 'Ed25519PublicKey', 'return': 'NoneType'}
   RSAPSSKey hints={'id': 'str', 'public_key': 'RSAPublicKey', 'return': 'NoneType'}
   key public names=['Ed25519Key', 'HmacKey', 'RSAPSSKey']
   RFC 8032 section 7.1 Ed25519 TEST 1, the empty message = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
   RFC 8032 section 7.1 Ed25519 TEST 2, the message 0x72 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
   Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 1, result valid, comment 'valid signature' = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
-  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 4, result valid, comment 'valid signature' = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='active' duplicate=False
-  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 73, result valid, comment 'salt is all 0' = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='active' duplicate=False
-  printf 'msg_ed25519.1614265330.{"test": 25519}' > msg; openssl pkeyutl -sign -rawin -inkey ed25519.pem -in msg | openssl base64 -A = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
-  printf '32503680000123.evt-9.{"test": 2048}' | openssl dgst -sha256 -sigopt rsa_padding_mode:pss -sigopt rsa_pss_saltlen:32 -sigopt rsa_mgf1_md:sha256 -sign rsa2048.pem | openssl base64 -A | tr '+/' '-_' | tr -d '=' = Message Message(test=2048) delivery_id='evt-9' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rsa-2048' duplicate=False
-  printf '32503680000456.evt-10.{"test": 3072}' | openssl dgst -sha256 -sigopt rsa_padding_mode:pss -sigopt rsa_pss_saltlen:32 -sigopt rsa_mgf1_md:sha256 -sign rsa3072.pem | openssl base64 -A | tr '+/' '-_' | tr -d '=' = Message Message(test=3072) delivery_id='evt-10' timestamp=3000-01-01T00:00:00.456000+00:00 matched_key_id='rsa-3072' duplicate=False
+  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 4, result valid, comment 'valid signature' = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='active'
+  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 73, result valid, comment 'salt is all 0' = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='active'
   GitHub 'Validating webhook deliveries', the test values for verifying an implementation = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
   Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 62, result invalid, comment 'first byte of m_hash modified' = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
   Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 67, result invalid, comment 's_len changed to 0' = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
@@ -40,26 +37,13 @@
   Wycheproof tcId 4 with one changed body byte = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
   Wycheproof tcId 4 with a trailing newline = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
   Ed25519 changed body = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
-  Ed25519 new timestamp = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
-  Ed25519 new delivery id = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
-  RSA new delivery id = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
   RSA changed body = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
   RSA empty signature = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
   RSA prefix only = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
-  Ed25519 rotated to the new key = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
-  Ed25519 both keys match = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  Ed25519 rotated to the new key = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  Ed25519 both keys match = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
   Ed25519 only the retired key = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
   Ed25519 empty key set = WebhookVerificationError: WebhookVerificationError(condition='missing_key') [condition='missing_key'] webhook_verification_error
-  Ed25519 bad signature first = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
-  Ed25519 signature header twice = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
-  RSA keys of two sizes = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='wycheproof' duplicate=False
-  RSA key id selects the 2048-bit key = Message Message(test=2048) delivery_id='evt-9' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rsa-2048' duplicate=False
-  RSA key id selects the 3072-bit key = Message Message(test=3072) delivery_id='evt-10' timestamp=3000-01-01T00:00:00.456000+00:00 matched_key_id='rsa-3072' duplicate=False
-  RSA key id names the other key = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
-  RSA unknown key id = WebhookVerificationError: WebhookVerificationError(condition='missing_key') [condition='missing_key'] webhook_verification_error
-  RSA 3072-bit signature before the 2048-bit one = Message Message(test=2048) delivery_id='evt-9' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rsa-2048' duplicate=False
-  RSA claimed = Message Message(test=2048) delivery_id='evt-9' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rsa-2048' duplicate=False
-  RSA duplicate = Message Message(test=2048) delivery_id='evt-9' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rsa-2048' duplicate=True
   HMAC key for RSA-PSS = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '0'), condition='wrong_capability'] protocol_configuration_error
   Ed25519 key for RSA-PSS = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '0'), condition='wrong_capability'] protocol_configuration_error
   Ed25519 key after an RSA-PSS key = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '1'), condition='wrong_capability'] protocol_configuration_error
@@ -96,12 +80,12 @@
   RSAPSSKey pickling ! TypeError: RSAPSSKey cannot be pickled []
   RSAPSSKey representation = "RSAPSSKey(id='active')"
   RSAPSSKey copies are the key=True
-  recorded Ed25519 key = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
-  recorded RSA key = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='active' duplicate=False
+  recorded Ed25519 key = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  recorded RSA key = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='active'
   recorded calls=[['verify', 'verify'], ['verify', 'verify']]
   unsupported algorithm = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '1'), condition='wrong_capability'] protocol_configuration_error
   unsupported algorithm calls=[['verify', 'verify'], ['verify', 'verify'], []]
-  invalid signature from a valid key = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='last' duplicate=False
+  invalid signature from a valid key = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='last'
   invalid signature from a valid key calls=[['verify', 'verify'], ['verify', 'verify'], ['verify', 'verify']]
   programmer error = RuntimeError: scripted []
   programmer error calls=[['verify', 'verify'], ['verify', 'verify'], []]

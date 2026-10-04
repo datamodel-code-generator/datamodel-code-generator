@@ -1167,5 +1167,4 @@ reopen are delivered again.
 
 ## Request compression
 
-No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
-off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.
+No operation of this package declares request compression, so every request is sent without SDK compression.

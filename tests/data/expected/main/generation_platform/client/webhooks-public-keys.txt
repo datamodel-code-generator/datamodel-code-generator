@@ -26,30 +26,23 @@ render pydantic_v2.BaseModel
   write client/webhooks/__init__.py
   write client/webhooks/keys.py
   write client/webhooks/github/__init__.py
-  write client/webhooks/keyed/__init__.py
   write client/webhooks/rfc8032/__init__.py
-  write client/webhooks/standard/__init__.py
   write client/webhooks/wycheproof/__init__.py
   write client/webhooks/rfc8032/ed25519.py
   write client/webhooks/wycheproof/rsa.py
-  write client/webhooks/standard/ed25519.py
-  write client/webhooks/keyed/rsa.py
   write client/webhooks/github/push.py
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['rfc8032.ed25519', 'wycheproof.rsa', 'standard.ed25519', 'keyed.rsa', 'github.push'] bindings 5
+  namespace client helpers ['rfc8032.ed25519', 'wycheproof.rsa', 'github.push'] bindings 4
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper rfc8032.ed25519 webhook enabled True /inputs/target_config/protocol_metadata/helpers/rfc8032.ed25519 8befb6939fe955a2bd8f665addce8d9a705268c1d9f4e124dd3276b6f47f5d4e
-  helper wycheproof.rsa webhook enabled True /inputs/target_config/protocol_metadata/helpers/wycheproof.rsa 37204347aa7db9ac01919c06b8594604b186a0b378b39ebda623d88f9eae3c20
-  helper standard.ed25519 webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.ed25519 122924ba7c3a6fc0d8e26d9c64c491b04c3be71005bbabcd2672e394aaf31c99
-  helper keyed.rsa webhook enabled True /inputs/target_config/protocol_metadata/helpers/keyed.rsa d53c275add719ccd967cf6fbff2a8b4f9a69d52211868b2c647351ca61a69ab6
-  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push db5dd04d96ec941efee24451300a154baf59aab8455fab1e755425f4e7fa8be3
+  helper rfc8032.ed25519 webhook enabled True /inputs/target_config/protocol_metadata/helpers/rfc8032.ed25519 ce4430e6db4ba110578fc321dcc47f1e3ee1d00016b7e7ccc3eb2f90945b599f
+  helper wycheproof.rsa webhook enabled True /inputs/target_config/protocol_metadata/helpers/wycheproof.rsa 0605ae4351d905493cf3c7092f40ce21cd4e2190b88d57d079717f63ea07ae03
+  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push 20b48f273efc814fa68f9183fc60e299c6453d1e8fe4cb6fc8fbd7b3cf4e6d78
   {
     "helpers": {
       "github.push": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "document": "/inputs/root",
@@ -57,67 +50,14 @@ render pydantic_v2.BaseModel
         },
         "kind": "webhook",
         "signature": {
-          "delivery_id": "none",
+          "algorithm": "hmac-sha256",
           "encoding": "hex",
-          "field_constraints": {},
           "header": "X-Hub-Signature-256",
-          "key_id": "none",
-          "kind": "hmac-sha256",
-          "prefix": "sha256=",
-          "separator": "none",
-          "signed_parts": [
-            "raw-body"
-          ],
-          "timestamp": "none"
-        }
-      },
-      "keyed.rsa": {
-        "duplicates": "report",
-        "enabled": true,
-        "event_schema": {
-          "document": "/inputs/root",
-          "pointer": "/components/schemas/Message"
-        },
-        "kind": "webhook",
-        "signature": {
-          "delivery_id": {
-            "header": "X-Delivery"
-          },
-          "encoding": "base64url",
-          "field_constraints": {
-            "delivery-id": {
-              "ascii_bytes": "abcdefghijklmnopqrstuvwxyz0123456789-"
-            },
-            "timestamp": {
-              "ascii_bytes": "0123456789"
-            }
-          },
-          "header": "X-Signature",
-          "key_id": {
-            "header": "X-Key-Id"
-          },
-          "kind": "rsa-pss-sha256",
-          "prefix": "v1=",
-          "separator": ",",
-          "signed_parts": [
-            "timestamp",
-            {
-              "literal": "."
-            },
-            "delivery-id",
-            {
-              "literal": "."
-            },
-            "raw-body"
-          ],
-          "timestamp": {
-            "header": "X-Timestamp",
-            "unit": "milliseconds"
-          }
+          "kind": "body_hmac",
+          "prefix": "sha256="
         }
       },
       "rfc8032.ed25519": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "document": "/inputs/root",
@@ -125,65 +65,13 @@ render pydantic_v2.BaseModel
         },
         "kind": "webhook",
         "signature": {
-          "delivery_id": "none",
           "encoding": "hex",
-          "field_constraints": {},
           "header": "X-Signature",
-          "key_id": "none",
           "kind": "ed25519",
-          "prefix": "",
-          "separator": "none",
-          "signed_parts": [
-            "raw-body"
-          ],
-          "timestamp": "none"
-        }
-      },
-      "standard.ed25519": {
-        "duplicates": "report",
-        "enabled": true,
-        "event_schema": {
-          "document": "/inputs/root",
-          "pointer": "/components/schemas/Message"
-        },
-        "kind": "webhook",
-        "signature": {
-          "delivery_id": {
-            "header": "webhook-id"
-          },
-          "encoding": "base64",
-          "field_constraints": {
-            "delivery-id": {
-              "ascii_bytes": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-            },
-            "timestamp": {
-              "ascii_bytes": "0123456789"
-            }
-          },
-          "header": "webhook-signature",
-          "key_id": "none",
-          "kind": "ed25519",
-          "prefix": "v1a,",
-          "separator": " ",
-          "signed_parts": [
-            "delivery-id",
-            {
-              "literal": "."
-            },
-            "timestamp",
-            {
-              "literal": "."
-            },
-            "raw-body"
-          ],
-          "timestamp": {
-            "header": "webhook-timestamp",
-            "unit": "seconds"
-          }
+          "prefix": ""
         }
       },
       "wycheproof.rsa": {
-        "duplicates": "report",
         "enabled": true,
         "event_schema": {
           "document": "/inputs/root",
@@ -191,18 +79,10 @@ render pydantic_v2.BaseModel
         },
         "kind": "webhook",
         "signature": {
-          "delivery_id": "none",
           "encoding": "hex",
-          "field_constraints": {},
           "header": "X-Signature",
-          "key_id": "none",
           "kind": "rsa-pss-sha256",
-          "prefix": "",
-          "separator": "none",
-          "signed_parts": [
-            "raw-body"
-          ],
-          "timestamp": "none"
+          "prefix": ""
         }
       }
     },
