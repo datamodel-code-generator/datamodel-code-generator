@@ -11252,8 +11252,8 @@ callable = "rename"
 | `__init__.py`, `application.py` | generator | `create_app`, `build_router`, and the public types |
 | `services.py` | generator | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | generator | Route registrations |
-| `responses.py`, `errors.py`, `auth_types.py`, `model_codecs.py` | generator | Results, errors, authentication, and codec types |
-| `_generated/`, `_runtime/` | generator | Plans, bindings, and the runtime the package imports |
+| `errors.py`, `auth_types.py` | generator | Errors and authentication types |
+| `_generated/`, `_runtime/` | generator | Plans and the runtime the package imports |
 | `README.md`, `py.typed` | generator | Documentation and typing marker |
 | `.dcg-target-manifest.json`, `.dcg-state/` | generator | What the last generation wrote, to regenerate and check safely |
 
@@ -11302,6 +11302,13 @@ form-style cookies, header and path arrays, objects, enums and literals of non-s
 placeholders, request bodies with several media types, text and binary bodies, multipart forms, and forms of the
 `pydantic_v2.dataclass` backend. A multipart form body reaches the method as its model, with uploads read to
 `bytes`.
+
+A service method returns the value of its primary response, which FastAPI validates and serializes with the
+route's `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`); an
+`HTTPResult(status_code, body, headers)` for another declared status or extra headers, whose body the package
+validates and serializes with the declared response's model and default media type; or a Starlette `Response`,
+sent as it is, for anything else, such as another media type or repeated headers. A `pydantic_v2.dataclass`
+cannot tell an omitted field from one set to `None`, so its responses send optional fields as `null`.
 
 ## Served OpenAPI document
 

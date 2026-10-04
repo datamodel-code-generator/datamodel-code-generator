@@ -9,7 +9,7 @@ from typing import Protocol
 from fastapi.responses import Response
 from typing_extensions import TypeVar
 
-from .responses import GetKeysResponsePayload, HTTPResult
+from ._runtime.server.responses import HTTPResult
 
 PrincipalT_contra = TypeVar("PrincipalT_contra", contravariant=True)
 
@@ -22,4 +22,4 @@ class UntaggedService(Protocol[PrincipalT_contra]):
         self,
         *,
         principal: PrincipalT_contra,
-    ) -> None | HTTPResult[GetKeysResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...

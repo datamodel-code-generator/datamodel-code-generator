@@ -8,15 +8,13 @@ from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hi
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._runtime.model_codecs.bindings import NativeKind
-
 if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 CONTEXT_VERSION: Final = 1
 
 FrozenJSONMap: TypeAlias = "Mapping[str, WireValue]"
-RenderKind: TypeAlias = NativeKind | Literal["surface", "request", "principal", "media_type", "result"]
+RenderKind: TypeAlias = Literal["surface", "request", "principal", "media_type", "result"]
 ArgumentLocation: TypeAlias = Literal[
     "path", "query", "querystring", "header", "cookie", "body", "request", "principal", "media_type"
 ]
@@ -38,13 +36,11 @@ class ImportSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RenderType:
-    """A finalized Python type: its binding and schema when it has them, its kind, expression, and imports.
+    """A finalized Python type: its kind, expression, and imports.
 
     The expression spells modules through the aliases of `imports`, which import them absolutely.
     """
 
-    binding_id: str | None
-    schema_id: str | None
     kind: RenderKind
     value: str
     imports: tuple[ImportSpec, ...]
@@ -64,7 +60,7 @@ class FastAPIProjectionView:
 
     use_ids: tuple[WireValue, ...]
     site: Literal["parameter", "body", "primary_response"]
-    transport: Literal["fastapi_native", "codec_adapter", "raw_request"]
+    transport: Literal["fastapi_native", "adapter", "raw_request"]
     reason: str
     source: SourceView | None
 
@@ -183,9 +179,6 @@ class OperationView:
     primary_response: PrimaryResponseView | None
     registration_status: int
     primary_return_type: RenderType | None
-    response_payload_type: RenderType
-    response_payload_alias: str
-    response_codecs_name: str
     handler_return_type: RenderType
     security: tuple[tuple[tuple[str, tuple[str, ...]], ...], ...] | None
     servers: tuple[FrozenJSONMap, ...]

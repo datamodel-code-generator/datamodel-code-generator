@@ -10,17 +10,8 @@ from typing import Protocol
 import parameters_basemodel_models
 from fastapi.responses import Response
 
-from .model_codecs import Unset
-from .responses import (
-    GetFileResponsePayload,
-    GetItemResponsePayload,
-    GetMenuResponsePayload,
-    GetNoteResponsePayload,
-    GetRatiosResponsePayload,
-    HTTPResult,
-    RepeatResponsePayload,
-    SearchResponsePayload,
-)
+from ._runtime.model_codecs.unset import Unset
+from ._runtime.server.responses import HTTPResult
 
 
 class UntaggedService(Protocol):
@@ -37,7 +28,7 @@ class UntaggedService(Protocol):
         x_ids: list[int],
         blob: parameters_basemodel_models.Blob | Unset,
         note: str | Unset,
-    ) -> None | HTTPResult[SearchResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def get_ratios(
@@ -45,35 +36,19 @@ class UntaggedService(Protocol):
         *,
         ratios: list[float],
         limits: list[int],
-    ) -> None | HTTPResult[GetRatiosResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
-    def repeat(
-        self,
-        *,
-        id: int,
-    ) -> None | HTTPResult[RepeatResponsePayload] | Response: ...
+    def repeat(self, *, id: int) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
-    def get_note(
-        self,
-        *,
-        note_id: int,
-    ) -> None | HTTPResult[GetNoteResponsePayload] | Response: ...
+    def get_note(self, *, note_id: int) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
-    def get_file(
-        self,
-        *,
-        file_name: str,
-    ) -> None | HTTPResult[GetFileResponsePayload] | Response: ...
+    def get_file(self, *, file_name: str) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
-    def get_menu(
-        self,
-        *,
-        item: str,
-    ) -> None | HTTPResult[GetMenuResponsePayload] | Response: ...
+    def get_menu(self, *, item: str) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def get_item(
@@ -86,4 +61,4 @@ class UntaggedService(Protocol):
         kind: parameters_basemodel_models.FieldItemsLevelGetQueryKindParameter | Unset,
         tier: parameters_basemodel_models.FieldItemsLevelGetQueryTierParameter1 | None | Unset,
         levels: list[parameters_basemodel_models.FieldItemsLevelGetQueryLevelsParameterEnum] | Unset,
-    ) -> None | HTTPResult[GetItemResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...

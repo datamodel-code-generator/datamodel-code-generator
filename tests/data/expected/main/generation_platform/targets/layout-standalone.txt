@@ -10,9 +10,6 @@ generate
   written target server/src/example/server/routers/untagged.py (target)
   written target server/src/example/server/_generated/__init__.py (target)
   written target server/src/example/server/_generated/contract.py (target)
-  written target server/src/example/server/_generated/model_bindings.py (target)
-  written target server/src/example/server/model_codecs.py (target)
-  written target server/src/example/server/responses.py (target)
   written target server/src/example/server/errors.py (target)
   written target server/src/example/server/auth_types.py (target)
   written target server/src/example/server/services.py (target)
@@ -21,7 +18,7 @@ generate
   written target server/pyproject.toml (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  22 runtime modules ['written']
+  13 runtime modules ['written']
 tree
   server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
@@ -31,19 +28,16 @@ tree
   server/src/example/server/__init__.py
   server/src/example/server/_generated/__init__.py
   server/src/example/server/_generated/contract.py
-  server/src/example/server/_generated/model_bindings.py
   server/src/example/server/application.py
   server/src/example/server/auth_types.py
   server/src/example/server/errors.py
-  server/src/example/server/model_codecs.py
   server/src/example/server/py.typed
-  server/src/example/server/responses.py
   server/src/example/server/routers/__init__.py
   server/src/example/server/routers/pets.py
   server/src/example/server/routers/store.py
   server/src/example/server/routers/untagged.py
   server/src/example/server/services.py
-  22 runtime modules ['present']
+  13 runtime modules ['present']
 show server/pyproject.toml
   | [build-system]
   | requires = ["hatchling>=1.27"]
@@ -54,7 +48,7 @@ show server/pyproject.toml
   | version = "1.2.3"
   | requires-python = ">=3.11"
   | readme = "README.md"
-  | dependencies = ["fastapi>=0.141.1", "starlette>=1.0.0", "pydantic>=2.13.5", "jsonschema[format-nongpl]>=4.26", "referencing>=0.37", "typing-extensions>=4.16"]
+  | dependencies = ["fastapi>=0.141.1", "pydantic>=2.13.5"]
   | 
   | [tool.hatch.build.targets.wheel]
   | only-include = ["src/example/server", "src/example/models.py"]
@@ -73,9 +67,6 @@ generate
   unchanged target server/src/example/server/routers/untagged.py (target)
   unchanged target server/src/example/server/_generated/__init__.py (target)
   unchanged target server/src/example/server/_generated/contract.py (target)
-  unchanged target server/src/example/server/_generated/model_bindings.py (target)
-  unchanged target server/src/example/server/model_codecs.py (target)
-  unchanged target server/src/example/server/responses.py (target)
   unchanged target server/src/example/server/errors.py (target)
   unchanged target server/src/example/server/auth_types.py (target)
   unchanged target server/src/example/server/services.py (target)
@@ -84,4 +75,4 @@ generate
   unchanged target server/pyproject.toml (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  22 runtime modules ['unchanged']
+  13 runtime modules ['unchanged']

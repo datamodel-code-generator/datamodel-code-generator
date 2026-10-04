@@ -10,8 +10,8 @@ import models
 import pydantic
 from fastapi.responses import Response
 
-from .model_codecs import ModelValue, Unset
-from .responses import GetValueResponsePayload, HTTPResult
+from ._runtime.model_codecs.unset import Unset
+from ._runtime.server.responses import HTTPResult
 
 
 class UntaggedService(Protocol):
@@ -25,9 +25,4 @@ class UntaggedService(Protocol):
         at: pydantic.AwareDatetime | Unset,
         tags: list[str] | Unset,
         x_label: models.FieldValuesIdGetHeaderXLabelParameter | Unset,
-    ) -> (
-        models.Value
-        | ModelValue[models.Value]
-        | HTTPResult[GetValueResponsePayload]
-        | Response
-    ): ...
+    ) -> models.Value | HTTPResult[models.Value] | Response: ...

@@ -10,22 +10,8 @@ import bodies_basemodel_models
 from fastapi import Request
 from fastapi.responses import Response
 
-from .model_codecs import Unset
-from .responses import (
-    HTTPResult,
-    PostAccountResponsePayload,
-    PostCheckResponsePayload,
-    PostFormResponsePayload,
-    PostItemResponsePayload,
-    PostNativeFormResponsePayload,
-    PostProfileResponsePayload,
-    PostRawResponsePayload,
-    PostVariantResponsePayload,
-    PutArchiveResponsePayload,
-    PutBlobResponsePayload,
-    PutDocumentResponsePayload,
-    UploadResponsePayload,
-)
+from ._runtime.model_codecs.unset import Unset
+from ._runtime.server.responses import HTTPResult
 
 
 class UntaggedService(Protocol):
@@ -36,14 +22,14 @@ class UntaggedService(Protocol):
         self,
         *,
         body: bodies_basemodel_models.Item | Unset,
-    ) -> None | HTTPResult[PostItemResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def post_account(
         self,
         *,
         body: bodies_basemodel_models.Account,
-    ) -> None | HTTPResult[PostAccountResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def post_profile(
@@ -51,7 +37,7 @@ class UntaggedService(Protocol):
         *,
         body: bodies_basemodel_models.FieldProfilesPostRequest | bodies_basemodel_models.FieldProfilesPostRequest1 | Unset,
         media_type: str | None,
-    ) -> None | HTTPResult[PostProfileResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def post_variant(
@@ -59,7 +45,7 @@ class UntaggedService(Protocol):
         *,
         body: bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | Unset,
         media_type: str | None,
-    ) -> None | HTTPResult[PostVariantResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def put_document(
@@ -67,7 +53,7 @@ class UntaggedService(Protocol):
         *,
         body: bodies_basemodel_models.Item | bodies_basemodel_models.FieldDocumentsPutRequest,
         media_type: str | None,
-    ) -> None | HTTPResult[PutDocumentResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def put_archive(
@@ -75,46 +61,42 @@ class UntaggedService(Protocol):
         *,
         body: bytes | bodies_basemodel_models.FieldArchivesPutRequest,
         media_type: str | None,
-    ) -> None | HTTPResult[PutArchiveResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
-    def put_blob(
-        self,
-        *,
-        body: bytes,
-    ) -> None | HTTPResult[PutBlobResponsePayload] | Response: ...
+    def put_blob(self, *, body: bytes) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def post_form(
         self,
         *,
         body: bodies_basemodel_models.FieldFormsPostRequest | Unset,
-    ) -> None | HTTPResult[PostFormResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def post_native_form(
         self,
         *,
         body: bodies_basemodel_models.FieldNativeFormsPostRequest,
-    ) -> None | HTTPResult[PostNativeFormResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def upload(
         self,
         *,
         body: bodies_basemodel_models.FieldUploadsPostRequest,
-    ) -> None | HTTPResult[UploadResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def post_check(
         self,
         *,
         body: bodies_basemodel_models.Check | Unset,
-    ) -> None | HTTPResult[PostCheckResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     async def post_raw(
         self,
         *,
         request: Request,
-    ) -> None | HTTPResult[PostRawResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...

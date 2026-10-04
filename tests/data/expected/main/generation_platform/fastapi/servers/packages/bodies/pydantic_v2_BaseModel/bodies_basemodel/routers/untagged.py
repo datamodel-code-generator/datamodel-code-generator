@@ -13,7 +13,7 @@ from .._generated.contract import OperationDependencies
 from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, Wiring, build
 from .._runtime.server.requests import absent, present
-from .._runtime.server.responses import respond
+from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
 
@@ -26,8 +26,8 @@ def _add_post_item(router: APIRouter, wiring: Wiring) -> None:
             media_type='application/json',
             default_factory=absent,
         )],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             post_item_handler(body=present(body)),
             contract.PostItem.RESPONSES,
         )
@@ -54,8 +54,11 @@ def _add_post_account(router: APIRouter, wiring: Wiring) -> None:
         body: Annotated[bodies_basemodel_models.Account, Body(
             media_type='application/json',
         )],
-    ) -> Response:
-        return respond(post_account_handler(body=body), contract.PostAccount.RESPONSES)
+    ) -> object:
+        return dispatch(
+            post_account_handler(body=body),
+            contract.PostAccount.RESPONSES,
+        )
 
     router.add_api_route(
         '/accounts',
@@ -77,8 +80,8 @@ def _add_post_profile(router: APIRouter, wiring: Wiring) -> None:
     def post_profile(
         *,
         body: Annotated[tuple[str | None, bodies_basemodel_models.FieldProfilesPostRequest | bodies_basemodel_models.FieldProfilesPostRequest1 | Unset], Depends(contract.PostProfile.BODY.receive)],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             post_profile_handler(body=body[1], media_type=body[0]),
             contract.PostProfile.RESPONSES,
         )
@@ -123,8 +126,8 @@ def _add_post_variant(router: APIRouter, wiring: Wiring) -> None:
     def post_variant(
         *,
         body: Annotated[tuple[str | None, bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | Unset], Depends(contract.PostVariant.BODY.receive)],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             post_variant_handler(body=body[1], media_type=body[0]),
             contract.PostVariant.RESPONSES,
         )
@@ -169,8 +172,8 @@ def _add_put_document(router: APIRouter, wiring: Wiring) -> None:
     def put_document(
         *,
         body: Annotated[tuple[str | None, bodies_basemodel_models.Item | bodies_basemodel_models.FieldDocumentsPutRequest], Depends(contract.PutDocument.BODY.receive)],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             put_document_handler(body=body[1], media_type=body[0]),
             contract.PutDocument.RESPONSES,
         )
@@ -219,8 +222,8 @@ def _add_put_archive(router: APIRouter, wiring: Wiring) -> None:
     def put_archive(
         *,
         body: Annotated[tuple[str | None, bytes | bodies_basemodel_models.FieldArchivesPutRequest], Depends(contract.PutArchive.BODY.receive)],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             put_archive_handler(body=body[1], media_type=body[0]),
             contract.PutArchive.RESPONSES,
         )
@@ -251,11 +254,8 @@ def _add_put_archive(router: APIRouter, wiring: Wiring) -> None:
 def _add_put_blob(router: APIRouter, wiring: Wiring) -> None:
     put_blob_handler = wiring.handlers['put_blob']
 
-    def put_blob(
-        *,
-        body: Annotated[bytes, Depends(contract.PutBlob.BODY)],
-    ) -> Response:
-        return respond(put_blob_handler(body=body), contract.PutBlob.RESPONSES)
+    def put_blob(*, body: Annotated[bytes, Depends(contract.PutBlob.BODY)]) -> object:
+        return dispatch(put_blob_handler(body=body), contract.PutBlob.RESPONSES)
 
     router.add_api_route(
         '/blobs',
@@ -283,8 +283,8 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
     def post_form(
         *,
         body: Annotated[bodies_basemodel_models.FieldFormsPostRequest | Unset, Depends(contract.PostForm.BODY)],
-    ) -> Response:
-        return respond(post_form_handler(body=body), contract.PostForm.RESPONSES)
+    ) -> object:
+        return dispatch(post_form_handler(body=body), contract.PostForm.RESPONSES)
 
     router.add_api_route(
         '/forms',
@@ -325,8 +325,8 @@ def _add_post_native_form(router: APIRouter, wiring: Wiring) -> None:
         body: Annotated[bodies_basemodel_models.FieldNativeFormsPostRequest, Form(
             media_type='application/x-www-form-urlencoded',
         )],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             post_native_form_handler(body=body),
             contract.PostNativeForm.RESPONSES,
         )
@@ -351,8 +351,8 @@ def _add_upload(router: APIRouter, wiring: Wiring) -> None:
     def upload(
         *,
         body: Annotated[bodies_basemodel_models.FieldUploadsPostRequest, Depends(contract.Upload.BODY)],
-    ) -> Response:
-        return respond(upload_handler(body=body), contract.Upload.RESPONSES)
+    ) -> object:
+        return dispatch(upload_handler(body=body), contract.Upload.RESPONSES)
 
     router.add_api_route(
         '/uploads',
@@ -394,8 +394,8 @@ def _add_post_check(router: APIRouter, wiring: Wiring) -> None:
             media_type='application/json',
             default_factory=absent,
         )],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             post_check_handler(body=present(body)),
             contract.PostCheck.RESPONSES,
         )
@@ -417,8 +417,8 @@ def _add_post_check(router: APIRouter, wiring: Wiring) -> None:
 def _add_post_raw(router: APIRouter, wiring: Wiring) -> None:
     post_raw_handler = wiring.async_handlers['post_raw']
 
-    async def post_raw(*, request: Request) -> Response:
-        return respond(
+    async def post_raw(*, request: Request) -> object:
+        return dispatch(
             await post_raw_handler(request=request),
             contract.PostRaw.RESPONSES,
         )

@@ -4,21 +4,12 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Protocol
+from typing import Any, Protocol
 
 import results_basemodel_models
 from fastapi.responses import Response
 
-from .model_codecs import ModelValue
-from .responses import (
-    GetLatinResponsePayload,
-    GetNothingResponsePayload,
-    GetPlainResponsePayload,
-    GetResultResponsePayload,
-    HeadResultResponsePayload,
-    HTTPResult,
-    PostEmptyResponsePayload,
-)
+from ._runtime.server.responses import HTTPResult
 
 
 class UntaggedService(Protocol):
@@ -31,17 +22,12 @@ class UntaggedService(Protocol):
         case: str,
     ) -> (
         results_basemodel_models.Thing
-        | ModelValue[results_basemodel_models.Thing]
-        | HTTPResult[GetResultResponsePayload]
+        | HTTPResult[results_basemodel_models.Thing | Any | str | results_basemodel_models.Problem]
         | Response
     ): ...
 
     @abstractmethod
-    def head_result(
-        self,
-        *,
-        case: str,
-    ) -> None | HTTPResult[HeadResultResponsePayload] | Response: ...
+    def head_result(self, *, case: str) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def get_plain(
@@ -50,8 +36,7 @@ class UntaggedService(Protocol):
         case: str,
     ) -> (
         results_basemodel_models.FieldPlainGetResponse
-        | ModelValue[results_basemodel_models.FieldPlainGetResponse]
-        | HTTPResult[GetPlainResponsePayload]
+        | HTTPResult[results_basemodel_models.FieldPlainGetResponse]
         | Response
     ): ...
 
@@ -62,8 +47,7 @@ class UntaggedService(Protocol):
         case: str,
     ) -> (
         results_basemodel_models.FieldLatinGetResponse
-        | ModelValue[results_basemodel_models.FieldLatinGetResponse]
-        | HTTPResult[GetLatinResponsePayload]
+        | HTTPResult[results_basemodel_models.FieldLatinGetResponse]
         | Response
     ): ...
 
@@ -72,11 +56,10 @@ class UntaggedService(Protocol):
         self,
         *,
         case: str,
-    ) -> HTTPResult[GetNothingResponsePayload] | Response: ...
+    ) -> HTTPResult[results_basemodel_models.FieldNothingGetResponse] | Response: ...
 
     @abstractmethod
-    def post_empty(
-        self,
-        *,
-        case: str,
-    ) -> None | HTTPResult[PostEmptyResponsePayload] | Response: ...
+    def get_blob(self, *, case: str) -> bytes | HTTPResult[bytes] | Response: ...
+
+    @abstractmethod
+    def post_empty(self, *, case: str) -> None | HTTPResult[None] | Response: ...

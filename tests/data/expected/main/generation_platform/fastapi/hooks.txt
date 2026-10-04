@@ -9,31 +9,19 @@ render pydantic_v2.BaseModel
   write server/routers/pets_routes.py
   write server/_generated/__init__.py
   write server/_generated/contract.py
-  write server/_generated/model_bindings.py
-  write server/model_codecs.py
-  write server/responses.py
   write server/errors.py
   write server/auth_types.py
   write server/services.py
   write server/README.md
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/model_codecs/__init__.py (copied runtime)
-  write server/_runtime/model_codecs/bindings.py (copied runtime)
-  write server/_runtime/model_codecs/codec.py (copied runtime)
-  write server/_runtime/model_codecs/context.py (copied runtime)
   write server/_runtime/model_codecs/errors.py (copied runtime)
   write server/_runtime/model_codecs/media.py (copied runtime)
-  write server/_runtime/model_codecs/outbound.py (copied runtime)
   write server/_runtime/model_codecs/parameters.py (copied runtime)
-  write server/_runtime/model_codecs/patterns.py (copied runtime)
-  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
-  write server/_runtime/model_codecs/schema.py (copied runtime)
   write server/_runtime/model_codecs/unset.py (copied runtime)
-  write server/_runtime/model_codecs/values.py (copied runtime)
   write server/_runtime/model_codecs/wire.py (copied runtime)
   write server/_runtime/server/__init__.py (copied runtime)
   write server/_runtime/server/application.py (copied runtime)
-  write server/_runtime/server/codecs.py (copied runtime)
   write server/_runtime/server/errors.py (copied runtime)
   write server/_runtime/server/requests.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
@@ -80,8 +68,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "request",
     |             "value": "Request",
     |             "imports": [
@@ -109,8 +95,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "principal",
     |             "value": "PrincipalT | None",
     |             "imports": [
@@ -138,8 +122,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldNotesPutRequest | models.FieldNotesPutRequest1 | Unset",
     |             "imports": [
@@ -215,7 +197,7 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "body",
-    |             "transport": "codec_adapter",
+    |             "transport": "adapter",
     |             "reason": "media_selection",
     |             "source": null
     |           },
@@ -230,8 +212,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "media_type",
     |             "value": "str | None",
     |             "imports": []
@@ -249,10 +229,8 @@ render pydantic_v2.BaseModel
     |         "media": [
     |           {
     |             "media_type": "text/plain",
-    |             "schema_id": null,
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/text~1plain/schema",
     |             "type": {
-    |               "binding_id": null,
-    |               "schema_id": null,
     |               "kind": "surface",
     |               "value": "models.FieldNotesPutRequest",
     |               "imports": [
@@ -268,10 +246,8 @@ render pydantic_v2.BaseModel
     |           },
     |           {
     |             "media_type": "application/json",
-    |             "schema_id": null,
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/application~1json/schema",
     |             "type": {
-    |               "binding_id": null,
-    |               "schema_id": null,
     |               "kind": "surface",
     |               "value": "models.FieldNotesPutRequest1",
     |               "imports": [
@@ -341,7 +317,7 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "codec_adapter",
+    |           "transport": "adapter",
     |           "reason": "media_selection",
     |           "source": null
     |         },
@@ -362,43 +338,17 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 204,
     |       "primary_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
     |         "value": "None",
     |         "imports": []
     |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
-    |         "kind": "result",
-    |         "value": "HandlePutNotesResponsePayload",
-    |         "imports": [
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandlePutNotesResponsePayload",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
-    |       },
-    |       "response_payload_alias": "HandlePutNotesResponsePayload",
-    |       "response_codecs_name": "HandlePutNotesResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "None | HTTPResult[HandlePutNotesResponsePayload] | Response",
+    |         "value": "None | HTTPResult[None] | Response",
     |         "imports": [
     |           {
     |             "module": "server._runtime.server.responses",
     |             "name": "HTTPResult",
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandlePutNotesResponsePayload",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -476,14 +426,14 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "codec_adapter",
+    |           "transport": "adapter",
     |           "reason": "media_selection",
     |           "source": null
     |         },
     |         {
     |           "use_ids": [],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
+    |           "transport": "adapter",
     |           "reason": "response_empty",
     |           "source": {
     |             "uri": "../hooks.yaml",
@@ -530,8 +480,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "request",
     |             "value": "Request",
     |             "imports": [
@@ -559,8 +507,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldUploadsPostRequest",
     |             "imports": [
@@ -576,8 +522,6 @@ render pydantic_v2.BaseModel
     |           "is_request": false,
     |           "is_principal": false,
     |           "bound_type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldUploadsPostRequest",
     |             "imports": [
@@ -618,7 +562,7 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "body",
-    |             "transport": "codec_adapter",
+    |             "transport": "adapter",
     |             "reason": "media_form",
     |             "source": null
     |           },
@@ -630,10 +574,8 @@ render pydantic_v2.BaseModel
     |         "media": [
     |           {
     |             "media_type": "multipart/form-data",
-    |             "schema_id": null,
+    |             "schema_id": "https://dcg.invalid/inputs/documents/0#/uploads/post/requestBody/content/multipart~1form-data/schema",
     |             "type": {
-    |               "binding_id": null,
-    |               "schema_id": null,
     |               "kind": "surface",
     |               "value": "models.FieldUploadsPostRequest",
     |               "imports": [
@@ -678,7 +620,7 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "codec_adapter",
+    |           "transport": "adapter",
     |           "reason": "media_form",
     |           "source": null
     |         },
@@ -699,43 +641,17 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 204,
     |       "primary_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
     |         "value": "None",
     |         "imports": []
     |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
-    |         "kind": "result",
-    |         "value": "HandlePostUploadsResponsePayload",
-    |         "imports": [
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandlePostUploadsResponsePayload",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
-    |       },
-    |       "response_payload_alias": "HandlePostUploadsResponsePayload",
-    |       "response_codecs_name": "HandlePostUploadsResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "None | HTTPResult[HandlePostUploadsResponsePayload] | Response",
+    |         "value": "None | HTTPResult[None] | Response",
     |         "imports": [
     |           {
     |             "module": "server._runtime.server.responses",
     |             "name": "HTTPResult",
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandlePostUploadsResponsePayload",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -780,14 +696,14 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "codec_adapter",
+    |           "transport": "adapter",
     |           "reason": "media_form",
     |           "source": null
     |         },
     |         {
     |           "use_ids": [],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
+    |           "transport": "adapter",
     |           "reason": "response_empty",
     |           "source": {
     |             "uri": "../hooks.yaml",
@@ -834,8 +750,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "request",
     |             "value": "Request",
     |             "imports": [
@@ -863,8 +777,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "principal",
     |             "value": "PrincipalT",
     |             "imports": [
@@ -892,8 +804,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.Pet",
     |             "imports": [
@@ -909,8 +819,6 @@ render pydantic_v2.BaseModel
     |           "is_request": false,
     |           "is_principal": false,
     |           "bound_type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.Pet",
     |             "imports": [
@@ -963,10 +871,8 @@ render pydantic_v2.BaseModel
     |         "media": [
     |           {
     |             "media_type": "application/json",
-    |             "schema_id": null,
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets/post/requestBody/content/application~1json/schema",
     |             "type": {
-    |               "binding_id": null,
-    |               "schema_id": null,
     |               "kind": "surface",
     |               "value": "models.Pet",
     |               "imports": [
@@ -1026,9 +932,7 @@ render pydantic_v2.BaseModel
     |               "media_type": "application/json",
     |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets/post/responses/201/content/application~1json/schema",
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets/post/responses/201/content/application~1json/schema",
-    |                 "kind": "model",
+    |                 "kind": "surface",
     |                 "value": "models.Pet",
     |                 "imports": [
     |                   {
@@ -1052,68 +956,30 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 201,
     |       "primary_return_type": {
-    |         "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
-    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets/post/responses/201/content/application~1json/schema",
-    |         "kind": "model",
-    |         "value": "models.Pet | ModelValue[models.Pet]",
+    |         "kind": "result",
+    |         "value": "models.Pet",
     |         "imports": [
     |           {
     |             "module": "models",
     |             "name": null,
     |             "alias": null,
     |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
-    |             "alias": null,
-    |             "type_checking": false
     |           }
     |         ]
     |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
-    |         "kind": "result",
-    |         "value": "HandleAddPetResponsePayload",
-    |         "imports": [
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandleAddPetResponsePayload",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
-    |       },
-    |       "response_payload_alias": "HandleAddPetResponsePayload",
-    |       "response_codecs_name": "HandleAddPetResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "models.Pet | ModelValue[models.Pet] | HTTPResult[HandleAddPetResponsePayload] | Response",
+    |         "value": "models.Pet | HTTPResult[models.Pet] | Response",
     |         "imports": [
     |           {
     |             "module": "models",
     |             "name": null,
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
     |             "alias": null,
     |             "type_checking": false
     |           },
     |           {
     |             "module": "server._runtime.server.responses",
     |             "name": "HTTPResult",
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandleAddPetResponsePayload",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -1242,8 +1108,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "request",
     |             "value": "Request",
     |             "imports": [
@@ -1271,8 +1135,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "principal",
     |             "value": "PrincipalT",
     |             "imports": [
@@ -1300,8 +1162,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "int",
     |             "imports": []
@@ -1310,8 +1170,6 @@ render pydantic_v2.BaseModel
     |           "is_request": false,
     |           "is_principal": false,
     |           "bound_type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldPetsPetIdGetPathPetIdParameter",
     |             "imports": [
@@ -1377,8 +1235,6 @@ render pydantic_v2.BaseModel
     |           "default_value": 10,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "int",
     |             "imports": []
@@ -1387,8 +1243,6 @@ render pydantic_v2.BaseModel
     |           "is_request": false,
     |           "is_principal": false,
     |           "bound_type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldPetsPetIdGetQueryLimitParameter",
     |             "imports": [
@@ -1454,8 +1308,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "str | Unset",
     |             "imports": [
@@ -1471,8 +1323,6 @@ render pydantic_v2.BaseModel
     |           "is_request": false,
     |           "is_principal": false,
     |           "bound_type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldPetsPetIdGetHeaderXTraceParameter",
     |             "imports": [
@@ -1538,8 +1388,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": true,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "str | None | Unset",
     |             "imports": [
@@ -1555,8 +1403,6 @@ render pydantic_v2.BaseModel
     |           "is_request": false,
     |           "is_principal": false,
     |           "bound_type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldPetsPetIdGetQueryAfterParameter",
     |             "imports": [
@@ -1622,8 +1468,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "str | Unset",
     |             "imports": [
@@ -1639,8 +1483,6 @@ render pydantic_v2.BaseModel
     |           "is_request": false,
     |           "is_principal": false,
     |           "bound_type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldPetsPetIdGetCookieSessionParameter",
     |             "imports": [
@@ -1684,7 +1526,7 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "parameter",
-    |             "transport": "codec_adapter",
+    |             "transport": "adapter",
     |             "reason": "parameter_style",
     |             "source": null
     |           },
@@ -1701,9 +1543,7 @@ render pydantic_v2.BaseModel
     |               "media_type": "application/json",
     |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
-    |                 "kind": "model",
+    |                 "kind": "surface",
     |                 "value": "models.Pet",
     |                 "imports": [
     |                   {
@@ -1722,9 +1562,7 @@ render pydantic_v2.BaseModel
     |               "name": "X-Rate",
     |               "required": true,
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/headers/X-Rate/schema|ModelNode(symbol='models:FieldPetsPetIdGetResponse200XRateHeader')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/headers/X-Rate/schema",
-    |                 "kind": "root",
+    |                 "kind": "surface",
     |                 "value": "models.FieldPetsPetIdGetResponse200XRateHeader",
     |                 "imports": [
     |                   {
@@ -1753,43 +1591,30 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 200,
     |       "primary_return_type": {
-    |         "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
-    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
-    |         "kind": "model",
-    |         "value": "",
-    |         "imports": []
-    |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "HandleGetPetResponsePayload",
+    |         "value": "models.Pet",
     |         "imports": [
     |           {
-    |             "module": "server.responses",
-    |             "name": "HandleGetPetResponsePayload",
+    |             "module": "models",
+    |             "name": null,
     |             "alias": null,
     |             "type_checking": false
     |           }
     |         ]
     |       },
-    |       "response_payload_alias": "HandleGetPetResponsePayload",
-    |       "response_codecs_name": "HandleGetPetResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "HTTPResult[HandleGetPetResponsePayload] | Response",
+    |         "value": "models.Pet | HTTPResult[models.Pet] | Response",
     |         "imports": [
     |           {
-    |             "module": "server._runtime.server.responses",
-    |             "name": "HTTPResult",
+    |             "module": "models",
+    |             "name": null,
     |             "alias": null,
     |             "type_checking": false
     |           },
     |           {
-    |             "module": "server.responses",
-    |             "name": "HandleGetPetResponsePayload",
+    |             "module": "server._runtime.server.responses",
+    |             "name": "HTTPResult",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -1988,7 +1813,7 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "parameter",
-    |           "transport": "codec_adapter",
+    |           "transport": "adapter",
     |           "reason": "parameter_style",
     |           "source": null
     |         },
@@ -2203,7 +2028,7 @@ render pydantic_v2.BaseModel
     | ## Implementing the services
     |
     | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
-    | A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+    | A method takes the operation's arguments as keywords and returns the value to send, an `HTTPResult` with another declared status, headers, or both, or a `Response` sent as it is.
     | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
     | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
     | The Protocols of groups with secured operations take the type of the principal your authorizer returns.

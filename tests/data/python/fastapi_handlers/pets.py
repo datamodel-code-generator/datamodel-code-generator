@@ -1,4 +1,4 @@
-"""Services of the pets server: native values, HTTP results, codec snapshots, and service mistakes."""
+"""Services of the pets server: native values, HTTP results, and service mistakes."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
 
         def list_my_pets(self) -> object:
             record("list_my_pets")
-            return server.responses.ListMyPetsResponseCodecs.body(status_code=200).from_wire([{"id": 1, "name": "Mimi", "tag": None}])
+            return [{"id": 1, "name": "Mimi", "tag": None}]
 
         def get_pet(self, *, pet_id: int) -> object:
             record("get_pet", pet_id=pet_id)

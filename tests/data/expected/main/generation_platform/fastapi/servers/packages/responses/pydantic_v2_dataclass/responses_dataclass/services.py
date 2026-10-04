@@ -9,13 +9,8 @@ from typing import Protocol
 import responses_dataclass_models
 from fastapi.responses import Response
 
-from .model_codecs import ModelValue, Unset
-from .responses import (
-    GetDocumentResponsePayload,
-    GetGreetingResponsePayload,
-    GetPetResponsePayload,
-    HTTPResult,
-)
+from ._runtime.model_codecs.unset import Unset
+from ._runtime.server.responses import HTTPResult
 
 
 class UntaggedService(Protocol):
@@ -28,8 +23,7 @@ class UntaggedService(Protocol):
         mode: responses_dataclass_models.FieldGreetingsGetQueryModeParameter | Unset,
     ) -> (
         responses_dataclass_models.FieldGreetingsGetResponse
-        | ModelValue[responses_dataclass_models.FieldGreetingsGetResponse]
-        | HTTPResult[GetGreetingResponsePayload]
+        | HTTPResult[responses_dataclass_models.FieldGreetingsGetResponse]
         | Response
     ): ...
 
@@ -40,8 +34,7 @@ class UntaggedService(Protocol):
         id: int,
     ) -> (
         responses_dataclass_models.Pet
-        | ModelValue[responses_dataclass_models.Pet]
-        | HTTPResult[GetDocumentResponsePayload]
+        | HTTPResult[responses_dataclass_models.Pet]
         | Response
     ): ...
 
@@ -52,7 +45,6 @@ class UntaggedService(Protocol):
         id: int,
     ) -> (
         responses_dataclass_models.Pet
-        | ModelValue[responses_dataclass_models.Pet]
-        | HTTPResult[GetPetResponsePayload]
+        | HTTPResult[responses_dataclass_models.Pet | responses_dataclass_models.Error]
         | Response
     ): ...

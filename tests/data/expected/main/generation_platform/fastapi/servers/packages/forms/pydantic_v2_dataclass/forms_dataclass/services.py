@@ -9,13 +9,7 @@ from typing import Protocol
 import forms_dataclass_models
 from fastapi.responses import Response
 
-from .responses import (
-    HTTPResult,
-    PostFormResponsePayload,
-    PostNotesResponsePayload,
-    UploadManyResponsePayload,
-    UploadResponsePayload,
-)
+from ._runtime.server.responses import HTTPResult
 
 
 class UntaggedService(Protocol):
@@ -26,25 +20,25 @@ class UntaggedService(Protocol):
         self,
         *,
         body: forms_dataclass_models.FieldFormsPostRequest,
-    ) -> None | HTTPResult[PostFormResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def post_notes(
         self,
         *,
         body: forms_dataclass_models.FieldNotesPostRequest,
-    ) -> None | HTTPResult[PostNotesResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def upload(
         self,
         *,
         body: forms_dataclass_models.FieldUploadsPostRequest,
-    ) -> None | HTTPResult[UploadResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def upload_many(
         self,
         *,
         body: forms_dataclass_models.FieldBatchesPostRequest,
-    ) -> None | HTTPResult[UploadManyResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...

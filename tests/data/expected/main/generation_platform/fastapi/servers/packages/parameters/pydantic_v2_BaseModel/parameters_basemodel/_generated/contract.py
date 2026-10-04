@@ -17,7 +17,7 @@ from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument, RawPath
-from .._runtime.server.responses import OperationResponses, ResponsePlan
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1search/get',
@@ -135,10 +135,7 @@ class Search:
         ),
         record=Parameters,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetRatios:
@@ -150,10 +147,7 @@ class GetRatios:
         service='untagged',
         keywords=('ratios', 'limits'),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class Repeat:
@@ -188,10 +182,7 @@ class Repeat:
         record=Parameters,
         path=RawPath(template='/repeat/{id}/again/{id}', names=frozenset({'id'})),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetNote:
@@ -203,10 +194,7 @@ class GetNote:
         service='untagged',
         keywords=('note_id',),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetFile:
@@ -218,10 +206,7 @@ class GetFile:
         service='untagged',
         keywords=('file_name',),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetMenu:
@@ -233,10 +218,7 @@ class GetMenu:
         service='untagged',
         keywords=('item',),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetItem:
@@ -335,7 +317,4 @@ class GetItem:
         record=Parameters,
         path=RawPath(template='/items/{level}', names=frozenset({'level'})),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)

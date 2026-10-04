@@ -6,17 +6,12 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias, TypedDict
 
+import results_basemodel_models
+from pydantic import TypeAdapter
 from typing_extensions import Never
 
-from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.server.application import Dependency, OperationPlan
-from .._runtime.server.responses import (
-    HeaderPlan,
-    MediaPlan,
-    OperationResponses,
-    ResponsePlan,
-)
-from . import model_bindings
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1results/get',
@@ -24,6 +19,7 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1plain/get',
     '/paths/~1latin/get',
     '/paths/~1nothing/get',
+    '/paths/~1blob/get',
     '/paths/~1empty/post',
 ]
 SchemeKey: TypeAlias = Never
@@ -35,6 +31,7 @@ OperationDependencies = TypedDict(
         '/paths/~1plain/get': Sequence[Dependency],
         '/paths/~1latin/get': Sequence[Dependency],
         '/paths/~1nothing/get': Sequence[Dependency],
+        '/paths/~1blob/get': Sequence[Dependency],
         '/paths/~1empty/post': Sequence[Dependency],
     },
     total=False,
@@ -52,81 +49,23 @@ class GetResult:
         keywords=('case',),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-                    ),
-                    MediaPlan(
-                        media_type='text/csv',
-                        kind='text',
-                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
-                    ),
-                    MediaPlan(media_type='application/octet-stream', kind='binary'),
-                    MediaPlan(media_type='image/*', kind='binary'),
-                ),
-                headers=(
-                    HeaderPlan(
-                        name='X-Rate',
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Rate',
-                            style='simple',
-                            kind='integer',
-                        ),
-                        codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
-                    ),
-                    HeaderPlan(name='X-Tag'),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(results_basemodel_models.Thing),
             ),
-            ResponsePlan(
-                status='201',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
-                    ),
-                ),
-                headers=(
-                    HeaderPlan(
-                        name='Location',
-                        required=True,
-                        plan=ParameterPlan(
-                            location='header',
-                            name='Location',
-                            style='simple',
-                            required=True,
-                        ),
-                        codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
-                    ),
-                ),
+            '201': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(results_basemodel_models.Thing),
             ),
-            ResponsePlan(status='204'),
-            ResponsePlan(
-                status='2XX',
-                media=(MediaPlan(media_type='application/json', kind='json'),),
+            '204': Declared(),
+            '2XX': Declared(media_type='application/json'),
+            '4XX': Declared(media_type='text/plain'),
+            'default': Declared(
+                media_type='application/problem+json',
+                adapter=TypeAdapter(results_basemodel_models.Problem),
             ),
-            ResponsePlan(
-                status='4XX',
-                media=(MediaPlan(media_type='text/plain', kind='text'),),
-            ),
-            ResponsePlan(
-                status='default',
-                media=(
-                    MediaPlan(
-                        media_type='application/problem+json',
-                        kind='json',
-                        codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
-                    ),
-                ),
-            ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )
 
 
@@ -140,8 +79,8 @@ class HeadResult:
         keywords=('case',),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='200'),),
-        primary=(200, None),
+        responses={'200': Declared()},
+        primary=200,
         head=True,
     )
 
@@ -156,19 +95,13 @@ class GetPlain:
         keywords=('case',),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='text/plain',
-                        kind='text',
-                        codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='text/plain',
+                adapter=TypeAdapter(results_basemodel_models.FieldPlainGetResponse),
             ),
-        ),
-        primary=(200, 'text/plain'),
+        },
+        primary=200,
     )
 
 
@@ -182,19 +115,13 @@ class GetLatin:
         keywords=('case',),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='text/plain; charset=iso-8859-1',
-                        kind='text',
-                        codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='text/plain; charset=iso-8859-1',
+                adapter=TypeAdapter(results_basemodel_models.FieldLatinGetResponse),
             ),
-        ),
-        primary=(200, 'text/plain; charset=iso-8859-1'),
+        },
+        primary=200,
     )
 
 
@@ -208,18 +135,27 @@ class GetNothing:
         keywords=('case',),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='default',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_9, model_bindings.CONTEXT_9),
-                    ),
-                ),
+        responses={
+            'default': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(results_basemodel_models.FieldNothingGetResponse),
             ),
-        ),
+        },
+    )
+
+
+class GetBlob:
+    """Plans of the get_blob operation."""
+
+    OPERATION: Final = OperationPlan(
+        name='get_blob',
+        key='/paths/~1blob/get',
+        service='untagged',
+        keywords=('case',),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses={'200': Declared(media_type='application/octet-stream')},
+        primary=200,
     )
 
 
@@ -232,7 +168,4 @@ class PostEmpty:
         service='untagged',
         keywords=('case',),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)

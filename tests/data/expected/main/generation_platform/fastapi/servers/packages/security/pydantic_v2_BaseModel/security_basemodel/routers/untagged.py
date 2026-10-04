@@ -11,7 +11,7 @@ from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
 from .._runtime.server.requests import absent, present
-from .._runtime.server.responses import respond
+from .._runtime.server.responses import dispatch
 from .._runtime.server.security import PrincipalT, SecretT
 from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
 from ..services import UntaggedService
@@ -28,8 +28,8 @@ def _add_get_maybe(router: APIRouter, wiring: Wiring) -> None:
             alias='principal',
             default_factory=absent,
         )],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             await get_maybe_handler(
                 principal=principal,
                 query_principal=present(query_principal),
@@ -59,8 +59,8 @@ def _add_put_pet(router: APIRouter, wiring: Wiring) -> None:
         *,
         principal: Annotated[object, Depends(put_pet_principal)],
         pet_id: Annotated[int, Path(alias='petId')],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             put_pet_handler(principal=principal, pet_id=pet_id),
             contract.PutPet.RESPONSES,
         )
@@ -86,8 +86,8 @@ def _add_get_session(router: APIRouter, wiring: Wiring) -> None:
     def get_session(
         *,
         principal: Annotated[object, Depends(get_session_principal)],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             get_session_handler(principal=principal),
             contract.GetSession.RESPONSES,
         )
@@ -113,8 +113,8 @@ def _add_get_custom(router: APIRouter, wiring: Wiring) -> None:
     async def get_custom(
         *,
         principal: Annotated[object, Depends(get_custom_principal)],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             await get_custom_handler(principal=principal),
             contract.GetCustom.RESPONSES,
         )

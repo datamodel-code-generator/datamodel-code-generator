@@ -69,7 +69,7 @@ if TYPE_CHECKING:
     )
 
 Site: TypeAlias = Literal["parameter", "body", "primary_response"]
-Transport: TypeAlias = Literal["fastapi_native", "codec_adapter", "raw_request"]
+Transport: TypeAlias = Literal["fastapi_native", "adapter", "raw_request"]
 Reason: TypeAlias = Literal[
     "native_supported",
     "explicit_raw",
@@ -681,7 +681,7 @@ class Planner:  # noqa: PLR0904
             required=fact(declaration, "required") is True,
             use=use,
             plan=plan,
-            decision=Decision(site="parameter", transport="codec_adapter", reason=reason, uses=uses),
+            decision=Decision(site="parameter", transport="adapter", reason=reason, uses=uses),
             source=declaration.use_site,
             type=value,
             default=default,
@@ -785,7 +785,7 @@ class Planner:  # noqa: PLR0904
         spec = BodySpec(
             required=fact(declaration, "required") is True,
             media=media,
-            decision=Decision(site="body", transport="codec_adapter", reason="media_selection", uses=uses),
+            decision=Decision(site="body", transport="adapter", reason="media_selection", uses=uses),
         )
         if self.body_modes.get(operation.id.use_site.pointer, self.config.body_mode) == "request":
             return replace(spec, decision=replace(spec.decision, transport="raw_request", reason="explicit_raw"))
@@ -900,7 +900,7 @@ class Planner:  # noqa: PLR0904
         successful = [code for code in exact if _MIN_CONTENT_STATUS <= code <= _MAX_SUCCESS_STATUS]
         status = _DEFAULT_STATUS if _DEFAULT_STATUS in exact else min(successful or exact)
         response = exact[status]
-        media = _default_media(response)
+        media = default_media(response)
         decision = _primary_decision(operation, status, response, media)
         return PrimarySpec(status=status, response=response, media=media, decision=decision)
 
@@ -909,7 +909,7 @@ class Planner:  # noqa: PLR0904
     ) -> PrimarySpec | None:
         """Return the explicitly chosen primary response, reporting a choice that names no declared response."""
         response = exact.get(choice.status_code)
-        media = None if response is None else _default_media(response)
+        media = None if response is None else default_media(response)
         if response is not None and choice.media_type is not None:
             wanted = _normalized(choice.media_type)
             media = next((item for item in response.media if item.media_type == wanted), None)
@@ -1058,7 +1058,7 @@ def _primary_decision(
     use = None if bodyless or media is None else media.use
     decision = Decision(
         site="primary_response",
-        transport="codec_adapter",
+        transport="adapter",
         reason="response_empty",
         source=response.declaration.use_site,
         uses=() if use is None else (use.id,),
@@ -1167,7 +1167,8 @@ def _normalized(media_type: str) -> str:
         return media_type
 
 
-def _default_media(response: ResponseSpec) -> MediaSpec | None:
+def default_media(response: ResponseSpec) -> MediaSpec | None:
+    """Return the media a response takes without a choice: JSON, then +json, then the first declared."""
     return (
         next((item for item in response.media if item.media_type == _JSON), None)
         or next((item for item in response.media if item.media_type.partition(";")[0].endswith("+json")), None)

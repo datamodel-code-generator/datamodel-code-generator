@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import keyword
-from functools import cached_property
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Final
 
@@ -14,10 +13,9 @@ from datamodel_code_generator._fastapi._compiled_templates import application as
 from datamodel_code_generator._fastapi._compiled_templates import readme as readme_template
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
-from datamodel_code_generator._fastapi.plan import BODYLESS_STATUSES, CONSTRAINED, Default, fact, symbol_imports
+from datamodel_code_generator._fastapi.plan import CONSTRAINED, Default, default_media, fact, symbol_imports
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
 from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, invalid
-from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
@@ -34,29 +32,24 @@ if TYPE_CHECKING:
         Argument,
         BodySpec,
         GroupSpec,
-        HeaderSpec,
         MediaSpec,
         NativeField,
         OperationSpec,
         ParameterSpec,
         Requirement,
-        ResponseSpec,
         SchemeKind,
         SchemeSpec,
         ServerPlan,
     )
     from datamodel_code_generator._fastapi.templates import TemplateSet
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan, PydanticBackend
-    from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
+    from datamodel_code_generator._openapi_codec_plan import PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_contract import (
         FinalPythonType,
         GeneratedEnumMember,
         GeneratedTypeContractBatch,
         TypeArgument,
-        TypeUseId,
     )
 
 WIDTH: Final = 88
@@ -69,12 +62,6 @@ _BASES: Final = {
     "constr": (None, "str"),
 }
 _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
-_PUBLIC: Final = {
-    "_runtime.model_codecs.unset": "model_codecs",
-    "_runtime.model_codecs.values": "model_codecs",
-    "_runtime.model_codecs.wire": "model_codecs",
-    "_runtime.server.responses": "responses",
-}
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
     ("_generated.contract", "OperationKey"),
@@ -147,26 +134,19 @@ class _Annotations(TypeSource):
 class Module:
     """One generated module: collision-free import aliases, type spellings, and runtime imports at its depth."""
 
-    def __init__(
-        self, reserved: Iterable[str], symbols: Mapping[int, str], *, level: int, public: bool = False
-    ) -> None:
-        """Reserve the names the module defines, and remember its depth and whether it imports public modules only."""
+    def __init__(self, reserved: Iterable[str], symbols: Mapping[int, str], *, level: int) -> None:
+        """Reserve the names the module defines, and remember its depth."""
         self.namespace = Namespace(reserved)
         self.types = _Annotations(self.namespace, symbols)
         self.level = level
-        self.public = public
 
     def name(self, module: str, name: str) -> str:
         """Return the local alias of an imported name."""
         return self.namespace.name(module, name)
 
     def local(self, module: str, name: str) -> str:
-        """Return the local alias of a name imported from a module of the generated package.
-
-        A module users read to implement it imports runtime names through the package's public modules instead.
-        """
-        public = _PUBLIC.get(module, module) if self.public else module
-        return self.namespace.name(f"{'.' * self.level}{public}", name)
+        """Return the local alias of a name imported from a module of the generated package."""
+        return self.namespace.name(f"{'.' * self.level}{module}", name)
 
     def static(self, value: FinalPythonType) -> str:
         """Return the static spelling of a final type."""
@@ -199,12 +179,11 @@ class ServerRenderer:  # noqa: PLR0904
         plan: ServerPlan,
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
-        codecs: CodecPlan,
         templates: TemplateSet | None = None,
         context: FastAPIContext | None = None,
         docs: Documentation | None = None,
     ) -> None:
-        """Keep the plans; the model bindings module and its accessors are rendered when first used.
+        """Keep the plans.
 
         A template set overrides builtin roles and adds extra files, which render from the context. The documentation
         adds what FastAPI cannot derive from the routes to its own document.
@@ -218,9 +197,7 @@ class ServerRenderer:  # noqa: PLR0904
         self.docs = docs
         self.batch = batch
         self.wire = wire
-        self.codecs = codecs
         self.symbols = symbol_imports(batch)
-        self.use_bindings: dict[TypeUseId, UseBinding] = dict(codecs.bindings)
         self.services = {group.key: group.stem for group in plan.groups}
 
     def role(self, name: str, compiled: Callable[..., str], **frame: object) -> Callable[..., str]:
@@ -275,16 +252,6 @@ class ServerRenderer:  # noqa: PLR0904
                 raise APIGenerationError((self.templates.conflict(message),))
             taken.add(extra.path)
 
-    @cached_property
-    def bindings(self) -> RenderedBindings:
-        """Return the model bindings module of every bound use, rendered once."""
-        return render_model_bindings(self.codecs, self.wire, self.batch, surface="server")
-
-    @cached_property
-    def accessors(self) -> dict[TypeUseId, UseAccessors]:
-        """Return the codec accessors of every bound use."""
-        return {item.use: item for item in self.bindings.uses}
-
     def file(self, path: PurePosixPath, kind: str, text: str, *, verbatim: bool = False) -> RenderedFile:
         """Return one owned file of the package."""
         return RenderedFile(path=self.package / path, kind=kind, text=text, verbatim=verbatim)
@@ -298,9 +265,6 @@ class ServerRenderer:  # noqa: PLR0904
             *self.routers(),
             self.file(generated / "__init__.py", "package", '"""Generated plans of this package."""\n'),
             self.file(generated / "contract.py", "contract", self.contract()),
-            self.file(generated / "model_bindings.py", "model_bindings", self.bindings.source),
-            self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs("server")),
-            self.file(PurePosixPath("responses.py"), "responses", self.responses()),
             self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
             self.file(PurePosixPath("auth_types.py"), "auth_types", _AUTH_TYPES),
             self.file(PurePosixPath("services.py"), "services", self.services_module()),
@@ -316,20 +280,6 @@ class ServerRenderer:  # noqa: PLR0904
         """Return the README of the target root: the operations, how to implement and connect them, and regeneration."""
         plan, config = self.plan, self.config
         info = dict(plan.info)
-        codecs = next(
-            (
-                (spec.pascal, response.status)
-                for spec in plan.operations
-                if not spec.head
-                for response in spec.responses
-                if response.status.isdigit()
-                and any(
-                    media.use is not None and media.use.id in self.accessors and media.kind != "binary"
-                    for media in response.media
-                )
-            ),
-            None,
-        )
         groups = plan.groups
         arguments = [f"{group.stem}={_implementation(group)}()" for group in groups]
         return self.role("readme.jinja2", readme_template.render)(
@@ -365,9 +315,6 @@ class ServerRenderer:  # noqa: PLR0904
             raw_request=any(
                 spec.body is not None and spec.body.decision.transport == "raw_request" for spec in plan.operations
             ),
-            dataclass=self.backend == "pydantic_v2.dataclass",
-            codecs=None if codecs is None else f"{codecs[0]}ResponseCodecs",
-            status=None if codecs is None else codecs[1],
             standalone=config.package_mode == "standalone",
         )
 
@@ -493,20 +440,18 @@ class ServerRenderer:  # noqa: PLR0904
         if any(argument.kind == "adapter" for argument in spec.arguments):
             annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Depends")
             parameters.append(f"{record}: {annotated}[{plan}.Parameters, {depends}({plan}.PARAMETERS)]")
-        native = spec.native_primary
-        returns = "object" if native else module.name("fastapi.responses", "Response")
         asynchronous = spec.mode == "async"
         signature = Group(
             f"{'async def' if asynchronous else 'def'} {spec.python_name}(",
             _items(("*", *parameters)) if parameters else (),
-            f") -> {returns}:",
+            ") -> object:",
         )
         call = Group(
             f"{'await ' if asynchronous else ''}{handler}(",
             tuple((f"{argument.name}=", _value(module, spec, argument, record)) for argument in spec.arguments),
             ")",
         )
-        dispatch = module.local("_runtime.server.responses", "dispatch" if native else "respond")
+        dispatch = module.local("_runtime.server.responses", "dispatch")
         body = Group(f"return {dispatch}(", (("", call), ("", f"{plan}.RESPONSES")), ")")
         return {
             "adder": f"_add_{spec.python_name}",
@@ -547,25 +492,18 @@ class ServerRenderer:  # noqa: PLR0904
 
     def body_type(self, module: Module, body: BodySpec) -> str:
         """Return the type the handler receives for a body, with UNSET for an optional one."""
-        kinds = dict.fromkeys(self.media_type(module, media, sent=False) for media in body.media)
+        kinds = dict.fromkeys(self.media_type(module, media) for media in body.media)
         if not body.required:
             kinds[module.local("_runtime.model_codecs.unset", "Unset")] = None
         return " | ".join(kinds)
 
-    def media_type(self, module: Module, media: MediaSpec, *, sent: bool) -> str:
-        """Return one media's payload type: the model's type, its envelope, or the media surface."""
+    @staticmethod
+    def media_type(module: Module, media: MediaSpec) -> str:
+        """Return one media's payload type: the model's type, or the media surface without a schema."""
         use = media.use
         if media.kind == "binary" or use is None or use.type is None:
             return module.name("typing", "Any") if media.kind == "json" else "str" if media.kind == "text" else "bytes"
-        static = module.static(use.type)
-        if not sent:
-            return static
-        binding = self.use_bindings.get(use.id)
-        envelope = binding is not None and binding.projection_mode == "envelope"
-        values = [static, f"{module.local('_runtime.model_codecs.values', 'ModelValue')}[{static}]"]
-        if envelope:
-            values.append(f"{module.local('_runtime.model_codecs.values', 'ModelInput')}[{static}]")
-        return " | ".join(values)
+        return module.static(use.type)
 
     def services_module(self) -> str:
         """Return the services module: one Protocol per router group with an abstract method per operation."""
@@ -573,7 +511,7 @@ class ServerRenderer:  # noqa: PLR0904
         reserved = {"PrincipalT_contra", *(group.service for group in groups)}
         for spec in self.plan.operations:
             reserved.update(argument.name for argument in spec.arguments)
-        module = Module(reserved, self.symbols, level=1, public=True)
+        module = Module(reserved, self.symbols, level=1)
         protocol = module.name("typing", "Protocol")
         single = self.config.layout == "single"
         protocols = [
@@ -631,20 +569,21 @@ class ServerRenderer:  # noqa: PLR0904
 
     def results(self, module: Module, spec: OperationSpec) -> list[str]:
         """Return the members of a method's result type, in the order the result type spells them."""
-        payload = module.local("responses", f"{spec.pascal}ResponsePayload")
-        result = f"{module.local('_runtime.server.responses', 'HTTPResult')}[{payload}]"
+        payloads = dict.fromkeys(
+            self.media_type(module, media)
+            for response in spec.responses
+            if _body_status(spec, response.status) and (media := default_media(response)) is not None
+        )
+        result = f"{module.local('_runtime.server.responses', 'HTTPResult')}[{' | '.join(payloads) or 'None'}]"
         return [*self.bare(module, spec), result, module.name("fastapi.responses", "Response")]
 
     def bare(self, module: Module, spec: OperationSpec) -> list[str]:
-        """Return the members of the type a method returns bare: the primary payload, None, or nothing.
-
-        A primary response that requires a header takes nothing bare, since a bare value cannot carry the header.
-        """
-        if (primary := spec.primary) is None or any(header.required for header in primary.response.headers):
+        """Return the members of the type a method returns bare: the primary payload, None, or nothing."""
+        if (primary := spec.primary) is None:
             return []
-        if (media := primary.media) is None or spec.head or not _content_status(primary.status):
+        if (media := primary.media) is None or not _body_status(spec, str(primary.status)):
             return ["None"]
-        return self.media_type(module, media, sent=True).split(" | ")
+        return [self.media_type(module, media)]
 
     def contract(self) -> str:
         """Return the contract module: key types, schemes, and each operation's plans and request adapters."""
@@ -685,17 +624,6 @@ class ServerRenderer:  # noqa: PLR0904
         assert self.docs is not None
         return _registration(module, spec, self.docs)
 
-    def codec(self, module: Module, use: TypeUseId) -> str:
-        """Return the (codec accessor, context) pair of one bound use."""
-        accessors = self.accessors[use]
-        bindings = module.name(".", "model_bindings")
-        return f"({bindings}.{accessors.codec}, {bindings}.{accessors.context})"
-
-    def envelope(self, use: TypeUseId) -> bool:
-        """Return whether a use's codec projects into an envelope."""
-        binding = self.use_bindings.get(use)
-        return binding is not None and binding.projection_mode == "envelope"
-
     def operation_plan(self, module: Module, spec: OperationSpec) -> str:
         """Return one operation's plan class: adapter parameter record, request adapters, and responses."""
         final = module.name("typing", "Final")
@@ -714,10 +642,10 @@ class ServerRenderer:  # noqa: PLR0904
             ))
             adapter = _parameter_adapter(module, spec, adapters)
             lines.append(f"    PARAMETERS: {final} = {layout(adapter, 4, len('PARAMETERS: Final = '), WIDTH)}")
-        if spec.body is not None and spec.body.decision.transport == "codec_adapter":
+        if spec.body is not None and spec.body.decision.transport == "adapter":
             body = _body_adapter(module, spec.body)
             lines.append(f"    BODY: {final} = {layout(body, 4, len('BODY: Final = '), WIDTH)}")
-        responses = self.responses_plan(module, spec)
+        responses = _responses_plan(module, spec)
         lines.append(f"    RESPONSES: {final} = {layout(responses, 4, len('RESPONSES: Final = '), WIDTH)}")
         return "\n".join(lines) + "\n"
 
@@ -740,140 +668,29 @@ class ServerRenderer:  # noqa: PLR0904
             items.append(("security=", plan))
         return Group(f"{module.local('_runtime.server.application', 'OperationPlan')}(", tuple(items), ")")
 
-    def responses_plan(self, module: Module, spec: OperationSpec) -> Group:
-        """Return the OperationResponses constructor of one operation."""
-        responses = _items(self.response_plan(module, response, head=spec.head) for response in spec.responses)
-        items: list[tuple[str, Doc]] = [("responses=", Group("(", responses, ")", ","))]
-        if (primary := spec.primary) is not None:
-            media = None if primary.media is None or spec.head else primary.media.media_type
-            items.append(("primary=", f"({primary.status}, {media!r})"))
-        if spec.head:
-            items.append(("head=", "True"))
-        return Group(f"{module.local('_runtime.server.responses', 'OperationResponses')}(", tuple(items), ")")
 
-    def response_plan(self, module: Module, response: ResponseSpec, *, head: bool) -> Group:
-        """Return the ResponsePlan constructor of one declared response."""
-        items: list[tuple[str, Doc]] = [("status=", repr(response.status))]
-        media: list[Doc] = []
-        for item in () if head else response.media:
-            entries: list[tuple[str, Doc]] = [
-                ("media_type=", repr(item.media_type)),
-                ("kind=", repr(_response_kind(item))),
-            ]
-            if item.kind != "binary" and item.use is not None and item.use.id in self.accessors:
-                entries.append(("codec=", self.codec(module, item.use.id)))
-            media.append(Group(f"{module.local('_runtime.server.responses', 'MediaPlan')}(", tuple(entries), ")"))
-        if media:
-            items.append(("media=", Group("(", _items(media), ")", ",")))
-        if headers := [self.header_plan(module, header) for header in response.headers]:
-            items.append(("headers=", Group("(", _items(headers), ")", ",")))
-        return Group(f"{module.local('_runtime.server.responses', 'ResponsePlan')}(", tuple(items), ")")
+def _responses_plan(module: Module, spec: OperationSpec) -> Group:
+    """Return the OperationResponses constructor of one operation: each declared response's default media and model."""
+    responses: list[tuple[str, Doc]] = []
+    for response in spec.responses:
+        entries: list[tuple[str, Doc]] = []
+        if _body_status(spec, response.status) and (media := default_media(response)) is not None:
+            entries.append(("media_type=", repr(media.media_type)))
+            if media.kind != "binary" and media.use is not None and media.use.type is not None:
+                entries.append(("adapter=", _adapter(module, media.use.type)))
+        declared = Group(f"{module.local('_runtime.server.responses', 'Declared')}(", tuple(entries), ")")
+        responses.append((f"{response.status!r}: ", declared))
+    items: list[tuple[str, Doc]] = [("responses=", Group("{", tuple(responses), "}"))]
+    if (primary := spec.primary) is not None and not spec.native_primary:
+        items.append(("primary=", str(primary.status)))
+    if spec.head:
+        items.append(("head=", "True"))
+    return Group(f"{module.local('_runtime.server.responses', 'OperationResponses')}(", tuple(items), ")")
 
-    def header_plan(self, module: Module, header: HeaderSpec) -> Group:
-        """Return the HeaderPlan constructor of one declared response header."""
-        entries: list[tuple[str, Doc]] = [("name=", repr(header.name))]
-        if header.required:
-            entries.append(("required=", "True"))
-        if header.plan is not None and header.use is not None and header.use.id in self.accessors:
-            entries.extend((
-                ("plan=", parameter_plan(module.local, header.plan)),
-                ("codec=", self.codec(module, header.use.id)),
-            ))
-        return Group(f"{module.local('_runtime.server.responses', 'HeaderPlan')}(", tuple(entries), ")")
 
-    def responses(self) -> str:
-        """Return the responses module: result types, payload aliases, and response codec facades."""
-        reserved = {"UNSET", "Unset", "HTTPResult"}
-        for spec in self.plan.operations:
-            reserved.update((
-                f"{spec.pascal}ResponsePayload",
-                f"{spec.pascal}ResponseCodecs",
-                f"_{spec.pascal}ResponseCodecs",
-                f"_{spec.pascal}ResponseCodec",
-            ))
-        module = Module(reserved, self.symbols, level=1)
-        exports = ["UNSET", "HTTPResult", "Unset"]
-        sections: list[str] = []
-        for spec in self.plan.operations:
-            alias = f"{spec.pascal}ResponsePayload"
-            head = f"{alias}: {module.name('typing', 'TypeAlias')} = "
-            sections.extend((
-                f"{head}{layout(self.payload(module, spec), 0, len(head), WIDTH)}\n",
-                self.facade(module, spec),
-            ))
-            exports.extend((alias, f"{spec.pascal}ResponseCodecs"))
-        head = (
-            '"""Results, payload types, and response codecs of this package."""\n\n'
-            "from ._runtime.model_codecs.unset import UNSET, Unset\n"
-            "from ._runtime.server.responses import HTTPResult\n"
-        )
-        listing = "".join(f"    {name!r},\n" for name in sorted(exports))
-        return f"{head}{module.imports()}\n\n\n" + "\n\n".join(sections) + f"\n\n__all__ = [\n{listing}]\n"
-
-    def payload(self, module: Module, spec: OperationSpec) -> Doc:
-        """Return the union of every declared response payload type, in declaration order."""
-        parts: dict[str, None] = {}
-        for response in spec.responses:
-            if spec.head or (response.status.isdigit() and int(response.status) in BODYLESS_STATUSES):
-                continue
-            for media in response.media:
-                parts.update(dict.fromkeys(self.media_type(module, media, sent=True).split(" | ")))
-        return Chain("|", tuple(parts)) if parts else module.name("typing_extensions", "Never")
-
-    def facade(self, module: Module, spec: OperationSpec) -> str:
-        """Return one operation's response codec facade: typed overloads over its codec-bearing bodies."""
-        branches = list(self.branches(module, spec))
-        kinds = tuple(dict.fromkeys(kind for _, _, kind, _ in branches))
-        name = f"_{spec.pascal}ResponseCodecs"
-        alias = ""
-        if len(kinds) > 1:
-            union = f"_{spec.pascal}ResponseCodec"
-            head = f"{union}: {module.name('typing', 'TypeAlias')} = "
-            alias = f"{head}{layout(Chain('|', kinds), 0, len(head), WIDTH)}\n\n\n"
-        else:
-            union = kinds[0] if kinds else module.name("typing_extensions", "Never")
-        base = f"{module.local('_runtime.server.codecs', 'ResponseCodecs')}[{union}]"
-        declaration = (
-            alias + layout(Group(f"class {name}(", (("", base),), "):"), 0, 0, WIDTH),
-            f'    """Outbound codecs of the {spec.python_name} response bodies."""',
-        )
-        overloads = _overloads(module, branches, union)
-        lines = (
-            (
-                *declaration,
-                "",
-                *overloads,
-                f"    {_body_signature('int', 'str | None = None', f'{union}:')}",
-                '        """Return the outbound codec of one declared response body."""',
-                "        return self.select(status_code, media_type)",
-            )
-            if overloads
-            else declaration
-        )
-        bodies: dict[str, list[Doc]] = {}
-        for status, media_type, _, accessor in branches:
-            bindings = module.local("_generated", "model_bindings")
-            bodies.setdefault(status, []).append(f"({media_type!r}, {bindings}.{accessor})")
-        statuses = _items(
-            Group("(", (("", repr(status)), ("", Group("(", _items(items), ")", ","))), ")")
-            for status, items in bodies.items()
-        )
-        instance = f"{spec.pascal}ResponseCodecs: {module.name('typing', 'Final')} = "
-        table = layout(Group(f"{name}(", (("", Group("(", statuses, ")", ",")),), ")"), 0, len(instance), WIDTH)
-        return "\n".join(lines) + f"\n\n\n{instance}{table}\n"
-
-    def branches(self, module: Module, spec: OperationSpec) -> Iterator[tuple[str, str, str, str]]:
-        """Yield the status key, media type, codec type, and accessor of each codec-bearing response body."""
-        for response in () if spec.head else spec.responses:
-            for media in response.media:
-                if media.use is None or media.use.id not in self.accessors or media.kind == "binary":
-                    continue
-                accessor = self.accessors[media.use.id].outbound
-                assert accessor is not None
-                assert media.use.type is not None
-                codec = "EnvelopeOutboundCodec" if self.envelope(media.use.id) else "NativeOutboundCodec"
-                kind = f"{module.local('_runtime.model_codecs.outbound', codec)}[{module.static(media.use.type)}]"
-                yield response.status, media.media_type, kind, accessor
+def _body_status(spec: OperationSpec, status: str) -> bool:
+    """Return whether a declared response of an operation carries a body: not for HEAD, 1XX, 204, 205, or 304."""
+    return not spec.head and not status.startswith("1") and status not in {"204", "205", "304"}
 
 
 def _implementation(group: GroupSpec) -> str:
@@ -1101,43 +918,6 @@ def _raw_path(module: Module, spec: OperationSpec, adapters: list[Argument]) -> 
     )
 
 
-def _overloads(module: Module, branches: list[tuple[str, str, str, str]], union: str) -> list[str]:
-    statuses: dict[str, list[tuple[str, str]]] = {}
-    for status, media_type, kind, _ in branches:
-        if status.isdigit():
-            statuses.setdefault(status, []).append((media_type, kind))
-    if not statuses:
-        return []
-    overload, literal = module.name("typing", "overload"), module.name("typing", "Literal")
-    lines: list[str] = []
-    for status, media in statuses.items():
-        code = f"{literal}[{status}]"
-        if len(media) == 1:
-            lines.extend(_overload(overload, code, f"{literal}[{media[0][0]!r}] | None = None", media[0][1]))
-            continue
-        for media_type, kind in media:
-            lines.extend(_overload(overload, code, f"{literal}[{media_type!r}]", kind))
-        lines.extend(_overload(overload, code, "None = None", _default_kind(media)))
-    lines.extend(_overload(overload, "int", "str | None = None", union))
-    return lines
-
-
-def _default_kind(media: list[tuple[str, str]]) -> str:
-    return next(
-        (kind for media_type, kind in media if media_type == "application/json"),
-        next((kind for media_type, kind in media if media_type.partition(";")[0].endswith("+json")), media[0][1]),
-    )
-
-
-def _overload(overload: str, status: str, media: str, returns: str) -> list[str]:
-    return [f"    @{overload}", f"    {_body_signature(status, media, f'{returns}: ...')}"]
-
-
-def _body_signature(status: str, media: str, returns: str) -> str:
-    parameters = _items(("self", "*", f"status_code: {status}", f"media_type: {media}"))
-    return layout(Group("def body(", parameters, f") -> {returns}"), 4, 0, WIDTH)
-
-
 def _settings(*, secured: bool) -> tuple[str, ...]:
     return ("authorizer", "credential_extractors", *_SETTINGS) if secured else _SETTINGS
 
@@ -1181,10 +961,6 @@ def _security(module: Module) -> tuple[tuple[str, Doc, str], ...]:
     )
 
 
-def _content_status(status: int) -> bool:
-    return status >= _MIN_CONTENT_STATUS and status not in BODYLESS_STATUSES
-
-
 def _dependency_sequence(module: Module) -> str:
     return f"{module.name('collections.abc', 'Sequence')}[{module.local('_runtime.server.application', 'Dependency')}]"
 
@@ -1222,10 +998,6 @@ def _request_kind(media: MediaSpec) -> str:
     return media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"
 
 
-def _response_kind(media: MediaSpec) -> str:
-    return media.kind if media.kind in {"json", "text"} else "binary"
-
-
 _PACKAGE: Final = '''"""FastAPI server generated by datamodel-code-generator."""
 
 from .application import (
@@ -1243,7 +1015,8 @@ from .application import (
     create_app,
 )
 from .errors import AuthConfigurationError, HandlerConfigurationError, OpenAPIConfigurationError
-from .responses import UNSET, HTTPResult, Unset
+from ._runtime.model_codecs.unset import UNSET, Unset
+from ._runtime.server.responses import HTTPResult
 
 __all__ = [
     "UNSET",

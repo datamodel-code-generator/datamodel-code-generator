@@ -11,16 +11,8 @@ import pets_dataclass_models
 import pydantic
 from fastapi.responses import Response
 
-from .model_codecs import ModelValue, Unset
-from .responses import (
-    CreatePetResponsePayload,
-    DeletePetResponsePayload,
-    GetInventoryResponsePayload,
-    GetPetResponsePayload,
-    HTTPResult,
-    ListMyPetsResponsePayload,
-    ListPetsResponsePayload,
-)
+from ._runtime.model_codecs.unset import Unset
+from ._runtime.server.responses import HTTPResult
 
 
 class PetsService(Protocol):
@@ -38,8 +30,7 @@ class PetsService(Protocol):
         session: str | Unset,
     ) -> (
         pets_dataclass_models.FieldPetsGetResponse
-        | ModelValue[pets_dataclass_models.FieldPetsGetResponse]
-        | HTTPResult[ListPetsResponsePayload]
+        | HTTPResult[pets_dataclass_models.FieldPetsGetResponse | pets_dataclass_models.Error]
         | Response
     ): ...
 
@@ -48,20 +39,14 @@ class PetsService(Protocol):
         self,
         *,
         body: pets_dataclass_models.NewPet,
-    ) -> (
-        pets_dataclass_models.Pet
-        | ModelValue[pets_dataclass_models.Pet]
-        | HTTPResult[CreatePetResponsePayload]
-        | Response
-    ): ...
+    ) -> pets_dataclass_models.Pet | HTTPResult[pets_dataclass_models.Pet] | Response: ...
 
     @abstractmethod
     def list_my_pets(
         self,
     ) -> (
         pets_dataclass_models.FieldPetsMineGetResponse
-        | ModelValue[pets_dataclass_models.FieldPetsMineGetResponse]
-        | HTTPResult[ListMyPetsResponsePayload]
+        | HTTPResult[pets_dataclass_models.FieldPetsMineGetResponse]
         | Response
     ): ...
 
@@ -72,17 +57,12 @@ class PetsService(Protocol):
         pet_id: int,
     ) -> (
         pets_dataclass_models.Pet
-        | ModelValue[pets_dataclass_models.Pet]
-        | HTTPResult[GetPetResponsePayload]
+        | HTTPResult[pets_dataclass_models.Pet | pets_dataclass_models.Error]
         | Response
     ): ...
 
     @abstractmethod
-    def delete_pet(
-        self,
-        *,
-        pet_id: int,
-    ) -> None | HTTPResult[DeletePetResponsePayload] | Response: ...
+    def delete_pet(self, *, pet_id: int) -> None | HTTPResult[None] | Response: ...
 
 
 class StoreService(Protocol):
@@ -93,7 +73,6 @@ class StoreService(Protocol):
         self,
     ) -> (
         pets_dataclass_models.FieldStoreInventoryGetResponse
-        | ModelValue[pets_dataclass_models.FieldStoreInventoryGetResponse]
-        | HTTPResult[GetInventoryResponsePayload]
+        | HTTPResult[pets_dataclass_models.FieldStoreInventoryGetResponse]
         | Response
     ): ...

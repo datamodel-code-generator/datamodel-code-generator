@@ -8,9 +8,6 @@ render
   write target server/routers/pets.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/_generated/model_bindings.py (target)
-  write target server/model_codecs.py (target)
-  write target server/responses.py (target)
   write target server/errors.py (target)
   write target server/auth_types.py (target)
   write target server/services.py (target)
@@ -18,44 +15,12 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  21 runtime modules ['write']
+  12 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is included by include_tags 'pets' but excluded by exclude_operations: Only reading pets
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is matched by no include rule: Only reading pets
   S_OPERATION_EXCLUDED info selection /paths/~1health/get: GET /health is matched by no include rule: Only reading pets
 {
-  "bindings": [
-    {
-      "adapter_identity": null,
-      "backend": "pydantic_v2.BaseModel",
-      "converter_strategy": "pydantic_type_adapter",
-      "strategy": "native",
-      "use_id": {
-        "declaration": null,
-        "direction": "response",
-        "location": null,
-        "media": "application/json",
-        "name": null,
-        "owner": {
-          "kind": "operation",
-          "source": {
-            "document": "/inputs/root",
-            "pointer": "/paths/~1pets/get"
-          }
-        },
-        "projection": "value",
-        "role": "response_body",
-        "schema": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1pets/get/responses/200/content/application~1json/schema"
-        },
-        "status": "200",
-        "use_site": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1pets/get/responses/200"
-        }
-      }
-    }
-  ],
+  "bindings": [],
   "diagnostics": [
     {
       "artifact_path": null,
@@ -148,27 +113,6 @@ render
       "group": null,
       "kind": "contract",
       "path": "_generated/contract.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "model_bindings",
-      "path": "_generated/model_bindings.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "model_codecs",
-      "path": "model_codecs.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "responses",
-      "path": "responses.py",
       "sha256": "<sha256>",
       "size": "<masked>"
     },
@@ -368,9 +312,6 @@ render
   write target server/routers/untagged.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/_generated/model_bindings.py (target)
-  write target server/model_codecs.py (target)
-  write target server/responses.py (target)
   write target server/errors.py (target)
   write target server/auth_types.py (target)
   write target server/services.py (target)
@@ -378,7 +319,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  22 runtime modules ['write']
+  13 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is excluded by exclude_tags 'admin': Administration runs elsewhere
 render
   APIGenerationError
@@ -397,9 +338,6 @@ render
   write target server/routers/pets.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/_generated/model_bindings.py (target)
-  write target server/model_codecs.py (target)
-  write target server/responses.py (target)
   write target server/errors.py (target)
   write target server/auth_types.py (target)
   write target server/services.py (target)
@@ -407,7 +345,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  21 runtime modules ['write']
+  12 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1health/get: GET /health is matched by no include rule: One operation
@@ -420,9 +358,6 @@ render
   write target server/routers/pets.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/_generated/model_bindings.py (target)
-  write target server/model_codecs.py (target)
-  write target server/responses.py (target)
   write target server/errors.py (target)
   write target server/auth_types.py (target)
   write target server/services.py (target)
@@ -430,7 +365,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  21 runtime modules ['write']
+  12 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1health/get: GET /health is matched by no include rule: One operation
@@ -444,9 +379,6 @@ render
   write target server/routers/pets.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/_generated/model_bindings.py (target)
-  write target server/model_codecs.py (target)
-  write target server/responses.py (target)
   write target server/errors.py (target)
   write target server/auth_types.py (target)
   write target server/services.py (target)
@@ -454,7 +386,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  21 runtime modules ['write']
+  12 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1health/get: GET /health is matched by no include rule: One operation

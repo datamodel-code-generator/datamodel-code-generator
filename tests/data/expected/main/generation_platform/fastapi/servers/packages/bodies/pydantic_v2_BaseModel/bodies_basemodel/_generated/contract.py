@@ -13,7 +13,7 @@ from typing_extensions import Never
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import BodyAdapter, BodyMedia
-from .._runtime.server.responses import OperationResponses, ResponsePlan
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1items/post',
@@ -60,10 +60,7 @@ class PostItem:
         service='untagged',
         keywords=('body',),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PostAccount:
@@ -75,10 +72,7 @@ class PostAccount:
         service='untagged',
         keywords=('body',),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PostProfile:
@@ -105,10 +99,7 @@ class PostProfile:
         ),
         required=False,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PostVariant:
@@ -135,10 +126,7 @@ class PostVariant:
         ),
         required=False,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PutDocument:
@@ -169,10 +157,7 @@ class PutDocument:
             ),
         ),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PutArchive:
@@ -194,10 +179,7 @@ class PutArchive:
             ),
         ),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PutBlob:
@@ -212,10 +194,7 @@ class PutBlob:
     BODY: Final = BodyAdapter(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PostForm:
@@ -243,10 +222,7 @@ class PostForm:
         ),
         required=False,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PostNativeForm:
@@ -258,10 +234,7 @@ class PostNativeForm:
         service='untagged',
         keywords=('body',),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class Upload:
@@ -283,10 +256,7 @@ class Upload:
             ),
         ),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PostCheck:
@@ -298,10 +268,7 @@ class PostCheck:
         service='untagged',
         keywords=('body',),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PostRaw:
@@ -314,7 +281,4 @@ class PostRaw:
         keywords=('request',),
         asynchronous=True,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)

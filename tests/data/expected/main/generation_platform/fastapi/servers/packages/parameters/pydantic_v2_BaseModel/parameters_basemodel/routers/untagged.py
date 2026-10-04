@@ -13,7 +13,7 @@ from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
 from .._runtime.server.requests import absent, present
-from .._runtime.server.responses import respond
+from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
 
@@ -26,8 +26,8 @@ def _add_search(router: APIRouter, wiring: Wiring) -> None:
             alias='code',
         )] = 'AB',
         parameters: Annotated[contract.Search.Parameters, Depends(contract.Search.PARAMETERS)],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             search_handler(
                 session=parameters.session,
                 code=code,
@@ -121,8 +121,8 @@ def _add_get_ratios(router: APIRouter, wiring: Wiring) -> None:
             deprecated=True,
             examples=[[1]],
         )] = [1, 2],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             get_ratios_handler(ratios=ratios, limits=limits),
             contract.GetRatios.RESPONSES,
         )
@@ -147,8 +147,8 @@ def _add_repeat(router: APIRouter, wiring: Wiring) -> None:
     def repeat(
         *,
         parameters: Annotated[contract.Repeat.Parameters, Depends(contract.Repeat.PARAMETERS)],
-    ) -> Response:
-        return respond(repeat_handler(id=parameters.id), contract.Repeat.RESPONSES)
+    ) -> object:
+        return dispatch(repeat_handler(id=parameters.id), contract.Repeat.RESPONSES)
 
     router.add_api_route(
         '/repeat/{dcg_p0}/again/{dcg_p1}',
@@ -177,8 +177,8 @@ def _add_repeat(router: APIRouter, wiring: Wiring) -> None:
 def _add_get_note(router: APIRouter, wiring: Wiring) -> None:
     get_note_handler = wiring.handlers['get_note']
 
-    def get_note(*, note_id: Annotated[int, Path(alias='dcg_p0')]) -> Response:
-        return respond(get_note_handler(note_id=note_id), contract.GetNote.RESPONSES)
+    def get_note(*, note_id: Annotated[int, Path(alias='dcg_p0')]) -> object:
+        return dispatch(get_note_handler(note_id=note_id), contract.GetNote.RESPONSES)
 
     router.add_api_route(
         '/notes/{dcg_p0}',
@@ -202,8 +202,8 @@ def _add_get_file(router: APIRouter, wiring: Wiring) -> None:
         file_name: Annotated[str, StringConstraints(pattern=r'^[a-z]+\.txt$'), Path(
             alias='dcg_p0',
         )],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             get_file_handler(file_name=file_name),
             contract.GetFile.RESPONSES,
         )
@@ -230,8 +230,8 @@ def _add_get_menu(router: APIRouter, wiring: Wiring) -> None:
         item: Annotated[str, StringConstraints(pattern=r'^[a-z]+$'), Path(
             alias='item',
         )],
-    ) -> Response:
-        return respond(get_menu_handler(item=item), contract.GetMenu.RESPONSES)
+    ) -> object:
+        return dispatch(get_menu_handler(item=item), contract.GetMenu.RESPONSES)
 
     router.add_api_route(
         '/menü/{item}',
@@ -257,8 +257,8 @@ def _add_get_item(router: APIRouter, wiring: Wiring) -> None:
             default_factory=absent,
         )],
         parameters: Annotated[contract.GetItem.Parameters, Depends(contract.GetItem.PARAMETERS)],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             get_item_handler(
                 level=parameters.level,
                 mode=parameters.mode,

@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Final, Literal, TypeAlias, TypedDict
 
+import pets_basemodel_models
 from pydantic import TypeAdapter
 from typing_extensions import Never
 
@@ -14,8 +15,7 @@ from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
-from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
-from . import model_bindings
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1pets/get',
@@ -72,29 +72,16 @@ class ListPets:
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(pets_basemodel_models.FieldPetsGetResponse),
             ),
-            ResponsePlan(
-                status='default',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
-                    ),
-                ),
+            'default': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(pets_basemodel_models.Error),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )
 
 
@@ -108,19 +95,12 @@ class CreatePet:
         keywords=('body',),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='201',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
-                    ),
-                ),
+        responses={
+            '201': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(pets_basemodel_models.Pet),
             ),
-        ),
-        primary=(201, 'application/json'),
+        },
     )
 
 
@@ -133,19 +113,12 @@ class ListMyPets:
         service='pets',
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(pets_basemodel_models.FieldPetsMineGetResponse),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )
 
 
@@ -159,29 +132,16 @@ class GetPet:
         keywords=('pet_id',),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(pets_basemodel_models.Pet),
             ),
-            ResponsePlan(
-                status='404',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
-                    ),
-                ),
+            '404': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(pets_basemodel_models.Error),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )
 
 
@@ -194,10 +154,7 @@ class DeletePet:
         service='pets',
         keywords=('pet_id',),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetInventory:
@@ -209,17 +166,10 @@ class GetInventory:
         service='store',
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(pets_basemodel_models.FieldStoreInventoryGetResponse),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )

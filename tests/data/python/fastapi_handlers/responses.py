@@ -1,19 +1,18 @@
-"""Services of the responses server: bare values, HTTP results, and codec values under each default response class."""
+"""Services of the responses server: bare values and HTTP results under each default response class."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, Response
 
 if TYPE_CHECKING:
     from types import ModuleType
 
 
 def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
-    """Return a service that answers with a bare value, an HTTP result, or a codec value, as the mode asks."""
-    codecs = server.responses.GetGreetingResponseCodecs.body(status_code=200)
+    """Return a service that answers with a bare value or an HTTP result, as the mode asks."""
     greeting = models.FieldGreetingsGetResponse
     make = greeting if isinstance(greeting, type) else str
 
@@ -23,27 +22,15 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             calls.append(f"get_greeting(mode={'absent' if absent else repr(mode)})")
             match mode:
                 case "result":
-                    return server.HTTPResult(status_code=200, body=make("ok"))
-                case "value":
-                    return codecs.from_wire("wire")
+                    return server.HTTPResult(200, make("ok"))
                 case _:
                     return make("hello")
 
         def get_document(self, *, id: int) -> object:  # noqa: A002
             calls.append(f"get_document(id={id!r})")
             if id == 1:
-                return server.HTTPResult(
-                    status_code=200, body=models.Pet(id=1, name="Mimi"), media_type="application/json"
-                )
-            if id == 4:
-                return server.HTTPResult(
-                    status_code=200, body=models.Pet(id=4, name="Mimi"), media_type="application/json; charset=utf-8"
-                )
-            if id == 3:
-                return server.HTTPResult(
-                    status_code=200, body=models.Error(message="v1"), media_type="application/json;profile=v1"
-                )
-            return server.HTTPResult(status_code=200, body=b"raw", media_type="text/plain")
+                return server.HTTPResult(200, models.Pet(id=1, name="Mimi"))
+            return Response(b"raw", media_type="text/plain")
 
         def get_pet(self, *, id: int) -> object:  # noqa: A002
             calls.append(f"get_pet(id={id!r})")
