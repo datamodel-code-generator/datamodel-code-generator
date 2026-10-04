@@ -478,9 +478,21 @@ def media(package: ModuleType, lines: list[str]) -> None:
 
 
 def _files(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Send only declared media types, never a range, and narrow a response to one concrete media type."""
+    """Send concrete media types within declared ranges, never a range, and narrow a response to one concrete type.
+
+    A concrete type goes to its most specific declaration, whose encoding it takes, and text takes its named charset.
+    """
     address = request_body(package, "storeFile", "application/json", {"city": "Oslo"})
     record(lines, "store file of a media range", lambda: api.files.store_file(body=address, media_type="image/*"))
+    csv = request_body(package, "storeFile", "text/*", "a,b")
+    exchange.respond(raw_response(204), raw_response(204), raw_response(204), raw_response(204))
+    record(lines, "store png", lambda: api.files.store_file(body=b"\x89PNG", media_type="image/png"))
+    record(lines, "store pdf", lambda: api.files.store_file(body=b"%PDF", media_type="application/pdf"))
+    record(lines, "store csv in UTF-16", lambda: api.files.store_file(body=csv, media_type="text/csv; charset=utf-16"))
+    record(
+        lines, "replace with octets", lambda: api.files.replace_file(body=b"x", media_type="application/octet-stream")
+    )
+    record(lines, "store video outside the ranges", lambda: api.files.store_file(body=b"x", media_type="video/mp4"))
     exchange.respond(raw_response(201, b"png", "image/png"), raw_response(200, b"jpeg", "image/jpeg"))
     for label in ("store file narrowed", "store file narrowed to another image"):
         record(

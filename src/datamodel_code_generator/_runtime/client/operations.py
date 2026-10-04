@@ -41,7 +41,7 @@ from .errors import (
     UnexpectedMediaTypeError,
     UnexpectedStatusError,
 )
-from .media import charset, encode_text, essence, most_specific, normalized
+from .media import charset, encode_text, essence, most_specific, normalized, with_charset
 from .multipart import (
     DecodedPart,
     MultipartData,
@@ -225,6 +225,7 @@ class FieldBody:
     branch: BodyFields
     values: tuple[object, ...]
     media: BodyMedia
+    sent: str
 
     def fields(self) -> dict[str, object]:
         """Return each given field's value by its wire name."""
@@ -266,10 +267,10 @@ class BodyMedia:
     encoded: tuple[ParameterPlan, ...] = ()
     content_types: tuple[tuple[str, str], ...] = ()
 
-    def encode(self, value: object) -> object:
-        """Encode one body argument for this media type, or raise the codec or media failure.
+    def encode(self, value: object, sent: str) -> object:
+        """Encode one body argument for the media type sent, or raise the codec or media failure.
 
-        Text takes the charset the media type names; a binary body is sent as it is given.
+        Text takes the charset the sent media type names; a binary body is sent as it is given.
         """
         match self.kind:
             case "json":
@@ -278,7 +279,7 @@ class BodyMedia:
                 if not isinstance(text := self.wire(value), str):
                     msg = "A text body must be a string"
                     raise ParameterEncodingError(msg)
-                return encode_text(text, self.media_type)
+                return encode_text(text, sent)
             case "form" if self.encoder is not None:
                 styled = {plan.name: partial(query_pairs, plan) for plan in self.encoded} if self.encoded else None
                 return encode_form(self.wire(value), self.fields, self.additional, styled)
@@ -357,39 +358,61 @@ class RequestBody:
             if self.required:
                 raise RequestEncodingError(location=("body",), operation_id=operation_id)
             return None
-        selected = value.media if isinstance(value, FieldBody) else self.selected(operation_id, media_type)
+        selected, sent = (
+            (value.media, value.sent) if isinstance(value, FieldBody) else self.selected(operation_id, media_type)
+        )
         try:
             if selected.kind == "multipart":
                 boundary = new_boundary()
                 return EncodedBody(
-                    media_type=f"{selected.media_type}; boundary={boundary}",
-                    content=selected.multipart(value, boundary),
+                    media_type=f"{sent}; boundary={boundary}", content=selected.multipart(value, boundary)
                 )
-            content = selected.encode(value)
+            content = selected.encode(value, sent)
         except RequestEncodingError as error:
             raise RequestEncodingError(location=error.location, operation_id=operation_id, cause=error.cause) from None
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation_id, cause=error) from None
-        return EncodedBody(media_type=selected.media_type, content=content)
+        return EncodedBody(media_type=sent, content=content)
 
-    def selected(self, operation_id: str | None, media_type: str | None) -> BodyMedia:
-        """Return the declared media a call sends by its media type, which never names a media range."""
+    def selected(self, operation_id: str | None, media_type: str | None) -> tuple[BodyMedia, str]:
+        """Return the declared media a call sends by its media type, and the media type sent.
+
+        A concrete media type is sent as it is named, with the declared charset when it names none; a call never names
+        a media range such as image/*.
+        """
         if media_type is not None and "*" in essence(media_type):
             raise ConfigurationError(field_path=("media_type",), condition="undeclared", operation_id=operation_id)
-        return self.select(operation_id, media_type)
+        found = self.select(operation_id, media_type)
+        concrete = None if media_type is None else normalized(media_type)
+        return found, found.media_type if concrete is None else _sent(concrete, found.media_type)
 
     def select(self, operation_id: str | None, media_type: str | None) -> BodyMedia:
-        """Return the declared media a call names, or the default media when it names none."""
+        """Return the declared media a call names, or the default media when it names none.
+
+        A media type names the most specific declared media it falls under: itself, itself without parameters, type/*,
+        then */*.
+        """
         if media_type is None and self.default is None:
             raise ConfigurationError(field_path=("media_type",), condition="missing", operation_id=operation_id)
         wanted = self.default if media_type is None else normalized(media_type)
-        if (found := next((media for media in self.media if media.media_type == wanted), None)) is None:
+        declared = None if wanted is None else most_specific(wanted, (media.media_type for media in self.media))
+        if (found := next((media for media in self.media if media.media_type == declared), None)) is None:
             raise ConfigurationError(field_path=("media_type",), condition="undeclared", operation_id=operation_id)
         return found
 
 
 def _quoted(names: tuple[str, ...], positions: Iterable[int]) -> str:
     return ", ".join(repr(names[position]) for position in positions)
+
+
+def _sent(concrete: str, declared: str) -> str:
+    """Return the media type a call sends: its concrete type, with the declared charset when it names none.
+
+    A boundary the concrete type names is left out, since a multipart body names the boundary of its call.
+    """
+    bare, *parameters = concrete.split("; ")
+    kept = "; ".join((bare, *(parameter for parameter in parameters if not parameter.startswith("boundary="))))
+    return with_charset(kept, declared)
 
 
 class Branch(Generic[T_co]):
@@ -957,7 +980,7 @@ class OperationPlan(Generic[T_co, E_co]):
         if given and not isinstance(body, Unset):
             msg = f"{method}() takes a body or its field arguments, not both: {_quoted(fields.names, given)}"
             raise TypeError(msg)
-        selected = request.selected(self.operation_id, media_type)
+        selected, sent = request.selected(self.operation_id, media_type)
         wanted = selected.media_type
         if (branch := fields.branches.get(wanted)) is None:
             if given:
@@ -970,4 +993,4 @@ class OperationPlan(Generic[T_co, E_co]):
         if missing := [position for position in branch.required if isinstance(values[position], Unset)]:
             msg = f"{method}() missing required field arguments for {wanted}: {_quoted(fields.names, missing)}"
             raise TypeError(msg)
-        return FieldBody(branch, tuple(values[position] for position in branch.positions), selected)
+        return FieldBody(branch, tuple(values[position] for position in branch.positions), selected, sent)

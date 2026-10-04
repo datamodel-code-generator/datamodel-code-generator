@@ -1273,8 +1273,9 @@ class _Resources(_Typing):
     ) -> tuple[list[_Variant], tuple[_Argument, ...]]:
         """Return the body signatures of an operation and the body keywords of its implementation.
 
-        A binary body takes the bytes, file, stream, and factory inputs of the client's mode. A media range is never
-        named by a call, so a body declared only in media ranges takes nothing.
+        A binary body takes the bytes, file, stream, and factory inputs of the client's mode. A body declared in a
+        media range such as image/* takes the concrete media type a call sends within it as any string, and a body
+        without declared media takes nothing.
         """
         if (body := spec.body) is None:
             return [_Variant(())], ()
@@ -1282,10 +1283,7 @@ class _Resources(_Typing):
         unset = "" if body.required else module.local("options", "Unset")
         groups: dict[str, list[str]] = {}
         for media in body.media:
-            if not media_range(media.media_type):
-                groups.setdefault(self.body_surface(module, media, asynchronous=asynchronous), []).append(
-                    media.media_type
-                )
+            groups.setdefault(self.body_surface(module, media, asynchronous=asynchronous), []).append(media.media_type)
         if not groups:
             nothing = (
                 _Argument("body", module.local("options", "Unset"), "unset"),
@@ -1293,13 +1291,16 @@ class _Resources(_Typing):
             )
             return [_Variant(nothing)], nothing
 
+        def choices(entries: list[str]) -> str:
+            return "str" if any(media_range(media) for media in entries) else _literal(literal, entries)
+
         def selecting(entries: list[str]) -> _Argument:
             if body.default in entries:
-                return _Argument("media_type", f"{_literal(literal, entries)} | None", "none")
-            return _Argument("media_type", _literal(literal, entries))
+                return _Argument("media_type", f"{choices(entries)} | None", "none")
+            return _Argument("media_type", choices(entries))
 
         surfaces = _union(groups)
-        every = _literal(literal, [media for entries in groups.values() for media in entries])
+        every = choices([media for entries in groups.values() for media in entries])
         if spec.fields:
             return self.field_requests(module, spec, groups, selecting, every)
         implementation = (
@@ -1309,7 +1310,7 @@ class _Resources(_Typing):
         if len(groups) == 1 and (body.default is not None or body.required):
             surface, declared = next(iter(groups.items()))
             if body.default is None:
-                single = (_Argument("body", surface), _Argument("media_type", _literal(literal, declared)))
+                single = (_Argument("body", surface), _Argument("media_type", choices(declared)))
                 return [_Variant(single)], single
             return [_Variant(implementation)], implementation
         variants = [_Variant((_Argument("body", surface), selecting(media))) for surface, media in groups.items()]

@@ -2247,11 +2247,12 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         body: object,
         media_type: str | None,
         options: RequestOptions | None,
-    ) -> tuple[tuple[WireValue | Unset, ...], tuple[WireValue, str, None] | None]:
+    ) -> tuple[tuple[WireValue | Unset, ...], tuple[WireValue, str, str | None] | None]:
         """Return the wire values of a helper call's arguments, and of its JSON body with its declared media type.
 
-        They are encoded and checked as the call's first request encodes them, and the body's third item is always None.
-        An argument `unsaved_argument` names is never saved, so a call giving one cannot be checkpointed.
+        They are encoded and checked as the call's first request encodes them; a body sent as a concrete media type
+        other than its declared one also gives the type sent. An argument `unsaved_argument` names is never saved, so a
+        call giving one cannot be checkpointed.
         """
         self._call_settings(options, operation.operation_id)
         saved = tuple(
@@ -2263,12 +2264,12 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         request = operation.body
         if request is None or isinstance(body, Unset):
             return saved, None
-        media = request.selected(operation.operation_id, media_type)
+        media, sent = request.selected(operation.operation_id, media_type)
         try:
             wire = media.wire(body)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation.operation_id, cause=error) from None
-        return saved, (wire, media.media_type, None)
+        return saved, (wire, media.media_type, None if sent == media.media_type else sent)
 
     @staticmethod
     def restored_request(
@@ -2278,8 +2279,9 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
     ) -> tuple[tuple[object, ...], object, str | None]:
         """Return the arguments, body, and media type of a request a checkpoint saved, built from their wire values.
 
-        Each value is validated and built as its codec builds a caller's wire value; a value that does not fit raises
-        RequestEncodingError, and so does a body whose third item names a concrete media type, which nothing saves now.
+        Each value is validated and built as its codec builds a caller's wire value, and a concrete media type is
+        selected as a call's is; a value that does not fit, or a concrete type that selects another declared media,
+        raises RequestEncodingError.
         """
         restored = tuple(
             value if isinstance(value, Unset) else _coded(operation, spec, partial(spec.restored, value))
@@ -2287,10 +2289,10 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         )
         if body is None or (request := operation.body) is None:
             return restored, UNSET, None
-        wire, media_type, concrete = body
-        if concrete is not None:
+        wire, declared, concrete = body
+        media_type = declared if concrete is None else concrete
+        if (media := request.selected(operation.operation_id, media_type)[0]).media_type != declared:
             raise RequestEncodingError(location=("body",), operation_id=operation.operation_id)
-        media = request.selected(operation.operation_id, media_type)
         try:
             return restored, media.restored(wire), media_type
         except (*DATA_ERRORS, ValueError, TypeError) as error:
