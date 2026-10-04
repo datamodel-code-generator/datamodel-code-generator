@@ -15,12 +15,7 @@ from ._runtime.client.operations import (
     model_branch,
 )
 from ._runtime.model_codecs.parameters import ParameterPlan
-from .types.orders import (
-    GetOrderErrorData,
-    GetOrderHTTPError,
-    GetOrderRequestCodecs,
-    GetOrderResponse,
-)
+from .types.orders import GetOrderErrorData, GetOrderHTTPError, GetOrderResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://evolution.example.com'),)
 
@@ -75,5 +70,4 @@ OPERATION_0: Final[OperationPlan[GetOrderResponse, GetOrderErrorData]] = Operati
             encoder=Encoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
         ),
     ),
-    codecs=GetOrderRequestCodecs,
 )

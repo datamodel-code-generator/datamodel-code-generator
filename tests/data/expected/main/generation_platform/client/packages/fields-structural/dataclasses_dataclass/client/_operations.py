@@ -25,39 +25,30 @@ from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.default import (
     CreateOwnerErrorData,
     CreateOwnerHTTPError,
-    CreateOwnerRequestCodecs,
     CreateOwnerResponse,
     CreatePetErrorData,
     CreatePetHTTPError,
-    CreatePetRequestCodecs,
     CreatePetResponse,
     LogVisitErrorData,
     LogVisitHTTPError,
-    LogVisitRequestCodecs,
     LogVisitResponse,
     PutLabelsErrorData,
     PutLabelsHTTPError,
-    PutLabelsRequestCodecs,
     PutLabelsResponse,
     PutPhotoErrorData,
     PutPhotoHTTPError,
-    PutPhotoRequestCodecs,
     PutPhotoResponse,
     ReplacePetErrorData,
     ReplacePetHTTPError,
-    ReplacePetRequestCodecs,
     ReplacePetResponse,
     SearchPetsErrorData,
     SearchPetsHTTPError,
-    SearchPetsRequestCodecs,
     SearchPetsResponse,
     SetOwnerErrorData,
     SetOwnerHTTPError,
-    SetOwnerRequestCodecs,
     SetOwnerResponse,
     UpdatePetErrorData,
     UpdatePetHTTPError,
-    UpdatePetRequestCodecs,
     UpdatePetResponse,
 )
 
@@ -107,7 +98,6 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse, CreatePetErrorData]] = Opera
         ),
         required=True,
     ),
-    codecs=CreatePetRequestCodecs,
     fields=FieldArguments(
         method='create_pet',
         names=('name', 'kind', 'pet_tag', 'birth_date', 'owner', 'secret'),
@@ -159,7 +149,6 @@ OPERATION_1: Final[OperationPlan[UpdatePetResponse, UpdatePetErrorData]] = Opera
         ),
         default='application/json',
     ),
-    codecs=UpdatePetRequestCodecs,
     fields=FieldArguments(
         method='update_pet',
         names=('name', 'tag'),
@@ -201,7 +190,6 @@ OPERATION_2: Final[OperationPlan[LogVisitResponse, LogVisitErrorData]] = Operati
         ),
         required=True,
     ),
-    codecs=LogVisitRequestCodecs,
     fields=FieldArguments(
         method='log_visit',
         names=('note', 'visit_options'),
@@ -242,7 +230,6 @@ OPERATION_3: Final[OperationPlan[SetOwnerResponse, SetOwnerErrorData]] = Operati
         ),
         default='application/json',
     ),
-    codecs=SetOwnerRequestCodecs,
 )
 
 OPERATION_4: Final[OperationPlan[CreateOwnerResponse, CreateOwnerErrorData]] = OperationPlan(
@@ -262,7 +249,6 @@ OPERATION_4: Final[OperationPlan[CreateOwnerResponse, CreateOwnerErrorData]] = O
         default='application/json',
         required=True,
     ),
-    codecs=CreateOwnerRequestCodecs,
     fields=FieldArguments(
         method='create_owner',
         names=('email', 'nick_name'),
@@ -304,7 +290,6 @@ OPERATION_5: Final[OperationPlan[PutLabelsResponse, PutLabelsErrorData]] = Opera
         default='application/json',
         required=True,
     ),
-    codecs=PutLabelsRequestCodecs,
 )
 
 OPERATION_6: Final[OperationPlan[SearchPetsResponse, SearchPetsErrorData]] = OperationPlan(
@@ -335,7 +320,6 @@ OPERATION_6: Final[OperationPlan[SearchPetsResponse, SearchPetsErrorData]] = Ope
         ),
         required=True,
     ),
-    codecs=SearchPetsRequestCodecs,
 )
 
 OPERATION_7: Final[OperationPlan[PutPhotoResponse, PutPhotoErrorData]] = OperationPlan(
@@ -374,7 +358,6 @@ OPERATION_7: Final[OperationPlan[PutPhotoResponse, PutPhotoErrorData]] = Operati
         default='multipart/form-data',
         required=True,
     ),
-    codecs=PutPhotoRequestCodecs,
 )
 
 OPERATION_8: Final[OperationPlan[ReplacePetResponse, ReplacePetErrorData]] = OperationPlan(
@@ -406,5 +389,14 @@ OPERATION_8: Final[OperationPlan[ReplacePetResponse, ReplacePetErrorData]] = Ope
         default='application/json',
         required=True,
     ),
-    codecs=ReplacePetRequestCodecs,
+    fields=FieldArguments(
+        method='replace_pet',
+        names=('name', 'tag'),
+        media=(
+            BodyFields(
+                media_type='application/json',
+                fields=((0, 'name', True), (1, 'tag', False)),
+            ),
+        ),
+    ),
 )

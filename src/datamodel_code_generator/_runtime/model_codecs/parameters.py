@@ -163,9 +163,9 @@ def _entries(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
             raise ParameterEncodingError(msg)
         case "scalar", _:
             return [(None, lexical(value, plan.kind))]
-        case "array", tuple() if value:
+        case "array", tuple():
             return [(None, lexical(item, plan.kind)) for item in value]
-        case "object", Mapping() if value:
+        case "object", Mapping():
             entries: list[_Entry] = []
             for key, item in value.items():
                 if (declared := _member(plan, key)) is None:
@@ -173,9 +173,6 @@ def _entries(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
                     raise ParameterEncodingError(msg)
                 entries.append((key, lexical(item, declared.kind)))
             return entries
-        case ("array", tuple()) | ("object", Mapping()):
-            msg = "An empty array or object cannot be distinguished from omission"
-            raise ParameterEncodingError(msg)
         case _:
             msg = "The value does not have the parameter's declared shape"
             raise ParameterEncodingError(msg)
@@ -313,7 +310,9 @@ def _encode_querystring(plan: ParameterPlan, value: WireValue) -> bytes:
 
 
 def _style_pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
-    entries = _entries(plan, value)
+    """Return a style's pairs of a value; an empty array or object writes none, as an omitted value does."""
+    if not (entries := _entries(plan, value)):
+        return []
     match plan.location:
         case "path":
             return [(None, _encode_path(plan, entries))]
@@ -362,10 +361,9 @@ def query_pairs(plan: ParameterPlan, value: WireValue) -> tuple[str, ...]:
 
 def part_pairs(plan: ParameterPlan, value: WireValue) -> tuple[tuple[str, str], ...]:
     """Return a query parameter's ordered names and values as form-data parts carry them, without percent-encoding."""
-    return tuple(
-        (plan.name if key is None else key, text)
-        for key, text in _encode_query(plan, _entries(plan, freeze_wire(value)), raw=True)
-    )
+    if not (entries := _entries(plan, freeze_wire(value))):
+        return ()
+    return tuple((plan.name if key is None else key, text) for key, text in _encode_query(plan, entries, raw=True))
 
 
 def _pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:

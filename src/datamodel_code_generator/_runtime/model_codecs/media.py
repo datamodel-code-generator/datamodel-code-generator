@@ -328,11 +328,8 @@ def encode_form(
 
 def _members(value: WireValue, field: FieldPlan) -> tuple[WireValue, ...]:
     match value:
-        case tuple() if field.repeated and value:
-            return value
         case tuple() if field.repeated:
-            msg = "An empty array cannot be represented by repeated pairs"
-            raise ParameterEncodingError(msg)
+            return value
         case _ if field.repeated:
             msg = "A repeated member must be an array"
             raise ParameterEncodingError(msg)

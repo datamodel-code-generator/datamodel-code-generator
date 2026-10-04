@@ -15,15 +15,14 @@ from pets.protocols import (
     MemoryCacheStore,
 )
 from pets.responses import ResponseInfo
-from pets.types.secure import GetSecureUserRequestCodecs, GetSecureUserResponse
+from pets.types.secure import GetSecureUserResponse
 from pets.types.users import (
     DeleteUserResponse,
-    GetUserRequestCodecs,
     GetUserResponse,
     ListUsersResponse,
     RenameUserResponse,
 )
-from pets_models import UserPatch
+from pets_models import FieldSecureUsersUserIdGetPathUserIdParameter, FieldUsersUserIdGetPathUserIdParameter, UserPatch
 from typing_extensions import Literal, assert_type
 
 
@@ -38,10 +37,9 @@ def stores() -> tuple[CacheStore, AsyncCacheStore]:
     return MemoryCacheStore(), AsyncMemoryCacheStore()
 
 
-def fetch(client: Client, entry: CacheEntry) -> None:
+def fetch(client: Client, entry: CacheEntry, three: FieldUsersUserIdGetPathUserIdParameter, one: FieldSecureUsersUserIdGetPathUserIdParameter) -> None:
     """Fetch typed results, read their metadata, and invalidate and mutate entries."""
     helper = client.protocols.users.profile
-    three = GetUserRequestCodecs.parameter(location="path", name="userId").from_wire(3)
     result = helper.fetch(user_id=three, cache_options=CacheOptions(max_ttl=60), options=RequestOptions())
     assert_type(result, CacheResult[GetUserResponse])
     assert_type(result.data, GetUserResponse)
@@ -53,7 +51,6 @@ def fetch(client: Client, entry: CacheEntry) -> None:
     assert_type(helper.mutations.rename(user_id=three, body=UserPatch(name="dog")), RenameUserResponse)
     assert_type(helper.mutations.remove(user_id=three), DeleteUserResponse)
     assert_type(client.protocols.users.listing.fetch(), CacheResult[ListUsersResponse])
-    one = GetSecureUserRequestCodecs.parameter(location="path", name="userId").from_wire(1)
     assert_type(client.protocols.secure.profile.fetch(user_id=one).data, GetSecureUserResponse)
     assert_type(entry.body, bytes)
     assert_type(entry.vary_fingerprints, tuple[bytes, ...])
@@ -66,10 +63,9 @@ def recovered(error: CacheInvalidationError[RenameUserResponse]) -> RenameUserRe
     return error.require_result()
 
 
-async def afetch(client: AsyncClient) -> None:
+async def afetch(client: AsyncClient, three: FieldUsersUserIdGetPathUserIdParameter) -> None:
     """Await the asyncio helpers, keeping the same result types."""
     helper = client.protocols.users.profile
-    three = GetUserRequestCodecs.parameter(location="path", name="userId").from_wire(3)
     assert_type(await helper.fetch(user_id=three), CacheResult[GetUserResponse])
     assert_type(await helper.invalidate(("users",)), int)
     assert_type(await helper.mutations.rename(user_id=three, body=UserPatch(name="dog")), RenameUserResponse)

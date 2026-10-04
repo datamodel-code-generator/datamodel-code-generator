@@ -186,7 +186,7 @@ def _public_api(content: bytes) -> list[str]:
         lines.extend((
             f"  {operation['operation_ref']} {operation['resource']}.{operation['method']}({parameters})",
             f"    exports {exports['response']} {exports['error_data']} {exports['http_error']}",
-            f"    exports {exports['request_codecs']} {exports['header_decoder']}",
+            f"    exports {exports['header_decoder']}",
         ))
     return lines
 
@@ -321,14 +321,18 @@ def client_helper_digest_report(first: str, second: str, root: Path) -> str:
 
 
 def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
-    """Render one fixture for each of its backends, returning a report and every backend's Python modules."""
+    """Render one fixture for each of its backends, returning a report and every backend's Python modules.
+
+    A case's `modules` keeps all modules (`true`), none (`false`), the listed ones, or maps each backend to one of these.
+    """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     lines = [f"# {case.get('expected', case_name)}"]
     rendered: dict[str, Modules] = {}
+    selected = case.get("modules", True)
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         lines.append(f"render {backend}")
         lines.extend(_render(case, backend, root / (name := backend.replace(".", "_")), modules := {}))
-        if modules and (kept := case.get("modules", True)):
+        if modules and (kept := selected[backend] if isinstance(selected, dict) else selected):
             rendered[name] = modules if kept is True else {parts: modules[parts] for parts in map(tuple, kept)}
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
 

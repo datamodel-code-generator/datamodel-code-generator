@@ -19,7 +19,6 @@ from .._runtime.protocols.pagination import (
 )
 from .._runtime.protocols.resume import ResumeState
 from .._runtime.protocols.streams import EventStream, open_events
-from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.notes import ListNotesResponse
 from . import PaginationOptions, StreamOptions, _plans
@@ -66,7 +65,7 @@ class NotesAllPagination:
     def page(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        cursor: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -84,7 +83,7 @@ class NotesAllPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        cursor: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

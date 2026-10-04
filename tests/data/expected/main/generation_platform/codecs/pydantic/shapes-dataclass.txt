@@ -1,15 +1,15 @@
-use /paths/~1animals/post request_body: envelope alias models:FieldAnimalsPostRequest models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
+use /paths/~1animals/post request_body: native alias models:FieldAnimalsPostRequest models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
 use /paths/~1animals/post response_body 200: native alias models:FieldAnimalsPostResponse models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
-use /paths/~1animals~1any/put request_body: envelope alias models:FieldAnimalsAnyPutRequest models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
-use /paths/~1kin/put request_body: envelope alias models:FieldKinPutRequest models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'forbid', False)]
+use /paths/~1animals~1any/put request_body: native alias models:FieldAnimalsAnyPutRequest models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
+use /paths/~1kin/put request_body: native alias models:FieldKinPutRequest models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'forbid', False)]
 use /paths/~1kin/get response_body 200: native alias models:FieldKinGetResponse models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'forbid', False)]
 use /paths/~1tree/put request_body: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
 use /paths/~1tree/put response_body 200: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
 use /paths/~1mixed/post request_body: native alias models:Mixed models=[('models:Large', 'dataclass', 'ignore', True), ('models:Small', 'dataclass', 'ignore', True)]
 use /paths/~1values/post request_body: native dataclass models:Values models=[('models:Values', 'dataclass', 'ignore', True)]
 use /paths/~1values/post response_body 200: native dataclass models:Values models=[('models:Values', 'dataclass', 'ignore', True)]
-animal-client-cat: input issues=DIRECTIONAL_REQUIRED@/id:models:Cat.id wire={"meow":true} extras={}
-animal-server-dog-extra: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"meow":true,"bark":1} extras={"/meow":true}
+animal-client-cat: NativeValidationError native.missing@/id['Cat', 'id'],native.missing@/id['Dog', 'id'],native.missing@/bark['Dog', 'bark']
+animal-server-dog-extra: NativeValidationError native.missing@/id['Cat', 'id'],native.unexpected_keyword_argument@/bark['Cat', 'bark'],native.missing@/id['Dog', 'id']
 animal-client-decode-dog: model Dog(id=2, name=None, nick_name=None, bark=3) wire={"id":2,"bark":3,"x":1} presence=['', '/id', '/bark', '/x'] extras={"/x":1}
 animal-server-encode-dog: wire={"id":2,"bark":3}
 animal-client-decode-null: model None wire=null presence=[''] extras={}

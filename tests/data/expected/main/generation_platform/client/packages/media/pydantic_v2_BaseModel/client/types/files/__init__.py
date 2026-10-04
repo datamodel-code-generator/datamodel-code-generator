@@ -4,21 +4,17 @@
 from ._operations import (
     ReplaceFileErrorData,
     ReplaceFileHTTPError,
-    ReplaceFileRequestCodecs,
     ReplaceFileResponse,
     StoreFileErrorData,
     StoreFileHTTPError,
-    StoreFileRequestCodecs,
     StoreFileResponse,
 )
 
 __all__ = [
     'ReplaceFileErrorData',
     'ReplaceFileHTTPError',
-    'ReplaceFileRequestCodecs',
     'ReplaceFileResponse',
     'StoreFileErrorData',
     'StoreFileHTTPError',
-    'StoreFileRequestCodecs',
     'StoreFileResponse',
 ]

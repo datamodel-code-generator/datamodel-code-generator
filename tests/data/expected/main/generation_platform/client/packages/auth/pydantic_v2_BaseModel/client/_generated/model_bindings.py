@@ -16,7 +16,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
 from .._runtime.model_codecs.wire import freeze_wire
@@ -646,11 +645,6 @@ def codec_0() -> PydanticModelCodec[models.FieldApiKeyCookieParametersGetCookieT
     )
 
 
-@cache
-def outbound_0() -> NativeOutboundCodec[models.FieldApiKeyCookieParametersGetCookieThemeParameter]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
-
-
 CONTEXT_1: Final = CodecContext(
     surface='client',
     direction='request',
@@ -683,11 +677,6 @@ def codec_1() -> PydanticModelCodec[models.FieldApiKeyCookieParametersGetQueryPa
         },
         request_bundle,
     )
-
-
-@cache
-def outbound_1() -> NativeOutboundCodec[models.FieldApiKeyCookieParametersGetQueryPageParameter]:
-    return NativeOutboundCodec(codec_1(), CONTEXT_1)
 
 
 CONTEXT_2: Final = CodecContext(
@@ -724,11 +713,6 @@ def codec_2() -> PydanticModelCodec[models.FieldApiKeyCookieParametersGetHeaderX
     )
 
 
-@cache
-def outbound_2() -> NativeOutboundCodec[models.FieldApiKeyCookieParametersGetHeaderXTraceParameter]:
-    return NativeOutboundCodec(codec_2(), CONTEXT_2)
-
-
 CONTEXT_3: Final = CodecContext(
     surface='client',
     direction='request',
@@ -763,11 +747,6 @@ def codec_3() -> PydanticModelCodec[models.FieldApiKeyCookieParametersGetQueryFi
     )
 
 
-@cache
-def outbound_3() -> NativeOutboundCodec[models.FieldApiKeyCookieParametersGetQueryFilterParameter]:
-    return NativeOutboundCodec(codec_3(), CONTEXT_3)
-
-
 CONTEXT_4: Final = CodecContext(
     surface='client',
     direction='request',
@@ -799,8 +778,3 @@ def codec_4() -> PydanticModelCodec[str]:
         {},
         request_bundle,
     )
-
-
-@cache
-def outbound_4() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_4(), CONTEXT_4)

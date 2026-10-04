@@ -20,7 +20,7 @@ def _validation(package: Any, case: dict[str, Any]) -> str:
     for direction in ("request", "response"):
         bundle = getattr(package.bindings, f"{direction}_bundle")()
         try:
-            issues = bundle.validator(case["schema"]).validate(package.public.freeze_wire(case["value"]))
+            issues = bundle.validator(case["schema"]).validate(package.wire.freeze_wire(case["value"]))
         except package.public.CodecError as error:
             outcomes.append(f"{direction} {failure(package, error)}")
             continue

@@ -84,12 +84,15 @@ class GeneratedCodecs:
         import_generated_codecs(name, root)
         self.bindings = importlib.import_module(f"{name}._generated.model_bindings")
         self.public = importlib.import_module(f"{name}.model_codecs")
-        self.media = importlib.import_module(f"{name}._runtime.model_codecs.media")
+        self.media, self.wire, self.values, self.outbound = (
+            importlib.import_module(f"{name}._runtime.model_codecs.{module}")
+            for module in ("media", "wire", "values", "outbound")
+        )
         self.uses = _uses(root, name)
 
     def load(self, path: Path) -> Any:
         """Decode a fixture as the package's runtime decodes JSON, keeping every number exact."""
-        return self.public.thaw_wire(self.media.decode_json(path.read_bytes()))
+        return self.wire.thaw_wire(self.media.decode_json(path.read_bytes()))
 
     def codec_of(self, index: int) -> Any:
         """Build the generated codec of one binding."""
@@ -148,10 +151,9 @@ def _native(value: object) -> str:
 
 
 def _result(package: GeneratedCodecs, value: object, *, wire_only: bool = False) -> str:
-    public = package.public
-    if isinstance(value, public.ModelValue) and wire_only:
+    if isinstance(value, package.values.ModelValue) and wire_only:
         return f"model wire={package.json(value.wire)} extras={package.json(value.extras)}"
-    if isinstance(value, public.ModelValue):
+    if isinstance(value, package.values.ModelValue):
         fields_set = getattr(value.value, "model_fields_set", None)
         return (
             f"model {_native(value.value)}"
@@ -159,7 +161,7 @@ def _result(package: GeneratedCodecs, value: object, *, wire_only: bool = False)
             + f" wire={package.json(value.wire)} presence={list(value.presence.pointers())}"
             + f" extras={package.json(value.extras)}"
         )
-    if isinstance(value, public.ModelInput):
+    if isinstance(value, package.values.ModelInput):
         issues = ",".join(f"{issue.code}@{issue.pointer}:{issue.field_id}" for issue in value.issues)
         return f"input issues={issues} wire={package.json(value.wire)} extras={package.json(value.extras)}"
     return f"wire={package.json(value)}"
@@ -234,14 +236,14 @@ class _Runner:
     def wire(self, spec: object) -> object:
         if isinstance(spec, dict) and spec.keys() & {"call", "result", "nested", "py"}:
             return self.native(spec)
-        return self.package.public.freeze_wire(spec)
+        return self.package.wire.freeze_wire(spec)
 
     def run(self, case: dict[str, Any]) -> str:
         public = self.package.public
         codec = self.codecs[str(case["use"])]
         context = _context(self.package, case, codec.binding)
         value = self.wire(case.get("value"))
-        presence = public.presence_of(case["presence"]) if "presence" in case else None
+        presence = self.package.wire.presence_of(case["presence"]) if "presence" in case else None
         result: object = None
         try:
             match case["op"]:
@@ -254,11 +256,11 @@ class _Runner:
                 case "snapshot":
                     result = codec.snapshot(value, context, presence=presence)
                 case "native-outbound":
-                    result = public.NativeOutboundCodec(codec, context).from_wire(value)
+                    result = self.package.outbound.NativeOutboundCodec(codec, context).from_wire(value)
                 case "envelope-outbound":
-                    result = public.EnvelopeOutboundCodec(codec, context).from_wire(value)
+                    result = self.package.outbound.EnvelopeOutboundCodec(codec, context).from_wire(value)
                 case "envelope-snapshot":
-                    result = public.EnvelopeOutboundCodec(codec, context).snapshot(value, presence=presence)
+                    result = self.package.outbound.EnvelopeOutboundCodec(codec, context).snapshot(value, presence=presence)
                 case "mutate":
                     target = self.results[str(case["target"])]
                     native = self.native(case.get("native")) if "native" in case else value
@@ -487,9 +489,9 @@ def _startup(generated: Path, root: Path, package: str, case: dict[str, Any], va
             codec = edited.codec_of(index)
             context = _context(edited, case, codec.binding)
             if "decode" in values:
-                return _result(edited, codec.decode(public.freeze_wire(values["decode"]), context))
+                return _result(edited, codec.decode(edited.wire.freeze_wire(values["decode"]), context))
             if "convert" in values:
-                return f"converted {_native(codec.convert(public.freeze_wire(values['convert']), context))}"
+                return f"converted {_native(codec.convert(edited.wire.freeze_wire(values['convert']), context))}"
         except public.CodecError as error:
             return failure(edited, error)
     return "built"

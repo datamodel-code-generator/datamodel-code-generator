@@ -7,6 +7,4 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['unused.schema'].event_schema: The event_schema '/components/schemas/Unused' of 'unused.schema' is not the schema of a JSON request body of any webhook or callback operation
   E_CONFIG_VALUE config protocols.helpers['form.event'].event_schema: The event_schema '/components/schemas/Form' of 'form.event' is not the schema of a JSON request body of any webhook or callback operation
   E_CONFIG_VALUE config protocols.helpers['mapped.event'].event_schema.mapping['circle']: The event_schema '/components/schemas/Circle' of 'mapped.event' is not the schema of a JSON request body of any webhook or callback operation
-  E_CLIENT_UNSUPPORTED target protocols.helpers['audit.event'].event_schema: The webhook helper 'audit.event' decodes an envelope-projected event, which is not supported yet
-  E_CLIENT_UNSUPPORTED target protocols.helpers['mapped.audit'].event_schema.mapping['audit']: The webhook helper 'mapped.audit' decodes an envelope-projected event, which is not supported yet
   E_CONFIG_VALUE config protocols.helpers['mapped.missing'].event_schema.mapping['missing']: The event_schema '/components/schemas/Missing' of 'mapped.missing' does not exist in its document

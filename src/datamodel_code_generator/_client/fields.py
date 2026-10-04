@@ -53,7 +53,7 @@ def _model(binding: UseBinding) -> ModelBinding | None:
         node = root
     if isinstance(node, UnionNode) and len(node.members) == 1:
         node = node.members[0]
-    if not isinstance(node, ModelNode) or binding.projection_mode != "native":
+    if not isinstance(node, ModelNode):
         return None
     return model if (model := models[node.symbol]).native_kind in _NATIVE_KINDS else None
 

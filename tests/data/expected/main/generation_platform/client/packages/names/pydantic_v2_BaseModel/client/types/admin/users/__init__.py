@@ -4,13 +4,11 @@
 from ._operations import (
     ListAdminUsersErrorData,
     ListAdminUsersHTTPError,
-    ListAdminUsersRequestCodecs,
     ListAdminUsersResponse,
 )
 
 __all__ = [
     'ListAdminUsersErrorData',
     'ListAdminUsersHTTPError',
-    'ListAdminUsersRequestCodecs',
     'ListAdminUsersResponse',
 ]

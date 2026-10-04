@@ -73,6 +73,7 @@ from tests.data.python.client_runtime import (
     Exchange,
     abroken,
     arecord,
+    argument,
     broken,
     chunked_response,
     failing,
@@ -81,9 +82,9 @@ from tests.data.python.client_runtime import (
     json_response,
     raw_response,
     record,
+    request_body,
     run,
 )
-from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_socket_connectors import socket_connector_outcomes, socket_connectors
 from tests.data.python.client_sockets import sockets
@@ -115,19 +116,12 @@ def _modules(package: ModuleType, *names: str) -> list[ModuleType]:
     return [importlib.import_module(f"{package.__name__}.{name}") for name in names]
 
 
-def _argument(package: ModuleType, operation: str, location: str, name: str, wire: object) -> object:
-    """Return a parameter value any backend accepts: the snapshot its request codec builds from a wire value."""
-    resource = "pets.photos" if operation == "Upload" else "pets"
-    codecs = getattr(importlib.import_module(f"{package.__name__}.types.{resource}"), f"{operation}RequestCodecs")
-    return codecs.parameter(location=location, name=name).from_wire(wire)
-
-
 def _pet(package: ModuleType, operation: str) -> object:
-    return _argument(package, operation, "path", "petId", 3)
+    return argument(package, operation, "path", "petId", 3)
 
 
 def _trace(package: ModuleType, value: str = "t") -> object:
-    return _argument(package, "ListPets", "header", "X-Trace", value)
+    return argument(package, "listPets", "header", "X-Trace", value)
 
 
 def _options(package: ModuleType, lines: list[str]) -> None:
@@ -196,11 +190,10 @@ def _lifecycle(package: ModuleType, lines: list[str]) -> None:
 
 def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     (types,) = _modules(package, "types.pets")
-    codecs = types.ListPetsRequestCodecs
-    limit = codecs.parameter(location="query", name="limit").from_wire(5).value
-    labels = codecs.parameter(location="query", name="tags").from_wire(["a b", "c"])
-    trace = codecs.parameter(location="header", name="X-Trace").from_wire("t1").value
-    session = codecs.parameter(location="cookie", name="session").from_wire("s1")
+    limit = argument(package, "listPets", "query", "limit", 5)
+    labels = argument(package, "listPets", "query", "tags", ["a b", "c"])
+    trace = argument(package, "listPets", "header", "X-Trace", "t1")
+    session = argument(package, "listPets", "cookie", "session", "s1")
     headers = {"X-Rate": "10", "X-Next": "abc", "X-Request-Id": "req-1"}
     pets = [{"id": 1, "name": "cat", "tag": None}]
     exchange.respond(json_response(200, pets, **headers))
@@ -263,22 +256,15 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     record(lines, "list missing", lambda: api.pets.list_pets(x_trace=options.UNSET))
     record(lines, "list invalid", lambda: api.pets.list_pets(x_trace=_trace(package, "line\nbreak")))
     record(lines, "list options", lambda: api.pets.list_pets(x_trace=trace, options="fast"))
-    record(lines, "list codec", lambda: codecs.parameter(location="query", name="missing"))
 
 
 def _create_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    (types,) = _modules(package, "types.pets")
-    codecs = types.CreatePetRequestCodecs
-    json_codec = codecs.body(media_type="application/json")
-    text = codecs.body(media_type="text/plain").from_wire("bird").value
+    text = request_body(package, "createPet", "text/plain", "bird")
     created = {"id": 2, "name": "dog"}
     exchange.respond(json_response(201, created), json_response(201, created), json_response(201, created))
-    record(
-        lines,
-        "create",
-        lambda: api.pets.create_pet(body=json_codec.from_wire({"name": "dog"}), media_type="application/json"),
-    )
-    native = json_codec.from_wire({"name": "dog", "tag": "x"}).value
+    dog = request_body(package, "createPet", "application/json", {"name": "dog"})
+    record(lines, "create", lambda: api.pets.create_pet(body=dog, media_type="application/json"))
+    native = request_body(package, "createPet", "application/json", {"name": "dog", "tag": "x"})
     record(lines, "create native", lambda: api.pets.create_pet(body=native, media_type="Application/JSON"))
     record(lines, "create text", lambda: api.pets.create_pet(body=text, media_type="text/plain"))
     record(lines, "create missing media", lambda: api.pets.create_pet(body=native))
@@ -289,8 +275,6 @@ def _create_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
     record(lines, "create invalid body", lambda: api.pets.create_pet(body=object(), media_type="application/json"))
     exchange.respond(json_response(422, {"code": 22}))
     record(lines, "create rejected", lambda: api.pets.create_pet(body=native, media_type="application/json"))
-    record(lines, "create codec default", codecs.body)
-    record(lines, "create codec media", lambda: codecs.body(media_type="text/csv"))
 
 
 def _get_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -309,25 +293,25 @@ def _get_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
         record(
             lines,
             label,
-            lambda media=media: api.pets.get_pet(pet_id=_pet(package, "GetPet"), response_media_type=media),
+            lambda media=media: api.pets.get_pet(pet_id=_pet(package, "getPet"), response_media_type=media),
         )
-    pet = _pet(package, "GetPet")
+    pet = _pet(package, "getPet")
     record(lines, "get undeclared", lambda: api.pets.get_pet(pet_id=pet, response_media_type="image/png"))
     record(lines, "get invalid", lambda: api.pets.get_pet(pet_id=pet, response_media_type="png"))
     exchange.respond(raw_response(204), injected(raw_response(204, b"x", "text/plain")), raw_response(200))
-    deleted = _pet(package, "DeletePetsByPetId")
+    deleted = _pet(package, "DELETE /pets/{petId}")
     record(lines, "delete", lambda: api.pets.delete_pets_by_pet_id(pet_id=deleted))
     record(lines, "delete body", lambda: api.pets.delete_pets_by_pet_id(pet_id=deleted))
     record(lines, "delete ok", lambda: api.pets.delete_pets_by_pet_id(pet_id=deleted))
     exchange.respond(raw_response(200, ETag='"v1"'))
-    response = record(lines, "head", lambda: api.pets.with_response.head_pet(pet_id=_pet(package, "HeadPet")))
+    response = record(lines, "head", lambda: api.pets.with_response.head_pet(pet_id=_pet(package, "headPet")))
     types = importlib.import_module(f"{package.__name__}.types.pets")
     record(lines, "head etag", lambda: types.decode_head_pet_header(response.info, name="ETag"))
 
 
 def _upload(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     exchange.respond(raw_response(200, b"\x89PNG", "image/png"), raw_response(200, b"{}", "application/json"))
-    pet = _pet(package, "Upload")
+    pet = _pet(package, "uploadPhoto")
     record(lines, "upload", lambda: api.pets.photos.upload(pet_id=pet, body=b"\x00\x01"))
     record(lines, "upload empty", lambda: api.pets.photos.upload(pet_id=pet))
     record(lines, "upload text", lambda: api.pets.photos.upload(pet_id=pet, body="text"))
@@ -339,7 +323,7 @@ def _servers(package: ModuleType, api_options: Any, exchange: Exchange, lines: l
     selection = options.ServerSelection
     http = exchange.client()
     override = options.ClientOptions(base_url="https://override.example.com/root/")
-    pet = _pet(package, "DeletePetsByPetId")
+    pet = _pet(package, "DELETE /pets/{petId}")
     with package.Client(http_client=http, options=override) as api:
         exchange.respond(raw_response(204), raw_response(204))
         record(lines, "base_url", lambda: api.pets.delete_pets_by_pet_id(pet_id=pet))
@@ -389,9 +373,9 @@ def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
         (httpx2.RemoteProtocolError, 1),
     ):
         exchange.respond(*(failing(error) for _ in range(attempts)))
-        record(lines, f"transport {error.__name__}", lambda: api.pets.get_pet(pet_id=_pet(package, "GetPet")))
+        record(lines, f"transport {error.__name__}", lambda: api.pets.get_pet(pet_id=_pet(package, "getPet")))
     exchange.respond(broken, broken, broken)
-    record(lines, "transport broken", lambda: api.pets.get_pet(pet_id=_pet(package, "GetPet")))
+    record(lines, "transport broken", lambda: api.pets.get_pet(pet_id=_pet(package, "getPet")))
 
 
 def pets(package: ModuleType, lines: list[str]) -> None:
@@ -416,9 +400,9 @@ def pets(package: ModuleType, lines: list[str]) -> None:
 async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
     (options,) = _modules(package, "options")
     http = exchange.async_client()
-    trace, pet = _trace(package), _pet(package, "GetPet")
+    trace, pet = _trace(package), _pet(package, "getPet")
     (types,) = _modules(package, "types.pets")
-    text = types.CreatePetRequestCodecs.body(media_type="text/plain").from_wire("dog")
+    text = request_body(package, "createPet", "text/plain", "dog")
     async with package.AsyncClient(
         http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
     ) as api:
@@ -458,17 +442,17 @@ def _async_invalid(package: ModuleType) -> Callable[[], Any]:
 
 
 def media(package: ModuleType, lines: list[str]) -> None:
-    """Send forms, pairs, documents, and notes, and decode forms, texts, envelopes, and object headers."""
+    """Send forms, pairs, documents, and notes, and decode forms, texts, documents, and object headers."""
     forms, documents = _modules(package, "types.forms", "types.documents")
     exchange = Exchange(lines)
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
-        form = forms.SubmitFormRequestCodecs.body().from_wire({"name": "a b", "count": 2, "labels": ["x", "y"]})
+        form = request_body(package, "submitForm", None, {"name": "a b", "count": 2, "labels": ["x", "y"]})
         exchange.respond(
             raw_response(200, b"name=a+b&count=2", "application/x-www-form-urlencoded"),
             raw_response(200, b"count=many", "application/x-www-form-urlencoded"),
         )
         record(lines, "form", lambda: api.forms.submit_form(body=form))
-        record(lines, "form invalid", lambda: api.forms.submit_form(body=form.value))
+        record(lines, "form invalid", lambda: api.forms.submit_form(body=form))
         exchange.respond(
             raw_response(200, b"a=1&a=2&b=%20", "application/x-www-form-urlencoded"),
             raw_response(200, b"a=%zz", "application/x-www-form-urlencoded"),
@@ -476,7 +460,7 @@ def media(package: ModuleType, lines: list[str]) -> None:
         record(lines, "pairs", lambda: api.forms.submit_pairs(body=(("a", "1"), ("a", "2"), ("b", " "))))
         record(lines, "pairs invalid", api.forms.submit_pairs)
         record(lines, "pairs body", lambda: api.forms.submit_pairs(body=[("a", "1")]))
-        search = forms.SubmitSearchRequestCodecs.body().from_wire({
+        search = request_body(package, "submitSearch", None, {
             "term": "a b",
             "filter": {"name": "x y", "min": 2},
             "tags": ["a", "b"],
@@ -487,14 +471,28 @@ def media(package: ModuleType, lines: list[str]) -> None:
         })
         exchange.respond(raw_response(204))
         record(lines, "search", lambda: api.forms.submit_search(body=search))
-        clash = forms.SubmitSearchRequestCodecs.body().from_wire({"term": "a", "extra": {"term": "b"}})
+        clash = request_body(package, "submitSearch", None, {"term": "a", "extra": {"term": "b"}})
         record(lines, "search of an extra named as another member", lambda: api.forms.submit_search(body=clash))
         _documents(package, api, exchange, lines, documents)
+        _files(package, api, exchange, lines)
+
+
+def _files(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Send only declared media types, never a range, and narrow a response to one concrete media type."""
+    address = request_body(package, "storeFile", "application/json", {"city": "Oslo"})
+    record(lines, "store file of a media range", lambda: api.files.store_file(body=address, media_type="image/*"))
+    exchange.respond(raw_response(201, b"png", "image/png"), raw_response(200, b"jpeg", "image/jpeg"))
+    for label in ("store file narrowed", "store file narrowed to another image"):
+        record(
+            lines,
+            label,
+            lambda: api.files.store_file(body=address, media_type="application/json", response_media_type="image/png"),
+        )
+    exchange.respond(raw_response(204))
+    record(lines, "replace file without a body", api.files.replace_file)
 
 
 def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[str], documents: ModuleType) -> None:
-    codecs = documents.StoreDocumentRequestCodecs
-    draft = codecs.body(media_type="application/vnd.api+json").from_wire({"title": "t", "secret": "s"})
     for label, responder, call in (
         ("store", json_response(200, {"stored": True}), lambda: api.documents.store_document(body={"x": [1, 2]})),
         (
@@ -506,11 +504,6 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             "store text of a charset named in capitals",
             raw_response(200, "caf\xe9".encode("latin-1"), "text/plain; CHARSET=latin-1"),
             lambda: api.documents.store_document(body="note", media_type="text/plain; charset=utf-16"),
-        ),
-        (
-            "store draft",
-            raw_response(202),
-            lambda: api.documents.store_document(body=draft, media_type="application/vnd.api+json"),
         ),
         ("store moved", json_response(302, {"id": 1, "title": "t"}), lambda: api.documents.store_document(body=1)),
         ("store moved invalid", json_response(302, {"title": 5}), lambda: api.documents.store_document(body=1)),
@@ -529,18 +522,12 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
         exchange.respond(responder)
         record(lines, label, call)
     record(lines, "store value", lambda: api.documents.store_document(body={1, 2}))
-    record(lines, "store codec", codecs.body)
-    record(lines, "store codec media", lambda: codecs.body(media_type="application/json"))
-    read = documents.ReadDocumentRequestCodecs.parameter(location="path", name="id").from_wire({"key": "a/b"})
-    exchange.respond(
-        raw_response(200, b'{"id":1,"title":"t"}', "application/vnd.api+json", **{"X-Draft": "id,1,title,h"})
-    )
-    response = record(
-        lines,
-        "read",
-        lambda: api.documents.with_response.read_document(id=read, filter={"q": [1]}, x_mode="fast"),
-    )
-    record(lines, "read header", lambda: documents.decode_read_document_header(response.info, name="X-Draft"))
+    read = argument(package, "readDocument", "path", "id", {"key": "a/b"})
+    draft = raw_response(200, b'{"id":1,"title":"t"}', "application/vnd.api+json", **{"X-Draft": "id,1,title,h"})
+    exchange.respond(draft, draft)
+    record(lines, "read", lambda: api.documents.read_document(id=read, filter={"q": [1]}, x_mode="fast"))
+    info = api.documents.with_raw_response.read_document(id=read, filter={"q": [1]}, x_mode="fast").info
+    record(lines, "read header", lambda: documents.decode_read_document_header(info, name="X-Draft"))
     exchange.respond(raw_response(204), raw_response(204), raw_response(204))
     record(lines, "note", lambda: api.documents.store_note(body=[1], media_type="application/vnd.note+json"))
     record(lines, "note replace", api.documents.replace_note)
@@ -553,7 +540,7 @@ def querystring(package: ModuleType, lines: list[str]) -> None:
     """Send a whole query through one querystring parameter, which no query patch may add to."""
     types, options = _modules(package, "types.default", "options")
     exchange = Exchange(lines)
-    criteria = types.SearchRequestCodecs.parameter(location="querystring", name="criteria").from_wire({
+    criteria = argument(package, "search", "querystring", "criteria", {
         "term": "a b",
         "page": 2,
     })
@@ -610,7 +597,8 @@ _PATHS: Final = (
 
 
 def _arguments(package: ModuleType, method: str, values: dict[str, object]) -> dict[str, object]:
-    return path_arguments(package, "default", method.title().replace("_", ""), values)
+    first, *rest = method.split("_")
+    return path_arguments(package, first + "".join(part.title() for part in rest), values)
 
 
 def paths(package: ModuleType, lines: list[str]) -> None:
@@ -675,7 +663,7 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         http_client_ownership="owned",
         options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0)),
     ) as api:
-        pet, trace = _pet(package, "GetPet"), _trace(package)
+        pet, trace = _pet(package, "getPet"), _trace(package)
         for label, responder in (
             ("gzip", _coded("gzip", gzip.compress(_PET, mtime=0))),
             ("x-gzip", _coded("X-Gzip", gzip.compress(_PET, mtime=0))),
@@ -716,13 +704,13 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         record(lines, "coding error truncated", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding redirect", lambda: api.pets.list_pets(x_trace=trace))
         record(
-            lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DeletePetsByPetId"))
+            lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DELETE /pets/{petId}"))
         )
     run(lambda: _async_codings(package, exchange, lines))
 
 
 async def _async_codings(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
-    pet = _pet(package, "GetPet")
+    pet = _pet(package, "getPet")
     async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
         exchange.respond(
             _coded("gzip, deflate", zlib.compress(gzip.compress(_PET, mtime=0))),
@@ -789,7 +777,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
     "multipart-split": ("multipart-split", STRUCTURAL, split_parts),
-    "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
     "signatures": ("pets", BACKENDS, signatures),

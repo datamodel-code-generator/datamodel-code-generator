@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing_extensions import NotRequired, TypedDict, assert_type
 
 from pets import AsyncClient, Client
-from pets.model_codecs import ModelValue
 from pets.options import RequestOptions
 from pets.responses import Response
 from pets.types.pets import ListPetsResponse
@@ -15,7 +14,7 @@ from pets_models import FieldPetsGetHeaderXTraceParameter
 class ListArguments(TypedDict):
     """Keywords of list_pets that a caller declares for itself."""
 
-    x_trace: FieldPetsGetHeaderXTraceParameter | ModelValue[FieldPetsGetHeaderXTraceParameter]
+    x_trace: FieldPetsGetHeaderXTraceParameter
     options: NotRequired[RequestOptions | None]
 
 

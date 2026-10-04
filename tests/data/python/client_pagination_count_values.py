@@ -46,7 +46,7 @@ def _value_calls(harness: Harness, api: Any) -> Iterator[tuple[str, Any, dict[st
         ("position", 40.5),
         ("position", Decimal("9007199254740993.0")),
     ):
-        argument = harness.argument("users", "ListUsers", "query", name, value)
+        argument = harness.argument("listUsers", "query", name, value)
         helper = api.protocols.users.offsets if name == "offset" else api.protocols.users.positions
         yield f"{name} {value!r}", helper, {name: argument}
 
@@ -60,7 +60,7 @@ def pagination_count_values(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(_total_response(token, "total"), _total_response(token, "total"))
             record(lines, f"ordinary total {token!r}", api.users.list_users)
             fetched(lines, f"offset total {token!r}", api.protocols.users.items.page)
-        start = harness.argument("users", "ListUsers", "query", "offset", 9007199254740991)
+        start = harness.argument("listUsers", "query", "offset", 9007199254740991)
         exchange.respond(
             _total_response(b"9007199254740993.0", "total"), _total_response(b"9007199254740993.0", "total")
         )
@@ -86,7 +86,7 @@ async def _async_values(harness: Harness, lines: list[str]) -> None:
             exchange.respond(_total_response(token, "total"), _total_response(token, "total"))
             await arecord(lines, f"async ordinary total {token!r}", api.users.list_users)
             await afetched(lines, f"async offset total {token!r}", api.protocols.users.items.page)
-        start = harness.argument("users", "ListUsers", "query", "offset", 9007199254740991)
+        start = harness.argument("listUsers", "query", "offset", 9007199254740991)
         exchange.respond(
             _total_response(b"9007199254740993.0", "total"), _total_response(b"9007199254740993.0", "total")
         )
@@ -139,7 +139,7 @@ def _default_calls(harness: Harness, api: Any) -> Iterator[tuple[str, str, Any, 
         view = api.with_options(options.RequestOptions(**{field: ((name.lower(), str(first + 10)),)}))
         nested = view.with_options(options.RequestOptions(**{field: ((name, str(first + 20)),)}))
         viewed, layered = (getattr(client.protocols.users, helper_name) for client in (view, nested))
-        typed = harness.argument("users", "ListUsers", location, name, first + 30)
+        typed = harness.argument("listUsers", location, name, first + 30)
         call = options.RequestOptions(**{field: ((name, str(first + 40)),)})
         removed = options.RequestOptions(**{field: ((name, None),)})
         cleared = api.with_options(removed)

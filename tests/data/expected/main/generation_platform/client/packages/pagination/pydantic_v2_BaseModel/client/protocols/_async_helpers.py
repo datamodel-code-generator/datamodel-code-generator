@@ -31,7 +31,6 @@ from .._runtime.protocols.pagination import (
     aresume_pages,
 )
 from .._runtime.protocols.resume import ResumeState
-from ..model_codecs import ModelValue, RequestMedia
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.archive import ListArchiveResponse
 from ..types.labels import ListLabelSetsResponse, ListLabelsResponse
@@ -207,9 +206,9 @@ class AsyncUsersAllPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        limit: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        limit: _dcg_type_1 | Unset = UNSET,
+        x_snapshot: _dcg_type_2 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -227,9 +226,9 @@ class AsyncUsersAllPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        limit: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        limit: _dcg_type_1 | Unset = UNSET,
+        x_snapshot: _dcg_type_2 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -291,9 +290,9 @@ class AsyncUsersByHeaderPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        limit: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        limit: _dcg_type_1 | Unset = UNSET,
+        x_snapshot: _dcg_type_2 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -311,9 +310,9 @@ class AsyncUsersByHeaderPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        limit: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        limit: _dcg_type_1 | Unset = UNSET,
+        x_snapshot: _dcg_type_2 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -375,9 +374,9 @@ class AsyncUsersSearchPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        cursor: _dcg_type_4 | Unset = UNSET,
+        body: _dcg_type_5,
+        media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -397,9 +396,9 @@ class AsyncUsersSearchPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        cursor: _dcg_type_4 | Unset = UNSET,
+        body: _dcg_type_5,
+        media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -463,7 +462,7 @@ class AsyncLooseAllPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_6 | ModelValue[_dcg_type_6] | Unset = UNSET,
+        cursor: _dcg_type_6 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -481,7 +480,7 @@ class AsyncLooseAllPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_6 | ModelValue[_dcg_type_6] | Unset = UNSET,
+        cursor: _dcg_type_6 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -543,7 +542,7 @@ class AsyncLooseTokensPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_6 | ModelValue[_dcg_type_6] | Unset = UNSET,
+        cursor: _dcg_type_6 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -561,7 +560,7 @@ class AsyncLooseTokensPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_6 | ModelValue[_dcg_type_6] | Unset = UNSET,
+        cursor: _dcg_type_6 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -623,7 +622,7 @@ class AsyncNestedAllPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_7 | ModelValue[_dcg_type_7] | Unset = UNSET,
+        cursor: _dcg_type_7 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -641,7 +640,7 @@ class AsyncNestedAllPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_7 | ModelValue[_dcg_type_7] | Unset = UNSET,
+        cursor: _dcg_type_7 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -703,7 +702,7 @@ class AsyncLabelsAllPagination:
     async def page(
         self,
         *,
-        after: _dcg_type_8 | ModelValue[_dcg_type_8] | Unset = UNSET,
+        after: _dcg_type_8 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -721,7 +720,7 @@ class AsyncLabelsAllPagination:
     def iterate(
         self,
         *,
-        after: _dcg_type_8 | ModelValue[_dcg_type_8] | Unset = UNSET,
+        after: _dcg_type_8 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -783,7 +782,7 @@ class AsyncLabelsSetsPagination:
     async def page(
         self,
         *,
-        after: _dcg_type_10 | ModelValue[_dcg_type_10] | Unset = UNSET,
+        after: _dcg_type_10 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -801,7 +800,7 @@ class AsyncLabelsSetsPagination:
     def iterate(
         self,
         *,
-        after: _dcg_type_10 | ModelValue[_dcg_type_10] | Unset = UNSET,
+        after: _dcg_type_10 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -863,7 +862,7 @@ class AsyncArchiveAllPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_11 | ModelValue[_dcg_type_11],
+        cursor: _dcg_type_11,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -881,7 +880,7 @@ class AsyncArchiveAllPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_11 | ModelValue[_dcg_type_11],
+        cursor: _dcg_type_11,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -943,7 +942,7 @@ class AsyncStatusesAllPagination:
     async def page(
         self,
         *,
-        code: _dcg_type_12 | ModelValue[_dcg_type_12] | Unset = UNSET,
+        code: _dcg_type_12 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -961,7 +960,7 @@ class AsyncStatusesAllPagination:
     def iterate(
         self,
         *,
-        code: _dcg_type_12 | ModelValue[_dcg_type_12] | Unset = UNSET,
+        code: _dcg_type_12 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1023,7 +1022,7 @@ class AsyncSecureUsersPagination:
     async def page(
         self,
         *,
-        cursor: _dcg_type_13 | ModelValue[_dcg_type_13] | Unset = UNSET,
+        cursor: _dcg_type_13 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1041,7 +1040,7 @@ class AsyncSecureUsersPagination:
     def iterate(
         self,
         *,
-        cursor: _dcg_type_13 | ModelValue[_dcg_type_13] | Unset = UNSET,
+        cursor: _dcg_type_13 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

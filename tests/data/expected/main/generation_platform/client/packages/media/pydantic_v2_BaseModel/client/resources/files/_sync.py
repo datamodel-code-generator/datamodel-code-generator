@@ -8,12 +8,9 @@ from functools import cached_property
 from typing import Literal, overload
 
 from models import Address as _dcg_type_0
-from models import FieldFilesPostRequest2 as _dcg_type_1
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...bodies import AsyncBinaryBody, SyncBinaryBody
-from ...model_codecs import ModelValue, RequestMedia, ResponseMedia
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.files import ReplaceFileResponse, StoreFileResponse
@@ -45,8 +42,8 @@ class FilesResource:
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse: ...
@@ -54,107 +51,26 @@ class FilesResource:
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_0 | None: ...
     @overload
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> bytes | None: ...
-    @overload
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: ResponseMedia[StoreFileResponse],
-        options: RequestOptions | None = None,
-    ) -> StoreFileResponse: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: None = None,
-        options: RequestOptions | None = None,
-    ) -> StoreFileResponse: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
-        options: RequestOptions | None = None,
-    ) -> _dcg_type_0 | None: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
-        options: RequestOptions | None = None,
-    ) -> bytes | None: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: ResponseMedia[StoreFileResponse],
-        options: RequestOptions | None = None,
-    ) -> StoreFileResponse: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: None = None,
-        options: RequestOptions | None = None,
-    ) -> StoreFileResponse: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
-        options: RequestOptions | None = None,
-    ) -> _dcg_type_0 | None: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
-        options: RequestOptions | None = None,
-    ) -> bytes | None: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: ResponseMedia[StoreFileResponse],
-        options: RequestOptions | None = None,
-    ) -> StoreFileResponse: ...
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json', 'image/png'] | None = None,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse:
         """Call POST /files."""
@@ -167,27 +83,11 @@ class FilesResource:
             response_media_type=response_media_type,
         ).data
 
-    @overload
-    def replace_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        options: RequestOptions | None = None,
-    ) -> ReplaceFileResponse: ...
-    @overload
     def replace_file(
         self,
         *,
         body: Unset = UNSET,
         media_type: None = None,
-        options: RequestOptions | None = None,
-    ) -> ReplaceFileResponse: ...
-    def replace_file(
-        self,
-        *,
-        body: SyncBinaryBody | Unset = UNSET,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceFileResponse:
         """Call PUT /files."""
@@ -211,8 +111,8 @@ class FilesWithResponse:
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]: ...
@@ -220,107 +120,26 @@ class FilesWithResponse:
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[_dcg_type_0 | None]: ...
     @overload
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> Response[bytes | None]: ...
-    @overload
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: ResponseMedia[StoreFileResponse],
-        options: RequestOptions | None = None,
-    ) -> Response[StoreFileResponse]: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: None = None,
-        options: RequestOptions | None = None,
-    ) -> Response[StoreFileResponse]: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
-        options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_0 | None]: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
-        options: RequestOptions | None = None,
-    ) -> Response[bytes | None]: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: ResponseMedia[StoreFileResponse],
-        options: RequestOptions | None = None,
-    ) -> Response[StoreFileResponse]: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: None = None,
-        options: RequestOptions | None = None,
-    ) -> Response[StoreFileResponse]: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
-        options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_0 | None]: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
-        options: RequestOptions | None = None,
-    ) -> Response[bytes | None]: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: ResponseMedia[StoreFileResponse],
-        options: RequestOptions | None = None,
-    ) -> Response[StoreFileResponse]: ...
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json', 'image/png'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]:
         """Call POST /files."""
@@ -333,27 +152,11 @@ class FilesWithResponse:
             response_media_type=response_media_type,
         )
 
-    @overload
-    def replace_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        options: RequestOptions | None = None,
-    ) -> Response[ReplaceFileResponse]: ...
-    @overload
     def replace_file(
         self,
         *,
         body: Unset = UNSET,
         media_type: None = None,
-        options: RequestOptions | None = None,
-    ) -> Response[ReplaceFileResponse]: ...
-    def replace_file(
-        self,
-        *,
-        body: SyncBinaryBody | Unset = UNSET,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceFileResponse]:
         """Call PUT /files."""
@@ -373,39 +176,12 @@ class FilesWithRawResponse:
         """Keep the client core the operations send through."""
         self._core = core
 
-    @overload
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
-        options: RequestOptions | None = None,
-    ) -> RawResponse: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
-        options: RequestOptions | None = None,
-    ) -> RawResponse: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
-        options: RequestOptions | None = None,
-    ) -> RawResponse: ...
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json', 'image/png'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /files."""
@@ -418,27 +194,11 @@ class FilesWithRawResponse:
             response_media_type=response_media_type,
         )
 
-    @overload
-    def replace_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        options: RequestOptions | None = None,
-    ) -> RawResponse: ...
-    @overload
     def replace_file(
         self,
         *,
         body: Unset = UNSET,
         media_type: None = None,
-        options: RequestOptions | None = None,
-    ) -> RawResponse: ...
-    def replace_file(
-        self,
-        *,
-        body: SyncBinaryBody | Unset = UNSET,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call PUT /files."""
@@ -458,39 +218,12 @@ class FilesWithStreamingResponse:
         """Keep the client core the operations send through."""
         self._core = core
 
-    @overload
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
-        options: RequestOptions | None = None,
-    ) -> AbstractContextManager[RawResponse]: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
-        options: RequestOptions | None = None,
-    ) -> AbstractContextManager[RawResponse]: ...
-    @overload
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
-        options: RequestOptions | None = None,
-    ) -> AbstractContextManager[RawResponse]: ...
-    def store_file(
-        self,
-        *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json', 'image/png'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /files."""
@@ -503,27 +236,11 @@ class FilesWithStreamingResponse:
             response_media_type=response_media_type,
         )
 
-    @overload
-    def replace_file(
-        self,
-        *,
-        body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        options: RequestOptions | None = None,
-    ) -> AbstractContextManager[RawResponse]: ...
-    @overload
     def replace_file(
         self,
         *,
         body: Unset = UNSET,
         media_type: None = None,
-        options: RequestOptions | None = None,
-    ) -> AbstractContextManager[RawResponse]: ...
-    def replace_file(
-        self,
-        *,
-        body: SyncBinaryBody | Unset = UNSET,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /files."""
