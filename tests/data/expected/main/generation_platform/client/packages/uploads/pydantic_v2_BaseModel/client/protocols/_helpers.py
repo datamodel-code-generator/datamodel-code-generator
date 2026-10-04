@@ -70,7 +70,7 @@ class FilesUploadResumableUpload:
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
-        """Read the source, create the upload of POST /files, and return its handle."""
+        """Measure the source, create the upload of POST /files, and return its handle."""
         return start_upload(
             self._core,
             _plans.PLAN_0,
@@ -90,7 +90,7 @@ class FilesUploadResumableUpload:
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
-        """Check the source against a checkpoint and continue from the offset the server holds."""
+        """Check a checkpoint and the source size, then continue from the server offset."""
         return resume_upload(
             self._core,
             _plans.PLAN_0,
@@ -119,7 +119,7 @@ class FilesFinishResumableUpload:
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
     ) -> UploadHandle[CompleteFileResponse]:
-        """Read the source, create the upload of POST /files, and return its handle."""
+        """Measure the source, create the upload of POST /files, and return its handle."""
         return start_upload(
             self._core,
             _plans.PLAN_1,
@@ -139,7 +139,7 @@ class FilesFinishResumableUpload:
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
     ) -> UploadHandle[CompleteFileResponse]:
-        """Check the source against a checkpoint and continue from the offset the server holds."""
+        """Check a checkpoint and the source size, then continue from the server offset."""
         return resume_upload(
             self._core,
             _plans.PLAN_1,
@@ -169,7 +169,7 @@ class FilesPutResumableUpload:
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
-        """Read the source, create the upload of POST /files, and return its handle."""
+        """Measure the source, create the upload of POST /files, and return its handle."""
         return start_upload(
             self._core,
             _plans.PLAN_2,
@@ -189,7 +189,7 @@ class FilesPutResumableUpload:
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
-        """Check the source against a checkpoint and continue from the offset the server holds."""
+        """Check a checkpoint and the source size, then continue from the server offset."""
         return resume_upload(
             self._core,
             _plans.PLAN_2,

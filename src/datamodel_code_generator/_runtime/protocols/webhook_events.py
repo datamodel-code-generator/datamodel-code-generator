@@ -1,4 +1,4 @@
-"""Decode webhook events, and the stages every webhook helper shares: arguments, limits, the window, and the claim.
+"""Decode webhook events and share argument, size, and timestamp checks.
 
 Builtin signatures and application verifiers authenticate a delivery in their own modules, so a package whose helpers
 use only one of them never loads the other's dependencies. Errors keep no key, signature, header, or body.
@@ -6,7 +6,6 @@ use only one of them never loads the other's dependencies. Errors keep no key, s
 
 from __future__ import annotations
 
-from collections.abc import Coroutine
 from dataclasses import dataclass, fields, replace
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -17,8 +16,6 @@ from typing_extensions import TypeIs, TypeVar
 from ..client.errors import (
     ProtocolConfigurationError,
     ProtocolSizeError,
-    WebhookReplayError,
-    WebhookStoreError,
     WebhookVerificationError,
     is_sequence,
 )
@@ -43,20 +40,15 @@ if TYPE_CHECKING:
     from ..client.operations import InboundModelCodec
     from ..model_codecs.context import CodecContext
     from ..model_codecs.wire import WireValue
-    from .webhooks import AsyncReplayStore, ReplayStore
 
 __all__ = (
     "EventDecoder",
     "EventPlan",
     "Facts",
     "MappedEventDecoder",
-    "SignedPlan",
-    "areceived",
     "configuration_error",
     "decode_unsigned",
     "epoch_microseconds",
-    "expiry",
-    "facts",
     "instant",
     "local_arguments",
     "received",
@@ -70,7 +62,6 @@ T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
 
 _EPOCH: Final = datetime(1970, 1, 1, tzinfo=timezone.utc)
-_LATEST: Final = datetime.max.replace(tzinfo=timezone.utc)
 _DEFAULTS: Final = ResolvedWebhookOptions(
     max_body_bytes=8388608,
     max_header_bytes=16384,
@@ -78,7 +69,6 @@ _DEFAULTS: Final = ResolvedWebhookOptions(
     max_signatures=8,
     past_tolerance=300.0,
     future_tolerance=30.0,
-    replay_ttl=300.0,
 )
 _OPTIONS: Final = tuple(item.name for item in fields(WebhookOptions))
 _DATA_ERRORS: Final = (
@@ -188,22 +178,13 @@ class EventPlan(Generic[T]):
     event: EventDecoder[T] | MappedEventDecoder[T]
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class SignedPlan(EventPlan[T]):
-    """A helper that authenticates its deliveries: its fingerprint, the replay namespace of its claims, and policy."""
-
-    fingerprint: str
-    duplicates: Literal["report", "reject"] = "report"
-
-
 @dataclass(frozen=True, slots=True)
 class Facts:
-    """The authenticated facts of a delivery, with the claim to make when given a store."""
+    """The authenticated facts of a delivery."""
 
     delivery_id: str | None
     timestamp: datetime | None
     matched_key_id: str
-    claim: tuple[str, datetime] | None
 
 
 def configuration_error(
@@ -214,9 +195,7 @@ def configuration_error(
 
 
 def reject(
-    condition: Literal[
-        "malformed_signature", "invalid_signature", "missing_key", "timestamp_window", "missing_delivery_id"
-    ],
+    condition: Literal["malformed_signature", "invalid_signature", "missing_key", "timestamp_window"],
     helper_id: str,
 ) -> NoReturn:
     """Refuse a delivery for the condition."""
@@ -231,7 +210,7 @@ def _is_pair(value: object) -> bool:
     return (
         is_sequence(value)
         and type(value) is tuple
-        and len(value) == 2  # noqa: PLR2004
+        and len(value) == 2  # ruff: ignore[magic-value-comparison]
         and all(isinstance(item, str) for item in value)
     )
 
@@ -259,33 +238,14 @@ def _limits(options: object, helper_id: str) -> ResolvedWebhookOptions:
     return replace(_DEFAULTS, **given)
 
 
-def _claimer(store: object, helper_id: str, *, asynchronous: bool) -> None:
-    """Refuse a store without a callable claim, or whose claim, or its __call__, is not of the call's mode."""
-    if store is None:
-        return
-    from inspect import iscoroutinefunction  # noqa: PLC0415 - Only a call given a store inspects its mode.
-
-    claim = getattr(store, "claim", None)
-    if (
-        not callable(claim)
-        or (
-            iscoroutinefunction(claim) or iscoroutinefunction(getattr(claim, "__call__", None))  # noqa: B004
-        )
-        is not asynchronous
-    ):
-        raise configuration_error(("replay_store",), "wrong_capability", helper_id)
-
-
-def local_arguments(  # noqa: PLR0913
+def local_arguments(  # ruff: ignore[too-many-arguments]
     helper_id: str,
     raw_body: object,
     headers: object,
     keys: object,
     *,
     now: object,
-    store: object,
     options: object,
-    asynchronous: bool,
 ) -> tuple[int, ResolvedWebhookOptions]:
     """Refuse the first wrong argument by its field path; return now in microseconds and the resolved limits."""
     for name, valid in (("raw_body", _instance(raw_body, bytes)), ("headers", _is_pairs(headers))):
@@ -296,7 +256,6 @@ def local_arguments(  # noqa: PLR0913
     if not _aware(now):
         raise configuration_error(("now",), "invalid_value", helper_id)
     limits = _limits(options, helper_id)
-    _claimer(store, helper_id, asynchronous=asynchronous)
     return epoch_microseconds(now), limits
 
 
@@ -324,11 +283,6 @@ def instant(microseconds: int) -> datetime | None:
         return None
 
 
-def _ceiling(seconds: float) -> int:
-    numerator, denominator = seconds.as_integer_ratio()
-    return -(-numerator * 1_000_000 // denominator)
-
-
 def within(now: int, timestamp: int, limits: ResolvedWebhookOptions) -> bool:
     """Return whether a timestamp lies in the inclusive window around now, comparing exact microseconds."""
     past, past_scale = limits.past_tolerance.as_integer_ratio()
@@ -336,90 +290,14 @@ def within(now: int, timestamp: int, limits: ResolvedWebhookOptions) -> bool:
     return (now - timestamp) * past_scale <= past * 1_000_000 and (timestamp - now) * future_scale <= future * 1_000_000
 
 
-def expiry(timestamp: int | None, now: int, limits: ResolvedWebhookOptions) -> int:
-    """Return when a claim expires: after both tolerances past the timestamp, or replay_ttl after now without one."""
-    if timestamp is None:
-        return now + _ceiling(limits.replay_ttl)
-    return timestamp + _ceiling(limits.past_tolerance) + _ceiling(limits.future_tolerance)
-
-
-def facts(  # noqa: PLR0913, PLR0917
-    delivery_id: str | None,
-    timestamp: datetime | None,
-    matched_key_id: str,
-    store: object,
-    expires: int,
-    helper_id: str,
-) -> Facts:
-    """Return a delivery's facts and claim, refusing a store given to a delivery without a delivery id."""
-    if store is not None and delivery_id is None:
-        reject("missing_delivery_id", helper_id)
-    claim = None if store is None or delivery_id is None else (delivery_id, instant(expires) or _LATEST)
-    return Facts(delivery_id, timestamp, matched_key_id, claim)
-
-
-def _duplicate(plan: SignedPlan[T], delivery_id: str, claimed: object) -> bool:
-    """Return whether a claim found a live duplicate, refusing a non-boolean result and duplicates under reject."""
-    if type(claimed) is not bool:
-        if isinstance(claimed, Coroutine):
-            claimed.close()
-        raise WebhookStoreError(action="claim", helper_id=plan.helper_id)
-    if claimed:
-        return False
-    if plan.duplicates == "reject":
-        raise WebhookReplayError(delivery_id=delivery_id, namespace=plan.fingerprint, helper_id=plan.helper_id)
-    return True
-
-
-def _store_failure(plan: SignedPlan[T], error: Exception) -> WebhookStoreError:
-    return WebhookStoreError(action="claim", helper_id=plan.helper_id, cause=error)
-
-
-def _verified(data: T, facts: Facts, *, duplicate: bool) -> VerifiedWebhook[T]:
+def received(plan: EventPlan[T], raw_body: bytes, facts: Facts) -> VerifiedWebhook[T]:
+    """Decode an authenticated event and return its facts without retaining delivery state."""
     return VerifiedWebhook(
-        data=data,
+        data=plan.event.decode(raw_body, plan.helper_id),
         delivery_id=facts.delivery_id,
         timestamp=facts.timestamp,
         matched_key_id=facts.matched_key_id,
-        duplicate=duplicate,
     )
-
-
-def received(
-    plan: SignedPlan[T], raw_body: bytes, facts: Facts, replay_store: ReplayStore | None
-) -> VerifiedWebhook[T]:
-    """Decode an authenticated delivery's event, then claim its delivery id in a synchronous store when given.
-
-    The claim is made after decoding and before the application processes the event, so it is at most once: if
-    processing fails afterwards, a retried delivery is a duplicate, or rejected under `reject`, until the claim
-    expires, and duplicates are detected only until then.
-    """
-    data = plan.event.decode(raw_body, plan.helper_id)
-    if replay_store is None or (claim := facts.claim) is None:
-        return _verified(data, facts, duplicate=False)
-    try:
-        claimed: object = replay_store.claim(plan.fingerprint, *claim)
-    except WebhookStoreError:
-        raise
-    except Exception as error:  # noqa: BLE001
-        raise _store_failure(plan, error) from None
-    return _verified(data, facts, duplicate=_duplicate(plan, claim[0], claimed))
-
-
-async def areceived(
-    plan: SignedPlan[T], raw_body: bytes, facts: Facts, replay_store: AsyncReplayStore | None
-) -> VerifiedWebhook[T]:
-    """Decode as received does, then await the claim of an asynchronous store when given; it is at most once too."""
-    data = plan.event.decode(raw_body, plan.helper_id)
-    if replay_store is None or (claim := facts.claim) is None:
-        return _verified(data, facts, duplicate=False)
-    try:
-        claimed: object = await replay_store.claim(plan.fingerprint, *claim)
-    except WebhookStoreError:
-        raise
-    except Exception as error:  # noqa: BLE001
-        raise _store_failure(plan, error) from None
-    return _verified(data, facts, duplicate=_duplicate(plan, claim[0], claimed))
 
 
 def decode_unsigned(plan: EventPlan[T], raw_body: bytes, *, options: WebhookOptions | None = None) -> T:

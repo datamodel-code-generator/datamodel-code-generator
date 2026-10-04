@@ -7,7 +7,6 @@ normalized metadata. Selectors and request targets are the runtime records gener
 from __future__ import annotations
 
 import keyword
-import re
 from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
@@ -34,10 +33,9 @@ if TYPE_CHECKING:
 
 __all__ = (
     "AdapterSignature",
-    "AsciiBytes",
     "Binding",
+    "BodyHmacSignature",
     "CacheHelper",
-    "CacheMutation",
     "Continuation",
     "Converter",
     "CountContinuation",
@@ -45,12 +43,9 @@ __all__ = (
     "EndCondition",
     "EventDiscriminator",
     "EventMapping",
-    "FixedBytes",
-    "HeaderName",
     "Helper",
     "HelperDefinition",
     "HelperKind",
-    "HmacSignature",
     "ImmediateResult",
     "InlineResult",
     "LengthCompletion",
@@ -71,17 +66,18 @@ __all__ = (
     "QueuedOperation",
     "RemoteCancel",
     "ResumableUploadHelper",
-    "SignedLiteral",
     "Source",
     "SourceValue",
     "Spec",
+    "StandardWebhooksSignature",
     "StreamCompletion",
     "StreamHelper",
     "StreamResume",
-    "TimestampHeader",
+    "StripeStyleSignature",
     "Tree",
     "UploadAbort",
     "UploadAppend",
+    "UploadChecksum",
     "UploadCreate",
     "UploadProbe",
     "WebSocketHelper",
@@ -114,18 +110,9 @@ KINDS: Final = (
     "queue",
 )
 _LATER: Final = frozenset({"batch"})
-_HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
-_SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
-_FACT_CHOICES: Final = ("required", "none")
-_ENCODINGS: Final = {
-    "hex": frozenset("0123456789ABCDEFabcdef"),
-    "base64": frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="),
-    "base64url": frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_="),
-}
-_FACTS: Final = ("timestamp", "delivery-id")
 _SOURCES: Final = ("input", "initial", "previous")
-_BRACKETED: Final = frozenset({"helpers", "mapping", "error_events", "mutations", "operations"})
+_BRACKETED: Final = frozenset({"helpers", "mapping", "error_events", "operations"})
 _KEYS: Final = {"from_": "from"}
 _ROOT: Final = "protocols"
 _MERGE: Final = "tag:yaml.org,2002:merge"
@@ -134,7 +121,6 @@ _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
 _FRAMES: Final = {"json": None, "utf8": "text", "bytes": "binary"}
 _MAX_DEPTH: Final = 64
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
-_TAG: Final = re.compile(r"(?:[^{}]|\{[^{}]+\})+")
 
 
 class _Mark(Enum):
@@ -387,77 +373,39 @@ class StreamHelper:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class HeaderName:
-    """A request header that carries a webhook fact, by its name."""
+class StandardWebhooksSignature:
+    """HMAC-SHA256 over the Standard Webhooks delivery id, timestamp, and body."""
 
+    kind: ClassVar[Literal["standard_webhooks"]] = "standard_webhooks"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StripeStyleSignature:
+    """HMAC-SHA256 over a Stripe-style timestamp and body."""
+
+    kind: ClassVar[Literal["stripe_style"]] = "stripe_style"
+    header: str = "Stripe-Signature"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BodyHmacSignature:
+    """A hex or base64 HMAC signature over the raw body."""
+
+    kind: ClassVar[Literal["body_hmac"]] = "body_hmac"
     header: str
+    algorithm: Literal["hmac-sha256", "hmac-sha512"] = "hmac-sha256"
+    encoding: Literal["hex", "base64"] = "hex"
+    prefix: str = ""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class TimestampHeader:
-    """The request header that carries a webhook's signed timestamp, and the unit of its decimal value."""
-
-    header: str
-    unit: Literal["seconds", "milliseconds"]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class SignedLiteral:
-    """Fixed ASCII text between the signed parts."""
-
-    literal: str
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class FixedBytes:
-    """A signed fact whose original bytes always have this length."""
-
-    fixed_bytes: int
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class AsciiBytes:
-    """A signed fact whose original bytes are all among these ASCII characters."""
-
-    ascii_bytes: str
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class _Signature:
-    """How a builtin webhook signature is carried and which bytes it signs, in order.
-
-    `none` declares that a webhook has no key id, timestamp, or delivery id header, and a separator of `none` keeps
-    each signature header value whole.
-    """
-
-    kind: str
-    header: str
-    encoding: Literal["hex", "base64", "base64url"]
-    prefix: str
-    separator: str
-    key_id: HeaderName | Literal["none"]
-    timestamp: TimestampHeader | Literal["none"]
-    delivery_id: HeaderName | Literal["none"]
-    signed_parts: tuple[Literal["raw-body", "timestamp", "delivery-id"] | SignedLiteral, ...]
-    field_constraints: Mapping[str, FixedBytes | AsciiBytes] = field(default_factory=lambda: MappingProxyType({}))
-
-    def __post_init__(self) -> None:
-        """Keep a read-only copy of the constraints."""
-        object.__setattr__(self, "field_constraints", _frozen(self.field_constraints))
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class HmacSignature(_Signature):
-    """How an HMAC webhook signature is carried and which bytes it signs, in order."""
-
-    kind: Literal["hmac-sha256", "hmac-sha512"]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class PublicKeySignature(_Signature):
-    """How an Ed25519 or RSA-PSS webhook signature is carried and which bytes it signs, in order."""
+class PublicKeySignature:
+    """An Ed25519 or RSA-PSS signature over the raw body."""
 
     kind: Literal["ed25519", "rsa-pss-sha256"]
+    header: str
+    encoding: Literal["hex", "base64", "base64url"] = "hex"
+    prefix: str = ""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -484,8 +432,14 @@ class WebhookHelper:
     kind: ClassVar[Literal["webhook"]] = "webhook"
 
     event_schema: SchemaRef | EventMapping
-    signature: HmacSignature | PublicKeySignature | AdapterSignature | NoSignature
-    duplicates: Literal["report", "reject"] = "report"
+    signature: (
+        StandardWebhooksSignature
+        | StripeStyleSignature
+        | BodyHmacSignature
+        | PublicKeySignature
+        | AdapterSignature
+        | NoSignature
+    )
     enabled: bool = True
 
 
@@ -520,19 +474,8 @@ class WebSocketHelper:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class CacheMutation:
-    """An operation whose explicit wrapper invalidates the cache entries its tags name after it succeeds."""
-
-    operation: OperationSelector
-    invalidate_tags: tuple[str, ...]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class CacheHelper:
-    """Fetch one operation's responses through a private cache that revalidates stale entries with their validator.
-
-    A tag is literal text whose braces each name a required path or query parameter of the operation it renders for.
-    """
+    """Fetch one operation's responses through a private cache that revalidates stale entries with their validator."""
 
     kind: ClassVar[Literal["cache"]] = "cache"
 
@@ -541,13 +484,7 @@ class CacheHelper:
     authenticated: bool
     statuses: tuple[int, ...] = (200,)
     vary_allowlist: tuple[str, ...] = ()
-    tags: tuple[str, ...] = ()
-    mutations: Mapping[str, CacheMutation] = field(default_factory=lambda: MappingProxyType({}))
     enabled: bool = True
-
-    def __post_init__(self) -> None:
-        """Keep a read-only copy of the mutations."""
-        object.__setattr__(self, "mutations", _frozen(self.mutations))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -570,12 +507,26 @@ class UploadProbe:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class UploadChecksum:
+    """Where an append writes the checksum of the bytes it sends, by which algorithm, and how it is spelled.
+
+    `algorithm_prefix` writes the algorithm's name and a space before the digest, as the tus checksum extension does.
+    """
+
+    target: RequestTarget
+    algorithm: Literal["md5", "sha1", "sha256", "sha512"]
+    encoding: Literal["base64", "hex"] = "base64"
+    algorithm_prefix: bool = False
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class UploadAppend:
-    """The operation that appends one chunk, and where it writes the chunk's offset and length."""
+    """The operation that appends one chunk, and where it writes the chunk's offset, length, and checksum."""
 
     operation: OperationSelector
     offset: RequestTarget
     length: RequestTarget | None = None
+    checksum: UploadChecksum | None = None
     bindings: tuple[Binding, ...] = ()
 
 
@@ -694,22 +645,19 @@ _RECORDS: Final = frozenset({
     EventMapping,
     StreamCompletion,
     StreamHelper,
-    HeaderName,
-    TimestampHeader,
-    SignedLiteral,
-    FixedBytes,
-    AsciiBytes,
-    HmacSignature,
+    StandardWebhooksSignature,
+    StripeStyleSignature,
+    BodyHmacSignature,
     PublicKeySignature,
     AdapterSignature,
     NoSignature,
     WebhookHelper,
     WebSocketMessage,
     WebSocketHelper,
-    CacheMutation,
     CacheHelper,
     UploadCreate,
     UploadProbe,
+    UploadChecksum,
     UploadAppend,
     LengthCompletion,
     OperationCompletion,
@@ -728,9 +676,6 @@ _ROLES: Final[Mapping[tuple[type, str], str]] = {
     (PollingHelper, "cancelled"): "json",
     (EventMapping, "mapping"): "mapping",
     (StreamHelper, "error_events"): "mapping",
-    (HmacSignature, "field_constraints"): "mapping",
-    (PublicKeySignature, "field_constraints"): "mapping",
-    (CacheHelper, "mutations"): "mapping",
     (QueueHelper, "operations"): "mapping",
     (ProtocolConfiguration, "helpers"): "mapping",
 }
@@ -838,9 +783,9 @@ def project(configuration: ProtocolConfiguration) -> object:
     def reference(value: Any) -> object:
         return {"pointer": value.pointer, **({} if value.document is None else {"document": value.document})}
 
-    def signature(value: HmacSignature | PublicKeySignature) -> object:
+    def signature(value: PublicKeySignature) -> object:
         """Project a signature record whose class allows its kind, and refuse any other as validation refuses."""
-        kinds = _HMAC_SIGNATURES if isinstance(value, HmacSignature) else _PUBLIC_KEY_SIGNATURES
+        kinds = _PUBLIC_KEY_SIGNATURES
         return members(value) if value.kind in kinds else FOREIGN
 
     def step(value: object) -> object:
@@ -848,7 +793,6 @@ def project(configuration: ProtocolConfiguration) -> object:
 
     shapes: dict[type, Callable[[Any], object]] = {
         **dict.fromkeys(_RECORDS, members),
-        HmacSignature: signature,
         PublicKeySignature: signature,
         CountContinuation: lambda value: {**members(value), "step": step(value.step)},
         StreamResume: lambda value: {"enabled": True, **members(value)},
@@ -1491,8 +1435,18 @@ class _Validator:  # noqa: PLR0904
             "bindings": (self.bindings, ()),
             "offset": (self.target, REQUIRED),
             "length": (self.target, OMITTED),
+            "checksum": (self.upload_checksum, OMITTED),
         }
         return self.record(value, at, spec, "an upload append")
+
+    def upload_checksum(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "target": (self.target, REQUIRED),
+            "algorithm": (self.choice("md5", "sha1", "sha256", "sha512"), REQUIRED),
+            "encoding": (self.choice("base64", "hex"), "base64"),
+            "algorithm_prefix": (self.boolean, False),
+        }
+        return self.record(value, at, spec, "an upload checksum")
 
     def upload_completion(self, value: object, at: str) -> object:
         variants: dict[str, Spec] = {
@@ -1667,8 +1621,6 @@ class _Validator:  # noqa: PLR0904
                 "authenticated": (self.boolean, REQUIRED),
                 "statuses": (self.statuses, [200]),
                 "vary_allowlist": (self.vary_names, []),
-                "tags": (self.tags, []),
-                "mutations": (self.mutations, {}),
             },
             "a helper definition",
         )
@@ -1685,29 +1637,6 @@ class _Validator:  # noqa: PLR0904
 
     def vary_name(self, value: object, at: str) -> object:
         return self.value(at, f"{at} must name a header, not '*'") if value == "*" else self.header(value, at)
-
-    def tags(self, value: object, at: str, *, nonempty: bool = False) -> object:
-        return self.distinct(at, self.items(value, at, self.tag, nonempty=nonempty), "a tag")
-
-    def tag(self, value: object, at: str) -> object:
-        valid = isinstance(value, str) and _encodable(value) and _TAG.fullmatch(value) is not None
-        return value if valid else self.value(at, f"{at} must be nonempty text whose braces each name a parameter")
-
-    def mutations(self, value: object, at: str) -> object:
-        """Convert the mutations by their method names: public Python identifiers that are not keywords."""
-        if not isinstance(value, Mapping):
-            return self.value(at, f"{at} must be a mapping")
-        spec: Spec = {
-            "operation": (self.operation, REQUIRED),
-            "invalidate_tags": (partial(self.tags, nonempty=True), REQUIRED),
-        }
-        mutations: dict[str, object] = {}
-        for name, item in value.items():
-            if isinstance(name, str) and name.isidentifier() and not keyword.iskeyword(name) and name[0] != "_":
-                mutations[name] = self.record(item, f"{at}[{name!r}]", spec, "a mutation")
-            else:
-                mutations[""] = self.value(at, f"{at} has the key {name!r}, which is not a public method name")
-        return INVALID if any(item is INVALID for item in mutations.values()) else mutations
 
     def queue(self, value: object, at: str) -> Tree | _Invalid:
         spec: Spec = {
@@ -1754,154 +1683,50 @@ class _Validator:  # noqa: PLR0904
         return queued
 
     def webhook(self, value: object, at: str) -> Tree | _Invalid:
-        """Convert a webhook helper, refusing to reject duplicates of deliveries that are unsigned."""
-        webhook = self.record(
+        """Convert a webhook helper with a fixed signature preset or application verifier."""
+        return self.record(
             value,
             at,
             {
                 "kind": (_keep, REQUIRED),
                 "enabled": (self.boolean, True),
                 "event_schema": (partial(self.event_schema, sse=False), REQUIRED),
-                "duplicates": (self.choice("report", "reject"), "report"),
                 "signature": (self.signature, REQUIRED),
             },
             "a helper definition",
         )
-        if webhook is not INVALID and webhook["signature"]["kind"] == "none" and webhook["duplicates"] == "reject":
-            self.conflict(f"{at}.duplicates", f"{at}.duplicates can be 'reject' only for a signed webhook")
-            return INVALID
-        return webhook
 
     def signature(self, value: object, at: str) -> object:
-        """Convert a signature profile, refusing framing that leaves a signed part of a builtin one ambiguous."""
-        fact = self.choice(*_FACT_CHOICES)
-        settings: Spec = {
+        """Convert fixed signature settings without interpreting arbitrary signed parts."""
+        body: Spec = {
             "header": (self.header, REQUIRED),
-            "encoding": (self.choice(*_ENCODINGS), REQUIRED),
-            "prefix": (partial(self.visible, empty=True), REQUIRED),
-            "separator": (self.separator, REQUIRED),
-            "key_id": (self.fact_header, REQUIRED),
-            "timestamp": (self.timestamp_header, REQUIRED),
-            "delivery_id": (self.fact_header, REQUIRED),
-            "signed_parts": (self.signed_parts, REQUIRED),
-            "field_constraints": (self.constraints, {}),
+            "encoding": (self.choice("hex", "base64"), "hex"),
+            "prefix": (partial(self.visible, empty=True), ""),
         }
-        variants: dict[str, Spec] = {
-            **dict.fromkeys(_SIGNATURES, settings),
-            "adapter": {"timestamp": (fact, REQUIRED), "delivery_id": (fact, REQUIRED)},
-            "none": {},
-        }
-        signature = self.tagged(value, at, "kind", variants, "a signature")
-        if (
-            signature is not INVALID
-            and signature["kind"] in _SIGNATURES
-            and (conflict := _ambiguity(signature, at)) is not None
-        ):
-            self.conflict(*conflict)
-            return INVALID
-        return signature
+        public: Spec = {**body, "encoding": (self.choice("hex", "base64", "base64url"), "hex")}
+        fact = self.choice("required", "none")
+        return self.tagged(
+            value,
+            at,
+            "kind",
+            {
+                "standard_webhooks": {},
+                "stripe_style": {"header": (self.header, "Stripe-Signature")},
+                "body_hmac": {**body, "algorithm": (self.choice("hmac-sha256", "hmac-sha512"), "hmac-sha256")},
+                **dict.fromkeys(_PUBLIC_KEY_SIGNATURES, public),
+                "adapter": {"timestamp": (fact, REQUIRED), "delivery_id": (fact, REQUIRED)},
+                "none": {},
+            },
+            "a signature",
+        )
 
     def visible(self, value: object, at: str, *, empty: bool = False) -> object:
         valid = isinstance(value, str) and (empty or value) and all("!" <= char <= "~" for char in value)
         return value if valid else self.value(at, f"{at} must be {'' if empty else 'nonempty '}visible ASCII text")
 
-    def separator(self, value: object, at: str) -> object:
-        valid = isinstance(value, str) and (value == "none" or (len(value) == 1 and _printable(value)))
-        return value if valid else self.value(at, f"{at} must be 'none' or one printable ASCII character")
-
-    def fact_header(self, value: object, at: str) -> object:
-        if value == "none":
-            return value
-        return self.record(value, at, {"header": (self.header, REQUIRED)}, "'none' or a header")
-
-    def timestamp_header(self, value: object, at: str) -> object:
-        if value == "none":
-            return value
-        spec: Spec = {"header": (self.header, REQUIRED), "unit": (self.choice("seconds", "milliseconds"), REQUIRED)}
-        return self.record(value, at, spec, "'none' or a timestamp header")
-
-    def signed_parts(self, value: object, at: str) -> object:
-        return self.items(value, at, self.signed_part, nonempty=True)
-
-    def signed_part(self, value: object, at: str) -> object:
-        if isinstance(value, Mapping):
-            return self.record(value, at, {"literal": (self.visible, REQUIRED)}, "a signed part")
-        return self.choice("raw-body", "timestamp", "delivery-id")(value, at)
-
-    def constraints(self, value: object, at: str) -> object:
-        return self.record(value, at, dict.fromkeys(_FACTS, (self.constraint, OMITTED)), "a mapping")
-
-    def constraint(self, value: object, at: str) -> object:
-        spec: Spec = {"fixed_bytes": (self.positive, OMITTED), "ascii_bytes": (self.byte_set, OMITTED)}
-        if (constraint := self.record(value, at, spec, "a field constraint")) is not INVALID and len(constraint) != 1:
-            return self.value(at, f"{at} needs exactly one of 'fixed_bytes' and 'ascii_bytes'")
-        return constraint
-
-    def byte_set(self, value: object, at: str) -> object:
-        valid = isinstance(value, str) and _printable(value) and len(set(value)) == len(value)
-        return (
-            value if valid else self.value(at, f"{at} must be nonempty printable ASCII text that repeats no character")
-        )
-
-
-def _printable(text: str) -> bool:
-    return bool(text) and text.isascii() and text.isprintable()
-
 
 def _keep(value: object, _: str) -> object:
     return value
-
-
-def _ambiguity(signature: Tree, at: str) -> tuple[str, str] | None:
-    """Return where and why a valid signature profile is ambiguous, by its headers and then by its signed parts."""
-    named = [(key, signature[key]) for key in ("key_id", "timestamp", "delivery_id") if signature[key] != "none"]
-    owners: dict[str, str] = {}
-    for key, header in (("header", signature["header"]), *((key, value["header"]) for key, value in named)):
-        if (owner := owners.setdefault(header.lower(), key)) != key:
-            return f"{at}.{key}", f"{at}.{key} names the same header as {at}.{owner}"
-    separator = signature["separator"]
-    if separator != "none" and (separator in _ENCODINGS[signature["encoding"]] or separator in signature["prefix"]):
-        return f"{at}.separator", f"{at}.separator {separator!r} can occur in a signature"
-    return _framing(signature, at)
-
-
-def _framing(signature: Tree, at: str) -> tuple[str, str] | None:
-    """Return where signed parts leave a part's boundary undetermined or a returned fact unsigned."""
-    where, parts, constraints = f"{at}.signed_parts", signature["signed_parts"], signature["field_constraints"]
-    names = [part if isinstance(part, str) else None for part in parts]
-    if names.count("raw-body") != 1:
-        return where, f"{where} must name 'raw-body' exactly once"
-    body = names.index("raw-body")
-    if (late := next((index for index, name in enumerate(names) if name and index > body), None)) is not None:
-        return f"{where}[{late}]", f"{where}[{late}] follows 'raw-body', after which only literals may come"
-    if (unsigned := _unsigned(signature, names, at)) is not None:
-        return unsigned
-    return next(
-        (
-            (f"{where}[{index}]", f"{where}[{index}] must be followed by a literal starting outside its ascii_bytes")
-            for index, name in enumerate(names)
-            if name in constraints
-            and "ascii_bytes" in (constraint := constraints[name])
-            and (isinstance(following := parts[index + 1], str) or following["literal"][0] in constraint["ascii_bytes"])
-        ),
-        None,
-    )
-
-
-def _unsigned(signature: Tree, names: list[str | None], at: str) -> tuple[str, str] | None:
-    """Return where a fact header is declared but unsigned, signed but undeclared, or not constrained exactly once."""
-    where, here, constraints = f"{at}.signed_parts", f"{at}.field_constraints", signature["field_constraints"]
-    for fact, key in zip(_FACTS, ("timestamp", "delivery_id"), strict=True):
-        signed, declared = fact in names, signature[key] != "none"
-        if declared and not signed:
-            return f"{at}.{key}", f"{at}.{key} names a header that {where} does not sign"
-        if signed and not declared:
-            return where, f"{where} signs {fact!r} without a header in {at}.{key}"
-        if fact in constraints and not signed:
-            return f"{here}[{fact!r}]", f"{here} constrains {fact!r}, which {where} does not sign"
-        if signed and fact not in constraints:
-            return here, f"{here} needs one constraint of {fact!r}, which {where} signs before 'raw-body'"
-    return None
 
 
 def _unsupported(at: str, message: str) -> Diagnostic:
@@ -1912,7 +1737,7 @@ def _targets(bindings: list[Tree], at: str) -> tuple[tuple[str, Tree], ...]:
     return tuple((f"{at}[{index}].target", binding["target"]) for index, binding in enumerate(bindings))
 
 
-def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:  # noqa: PLR0912
+def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:
     """Yield the operations a valid helper sends, its entry operation first, with the targets each one takes."""
     match kind:
         case "pagination":
@@ -1929,8 +1754,6 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:  # noqa: PLR0912
             yield Link(at=f"{at}.operation", ref=tree["operation"])
         case "cache":
             yield Link(at=f"{at}.operation", ref=tree["operation"])
-            for name, mutation in tree["mutations"].items():
-                yield Link(at=f"{at}.mutations[{name!r}].operation", ref=mutation["operation"])
         case "resumable_upload":
             yield from _upload_links(tree, at)
         case "queue":
@@ -1966,6 +1789,8 @@ def _upload_links(tree: Tree, at: str) -> Iterator[Link]:
     )
     append = tree["append"]
     written = tuple((f"{at}.append.{name}", append[name]) for name in ("offset", "length") if name in append)
+    if (checksum := append.get("checksum")) is not None:
+        written = (*written, (f"{at}.append.checksum.target", checksum["target"]))
     yield Link(
         at=f"{at}.append.operation",
         ref=append["operation"],

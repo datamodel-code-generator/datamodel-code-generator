@@ -1146,13 +1146,13 @@ event type and no event ID, and a declared error record raises `StreamRemoteErro
 
 A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
 cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
-a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the event and reconnection counts, the
-last `retry` time, the bindings' values, and the caller's first request when the reopen repeats it, never events,
-responses, the session, or the call's options. A call given a cookie or credential argument cannot be checkpointed:
-`checkpoint()` raises `ProtocolConfigurationError` with the condition `wrong_capability`, and `ProtocolDataError` for a
-cursor the reopen request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of
-its own, writing the cursor, and omitting a cleared one, and returns once its response is a declared success; it
-refuses another helper's state, one made under other security, an expired one, and one that does not fit with
+a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the bindings' values, the server's
+expiry, and the caller's first request when the reopen repeats it, never events, counts, responses, the session, or
+the call's options. A call given a cookie or credential argument cannot be checkpointed: `checkpoint()` raises
+`ProtocolConfigurationError` with the condition `wrong_capability`, and `ProtocolDataError` for a cursor the reopen
+request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of its own, writing
+the cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
+reconnections afresh; it refuses another helper's state, an expired one, and one that does not fit with
 `ResumeStateError` before sending. `StreamInterruptedError` keeps a checkpoint as `resume_state`, and no options, the
 client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
 
@@ -1167,5 +1167,4 @@ reopen are delivered again.
 
 ## Request compression
 
-No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
-off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.
+No operation of this package declares request compression, so every request is sent without SDK compression.

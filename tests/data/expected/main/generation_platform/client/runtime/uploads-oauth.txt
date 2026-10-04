@@ -12,27 +12,24 @@ async original failure: ClientClosedError cause=None
 file source change remains terminal
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  first advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=10 original=True
+  first advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', expected_size=10, actual_size=3) [condition='inconsistent'] upload_source_changed_error [expected_size=10, actual_size=3]
   checkpoint confirmed=0 phase=uploading
   advance after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='advance') [] protocol_state_error
   run after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
   checkpoint unchanged after close: True
-  borrowed source reads after handle close: True
-  readers opened 3, closed 3, most at once 1
+  borrowed source left open: True
   later resource sends=0
   provider sends=0
   stored u1: 0 bytes, original=False
 async file source change remains terminal
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  first advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=10 original=True
+  first advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', expected_size=10, actual_size=3) [condition='inconsistent'] upload_source_changed_error [expected_size=10, actual_size=3]
   checkpoint confirmed=0 phase=uploading
   advance after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='advance') [] protocol_state_error
   run after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
   checkpoint unchanged after close: True
-  borrowed source reads after handle close: True
-  readers opened 3, closed 3, most at once 1
+  borrowed source left open: True
   later resource sends=0
   provider sends=0
   stored u1: 0 bytes, original=False
-  range after owner closes source ! ProtocolStateError: ProtocolStateError(state='closed', action='open_range') [] protocol_state_error
