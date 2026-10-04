@@ -17,6 +17,7 @@ import copy
 import pickle
 from dataclasses import dataclass
 from datetime import datetime
+from itertools import starmap
 from typing import TYPE_CHECKING, Any, Final, get_type_hints
 
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
@@ -27,14 +28,12 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat,
 from tests.data.python.client_runtime import describe, record
 from tests.data.python.client_webhooks import (
     GITHUB,
-    KEYED,
     PUBLIC_MODULES,
     STANDARD,
     Vector,
     Webhooks,
     failure,
     imports,
-    outcome,
     reachable,
 )
 
@@ -250,76 +249,8 @@ WYCHEPROOF_INVALID: Final = (
         "ac24c2bf960a406d48818e3eb7ed53b0446032469047dfed95fc18088c92d91d93722c47f88163a8",
     ),
 )
-STANDARD_ED25519: Final = Signed(
-    source=(
-        "printf 'msg_ed25519.1614265330.{\"test\": 25519}' > msg; openssl pkeyutl -sign -rawin -inkey ed25519.pem "
-        "-in msg | openssl base64 -A"
-    ),
-    helper="standard.ed25519",
-    public_key=_ED25519_KEY,
-    body=b'{"test": 25519}',
-    headers=(
-        ("webhook-id", "msg_ed25519"),
-        ("webhook-timestamp", "1614265330"),
-        (
-            "webhook-signature",
-            "v1a,jjpP+tiYWxKBWtQC+JFjRENufsh8A70KguvJzwWrv5wgB9gyE8d1VF1IdWuNU7fDXcs+vNHwb1WcHdrxaqIBCA==",
-        ),
-    ),
-    now=STANDARD.now,
-)
 _PSS: Final = (
     "openssl dgst -sha256 -sigopt rsa_padding_mode:pss -sigopt rsa_pss_saltlen:32 -sigopt rsa_mgf1_md:sha256 -sign "
-)
-RSA_2048: Final = Signed(
-    source=(
-        f"printf '32503680000123.evt-9.{{\"test\": 2048}}' | {_PSS}rsa2048.pem | openssl base64 -A | tr '+/' '-_' | "
-        "tr -d '='"
-    ),
-    helper="keyed.rsa",
-    public_key=_RSA_2048_KEY,
-    body=b'{"test": 2048}',
-    headers=(
-        ("X-Key-Id", "rsa-2048"),
-        ("X-Timestamp", "32503680000123"),
-        ("X-Delivery", "evt-9"),
-        (
-            "X-Signature",
-            "v1="
-            "XCyU-C0QfcyfhPZM-xJIsgDalHuC0iBa6nPA9Vz-duUg9HE5r9KEwkvrVwp06dB_Y6gGFycFjFHTUB79T4F-AnTe2LTMrU1a4OvK"
-            "gqwFmd9qdZjaCUZLN3EElNI3KgXG3NsBXpDLCrXhjhnn26pdE_JJ-YeBlkgQQZ6ahrosOs-Y9gyU8_eDs5leBEk3tVs8aGlwLsLG"
-            "hmnZZ7Mc0wh2d_LTkd_GdW-pPl8rWND4IasJdCxVnOmj7p7h0VmehmSpzKUxw0RfbF8U3Qk2a3m_huZ1SOpH6mkKdXoFWo4xNzC_"
-            "NVbcBeZhSBtHFoovZzU6ZkILoyG8Ks9B6xFHhjrQxQ",
-        ),
-    ),
-    now=KEYED.now,
-    key_id="rsa-2048",
-)
-RSA_3072: Final = Signed(
-    source=(
-        f"printf '32503680000456.evt-10.{{\"test\": 3072}}' | {_PSS}rsa3072.pem | openssl base64 -A | tr '+/' '-_' | "
-        "tr -d '='"
-    ),
-    helper="keyed.rsa",
-    public_key=_RSA_3072_KEY,
-    body=b'{"test": 3072}',
-    headers=(
-        ("X-Key-Id", "rsa-3072"),
-        ("X-Timestamp", "32503680000456"),
-        ("X-Delivery", "evt-10"),
-        (
-            "X-Signature",
-            "v1="
-            "PGXcg136-84tkDZtIzvbfI0eR_VBcwGC_dsULTTnC1YxhwP5bt4AkiX-fTI8B1ut84c1KJmN5dzl7ep_IIq-hswvJ_gK-MMv-TAH"
-            "-VEKNcNdcquAYdSZRHUTEY3vQVJw5rAsZaZRfUqrtUZKVM8CSuk1qtlNSZ7H7yIS13lKz8K403VHndgIA1QC4GOUrp8VhFbEf4Yb"
-            "As9MTx51UHR1ar9VJVJjHqcsP-hbV381nxbL0BGBthSSLSvy0-Tk9DUGnoo9kn6pGkbh2TmK28Xa4TnUZ4FCqrcUXWfh_pyIy-eZ"
-            "dAi5BdI56rbHkJY3n0gKyTr5SpMK_C9KdAGN96iPVtxk2LPkPC2KmNhXqi7TAipc5UC6aF-VmN6dZGNbw78uA3hDarhetpgfqXYb"
-            "UmugMYNOV4iw61tvCYWjhz7Q7tWmhlxpe88HEgWadPsta30SN4AOvNJfSYgqz1XxBtmIn8RKgP6Fxaa3_AstdOXgjZa3GWF5tsjo"
-            "VEVLK9FSDxeF",
-        ),
-    ),
-    now=KEYED.now.replace(microsecond=456000),
-    key_id="rsa-3072",
 )
 
 
@@ -388,7 +319,7 @@ class PublicKeyWebhooks(Webhooks):
 
     def key_set(self, *keys: tuple[str, Any]) -> Any:
         """Return a key set of Ed25519 or RSA-PSS keys, by the class of each public key, given with their ids."""
-        return self.protocols.KeySet(keys=tuple(self.wrapped(name, key) for name, key in keys))
+        return self.protocols.KeySet(keys=tuple(starmap(self.wrapped, keys)))
 
     def wrapped(self, name: str, key: object) -> Any:
         """Return the key wrapper of a public key, or an HMAC key for bytes."""
@@ -414,8 +345,8 @@ def webhook_public_keys(package: ModuleType, lines: list[str]) -> None:
 def _imports(hooks: PublicKeyWebhooks) -> None:
     """Load cryptography only with the key module or a public-key helper, whose hints then resolve."""
     package, lines = hooks.package, hooks.lines
-    imports(package, lines, "standard.ed25519", (*PUBLIC_MODULES, ".webhooks.github.push", ".webhooks.keys"))
-    imports(package, lines, "keyed.rsa", (".webhooks.wycheproof.rsa",))
+    imports(package, lines, "rfc8032.ed25519", (*PUBLIC_MODULES, ".webhooks.github.push", ".webhooks.keys"))
+    imports(package, lines, "wycheproof.rsa", (".webhooks.wycheproof.rsa",))
     for name in ("Ed25519Key", "RSAPSSKey"):
         hints = get_type_hints(getattr(hooks.keys, name).__init__)
         lines.append(f"  {name} hints={ {key: getattr(value, '__name__', value) for key, value in hints.items()} }")
@@ -424,7 +355,7 @@ def _imports(hooks: PublicKeyWebhooks) -> None:
 
 def _vectors(hooks: PublicKeyWebhooks) -> None:
     """Accept every published and authored vector; a body that is not JSON fails only after its signature verifies."""
-    for vector in (*RFC_8032, *WYCHEPROOF_VALID, STANDARD_ED25519, RSA_2048, RSA_3072, GITHUB):
+    for vector in (*RFC_8032, *WYCHEPROOF_VALID, GITHUB):
         hooks.check(vector.source, vector)
 
 
@@ -447,59 +378,21 @@ def _rejections(hooks: PublicKeyWebhooks) -> None:
     valid = WYCHEPROOF_VALID[1]
     hooks.check("Wycheproof tcId 4 with one changed body byte", valid, body=b"123401")
     hooks.check("Wycheproof tcId 4 with a trailing newline", valid, body=b"123400\n")
-    hooks.check("Ed25519 changed body", STANDARD_ED25519, body=b'{"test": 25518}')
-    hooks.check(
-        "Ed25519 new timestamp", STANDARD_ED25519, headers=STANDARD_ED25519.changed("webhook-timestamp", "1614265331")
-    )
-    hooks.check(
-        "Ed25519 new delivery id", STANDARD_ED25519, headers=STANDARD_ED25519.changed("webhook-id", "msg_ed2551")
-    )
-    hooks.check("RSA new delivery id", RSA_2048, headers=RSA_2048.changed("X-Delivery", "evt-8"))
-    hooks.check("RSA changed body", RSA_2048, body=b'{"test": 2049}')
-    hooks.check("RSA empty signature", RSA_2048, headers=RSA_2048.changed("X-Signature", ""))
-    hooks.check("RSA prefix only", RSA_2048, headers=RSA_2048.changed("X-Signature", "v1="))
+    hooks.check("Ed25519 changed body", RFC_8032[1], body=b'{"test": 25518}')
+    hooks.check("RSA changed body", WYCHEPROOF_VALID[0], body=b'{"test": 2049}')
+    hooks.check("RSA empty signature", WYCHEPROOF_VALID[0], headers=WYCHEPROOF_VALID[0].changed("X-Signature", ""))
+    hooks.check("RSA prefix only", WYCHEPROOF_VALID[0], headers=WYCHEPROOF_VALID[0].changed("X-Signature", "v1="))
 
 
 def _candidates(hooks: PublicKeyWebhooks) -> None:
-    """Try keys in key-set order and signatures in header order, moving on only after an invalid signature."""
-    signature = STANDARD_ED25519.headers[2][1]
-    retired, active = ("retired", _RFC_8032_TEST_2_KEY), ("active", _ED25519_KEY)
-    hooks.check("Ed25519 rotated to the new key", STANDARD_ED25519, keys=hooks.key_set(retired, active))
-    hooks.check("Ed25519 both keys match", STANDARD_ED25519, keys=hooks.key_set(active, ("again", _ED25519_KEY)))
-    hooks.check("Ed25519 only the retired key", STANDARD_ED25519, keys=hooks.key_set(retired))
-    hooks.check("Ed25519 empty key set", STANDARD_ED25519, keys=hooks.key_set())
-    hooks.check(
-        "Ed25519 bad signature first",
-        STANDARD_ED25519,
-        headers=STANDARD_ED25519.changed("webhook-signature", f"{_ZERO_ED25519} {signature}"),
-    )
-    hooks.check(
-        "Ed25519 signature header twice",
-        STANDARD_ED25519,
-        headers=(*STANDARD_ED25519.changed("webhook-signature", _ZERO_ED25519), ("Webhook-Signature", signature)),
-    )
-    sizes = hooks.key_set(("rsa-3072", _RSA_3072_KEY), ("wycheproof", _WYCHEPROOF_KEY))
-    hooks.check("RSA keys of two sizes", WYCHEPROOF_VALID[1], keys=sizes)
-    rotation = hooks.key_set(("rsa-2048", _RSA_2048_KEY), ("rsa-3072", _RSA_3072_KEY))
-    hooks.check("RSA key id selects the 2048-bit key", RSA_2048, keys=rotation)
-    hooks.check("RSA key id selects the 3072-bit key", RSA_3072, keys=rotation)
-    hooks.check(
-        "RSA key id names the other key", RSA_2048, keys=rotation, headers=RSA_2048.changed("X-Key-Id", "rsa-3072")
-    )
-    hooks.check("RSA unknown key id", RSA_2048, keys=rotation, headers=RSA_2048.changed("X-Key-Id", "rsa-4096"))
-    both = f"{RSA_3072.headers[3][1]},{RSA_2048.headers[3][1]}"
-    hooks.check(
-        "RSA 3072-bit signature before the 2048-bit one",
-        RSA_2048,
-        keys=rotation,
-        headers=RSA_2048.changed("X-Signature", both),
-    )
-    helper, store, keys = hooks.helper("keyed.rsa"), hooks.protocols.MemoryReplayStore(), hooks.default_keys(RSA_2048)
-    for label in ("claimed", "duplicate"):
-        claimed = outcome(
-            lambda: helper.verify(RSA_2048.body, list(RSA_2048.headers), keys, now=RSA_2048.now, replay_store=store)
-        )
-        hooks.lines.append(f"  RSA {label} = {claimed}")
+    """Try rotating keys and retain empty or unmatched key behavior with raw-body signatures."""
+    vector = RFC_8032[1]
+    active = ("active", vector.public_key)
+    retired = ("retired", _RFC_8032_TEST_1_KEY)
+    hooks.check("Ed25519 rotated to the new key", vector, keys=hooks.key_set(retired, active))
+    hooks.check("Ed25519 both keys match", vector, keys=hooks.key_set(active, ("again", vector.public_key)))
+    hooks.check("Ed25519 only the retired key", vector, keys=hooks.key_set(retired))
+    hooks.check("Ed25519 empty key set", vector, keys=hooks.key_set())
 
 
 def _wrappers(hooks: PublicKeyWebhooks) -> None:
@@ -510,11 +403,11 @@ def _wrappers(hooks: PublicKeyWebhooks) -> None:
         ("HMAC key for RSA-PSS", valid, hooks.key_set(("hmac", b"secret"))),
         ("Ed25519 key for RSA-PSS", valid, hooks.key_set(ed25519)),
         ("Ed25519 key after an RSA-PSS key", valid, hooks.key_set(rsa, ed25519)),
-        ("RSA-PSS key for Ed25519", STANDARD_ED25519, hooks.key_set(rsa)),
+        ("RSA-PSS key for Ed25519", RFC_8032[1], hooks.key_set(rsa)),
         ("Ed25519 key for HMAC", GITHUB, hooks.key_set(ed25519)),
         (
             "object claiming to be an Ed25519 key",
-            STANDARD_ED25519,
+            RFC_8032[1],
             hooks.protocols.KeySet(keys=(_Claiming(hooks.keys.Ed25519Key, id="active", public_key=_ED25519_KEY),)),
         ),
         (
@@ -568,8 +461,8 @@ def _keys(hooks: PublicKeyWebhooks) -> None:
 
 def _backend(hooks: PublicKeyWebhooks) -> None:
     """Use public keys only to verify; refuse a key its backend cannot use, and propagate any other error unchanged."""
-    keys = (RecordingEd25519PublicKey(_ED25519_KEY), RecordingRSAPublicKey(_WYCHEPROOF_KEY))
-    hooks.check("recorded Ed25519 key", STANDARD_ED25519, keys=hooks.key_set(("active", keys[0])))
+    keys = (RecordingEd25519PublicKey(_RFC_8032_TEST_2_KEY), RecordingRSAPublicKey(_WYCHEPROOF_KEY))
+    hooks.check("recorded Ed25519 key", RFC_8032[1], keys=hooks.key_set(("active", keys[0])))
     hooks.check("recorded RSA key", WYCHEPROOF_VALID[1], keys=hooks.key_set(("active", keys[1])))
     hooks.lines.append(f"  recorded calls={[key.calls for key in keys]}")
     for label, errors in (
@@ -585,7 +478,7 @@ def _backend(hooks: PublicKeyWebhooks) -> None:
         hooks.lines.append(f"  {label} calls={[key.calls for key in (first, scripted, last)]}")
     scripted = RecordingRSAPublicKey(_RSA_2048_KEY, UnsupportedAlgorithm("scripted"), UnsupportedAlgorithm("scripted"))
     keys = hooks.key_set(("rsa-3072", RecordingRSAPublicKey(_RSA_3072_KEY)), ("rsa-2048", scripted))
-    hooks.check("unsupported algorithm of the key the key id selects", RSA_2048, keys=keys)
+    hooks.check("unsupported algorithm of the key the key id selects", WYCHEPROOF_VALID[0], keys=keys)
     helper = hooks.helper("wycheproof.rsa")
     vector = WYCHEPROOF_VALID[1]
     for asynchronous in (False, True):
@@ -617,7 +510,7 @@ def _secrecy(hooks: PublicKeyWebhooks) -> None:
     ):
         try:
             helper.verify(body, list(vector.headers), keys, now=vector.now)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             hooks.lines.append(f"  {label} ! {describe(error)} context={error.__context__!r}")
             texts.extend(reachable(error, set()))
     hooks.lines.append(f"  markers shown={[text for text in texts if _MARKER in text]} calls={recorded.calls}")

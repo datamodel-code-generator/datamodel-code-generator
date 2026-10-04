@@ -1,7 +1,7 @@
-"""Verify the deliveries of generated webhook helpers through application verifiers, then decode and claim their events.
+"""Verify the deliveries of generated webhook helpers through application verifiers, then decode their events.
 
 The stages run in a fixed order: local configuration, sizes, the verifier, the contract fence over the facts it
-returns, the timestamp window, the replay prerequisite, decoding, and the replay claim. The verifier is synchronous in
+returns, the timestamp window, and decoding. The verifier is synchronous in
 both modes, is called once, and its errors propagate as they are. Errors keep no key, signature, header, or body.
 """
 
@@ -16,13 +16,10 @@ from typing_extensions import TypeVar
 
 from ..client.errors import AdapterContractError, DeliveryState
 from .webhook_events import (
+    EventPlan,
     Facts,
-    SignedPlan,
-    areceived,
     configuration_error,
     epoch_microseconds,
-    expiry,
-    facts,
     local_arguments,
     received,
     reject,
@@ -34,7 +31,7 @@ from .webhooks import VerifiedSignature
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from .webhooks import AsyncReplayStore, KeySet, ReplayStore, VerifiedWebhook, Verifier, WebhookOptions
+    from .webhooks import KeySet, VerifiedWebhook, Verifier, WebhookOptions
 
 __all__ = ("AdapterPlan", "averify_adapted", "verify_adapted")
 
@@ -43,8 +40,8 @@ K = TypeVar("K")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class AdapterPlan(SignedPlan[T]):
-    """A generated helper whose caller supplies the verifier: its identity, fingerprint, facts, decoder, and policy.
+class AdapterPlan(EventPlan[T]):
+    """A generated helper whose caller supplies the verifier: its identity, required facts, and decoder.
 
     `timestamp` and `delivery_id` declare whether the verifier must return each fact; an undeclared one must be None.
     """
@@ -67,7 +64,7 @@ def _utc(value: object) -> datetime | None:
     try:
         offset = value.utcoffset()
         moment = None if offset is None else (value.replace(tzinfo=None) - offset).replace(tzinfo=timezone.utc)
-    except Exception:  # noqa: BLE001
+    except Exception:  # ruff: ignore[blind-except]
         moment = None
     return moment
 
@@ -101,7 +98,7 @@ def _fenced(plan: AdapterPlan[T], signature: object) -> tuple[str | None, dateti
     raise AdapterContractError(delivery_state=DeliveryState.NOT_SENT)
 
 
-def _authenticate(  # noqa: PLR0913
+def _authenticate(  # ruff: ignore[too-many-arguments]
     plan: AdapterPlan[T],
     raw_body: bytes,
     headers: Sequence[tuple[str, str]],
@@ -109,15 +106,11 @@ def _authenticate(  # noqa: PLR0913
     *,
     verifier: Verifier[K],
     now: datetime,
-    store: object,
     options: object,
-    asynchronous: bool,
 ) -> Facts:
-    """Run every stage before decoding; return the verified facts, with the claim to make when given a store."""
+    """Run every stage before decoding; return the verified facts."""
     helper_id = plan.helper_id
-    now_us, limits = local_arguments(
-        helper_id, raw_body, headers, keys, now=now, store=store, options=options, asynchronous=asynchronous
-    )
+    now_us, limits = local_arguments(helper_id, raw_body, headers, keys, now=now, options=options)
     if not callable(verify := getattr(verifier, "verify", None)):
         raise configuration_error(("verifier",), "wrong_capability", helper_id)
     sizes(limits, raw_body, headers, len(keys.keys), helper_id)
@@ -127,10 +120,10 @@ def _authenticate(  # noqa: PLR0913
         signed = epoch_microseconds(timestamp)
         if not within(now_us, signed, limits):
             reject("timestamp_window", helper_id)
-    return facts(delivery_id, timestamp, matched_key_id, store, expiry(signed, now_us, limits), helper_id)
+    return Facts(delivery_id, timestamp, matched_key_id)
 
 
-def verify_adapted(  # noqa: PLR0913
+def verify_adapted(  # ruff: ignore[too-many-arguments]
     plan: AdapterPlan[T],
     raw_body: bytes,
     headers: Sequence[tuple[str, str]],
@@ -138,13 +131,9 @@ def verify_adapted(  # noqa: PLR0913
     *,
     verifier: Verifier[K],
     now: datetime,
-    replay_store: ReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[T]:
-    """Verify a delivery with the caller's verifier, decode its event, and claim it in a synchronous store when given.
-
-    The claim is at most once, as `received` describes.
-    """
+    """Authenticate a delivery with the caller's verifier, then decode its event."""
     authenticated = _authenticate(
         plan,
         raw_body,
@@ -152,14 +141,12 @@ def verify_adapted(  # noqa: PLR0913
         keys,
         verifier=verifier,
         now=now,
-        store=replay_store,
         options=options,
-        asynchronous=False,
     )
-    return received(plan, raw_body, authenticated, replay_store)
+    return received(plan, raw_body, authenticated)
 
 
-async def averify_adapted(  # noqa: PLR0913
+async def averify_adapted(  # ruff: ignore[too-many-arguments, unused-async]
     plan: AdapterPlan[T],
     raw_body: bytes,
     headers: Sequence[tuple[str, str]],
@@ -167,10 +154,9 @@ async def averify_adapted(  # noqa: PLR0913
     *,
     verifier: Verifier[K],
     now: datetime,
-    replay_store: AsyncReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[T]:
-    """Verify with the same synchronous verifier as verify_adapted, then await the claim of an asynchronous store."""
+    """Verify with the same synchronous verifier as verify_adapted, then decode the event."""
     authenticated = _authenticate(
         plan,
         raw_body,
@@ -178,8 +164,6 @@ async def averify_adapted(  # noqa: PLR0913
         keys,
         verifier=verifier,
         now=now,
-        store=replay_store,
         options=options,
-        asynchronous=True,
     )
-    return await areceived(plan, raw_body, authenticated, replay_store)
+    return received(plan, raw_body, authenticated)

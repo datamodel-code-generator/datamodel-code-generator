@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import string
 from dataclasses import replace
 from functools import reduce
 from typing import TYPE_CHECKING
@@ -10,18 +9,14 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator._api_types import OperationRef, SchemaRef
 from datamodel_code_generator._client.protocols import (
     AdapterSignature,
-    AsciiBytes,
     Binding,
+    BodyHmacSignature,
     CacheHelper,
-    CacheMutation,
     CountContinuation,
     CursorContinuation,
     EndCondition,
     EventDiscriminator,
     EventMapping,
-    FixedBytes,
-    HeaderName,
-    HmacSignature,
     ImmediateResult,
     InlineResult,
     LinkContinuation,
@@ -38,12 +33,12 @@ from datamodel_code_generator._client.protocols import (
     QueuedOperation,
     QueueHelper,
     RemoteCancel,
-    SignedLiteral,
     SourceValue,
+    StandardWebhooksSignature,
     StreamCompletion,
     StreamHelper,
     StreamResume,
-    TimestampHeader,
+    StripeStyleSignature,
     WebhookHelper,
 )
 from datamodel_code_generator._runtime.protocols.records import (
@@ -315,181 +310,45 @@ INVALID = ProtocolConfiguration(
         ),
         "jobs.run": object(),  # ty: ignore[invalid-argument-type]
         "hooks.hmac": WebhookHelper(
-            event_schema=USER,
-            signature=HmacSignature(
-                kind="ed25519",  # ty: ignore[invalid-argument-type]
-                header="X-Signature",
-                encoding="hex",
-                prefix="",
-                separator="none",
-                key_id="none",
-                timestamp="none",
-                delivery_id="none",
-                signed_parts=("raw-body",),
-            ),
+            event_schema=USER, signature=BodyHmacSignature(header="X-Signature", algorithm="ed25519")
         ),
         "hooks.public": WebhookHelper(
-            event_schema=USER,
-            signature=PublicKeySignature(
-                kind="hmac-sha256",  # ty: ignore[invalid-argument-type]
-                header="X-Signature",
-                encoding="hex",
-                prefix="",
-                separator="none",
-                key_id="none",
-                timestamp="none",
-                delivery_id="none",
-                signed_parts=("raw-body",),
-            ),
+            event_schema=USER, signature=PublicKeySignature(kind="hmac-sha256", header="X-Signature")
         ),
     },
 )
 
 SHAPE = ProtocolConfiguration(helpers=[DISABLED])  # ty: ignore[invalid-argument-type]
 
-DOT = SignedLiteral(literal=".")
-DIGITS = AsciiBytes(ascii_bytes=string.digits)
-STANDARD = HmacSignature(
-    kind="hmac-sha256",
-    header="webhook-signature",
-    encoding="base64",
-    prefix="v1,",
-    separator=" ",
-    key_id="none",
-    timestamp=TimestampHeader(header="webhook-timestamp", unit="seconds"),
-    delivery_id=HeaderName(header="webhook-id"),
-    signed_parts=("delivery-id", DOT, "timestamp", DOT, "raw-body"),
-    field_constraints={
-        "delivery-id": AsciiBytes(ascii_bytes="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"),
-        "timestamp": DIGITS,
-    },
-)
-BODY_ONLY = HmacSignature(
-    kind="hmac-sha256",
-    header="X-Signature",
-    encoding="hex",
-    prefix="",
-    separator="none",
-    key_id="none",
-    timestamp="none",
-    delivery_id="none",
-    signed_parts=("raw-body",),
-)
+STANDARD = StandardWebhooksSignature()
+BODY_ONLY = BodyHmacSignature(header="X-Signature")
 MESSAGE = SchemaRef(pointer="/components/schemas/Message")
 PUSH = SchemaRef(pointer="/components/schemas/Push")
 WEBHOOKS = ProtocolConfiguration(
     helpers={
         "standard.message": WebhookHelper(event_schema=MESSAGE, signature=STANDARD),
-        "standard.rejecting": WebhookHelper(
-            event_schema=SchemaRef(pointer="/webhooks/message/post/requestBody/content/application~1json/schema"),
-            signature=STANDARD,
-            duplicates="reject",
-        ),
+        "stripe.event": WebhookHelper(event_schema=MESSAGE, signature=StripeStyleSignature()),
         "github.push": WebhookHelper(
             event_schema=PUSH, signature=replace(BODY_ONLY, header="X-Hub-Signature-256", prefix="sha256=")
         ),
-        "slack.command": WebhookHelper(
-            event_schema=SchemaRef(pointer="/components/schemas/Command"),
-            signature=replace(
-                BODY_ONLY,
-                header="X-Slack-Signature",
-                prefix="v0=",
-                timestamp=TimestampHeader(header="X-Slack-Request-Timestamp", unit="seconds"),
-                signed_parts=(SignedLiteral(literal="v0:"), "timestamp", SignedLiteral(literal=":"), "raw-body"),
-                field_constraints={"timestamp": DIGITS},
-            ),
-        ),
         "rfc.sha256": WebhookHelper(event_schema=PUSH, signature=BODY_ONLY),
-        "rfc.sha512": WebhookHelper(event_schema=PUSH, signature=replace(BODY_ONLY, kind="hmac-sha512")),
-        "keyed.event": WebhookHelper(
-            event_schema=MESSAGE,
-            signature=HmacSignature(
-                kind="hmac-sha512",
-                header="X-Signature",
-                encoding="base64url",
-                prefix="",
-                separator=",",
-                key_id=HeaderName(header="X-Key-Id"),
-                timestamp=TimestampHeader(header="X-Timestamp", unit="milliseconds"),
-                delivery_id=HeaderName(header="X-Delivery"),
-                signed_parts=["timestamp", DOT, "delivery-id", DOT, "raw-body"],  # ty: ignore[invalid-argument-type]
-                field_constraints={
-                    "timestamp": DIGITS,
-                    "delivery-id": AsciiBytes(ascii_bytes="abcdefghijklmnopqrstuvwxyz0123456789-"),
-                },
-            ),
-        ),
-        "framed.count": WebhookHelper(
-            event_schema=SchemaRef(pointer="/components/schemas/Count"),
-            signature=replace(
-                BODY_ONLY,
-                header="X-Framed-Signature",
-                delivery_id=HeaderName(header="X-Framed-Id"),
-                signed_parts=("delivery-id", "raw-body"),
-                field_constraints={"delivery-id": FixedBytes(fixed_bytes=1)},
-            ),
-        ),
+        "rfc.sha512": WebhookHelper(event_schema=PUSH, signature=replace(BODY_ONLY, algorithm="hmac-sha512")),
         "shapes.drawn": WebhookHelper(event_schema=SchemaRef(pointer="/components/schemas/Shape"), signature=BODY_ONLY),
         "callbacks.delivered": WebhookHelper(
-            event_schema=SchemaRef(pointer="/components/schemas/Delivery"),
-            signature=replace(BODY_ONLY, signed_parts=("raw-body", SignedLiteral(literal="!"))),
+            event_schema=SchemaRef(pointer="/components/schemas/Delivery"), signature=BODY_ONLY
         ),
         "disabled.hook": WebhookHelper(
             enabled=False, event_schema=SchemaRef(pointer="/components/schemas/Unused"), signature=BODY_ONLY
         ),
     }
 )
-
-ED25519_BODY = PublicKeySignature(
-    kind="ed25519",
-    header="X-Signature",
-    encoding="hex",
-    prefix="",
-    separator="none",
-    key_id="none",
-    timestamp="none",
-    delivery_id="none",
-    signed_parts=("raw-body",),
-)
+ED25519_BODY = PublicKeySignature(kind="ed25519", header="X-Signature")
 PUBLIC_KEYS = ProtocolConfiguration(
     helpers={
         "rfc8032.ed25519": WebhookHelper(event_schema=PUSH, signature=ED25519_BODY),
         "wycheproof.rsa": WebhookHelper(
             event_schema=SchemaRef(pointer="/components/schemas/Count"),
             signature=replace(ED25519_BODY, kind="rsa-pss-sha256"),
-        ),
-        "standard.ed25519": WebhookHelper(
-            event_schema=MESSAGE,
-            signature=PublicKeySignature(
-                kind="ed25519",
-                header=STANDARD.header,
-                encoding=STANDARD.encoding,
-                prefix="v1a,",
-                separator=STANDARD.separator,
-                key_id=STANDARD.key_id,
-                timestamp=STANDARD.timestamp,
-                delivery_id=STANDARD.delivery_id,
-                signed_parts=STANDARD.signed_parts,
-                field_constraints=STANDARD.field_constraints,
-            ),
-        ),
-        "keyed.rsa": WebhookHelper(
-            event_schema=MESSAGE,
-            signature=PublicKeySignature(
-                kind="rsa-pss-sha256",
-                header="X-Signature",
-                encoding="base64url",
-                prefix="v1=",
-                separator=",",
-                key_id=HeaderName(header="X-Key-Id"),
-                timestamp=TimestampHeader(header="X-Timestamp", unit="milliseconds"),
-                delivery_id=HeaderName(header="X-Delivery"),
-                signed_parts=("timestamp", DOT, "delivery-id", DOT, "raw-body"),
-                field_constraints={
-                    "timestamp": DIGITS,
-                    "delivery-id": AsciiBytes(ascii_bytes="abcdefghijklmnopqrstuvwxyz0123456789-"),
-                },
-            ),
         ),
         "github.push": WEBHOOKS.helpers["github.push"],
     }
@@ -512,7 +371,6 @@ ADAPTERS = ProtocolConfiguration(
         ),
         "adapted.plain": WebhookHelper(
             event_schema=MESSAGE,
-            duplicates="reject",
             signature=AdapterSignature(timestamp="none", delivery_id="none"),
         ),
         "mapped.event": WebhookHelper(
@@ -543,16 +401,6 @@ CACHING = ProtocolConfiguration(
             validator="both",
             authenticated=False,
             vary_allowlist=("Accept-Language",),
-            tags=("user:{userId}", "users"),
-            mutations={
-                "rename": CacheMutation(
-                    operation=OperationRef(pointer="/paths/~1users~1{userId}/patch"),
-                    invalidate_tags=("user:{userId}",),
-                ),
-                "remove": CacheMutation(
-                    operation="/paths/~1users~1{userId}/delete", invalidate_tags=("user:{userId}", "users")
-                ),
-            },
         ),
         "users.dated": CacheHelper(
             operation=USER_BY_ID, validator="last_modified", authenticated=False, statuses=(200, 203)
@@ -562,8 +410,6 @@ CACHING = ProtocolConfiguration(
             validator="etag",
             authenticated=False,
             vary_allowlist=("Accept-Language",),
-            tags=("users",),
-            mutations={"create": CacheMutation(operation="/paths/~1users/post", invalidate_tags=("users",))},
         ),
         "carts.current": CacheHelper(operation="/paths/~1carts~1current/get", validator="etag", authenticated=True),
         "secure.profile": CacheHelper(

@@ -17,6 +17,7 @@ from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
+from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
 from tests.data.python.client_regressions import json_error_body, retained_body
 from tests.data.python.client_runtime import argument, describe, run
 from tests.data.python.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
@@ -200,6 +201,7 @@ def sockets(package: ModuleType, lines: list[str]) -> None:
         _peers(harness)
         _proxies(harness)
         run(lambda: _async_sockets(harness))
+        run(lambda: _async_refused(harness))
         run(lambda: _async_hooked(harness))
     finally:
         server.stop()
@@ -240,41 +242,18 @@ def _large(connection: ServerConnection) -> None:
     connection.close()
 
 
-def _slow(connection: ServerConnection) -> None:
-    """Read the first fragment of a message, then nothing for a while, then the rest."""
-    fragments = connection.recv_streaming()
-    next(fragments)
-    threading.Event().wait(1.5)
-    for _ in fragments:
-        pass
-
-
-def _aborting(connection: ServerConnection) -> None:
-    """Drop the connection once the first fragment of a message arrived."""
-    fragments = connection.recv_streaming()
-    next(fragments)
-    connection.close_socket()
-    for _ in fragments:
-        pass
-
-
 def _sends(harness: _Harness, api: Any) -> None:
-    """Fragment a long message, refuse a send past its timeout, and give up on one cut off midway."""
+    """Send a long message whole and refuse a send past its timeout."""
     lines, server = harness.lines, harness.server
     (play,) = server.play(Play(talk=_large))
     with api.protocols.secure.chat.connect() as session:
         session.send(b"y" * 100000)
-        lines.append(f"  fragmented {_message(session.receive())}")
+        lines.append(f"  whole {_message(session.receive())}")
     harness.report(play)
-    for label, talk, limits in (
-        ("send past its timeout", _closing, {"send_timeout": 1e-9}),
-        ("send overdue between fragments", _slow, {"send_timeout": 0.3}),
-        ("send cut off midway", _aborting, {}),
-    ):
-        server.play(Play(talk=talk))
-        session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1, **limits))
-        record(lines, label, lambda session=session: session.send(_LARGE))
-        session.close()
+    server.play(Play(talk=_closing))
+    session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1, send_timeout=1e-9))
+    record(lines, "send past its timeout", lambda: session.send(_LARGE))
+    session.close()
 
 
 def _channels(harness: _Harness, api: Any) -> None:
@@ -301,41 +280,20 @@ def _channels(harness: _Harness, api: Any) -> None:
 
 
 def _refusals(harness: _Harness, api: Any) -> None:
-    """Refuse handshakes with statuses, retry them, follow a redirect, and refuse what fails before sending."""
+    """Refuse handshakes with statuses, never retrying or redirecting them, and refuse what fails before sending."""
     lines, server, options = harness.lines, harness.server, harness.options
     chat = api.protocols.rooms.chat
     cases: tuple[tuple[str, tuple[Play, ...], dict[str, Any]], ...] = (
         ("declared error", (Play(refuse=(404, _PROBLEM, b'{"detail":"no room"}')),), {}),
         ("undeclared success", (Play(refuse=(200, (), b"plain")),), {}),
+        ("not retried", (Play(refuse=(503, (), b"")),), {}),
+        ("retry after not honored", (Play(refuse=(429, (("Retry-After", "0"),), b"")),), {}),
         (
-            "retried",
-            (Play(refuse=(503, (), b"")), Play(refuse=(503, (), b"")), Play(talk=_closing)),
-            {},
-        ),
-        ("not retried", (Play(refuse=(503, (), b"")),), {"options": options.RequestOptions(retry=options.RetryOptions(max_retries=0))}),
-        ("retry after too long", (Play(refuse=(429, (("Retry-After", "120"),), b"")),), {}),
-        (
-            "redirected",
-            (Play(refuse=(302, (("Location", "/rooms/r2/socket"),), b"")), Play(talk=_closing)),
+            "redirect not followed",
+            (Play(refuse=(302, (("Location", "/rooms/r2/socket"),), b"")),),
             {"options": options.RequestOptions(redirects=options.RedirectOptions(enabled=True))},
         ),
-        (
-            "redirected to a wss URL",
-            (Play(refuse=(307, (("Location", f"WSS://localhost:{server.port}/rooms/r3/socket"),), b"")), Play(talk=_closing)),
-            {"options": options.RequestOptions(redirects=options.RedirectOptions(enabled=True))},
-        ),
-        (
-            "redirected to a ws URL",
-            (Play(refuse=(307, (("Location", f"ws://localhost:{server.port}/rooms/r3/socket"),), b"")),),
-            {"options": options.RequestOptions(redirects=options.RedirectOptions(enabled=True))},
-        ),
-        ("redirect not followed", (Play(refuse=(302, (("Location", "/rooms/r2/socket"),), b"")),), {}),
         ("subprotocol not selected", (Play(subprotocol=None),), {}),
-        (
-            "session without room for a retry",
-            (Play(refuse=(503, (), b"")),),
-            {"session_options": options.SessionOptions(max_network_sends=1)},
-        ),
     )
     for label, plays, arguments in cases:
         server.play(*plays)
@@ -349,8 +307,6 @@ def _refusals(harness: _Harness, api: Any) -> None:
     for label, call in (
         ("managed header", lambda: chat.connect(room=harness.room(), options=options.RequestOptions(headers=(("Upgrade", "h2c"),)))),
         ("no send slot", lambda: chat.connect(room=harness.room(), session_options=options.SessionOptions(max_network_sends=0))),
-        ("reconnecting", lambda: chat.connect(room=harness.room(), ws_options=harness.ws(reconnect=True))),
-        ("compression", lambda: chat.connect(room=harness.room(), options=options.RequestOptions(compression="gzip"))),
         ("options of another type", lambda: chat.connect(room=harness.room(), ws_options=options.RequestOptions())),
         ("request options of another type", lambda: chat.connect(room=harness.room(), options=harness.ws())),
         ("session options of another type", lambda: chat.connect(room=harness.room(), session_options=harness.ws())),
@@ -464,6 +420,10 @@ def _closing_sessions(harness: _Harness, api: Any) -> None:
     (play,) = server.play(Play(talk=_closing))
     session = api.protocols.feed.text.connect()
     harness.report(play)
+    record(lines, "send once the server closed unread", lambda: session.send("late"))
+    (play,) = server.play(Play(talk=_closing))
+    session = api.protocols.feed.text.connect()
+    harness.report(play)
     record(lines, "ping once the server closed unread", session.ping)
 
 
@@ -561,13 +521,13 @@ class _AsyncTokens(_Tokens):
 
 
 def _authenticated(harness: _Harness) -> None:
-    """Authenticate each handshake, refreshing a rejected token once, and send a header parameter."""
+    """Authenticate each handshake, never refreshing a rejected token, and send a header parameter."""
     lines, server, options = harness.lines, harness.server, harness.options
-    for label, retry in (("refreshed after invalid_token", None), ("no refresh without retries", 0)):
+    for label, retry in (("rejected token not refreshed", None), ("no refresh without retries", 0)):
         tokens = _Tokens(harness.auth)
         settings = {} if retry is None else {"retry": options.RetryOptions(max_retries=retry)}
         client_options = harness.client(auth=harness.auth.AuthConfig({"bearer": tokens}))
-        plays = server.play(Play(refuse=(401, _INVALID, b"")), *(() if retry == 0 else (Play(talk=_closing),)))
+        plays = server.play(Play(refuse=(401, _INVALID, b"")))
         with harness.package.Client(options=client_options) as api:
             session = record(
                 lines,
@@ -654,12 +614,6 @@ def _client_close(harness: _Harness) -> None:
     harness.report(play)
 
 
-def _free_port() -> int:
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        return probe.getsockname()[1]
-
-
 def _handshakes(harness: _Harness) -> None:
     """Classify handshakes that break the protocol, time out, or never connect."""
     lines, options = harness.lines, harness.options
@@ -687,8 +641,26 @@ def _handshakes(harness: _Harness) -> None:
                 )
         finally:
             peer.stop()
-    with harness.package.Client(options=harness.client(f"https://localhost:{_free_port()}")) as api:
-        record(lines, "refused connection", lambda: api.protocols.feed.text.connect(options=once))
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        url = f"https://127.0.0.1:{probe.getsockname()[1]}"
+        for retry in (1, 0):
+            with harness.package.Client(options=harness.client(url)) as api:
+                record(
+                    lines,
+                    f"refused connection retry={retry}",
+                    lambda retry=retry, api=api: api.protocols.feed.text.connect(
+                        options=options.RequestOptions(retry=options.RetryOptions(max_retries=retry))
+                    ),
+                )
+        limiter = _SemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
+        for label, settings, arguments in (
+            ("refused retry exhausts session budget", {}, {"session_options": options.SessionOptions(max_network_sends=1)}),
+            ("refused retry with failed permit release", {"limiter": limiter}, {}),
+        ):
+            with harness.package.Client(options=harness.client(url, **settings)) as api:
+                record(lines, label, lambda api=api, arguments=arguments: api.protocols.feed.text.connect(**arguments))
+        lines.append(f"    refused permit cleanup {limiter.usage.report}")
     with harness.package.Client(options=harness.client(transport=harness.protocols.WebSocketTransportOptions())) as api:
         record(lines, "untrusted certificate", lambda: api.protocols.feed.text.connect(options=once))
 
@@ -702,6 +674,8 @@ def _peers(harness: _Harness) -> None:
         with harness.package.Client(options=harness.client(hangup.url)) as api:
             session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1))
             record(lines, "peer hanging up during a ping", session.ping)
+            session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1))
+            record(lines, "peer hanging up during a whole send", lambda: session.send(_LARGE))
         with harness.package.Client(options=harness.client(peer.url)) as api:
             feed = api.protocols.feed.text
             session = feed.connect(ws_options=harness.ws(pong_timeout=0.1, ping_interval=None, close_timeout=0.1))
@@ -816,6 +790,23 @@ def _proxies(harness: _Harness) -> None:
         proxy.stop()
         refusing.stop()
         garbled.stop()
+
+
+async def _async_refused(harness: _Harness) -> None:
+    """Retry an asyncio handshake refused before sending, within its session budget and permit cleanup."""
+    lines, options = harness.lines, harness.options
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        url = f"https://127.0.0.1:{probe.getsockname()[1]}"
+        limiter = _AsyncSemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
+        for label, settings, arguments in (
+            ("async refused connection", {}, {}),
+            ("async refused retry exhausts session budget", {}, {"session_options": options.SessionOptions(max_network_sends=1)}),
+            ("async refused retry with failed permit release", {"limiter": limiter}, {}),
+        ):
+            async with harness.package.AsyncClient(options=harness.client(url, **settings)) as api:
+                await arecord(lines, label, lambda api=api, arguments=arguments: api.protocols.feed.text.connect(**arguments))
+        lines.append(f"    async refused permit cleanup {limiter.usage.report}")
 
 
 async def _async_sockets(harness: _Harness) -> None:

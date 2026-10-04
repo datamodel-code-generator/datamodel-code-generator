@@ -6,17 +6,11 @@ from __future__ import annotations
 from typing import Final
 
 from .. import _operations
-from .._runtime.protocols.cache import CacheMutationPlan, CachePlan
+from .._runtime.protocols.cache import CachePlan
 from .._runtime.protocols.references import OperationRef
 from ..types.carts import GetCurrentCartResponse
 from ..types.secure import GetSecureUserResponse
-from ..types.users import (
-    CreateUserResponse,
-    DeleteUserResponse,
-    GetUserResponse,
-    ListUsersResponse,
-    RenameUserResponse,
-)
+from ..types.users import GetUserResponse, ListUsersResponse
 
 PLAN_0: Final[CachePlan[GetUserResponse]] = CachePlan(
     helper_id='users.profile',
@@ -24,25 +18,8 @@ PLAN_0: Final[CachePlan[GetUserResponse]] = CachePlan(
     call=_operations.OPERATION_0,
     validator='both',
     authenticated=False,
-    fingerprint='8bc3cb12a7c197074fd9c76e454ce348b7992c59bb308418c3be811dea86f4ad',
+    fingerprint='a5c33bfc2387bfdeefda057abfbff7a1f816965cc5512d3d2b468bb79c88b2cf',
     vary_allowlist=frozenset(('accept-language',)),
-    tags=(('user:', 2), ('users',)),
-)
-
-
-MUTATION_0_0: Final[CacheMutationPlan[RenameUserResponse]] = CacheMutationPlan(
-    helper_id='users.profile',
-    operation=OperationRef(pointer='/paths/~1users~1{userId}/patch'),
-    call=_operations.OPERATION_2,
-    tags=(('user:', 0),),
-)
-
-
-MUTATION_0_1: Final[CacheMutationPlan[DeleteUserResponse]] = CacheMutationPlan(
-    helper_id='users.profile',
-    operation=OperationRef(pointer='/paths/~1users~1{userId}/delete'),
-    call=_operations.OPERATION_3,
-    tags=(('user:', 0), ('users',)),
 )
 
 
@@ -52,7 +29,7 @@ PLAN_1: Final[CachePlan[GetUserResponse]] = CachePlan(
     call=_operations.OPERATION_0,
     validator='last_modified',
     authenticated=False,
-    fingerprint='46268d7980b99b249a57f34340a625c3ae65fd090549291665170e054c80e2b9',
+    fingerprint='ffd35cfb8756376968bf9ead7dace1da61dfcd46b58850161aa98e447b5cb76a',
     statuses=frozenset((200, 203)),
 )
 
@@ -63,17 +40,8 @@ PLAN_2: Final[CachePlan[ListUsersResponse]] = CachePlan(
     call=_operations.OPERATION_4,
     validator='etag',
     authenticated=False,
-    fingerprint='7d3252dc3f8126e03c6df9096f89184192d1b2b773adf2197f3e86c95e8c9ca1',
+    fingerprint='cc1a57a0fc4bda874f5c12c0eca99882e34a7347e60b6f5f0c9901fc9a560a2b',
     vary_allowlist=frozenset(('accept-language',)),
-    tags=(('users',),),
-)
-
-
-MUTATION_2_0: Final[CacheMutationPlan[CreateUserResponse]] = CacheMutationPlan(
-    helper_id='users.listing',
-    operation=OperationRef(pointer='/paths/~1users/post'),
-    call=_operations.OPERATION_5,
-    tags=(('users',),),
 )
 
 
@@ -83,7 +51,7 @@ PLAN_3: Final[CachePlan[GetCurrentCartResponse]] = CachePlan(
     call=_operations.OPERATION_6,
     validator='etag',
     authenticated=True,
-    fingerprint='a4259a7989ae081629e28007104f79281e69bc308a67a3944f9da1c7567be14d',
+    fingerprint='179b506923255b0a458c57b6b4e5dd4c6cf8dc95332912c11db7671b8c4e77bc',
 )
 
 
@@ -93,6 +61,6 @@ PLAN_4: Final[CachePlan[GetSecureUserResponse]] = CachePlan(
     call=_operations.OPERATION_7,
     validator='etag',
     authenticated=True,
-    fingerprint='15df827e2b132c48312ba9808481c2d55962bbdc2709f3ca89123914cfee4521',
+    fingerprint='84492f01958cc3bfa108dcb62e333bff90c15220dea56d425a45c2842fd94a1e',
     vary_allowlist=frozenset(('x-signature',)),
 )

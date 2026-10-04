@@ -4,31 +4,23 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import Literal
 
-from models import FieldCartsCurrentGetCookieCartParameter as _dcg_type_6
-from models import FieldSecureUsersUserIdGetPathUserIdParameter as _dcg_type_7
-from models import FieldUsersGetQueryPageParameter as _dcg_type_4
-from models import FieldUsersGetQueryRoleParameter as _dcg_type_5
+from models import FieldCartsCurrentGetCookieCartParameter as _dcg_type_5
+from models import FieldSecureUsersUserIdGetPathUserIdParameter as _dcg_type_6
+from models import FieldUsersGetQueryPageParameter as _dcg_type_3
+from models import FieldUsersGetQueryRoleParameter as _dcg_type_4
 from models import FieldUsersUserIdGetHeaderAcceptLanguageParameter as _dcg_type_1
 from models import FieldUsersUserIdGetPathUserIdParameter as _dcg_type_2
 from models import FieldUsersUserIdGetQueryFieldsParameter as _dcg_type_0
-from models import UserPatch as _dcg_type_3
 
 from .._runtime.client.client import ClientCore
-from .._runtime.protocols.cache import fetch, invalidate, mutate
+from .._runtime.protocols.cache import fetch
 from .._runtime.protocols.caches import CacheResult
 from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, Unset
 from ..types.carts import GetCurrentCartResponse
 from ..types.secure import GetSecureUserResponse
-from ..types.users import (
-    CreateUserResponse,
-    DeleteUserResponse,
-    GetUserResponse,
-    ListUsersResponse,
-    RenameUserResponse,
-)
+from ..types.users import GetUserResponse, ListUsersResponse
 from . import CacheOptions, _plans
 
 
@@ -129,50 +121,6 @@ class UsersProfileCache:
             options=options,
         )
 
-    def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return invalidate(self._core, _plans.PLAN_0, tags)
-
-    @cached_property
-    def mutations(self) -> UsersProfileCacheMutations:
-        """The mutations that invalidate entries of this helper."""
-        return UsersProfileCacheMutations(self._core)
-
-
-class UsersProfileCacheMutations:
-    """The mutations of the users.profile cache helper."""
-
-    def __init__(self, core: ClientCore) -> None:
-        """Keep the client core the helper sends through."""
-        self._core = core
-
-    def rename(
-        self,
-        *,
-        user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
-        body: _dcg_type_3 | ModelValue[_dcg_type_3],
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> RenameUserResponse:
-        """Call PATCH /users/{userId}, then remove the cached entries its tags name once it succeeds."""
-        return mutate(
-            self._core,
-            _plans.MUTATION_0_0,
-            (user_id,),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )
-
-    def remove(
-        self,
-        *,
-        user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
-        options: RequestOptions | None = None,
-    ) -> DeleteUserResponse:
-        """Call DELETE /users/{userId}, then remove the cached entries its tags name once it succeeds."""
-        return mutate(self._core, _plans.MUTATION_0_1, (user_id,), options=options)
-
 
 class UsersDatedCache:
     """The users.dated cache helper of GET /users/{userId}."""
@@ -199,10 +147,6 @@ class UsersDatedCache:
             options=options,
         )
 
-    def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return invalidate(self._core, _plans.PLAN_1, tags)
-
 
 class UsersListingCache:
     """The users.listing cache helper of GET /users."""
@@ -214,8 +158,8 @@ class UsersListingCache:
     def fetch(
         self,
         *,
-        page: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        role: _dcg_type_5 | ModelValue[_dcg_type_5] | Unset = UNSET,
+        page: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        role: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[ListUsersResponse]:
@@ -225,40 +169,6 @@ class UsersListingCache:
             _plans.PLAN_2,
             (page, role),
             cache_options=cache_options,
-            options=options,
-        )
-
-    def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return invalidate(self._core, _plans.PLAN_2, tags)
-
-    @cached_property
-    def mutations(self) -> UsersListingCacheMutations:
-        """The mutations that invalidate entries of this helper."""
-        return UsersListingCacheMutations(self._core)
-
-
-class UsersListingCacheMutations:
-    """The mutations of the users.listing cache helper."""
-
-    def __init__(self, core: ClientCore) -> None:
-        """Keep the client core the helper sends through."""
-        self._core = core
-
-    def create(
-        self,
-        *,
-        body: _dcg_type_3 | ModelValue[_dcg_type_3],
-        media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> CreateUserResponse:
-        """Call POST /users, then remove the cached entries its tags name once it succeeds."""
-        return mutate(
-            self._core,
-            _plans.MUTATION_2_0,
-            (),
-            body=body,
-            media_type=media_type,
             options=options,
         )
 
@@ -273,7 +183,7 @@ class CartsCurrentCache:
     def fetch(
         self,
         *,
-        cart: _dcg_type_6 | ModelValue[_dcg_type_6],
+        cart: _dcg_type_5 | ModelValue[_dcg_type_5],
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetCurrentCartResponse]:
@@ -286,10 +196,6 @@ class CartsCurrentCache:
             options=options,
         )
 
-    def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return invalidate(self._core, _plans.PLAN_3, tags)
-
 
 class SecureProfileCache:
     """The secure.profile cache helper of GET /secure/users/{userId}."""
@@ -301,7 +207,7 @@ class SecureProfileCache:
     def fetch(
         self,
         *,
-        user_id: _dcg_type_7 | ModelValue[_dcg_type_7],
+        user_id: _dcg_type_6 | ModelValue[_dcg_type_6],
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetSecureUserResponse]:
@@ -313,7 +219,3 @@ class SecureProfileCache:
             cache_options=cache_options,
             options=options,
         )
-
-    def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return invalidate(self._core, _plans.PLAN_4, tags)

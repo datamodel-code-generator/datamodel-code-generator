@@ -280,67 +280,49 @@ pyright signatures_negative.py: 1/2 marked lines with one error, 0 elsewhere, 0 
   43 reportAssignmentType
 ty signatures_negative.py: 1/2 marked lines with one error, 0 elsewhere, 0 in other files
   43 invalid-assignment
-webhooks_negative.py 19 marked lines
-mypy webhooks_negative.py: 19/19 marked lines with one error, 0 elsewhere, 0 in other files
-  27 assignment
-  28 assignment
-  29 arg-type
-  30 misc
-  36 misc
-  37 misc
-  38 assignment
-  39 arg-type
-  40 arg-type
-  41 arg-type
-  42 misc
-  43 arg-type
-  44 arg-type
-  45 arg-type
-  51 misc
-  52 assignment
-  53 assignment
-  54 assignment
-  55 arg-type
-pyright webhooks_negative.py: 19/19 marked lines with one error, 0 elsewhere, 0 in other files
-  27 reportAssignmentType
-  28 reportAssignmentType
-  29 reportArgumentType
-  30 reportAttributeAccessIssue
-  36 reportAttributeAccessIssue
-  37 reportAttributeAccessIssue
-  38 reportAssignmentType
-  39 reportArgumentType
-  40 reportArgumentType
-  41 reportArgumentType
-  42 reportCallIssue
-  43 reportArgumentType
-  44 reportArgumentType
-  45 reportArgumentType
-  51 reportGeneralTypeIssues
-  52 reportAssignmentType
-  53 reportAssignmentType
-  54 reportAssignmentType
-  55 reportArgumentType
-ty webhooks_negative.py: 19/19 marked lines with one error, 0 elsewhere, 0 in other files
+webhooks_negative.py 13 marked lines
+mypy webhooks_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  18 assignment
+  19 assignment
+  20 arg-type
+  21 misc
+  27 misc
+  28 misc
+  29 assignment
+  30 arg-type
+  31 arg-type
+  32 misc
+  33 arg-type
+  34 arg-type
+  35 arg-type
+pyright webhooks_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  18 reportAssignmentType
+  19 reportAssignmentType
+  20 reportArgumentType
+  21 reportAttributeAccessIssue
+  27 reportAttributeAccessIssue
+  28 reportAttributeAccessIssue
+  29 reportAssignmentType
+  30 reportArgumentType
+  31 reportArgumentType
+  32 reportCallIssue
+  33 reportArgumentType
+  34 reportArgumentType
+  35 reportArgumentType
+ty webhooks_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  18 invalid-assignment
+  19 invalid-assignment
+  20 invalid-argument-type
+  21 invalid-assignment
   27 invalid-assignment
   28 invalid-assignment
-  29 invalid-argument-type
-  30 invalid-assignment
-  36 invalid-assignment
-  37 invalid-assignment
-  38 invalid-assignment
-  39 invalid-argument-type
-  40 invalid-argument-type
-  41 invalid-argument-type
-  42 too-many-positional-arguments
-  43 invalid-argument-type
-  44 invalid-argument-type
-  45 invalid-argument-type
-  51 invalid-await
-  52 invalid-assignment
-  53 invalid-assignment
-  54 invalid-assignment
-  55 invalid-argument-type
+  29 invalid-assignment
+  30 invalid-argument-type
+  31 invalid-argument-type
+  32 too-many-positional-arguments
+  33 invalid-argument-type
+  34 invalid-argument-type
+  35 invalid-argument-type
 protocols_negative.py 38 marked lines
 mypy protocols_negative.py: 38/38 marked lines with one error, 0 elsewhere, 0 in other files
   41 assignment
