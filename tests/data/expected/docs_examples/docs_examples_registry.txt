@@ -37,6 +37,7 @@ python-client.cache.usage: python-client.md
 python-client.cache.diagnostics: python-client.md
 python-client.websocket.helper: python-client.md
 python-client.websocket.diagnostics: python-client.md
+python-client.webhooks.error-fields: python-client.md
 python-client.webhooks.usage: python-client.md
 python-client.webhooks.helper: python-client.md
 python-client.webhooks.yaml: python-client.md

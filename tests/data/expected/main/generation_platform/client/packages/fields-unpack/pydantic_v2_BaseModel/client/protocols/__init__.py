@@ -54,9 +54,7 @@ from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.resume import ResumeState, import_state
 from .._runtime.protocols.sources import UploadProgress, UploadSource
 from .._runtime.protocols.webhooks import (
-    AsyncReplayStore,
     KeySet,
-    ReplayStore,
     ResolvedWebhookOptions,
     VerifiedSignature,
     VerifiedWebhook,
@@ -81,7 +79,6 @@ if TYPE_CHECKING:
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
-    from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import (
         AsyncEventStream,
         EventStream,
@@ -97,10 +94,8 @@ __all__ = [
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
     "AsyncMemoryQueueStore",
-    "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncQueueStore",
-    "AsyncReplayStore",
     "AsyncUploadHandle",
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
@@ -121,7 +116,6 @@ __all__ = [
     "LroHandle",
     "MemoryCacheStore",
     "MemoryQueueStore",
-    "MemoryReplayStore",
     "Message",
     "OperationRef",
     "Origin",
@@ -143,7 +137,6 @@ __all__ = [
     "QueueOutcome",
     "QueueReceipt",
     "QueueStore",
-    "ReplayStore",
     "RequestTarget",
     "ResolvedQueueOptions",
     "ResolvedWSOptions",
@@ -204,13 +197,5 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import queue_stores
 
         return getattr(queue_stores, name)
-    if name == "MemoryReplayStore":
-        from .._runtime.protocols.replay import MemoryReplayStore
-
-        return MemoryReplayStore
-    if name == "AsyncMemoryReplayStore":
-        from .._runtime.protocols.replay import AsyncMemoryReplayStore
-
-        return AsyncMemoryReplayStore
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)

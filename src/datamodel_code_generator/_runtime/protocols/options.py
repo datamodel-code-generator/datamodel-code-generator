@@ -107,7 +107,6 @@ WEBHOOK_LIMITS: Final = (
     ("max_signatures", False, False, False),
     ("past_tolerance", True, False, True),
     ("future_tolerance", True, False, True),
-    ("replay_ttl", True, False, False),
 )
 
 

@@ -206,7 +206,7 @@ class ClientTarget:
             streams=streams,
             sockets=sockets,
             fingerprints=fingerprints,
-            webhooks=partial(webhook_files, webhooks, dict(codecs.imports), fingerprints),
+            webhooks=partial(webhook_files, webhooks, dict(codecs.imports)),
         )
         validation = config.validation
         return TargetRender(
