@@ -108,6 +108,7 @@ class OrdinaryCaptureSession(TargetGenerationSession):
 
     def freeze_attempt(self, parser: Any, results: Any) -> Any:
         """Remember the attempt without projecting its graph."""
+        del results
         self.accepted = parser.attempt
         return parser.attempt
 
