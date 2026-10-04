@@ -1144,8 +1144,7 @@ class _Resources(_Typing):
         helpers = (*self.helpers, *self.streams, *self.sockets)
         if not helpers:
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
-        if helpers:
-            entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
+        entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
 
     def client(self, *, asynchronous: bool) -> str:
