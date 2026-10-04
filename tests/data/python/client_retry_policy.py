@@ -355,8 +355,8 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
 
         exchange.responders.clear()
         exchange.respond(
-            lambda request: _response(503, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
-            _response(200),
+            _response(503),
+            lambda request: _response(200, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
         )
         events = _Events()
         raw = api.retry.with_raw_response.post_key_only(
@@ -590,8 +590,8 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
             response = await arecord(lines, "async retries on a frozen clock", frozen.retry.with_response.get_safe)
             lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'resource_attempt_count', None)}")
         exchange.respond(
-            lambda request: _response(503, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
-            _response(200),
+            _response(503),
+            lambda request: _response(200, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
         )
         raw = await api.retry.with_raw_response.post_key_only(body=b"automatic")
         wire_key = raw.info.headers.get("X-Observed-Key")
