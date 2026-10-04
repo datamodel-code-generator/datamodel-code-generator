@@ -32,9 +32,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout single
-  ping: GET /ping -> /ping [all] status 204 primary 204 None body typed handler sync
-  group all -> service (1)
   file server/README.md
     | # server
     |

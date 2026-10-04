@@ -41,15 +41,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  pets_get: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
-  pets_post: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler sync
-  files_post: POST /uploads -> /uploads [tag:files] status 204 primary 204 None body typed handler sync
-  handle_put__notes: PUT /notes -> /notes [untagged] status 204 primary 204 None body typed handler sync
-  handle_post__raw: POST /raw -> /raw [untagged] status 204 primary 204 None body request handler sync
-  group tag:pets -> pets (2)
-  group tag:files -> files (1)
-  group untagged -> untagged (2)
   file server/README.md
     | # Hooked pets
     |
@@ -200,15 +191,6 @@ render pydantic_v2.dataclass
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  pets_get: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
-  pets_post: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler sync
-  files_post: POST /uploads -> /uploads [tag:files] status 204 primary 204 None body typed handler sync
-  handle_put__notes: PUT /notes -> /notes [untagged] status 204 primary 204 None body typed handler sync
-  handle_post__raw: POST /raw -> /raw [untagged] status 204 primary 204 None body request handler sync
-  group tag:pets -> pets (2)
-  group tag:files -> files (1)
-  group untagged -> untagged (2)
   file server/README.md
     | # Hooked pets
     |

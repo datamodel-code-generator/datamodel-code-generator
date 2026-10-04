@@ -37,25 +37,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  post_json: POST /json -> /json [tag:json] status 204 primary 204 None body typed handler sync
-  post_optional: POST /json/optional -> /json/optional [tag:json] status 204 primary 204 None body typed handler sync
-  post_nullable: POST /json/nullable -> /json/nullable [tag:json] status 204 primary 204 None body typed handler sync
-  post_envelope: POST /json/envelope -> /json/envelope [tag:json] status 204 primary 204 None body typed handler sync
-  post_many: POST /json/many -> /json/many [tag:json] status 204 primary 204 None body typed handler sync
-  post_text: POST /text -> /text [tag:raw] status 204 primary 204 None body typed handler sync
-  put_binary: PUT /binary -> /binary [tag:raw] status 204 primary 204 None body typed handler sync
-  post_raw: POST /raw -> /raw [tag:raw] status 204 primary 204 None body request handler sync
-  post_form: POST /form -> /form [tag:form] status 204 primary 204 None body typed handler sync
-  post_optional_form: POST /form/optional -> /form/optional [tag:form] status 204 primary 204 None body typed handler sync
-  post_either_form: POST /form/either -> /form/either [tag:form] status 204 primary 204 None body typed handler sync
-  post_nested_form: POST /form/nested -> /form/nested [tag:form] status 204 primary 204 None body typed handler sync
-  post_closed_form: POST /form/closed -> /form/closed [tag:form] status 204 primary 204 None body typed handler sync
-  post_choice_form: POST /form/choice -> /form/choice [tag:form] status 204 primary 204 None body typed handler sync
-  upload: POST /upload -> /upload [tag:form] status 204 primary 204 None body typed handler sync
-  group tag:json -> json (5)
-  group tag:raw -> raw (3)
-  group tag:form -> form (7)
   file server/README.md
     | # Bodies
     |

@@ -99,7 +99,7 @@ render
       "size": "<masked>"
     },
     {
-      "group": "tag:items",
+      "group": null,
       "kind": "router",
       "path": "routers/items.py",
       "sha256": "<sha256>",
@@ -246,8 +246,7 @@ render
         "parameter_names": {},
         "primary_responses": {},
         "router_names": {},
-        "templates": null,
-        "update_groups": null
+        "templates": null
       },
       "runtime_defaults": {}
     }

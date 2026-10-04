@@ -39,17 +39,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  create: POST /created -> /created [tag:results] status 201 primary 201 application/vnd.thing+json body typed handler sync
-  only_default: GET /defaults -> /defaults [tag:results] status 200 primary - body typed handler sync
-  only_ranges: GET /ranges -> /ranges [tag:results] status 200 primary - body typed handler sync
-  only_errors: GET /errors -> /errors [tag:results] status 404 primary 404 application/json body typed handler sync
-  get_optional: GET /optional -> /optional [tag:results] status 200 primary 200 application/json body typed handler sync
-  get_secret: GET /secret -> /secret [tag:results] status 200 primary 200 application/json body typed handler sync
-  head_secret: HEAD /secret -> /secret [tag:results] status 200 primary 200 application/json body typed handler sync
-  download: GET /download -> /download [tag:files] status 200 primary 200 application/octet-stream body typed handler sync
-  group tag:results -> results (7)
-  group tag:files -> files (1)
   file server/README.md
     | # Responses
     |
@@ -173,17 +162,6 @@ render pydantic_v2.dataclass
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  create: POST /created -> /created [tag:results] status 201 primary 201 application/vnd.thing+json body typed handler sync
-  only_default: GET /defaults -> /defaults [tag:results] status 200 primary - body typed handler sync
-  only_ranges: GET /ranges -> /ranges [tag:results] status 200 primary - body typed handler sync
-  only_errors: GET /errors -> /errors [tag:results] status 404 primary 404 application/json body typed handler sync
-  get_optional: GET /optional -> /optional [tag:results] status 200 primary 200 application/json body typed handler sync
-  get_secret: GET /secret -> /secret [tag:results] status 200 primary 200 application/json body typed handler sync
-  head_secret: HEAD /secret -> /secret [tag:results] status 200 primary 200 application/json body typed handler sync
-  download: GET /download -> /download [tag:files] status 200 primary 200 application/octet-stream body typed handler sync
-  group tag:results -> results (7)
-  group tag:files -> files (1)
   file server/README.md
     | # Responses
     |

@@ -8,7 +8,6 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import RenderedFile
-from datamodel_code_generator._api_manifest import sha256
 from datamodel_code_generator._api_types import APIGenerationError
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
@@ -247,30 +246,24 @@ class ServerRenderer:  # noqa: PLR0904
         if (templates := self.templates) is None or (context := self.context) is None:
             return
         for extra in templates.extras:
-            frames: list[tuple[str, str | None, dict[str, object]]]
+            frames: list[tuple[str, dict[str, object]]]
             if extra.scope == "project":
-                frames = [(extra.path, None, {})]
+                frames = [(extra.path, {})]
             elif extra.scope == "router":
                 frames = [
-                    (
-                        extra.path.replace(ROUTER, view.file_stem),
-                        view.key,
-                        {"router": view, "tag": view.primary_tag},
-                    )
+                    (extra.path.replace(ROUTER, view.file_stem), {"router": view, "tag": view.primary_tag})
                     for view in context.routers
                 ]
             else:
                 frames = [
-                    (extra.path.replace(OPERATION, view.python_name), view.group_key, {"operation": view})
+                    (extra.path.replace(OPERATION, view.python_name), {"operation": view})
                     for view in context.operations
                 ]
-            for path, group, frame in frames:
+            for path, frame in frames:
                 text = templates.render(extra.template, {"context": context, **frame})
                 if (problem := invalid(extra.format, text)) is not None:
                     raise APIGenerationError((templates.problem(f"{path} is not valid {extra.format}: {problem}"),))
-                yield RenderedFile(
-                    path=self.package / path, kind="template", text=text, group=group, header=extra.header
-                )
+                yield RenderedFile(path=self.package / path, kind="template", text=text, header=extra.header)
 
     def placed(self, files: tuple[RenderedFile, ...], extras: tuple[RenderedFile, ...]) -> None:
         """Reject extra files that take the path of a builtin file, a runtime module, or another extra file."""
@@ -292,11 +285,9 @@ class ServerRenderer:  # noqa: PLR0904
         """Return the codec accessors of every bound use."""
         return {item.use: item for item in self.bindings.uses}
 
-    def file(
-        self, path: PurePosixPath, kind: str, text: str, group: str | None = None, *, verbatim: bool = False
-    ) -> RenderedFile:
+    def file(self, path: PurePosixPath, kind: str, text: str, *, verbatim: bool = False) -> RenderedFile:
         """Return one owned file of the package."""
-        return RenderedFile(path=self.package / path, kind=kind, text=text, group=group, verbatim=verbatim)
+        return RenderedFile(path=self.package / path, kind=kind, text=text, verbatim=verbatim)
 
     def files(self) -> tuple[RenderedFile, ...]:
         """Return every rendered server file in the fixed artifact order."""
@@ -437,13 +428,11 @@ class ServerRenderer:  # noqa: PLR0904
         """Return the router modules: one routes module, or a package with one module per group."""
         if self.config.layout == "single":
             group = self.plan.groups[0] if self.plan.groups else None
-            yield self.file(PurePosixPath("routes.py"), "router", self.router(group, level=1), "all")
+            yield self.file(PurePosixPath("routes.py"), "router", self.router(group, level=1))
             return
         yield self.file(PurePosixPath("routers/__init__.py"), "package", '"""Router groups of this package."""\n')
         for group in self.plan.groups:
-            yield self.file(
-                PurePosixPath("routers", f"{group.stem}.py"), "router", self.router(group, level=2), group.key
-            )
+            yield self.file(PurePosixPath("routers", f"{group.stem}.py"), "router", self.router(group, level=2))
 
     def router(self, group: GroupSpec | None, *, level: int) -> str:
         """Return one router module, rendered from its builtin template."""
@@ -614,11 +603,6 @@ class ServerRenderer:  # noqa: PLR0904
             f") -> {returns}: ...",
         )
         return layout(signature, 4, 0, WIDTH)
-
-    def signature_digest(self, spec: OperationSpec) -> str:
-        """Return the fingerprint of an operation's service method, spelled in a module of its own."""
-        module = Module({"PrincipalT_contra"}, self.symbols, level=1, public=True)
-        return sha256(f"{self.method(module, spec)}\n{module.imports()}".encode())
 
     def parameters(self, module: Module, spec: OperationSpec, principal: str) -> list[Doc]:
         """Return the keyword-only parameters of one operation's method, typed as the endpoint passes them."""

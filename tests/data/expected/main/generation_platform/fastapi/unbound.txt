@@ -39,9 +39,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  get_value: GET /values/{id} -> /values/{id} [untagged] status 200 primary 200 application/json body typed handler sync
-  group untagged -> untagged (1)
   file server/README.md
     | # Unbound parameter types
     |
