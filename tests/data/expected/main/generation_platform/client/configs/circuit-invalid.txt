@@ -1,5 +1,0 @@
-APIGenerationError
-  E_CONFIG_VALUE config operations[0].runtime.circuit_group: circuit_group must be a string with non-whitespace text and no control characters
-  E_CONFIG_VALUE config operations[1].runtime.circuit_group: circuit_group must be a string with non-whitespace text and no control characters
-  E_CONFIG_VALUE config operations[2].runtime.circuit_group: circuit_group must be a string with non-whitespace text and no control characters
-  E_CONFIG_VALUE config operations[3].runtime.circuit_group: circuit_group must be a string with non-whitespace text and no control characters
