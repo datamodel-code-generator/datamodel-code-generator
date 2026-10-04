@@ -7,9 +7,11 @@ paths:
       security:
         - api-key: []
         - api_key: []
+        - wiring: []
       responses:
         "204": {description: Done.}
 components:
   securitySchemes:
     api-key: {type: apiKey, in: header, name: X-Key}
     api_key: {type: apiKey, in: query, name: key}
+    wiring: {type: http, scheme: basic, bearerFormat: JWT}
