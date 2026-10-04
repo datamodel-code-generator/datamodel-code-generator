@@ -52,7 +52,6 @@ if TYPE_CHECKING:
         CodecCapabilities,
         ParameterCodecCapabilities,
         SchemaCodecCapabilities,
-        ServerMediaCodecCapabilities,
     )
     from .context import CodecContext
     from .schema import WireValidator
@@ -174,27 +173,6 @@ class AsyncByteReader(Protocol):
 
     def read(self, max_bytes: int) -> Awaitable[bytes]:
         """Return at most max_bytes bytes, or empty bytes at the end."""
-        ...
-
-
-class ServerMediaCodecAdapterV1(Protocol):
-    """Convert one buffered server request or response media and wire values."""
-
-    @property
-    def api_version(self) -> Literal[1]:
-        """Return the adapter contract version."""
-        ...
-
-    def capabilities(self, *, binding: CodecBindingView) -> ServerMediaCodecCapabilities:
-        """Return the capabilities the adapter supports for this binding."""
-        ...
-
-    async def decode(self, *, reader: AsyncByteReader, binding: CodecBindingView, context: CodecContext) -> WireValue:
-        """Read and decode a request body into a wire value."""
-        ...
-
-    def encode(self, *, wire: WireValue, binding: CodecBindingView, context: CodecContext) -> bytes:
-        """Encode a validated wire value into response bytes without I/O."""
         ...
 
 

@@ -701,11 +701,11 @@ class ServerRenderer:  # noqa: PLR0904
             f"PLAN: {final} = {layout(plan, 0, len(f'PLAN: {final} = '), WIDTH)}\n"
         )
 
-    def codec(self, module: Module, use: TypeUseId, accessor: str | None = None) -> str:
-        """Return the (codec accessor, context) pair of one bound use, or of another accessor of the use."""
+    def codec(self, module: Module, use: TypeUseId) -> str:
+        """Return the (codec accessor, context) pair of one bound use."""
         accessors = self.accessors[use]
         bindings = module.name(".", "model_bindings")
-        return f"({bindings}.{accessor or accessors.codec}, {bindings}.{accessors.context})"
+        return f"({bindings}.{accessors.codec}, {bindings}.{accessors.context})"
 
     def envelope(self, use: TypeUseId) -> bool:
         """Return whether a use's codec projects into an envelope."""
@@ -789,8 +789,6 @@ class ServerRenderer:  # noqa: PLR0904
                 entries.append(("codec=", self.codec(module, use.id)))
                 if self.envelope(use.id):
                     entries.append(("envelope=", "True"))
-                if (adapter := self.accessors[use.id].parameter) is not None:
-                    entries.append(("adapter=", self.codec(module, use.id, adapter)))
                 names.update(self.property_names(use.id))
             if not isinstance(parameter.default, Unset):
                 entries.append((

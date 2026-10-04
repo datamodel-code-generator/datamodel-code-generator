@@ -17,30 +17,30 @@ from adapted.model_codecs import (
     WireValue,
     freeze_wire,
 )
-from adapted_models import Code, Keeper, Pet, Secretive, Tags
+from adapted_models import Code, Keeper, Pet, Tags
 
 
-def exercise(wire: WireValue, pet: Pet, secretive: Secretive, raw: RawParameter) -> None:
-    pets: ModelCodec[Pet] = bindings.codec_4()
-    decoded = pets.decode(wire, bindings.CONTEXT_4)
+def exercise(wire: WireValue, pet: Pet, keeper: Keeper, raw: RawParameter) -> None:
+    pets: ModelCodec[Pet] = bindings.codec_5()
+    decoded = pets.decode(wire, bindings.CONTEXT_5)
     assert_type(decoded, DecodedValue[Pet])
     match decoded:
         case ModelValue():
             assert_type(decoded.value, Pet)
         case ModelInput():
             assert_type(decoded.issues, tuple[ProjectionIssue, ...])
-    native = bindings.outbound_5()
-    assert_type(native, NativeOutboundCodec[Pet])
-    assert_type(native.from_wire({"id": 1, "name": "Rex"}), ModelValue[Pet])
-    assert_type(native.snapshot(pet), ModelValue[Pet])
-    envelope = bindings.outbound_8()
-    assert_type(envelope, EnvelopeOutboundCodec[Secretive])
-    assert_type(envelope.from_wire({"name": "s"}), DecodedValue[Secretive])
-    assert_type(envelope.snapshot(secretive), ModelValue[Secretive])
-    keepers: ModelCodec[Keeper] = bindings.codec_7()
-    assert_type(keepers.encode(bindings.outbound_7().from_wire({"badge": "k"}), bindings.CONTEXT_7), WireValue)
-    codes: ModelCodec[Code] = bindings.codec_2()
-    assert_type(codes.decode("ab", bindings.CONTEXT_2), DecodedValue[Code])
+    native = bindings.outbound_6()
+    assert_type(native, NativeOutboundCodec[Keeper])
+    assert_type(native.from_wire({"badge": "k"}), ModelValue[Keeper])
+    assert_type(native.snapshot(keeper), ModelValue[Keeper])
+    envelope = bindings.outbound_4()
+    assert_type(envelope, EnvelopeOutboundCodec[Pet])
+    assert_type(envelope.from_wire({"name": "Rex"}), DecodedValue[Pet])
+    assert_type(envelope.snapshot(pet), ModelValue[Pet])
+    keepers: ModelCodec[Keeper] = bindings.codec_6()
+    assert_type(keepers.encode(bindings.outbound_6().from_wire({"badge": "k"}), bindings.CONTEXT_6), WireValue)
+    codes: ModelCodec[Code] = bindings.codec_3()
+    assert_type(codes.decode("ab", bindings.CONTEXT_3), DecodedValue[Code])
     tags: ModelCodec[Tags] = bindings.codec_0()
     assert_type(tags.decode(wire, bindings.CONTEXT_0), DecodedValue[Tags])
     cookie = bindings.parameter_0()

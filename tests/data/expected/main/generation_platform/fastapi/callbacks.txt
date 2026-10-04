@@ -1569,7 +1569,7 @@ render pydantic_v2.BaseModel
     |
     | FastAPI server generation is experimental.
     | The server supports the `pydantic_v2.BaseModel` and `pydantic_v2.dataclass` model backends, while client generation supports all five.
-    | Custom templates, base classes, Python types, codec adapters, and codec compatibility declarations stay within these two backends.
+    | Custom templates, base classes, and Python types stay within these two backends.
     |
     | ## Operations
     |

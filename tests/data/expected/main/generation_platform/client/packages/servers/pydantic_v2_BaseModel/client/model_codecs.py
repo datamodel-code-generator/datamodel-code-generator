@@ -11,7 +11,6 @@ from ._runtime.model_codecs.adapters import (
 )
 from ._runtime.model_codecs.bindings import BackendId, ConverterStrategy, NativeKind
 from ._runtime.model_codecs.capabilities import (
-    ClientMediaCodecCapabilities,
     CodecCapabilities,
     ParameterCodecCapabilities,
     SchemaCodecCapabilities,
@@ -80,7 +79,6 @@ __all__ = [
     'AsyncByteReader',
     'BackendId',
     'ByteReader',
-    'ClientMediaCodecCapabilities',
     'CodecAdapterError',
     'CodecBindingError',
     'CodecBindingView',
