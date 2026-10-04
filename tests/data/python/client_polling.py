@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import importlib
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
@@ -16,6 +15,7 @@ from tests.data.python.client_runtime import (
     failing,
     json_response,
     raw_response,
+    request_body,
     run,
 )
 
@@ -138,8 +138,7 @@ class Polling(Harness):
     def __init__(self, package: ModuleType) -> None:
         """Import the modules and the create body codec."""
         super().__init__(package)
-        types = importlib.import_module(f"{package.__name__}.types.jobs")
-        self.body = types.CreateJobRequestCodecs.body().from_wire({"name": "nightly"})
+        self.body = request_body(package, "createJob", None, {"name": "nightly"})
 
     def client_options(self, **settings: Any) -> Any:
         """Return client options that retry at once and poll each helper without a noticeable interval."""

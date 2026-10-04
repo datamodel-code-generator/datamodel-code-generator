@@ -71,7 +71,6 @@ if TYPE_CHECKING:
     from ..client.operations import OperationPlan
     from ..client.responses import ResponseInfo
     from ..client.timing import Deadline
-    from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .pagination import PageBinding
     from .records import ParameterTarget, ProtocolProgress, Selector
@@ -1018,7 +1017,7 @@ class UploadHandle(_Upload[T]):
             raise
         return self._chunked(chunk, index, size)
 
-    def _create(self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None) -> None:
+    def _create(self, arguments: tuple[object, ...], body: object, media_type: str | None) -> None:
         """Send the create request as the session's first child call and keep what it gives."""
         core, plan = self._core, self._plan
         with self._mapped(created=False):
@@ -1242,9 +1241,7 @@ class AsyncUploadHandle(_Upload[T]):
             raise
         return self._chunked(chunk, index, size)
 
-    async def _create(
-        self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None
-    ) -> None:
+    async def _create(self, arguments: tuple[object, ...], body: object, media_type: str | None) -> None:
         """Send the create request as the session's first child call and keep what it gives."""
         core, plan = self._core, self._plan
         with self._mapped(created=False):
@@ -1446,7 +1443,7 @@ def start_upload(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     upload_options: object = None,
     options: object = None,
     session_options: object = None,
@@ -1469,7 +1466,7 @@ async def astart_upload(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     upload_options: object = None,
     options: object = None,
     session_options: object = None,

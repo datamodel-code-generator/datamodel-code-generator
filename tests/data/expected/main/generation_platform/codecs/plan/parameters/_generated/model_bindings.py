@@ -17,7 +17,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
 from .._runtime.model_codecs.wire import freeze_wire
@@ -232,11 +231,6 @@ def codec_0() -> PydanticModelCodec[plan_parameters_models.FieldPagesGetHeaderXT
     )
 
 
-@cache
-def outbound_0() -> NativeOutboundCodec[plan_parameters_models.FieldPagesGetHeaderXTokenParameter]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
-
-
 CONTEXT_1: Final = CodecContext(
     surface='client',
     direction='request',
@@ -269,11 +263,6 @@ def codec_1() -> PydanticModelCodec[plan_parameters_models.FieldPagesGetQueryPag
         },
         request_bundle,
     )
-
-
-@cache
-def outbound_1() -> NativeOutboundCodec[plan_parameters_models.FieldPagesGetQueryPageParameter]:
-    return NativeOutboundCodec(codec_1(), CONTEXT_1)
 
 
 CONTEXT_2: Final = CodecContext(
@@ -310,11 +299,6 @@ def codec_2() -> PydanticModelCodec[plan_parameters_models.FieldPagesGetQueryPag
     )
 
 
-@cache
-def outbound_2() -> NativeOutboundCodec[plan_parameters_models.FieldPagesGetQueryPagerParameter]:
-    return NativeOutboundCodec(codec_2(), CONTEXT_2)
-
-
 CONTEXT_3: Final = CodecContext(
     surface='client',
     direction='request',
@@ -347,11 +331,6 @@ def codec_3() -> PydanticModelCodec[plan_parameters_models.FieldOptionsGetQueryO
         },
         request_bundle,
     )
-
-
-@cache
-def outbound_3() -> NativeOutboundCodec[plan_parameters_models.FieldOptionsGetQueryOptsParameter]:
-    return NativeOutboundCodec(codec_3(), CONTEXT_3)
 
 
 CONTEXT_4: Final = CodecContext(
@@ -388,11 +367,6 @@ def codec_4() -> PydanticModelCodec[plan_parameters_models.FieldMoreGetQueryMore
     )
 
 
-@cache
-def outbound_4() -> NativeOutboundCodec[plan_parameters_models.FieldMoreGetQueryMoreParameter]:
-    return NativeOutboundCodec(codec_4(), CONTEXT_4)
-
-
 CONTEXT_5: Final = CodecContext(
     surface='client',
     direction='request',
@@ -427,11 +401,6 @@ def codec_5() -> PydanticModelCodec[plan_parameters_models.FieldHeadersGetHeader
     )
 
 
-@cache
-def outbound_5() -> NativeOutboundCodec[plan_parameters_models.FieldHeadersGetHeaderCombinedParameter]:
-    return NativeOutboundCodec(codec_5(), CONTEXT_5)
-
-
 CONTEXT_6: Final = CodecContext(
     surface='client',
     direction='request',
@@ -462,11 +431,6 @@ def codec_6() -> PydanticModelCodec[plan_parameters_models.FieldHeadersGetHeader
         {},
         request_bundle,
     )
-
-
-@cache
-def outbound_6() -> NativeOutboundCodec[plan_parameters_models.FieldHeadersGetHeaderFlagParameter]:
-    return NativeOutboundCodec(codec_6(), CONTEXT_6)
 
 
 CONTEXT_7: Final = CodecContext(
@@ -501,11 +465,6 @@ def codec_7() -> PydanticModelCodec[plan_parameters_models.FieldHeadersGetHeader
     )
 
 
-@cache
-def outbound_7() -> NativeOutboundCodec[plan_parameters_models.FieldHeadersGetHeaderRatioParameter]:
-    return NativeOutboundCodec(codec_7(), CONTEXT_7)
-
-
 CONTEXT_8: Final = CodecContext(
     surface='client',
     direction='request',
@@ -536,11 +495,6 @@ def codec_8() -> PydanticModelCodec[plan_parameters_models.FieldHeadersGetHeader
         {},
         request_bundle,
     )
-
-
-@cache
-def outbound_8() -> NativeOutboundCodec[plan_parameters_models.FieldHeadersGetHeaderModeParameter]:
-    return NativeOutboundCodec(codec_8(), CONTEXT_8)
 
 
 CONTEXT_9: Final = CodecContext(
@@ -577,11 +531,6 @@ def codec_9() -> PydanticModelCodec[plan_parameters_models.FieldHeadersGetHeader
     )
 
 
-@cache
-def outbound_9() -> NativeOutboundCodec[plan_parameters_models.FieldHeadersGetHeaderShapedParameter]:
-    return NativeOutboundCodec(codec_9(), CONTEXT_9)
-
-
 CONTEXT_10: Final = CodecContext(
     surface='client',
     direction='request',
@@ -616,11 +565,6 @@ def codec_10() -> PydanticModelCodec[plan_parameters_models.FieldHeadersGetHeade
     )
 
 
-@cache
-def outbound_10() -> NativeOutboundCodec[plan_parameters_models.FieldHeadersGetHeaderCountsParameter]:
-    return NativeOutboundCodec(codec_10(), CONTEXT_10)
-
-
 CONTEXT_11: Final = CodecContext(
     surface='client',
     direction='request',
@@ -653,8 +597,3 @@ def codec_11() -> PydanticModelCodec[plan_parameters_models.FieldHeadersGetHeade
         },
         request_bundle,
     )
-
-
-@cache
-def outbound_11() -> NativeOutboundCodec[plan_parameters_models.FieldHeadersGetHeaderAnyMapParameter]:
-    return NativeOutboundCodec(codec_11(), CONTEXT_11)

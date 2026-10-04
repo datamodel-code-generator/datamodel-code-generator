@@ -97,21 +97,21 @@ render pydantic_v2.BaseModel
   }
   /selection/selected_operations/0 orders.create_order(header:X-Trace=x_trace, cookie:session=session)
     exports client.types.orders.CreateOrderResponse client.types.orders.CreateOrderErrorData client.types.orders.CreateOrderHTTPError
-    exports client.types.orders.CreateOrderRequestCodecs None
+    exports None
   /selection/selected_operations/1 orders.get_order(path:orderId=order_id, query:verbose=verbose)
     exports client.types.orders.GetOrderResponse client.types.orders.GetOrderErrorData client.types.orders.GetOrderHTTPError
-    exports client.types.orders.GetOrderRequestCodecs None
+    exports None
   /selection/selected_operations/2 orders.add_note(path:orderId=order_id)
     exports client.types.orders.AddNoteResponse client.types.orders.AddNoteErrorData client.types.orders.AddNoteHTTPError
-    exports client.types.orders.AddNoteRequestCodecs None
+    exports None
   /selection/selected_operations/3 orders.put_receipt(path:orderId=order_id)
     exports client.types.orders.PutReceiptResponse client.types.orders.PutReceiptErrorData client.types.orders.PutReceiptHTTPError
-    exports client.types.orders.PutReceiptRequestCodecs None
+    exports None
   /selection/selected_operations/4 account.get_account()
     exports client.types.account.GetAccountResponse client.types.account.GetAccountErrorData client.types.account.GetAccountHTTPError
-    exports client.types.account.GetAccountRequestCodecs None
+    exports None
   /selection/selected_operations/5 account.update_account()
     exports client.types.account.UpdateAccountResponse client.types.account.UpdateAccountErrorData client.types.account.UpdateAccountHTTPError
-    exports client.types.account.UpdateAccountRequestCodecs None
+    exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1filtered/get: GET /filtered is excluded by exclude_tags 'filtered': Filtered listings are not queued

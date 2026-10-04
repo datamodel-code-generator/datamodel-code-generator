@@ -68,7 +68,6 @@ if TYPE_CHECKING:
     from ..client.responses import HeadersView
     from ..client.timing import Clock, Deadline
     from ..client.urls import Origin
-    from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .references import OperationRef
     from .writes import ReadPaths
@@ -287,7 +286,7 @@ class _Request:
 
     arguments: tuple[object, ...]
     body: object
-    media_type: str | MediaSelector | None
+    media_type: str | None
 
 
 class _History:
@@ -1700,7 +1699,7 @@ def first_page(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     pagination_options: object = None,
     options: object = None,
     session_options: object = None,
@@ -1720,7 +1719,7 @@ async def afirst_page(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     pagination_options: object = None,
     options: object = None,
     session_options: object = None,
@@ -1740,7 +1739,7 @@ def iterate_pages(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     pagination_options: object = None,
     options: object = None,
     session_options: object = None,
@@ -1756,7 +1755,7 @@ def aiterate_pages(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     pagination_options: object = None,
     options: object = None,
     session_options: object = None,

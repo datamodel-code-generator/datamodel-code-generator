@@ -18,7 +18,6 @@ from .._runtime.protocols.pagination import (
     resume_pages,
 )
 from .._runtime.protocols.resume import ResumeState
-from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.default import LookupResponse, SearchResponse
 from . import PaginationOptions, _plans
@@ -88,7 +87,7 @@ class SearchAllPagination:
     def page(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -106,7 +105,7 @@ class SearchAllPagination:
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -168,7 +167,7 @@ class SearchFixedPagination:
     def page(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -186,7 +185,7 @@ class SearchFixedPagination:
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -248,7 +247,7 @@ class SearchNextPagination:
     def page(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -266,7 +265,7 @@ class SearchNextPagination:
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -328,7 +327,7 @@ class LookupAllPagination:
     def page(
         self,
         *,
-        filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        filter: _dcg_type_1 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -346,7 +345,7 @@ class LookupAllPagination:
     def iterate(
         self,
         *,
-        filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        filter: _dcg_type_1 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

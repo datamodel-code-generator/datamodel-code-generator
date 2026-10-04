@@ -11,7 +11,6 @@ from models import FieldLabelsGetQueryItemsParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue, ResponseMedia
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.labels import ListLabelsResponse
@@ -42,8 +41,8 @@ class LabelsResource:
     def list_labels(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelsResponse] | None = None,
+        items: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelsResponse:
         """Call GET /labels."""
@@ -65,8 +64,8 @@ class LabelsWithResponse:
     def list_labels(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelsResponse] | None = None,
+        items: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelsResponse]:
         """Call GET /labels."""
@@ -88,8 +87,8 @@ class LabelsWithRawResponse:
     def list_labels(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelsResponse] | None = None,
+        items: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /labels."""
@@ -111,8 +110,8 @@ class LabelsWithStreamingResponse:
     def list_labels(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelsResponse] | None = None,
+        items: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /labels."""

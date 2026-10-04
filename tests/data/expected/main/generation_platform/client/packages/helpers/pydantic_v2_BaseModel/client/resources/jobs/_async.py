@@ -13,7 +13,6 @@ from models import JobRequest as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue, RequestMedia, ResponseMedia
 from ...options import RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.jobs import (
@@ -49,9 +48,9 @@ class AsyncJobsResource:
     async def run_job(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[RunJobResponse] | None = None,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RunJobResponse:
         """Call POST /jobs."""
@@ -67,8 +66,8 @@ class AsyncJobsResource:
     async def get_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
-        response_media_type: Literal['application/json'] | ResponseMedia[GetJobResponse] | None = None,
+        job_id: _dcg_type_1,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetJobResponse:
         """Call GET /jobs/{jobId}."""
@@ -82,8 +81,8 @@ class AsyncJobsResource:
     async def cancel_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
-        response_media_type: Literal['application/json'] | ResponseMedia[CancelJobResponse] | None = None,
+        job_id: _dcg_type_1,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CancelJobResponse:
         """Call DELETE /jobs/{jobId}."""
@@ -97,8 +96,8 @@ class AsyncJobsResource:
     async def get_job_result(
         self,
         *,
-        job_id: _dcg_type_2 | ModelValue[_dcg_type_2],
-        response_media_type: Literal['application/json'] | ResponseMedia[GetJobResultResponse] | None = None,
+        job_id: _dcg_type_2,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetJobResultResponse:
         """Call GET /jobs/{jobId}/result."""
@@ -120,9 +119,9 @@ class AsyncJobsWithResponse:
     async def run_job(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[RunJobResponse] | None = None,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[RunJobResponse]:
         """Call POST /jobs."""
@@ -138,8 +137,8 @@ class AsyncJobsWithResponse:
     async def get_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
-        response_media_type: Literal['application/json'] | ResponseMedia[GetJobResponse] | None = None,
+        job_id: _dcg_type_1,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetJobResponse]:
         """Call GET /jobs/{jobId}."""
@@ -153,8 +152,8 @@ class AsyncJobsWithResponse:
     async def cancel_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
-        response_media_type: Literal['application/json'] | ResponseMedia[CancelJobResponse] | None = None,
+        job_id: _dcg_type_1,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CancelJobResponse]:
         """Call DELETE /jobs/{jobId}."""
@@ -168,8 +167,8 @@ class AsyncJobsWithResponse:
     async def get_job_result(
         self,
         *,
-        job_id: _dcg_type_2 | ModelValue[_dcg_type_2],
-        response_media_type: Literal['application/json'] | ResponseMedia[GetJobResultResponse] | None = None,
+        job_id: _dcg_type_2,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetJobResultResponse]:
         """Call GET /jobs/{jobId}/result."""
@@ -191,9 +190,9 @@ class AsyncJobsWithRawResponse:
     async def run_job(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[RunJobResponse] | None = None,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /jobs."""
@@ -209,8 +208,8 @@ class AsyncJobsWithRawResponse:
     async def get_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
-        response_media_type: Literal['application/json'] | ResponseMedia[GetJobResponse] | None = None,
+        job_id: _dcg_type_1,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /jobs/{jobId}."""
@@ -224,8 +223,8 @@ class AsyncJobsWithRawResponse:
     async def cancel_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
-        response_media_type: Literal['application/json'] | ResponseMedia[CancelJobResponse] | None = None,
+        job_id: _dcg_type_1,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call DELETE /jobs/{jobId}."""
@@ -239,8 +238,8 @@ class AsyncJobsWithRawResponse:
     async def get_job_result(
         self,
         *,
-        job_id: _dcg_type_2 | ModelValue[_dcg_type_2],
-        response_media_type: Literal['application/json'] | ResponseMedia[GetJobResultResponse] | None = None,
+        job_id: _dcg_type_2,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /jobs/{jobId}/result."""
@@ -262,9 +261,9 @@ class AsyncJobsWithStreamingResponse:
     def run_job(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
-        response_media_type: Literal['application/json'] | ResponseMedia[RunJobResponse] | None = None,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /jobs."""
@@ -280,8 +279,8 @@ class AsyncJobsWithStreamingResponse:
     def get_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
-        response_media_type: Literal['application/json'] | ResponseMedia[GetJobResponse] | None = None,
+        job_id: _dcg_type_1,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /jobs/{jobId}."""
@@ -295,8 +294,8 @@ class AsyncJobsWithStreamingResponse:
     def cancel_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
-        response_media_type: Literal['application/json'] | ResponseMedia[CancelJobResponse] | None = None,
+        job_id: _dcg_type_1,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call DELETE /jobs/{jobId}."""
@@ -310,8 +309,8 @@ class AsyncJobsWithStreamingResponse:
     def get_job_result(
         self,
         *,
-        job_id: _dcg_type_2 | ModelValue[_dcg_type_2],
-        response_media_type: Literal['application/json'] | ResponseMedia[GetJobResultResponse] | None = None,
+        job_id: _dcg_type_2,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /jobs/{jobId}/result."""

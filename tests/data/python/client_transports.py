@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, arecord, record, run
+from tests.data.python.client_runtime import Exchange, arecord, argument, record, request_body, run
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
@@ -30,9 +30,8 @@ def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType, ModuleType, M
     return transports, errors, options, responses
 
 
-def _pet(package: ModuleType, operation: str = "GetPet") -> object:
-    types = importlib.import_module(f"{package.__name__}.types.pets")
-    return getattr(types, f"{operation}RequestCodecs").parameter(location="path", name="petId").from_wire(3)
+def _pet(package: ModuleType, operation_id: str = "getPet") -> object:
+    return argument(package, operation_id, "path", "petId", 3)
 
 
 class Response:
@@ -180,9 +179,7 @@ def _adapter_calls(
         lambda request, context: response(lines, 200, json, (b"{", RuntimeError("read bug")), close_error=True),
         _answered_then_failing(json),
     ))
-    body = importlib.import_module(f"{package.__name__}.types.pets").CreatePetRequestCodecs.body(
-        media_type="application/json"
-    ).from_wire({"name": "cat"})
+    body = request_body(package, "createPet", "application/json", {"name": "cat"})
     return lambda: api.pets.get_pet(pet_id=pet), body
 
 
@@ -301,9 +298,7 @@ async def _async_transports(package: ModuleType, lines: list[str]) -> None:
     echo.respond(lambda request: _header_echo(request, sent))
     unicode = echo.client()
     with package.Client(http_client=unicode) as api:
-        trace = importlib.import_module(f"{package.__name__}.types.pets").ListPetsRequestCodecs.parameter(
-            location="header", name="X-Trace"
-        ).from_wire("café")
+        trace = argument(package, "listPets", "header", "X-Trace", "café")
         record(lines, "unicode header", lambda: api.pets.with_response.list_pets(x_trace=trace).info.status_code)
     unicode.close()
     lines.append(f"  unicode header bytes {sent}")

@@ -9,8 +9,6 @@
      "value": {"id": 1, "name": "Mimi", "status": "new"}},
     {"name": "create-client-from-wire", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "from_wire",
      "value": {"id": 7, "name": "Mimi", "status": "new", "owner": {"name": "Ann", "note": 1}, "extra": true}},
-    {"name": "create-client-encode-input", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "encode",
-     "value": {"result": "create-client-from-wire"}},
     {"name": "create-client-envelope", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "envelope-outbound",
      "value": {"name": "Mimi", "status": "new"}},
     {"name": "create-client-native-refused", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "native-outbound",

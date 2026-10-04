@@ -6,7 +6,7 @@ render pydantic_v2.BaseModel
 generate pydantic_v2.BaseModel
   source ../input-aliases.yaml digest 106a42a6e8a30707ba47bf5dc095290c99321b153d257de16341bfd90ed398da
   files ['client/.dcg-state/model-artifacts.json', 'client/.dcg-target-manifest.json', 'client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/transports.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
-  runtime files 75
+  runtime files 72
 render pydantic_v2.dataclass
   source ../input-aliases.yaml digest 106a42a6e8a30707ba47bf5dc095290c99321b153d257de16341bfd90ed398da
   files []
@@ -14,7 +14,7 @@ render pydantic_v2.dataclass
 generate pydantic_v2.dataclass
   source ../input-aliases.yaml digest 106a42a6e8a30707ba47bf5dc095290c99321b153d257de16341bfd90ed398da
   files ['client/.dcg-state/model-artifacts.json', 'client/.dcg-target-manifest.json', 'client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/transports.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
-  runtime files 75
+  runtime files 72
 render dataclasses.dataclass
   source ../input-aliases.yaml digest 106a42a6e8a30707ba47bf5dc095290c99321b153d257de16341bfd90ed398da
   files []
@@ -22,7 +22,7 @@ render dataclasses.dataclass
 generate dataclasses.dataclass
   source ../input-aliases.yaml digest 106a42a6e8a30707ba47bf5dc095290c99321b153d257de16341bfd90ed398da
   files ['client/.dcg-state/model-artifacts.json', 'client/.dcg-target-manifest.json', 'client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/transports.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
-  runtime files 75
+  runtime files 72
 render typing.TypedDict
   source ../input-aliases.yaml digest 106a42a6e8a30707ba47bf5dc095290c99321b153d257de16341bfd90ed398da
   files []
@@ -30,7 +30,7 @@ render typing.TypedDict
 generate typing.TypedDict
   source ../input-aliases.yaml digest 106a42a6e8a30707ba47bf5dc095290c99321b153d257de16341bfd90ed398da
   files ['client/.dcg-state/model-artifacts.json', 'client/.dcg-target-manifest.json', 'client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/transports.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
-  runtime files 75
+  runtime files 72
 render msgspec.Struct
   source ../input-aliases.yaml digest 106a42a6e8a30707ba47bf5dc095290c99321b153d257de16341bfd90ed398da
   files []
@@ -38,4 +38,4 @@ render msgspec.Struct
 generate msgspec.Struct
   source ../input-aliases.yaml digest 106a42a6e8a30707ba47bf5dc095290c99321b153d257de16341bfd90ed398da
   files ['client/.dcg-state/model-artifacts.json', 'client/.dcg-target-manifest.json', 'client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/transports.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
-  runtime files 75
+  runtime files 72

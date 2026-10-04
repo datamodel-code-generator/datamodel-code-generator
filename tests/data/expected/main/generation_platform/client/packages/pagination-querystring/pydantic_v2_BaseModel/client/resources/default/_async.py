@@ -12,7 +12,6 @@ from models import FieldSearchGetQuerystringCriteriaParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue, ResponseMedia
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.default import LookupResponse, SearchResponse
@@ -43,8 +42,8 @@ class AsyncDefaultResource:
     async def search(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
+        criteria: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchResponse:
         """Call GET /search."""
@@ -58,8 +57,8 @@ class AsyncDefaultResource:
     async def lookup(
         self,
         *,
-        filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[LookupResponse] | None = None,
+        filter: _dcg_type_1 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> LookupResponse:
         """Call GET /lookup."""
@@ -81,8 +80,8 @@ class AsyncDefaultWithResponse:
     async def search(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
+        criteria: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchResponse]:
         """Call GET /search."""
@@ -96,8 +95,8 @@ class AsyncDefaultWithResponse:
     async def lookup(
         self,
         *,
-        filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[LookupResponse] | None = None,
+        filter: _dcg_type_1 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[LookupResponse]:
         """Call GET /lookup."""
@@ -119,8 +118,8 @@ class AsyncDefaultWithRawResponse:
     async def search(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
+        criteria: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /search."""
@@ -134,8 +133,8 @@ class AsyncDefaultWithRawResponse:
     async def lookup(
         self,
         *,
-        filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[LookupResponse] | None = None,
+        filter: _dcg_type_1 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /lookup."""
@@ -157,8 +156,8 @@ class AsyncDefaultWithStreamingResponse:
     def search(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
+        criteria: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /search."""
@@ -172,8 +171,8 @@ class AsyncDefaultWithStreamingResponse:
     def lookup(
         self,
         *,
-        filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[LookupResponse] | None = None,
+        filter: _dcg_type_1 | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /lookup."""
