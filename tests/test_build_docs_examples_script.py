@@ -34,6 +34,22 @@ def test_docs_examples_use_rendered_clients(capsys: pytest.CaptureFixture[str]) 
     )
 
 
+@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
+def test_pagination_docs_example(tmp_path: Path) -> None:
+    """Pagination renders its tested client recipe with the exact committed documentation text."""
+    example = next(
+        example
+        for example in build_docs_examples.docs_examples()
+        if example.example_id == "python-client.pagination.helper"
+    )
+    content = example.path.read_text(encoding="utf-8")
+    expected_path = tmp_path / "pagination-docs.txt"
+    expected_path.write_text(content, encoding="utf-8")
+    updated, _ = build_docs_examples.replace_example(content, example)
+
+    assert_output(updated, expected_path)
+
+
 def test_docs_examples_registry() -> None:
     """Docs example registry exposes stable generated section IDs."""
     output = "".join(f"{example.example_id}: {example.path.name}\n" for example in build_docs_examples.docs_examples())
@@ -63,6 +79,7 @@ def test_docs_example_render_helpers(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     output = "".join((
+        build_docs_examples.render_cli_example(),
         build_docs_examples.details("schema.yaml", "yaml", build_docs_examples.read_text(yaml_path)),
         build_docs_examples.render_file_example(language="yaml", path=yaml_path),
         build_docs_examples._file_example(
