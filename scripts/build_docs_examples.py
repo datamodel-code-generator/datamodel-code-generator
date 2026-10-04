@@ -201,9 +201,9 @@ def _file_example(
 
 def render_webhook_error_fields() -> str:
     """Render the kept webhook exception fields from their constructor annotations."""
-    from typing import get_type_hints  # noqa: PLC0415
+    from typing import get_type_hints  # ruff: ignore[import-outside-top-level]
 
-    from datamodel_code_generator._runtime.client.errors import (  # noqa: PLC0415, PLC2701 - Generate runtime field docs.
+    from datamodel_code_generator._runtime.client.errors import (  # ruff: ignore[import-outside-top-level, import-private-name]
         ProtocolConfigurationError,
         WebhookVerificationError,
     )
