@@ -12,7 +12,6 @@ from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_0
 from .... import _operations
 from ...._runtime.client.client import AsyncClientCore
 from ....bodies import AsyncBinaryBody
-from ....model_codecs import ModelValue
 from ....options import UNSET, RequestOptions, Unset
 from ....responses import AsyncRawResponse, Response
 from ....types.pets.photos import UploadResponse
@@ -43,7 +42,7 @@ class AsyncPetsPhotosResource:
     async def upload(
         self,
         *,
-        pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
+        pet_id: _dcg_type_0,
         body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -68,7 +67,7 @@ class AsyncPetsPhotosWithResponse:
     async def upload(
         self,
         *,
-        pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
+        pet_id: _dcg_type_0,
         body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -93,7 +92,7 @@ class AsyncPetsPhotosWithRawResponse:
     async def upload(
         self,
         *,
-        pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
+        pet_id: _dcg_type_0,
         body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -118,7 +117,7 @@ class AsyncPetsPhotosWithStreamingResponse:
     def upload(
         self,
         *,
-        pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
+        pet_id: _dcg_type_0,
         body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,

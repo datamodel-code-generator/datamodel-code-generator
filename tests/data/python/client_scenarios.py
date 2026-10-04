@@ -442,7 +442,7 @@ def _async_invalid(package: ModuleType) -> Callable[[], Any]:
 
 
 def media(package: ModuleType, lines: list[str]) -> None:
-    """Send forms, pairs, documents, and notes, and decode forms, texts, envelopes, and object headers."""
+    """Send forms, pairs, documents, and notes, and decode forms, texts, documents, and object headers."""
     forms, documents = _modules(package, "types.forms", "types.documents")
     exchange = Exchange(lines)
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
@@ -523,15 +523,11 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
         record(lines, label, call)
     record(lines, "store value", lambda: api.documents.store_document(body={1, 2}))
     read = argument(package, "readDocument", "path", "id", {"key": "a/b"})
-    exchange.respond(
-        raw_response(200, b'{"id":1,"title":"t"}', "application/vnd.api+json", **{"X-Draft": "id,1,title,h"})
-    )
-    response = record(
-        lines,
-        "read",
-        lambda: api.documents.with_response.read_document(id=read, filter={"q": [1]}, x_mode="fast"),
-    )
-    record(lines, "read header", lambda: documents.decode_read_document_header(response.info, name="X-Draft"))
+    draft = raw_response(200, b'{"id":1,"title":"t"}', "application/vnd.api+json", **{"X-Draft": "id,1,title,h"})
+    exchange.respond(draft, draft)
+    record(lines, "read", lambda: api.documents.read_document(id=read, filter={"q": [1]}, x_mode="fast"))
+    info = api.documents.with_raw_response.read_document(id=read, filter={"q": [1]}, x_mode="fast").info
+    record(lines, "read header", lambda: documents.decode_read_document_header(info, name="X-Draft"))
     exchange.respond(raw_response(204), raw_response(204), raw_response(204))
     record(lines, "note", lambda: api.documents.store_note(body=[1], media_type="application/vnd.note+json"))
     record(lines, "note replace", api.documents.replace_note)

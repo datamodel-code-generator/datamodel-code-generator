@@ -15,7 +15,6 @@ from models import Message as _dcg_type_2
 
 from .._runtime.client.client import ClientCore
 from .._runtime.protocols.streams import EventStream, UnknownEvent, open_events
-from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import StreamOptions, _plans
 
@@ -84,8 +83,8 @@ class EventsMessagesSse:
     def open(
         self,
         *,
-        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        last_event_id: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        topic: _dcg_type_0 | Unset = UNSET,
+        last_event_id: _dcg_type_1 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -111,8 +110,8 @@ class EventsTypedSse:
     def open(
         self,
         *,
-        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        last_event_id: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        topic: _dcg_type_0 | Unset = UNSET,
+        last_event_id: _dcg_type_1 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -138,8 +137,8 @@ class EventsTaggedSse:
     def open(
         self,
         *,
-        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        last_event_id: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        topic: _dcg_type_0 | Unset = UNSET,
+        last_event_id: _dcg_type_1 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -165,7 +164,7 @@ class FeedAllSse:
     def open(
         self,
         *,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_5,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,

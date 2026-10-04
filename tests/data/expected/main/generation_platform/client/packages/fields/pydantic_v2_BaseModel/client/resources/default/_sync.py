@@ -28,7 +28,7 @@ from models import Visit as _dcg_type_9
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import MultipartBody
-from ...model_codecs import DecodedValue, ModelValue, WireValue
+from ...model_codecs import WireValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.default import (
@@ -69,8 +69,8 @@ class DefaultResource:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_1,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -85,8 +85,8 @@ class DefaultResource:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_2 | ModelValue[_dcg_type_2],
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_2,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -101,7 +101,7 @@ class DefaultResource:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: _dcg_type_3,
@@ -117,7 +117,7 @@ class DefaultResource:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: Unset = UNSET,
@@ -132,8 +132,8 @@ class DefaultResource:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1] | _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_1 | _dcg_type_2 | Unset = UNSET,
         name: str | Unset = UNSET,
         kind: _dcg_type_3 | Unset = UNSET,
         pet_tag: str | None | Unset = UNSET,
@@ -159,8 +159,8 @@ class DefaultResource:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        pet_id: _dcg_type_6,
+        body: _dcg_type_7,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -170,7 +170,7 @@ class DefaultResource:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -181,7 +181,7 @@ class DefaultResource:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
@@ -192,7 +192,7 @@ class DefaultResource:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: Unset = UNSET,
         tag: Unset = UNSET,
@@ -202,8 +202,8 @@ class DefaultResource:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        body: _dcg_type_7 | ModelValue[_dcg_type_7] | Unset = UNSET,
+        pet_id: _dcg_type_6,
+        body: _dcg_type_7 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -223,8 +223,8 @@ class DefaultResource:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
-        body: _dcg_type_9 | ModelValue[_dcg_type_9],
+        pet_id: _dcg_type_8,
+        body: _dcg_type_9,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
         media_type: Literal['application/json'],
@@ -234,7 +234,7 @@ class DefaultResource:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
+        pet_id: _dcg_type_8,
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
@@ -245,7 +245,7 @@ class DefaultResource:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
+        pet_id: _dcg_type_8,
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
@@ -255,8 +255,8 @@ class DefaultResource:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
-        body: _dcg_type_9 | ModelValue[_dcg_type_9] | str | Unset = UNSET,
+        pet_id: _dcg_type_8,
+        body: _dcg_type_9 | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
@@ -275,8 +275,8 @@ class DefaultResource:
     def set_owner(
         self,
         *,
-        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
-        body: _dcg_type_5 | ModelValue[_dcg_type_5] | Unset = UNSET,
+        pet_id: _dcg_type_10,
+        body: _dcg_type_5 | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SetOwnerResponse:
@@ -293,7 +293,7 @@ class DefaultResource:
     def create_owner(
         self,
         *,
-        body: _dcg_type_11 | ModelValue[_dcg_type_11],
+        body: _dcg_type_11,
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -312,7 +312,7 @@ class DefaultResource:
     def create_owner(
         self,
         *,
-        body: _dcg_type_11 | ModelValue[_dcg_type_11] | Unset = UNSET,
+        body: _dcg_type_11 | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -331,8 +331,8 @@ class DefaultResource:
     def put_labels(
         self,
         *,
-        pet_id: _dcg_type_12 | ModelValue[_dcg_type_12],
-        body: _dcg_type_13 | ModelValue[_dcg_type_13],
+        pet_id: _dcg_type_12,
+        body: _dcg_type_13,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutLabelsResponse:
@@ -348,8 +348,8 @@ class DefaultResource:
     def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14 | ModelValue[_dcg_type_14],
-        body: MultipartBody[str | ModelValue[str] | WireValue],
+        pet_id: _dcg_type_14,
+        body: MultipartBody[str | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutPhotoResponse:
@@ -362,11 +362,35 @@ class DefaultResource:
             options=options,
         ).data
 
+    @overload
     def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15 | ModelValue[_dcg_type_15],
-        body: _dcg_type_16 | DecodedValue[_dcg_type_16],
+        pet_id: _dcg_type_15,
+        body: _dcg_type_16,
+        name: Unset = UNSET,
+        tag: Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> ReplacePetResponse: ...
+    @overload
+    def replace_pet(
+        self,
+        *,
+        pet_id: _dcg_type_15,
+        body: Unset = UNSET,
+        name: str,
+        tag: str | None | Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> ReplacePetResponse: ...
+    def replace_pet(
+        self,
+        *,
+        pet_id: _dcg_type_15,
+        body: _dcg_type_16 | Unset = UNSET,
+        name: str | Unset = UNSET,
+        tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplacePetResponse:
@@ -375,6 +399,7 @@ class DefaultResource:
             _operations.OPERATION_7,
             (pet_id,),
             body=body,
+            fields=(name, tag),
             media_type=media_type,
             options=options,
         ).data
@@ -391,8 +416,8 @@ class DefaultWithResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_1,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -407,8 +432,8 @@ class DefaultWithResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_2 | ModelValue[_dcg_type_2],
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_2,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -423,7 +448,7 @@ class DefaultWithResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: _dcg_type_3,
@@ -439,7 +464,7 @@ class DefaultWithResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: Unset = UNSET,
@@ -454,8 +479,8 @@ class DefaultWithResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1] | _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_1 | _dcg_type_2 | Unset = UNSET,
         name: str | Unset = UNSET,
         kind: _dcg_type_3 | Unset = UNSET,
         pet_tag: str | None | Unset = UNSET,
@@ -481,8 +506,8 @@ class DefaultWithResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        pet_id: _dcg_type_6,
+        body: _dcg_type_7,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -492,7 +517,7 @@ class DefaultWithResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -503,7 +528,7 @@ class DefaultWithResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
@@ -514,7 +539,7 @@ class DefaultWithResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: Unset = UNSET,
         tag: Unset = UNSET,
@@ -524,8 +549,8 @@ class DefaultWithResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        body: _dcg_type_7 | ModelValue[_dcg_type_7] | Unset = UNSET,
+        pet_id: _dcg_type_6,
+        body: _dcg_type_7 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -545,8 +570,8 @@ class DefaultWithResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
-        body: _dcg_type_9 | ModelValue[_dcg_type_9],
+        pet_id: _dcg_type_8,
+        body: _dcg_type_9,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
         media_type: Literal['application/json'],
@@ -556,7 +581,7 @@ class DefaultWithResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
+        pet_id: _dcg_type_8,
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
@@ -567,7 +592,7 @@ class DefaultWithResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
+        pet_id: _dcg_type_8,
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
@@ -577,8 +602,8 @@ class DefaultWithResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
-        body: _dcg_type_9 | ModelValue[_dcg_type_9] | str | Unset = UNSET,
+        pet_id: _dcg_type_8,
+        body: _dcg_type_9 | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
@@ -597,8 +622,8 @@ class DefaultWithResponse:
     def set_owner(
         self,
         *,
-        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
-        body: _dcg_type_5 | ModelValue[_dcg_type_5] | Unset = UNSET,
+        pet_id: _dcg_type_10,
+        body: _dcg_type_5 | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SetOwnerResponse]:
@@ -615,7 +640,7 @@ class DefaultWithResponse:
     def create_owner(
         self,
         *,
-        body: _dcg_type_11 | ModelValue[_dcg_type_11],
+        body: _dcg_type_11,
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -634,7 +659,7 @@ class DefaultWithResponse:
     def create_owner(
         self,
         *,
-        body: _dcg_type_11 | ModelValue[_dcg_type_11] | Unset = UNSET,
+        body: _dcg_type_11 | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -653,8 +678,8 @@ class DefaultWithResponse:
     def put_labels(
         self,
         *,
-        pet_id: _dcg_type_12 | ModelValue[_dcg_type_12],
-        body: _dcg_type_13 | ModelValue[_dcg_type_13],
+        pet_id: _dcg_type_12,
+        body: _dcg_type_13,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutLabelsResponse]:
@@ -670,8 +695,8 @@ class DefaultWithResponse:
     def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14 | ModelValue[_dcg_type_14],
-        body: MultipartBody[str | ModelValue[str] | WireValue],
+        pet_id: _dcg_type_14,
+        body: MultipartBody[str | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutPhotoResponse]:
@@ -684,11 +709,35 @@ class DefaultWithResponse:
             options=options,
         )
 
+    @overload
     def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15 | ModelValue[_dcg_type_15],
-        body: _dcg_type_16 | DecodedValue[_dcg_type_16],
+        pet_id: _dcg_type_15,
+        body: _dcg_type_16,
+        name: Unset = UNSET,
+        tag: Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[ReplacePetResponse]: ...
+    @overload
+    def replace_pet(
+        self,
+        *,
+        pet_id: _dcg_type_15,
+        body: Unset = UNSET,
+        name: str,
+        tag: str | None | Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[ReplacePetResponse]: ...
+    def replace_pet(
+        self,
+        *,
+        pet_id: _dcg_type_15,
+        body: _dcg_type_16 | Unset = UNSET,
+        name: str | Unset = UNSET,
+        tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplacePetResponse]:
@@ -697,6 +746,7 @@ class DefaultWithResponse:
             _operations.OPERATION_7,
             (pet_id,),
             body=body,
+            fields=(name, tag),
             media_type=media_type,
             options=options,
         )
@@ -713,8 +763,8 @@ class DefaultWithRawResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_1,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -729,8 +779,8 @@ class DefaultWithRawResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_2 | ModelValue[_dcg_type_2],
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_2,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -745,7 +795,7 @@ class DefaultWithRawResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: _dcg_type_3,
@@ -761,7 +811,7 @@ class DefaultWithRawResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: Unset = UNSET,
@@ -776,8 +826,8 @@ class DefaultWithRawResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1] | _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_1 | _dcg_type_2 | Unset = UNSET,
         name: str | Unset = UNSET,
         kind: _dcg_type_3 | Unset = UNSET,
         pet_tag: str | None | Unset = UNSET,
@@ -803,8 +853,8 @@ class DefaultWithRawResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        pet_id: _dcg_type_6,
+        body: _dcg_type_7,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -814,7 +864,7 @@ class DefaultWithRawResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -825,7 +875,7 @@ class DefaultWithRawResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
@@ -836,7 +886,7 @@ class DefaultWithRawResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: Unset = UNSET,
         tag: Unset = UNSET,
@@ -846,8 +896,8 @@ class DefaultWithRawResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        body: _dcg_type_7 | ModelValue[_dcg_type_7] | Unset = UNSET,
+        pet_id: _dcg_type_6,
+        body: _dcg_type_7 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -867,8 +917,8 @@ class DefaultWithRawResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
-        body: _dcg_type_9 | ModelValue[_dcg_type_9],
+        pet_id: _dcg_type_8,
+        body: _dcg_type_9,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
         media_type: Literal['application/json'],
@@ -878,7 +928,7 @@ class DefaultWithRawResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
+        pet_id: _dcg_type_8,
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
@@ -889,7 +939,7 @@ class DefaultWithRawResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
+        pet_id: _dcg_type_8,
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
@@ -899,8 +949,8 @@ class DefaultWithRawResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
-        body: _dcg_type_9 | ModelValue[_dcg_type_9] | str | Unset = UNSET,
+        pet_id: _dcg_type_8,
+        body: _dcg_type_9 | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
@@ -919,8 +969,8 @@ class DefaultWithRawResponse:
     def set_owner(
         self,
         *,
-        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
-        body: _dcg_type_5 | ModelValue[_dcg_type_5] | Unset = UNSET,
+        pet_id: _dcg_type_10,
+        body: _dcg_type_5 | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -937,7 +987,7 @@ class DefaultWithRawResponse:
     def create_owner(
         self,
         *,
-        body: _dcg_type_11 | ModelValue[_dcg_type_11],
+        body: _dcg_type_11,
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -956,7 +1006,7 @@ class DefaultWithRawResponse:
     def create_owner(
         self,
         *,
-        body: _dcg_type_11 | ModelValue[_dcg_type_11] | Unset = UNSET,
+        body: _dcg_type_11 | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -975,8 +1025,8 @@ class DefaultWithRawResponse:
     def put_labels(
         self,
         *,
-        pet_id: _dcg_type_12 | ModelValue[_dcg_type_12],
-        body: _dcg_type_13 | ModelValue[_dcg_type_13],
+        pet_id: _dcg_type_12,
+        body: _dcg_type_13,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -992,8 +1042,8 @@ class DefaultWithRawResponse:
     def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14 | ModelValue[_dcg_type_14],
-        body: MultipartBody[str | ModelValue[str] | WireValue],
+        pet_id: _dcg_type_14,
+        body: MultipartBody[str | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1006,11 +1056,35 @@ class DefaultWithRawResponse:
             options=options,
         )
 
+    @overload
     def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15 | ModelValue[_dcg_type_15],
-        body: _dcg_type_16 | DecodedValue[_dcg_type_16],
+        pet_id: _dcg_type_15,
+        body: _dcg_type_16,
+        name: Unset = UNSET,
+        tag: Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse: ...
+    @overload
+    def replace_pet(
+        self,
+        *,
+        pet_id: _dcg_type_15,
+        body: Unset = UNSET,
+        name: str,
+        tag: str | None | Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse: ...
+    def replace_pet(
+        self,
+        *,
+        pet_id: _dcg_type_15,
+        body: _dcg_type_16 | Unset = UNSET,
+        name: str | Unset = UNSET,
+        tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1019,6 +1093,7 @@ class DefaultWithRawResponse:
             _operations.OPERATION_7,
             (pet_id,),
             body=body,
+            fields=(name, tag),
             media_type=media_type,
             options=options,
         )
@@ -1035,8 +1110,8 @@ class DefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_1,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -1051,8 +1126,8 @@ class DefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_2 | ModelValue[_dcg_type_2],
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_2,
         name: Unset = UNSET,
         kind: Unset = UNSET,
         pet_tag: Unset = UNSET,
@@ -1067,7 +1142,7 @@ class DefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: _dcg_type_3,
@@ -1083,7 +1158,7 @@ class DefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
         body: Unset = UNSET,
         name: str,
         kind: Unset = UNSET,
@@ -1098,8 +1173,8 @@ class DefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1] | _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        tag: _dcg_type_0 | Unset = UNSET,
+        body: _dcg_type_1 | _dcg_type_2 | Unset = UNSET,
         name: str | Unset = UNSET,
         kind: _dcg_type_3 | Unset = UNSET,
         pet_tag: str | None | Unset = UNSET,
@@ -1125,8 +1200,8 @@ class DefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        pet_id: _dcg_type_6,
+        body: _dcg_type_7,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1136,7 +1211,7 @@ class DefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -1147,7 +1222,7 @@ class DefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
@@ -1158,7 +1233,7 @@ class DefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: Unset = UNSET,
         tag: Unset = UNSET,
@@ -1168,8 +1243,8 @@ class DefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        body: _dcg_type_7 | ModelValue[_dcg_type_7] | Unset = UNSET,
+        pet_id: _dcg_type_6,
+        body: _dcg_type_7 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1189,8 +1264,8 @@ class DefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
-        body: _dcg_type_9 | ModelValue[_dcg_type_9],
+        pet_id: _dcg_type_8,
+        body: _dcg_type_9,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
         media_type: Literal['application/json'],
@@ -1200,7 +1275,7 @@ class DefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
+        pet_id: _dcg_type_8,
         body: str,
         note: Unset = UNSET,
         visit_options: Unset = UNSET,
@@ -1211,7 +1286,7 @@ class DefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
+        pet_id: _dcg_type_8,
         body: Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
@@ -1221,8 +1296,8 @@ class DefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: _dcg_type_8 | ModelValue[_dcg_type_8],
-        body: _dcg_type_9 | ModelValue[_dcg_type_9] | str | Unset = UNSET,
+        pet_id: _dcg_type_8,
+        body: _dcg_type_9 | str | Unset = UNSET,
         note: str | Unset = UNSET,
         visit_options: list[str] | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
@@ -1241,8 +1316,8 @@ class DefaultWithStreamingResponse:
     def set_owner(
         self,
         *,
-        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
-        body: _dcg_type_5 | ModelValue[_dcg_type_5] | Unset = UNSET,
+        pet_id: _dcg_type_10,
+        body: _dcg_type_5 | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1259,7 +1334,7 @@ class DefaultWithStreamingResponse:
     def create_owner(
         self,
         *,
-        body: _dcg_type_11 | ModelValue[_dcg_type_11],
+        body: _dcg_type_11,
         email: Unset = UNSET,
         nick_name: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1278,7 +1353,7 @@ class DefaultWithStreamingResponse:
     def create_owner(
         self,
         *,
-        body: _dcg_type_11 | ModelValue[_dcg_type_11] | Unset = UNSET,
+        body: _dcg_type_11 | Unset = UNSET,
         email: str | Unset = UNSET,
         nick_name: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1297,8 +1372,8 @@ class DefaultWithStreamingResponse:
     def put_labels(
         self,
         *,
-        pet_id: _dcg_type_12 | ModelValue[_dcg_type_12],
-        body: _dcg_type_13 | ModelValue[_dcg_type_13],
+        pet_id: _dcg_type_12,
+        body: _dcg_type_13,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1314,8 +1389,8 @@ class DefaultWithStreamingResponse:
     def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14 | ModelValue[_dcg_type_14],
-        body: MultipartBody[str | ModelValue[str] | WireValue],
+        pet_id: _dcg_type_14,
+        body: MultipartBody[str | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1328,11 +1403,35 @@ class DefaultWithStreamingResponse:
             options=options,
         )
 
+    @overload
     def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15 | ModelValue[_dcg_type_15],
-        body: _dcg_type_16 | DecodedValue[_dcg_type_16],
+        pet_id: _dcg_type_15,
+        body: _dcg_type_16,
+        name: Unset = UNSET,
+        tag: Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]: ...
+    @overload
+    def replace_pet(
+        self,
+        *,
+        pet_id: _dcg_type_15,
+        body: Unset = UNSET,
+        name: str,
+        tag: str | None | Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]: ...
+    def replace_pet(
+        self,
+        *,
+        pet_id: _dcg_type_15,
+        body: _dcg_type_16 | Unset = UNSET,
+        name: str | Unset = UNSET,
+        tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1341,6 +1440,7 @@ class DefaultWithStreamingResponse:
             _operations.OPERATION_7,
             (pet_id,),
             body=body,
+            fields=(name, tag),
             media_type=media_type,
             options=options,
         )

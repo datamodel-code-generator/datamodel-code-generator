@@ -15,7 +15,6 @@ from models import FieldApiKeyCookieParametersGetQueryPageParameter as _dcg_type
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncBinaryBody, AsyncMultipartBody
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.auth import (
@@ -227,10 +226,10 @@ class AsyncAuthResource:
     async def cookie_parameters(
         self,
         *,
-        theme: _dcg_type_0 | ModelValue[_dcg_type_0],
-        page: _dcg_type_1 | ModelValue[_dcg_type_1],
-        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
-        filter: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        theme: _dcg_type_0,
+        page: _dcg_type_1,
+        x_trace: _dcg_type_2,
+        filter: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> CookieParametersResponse:
@@ -439,7 +438,7 @@ class AsyncAuthResource:
     async def signed_multipart(
         self,
         *,
-        body: AsyncMultipartBody[str | ModelValue[str]],
+        body: AsyncMultipartBody[str],
         media_type: Literal['multipart/form-data'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -619,10 +618,10 @@ class AsyncAuthWithResponse:
     async def cookie_parameters(
         self,
         *,
-        theme: _dcg_type_0 | ModelValue[_dcg_type_0],
-        page: _dcg_type_1 | ModelValue[_dcg_type_1],
-        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
-        filter: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        theme: _dcg_type_0,
+        page: _dcg_type_1,
+        x_trace: _dcg_type_2,
+        filter: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CookieParametersResponse]:
@@ -831,7 +830,7 @@ class AsyncAuthWithResponse:
     async def signed_multipart(
         self,
         *,
-        body: AsyncMultipartBody[str | ModelValue[str]],
+        body: AsyncMultipartBody[str],
         media_type: Literal['multipart/form-data'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -1011,10 +1010,10 @@ class AsyncAuthWithRawResponse:
     async def cookie_parameters(
         self,
         *,
-        theme: _dcg_type_0 | ModelValue[_dcg_type_0],
-        page: _dcg_type_1 | ModelValue[_dcg_type_1],
-        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
-        filter: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        theme: _dcg_type_0,
+        page: _dcg_type_1,
+        x_trace: _dcg_type_2,
+        filter: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1223,7 +1222,7 @@ class AsyncAuthWithRawResponse:
     async def signed_multipart(
         self,
         *,
-        body: AsyncMultipartBody[str | ModelValue[str]],
+        body: AsyncMultipartBody[str],
         media_type: Literal['multipart/form-data'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -1403,10 +1402,10 @@ class AsyncAuthWithStreamingResponse:
     def cookie_parameters(
         self,
         *,
-        theme: _dcg_type_0 | ModelValue[_dcg_type_0],
-        page: _dcg_type_1 | ModelValue[_dcg_type_1],
-        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
-        filter: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        theme: _dcg_type_0,
+        page: _dcg_type_1,
+        x_trace: _dcg_type_2,
+        filter: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -1615,7 +1614,7 @@ class AsyncAuthWithStreamingResponse:
     def signed_multipart(
         self,
         *,
-        body: AsyncMultipartBody[str | ModelValue[str]],
+        body: AsyncMultipartBody[str],
         media_type: Literal['multipart/form-data'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,

@@ -60,8 +60,6 @@
      "target": "record-client-decode", "attr": "note", "native": "n"},
     {"name": "record-server-encode", "use": "/paths/~1records/put response_body 200", "op": "encode",
      "value": {"result": "record-client-decode", "attr": "value"}},
-    {"name": "record-server-encode-envelope", "use": "/paths/~1records/put response_body 200", "op": "encode",
-     "value": {"result": "record-client-decode-note"}},
     {"name": "keyed-client-decode", "use": "/paths/~1keyed/post response_body 200", "surface": "client", "op": "decode",
      "value": {"by_color": {"red": 1, "green": 2}, "by_code": {"ab": 3}, "by_name": {"x": {"name": "a", "stamp": "s"}}}},
     {"name": "keyed-server-encode", "use": "/paths/~1keyed/post response_body 200", "op": "encode",

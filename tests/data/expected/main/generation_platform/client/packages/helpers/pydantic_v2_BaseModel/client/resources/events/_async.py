@@ -11,7 +11,6 @@ from models import FieldEventsGetHeaderLastEventIDParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.events import StreamEventsResponse
@@ -42,7 +41,7 @@ class AsyncEventsResource:
     async def stream_events(
         self,
         *,
-        last_event_id: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        last_event_id: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['text/event-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> StreamEventsResponse:
@@ -65,7 +64,7 @@ class AsyncEventsWithResponse:
     async def stream_events(
         self,
         *,
-        last_event_id: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        last_event_id: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['text/event-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StreamEventsResponse]:
@@ -88,7 +87,7 @@ class AsyncEventsWithRawResponse:
     async def stream_events(
         self,
         *,
-        last_event_id: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        last_event_id: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['text/event-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -111,7 +110,7 @@ class AsyncEventsWithStreamingResponse:
     def stream_events(
         self,
         *,
-        last_event_id: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        last_event_id: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['text/event-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

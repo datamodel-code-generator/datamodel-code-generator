@@ -11,17 +11,17 @@ from ..._generated import model_bindings
 from ..._runtime.client.codecs import (
     HeaderBranch,
     ResponseHeaders,
-    envelope_value,
+    native_value,
     optional_header,
 )
 from ..._runtime.model_codecs.media import FieldPlan
 from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...errors import HTTPStatusError
-from ...model_codecs import DecodedValue, WireValue
+from ...model_codecs import WireValue
 from ...options import Unset
 from ...responses import ResponseInfo
 
-StoreDocumentResponse: TypeAlias = WireValue | str | None | DecodedValue[_dcg_type_0]
+StoreDocumentResponse: TypeAlias = WireValue | str | None | _dcg_type_0
 StoreDocumentErrorData: TypeAlias = str
 
 
@@ -29,7 +29,7 @@ class StoreDocumentHTTPError(HTTPStatusError[StoreDocumentErrorData]):
     """An error response of store_document, with its decoded payload when one is declared."""
 
 
-ReadDocumentResponse: TypeAlias = DecodedValue[_dcg_type_0]
+ReadDocumentResponse: TypeAlias = _dcg_type_0
 ReadDocumentErrorData: TypeAlias = None
 
 
@@ -37,7 +37,7 @@ class ReadDocumentHTTPError(HTTPStatusError[ReadDocumentErrorData]):
     """An error response of read_document, with its decoded payload when one is declared."""
 
 
-_READ_DOCUMENT_HEADERS: Final[ResponseHeaders[DecodedValue[_dcg_type_0], Unset]] = ResponseHeaders(
+_READ_DOCUMENT_HEADERS: Final[ResponseHeaders[_dcg_type_0, Unset]] = ResponseHeaders(
     'readDocument',
     frozenset({'200'}),
     (
@@ -59,7 +59,7 @@ _READ_DOCUMENT_HEADERS: Final[ResponseHeaders[DecodedValue[_dcg_type_0], Unset]]
                             ),
                             additional=FieldPlan('', 'string'),
                         ),
-                        decode=envelope_value(model_bindings.codec_17, model_bindings.CONTEXT_17),
+                        decode=native_value(model_bindings.codec_17, model_bindings.CONTEXT_17),
                         missing=optional_header,
                     ),
                 ),
@@ -73,7 +73,7 @@ def decode_read_document_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Draft'],
-) -> DecodedValue[_dcg_type_0] | Unset:
+) -> _dcg_type_0 | Unset:
     """Decode one declared response header of read_document from a response's metadata."""
     return _READ_DOCUMENT_HEADERS.decode(info, name)
 

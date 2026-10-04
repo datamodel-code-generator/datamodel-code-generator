@@ -174,7 +174,6 @@ _UPLOAD_PARTS: Final = (
     (_NAMED % b"tags", b"a"),
     (_NAMED % b"tags", b"b"),
     (_NAMED % b"meta" + _JSON, b'{"city":"Oslo","codes":[7]}'),
-    (_NAMED % b"draft" + _JSON, b'{"id":1,"title":"t"}'),
     (_NAMED % b"photo" + b'; filename="a.png"\r\nContent-Type: image/png', b"\x89PNG"),
     (_NAMED % b"pages", b"1"),
     (_NAMED % b"pages", b"2"),
@@ -185,7 +184,7 @@ _UPLOAD_PARTS: Final = (
 def _uploads_read(api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Read form-data responses with file parts: files as bytes, other parts through their members' codecs."""
     form = "multipart/form-data; boundary=b1"
-    title, photo = _UPLOAD_PARTS[0], _UPLOAD_PARTS[6]
+    title, photo = _UPLOAD_PARTS[0], _UPLOAD_PARTS[5]
     for label, status, parts in (
         ("upload read", 200, _UPLOAD_PARTS),
         ("upload read of its required parts", 200, (photo, title)),
@@ -222,8 +221,7 @@ def _profiles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
         ("profile with its name only", {"name": "Bo"}),
         ("profile with no tags", {"name": "Bo", "tags": []}),
     ):
-        if label in {"profile", "profile with its name only"}:
-            exchange.respond(raw_response(204))
+        exchange.respond(raw_response(204))
         record(
             lines,
             label,
@@ -309,6 +307,7 @@ def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
             ),
         ),
         ("upload of its required parts", (photo, title)),
+        ("upload of no tags", (title, photo, field("tags", []))),
     ):
         exchange.respond(raw_response(204))
         record(lines, label, lambda parts=parts: api.forms.submit_upload(body=body(parts)))
@@ -320,7 +319,6 @@ def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
         ("upload of a title as a file", (file("title", b"x"), photo)),
         ("upload of a title twice", (title, title, photo)),
         ("upload of a photo twice", (title, photo, photo)),
-        ("upload of no tags", (title, photo, field("tags", []))),
         ("upload of a part without a name", (title, photo, field(1, "x"))),
         ("upload of a read-only id", (title, photo, field("id", 1))),
     ):
@@ -401,12 +399,13 @@ def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         "label": "l/1",
         "y": 4,
     }
-    exchange.respond(raw_response(204))
-    record(
-        lines,
-        "stickers",
-        lambda: api.forms.submit_stickers(body=request_body(package, "submitStickers", None, sticker)),
-    )
+    exchange.respond(raw_response(204), raw_response(204))
+    for label, value in (("stickers", sticker), ("stickers of no tags and no filter", {"tags": [], "filter": {}})):
+        record(
+            lines,
+            label,
+            lambda value=value: api.forms.submit_stickers(body=request_body(package, "submitStickers", None, value)),
+        )
     for label, value in (
         ("stickers of a point whose extra is named as another member", {"point": {"y": 1}, "y": 2}),
         ("stickers of another member named as a point's extra", {"y": 2, "point": {"y": 1}}),

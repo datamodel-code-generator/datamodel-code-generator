@@ -15,7 +15,6 @@ from models import FieldUsersSearchPostRequest as _dcg_type_4
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.users import ListUsersResponse, SearchUsersResponse
@@ -46,10 +45,10 @@ class AsyncUsersResource:
     async def list_users(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        offset: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        page: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
-        snapshot: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        offset: _dcg_type_1 | Unset = UNSET,
+        page: _dcg_type_2 | Unset = UNSET,
+        snapshot: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListUsersResponse:
@@ -64,7 +63,7 @@ class AsyncUsersResource:
     async def search_users(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -90,10 +89,10 @@ class AsyncUsersWithResponse:
     async def list_users(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        offset: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        page: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
-        snapshot: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        offset: _dcg_type_1 | Unset = UNSET,
+        page: _dcg_type_2 | Unset = UNSET,
+        snapshot: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListUsersResponse]:
@@ -108,7 +107,7 @@ class AsyncUsersWithResponse:
     async def search_users(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -134,10 +133,10 @@ class AsyncUsersWithRawResponse:
     async def list_users(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        offset: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        page: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
-        snapshot: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        offset: _dcg_type_1 | Unset = UNSET,
+        page: _dcg_type_2 | Unset = UNSET,
+        snapshot: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -152,7 +151,7 @@ class AsyncUsersWithRawResponse:
     async def search_users(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -178,10 +177,10 @@ class AsyncUsersWithStreamingResponse:
     def list_users(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        offset: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        page: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
-        snapshot: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        offset: _dcg_type_1 | Unset = UNSET,
+        page: _dcg_type_2 | Unset = UNSET,
+        snapshot: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -196,7 +195,7 @@ class AsyncUsersWithStreamingResponse:
     def search_users(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,

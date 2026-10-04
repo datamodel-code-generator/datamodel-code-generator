@@ -13,7 +13,6 @@ from models import JobRequest as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue
 from ...options import RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.jobs import (
@@ -49,7 +48,7 @@ class AsyncJobsResource:
     async def run_job(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -67,7 +66,7 @@ class AsyncJobsResource:
     async def get_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
+        job_id: _dcg_type_1,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetJobResponse:
@@ -82,7 +81,7 @@ class AsyncJobsResource:
     async def cancel_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
+        job_id: _dcg_type_1,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CancelJobResponse:
@@ -97,7 +96,7 @@ class AsyncJobsResource:
     async def get_job_result(
         self,
         *,
-        job_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        job_id: _dcg_type_2,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetJobResultResponse:
@@ -120,7 +119,7 @@ class AsyncJobsWithResponse:
     async def run_job(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -138,7 +137,7 @@ class AsyncJobsWithResponse:
     async def get_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
+        job_id: _dcg_type_1,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetJobResponse]:
@@ -153,7 +152,7 @@ class AsyncJobsWithResponse:
     async def cancel_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
+        job_id: _dcg_type_1,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CancelJobResponse]:
@@ -168,7 +167,7 @@ class AsyncJobsWithResponse:
     async def get_job_result(
         self,
         *,
-        job_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        job_id: _dcg_type_2,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetJobResultResponse]:
@@ -191,7 +190,7 @@ class AsyncJobsWithRawResponse:
     async def run_job(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -209,7 +208,7 @@ class AsyncJobsWithRawResponse:
     async def get_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
+        job_id: _dcg_type_1,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -224,7 +223,7 @@ class AsyncJobsWithRawResponse:
     async def cancel_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
+        job_id: _dcg_type_1,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -239,7 +238,7 @@ class AsyncJobsWithRawResponse:
     async def get_job_result(
         self,
         *,
-        job_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        job_id: _dcg_type_2,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -262,7 +261,7 @@ class AsyncJobsWithStreamingResponse:
     def run_job(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -280,7 +279,7 @@ class AsyncJobsWithStreamingResponse:
     def get_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
+        job_id: _dcg_type_1,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -295,7 +294,7 @@ class AsyncJobsWithStreamingResponse:
     def cancel_job(
         self,
         *,
-        job_id: _dcg_type_1 | ModelValue[_dcg_type_1],
+        job_id: _dcg_type_1,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -310,7 +309,7 @@ class AsyncJobsWithStreamingResponse:
     def get_job_result(
         self,
         *,
-        job_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        job_id: _dcg_type_2,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

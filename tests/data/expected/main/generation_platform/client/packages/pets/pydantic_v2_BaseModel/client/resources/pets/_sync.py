@@ -22,7 +22,6 @@ from models import Pet as _dcg_type_7
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import MultipartBody
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.pets import (
@@ -67,10 +66,10 @@ class PetsResource:
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        labels: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
-        session: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        limit: _dcg_type_0 | Unset = UNSET,
+        labels: _dcg_type_1 | Unset = UNSET,
+        x_trace: _dcg_type_2,
+        session: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListPetsResponse:
@@ -86,7 +85,7 @@ class PetsResource:
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -95,7 +94,7 @@ class PetsResource:
     def create_pet(
         self,
         *,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_5,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -103,7 +102,7 @@ class PetsResource:
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_4 | _dcg_type_5,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -122,7 +121,7 @@ class PetsResource:
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> _dcg_type_7: ...
@@ -130,7 +129,7 @@ class PetsResource:
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_7: ...
@@ -138,14 +137,14 @@ class PetsResource:
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_8: ...
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
@@ -160,7 +159,7 @@ class PetsResource:
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         options: RequestOptions | None = None,
     ) -> DeletePetsByPetIdResponse:
         """Call DELETE /pets/{petId}."""
@@ -173,7 +172,7 @@ class PetsResource:
     def head_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         options: RequestOptions | None = None,
     ) -> HeadPetResponse:
         """Call HEAD /pets/{petId}."""
@@ -186,8 +185,8 @@ class PetsResource:
     def attach_files(
         self,
         *,
-        pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
-        body: MultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]],
+        pet_id: _dcg_type_9,
+        body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AttachFilesResponse:
@@ -203,7 +202,7 @@ class PetsResource:
     def read_files(
         self,
         *,
-        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
+        pet_id: _dcg_type_10,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadFilesResponse:
@@ -226,10 +225,10 @@ class PetsWithResponse:
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        labels: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
-        session: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        limit: _dcg_type_0 | Unset = UNSET,
+        labels: _dcg_type_1 | Unset = UNSET,
+        x_trace: _dcg_type_2,
+        session: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListPetsResponse]:
@@ -245,7 +244,7 @@ class PetsWithResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -254,7 +253,7 @@ class PetsWithResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_5,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -262,7 +261,7 @@ class PetsWithResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_4 | _dcg_type_5,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -281,7 +280,7 @@ class PetsWithResponse:
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[_dcg_type_7]: ...
@@ -289,7 +288,7 @@ class PetsWithResponse:
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[_dcg_type_7]: ...
@@ -297,14 +296,14 @@ class PetsWithResponse:
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> Response[_dcg_type_8]: ...
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetPetResponse]:
@@ -319,7 +318,7 @@ class PetsWithResponse:
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         options: RequestOptions | None = None,
     ) -> Response[DeletePetsByPetIdResponse]:
         """Call DELETE /pets/{petId}."""
@@ -328,7 +327,7 @@ class PetsWithResponse:
     def head_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         options: RequestOptions | None = None,
     ) -> Response[HeadPetResponse]:
         """Call HEAD /pets/{petId}."""
@@ -337,8 +336,8 @@ class PetsWithResponse:
     def attach_files(
         self,
         *,
-        pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
-        body: MultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]],
+        pet_id: _dcg_type_9,
+        body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[AttachFilesResponse]:
@@ -354,7 +353,7 @@ class PetsWithResponse:
     def read_files(
         self,
         *,
-        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
+        pet_id: _dcg_type_10,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadFilesResponse]:
@@ -377,10 +376,10 @@ class PetsWithRawResponse:
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        labels: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
-        session: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        limit: _dcg_type_0 | Unset = UNSET,
+        labels: _dcg_type_1 | Unset = UNSET,
+        x_trace: _dcg_type_2,
+        session: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -396,7 +395,7 @@ class PetsWithRawResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -405,7 +404,7 @@ class PetsWithRawResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_5,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -413,7 +412,7 @@ class PetsWithRawResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_4 | _dcg_type_5,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -431,7 +430,7 @@ class PetsWithRawResponse:
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -446,7 +445,7 @@ class PetsWithRawResponse:
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call DELETE /pets/{petId}."""
@@ -459,7 +458,7 @@ class PetsWithRawResponse:
     def head_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call HEAD /pets/{petId}."""
@@ -472,8 +471,8 @@ class PetsWithRawResponse:
     def attach_files(
         self,
         *,
-        pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
-        body: MultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]],
+        pet_id: _dcg_type_9,
+        body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -489,7 +488,7 @@ class PetsWithRawResponse:
     def read_files(
         self,
         *,
-        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
+        pet_id: _dcg_type_10,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -512,10 +511,10 @@ class PetsWithStreamingResponse:
     def list_pets(
         self,
         *,
-        limit: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        labels: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
-        session: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        limit: _dcg_type_0 | Unset = UNSET,
+        labels: _dcg_type_1 | Unset = UNSET,
+        x_trace: _dcg_type_2,
+        session: _dcg_type_3 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -531,7 +530,7 @@ class PetsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -540,7 +539,7 @@ class PetsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_5,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -548,7 +547,7 @@ class PetsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_4 | _dcg_type_5,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -566,7 +565,7 @@ class PetsWithStreamingResponse:
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -581,7 +580,7 @@ class PetsWithStreamingResponse:
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call DELETE /pets/{petId}."""
@@ -590,7 +589,7 @@ class PetsWithStreamingResponse:
     def head_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call HEAD /pets/{petId}."""
@@ -599,8 +598,8 @@ class PetsWithStreamingResponse:
     def attach_files(
         self,
         *,
-        pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
-        body: MultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]],
+        pet_id: _dcg_type_9,
+        body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -616,7 +615,7 @@ class PetsWithStreamingResponse:
     def read_files(
         self,
         *,
-        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
+        pet_id: _dcg_type_10,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
