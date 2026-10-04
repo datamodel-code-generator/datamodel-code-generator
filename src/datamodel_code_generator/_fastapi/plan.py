@@ -746,16 +746,12 @@ class Planner:  # noqa: PLR0904
 
     def literal(self, value: FinalPythonType) -> bool:
         """Return whether a type accepts only enum members or literals, which FastAPI matches against query text."""
-        match value:
-            case UnionType():
-                members = value.members
-            case GenericType():
-                members = value.arguments
-            case GeneratedSymbolType():
-                return self.symbols[value.symbol].kind == "enum"
-            case _:
-                return isinstance(value, LiteralType)
-        return any(self.literal(member) for member in members)
+        if isinstance(value, UnionType | GenericType):
+            members = value.members if isinstance(value, UnionType) else value.arguments
+            return any(self.literal(member) for member in members)
+        if isinstance(value, GeneratedSymbolType):
+            return self.symbols[value.symbol].kind == "enum"
+        return isinstance(value, LiteralType)
 
     def scalar(self, value: FinalPythonType) -> bool:
         """Return whether FastAPI reads a type as one scalar value: a builtin, enum, literal, or constrained scalar."""
