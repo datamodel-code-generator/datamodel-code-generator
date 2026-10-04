@@ -17,9 +17,8 @@ if TYPE_CHECKING:
 
     from ..model_codecs.context import CodecContext
     from ..model_codecs.parameters import ParameterPlan
-    from ..model_codecs.values import DecodedValue
     from ..model_codecs.wire import WireValue
-    from .operations import InboundEnvelopeCodec, InboundModelCodec
+    from .operations import InboundModelCodec
     from .responses import ResponseInfo
 
 T = TypeVar("T")
@@ -65,34 +64,9 @@ class NativeValue(Generic[T_co]):
         return self._codec().convert(wire, self._context)
 
 
-class EnvelopeValue(Generic[T]):
-    """Decode a received header or part value into its model value or envelope, always by its schema."""
-
-    __slots__ = ("_codec", "_context")
-
-    def __init__(self, codec: Callable[[], InboundEnvelopeCodec[T]], context: CodecContext) -> None:
-        """Bind the value's codec accessor and context."""
-        self._codec = codec
-        self._context = context
-
-    def __call__(self, wire: WireValue) -> DecodedValue[T]:
-        """Validate a wire value against its schema and construct its model value or envelope."""
-        return self._codec().decode(wire, self._context)
-
-    convert = __call__
-
-
 def native_value(codec: Callable[[], InboundModelCodec[T]], context: CodecContext) -> NativeValue[T]:
     """Return a decoder of a header or part value that constructs the native value."""
     return NativeValue(codec, context)
-
-
-def envelope_value(codec: Callable[[], InboundEnvelopeCodec[T]], context: CodecContext) -> EnvelopeValue[T]:
-    """Return a decoder of a header or part value that constructs a model value or envelope.
-
-    An envelope keeps its strict contract, so it is validated against its schema even where values are converted.
-    """
-    return EnvelopeValue(codec, context)
 
 
 class ResponseHeaders(Generic[T_co, M_co]):

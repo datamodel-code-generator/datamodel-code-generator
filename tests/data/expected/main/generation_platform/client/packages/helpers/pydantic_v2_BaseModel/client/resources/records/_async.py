@@ -12,7 +12,6 @@ from models import Record as _dcg_type_1
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.records import StreamRecordsResponse
@@ -44,7 +43,7 @@ class AsyncRecordsResource:
     async def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> StreamRecordsResponse: ...
@@ -52,7 +51,7 @@ class AsyncRecordsResource:
     async def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/x-ndjson'],
         options: RequestOptions | None = None,
     ) -> bytes: ...
@@ -60,14 +59,14 @@ class AsyncRecordsResource:
     async def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_1: ...
     async def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/x-ndjson', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> StreamRecordsResponse:
@@ -91,7 +90,7 @@ class AsyncRecordsWithResponse:
     async def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[StreamRecordsResponse]: ...
@@ -99,7 +98,7 @@ class AsyncRecordsWithResponse:
     async def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/x-ndjson'],
         options: RequestOptions | None = None,
     ) -> Response[bytes]: ...
@@ -107,14 +106,14 @@ class AsyncRecordsWithResponse:
     async def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[_dcg_type_1]: ...
     async def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/x-ndjson', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StreamRecordsResponse]:
@@ -137,7 +136,7 @@ class AsyncRecordsWithRawResponse:
     async def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/x-ndjson', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -160,7 +159,7 @@ class AsyncRecordsWithStreamingResponse:
     def stream_records(
         self,
         *,
-        after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        after: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/x-ndjson', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

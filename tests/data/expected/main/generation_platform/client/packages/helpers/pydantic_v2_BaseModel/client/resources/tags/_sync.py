@@ -12,7 +12,6 @@ from models import FieldTagsGetQueryItemsParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.tags import ListTagsResponse
@@ -43,8 +42,8 @@ class TagsResource:
     def list_tags(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        cursor: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        items: _dcg_type_0 | Unset = UNSET,
+        cursor: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListTagsResponse:
@@ -67,8 +66,8 @@ class TagsWithResponse:
     def list_tags(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        cursor: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        items: _dcg_type_0 | Unset = UNSET,
+        cursor: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListTagsResponse]:
@@ -91,8 +90,8 @@ class TagsWithRawResponse:
     def list_tags(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        cursor: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        items: _dcg_type_0 | Unset = UNSET,
+        cursor: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -115,8 +114,8 @@ class TagsWithStreamingResponse:
     def list_tags(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        cursor: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        items: _dcg_type_0 | Unset = UNSET,
+        cursor: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

@@ -5,12 +5,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
 
+from typing_extensions import cast  # noqa: UP035 - Preserve the existing Generic import.
+
 from .errors import CodecBindingError
-from .values import ModelInput
 
 if TYPE_CHECKING:
     from .context import CodecContext
-    from .values import DecodedValue, ModelValue
+    from .values import DecodedValue, ModelInput, ModelValue
     from .wire import JSONValue, PresenceTree, WireValue
 
 T = TypeVar("T")
@@ -64,11 +65,10 @@ class NativeOutboundCodec(OutboundCodec[T]):
     __slots__ = ()
 
     def from_wire(self, value: JSONValue | WireValue) -> ModelValue[T]:
-        """Project a wire value to send into a constructed native value."""
+        """Project a wire value to send into a constructed native value, refusing an envelope."""
         decoded = self._codec.from_wire(value, self._context)
-        if isinstance(decoded, ModelInput):
-            decoded.require_model()
-        return decoded
+        decoded.require_model()
+        return cast("ModelValue[T]", decoded)
 
 
 class EnvelopeOutboundCodec(OutboundCodec[T]):

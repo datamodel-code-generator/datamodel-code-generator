@@ -2,15 +2,15 @@ use /paths/~1pets/get parameter query limit: native alias models:FieldPetsGetQue
 use /paths/~1pets/get parameter query tags: native alias models:FieldPetsGetQueryTagsParameter models=[]
 use /paths/~1pets/get parameter query filter: native alias models:FieldPetsGetQueryFilterParameter models=[]
 use /paths/~1pets/get response_body 200: native alias models:FieldPetsGetResponse models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]
-use /paths/~1pets/post request_body: envelope dataclass models:Pet models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]
+use /paths/~1pets/post request_body: native dataclass models:Pet models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]
 use /paths/~1pets/post response_body 201: native dataclass models:Pet models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]
 use /paths/~1pets~1lookup/get response_body 200: native alias models:FieldPetsLookupGetResponse models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]
 use /paths/~1pets~1{id}~1photo/get parameter path id: native alias models:FieldPetsIdPhotoGetPathIdParameter models=[]
 use /paths/~1pets~1{id}/patch parameter path id: native alias models:FieldPetsIdPatchPathIdParameter models=[]
 use /paths/~1pets~1{id}/patch request_body: native dataclass models:PetPatch models=[('models:PetPatch', 'dataclass', 'ignore', True)]
 use /paths/~1pets~1{id}/patch response_body 200: native dataclass models:PetPatch models=[('models:PetPatch', 'dataclass', 'ignore', True)]
-create-server-decode: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new","password":"pw"} extras={}
-create-client-from-wire: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new","extra":true} extras={"/extra":true}
+create-server-decode: NativeValidationError native.missing@/id['id']
+create-client-from-wire: NativeValidationError native.missing@/id['id']
 create-client-encode-native: wire={"name":"Mimi","status":"new","nick-name":null,"password":"pw","co-owner":null,"cost":null,"visits":0}
 created-client-decode: model Pet(id=1, name='Mimi', status='new', tag=None, nick_name=None, password=None, kind=<Kind.cat: 'cat'>, owner=Owner(name='Ann', e_mail=None, phone=None), co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0) wire={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","note":1},"hint":"x"} presence=['', '/id', '/name', '/status', '/kind', '/owner', '/owner/name', '/owner/note', '/hint'] extras={"/owner/note":1,"/hint":"x"}
 created-server-encode-echo: wire={"id":1,"name":"Mimi","status":"new","nick-name":null,"kind":"cat","owner":{"name":"Ann"},"co-owner":null,"cost":null,"visits":0}

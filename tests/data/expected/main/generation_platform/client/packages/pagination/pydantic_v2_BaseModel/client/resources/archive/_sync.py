@@ -11,7 +11,6 @@ from models import FieldArchiveCursorGetPathCursorParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue
 from ...options import RequestOptions
 from ...responses import RawResponse, Response
 from ...types.archive import ListArchiveResponse
@@ -42,7 +41,7 @@ class ArchiveResource:
     def list_archive(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
+        cursor: _dcg_type_0,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListArchiveResponse:
@@ -65,7 +64,7 @@ class ArchiveWithResponse:
     def list_archive(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
+        cursor: _dcg_type_0,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListArchiveResponse]:
@@ -88,7 +87,7 @@ class ArchiveWithRawResponse:
     def list_archive(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
+        cursor: _dcg_type_0,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -111,7 +110,7 @@ class ArchiveWithStreamingResponse:
     def list_archive(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
+        cursor: _dcg_type_0,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

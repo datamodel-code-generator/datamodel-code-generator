@@ -11,7 +11,6 @@ from models import Address as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.files import ReplaceFileResponse, StoreFileResponse
@@ -43,7 +42,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -52,7 +51,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
@@ -61,7 +60,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -69,7 +68,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json', 'image/png'] | None = None,
         options: RequestOptions | None = None,
@@ -112,7 +111,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -121,7 +120,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
@@ -130,7 +129,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -138,7 +137,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json', 'image/png'] | None = None,
         options: RequestOptions | None = None,
@@ -180,7 +179,7 @@ class AsyncFilesWithRawResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json', 'image/png'] | None = None,
         options: RequestOptions | None = None,
@@ -222,7 +221,7 @@ class AsyncFilesWithStreamingResponse:
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json', 'image/png'] | None = None,
         options: RequestOptions | None = None,

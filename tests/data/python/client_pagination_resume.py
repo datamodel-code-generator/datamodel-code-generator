@@ -509,7 +509,7 @@ def _validated(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
     saved = searches.iterate(body=_body(harness, "search", {"query": "a"})).checkpoint()
     for label, path, value in (
         ("body its schema refuses", ("body", 0), {"query": 5, "extra": "x"}),
-        ("media type its selector refuses", ("body", 2), "text/plain"),
+        ("concrete media type a saved body no longer carries", ("body", 2), "text/plain"),
         ("unparsable media type", ("body", 2), "%%%"),
         ("media type with a line break", ("body", 2), "application/json\r\nX-Injected: 1"),
     ):

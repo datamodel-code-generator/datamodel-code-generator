@@ -2278,7 +2278,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
     ) -> tuple[tuple[object, ...], object, str | None]:
         """Return the arguments, body, and media type of a request a checkpoint saved, built from their wire values.
 
-        Each value is validated and built as its codec builds a caller's wire value; a value that does not fit raises
+        Each value is validated against its schema and built into its native value; a value that does not fit raises
         RequestEncodingError, and so does a body whose third item names a concrete media type, which nothing saves now.
         """
         restored = tuple(

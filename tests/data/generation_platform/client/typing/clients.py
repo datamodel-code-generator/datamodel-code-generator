@@ -33,7 +33,7 @@ from pets.bodies import (
     StreamBody,
     SyncBinaryBody,
 )
-from pets.model_codecs import JSONValue, ModelValue, WireValue
+from pets.model_codecs import JSONValue, WireValue
 from pets.errors import (
     BudgetExceededError,
     DeadlineExceededError,
@@ -114,8 +114,6 @@ async def call_async(client: AsyncClient, trace: FieldPetsGetHeaderXTraceParamet
     assert_type(await client.pets.list_pets(x_trace=trace), ListPetsResponse)
     response = await client.pets.with_response.list_pets(x_trace=trace)
     assert_type(response, Response[ListPetsResponse])
-    value: ModelValue[object] | None = None
-    del value
     await client.aclose()
 
 

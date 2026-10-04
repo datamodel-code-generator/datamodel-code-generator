@@ -18,7 +18,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import EnvelopeOutboundCodec, NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import (
     DirectionalView,
@@ -707,11 +706,6 @@ def codec_0() -> PydanticModelCodec[models.FieldPetsPostQueryTagParameter]:
     )
 
 
-@cache
-def outbound_0() -> NativeOutboundCodec[models.FieldPetsPostQueryTagParameter]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
-
-
 CONTEXT_1: Final = CodecContext(
     surface='client',
     direction='request',
@@ -745,11 +739,6 @@ def codec_1() -> PydanticModelCodec[models.NewPet]:
     )
 
 
-@cache
-def outbound_1() -> NativeOutboundCodec[models.NewPet]:
-    return NativeOutboundCodec(codec_1(), CONTEXT_1)
-
-
 CONTEXT_2: Final = CodecContext(
     surface='client',
     direction='request',
@@ -781,11 +770,6 @@ def codec_2() -> PydanticModelCodec[models.PetForm]:
         {'models:PetForm': models.PetForm},
         request_bundle,
     )
-
-
-@cache
-def outbound_2() -> NativeOutboundCodec[models.PetForm]:
-    return NativeOutboundCodec(codec_2(), CONTEXT_2)
 
 
 CONTEXT_3: Final = CodecContext(
@@ -853,11 +837,6 @@ def codec_4() -> PydanticModelCodec[models.FieldPetsPetIdPatchPathPetIdParameter
     )
 
 
-@cache
-def outbound_4() -> NativeOutboundCodec[models.FieldPetsPetIdPatchPathPetIdParameter]:
-    return NativeOutboundCodec(codec_4(), CONTEXT_4)
-
-
 CONTEXT_5: Final = CodecContext(
     surface='client',
     direction='request',
@@ -891,11 +870,6 @@ def codec_5() -> PydanticModelCodec[models.PetPatch]:
     )
 
 
-@cache
-def outbound_5() -> NativeOutboundCodec[models.PetPatch]:
-    return NativeOutboundCodec(codec_5(), CONTEXT_5)
-
-
 CONTEXT_6: Final = CodecContext(
     surface='client',
     direction='request',
@@ -926,11 +900,6 @@ def codec_6() -> PydanticModelCodec[models.FieldPetsPetIdVisitsPostPathPetIdPara
         {'models:FieldPetsPetIdVisitsPostPathPetIdParameter': models.FieldPetsPetIdVisitsPostPathPetIdParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_6() -> NativeOutboundCodec[models.FieldPetsPetIdVisitsPostPathPetIdParameter]:
-    return NativeOutboundCodec(codec_6(), CONTEXT_6)
 
 
 CONTEXT_7: Final = CodecContext(
@@ -966,11 +935,6 @@ def codec_7() -> PydanticModelCodec[models.Visit]:
     )
 
 
-@cache
-def outbound_7() -> NativeOutboundCodec[models.Visit]:
-    return NativeOutboundCodec(codec_7(), CONTEXT_7)
-
-
 CONTEXT_8: Final = CodecContext(
     surface='client',
     direction='request',
@@ -1001,11 +965,6 @@ def codec_8() -> PydanticModelCodec[models.FieldPetsPetIdOwnerPutPathPetIdParame
         {'models:FieldPetsPetIdOwnerPutPathPetIdParameter': models.FieldPetsPetIdOwnerPutPathPetIdParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_8() -> NativeOutboundCodec[models.FieldPetsPetIdOwnerPutPathPetIdParameter]:
-    return NativeOutboundCodec(codec_8(), CONTEXT_8)
 
 
 CONTEXT_9: Final = CodecContext(
@@ -1041,11 +1000,6 @@ def codec_9() -> PydanticModelCodec[models.Owner]:
     )
 
 
-@cache
-def outbound_9() -> NativeOutboundCodec[models.Owner]:
-    return NativeOutboundCodec(codec_9(), CONTEXT_9)
-
-
 CONTEXT_10: Final = CodecContext(
     surface='client',
     direction='request',
@@ -1079,11 +1033,6 @@ def codec_10() -> PydanticModelCodec[models.FieldOwnersPostRequest]:
     )
 
 
-@cache
-def outbound_10() -> NativeOutboundCodec[models.FieldOwnersPostRequest]:
-    return NativeOutboundCodec(codec_10(), CONTEXT_10)
-
-
 CONTEXT_11: Final = CodecContext(
     surface='client',
     direction='request',
@@ -1114,11 +1063,6 @@ def codec_11() -> PydanticModelCodec[models.FieldPetsPetIdLabelsPutPathPetIdPara
         {'models:FieldPetsPetIdLabelsPutPathPetIdParameter': models.FieldPetsPetIdLabelsPutPathPetIdParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_11() -> NativeOutboundCodec[models.FieldPetsPetIdLabelsPutPathPetIdParameter]:
-    return NativeOutboundCodec(codec_11(), CONTEXT_11)
 
 
 CONTEXT_12: Final = CodecContext(
@@ -1154,11 +1098,6 @@ def codec_12() -> PydanticModelCodec[models.Labels]:
     )
 
 
-@cache
-def outbound_12() -> NativeOutboundCodec[models.Labels]:
-    return NativeOutboundCodec(codec_12(), CONTEXT_12)
-
-
 CONTEXT_13: Final = CodecContext(
     surface='client',
     direction='request',
@@ -1189,11 +1128,6 @@ def codec_13() -> PydanticModelCodec[models.FieldPetsPetIdPhotoPutPathPetIdParam
         {'models:FieldPetsPetIdPhotoPutPathPetIdParameter': models.FieldPetsPetIdPhotoPutPathPetIdParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_13() -> NativeOutboundCodec[models.FieldPetsPetIdPhotoPutPathPetIdParameter]:
-    return NativeOutboundCodec(codec_13(), CONTEXT_13)
 
 
 CONTEXT_14: Final = CodecContext(
@@ -1228,11 +1162,6 @@ def codec_14() -> PydanticModelCodec[models.FieldPetsPetIdRecordsPutPathPetIdPar
     )
 
 
-@cache
-def outbound_14() -> NativeOutboundCodec[models.FieldPetsPetIdRecordsPutPathPetIdParameter]:
-    return NativeOutboundCodec(codec_14(), CONTEXT_14)
-
-
 CONTEXT_15: Final = CodecContext(
     surface='client',
     direction='request',
@@ -1255,7 +1184,7 @@ def codec_15() -> PydanticModelCodec[models.Pet]:
             backend='pydantic_v2.BaseModel',
             native_kind='model',
             native_export='models:Pet',
-            projection_mode='envelope',
+            projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Pet'),
             models=(_model_4(),),
@@ -1264,11 +1193,6 @@ def codec_15() -> PydanticModelCodec[models.Pet]:
         {'models:Pet': models.Pet},
         request_bundle,
     )
-
-
-@cache
-def outbound_15() -> EnvelopeOutboundCodec[models.Pet]:
-    return EnvelopeOutboundCodec(codec_15(), CONTEXT_15)
 
 
 CONTEXT_16: Final = CodecContext(
@@ -1302,8 +1226,3 @@ def codec_16() -> PydanticModelCodec[str]:
         {},
         request_bundle,
     )
-
-
-@cache
-def outbound_16() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_16(), CONTEXT_16)

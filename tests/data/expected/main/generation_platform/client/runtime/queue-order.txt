@@ -80,16 +80,16 @@ sync
     replay=succeeded/succeeded providers=1 sends=1
   > GET https://api.example.com/repeated?patch=zulu&patch=alpha&tag=alpha&tag=zulu&tag=zulu
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
-  changed argument-order: QueueBindingError providers=0 sends=0
-  changed argument-value: QueueBindingError providers=0 sends=0
-  changed nested-order: QueueBindingError providers=0 sends=0
-  changed repeated-order: QueueBindingError providers=0 sends=0
-  changed repeated-value: QueueBindingError providers=0 sends=0
-  changed query-order: QueueBindingError providers=0 sends=0
-  changed query-value: QueueBindingError providers=0 sends=0
-  changed header-order: QueueBindingError providers=0 sends=0
-  changed header-value: QueueBindingError providers=0 sends=0
-  changed basepath: QueueBindingError providers=0 sends=0
+  changed argument-order: accepted providers=1 sends=1
+  changed argument-value: QueueBindingError providers=1 sends=1
+  changed nested-order: QueueBindingError providers=1 sends=1
+  changed repeated-order: QueueBindingError providers=1 sends=1
+  changed repeated-value: QueueBindingError providers=1 sends=1
+  changed query-order: QueueBindingError providers=1 sends=1
+  changed query-value: QueueBindingError providers=1 sends=1
+  changed header-order: QueueBindingError providers=1 sends=1
+  changed header-value: QueueBindingError providers=1 sends=1
+  changed basepath: QueueBindingError providers=1 sends=1
 async
   deep-reverse saved={"alpha":"cake","zulu":"tea"}
     enqueue providers=0 sends=0
@@ -171,13 +171,13 @@ async
     replay=succeeded/succeeded providers=1 sends=1
   > GET https://api.example.com/repeated?patch=zulu&patch=alpha&tag=alpha&tag=zulu&tag=zulu
     patches=[('x-zulu', 'tea'), ('x-alpha', 'cake')]
-  changed argument-order: QueueBindingError providers=0 sends=0
-  changed argument-value: QueueBindingError providers=0 sends=0
-  changed nested-order: QueueBindingError providers=0 sends=0
-  changed repeated-order: QueueBindingError providers=0 sends=0
-  changed repeated-value: QueueBindingError providers=0 sends=0
-  changed query-order: QueueBindingError providers=0 sends=0
-  changed query-value: QueueBindingError providers=0 sends=0
-  changed header-order: QueueBindingError providers=0 sends=0
-  changed header-value: QueueBindingError providers=0 sends=0
-  changed basepath: QueueBindingError providers=0 sends=0
+  changed argument-order: accepted providers=1 sends=1
+  changed argument-value: QueueBindingError providers=1 sends=1
+  changed nested-order: QueueBindingError providers=1 sends=1
+  changed repeated-order: QueueBindingError providers=1 sends=1
+  changed repeated-value: QueueBindingError providers=1 sends=1
+  changed query-order: QueueBindingError providers=1 sends=1
+  changed query-value: QueueBindingError providers=1 sends=1
+  changed header-order: QueueBindingError providers=1 sends=1
+  changed header-value: QueueBindingError providers=1 sends=1
+  changed basepath: QueueBindingError providers=1 sends=1

@@ -15,7 +15,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
 from .._runtime.model_codecs.wire import freeze_wire
@@ -430,11 +429,6 @@ def codec_0() -> PydanticModelCodec[models.FieldParameterPostHeaderXRequestKeyPa
         {'models:FieldParameterPostHeaderXRequestKeyParameter': models.FieldParameterPostHeaderXRequestKeyParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_0() -> NativeOutboundCodec[models.FieldParameterPostHeaderXRequestKeyParameter]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
 
 
 CONTEXT_1: Final = CodecContext(
@@ -991,11 +985,6 @@ def codec_17() -> PydanticModelCodec[models.FieldDirectionPostHeaderXRetryContro
         },
         request_bundle,
     )
-
-
-@cache
-def outbound_17() -> NativeOutboundCodec[models.FieldDirectionPostHeaderXRetryControlParameter]:
-    return NativeOutboundCodec(codec_17(), CONTEXT_17)
 
 
 CONTEXT_18: Final = CodecContext(

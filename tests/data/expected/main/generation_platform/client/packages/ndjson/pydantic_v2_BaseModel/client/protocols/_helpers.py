@@ -14,7 +14,6 @@ from models import SearchQuery as _dcg_type_4
 
 from .._runtime.client.client import ClientCore
 from .._runtime.protocols.streams import EventStream, UnknownEvent, open_events
-from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import StreamOptions, _plans
 
@@ -83,7 +82,7 @@ class RecordsAllNdjson:
     def open(
         self,
         *,
-        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        topic: _dcg_type_0 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -109,7 +108,7 @@ class RecordsLenientNdjson:
     def open(
         self,
         *,
-        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        topic: _dcg_type_0 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -135,7 +134,7 @@ class RecordsTaggedNdjson:
     def open(
         self,
         *,
-        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        topic: _dcg_type_0 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -161,7 +160,7 @@ class SearchAllNdjson:
     def open(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,

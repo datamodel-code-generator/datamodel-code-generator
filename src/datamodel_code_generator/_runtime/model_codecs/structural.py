@@ -48,7 +48,7 @@ from .codec import (
 from .errors import CodecConfigurationError, ModelProjectionError, NativeIssue, NativeValidationError
 from .media import encode_json
 from .patterns import PatternDialectError, PatternPlan, PatternResourceError, plan_pattern, search
-from .values import DecodedValue, ModelInput, ModelValue, ProjectionIssue
+from .values import DecodedValue, ModelValue, ProjectionIssue
 from .wire import (
     JSONValue,
     PresenceTree,
@@ -634,7 +634,7 @@ def _fits_record(binding: ModelBinding, native: type) -> bool:
 class StructuralModelCodec(BuiltinModelCodec[T]):
     """Validate, construct, snapshot, and encode one bound use of a standard dataclass or TypedDict model type."""
 
-    __slots__ = ("_convert", "_directed", "_invalid", "_plan", "_plans", "_scan")
+    __slots__ = ("_convert", "_directed", "_invalid", "_plan", "_plans")
 
     @overload
     def __init__(
@@ -673,7 +673,6 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             self._types[model.symbol] = native
         self._plans: dict[str, _Model] = {}
         self._plan = self._build(binding.type, native_type, binding.native_export or binding.schema_id)
-        self._scan = binding.projection_mode == "envelope"
         self._convert: Callable[[object], object] | None = None
         self._invalid: type[Exception] = ModelProjectionError
         if binding.converter_strategy == "msgspec_convert":
@@ -828,34 +827,25 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
     def _project(self, wire: WireValue, budget: MatchBudget) -> DecodedValue[T]:
         presence = snapshot_presence(wire)
         binding_id = self._binding.binding_id
-        if self._scan or self._convert is not None:
+        if self._convert is not None:
             scan = Walk(budget)
             self._decode(wire, self._plan, None, scan)
-            if scan.issues and self._scan:
-                return ModelInput(
-                    binding_id=binding_id,
-                    wire=wire,
-                    presence=presence,
-                    extras=MappingProxyType(scan.extras),
-                    issues=tuple(scan.issues),
-                )
             if scan.issues:
                 msg = f"The native use has an unplanned projection gap at {scan.issues[0].pointer or '/'}"
                 raise ModelProjectionError(msg)
-            if self._convert is not None:
-                if scan.native:
-                    raise NativeValidationError(tuple(scan.native))
-                try:
-                    value = typing.cast("T", self._convert(_thawed(wire)))
-                except self._invalid as error:
-                    raise NativeValidationError((_msgspec_issue(str(error), wire),)) from None
-                return ModelValue(
-                    value=value,
-                    binding_id=binding_id,
-                    wire=wire,
-                    presence=presence,
-                    extras=MappingProxyType(scan.extras) if scan.extras else EMPTY,
-                )
+            if scan.native:
+                raise NativeValidationError(tuple(scan.native))
+            try:
+                value = typing.cast("T", self._convert(_thawed(wire)))
+            except self._invalid as error:
+                raise NativeValidationError((_msgspec_issue(str(error), wire),)) from None
+            return ModelValue(
+                value=value,
+                binding_id=binding_id,
+                wire=wire,
+                presence=presence,
+                extras=MappingProxyType(scan.extras) if scan.extras else EMPTY,
+            )
         state = Walk(budget, construct=True)
         value = typing.cast("T", self._decode(wire, self._plan, None, state))
         if state.native:

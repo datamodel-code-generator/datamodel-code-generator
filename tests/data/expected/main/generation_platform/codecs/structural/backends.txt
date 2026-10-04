@@ -20,7 +20,8 @@ created-value-encode [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.
 created-bad-price [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict]: NativeValidationError native.decimal_parsing@/price['price']
 created-bad-price [msgspec.Struct]: NativeValidationError native.validation_error@/price['price']
 created-bad-kind [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: WireValidationError schema.enum@/kind
-create-readonly [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new"} extras={}
+create-readonly [pydantic_v2.BaseModel, pydantic_v2.dataclass]: NativeValidationError native.missing@/id['id']
+create-readonly [dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: ModelProjectionError The native use has an unplanned projection gap at /id
 list-echo [pydantic_v2.BaseModel, typing.TypedDict]: wire=[{"id":1,"name":"A","status":"new"},{"id":2,"name":"B","status":"new","tag":"t"}]
 list-echo [pydantic_v2.dataclass, dataclasses.dataclass]: wire=[{"id":1,"name":"A","status":"new","nick-name":null,"co-owner":null,"cost":null,"visits":0},{"id":2,"name":"B","status":"new","tag":"t","nick-name":null,"co-owner":null,"cost":null,"visits":0}]
 list-echo [msgspec.Struct]: wire=[{"id":1,"name":"A","status":"new","visits":0},{"id":2,"name":"B","status":"new","tag":"t","visits":0}]

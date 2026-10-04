@@ -6,7 +6,6 @@ from collections.abc import AsyncIterator, Iterator
 from typing import Literal
 
 from pets import AsyncClient, Client
-from pets.model_codecs import ModelValue
 from pets.errors import ConcurrentReceiveError, DeliveryUnknownError, WebSocketClosedError
 from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions, SessionOptions
 from pets.protocols import (
@@ -42,7 +41,7 @@ def sockets(
         options=RequestOptions(),
         session_options=SessionOptions(max_network_sends=2),
     )
-    assert_type(session, WebSocketSession[ClientMessage | ModelValue[ClientMessage], ServerMessage])
+    assert_type(session, WebSocketSession[ClientMessage, ServerMessage])
     session.send(message)
     received = session.receive()
     assert_type(received, Message[ServerMessage])
@@ -88,7 +87,7 @@ async def async_sockets(
 ) -> None:
     """Connect with one await, then await sends, receives, pings, and closes, and iterate asynchronously."""
     session = await client.protocols.rooms.chat.connect(room=room)
-    assert_type(session, AsyncWebSocketSession[ClientMessage | ModelValue[ClientMessage], ServerMessage])
+    assert_type(session, AsyncWebSocketSession[ClientMessage, ServerMessage])
     await session.send(message)
     assert_type(await session.receive(), Message[ServerMessage])
     assert_type(await session.ping(), PingReceipt)

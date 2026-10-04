@@ -1,11 +1,11 @@
-use /paths/~1animals~1any/put request_body: envelope alias models:FieldAnimalsAnyPutRequest models=[('models:Cat', 'dataclass', 'ignore', False), ('models:Dog', 'dataclass', 'ignore', True)]
-use /paths/~1kin/put request_body: envelope alias models:FieldKinPutRequest models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'ignore', False)]
+use /paths/~1animals~1any/put request_body: native alias models:FieldAnimalsAnyPutRequest models=[('models:Cat', 'dataclass', 'ignore', False), ('models:Dog', 'dataclass', 'ignore', True)]
+use /paths/~1kin/put request_body: native alias models:FieldKinPutRequest models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'ignore', False)]
 use /paths/~1tree/put request_body: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
 use /paths/~1tree/put response_body 200: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
 use /paths/~1mixed/post request_body: native alias models:Mixed models=[('models:Large', 'dataclass', 'ignore', True), ('models:Small', 'dataclass', 'ignore', True)]
 use /paths/~1values/post request_body: native dataclass models:Values models=[('models:Values', 'dataclass', 'ignore', True)]
 use /paths/~1values/post response_body 200: native dataclass models:Values models=[('models:Values', 'dataclass', 'ignore', True)]
-animal-server-dog: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"bark":1} extras={}
+animal-server-dog: ModelProjectionError The native use has an unplanned projection gap at /id
 animal-any-decode-cat: WireValidationError schema.anyOf@
 mixed-server-decode: model Large(size='large') wire={"size":"large"} presence=['', '/size'] extras={}
 kin-client-encode-cat: wire={"meow":true}

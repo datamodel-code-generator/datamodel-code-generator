@@ -9,7 +9,7 @@ from models import Address as _dcg_type_0
 from models import Draft as _dcg_type_1
 
 from ._generated import model_bindings
-from ._runtime.client.codecs import envelope_value, native_value
+from ._runtime.client.codecs import native_value
 from ._runtime.client.multipart import PartPlan, file_part, value_part
 from ._runtime.client.operations import (
     BodyMedia,
@@ -22,7 +22,6 @@ from ._runtime.client.operations import (
     ServerPlan,
     binary_branch,
     empty_branch,
-    envelope_branch,
     form_branch,
     model_branch,
     multipart_branch,
@@ -32,7 +31,6 @@ from ._runtime.client.operations import (
 )
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
-from .model_codecs import DecodedValue
 from .types.documents import (
     ReadDocumentErrorData,
     ReadDocumentHTTPError,
@@ -327,7 +325,7 @@ OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = Ope
             parts_branch(
                 '200',
                 'multipart/form-data',
-                PartsReader[str | int | _dcg_type_0 | DecodedValue[_dcg_type_1] | bytes](
+                PartsReader[str | int | _dcg_type_0 | _dcg_type_1 | bytes](
                     (
                         value_part(
                             'title',
@@ -354,7 +352,7 @@ OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = Ope
                         value_part(
                             'draft',
                             'json',
-                            envelope_value(model_bindings.codec_28, model_bindings.CONTEXT_28),
+                            native_value(model_bindings.codec_28, model_bindings.CONTEXT_28),
                         ),
                         file_part('photo', required=True),
                         file_part('pages', repeated=True),
@@ -834,7 +832,7 @@ OPERATION_20: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]
             wire_branch('200', 'application/json'),
             text_branch('200', 'text/plain'),
             empty_branch('202'),
-            envelope_branch(
+            model_branch(
                 '3XX',
                 'application/json',
                 'json',
@@ -867,7 +865,7 @@ OPERATION_21: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] 
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            envelope_branch(
+            model_branch(
                 '200',
                 'application/vnd.api+json',
                 'json',

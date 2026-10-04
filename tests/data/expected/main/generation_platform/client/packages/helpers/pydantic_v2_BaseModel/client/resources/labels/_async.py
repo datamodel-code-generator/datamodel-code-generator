@@ -11,7 +11,6 @@ from models import FieldLabelsGetQueryItemsParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.labels import ListLabelsResponse
@@ -42,7 +41,7 @@ class AsyncLabelsResource:
     async def list_labels(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        items: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelsResponse:
@@ -65,7 +64,7 @@ class AsyncLabelsWithResponse:
     async def list_labels(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        items: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelsResponse]:
@@ -88,7 +87,7 @@ class AsyncLabelsWithRawResponse:
     async def list_labels(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        items: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -111,7 +110,7 @@ class AsyncLabelsWithStreamingResponse:
     def list_labels(
         self,
         *,
-        items: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        items: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
