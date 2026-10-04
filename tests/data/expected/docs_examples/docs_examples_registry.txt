@@ -31,7 +31,6 @@ python-client.streams.resume: python-client.md
 python-client.streams.resume-diagnostics: python-client.md
 python-client.ndjson.helper: python-client.md
 python-client.ndjson.diagnostics: python-client.md
-python-client.cache.fields: python-client.md
 python-client.cache.keys: python-client.md
 python-client.cache.yaml: python-client.md
 python-client.cache.helper: python-client.md

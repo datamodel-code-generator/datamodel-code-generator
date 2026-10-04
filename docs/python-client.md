@@ -3724,7 +3724,7 @@ Then each request the helper sends is compressed only when it has such a body:
 
 A cache helper's `fetch` sends a bodyless GET, so a coding its call selects raises
 `ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')` before the cache is
-looked up, whether the entry is stored or not; its mutations follow their operation.
+looked up, whether the entry is stored or not.
 
 Queue entries keep their wire body and entry policy, without call options or a content coding. To change a pending
 entry's delivery settings, use client, view, or request options at drain. Inherited codings apply only to queued
