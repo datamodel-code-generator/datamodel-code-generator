@@ -201,7 +201,7 @@ class ClientTarget:
             streams=streams,
             sockets=sockets,
             fingerprints=fingerprints,
-            webhooks=partial(webhook_files, webhooks, dict(codecs.imports), fingerprints),
+            webhooks=partial(webhook_files, webhooks, dict(codecs.imports)),
         )
         validation = config.validation
         return TargetRender(
@@ -417,7 +417,7 @@ class _TargetData:
         })
 
     def cache(self, spec: CacheSpec, settings: JSONValue) -> str:
-        """Return the digest of a cache helper's contract closure: its and its mutations' signatures and operations.
+        """Return the digest of a cache helper's contract closure: its fetch signature and operation.
 
         The fetch's signature carries the settings, and the type use of its cacheable response closes the contract.
         """
@@ -435,12 +435,11 @@ class _TargetData:
                 ],
             }
 
-        operations = (spec.operation, *(mutation.operation for mutation in spec.mutations))
+        operations = (spec.operation,)
         return _digest({
             "kind": "cache",
             "signatures": [
                 {**signature(spec.helper.name, spec.operation), "settings": settings},
-                *(signature(mutation.name, mutation.operation) for mutation in spec.mutations),
             ],
             "operations": [self.request.documents.operation(item.contract.id) for item in operations],
             "schemas": [],
