@@ -30,11 +30,11 @@ render pydantic_v2.dataclass
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 19
+  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 124b9ec5eabb15994ebfc65ee1ddabbbff2a87df94db360255c9f913da981a55
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 23fcacceee627393eddcb01ee5db0667aefe43e036ae5b050e7f36278e594be6
   helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish 8fe2950f21284689cd6f005ea23a886e8c2a72e508f9bbc384af5950f2fab4c0
-  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 7186c0578e3ba5e5009242b1b30b049ab85b52aa1cf7499772d9f9701fde756c
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 5fefd816d6747fc2b80a934a69e81db21f0bd4de6acd5d42faf26d656966714b
   {
     "helpers": {
       "files.finish": {
@@ -160,6 +160,15 @@ render pydantic_v2.dataclass
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha256",
+            "algorithm_prefix": false,
+            "encoding": "hex",
+            "target": {
+              "in": "query",
+              "name": "checksum"
+            }
+          },
           "offset": {
             "in": "query",
             "name": "offset"
@@ -245,6 +254,15 @@ render pydantic_v2.dataclass
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha1",
+            "algorithm_prefix": true,
+            "encoding": "base64",
+            "target": {
+              "in": "header",
+              "name": "Upload-Checksum"
+            }
+          },
           "length": {
             "in": "header",
             "name": "X-Chunk-Length"
@@ -326,10 +344,10 @@ render pydantic_v2.dataclass
   /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
     exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
     exports client.types.files.ProbeFileRequestCodecs client.types.files.decode_probe_file_header
-  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length, header:Upload-Checksum=upload_checksum)
     exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
     exports client.types.files.AppendFileRequestCodecs client.types.files.decode_append_file_header
-  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset, query:checksum=checksum)
     exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
     exports client.types.files.PutFileChunkRequestCodecs None
   /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)
@@ -370,11 +388,11 @@ render dataclasses.dataclass
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 19
+  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 25e9a44a60ce2e292cdbf4aa467e04fd3fc2071272f3558d3acc693351a71dca
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload cd8e4b33454a5380f943d50dbcd69eb681a4b363e9a637cdc107d4235afb61ca
   helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish c57d41ee45abfe749d2458b5cad5751095bcd5ca2f1ce0e70b77a67c937804d1
-  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 645d2ec104a2da5651c2905174857fb1b45059550ef8c32a220f5747ebd2d1b1
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put b97547850a9e9605008be845b6e2bdfbd00bff16e3386f7ba956d226b95f8266
   {
     "helpers": {
       "files.finish": {
@@ -500,6 +518,15 @@ render dataclasses.dataclass
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha256",
+            "algorithm_prefix": false,
+            "encoding": "hex",
+            "target": {
+              "in": "query",
+              "name": "checksum"
+            }
+          },
           "offset": {
             "in": "query",
             "name": "offset"
@@ -585,6 +612,15 @@ render dataclasses.dataclass
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha1",
+            "algorithm_prefix": true,
+            "encoding": "base64",
+            "target": {
+              "in": "header",
+              "name": "Upload-Checksum"
+            }
+          },
           "length": {
             "in": "header",
             "name": "X-Chunk-Length"
@@ -666,10 +702,10 @@ render dataclasses.dataclass
   /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
     exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
     exports client.types.files.ProbeFileRequestCodecs client.types.files.decode_probe_file_header
-  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length, header:Upload-Checksum=upload_checksum)
     exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
     exports client.types.files.AppendFileRequestCodecs client.types.files.decode_append_file_header
-  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset, query:checksum=checksum)
     exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
     exports client.types.files.PutFileChunkRequestCodecs None
   /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)
@@ -710,11 +746,11 @@ render typing.TypedDict
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 19
+  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 2cc3fbd8b11688c42cb5dea21062e284d9f40cfc7562793712501e41443d359d
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 183a22276ce7015addbe9ea18b61a1d40040bf7803f9b09e64af08713731dc88
   helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish f58857c5557b797ff352ae56dc9f8a805af6896096e4dd53a8236e94b8c4b4ae
-  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 3601e387536cf9d36061f67540ead013c108d1cc8d2f5890c1501316f9e16caf
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put c61bedfb798e6c93224793f7ac970e60123f8682e98b4e3e2391decf6234e5cb
   {
     "helpers": {
       "files.finish": {
@@ -840,6 +876,15 @@ render typing.TypedDict
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha256",
+            "algorithm_prefix": false,
+            "encoding": "hex",
+            "target": {
+              "in": "query",
+              "name": "checksum"
+            }
+          },
           "offset": {
             "in": "query",
             "name": "offset"
@@ -925,6 +970,15 @@ render typing.TypedDict
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha1",
+            "algorithm_prefix": true,
+            "encoding": "base64",
+            "target": {
+              "in": "header",
+              "name": "Upload-Checksum"
+            }
+          },
           "length": {
             "in": "header",
             "name": "X-Chunk-Length"
@@ -1006,10 +1060,10 @@ render typing.TypedDict
   /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
     exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
     exports client.types.files.ProbeFileRequestCodecs client.types.files.decode_probe_file_header
-  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length, header:Upload-Checksum=upload_checksum)
     exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
     exports client.types.files.AppendFileRequestCodecs client.types.files.decode_append_file_header
-  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset, query:checksum=checksum)
     exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
     exports client.types.files.PutFileChunkRequestCodecs None
   /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)
@@ -1050,11 +1104,11 @@ render msgspec.Struct
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 19
+  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload c96e972b1d1cff57cfba7fe32a4570bd1cc9775d6a18968214fe76d11e9a89bc
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 5287198f2e3637df6c120f04e5da02d581049747643949eb647987a80a39e476
   helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish 072939a245e04c99c8171655b1c0ef58ab1788941271cd7d2041a585c7659536
-  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 586a7c05d10271526adc830b78a0a597520422a48db551c2efe553173683eca1
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 82bafd82614b00c4520bfd37ec6372c80190dfa239e4376a15d7b3aa1cf8f6ea
   {
     "helpers": {
       "files.finish": {
@@ -1180,6 +1234,15 @@ render msgspec.Struct
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha256",
+            "algorithm_prefix": false,
+            "encoding": "hex",
+            "target": {
+              "in": "query",
+              "name": "checksum"
+            }
+          },
           "offset": {
             "in": "query",
             "name": "offset"
@@ -1265,6 +1328,15 @@ render msgspec.Struct
               }
             }
           ],
+          "checksum": {
+            "algorithm": "sha1",
+            "algorithm_prefix": true,
+            "encoding": "base64",
+            "target": {
+              "in": "header",
+              "name": "Upload-Checksum"
+            }
+          },
           "length": {
             "in": "header",
             "name": "X-Chunk-Length"
@@ -1346,10 +1418,10 @@ render msgspec.Struct
   /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
     exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
     exports client.types.files.ProbeFileRequestCodecs client.types.files.decode_probe_file_header
-  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length, header:Upload-Checksum=upload_checksum)
     exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
     exports client.types.files.AppendFileRequestCodecs client.types.files.decode_append_file_header
-  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset, query:checksum=checksum)
     exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
     exports client.types.files.PutFileChunkRequestCodecs None
   /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)

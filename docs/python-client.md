@@ -182,49 +182,38 @@ raise `ValueError`.
 
 ### Upload records and sources
 
-`UploadIdentity(*, size: int, sha256: bytes)` names upload content, or one checked range of it: a nonnegative size and
-a 32-byte SHA-256 digest, which the representation leaves out. `PartReceipt(*, index: int, receipt: str)` is a part
-a server confirmed, from index 1. `UploadProgress(*, confirmed_bytes: int, total_bytes: int, confirmed_parts:
-tuple[PartReceipt, ...] = (), complete: bool = False)` is how far an upload is; the confirmed bytes never exceed the
-total. `UploadSource` and `AsyncUploadSource` are the protocols a source implements, and `RangeReader` and
-`AsyncRangeReader` those of the readers it opens; see [upload helpers](#upload-helpers). The builtin sources and the
-handles are loaded only when first requested.
+`UploadProgress(*, confirmed_bytes: int, total_bytes: int, complete: bool = False)` is how far an upload is; the
+confirmed bytes never exceed the total. `UploadSource` is `bytes | bytearray | memoryview | BinaryIO`, the content an
+upload reads; see [upload helpers](#upload-helpers). The handles are loaded only when first requested.
 
 ### Resume state
 
-`ResumeState(*, helper_fingerprint: str, security_fingerprint: str, state: WireValue, payload: bytes = b'',
-expires_at: datetime | None = None)` is opaque. The fingerprints must be strings without lone surrogates, and
-`expires_at` must be timezone-aware. The representation is `ResumeState(version=1)`, each instance equals only
-itself, and nothing is written to disk automatically. `copy.copy` and `copy.deepcopy` return the same instance,
-which cannot change, and `pickle.dumps` raises `TypeError`. The same applies to `Continuation`.
+`ResumeState(*, helper: str, state: WireValue)` is a small, opaque token: the identity of the helper it belongs to and
+the state that helper continues from, such as a cursor, a next URL, an operation's poll values, or a Last-Event-ID. The
+helper's identity must be a string without lone surrogates. The representation is `ResumeState(version=1)`, each
+instance equals only itself, and nothing is written to disk automatically: the caller saves the token where it likes.
+`copy.copy` and `copy.deepcopy` return the same instance, which cannot change, and `pickle.dumps` raises `TypeError`.
+The same applies to `Continuation`. A token carries no credential, page, digest, or security binding; a resumed call
+authenticates with the resuming client's own auth.
 
-`state.export()` returns canonical JSON with the members `expires_at`, `helper_fingerprint`, `payload`,
-`security_fingerprint`, `sha256`, `state`, and `version`. `expires_at` is `null` or the expiry's
-`datetime.isoformat()`, `payload` is standard base64 with padding, and `version` is `1`. `sha256` is the lowercase
-hexadecimal SHA-256 of the canonical JSON of the other six members. It detects corruption only; it is not a
-signature. An envelope larger than 16 MiB raises `ResumeStateTooLargeError` from `export()`, because
-`import_state` would refuse it.
-
+`state.export()` returns canonical JSON with the members `helper`, `state`, and `version`, which is `1`.
 `import_state(data)` validates the bytes and rejects them in this order:
 
 | Rejected input | Exception |
 |---|---|
-| More than 16 MiB | `ResumeStateTooLargeError(limit=16777216, observed_bytes=...)` |
 | Not bytes, or not a JSON object | `ResumeStateError(condition='malformed')` |
 | An integer version other than 1, whatever the other members | `ResumeStateError(condition='version')` |
-| Unknown, missing, or mistyped members, an expiry or payload that `export()` would spell differently, or a state nested too deeply | `ResumeStateError(condition='malformed')` |
-| A checksum that does not match | `ResumeStateError(condition='checksum')` |
-| An expiry that has passed | `ResumeStateError(condition='expired')` |
+| Unknown, missing, or mistyped members, or a state nested too deeply | `ResumeStateError(condition='malformed')` |
 
 ```python
 from pkg.protocols import ResumeState, import_state
 
-state = ResumeState(helper_fingerprint="helper", security_fingerprint="tenant", state={"cursor": "c2"})
+state = ResumeState(helper="helper", state={"cursor": "c2"})
 restored = import_state(state.export())
 ```
 
-Errors never include fingerprints, state, or payload bytes. `import_state` does not compare fingerprints; the
-helper that resumes the state compares them with its own before sending anything.
+Errors never include the helper's identity or the state. `import_state` does not compare the helper; the helper that
+resumes the token compares it with its own, and checks the state, before sending anything.
 
 ### Helper options
 
@@ -250,7 +239,6 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
 | `UploadOptions` | `chunk_bytes` | `8388608`, at most the helper's `max_chunk_bytes` | Positive integer |
 | | `max_parts` | `10000` | Positive integer or `None` |
-| | `parallelism` | `4` | Positive integer |
 | | `max_uncertain_probes` | `3` | Nonnegative integer |
 | `CacheOptions` | `max_entry_bytes` | `2097152` | Positive integer: the largest body a fetch stores |
 | | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
@@ -321,8 +309,7 @@ Invalid field values raise `ValueError`.
 | `ProtocolStateError` | `ProtocolError` | `state: str`, `action: str` |
 | `SessionLimitError` | `ProtocolError` | `kind: Literal['network_sends', 'pages', 'items', 'polls', 'reconnects', 'parts']`, `limit: int`, `progress: ProtocolProgress`, `resume_state: ResumeState \| None = None` |
 | `StreamResumeExhaustedError` | `SessionLimitError` | The same fields; `kind` is `reconnects` or `network_sends` |
-| `ResumeStateError` | `ProtocolError` | `condition: Literal['version', 'fingerprint', 'security', 'expired', 'malformed', 'checksum', 'size']` |
-| `ResumeStateTooLargeError` | `ResumeStateError` | `limit: int`, `observed_bytes: int`; `condition` is always `size` |
+| `ResumeStateError` | `ProtocolError` | `condition: Literal['version', 'fingerprint', 'expired', 'malformed']` |
 | `PaginationCycleError` | `ProtocolDataError` | `page_index: int`, `first_seen_page_index: int`, `resume_state: ResumeState \| None = None`; `condition` is always `inconsistent` |
 | `PollingStateError` | `ProtocolDataError` | `condition: Literal['type', 'value'] = 'value'` |
 | `PollWaitLimitError` | `ProtocolError` | `kind: Literal['wait', 'deadline']`, `required_wait: float`, `limit: float`, `resume_state: ResumeState \| None = None` |
@@ -346,7 +333,7 @@ Invalid field values raise `ValueError`.
 | `CircuitOpenError` | `ProtocolError` | `key: CircuitKey`, `retry_at: float`, the nonnegative monotonic time of the circuit's next admission |
 | `NonResumableSourceError` | `ProtocolConfigurationError` | `source_kind: Literal['iterable', 'iterator', 'stream', 'reader']`; `field_path` is always `('source',)` and `condition` `wrong_capability` |
 | `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` |
-| `UploadSourceChangedError` | `ProtocolDataError` | `expected: UploadIdentity`, `actual: UploadIdentity \| None`, `offset: int \| None = None`; `condition` is always `inconsistent` |
+| `UploadSourceChangedError` | `ProtocolDataError` | `expected_size: int`, the upload's size, and `actual_size: int`, the size the source has now; `condition` is always `inconsistent` |
 | `UploadOffsetError` | `ProtocolDataError` | `confirmed_offset: int`, `expected_offset: int`, `remote_offset: int`, `size: int`, `resume_state: ResumeState \| None = None`; `condition` is always `inconsistent` |
 | `UploadExpiredError` | `ResumeStateError` | `expires_at: datetime`, timezone-aware; `condition` is always `expired` |
 | `QueueStoreError` | `ProtocolStoreError` | `action`, `entry_id: str \| None = None` |
@@ -523,7 +510,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `compression` (`false`) |
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
 | `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`), `tags` (`[]`), `mutations` (`{}`); see [cache helpers](#cache-helpers) |
-| `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, bindings?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
+| `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, checksum?, bindings?}`, a `checksum` being `{target, algorithm, encoding?, algorithm_prefix?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
 | `queue` | `operations`, a nonempty mapping of aliases to `{operation, side_effects}` (see [queue helpers](#queue-helpers)) | Per operation, `key_binding` and `dedupe_ttl`, given together and required with side effects |
 
 A pagination `continuation` is one of these:
@@ -582,8 +569,8 @@ or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"deliv
 `AdapterSignature(timestamp=..., delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()`
 declares an unsigned webhook. An event mapping is an `EventMapping` with an `EventDiscriminator(from_="body",
 pointer=...)`, a cache mutation a `CacheMutation(operation=..., invalidate_tags=(...))`, and an upload takes
-`UploadCreate`, `UploadProbe`, `UploadAppend`, `LengthCompletion()` or `OperationCompletion`, and `UploadAbort`
-records. A queue is a `QueueHelper` whose `operations` map aliases to `QueuedOperation(operation=..., side_effects=...,
+`UploadCreate`, `UploadProbe`, `UploadAppend` with an optional `UploadChecksum`, `LengthCompletion()` or
+`OperationCompletion`, and `UploadAbort` records. A queue is a `QueueHelper` whose `operations` map aliases to `QueuedOperation(operation=..., side_effects=...,
 key_binding=..., dedupe_ttl=...)`. They are validated as the file is, with the same diagnostics, when the client configuration is constructed.
 The later kinds have no records yet.
 
@@ -852,8 +839,8 @@ with Client() as client:
 |---|---|
 | The wire values of the call's parameters, as its first request encoded and checked them | The call's `options`, headers, query patches, and cookies, and anything its auth adds |
 | The JSON body, when the next request sends it, with its declared media type and any selector's concrete type | The body of a next-URL or Link helper that does not repeat it, once its first page is fetched |
-| The last page's index, the items fetched so far, its continuation and binding values, and the digests of the continuations its pages returned | The session, its deadline, and its send counters |
-| The last page's body, status, and media type while items of it are left | Model objects, which are decoded again from the body |
+| Where the pager continues: the index, item count, continuation, and binding values of the last page, or of the page before it while the last page has items left | The session, its deadline, and its send counters |
+| How many items of the page it fetches next were already delivered | Pages, their bodies, the cycle history, and model objects |
 
 A call that gives a cookie parameter, a header the client treats as a credential, a parameter at the position of a
 declared security scheme, or a querystring with a field at such a position cannot be checkpointed: `checkpoint()` raises
@@ -862,14 +849,16 @@ keep `resume_state=None`. Otherwise
 `SessionLimitError` and `PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state`, with the
 item a limit refused still to come.
 
-A resumed pager first delivers the items left of the saved page, decoded again under the call's response validation,
-and then continues with the saved continuation, bindings, and request, whose arguments and body are built from their
-wire values as their codecs build a caller's, so the call's request validation applies to them again. A literal binding
-sends the plan's value, never a saved one; with items left it iterates items only, so
+A resumed pager continues with the saved continuation, bindings, and request, whose arguments and body are built from
+their wire values as their codecs build a caller's, so the call's request validation applies to them again. A pager
+checkpointed in the middle of a page fetches that page again and skips the items it delivered of it, which count as
+delivered; when the server's data changed in between, it skips the same number of items of the page it gets now. A
+literal binding sends the plan's value, never a saved one; a pager that skips items iterates items only, so
 `iter_pages()` raises `ProtocolStateError`. Its pages continue with `next_page` as any other. Pages and items count on
 from the checkpoint against the resumed call's limits, so a limit that stopped the pager stops it again unless it is
-raised, while the session's timeout, deadline, and sends start afresh. The cycle history carries over, so a resumed cycle
-raises `PaginationCycleError` again without sending.
+raised, while the session's timeout, deadline, and sends start afresh. Cycles are detected within a live pager only: a
+resumed pager starts its history with the saved continuation, so a resumed cycle raises `PaginationCycleError` again
+after one fetch.
 
 `resume` checks the state before returning, without sending:
 
@@ -877,15 +866,12 @@ raises `PaginationCycleError` again without sending.
 |---|---|
 | Not a `ResumeState` | `ProtocolConfigurationError(field_path=("state",), condition="invalid_value")` |
 | Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
-| Made under another credential partition, allowed origins, server origin, or declared security schemes, kinds, and scopes, or under another auth: the schemes it gives credentials for, an OAuth grant's audience or requested scopes, `allowed_origins`, `selection`, `send_on_anonymous`, `anonymous_schemes`, or the origins, headers, query fields, and body digest the signers declare. The classes of providers and signers are no part of it, so a synchronous client's checkpoint resumes in an asyncio client with the same settings | `ResumeStateError(condition="security")` |
-| An expiry that has passed | `ResumeStateError(condition="expired")` |
-| A state, saved argument, body, or page that does not fit the helper: a value its codec refuses, a media type the operation's select method refuses, path arguments that make their segment a dot segment once encoded, a value for a parameter that is never saved, an offset or page number other than the one the saved pages reach from the first request's start, or a saved value that cannot be encoded into the first or next request, such as one with CR, LF, or NUL in a header. A refusal of the resumed call's own options is raised as the call raises it | `ResumeStateError(condition="malformed")` |
-| A cursor over the resumed call's `max_cursor_bytes`, a URL a server could not have given, a server value that would make a path segment a dot segment once encoded, or a saved page over the resumed call's `max_page_bytes` | `ProtocolSizeError` or `ProtocolDataError`, as for a page |
+| A state, saved argument, or body that does not fit the helper: a value its codec refuses, a media type the operation's select method refuses, path arguments that make their segment a dot segment once encoded, a value for a parameter that is never saved, an offset or page number other than the one the saved pages reach from the first request's start, items to skip after the last page, or a saved value that cannot be encoded into the first or next request, such as one with CR, LF, or NUL in a header. A refusal of the resumed call's own options is raised as the call raises it | `ResumeStateError(condition="malformed")` |
+| A cursor over the resumed call's `max_cursor_bytes`, a URL a server could not have given or at an origin the resuming client does not allow, or a server value that would make a path segment a dot segment once encoded | `ProtocolSizeError` or `ProtocolDataError`, as for a page |
 
-`ResumeState.export()` of a helper's checkpoint requires `ProtocolSecurityContext.credential_partition` when the
-operation declares security or the call configures auth, and raises `ProtocolConfigurationError` with
-`condition="security_partition"` otherwise; such a state still resumes in the same process. The saved body is not
-encrypted, so store exported states as the call's own data.
+A token carries no credential and is bound to no credential partition or auth: a resumed pager sends its requests with
+the resuming client's own auth, only to that client's origins, and the server authorizes the saved cursor as it would
+any caller's. The saved arguments are not encrypted, so store exported tokens as the call's own data.
 
 ### Generation checks
 
@@ -1093,15 +1079,21 @@ sending, as it does for options of another type.
 ### Checkpoints and resume of operations
 
 `handle.checkpoint()` returns a `ResumeState` without sending, on `LroHandle` and `AsyncLroHandle` alike, also after
-`close`. While another thread or task runs `status` or `wait`, it saves the handle as the last poll or fetch that
-settled left it, never waiting for a step and never refusing; a poll in flight is not saved, so a resumed handle polls
-again. The helper's `resume(state, *, poll_options=None, options=None, session_options=None)` is not awaited, even on
-`AsyncClient`, and returns the handle type `start` returns, in a session of its own, without sending: it never creates
-the operation again, and `status` or `wait` sends its first poll.
+`close`. While another thread or task runs `status` or `wait`, it saves the handle as the last poll that settled left
+it, never waiting for a step. A settled operation, one that failed, was cancelled, or holds its result, including
+one that completed at once, has nothing left to continue: its `checkpoint()` raises `ProtocolStateError` with the
+phase as `state`. The helper's `resume(state, *, poll_options=None, options=None, session_options=None)` is not
+awaited, even on `AsyncClient`, and returns the handle type `start` returns, in a session of its own, without sending:
+it never creates the operation again. A pending handle's `status` or `wait` sends its first poll at once; a handle
+whose result fetch is due fetches it once in `wait`, and its `status` raises `ProtocolStateError`, since it holds no
+poll. A checkpoint does not keep a server's delay,
+so a caller resuming after `PollWaitLimitError` waits out its `required_wait` itself before polling.
 
 ```python
+import time
+
 from pkg.errors import PollWaitLimitError
-from pkg.protocols import PollOptions, import_state
+from pkg.protocols import import_state
 
 with Client() as client:
     helper = client.protocols.jobs.run
@@ -1112,24 +1104,20 @@ with Client() as client:
         helper.start(body=job).wait()
     except PollWaitLimitError as error:
         if error.resume_state is not None:
-            later = helper.resume(error.resume_state, poll_options=PollOptions(max_wait=None))
+            time.sleep(error.required_wait)
+            later = helper.resume(error.resume_state)
 ```
 
 | Saved | Never saved |
 |---|---|
-| The phase: pending, succeeded, failed, or cancelled | The create request, its body, and its idempotency key, since resume never sends it |
-| The polls so far, and the wait left before the next poll or result fetch, in milliseconds rounded up and at most 2^53 - 1, which a longer server delay saves | The session, its deadline, and its send counters |
-| The values the next poll, the result fetch, and a remote cancel write, read from the responses so far | The call's `options`, and anything its auth adds |
-| A settled operation's final poll and its state value, and the create response of an immediate result or the fetched result, as body, status, and media type | Model objects, which are decoded again, and any other response metadata |
-| The server's expiry an `expires_at` helper read, as the state's expiry | |
+| Whether the operation is pending or its result fetch is due | The create request, its body, and its idempotency key, since resume never sends it |
+| While pending, the values the next poll and a remote cancel write, read from the create response or the last pending poll, and those the create response gave the result fetch's `initial` bindings; while the fetch is due, the values it writes | Polls, results, their bodies, and model objects |
+| The server's expiry an `expires_at` helper read | The session, its deadline, its send counters, the call's `options`, and anything its auth adds |
 
-A resumed pending handle waits out the saved wait, then polls with the saved values; a resumed handle whose result
-fetch is due fetches it once. A settled one sends nothing: `wait` returns the result decoded again from its saved body
-under the call's response validation, or raises `OperationFailedError` or `OperationCancelledError` again, and
-`status` returns the final poll, whose `response` holds only the saved status and `Content-Type` and an empty
-`call_id`. Polls count on from the checkpoint against the resumed call's `max_polls`, so a poll limit that stopped the
-handle stops it again unless it is raised, while the session's timeout, deadline, and sends start afresh. A literal
-binding sends the plan's value, never a saved one.
+A resumed pending handle polls with the saved values, and one whose fetch is due fetches the result with them. Polls
+count afresh against the resumed call's
+`max_polls`, and the session's timeout, deadline, and sends start afresh. A literal binding sends the plan's value,
+never a saved one.
 
 `resume` checks the resumed call's options as `start` does, then the state, before returning:
 
@@ -1137,17 +1125,14 @@ binding sends the plan's value, never a saved one.
 |---|---|
 | Not a `ResumeState` | `ProtocolConfigurationError(field_path=("state",), condition="invalid_value")` |
 | Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
-| Made under another credential partition, allowed origins, or auth, or with other server origins or declared security of the poll, result fetch, or remote cancel operation, as for [pagers](#checkpoints-and-resume) | `ResumeStateError(condition="security")` |
+| A state that does not fit the helper: an unknown or missing member, an unknown phase, a due fetch of a helper without one, values of another count than the bindings, an expiry `datetime.isoformat()` would spell differently, or a saved value that cannot be encoded into the next poll, result fetch, or remote cancel, such as one with CR, LF, or NUL in a header | `ResumeStateError(condition="malformed")` |
 | An expiry that has passed | `ResumeStateError(condition="expired")` |
-| A state or saved body that does not fit the helper: an unknown phase or member, a wait over 2^53 - 1 milliseconds, a saved state value of another phase or none the helper declares, a body that does not decode or does not carry the result, an immediate result of a status the helper does not declare, or a saved value that cannot be encoded into the next poll, result fetch, or remote cancel, such as one with CR, LF, or NUL in a header | `ResumeStateError(condition="malformed")` |
-| A saved body over the resumed call's `max_response_bytes` of its operation | `ProtocolSizeError(kind="body")`, as receiving it would |
 | A dot segment (`.` or `..`) a saved value would write to a path parameter | `ProtocolDataError`, as for a server's value |
 
-A pending checkpoint saves the result fetch's `initial` values before the final poll gives its others: `resume` encodes
-each one written to a parameter as the fetch encodes it, while one written into the fetch's querystring or body is
-checked only when the fetch request is built, which refuses a value it cannot send before sending. `ResumeState.export()` requires `ProtocolSecurityContext.credential_partition`
-when one of these operations declares security or the call configures auth, as for pagers; the saved bodies are not
-encrypted, so store exported states as the call's own data.
+A checkpoint saves the result fetch's `initial` values before the final poll gives its others: `resume` encodes each
+one written to a parameter as the fetch encodes it, while one written into the fetch's querystring or body is checked
+only when the fetch request is built, which refuses a value it cannot send before sending. As for pagers, a token holds
+no credential and binds to no auth; store exported tokens as the call's own data.
 
 ### Remote cancellation and expiry
 
@@ -1192,7 +1177,7 @@ annotate a handle as `LroHandle[T, P]` or `AsyncLroHandle[T, P]`, which they sub
 string giving an RFC 3339 date-time with an offset or an HTTP date, where a leap second is the second after the one
 before it. A missing, null, non-string, or unparsable value fails `start` with `ProtocolDataError` after the create
 response, as a missing binding value does; the remote operation was created all the same, and nothing cancels it. The expiry, in UTC,
-becomes the expiry of every checkpoint of the handle, so `import_state` and `resume` refuse them afterwards with
+becomes the expiry of every checkpoint of the handle, so `resume` refuses them afterwards with
 `ResumeStateError(condition="expired")`; it does not stop a live handle from polling. Without `expires_at`, checkpoints
 never expire, and no expiry is assumed. An immediate result has none.
 
@@ -1327,7 +1312,7 @@ keywords, never field arguments, without the parameter the helper writes the con
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
-        """Read the source, create the upload of POST /files, and return its handle."""
+        """Measure the source, create the upload of POST /files, and return its handle."""
         return start_upload(
             self._core,
             _plans.PLAN_0,
@@ -1347,7 +1332,7 @@ keywords, never field arguments, without the parameter the helper writes the con
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
-        """Check the source against a checkpoint and continue from the offset the server holds."""
+        """Check a checkpoint and the source size, then continue from the server offset."""
         return resume_upload(
             self._core,
             _plans.PLAN_0,
@@ -1363,11 +1348,9 @@ keywords, never field arguments, without the parameter the helper writes the con
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.uploads.helper -->
 
 ```python
-from pkg.protocols import FileUploadSource
-
-with Client() as client:
+with Client() as client, open("video.mp4", "rb") as video:
     upload = client.protocols.files.upload
-    handle = upload.start(FileUploadSource.from_path("video.mp4"), tus_resumable=version)
+    handle = upload.start(video, tus_resumable=version)
     progress = handle.advance()
     state = handle.checkpoint()
     handle.run()
@@ -1378,54 +1361,41 @@ upload completed by length and the completion operation's response type otherwis
 completes the upload once the server holds every byte, and returns an `UploadProgress`; `run()` appends every
 remaining chunk, completes the upload, and returns its result. Both are coroutines on `AsyncUploadHandle`. Once
 complete, `advance` returns the progress and `run` the kept result without sending. `checkpoint()` returns a
-`ResumeState` at any time, even while another thread or task steps the handle, and sends nothing.
+`ResumeState` at any time before the upload completes, even while another thread or task steps the handle, and sends
+nothing; a complete upload has nothing to resume, so its `checkpoint()` raises `ProtocolStateError` with
+`state='complete'`.
 
 ### Sources
 
-A source has an immutable `identity`, an `UploadIdentity(size, sha256)` of its whole content, a
-`max_parallel_ranges` of at least 1, and `open_range(offset, length)`, which returns a context manager, an async one
-for `AsyncUploadSource`, opening a reader of that range. A reader's `read(max_bytes)` returns 0 to `max_bytes` bytes,
-`b''` being its permanent end, and `close()` or `aclose()` releases it; each reader has its own position. The builtin
-sources open independent readers and allow 4 ranges at once:
+A source is `bytes`, a `bytearray`, a `memoryview`, or a seekable binary file, such as one `open(path, "rb")` returns
+or an `io.BytesIO`; `UploadSource` names that union. `Client` and `AsyncClient` take the same sources. A file's content
+runs from its position when `start` or `resume` is called to its end, and the call measures its size by seeking to
+the end, without reading it. A file that cannot seek, an iterable, an iterator, or an asyncio stream raises
+`NonResumableSourceError` with its `source_kind` before anything is sent; send it as an ordinary upload. A file whose
+`read`, `seek`, or `tell` gives anything but bytes and integers, such as a text file or an asyncio file, raises
+`ProtocolConfigurationError` with `condition='wrong_capability'`. Sources are borrowed and never closed by the client,
+and nothing is ever spooled to disk.
 
-| Source | Content |
-|---|---|
-| `BytesUploadSource.from_bytes(data)` | A copy of bytes, a bytearray, or a memoryview |
-| `FileUploadSource.from_path(path)` | A file, hashed once in 64 KiB reads; each range opens its own descriptor |
-| `AsyncBytesUploadSource.from_bytes(data)` | A copy of bytes, read by native asyncio readers |
-| `await AsyncFileUploadSource.from_path(path)` | A file, hashed once in one 64 KiB read per worker job, so a cancellation stops between reads; one worker thread of its own opens, reads, and closes it, and `aclose()` or leaving `async with` stops it once its readers close and waits for the work interrupted callers left |
-
-A path must name a regular file: a FIFO, a device, or a directory raises `NonResumableSourceError` with
-`source_kind='stream'` before it is opened. A path source hashes at most the size the file had when it was opened and
-records the file's device, inode, size, and modification time, and each range it opens later raises
-`UploadSourceChangedError` when any of them changed. It is not a snapshot: keep the file unchanged while it is uploaded.
-Sources a call is given are borrowed and never closed by the client; every reader the client opens is closed. A one-shot
-input has no identity to resume from: bytes, an iterable, an iterator, an asyncio stream, or a reader raise
-`NonResumableSourceError` with its `source_kind` before anything is read; send it as an ordinary upload. Nothing is ever
-spooled to disk.
-
-Before anything is sent, `start` and `resume` read the whole source once through one reader and record the SHA-256 of
-each chunk; content that does not match the identity, by its length or its digest, raises `UploadSourceChangedError`.
-Each append reads its chunk again into a buffer of its own, one byte longer than the chunk, hashing it as it reads, and
-sends it only when its length and digest match what the scan recorded; otherwise it raises `UploadSourceChangedError`
-with the chunk's offset, and the handle sends nothing more: every later step raises `ProtocolStateError` with
-`state='source_changed'`, though `checkpoint()` still works. The body is sent from that buffer in 64 KiB slices, so an
-upload holds one chunk at a time besides fixed read buffers. A reader returning more bytes than it was asked for, or
-anything but bytes, raises `ProtocolConfigurationError` with `condition='wrong_capability'`.
+Each append seeks to the confirmed offset and reads the rest of its chunk into one buffer, synchronously on both
+clients; the last chunk is read with one byte more. Content shorter or longer than the size measured at `start` raises
+`UploadSourceChangedError` with both sizes, and the handle sends nothing more: every later step raises
+`ProtocolStateError` with `state='source_changed'`, though `checkpoint()` still works. The content is not hashed, so a
+change that keeps its size is not found: keep it unchanged while it is uploaded. The body is sent from that buffer in
+64 KiB slices, so an upload holds one chunk at a time besides fixed read buffers.
 
 ### Chunks, offsets, and recovery
 
 A chunk is `UploadOptions.chunk_bytes`, 8 MiB by default, or the helper's smaller `max_chunk_bytes`. An upload of more
-chunks than `UploadOptions.max_parts`, 10000 by default, raises `ProtocolConfigurationError` before anything is read,
-and so does a digest list whose base64 would exceed 15 MiB, with `ProtocolSizeError(kind='part_manifest')`; the
-remaining 1 MiB of a checkpoint's 16 MiB is left for its state, fingerprints, and a completion's response, and a larger
-response can still make `export()` raise `ResumeStateTooLargeError`. The offset profile sends one chunk at a time,
-whatever `parallelism` says.
+chunks than `UploadOptions.max_parts`, 10000 by default, raises `ProtocolConfigurationError` before anything is sent.
+The offset profile sends one chunk at a time.
 
 `start` sends the create request once, resent only as shared retries allow, with the content's size in the declared
 `size` parameter, and reads every binding's `initial` value and the server's expiry from its response. The upload
-starts at offset 0. Each append writes the confirmed offset into `offset`, and the chunk's length into `length` when
-declared, and sends the rest of the chunk as the body; a success response confirms the chunk. An append is never sent
+starts at offset 0. Each append writes the confirmed offset into `offset`, the length of the bytes it sends into
+`length` when declared, and their checksum into `checksum.target` when declared, and sends the rest of the chunk as the
+body; a success response confirms the chunk. A checksum is the `md5`, `sha1`, `sha256`, or `sha512` digest of those
+bytes, computed from the chunk's buffer as each append is built, in `base64` (the default) or `hex`, after the
+algorithm's name and a space with `algorithm_prefix: true`, as the tus checksum extension spells it. An append is never sent
 again by shared retries once it may have reached the server, even for an operation that is otherwise safe to retry:
 
 | Append outcome | What follows |
@@ -1455,30 +1425,27 @@ stays, and every later step raises `ProtocolStateError` with `state='closed'`. C
 
 ### Checkpoints and resume
 
-`checkpoint()` saves the content's identity, the chunk size and each chunk's digest, the confirmed offset, the values
-the probe, the append, and the completion write, the completion's result once complete, and the server's expiry. It is
-bound to the helper and to the security the call runs under, as pagination checkpoints are, and exports only when the
-call cannot authenticate or the client has a credential partition. Model values are never saved; a saved result is
-decoded again.
+`checkpoint()` saves the content's size, the chunk size, the confirmed offset, the values the probe, the append, and
+the completion write, a completion of unknown outcome, and the server's expiry; it saves no content, digest, or
+result, credential, or security binding: a resumed upload sends with the resuming client's own auth, as pagination
+checkpoints do.
 
 `resume(source, state)` starts a new session and never creates the upload again. It checks the call's options, then the
 checkpoint: not a `ResumeState` raises `ProtocolConfigurationError`; another helper's raises
-`ResumeStateError(condition='fingerprint')`, another security's `ResumeStateError(condition='security')`, one past the
-server's expiry `UploadExpiredError`, and one whose state does not fit the helper
-`ResumeStateError(condition='malformed')`. A checkpoint keeps its chunk size, which must not exceed the call's
+`ResumeStateError(condition='fingerprint')`, one whose state does not fit the helper
+`ResumeStateError(condition='malformed')`, and one past the server's expiry `UploadExpiredError`. A checkpoint keeps its chunk size, which must not exceed the call's
 `UploadOptions.chunk_bytes`, since an append holds one chunk in memory, and its chunk count must not exceed `max_parts`;
 either raises `ProtocolConfigurationError` with the option's `field_path`. Then the saved values each call writes: a
 value that makes a path segment `.` or `..` raises `ProtocolDataError`, as if a server gave it, and one that cannot be
 sent `ResumeStateError(condition='malformed')`. Then the source: a one-shot input raises `NonResumableSourceError`, and
-an identity other than the checkpoint's raises `UploadSourceChangedError`, and the source is read once and compared with
-the saved digests. Then it probes the server's offset once, which must not be below the saved one, and returns the
-handle; nothing is read or sent for a complete checkpoint, and a completion of unknown outcome raises
-`UploadDeliveryUnknownError` again.
+a size other than the checkpoint's raises `UploadSourceChangedError`; the source is not read. A completion of unknown
+outcome raises `UploadDeliveryUnknownError` again without sending. Otherwise it probes the server's offset once, which
+must not be below the saved one, and returns the handle.
 
 A server's expiry is read once from the create response at `create.expires_at`, an RFC 3339 date-time with an offset or
 an HTTP date; a missing, null, or unparsable value raises `ProtocolDataError` from `start`. It bounds only checkpoints
-once it has passed: `import_state` raises `ResumeStateError(condition='expired')`, and `resume` raises
-`UploadExpiredError`, a subclass of it, with the expiry; uploading goes on until the server refuses.
+once it has passed: `resume` raises `UploadExpiredError`, a subclass of `ResumeStateError` with the condition
+`expired`, with the expiry; uploading goes on until the server refuses.
 
 ### Limits and sessions
 
@@ -1491,22 +1458,19 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 |---|---|---|
 | `UploadOptions.chunk_bytes` | 8 MiB, at most the helper's `max_chunk_bytes` | Not allowed |
 | `UploadOptions.max_parts` | 10000 chunks | Removes the limit |
-| `UploadOptions.parallelism` | 4, unused by the offset profile | Not allowed |
 | `UploadOptions.max_uncertain_probes` | 3 probes; 0 probes none | Not allowed |
 | `SessionOptions.total_timeout` | No limit | Removes the limit |
 | `SessionOptions.deadline` | None | No deadline |
 | `SessionOptions.max_network_sends` | 10000 sends | Removes the limit |
 
 By default, an upload session has no total lifetime limit. If a finite `total_timeout` is configured, it runs from
-`start` or `resume` for the whole life of the handle, including reading the source. A long upload stepped slowly may
-then need a larger timeout, `SessionOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new
-session. Both modes check a finite deadline before each source read. A synchronous `opened.read()` cannot be
-interrupted once it blocks; an asynchronous read is bounded by the remaining deadline. A call past a limit raises
-`SessionLimitError` with the kind `network_sends`, the progress so far, and `resume_state`, before sending; a create
-request the session has no slot for raises it without `resume_state`, since nothing was created. The options must not
-fix an idempotency key, from the client, a view, or the call, and must not patch a header or a query parameter the
-helper writes, the size included; `start` and `resume` raise `ProtocolConfigurationError` before reading or sending, as
-they do for options of another type.
+`start` or `resume` for the whole life of the handle. A long upload stepped slowly may then need a larger timeout,
+`SessionOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new session. A call past a limit
+raises `SessionLimitError` with the kind `network_sends`, the progress so far, and `resume_state`, before sending; a
+create request the session has no slot for raises it without `resume_state`, since nothing was created. The options
+must not fix an idempotency key, from the client, a view, or the call, and must not patch a header or a query parameter
+the helper writes, the size included; `start` and `resume` raise `ProtocolConfigurationError` before reading or
+sending, as they do for options of another type.
 
 ### Upload generation checks
 
@@ -1554,6 +1518,9 @@ E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.offset /p
 E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.length /paths/~1files~1{fileId}/patch: The chunk length of 'checks.append_places' writes 'body', where only a path, query, or header parameter takes it
 E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.bindings /paths/~1files~1{fileId}/patch: PATCH /files/{fileId} requires the header parameter 'Upload-Offset', which no binding of 'checks.append_places' writes
 E_CONFIG_VALUE config protocols.helpers['checks.append_types'].append.offset /paths/~1files~1{fileId}/patch: The chunk offset of 'checks.append_types' gives integer values, which the header parameter 'X-Note' of PATCH /files/{fileId} does not accept
+E_CONFIG_CONFLICT config protocols.helpers['checks.checksum_overlap'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_overlap' writes the same target as its chunk offset
+E_CONFIG_VALUE config protocols.helpers['checks.checksum_place'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_place' writes the cookie 'session', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols.helpers['checks.checksum_type'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_type' gives string values, which the header parameter 'X-Count' of PATCH /files/{fileId} does not accept
 E_CONFIG_VALUE config protocols.helpers['checks.append_body'].append.bindings[1].target /paths/~1files~1{fileId}/patch: The append binding 1 of 'checks.append_body' writes the request body, which is the chunk
 E_CONFIG_VALUE config protocols.helpers['checks.completion_media'].completion.operation /paths/~1files~1{fileId}~1finish/post: POST /files/{fileId}/finish must declare exactly one JSON success response for the completion of 'checks.completion_media'
 E_CONFIG_VALUE config protocols.helpers['checks.completion_missing'].completion.result_schema /paths/~1files~1{fileId}~1complete/post: The result schema '/components/schemas/Missing' of 'checks.completion_missing' does not exist in its document
@@ -1772,27 +1739,24 @@ its event.
 
 `checkpoint()` sends nothing and works on an open, ended, failed, or closed stream once a cursor was delivered; before
 that, and while another step runs, it raises `ProtocolStateError`, and on a stream of a helper without resume metadata
-`ProtocolConfigurationError` with the condition `missing_metadata`. It saves the cursor, the number of events dispatched
-and of reconnections, the last valid `retry` time, the bindings' values, and, when the reopen operation is the helper's
-own, the wire values of the caller's first request, never events, responses, the session, the call's options, or what
-its auth adds; the caller's value of an optional parameter the reopen writes, such as its own `Last-Event-ID`, is left
+`ProtocolConfigurationError` with the condition `missing_metadata`. It saves the cursor, the bindings' values, the
+server's expiry, and, when the reopen operation is the helper's own, the wire values of the caller's first request,
+never events, counts, `retry` times, responses, the session, the call's options, or what its auth adds; the caller's value of an optional parameter the reopen writes, such as its own `Last-Event-ID`, is left
 out. A call that gives a cookie, a credential header, or a security scheme's query parameter cannot be checkpointed and
 raises `ProtocolConfigurationError` with the condition `wrong_capability`, and so does a stream whose cursor or binding
 value the reopen sends as such a query field, including a property of an exploded form or deepObject query parameter. A cursor
 the reopen request cannot encode, such as an event ID ending in a space or an object written to a query parameter,
 raises `ProtocolDataError` with the condition `value` and the cursor's selector, or for an event ID the target it is
 written to, as `location`, from `checkpoint()` and from a reconnection, which keeps no `resume_state` and has the
-interruption as its context. The state is bound to the helper's fingerprint and to the security of the reopen operation,
-and exports as pagination and polling checkpoints do.
+interruption as its context. Like pagination and polling tokens, it holds no credential and binds to no auth.
 
 `resume` creates a session of its own and sends the reopen at once: the helper's own operation repeats the caller's
 first request, another one sends only what is written, each binding's value first and then the cursor, whose
 parameter is omitted once the cursor is cleared, so a cleared SSE cursor sends no `Last-Event-ID`. The request then
-returns once its response is a declared success, as `open` does; sequences and reconnections count on from the
-checkpoint, the session's deadline and sends start afresh, and the reopen counts as no reconnection. Before sending it
-refuses a value that is not a `ResumeState` with `ProtocolConfigurationError`, and with `ResumeStateError` another
-helper's state, one made under other security, an expired one, and one that does not fit the helper or whose request
-does not encode. The saved cursor and bindings' values are written into the saved request and validated with it as a
+returns once its response is a declared success, as `open` does; sequences, reconnections, the session's deadline and
+sends start afresh, and the reopen counts as no reconnection. Before sending it refuses a value that is not a
+`ResumeState` with `ProtocolConfigurationError`, and with `ResumeStateError` another helper's state, an expired one,
+and one that does not fit the helper or whose request does not encode. The saved cursor and bindings' values are written into the saved request and validated with it as a
 saved request is, its body whole, so a value that does not fit its target is refused too; a saved dot segment for a
 path parameter raises `ProtocolDataError` as a server's would.
 
@@ -3403,15 +3367,15 @@ cannot change it. Each of the three sources is a function that takes no argument
 
 | Source | Default | Read for |
 |---|---|---|
-| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, idempotency key retention, token expiry, hook event durations, and protocol helper sessions, poll intervals, a polling checkpoint's `wait_ms`, and stream deadlines |
-| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt, an idempotency key's `first_used_at` at call entry, and an access token's `expires_at`; a resumed pager's or polling handle's check of its state's `expires_at`; and a cache fetch's request, response, and age times |
+| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, idempotency key retention, token expiry, hook event durations, and protocol helper sessions, poll intervals, and stream deadlines |
+| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt, an idempotency key's `first_used_at` at call entry, and an access token's `expires_at`; a polling, stream, or upload helper's `resume` check of its state's `expires_at`; and a cache fetch's request, response, and age times |
 | `random` | A secure uniform draw | The fraction in `[0, 1)` of a full-jitter backoff, drawn only when a retry needs one |
 
 A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
 and flows keep their own time through `OAuthProviderOptions(clock=...)`, since one provider can serve several clients.
 A client and the providers it uses must agree on wall time, because an access token's `expires_at` passes between them
 as a UTC datetime. A key from `IdempotencyKey.new()` takes its first use from the system clock; pass `first_used_at`
-yourself for a client with another clock. `import_state` has no client, so it checks an expiry by the system clock.
+yourself for a client with another clock. A helper's `resume` checks a token's expiry by its client's wall clock.
 
 A deadline remembers its clock. `Deadline.after(seconds, clock=clock)` creates it on that clock, the system clock by
 default, and `remaining()` reads that clock, so an adapter, limiter, or provider that receives it measures it

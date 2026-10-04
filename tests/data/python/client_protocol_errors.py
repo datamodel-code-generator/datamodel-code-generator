@@ -28,7 +28,6 @@ _CLASSES: Final = (
     "SessionLimitError",
     "StreamResumeExhaustedError",
     "ResumeStateError",
-    "ResumeStateTooLargeError",
     "PaginationCycleError",
     "PollingStateError",
     "PollWaitLimitError",
@@ -61,7 +60,7 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
         elapsed=0.25,
         content_type="application/json",
     )
-    resume = protocols.ResumeState(helper_fingerprint=secret, security_fingerprint=secret, state={"cursor": secret})
+    resume = protocols.ResumeState(helper=secret, state={"cursor": secret})
     data = {"secret": secret}
     snapshot = protocols.PollSnapshot(state=secret, terminal=True, data=data, response=info)
     selector = protocols.BodySelector(pointer=f"/{secret}")
@@ -74,7 +73,6 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
             {"kind": "reconnects", "limit": 5, "progress": {"reconnects": 5}, "resume_state": resume},
         ),
         ("ResumeStateError", {"condition": "fingerprint"}),
-        ("ResumeStateTooLargeError", {"limit": 16777216, "observed_bytes": 16777217}),
         (
             "PaginationCycleError",
             {
@@ -227,7 +225,6 @@ def _defaults(errors: ModuleType, snapshot: object, lines: list[str]) -> None:
         ("session limit", lambda: errors.SessionLimitError(kind="network_sends", limit=0, progress={})),
         ("resume exhausted", lambda: errors.StreamResumeExhaustedError(kind="network_sends", limit=16, progress={})),
         ("resume", lambda: errors.ResumeStateError(condition="malformed")),
-        ("resume size", lambda: errors.ResumeStateTooLargeError(limit=0, observed_bytes=0)),
         ("cycle", lambda: errors.PaginationCycleError(page_index=0, first_seen_page_index=0)),
         ("polling", lambda: errors.PollingStateError()),
         ("wait", lambda: errors.PollWaitLimitError(kind="deadline", required_wait=0, limit=0)),
@@ -270,7 +267,7 @@ def _choices(errors: ModuleType, lines: list[str]) -> None:
         (
             "ResumeStateError",
             "condition",
-            ("version", "fingerprint", "security", "expired", "malformed", "checksum", "size"),
+            ("version", "fingerprint", "expired", "malformed"),
             {},
         ),
         ("PollingStateError", "condition", ("type", "value"), {}),
@@ -287,7 +284,6 @@ def _choices(errors: ModuleType, lines: list[str]) -> None:
         accepted = [getattr(error_type(**{field: value}, **required), field) for value in values]
         lines.append(f"  {name} {field}: {accepted}")
     fixed = (
-        errors.ResumeStateTooLargeError(limit=1, observed_bytes=2).condition,
         errors.PaginationCycleError(page_index=1, first_seen_page_index=0).condition,
         errors.IncompleteFrameError(buffered_bytes=1, sequence=0).condition,
         errors.StreamDecodeError(sequence=0, raw_prefix=b"", truncated=False).condition,
@@ -329,9 +325,6 @@ def _rejections(
         ("exhausted kind pages", lambda: errors.StreamResumeExhaustedError(kind="pages", limit=1, progress={})),
         ("resume condition unknown", lambda: errors.ResumeStateError(condition="stale")),
         ("resume missing condition", lambda: errors.ResumeStateError()),
-        ("size fixed condition", lambda: errors.ResumeStateTooLargeError(condition="size", limit=1, observed_bytes=2)),
-        ("size negative", lambda: errors.ResumeStateTooLargeError(limit=1, observed_bytes=-2)),
-        ("size bool", lambda: errors.ResumeStateTooLargeError(limit=False, observed_bytes=2)),
         ("cycle fixed condition", lambda: errors.PaginationCycleError(
             condition="inconsistent", page_index=1, first_seen_page_index=0
         )),
@@ -390,7 +383,7 @@ def _rejections(
         ("context helper", lambda: errors.ProtocolStateError(state="s", action="a", helper_id=1)),
         ("context counters", lambda: errors.ProtocolStateError(state="s", action="a", network_send_count=-1)),
         ("positional message", lambda: errors.ProtocolStateError(secret, state="s", action="a")),
-        ("readonly reason", lambda: setattr(errors.ResumeStateError(condition="size"), "reason_code", "changed")),
+        ("readonly reason", lambda: setattr(errors.ResumeStateError(condition="expired"), "reason_code", "changed")),
     ):
         record(lines, label, create)
     lines.append(f"  exported={all(hasattr(errors, name) and name in errors.__all__ for name in _CLASSES)}")
