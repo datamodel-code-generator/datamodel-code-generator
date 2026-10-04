@@ -1,9 +1,6 @@
 # pets pydantic_v2.BaseModel
   optional imports=[]
   import threads unchanged=True
-  replay loaded with types=False
-  replay loaded with stores=True
-  construction threads unchanged=True
   key identities=True/True/True
   opaque key representation = KeySet()
   empty keys = KeySet()
@@ -23,12 +20,12 @@
   signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
   signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
   signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
-  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active', duplicate=False)
+  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   event data identity=True
-  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' []
-  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET, replay_ttl=UNSET)
+  event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
   options share UNSET=True
-  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=300.0)
+  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
   resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
@@ -40,26 +37,21 @@
   VerifiedSignature fields=('delivery_id', 'timestamp', 'matched_key_id')
   VerifiedSignature keyword-only=True
   VerifiedSignature hints=('delivery_id', 'timestamp', 'matched_key_id')
-  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id', 'duplicate')
+  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
   VerifiedWebhook keyword-only=True
-  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id', 'duplicate')
-  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   WebhookOptions keyword-only=True
-  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
-  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   ResolvedWebhookOptions keyword-only=True
-  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   key variance=False/False
   event covariance=True
   key tuple hint=True/True
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  ReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
-  AsyncReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
-  MemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
-  AsyncMemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
-  replay capacity defaults=10000/10000
   unknown protocol attribute ! AttributeError: module 'pets_pydantic_v2_basemodel.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -101,63 +93,12 @@
   options future_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
   options future_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
   options future_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  zero replay TTL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0, replay_ttl=0.01)
-  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7, replay_ttl=9)
+  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-  MemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  first claim = True
-  duplicate claim = False
-  independent namespace = True
-  full store=replay_store_full_error action=claim capacity=2
-  full store preserves first = False
-  full store preserves second = False
-  expired claim needs no capacity = True
-  past expiry cannot replace live claim = False
-  independent store = True
-  empty namespace and delivery = True
-  claim namespace type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('namespace',), condition='invalid_value'] protocol_configuration_error
-  claim delivery type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('delivery_id',), condition='invalid_value'] protocol_configuration_error
-  claim expiry type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('expires_at',), condition='invalid_value'] protocol_configuration_error
-  claim naive expiry ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('expires_at',), condition='invalid_value'] protocol_configuration_error
-  aware offset claim = True
-  UTC duplicate = False
-  earliest offset expiry = True
-  latest offset expiry = True
-  retain long claim = True
-  retain short claim = True
-  duplicate never extends expiry = False
-  expired entry frees capacity = True
-  unexpired entry remains = False
-  atomic threads claimed=1 duplicate=7
-  async first claim = True
-  async duplicate = False
-  async full store=replay_store_full_error action=claim capacity=1
-  atomic tasks claimed=1 duplicate=31
-  async atomic threads claimed=1 duplicate=7
 # pets pydantic_v2.dataclass
   optional imports=[]
   import threads unchanged=True
-  replay loaded with types=False
-  replay loaded with stores=True
-  construction threads unchanged=True
   key identities=True/True/True
   opaque key representation = KeySet()
   empty keys = KeySet()
@@ -177,12 +118,12 @@
   signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
   signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
   signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
-  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active', duplicate=False)
+  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   event data identity=True
-  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' []
-  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET, replay_ttl=UNSET)
+  event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
   options share UNSET=True
-  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=300.0)
+  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
   resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
@@ -194,26 +135,21 @@
   VerifiedSignature fields=('delivery_id', 'timestamp', 'matched_key_id')
   VerifiedSignature keyword-only=True
   VerifiedSignature hints=('delivery_id', 'timestamp', 'matched_key_id')
-  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id', 'duplicate')
+  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
   VerifiedWebhook keyword-only=True
-  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id', 'duplicate')
-  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   WebhookOptions keyword-only=True
-  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
-  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   ResolvedWebhookOptions keyword-only=True
-  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   key variance=False/False
   event covariance=True
   key tuple hint=True/True
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  ReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
-  AsyncReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
-  MemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
-  AsyncMemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
-  replay capacity defaults=10000/10000
   unknown protocol attribute ! AttributeError: module 'pets_pydantic_v2_dataclass.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -255,63 +191,12 @@
   options future_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
   options future_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
   options future_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  zero replay TTL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0, replay_ttl=0.01)
-  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7, replay_ttl=9)
+  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-  MemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  first claim = True
-  duplicate claim = False
-  independent namespace = True
-  full store=replay_store_full_error action=claim capacity=2
-  full store preserves first = False
-  full store preserves second = False
-  expired claim needs no capacity = True
-  past expiry cannot replace live claim = False
-  independent store = True
-  empty namespace and delivery = True
-  claim namespace type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('namespace',), condition='invalid_value'] protocol_configuration_error
-  claim delivery type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('delivery_id',), condition='invalid_value'] protocol_configuration_error
-  claim expiry type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('expires_at',), condition='invalid_value'] protocol_configuration_error
-  claim naive expiry ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('expires_at',), condition='invalid_value'] protocol_configuration_error
-  aware offset claim = True
-  UTC duplicate = False
-  earliest offset expiry = True
-  latest offset expiry = True
-  retain long claim = True
-  retain short claim = True
-  duplicate never extends expiry = False
-  expired entry frees capacity = True
-  unexpired entry remains = False
-  atomic threads claimed=1 duplicate=7
-  async first claim = True
-  async duplicate = False
-  async full store=replay_store_full_error action=claim capacity=1
-  atomic tasks claimed=1 duplicate=31
-  async atomic threads claimed=1 duplicate=7
 # pets dataclasses.dataclass
   optional imports=[]
   import threads unchanged=True
-  replay loaded with types=False
-  replay loaded with stores=True
-  construction threads unchanged=True
   key identities=True/True/True
   opaque key representation = KeySet()
   empty keys = KeySet()
@@ -331,12 +216,12 @@
   signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
   signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
   signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
-  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active', duplicate=False)
+  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   event data identity=True
-  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' []
-  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET, replay_ttl=UNSET)
+  event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
   options share UNSET=True
-  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=300.0)
+  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
   resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
@@ -348,26 +233,21 @@
   VerifiedSignature fields=('delivery_id', 'timestamp', 'matched_key_id')
   VerifiedSignature keyword-only=True
   VerifiedSignature hints=('delivery_id', 'timestamp', 'matched_key_id')
-  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id', 'duplicate')
+  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
   VerifiedWebhook keyword-only=True
-  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id', 'duplicate')
-  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   WebhookOptions keyword-only=True
-  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
-  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   ResolvedWebhookOptions keyword-only=True
-  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   key variance=False/False
   event covariance=True
   key tuple hint=True/True
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  ReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
-  AsyncReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
-  MemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
-  AsyncMemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
-  replay capacity defaults=10000/10000
   unknown protocol attribute ! AttributeError: module 'pets_dataclasses_dataclass.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -409,63 +289,12 @@
   options future_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
   options future_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
   options future_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  zero replay TTL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0, replay_ttl=0.01)
-  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7, replay_ttl=9)
+  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-  MemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  first claim = True
-  duplicate claim = False
-  independent namespace = True
-  full store=replay_store_full_error action=claim capacity=2
-  full store preserves first = False
-  full store preserves second = False
-  expired claim needs no capacity = True
-  past expiry cannot replace live claim = False
-  independent store = True
-  empty namespace and delivery = True
-  claim namespace type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('namespace',), condition='invalid_value'] protocol_configuration_error
-  claim delivery type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('delivery_id',), condition='invalid_value'] protocol_configuration_error
-  claim expiry type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('expires_at',), condition='invalid_value'] protocol_configuration_error
-  claim naive expiry ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('expires_at',), condition='invalid_value'] protocol_configuration_error
-  aware offset claim = True
-  UTC duplicate = False
-  earliest offset expiry = True
-  latest offset expiry = True
-  retain long claim = True
-  retain short claim = True
-  duplicate never extends expiry = False
-  expired entry frees capacity = True
-  unexpired entry remains = False
-  atomic threads claimed=1 duplicate=7
-  async first claim = True
-  async duplicate = False
-  async full store=replay_store_full_error action=claim capacity=1
-  atomic tasks claimed=1 duplicate=31
-  async atomic threads claimed=1 duplicate=7
 # pets typing.TypedDict
   optional imports=[]
   import threads unchanged=True
-  replay loaded with types=False
-  replay loaded with stores=True
-  construction threads unchanged=True
   key identities=True/True/True
   opaque key representation = KeySet()
   empty keys = KeySet()
@@ -485,12 +314,12 @@
   signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
   signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
   signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
-  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active', duplicate=False)
+  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   event data identity=True
-  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' []
-  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET, replay_ttl=UNSET)
+  event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
   options share UNSET=True
-  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=300.0)
+  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
   resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
@@ -502,26 +331,21 @@
   VerifiedSignature fields=('delivery_id', 'timestamp', 'matched_key_id')
   VerifiedSignature keyword-only=True
   VerifiedSignature hints=('delivery_id', 'timestamp', 'matched_key_id')
-  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id', 'duplicate')
+  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
   VerifiedWebhook keyword-only=True
-  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id', 'duplicate')
-  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   WebhookOptions keyword-only=True
-  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
-  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   ResolvedWebhookOptions keyword-only=True
-  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   key variance=False/False
   event covariance=True
   key tuple hint=True/True
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  ReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
-  AsyncReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
-  MemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
-  AsyncMemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
-  replay capacity defaults=10000/10000
   unknown protocol attribute ! AttributeError: module 'pets_typing_typeddict.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -563,63 +387,12 @@
   options future_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
   options future_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
   options future_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  zero replay TTL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0, replay_ttl=0.01)
-  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7, replay_ttl=9)
+  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-  MemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  first claim = True
-  duplicate claim = False
-  independent namespace = True
-  full store=replay_store_full_error action=claim capacity=2
-  full store preserves first = False
-  full store preserves second = False
-  expired claim needs no capacity = True
-  past expiry cannot replace live claim = False
-  independent store = True
-  empty namespace and delivery = True
-  claim namespace type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('namespace',), condition='invalid_value'] protocol_configuration_error
-  claim delivery type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('delivery_id',), condition='invalid_value'] protocol_configuration_error
-  claim expiry type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('expires_at',), condition='invalid_value'] protocol_configuration_error
-  claim naive expiry ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('expires_at',), condition='invalid_value'] protocol_configuration_error
-  aware offset claim = True
-  UTC duplicate = False
-  earliest offset expiry = True
-  latest offset expiry = True
-  retain long claim = True
-  retain short claim = True
-  duplicate never extends expiry = False
-  expired entry frees capacity = True
-  unexpired entry remains = False
-  atomic threads claimed=1 duplicate=7
-  async first claim = True
-  async duplicate = False
-  async full store=replay_store_full_error action=claim capacity=1
-  atomic tasks claimed=1 duplicate=31
-  async atomic threads claimed=1 duplicate=7
 # pets msgspec.Struct
   optional imports=[]
   import threads unchanged=True
-  replay loaded with types=False
-  replay loaded with stores=True
-  construction threads unchanged=True
   key identities=True/True/True
   opaque key representation = KeySet()
   empty keys = KeySet()
@@ -639,12 +412,12 @@
   signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
   signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
   signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
-  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active', duplicate=False)
+  verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   event data identity=True
-  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' []
-  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET, replay_ttl=UNSET)
+  event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
   options share UNSET=True
-  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=300.0)
+  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
   resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
@@ -656,26 +429,21 @@
   VerifiedSignature fields=('delivery_id', 'timestamp', 'matched_key_id')
   VerifiedSignature keyword-only=True
   VerifiedSignature hints=('delivery_id', 'timestamp', 'matched_key_id')
-  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id', 'duplicate')
+  VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
   VerifiedWebhook keyword-only=True
-  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id', 'duplicate')
-  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
+  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   WebhookOptions keyword-only=True
-  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
-  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   ResolvedWebhookOptions keyword-only=True
-  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance', 'replay_ttl')
+  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   key variance=False/False
   event covariance=True
   key tuple hint=True/True
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  ReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
-  AsyncReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
-  MemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
-  AsyncMemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
-  replay capacity defaults=10000/10000
   unknown protocol attribute ! AttributeError: module 'pets_msgspec_struct.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -717,54 +485,6 @@
   options future_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
   options future_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
   options future_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  options replay_ttl unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  zero replay TTL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
-  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0, replay_ttl=0.01)
-  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7, replay_ttl=9)
+  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-  MemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  MemoryReplayStore capacity None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  AsyncMemoryReplayStore capacity None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
-  first claim = True
-  duplicate claim = False
-  independent namespace = True
-  full store=replay_store_full_error action=claim capacity=2
-  full store preserves first = False
-  full store preserves second = False
-  expired claim needs no capacity = True
-  past expiry cannot replace live claim = False
-  independent store = True
-  empty namespace and delivery = True
-  claim namespace type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('namespace',), condition='invalid_value'] protocol_configuration_error
-  claim delivery type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('delivery_id',), condition='invalid_value'] protocol_configuration_error
-  claim expiry type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('expires_at',), condition='invalid_value'] protocol_configuration_error
-  claim naive expiry ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('expires_at',), condition='invalid_value'] protocol_configuration_error
-  aware offset claim = True
-  UTC duplicate = False
-  earliest offset expiry = True
-  latest offset expiry = True
-  retain long claim = True
-  retain short claim = True
-  duplicate never extends expiry = False
-  expired entry frees capacity = True
-  unexpired entry remains = False
-  atomic threads claimed=1 duplicate=7
-  async first claim = True
-  async duplicate = False
-  async full store=replay_store_full_error action=claim capacity=1
-  atomic tasks claimed=1 duplicate=31
-  async atomic threads claimed=1 duplicate=7

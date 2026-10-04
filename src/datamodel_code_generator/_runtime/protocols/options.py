@@ -10,7 +10,7 @@ from inspect import iscoroutinefunction
 from keyword import iskeyword
 from sys import float_info
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, Protocol, cast
+from typing import TYPE_CHECKING, Final, Literal, cast
 
 from typing_extensions import TypeIs, TypeVar
 
@@ -18,12 +18,6 @@ from ..client.errors import ProtocolConfigurationError, is_sequence
 from ..client.timing import SessionOptions
 from ..model_codecs.unset import UNSET, Unset
 from .caches import AsyncCacheStore, CacheStore  # noqa: TC001 - Public annotations support get_type_hints().
-from .circuit_records import (  # noqa: TC001 - Public annotations support get_type_hints().
-    CircuitKey,
-    CircuitOutcome,
-    CircuitPermit,
-    CircuitSnapshot,
-)
 from .origins import Origin
 from .queues import AsyncQueueStore, QueueStore, ResolvedQueueOptions
 from .websocket_types import (
@@ -70,15 +64,10 @@ _WS: Final = (
     ("ping_interval", True, True, False),
     ("pong_timeout", True, True, False),
     ("close_timeout", True, False, False),
-    ("resume_ack_timeout", True, False, False),
-    ("max_ack_buffer_messages", False, False, False),
-    ("max_ack_buffer_bytes", False, False, False),
-    ("max_unacked", False, False, False),
-    ("max_reconnects", False, True, True),
 )
 _PROXY_SCHEMES: Final = ("http", "https")
 _CACHE: Final = (("max_entry_bytes", False, False, False), ("max_ttl", True, False, False))
-_CACHE_METHODS: Final = ("lookup", "fingerprint_vary", "compare_exchange", "delete", "invalidate")
+_CACHE_METHODS: Final = ("get", "set", "delete")
 QUEUE_FIELDS: Final = (
     ("max_entries", False, False, False),
     ("parallelism", False, False, False),
@@ -113,7 +102,6 @@ WEBHOOK_LIMITS: Final = (
     ("max_signatures", False, False, False),
     ("past_tolerance", True, False, True),
     ("future_tolerance", True, False, True),
-    ("replay_ttl", True, False, False),
 )
 
 
@@ -239,7 +227,7 @@ class WSOptions:
     """WebSocket limits; durations are finite positive seconds, None removes a limit where it is allowed.
 
     `idle_timeout` bounds a receive waiting for a message and inherits the call's stream idle timeout. Compression is
-    `deflate` only where the helper permits it. Reconnection stays off unless enabled, and only max_reconnects takes 0.
+    `deflate` only where the helper permits it.
     """
 
     open_timeout: float | Unset | None = UNSET
@@ -250,18 +238,11 @@ class WSOptions:
     ping_interval: float | Unset | None = UNSET
     pong_timeout: float | Unset | None = UNSET
     close_timeout: float | Unset = UNSET
-    resume_ack_timeout: float | Unset = UNSET
-    max_ack_buffer_messages: int | Unset = UNSET
-    max_ack_buffer_bytes: int | Unset = UNSET
-    max_unacked: int | Unset = UNSET
     compression: Literal["deflate"] | Unset | None = UNSET
-    reconnect: bool | Unset = UNSET
-    max_reconnects: int | Unset | None = UNSET
 
     def __post_init__(self) -> None:
-        """Reject booleans as limits, other compressions, a nonboolean reconnect switch, and forbidden None or zero."""
+        """Reject booleans as limits, other compressions, and forbidden None or zero."""
         check_limits(self, _WS)
-        _instance(self.reconnect, (bool, Unset), "reconnect")
         if not isinstance(self.compression, Unset) and self.compression not in {None, "deflate"}:
             raise ProtocolConfigurationError(field_path=("compression",), condition="invalid_value")
 
@@ -400,73 +381,6 @@ class ProtocolSecurityContext:
         object.__setattr__(self, "allowed_origins", _origins(self.allowed_origins))
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class CircuitBreakerOptions:
-    """Circuit breaking of operations that declare a circuit group; off unless enabled.
-
-    failure_threshold consecutive failed calls open a group's circuit for cooldown seconds, after which one probe call
-    may close it again. Only one probe runs at a time, and no option changes that.
-    """
-
-    enabled: bool = False
-    failure_threshold: int = 5
-    cooldown: float = 30.0
-
-    def __post_init__(self) -> None:
-        """Require a boolean switch, a positive threshold, and a positive finite cooldown."""
-        _instance(self.enabled, (bool,), "enabled")
-        positive_count(self.failure_threshold, "failure_threshold")
-        checked_seconds(self.cooldown, "cooldown")
-
-    def resolved(self) -> ResolvedCircuitBreakerOptions:
-        """Return the limits a circuit store applies."""
-        return ResolvedCircuitBreakerOptions(failure_threshold=self.failure_threshold, cooldown=float(self.cooldown))
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ResolvedCircuitBreakerOptions:
-    """The limits a circuit store applies to one admission: the opening threshold and the cooldown in seconds."""
-
-    failure_threshold: int
-    cooldown: float
-
-
-class CircuitStore(Protocol):
-    """A borrowed store of circuit states; each method is atomic, and `now` is the caller's monotonic time."""
-
-    def admit(self, key: CircuitKey, *, now: float, options: ResolvedCircuitBreakerOptions) -> CircuitPermit:
-        """Admit one call, taking the single half-open probe slot when due, or raise CircuitOpenError."""
-        ...
-
-    def record(self, permit: CircuitPermit, outcome: CircuitOutcome, *, now: float) -> None:
-        """Apply a call's outcome once, ignoring a permit of another generation."""
-
-    def reset(self, key: CircuitKey) -> None:
-        """Close a circuit and advance its generation, so permits admitted before cannot change it."""
-
-    def snapshot(self, key: CircuitKey) -> CircuitSnapshot:
-        """Return the circuit's current state."""
-        ...
-
-
-class AsyncCircuitStore(Protocol):
-    """A borrowed asynchronous store of circuit states with the same atomic contract."""
-
-    async def admit(self, key: CircuitKey, *, now: float, options: ResolvedCircuitBreakerOptions) -> CircuitPermit:
-        """Admit one call, taking the single half-open probe slot when due, or raise CircuitOpenError."""
-        ...
-
-    async def record(self, permit: CircuitPermit, outcome: CircuitOutcome, *, now: float) -> None:
-        """Apply a call's outcome once, ignoring a permit of another generation."""
-
-    async def reset(self, key: CircuitKey) -> None:
-        """Close a circuit and advance its generation, so permits admitted before cannot change it."""
-
-    async def snapshot(self, key: CircuitKey) -> CircuitSnapshot:
-        """Return the circuit's current state."""
-        ...
-
-
 def _helper_defaults(value: object) -> Mapping[str, ProtocolDefaults]:
     if not _is_mapping(value):
         raise ProtocolConfigurationError(field_path=("defaults",), condition="invalid_value")
@@ -540,20 +454,16 @@ class ProtocolClientOptions:
     cache_stores: Mapping[str, CacheStore | AsyncCacheStore] | Unset = UNSET
     websocket_connector: WebSocketConnector | AsyncWebSocketConnector | Unset | None = UNSET
     websocket_transport: WebSocketTransportOptions | Unset = UNSET
-    circuit: CircuitBreakerOptions | Unset = UNSET
-    circuit_store: CircuitStore | AsyncCircuitStore | Unset | None = field(default=UNSET, repr=False)
     queue_stores: Mapping[str, QueueStore | AsyncQueueStore] | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse another security value, helper names that are not dotted identifiers, and other default values.
 
-        A connector needs an `open` method, and the transport settings their own type. The circuit store is only
-        borrowed here; whether its methods suit the client's mode is checked by the client.
+        A connector needs an `open` method, and the transport settings their own type.
         """
         _instance(self.security, (ProtocolSecurityContext, Unset, type(None)), "security")
         if not isinstance(self.defaults, Unset):
             object.__setattr__(self, "defaults", _helper_defaults(self.defaults))
-        _instance(self.circuit, (CircuitBreakerOptions, Unset), "circuit")
         if not isinstance(self.cache_stores, Unset):
             object.__setattr__(self, "cache_stores", _stores(self.cache_stores, "cache_stores"))
         if not isinstance(self.queue_stores, Unset):

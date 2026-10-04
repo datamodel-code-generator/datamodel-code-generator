@@ -20,38 +20,9 @@ helpers:
     validator: etag
     authenticated: false
     vary_allowlist: [Accept, ACCEPT]
-  bad.tags:
-    kind: cache
-    operation: /paths/~1users~1{userId}/get
-    validator: etag
-    authenticated: false
-    tags: ["", "a{", "{}", "{a{b}}", ok, ok, 1]
-  bad.repeated_tags:
-    kind: cache
-    operation: /paths/~1users~1{userId}/get
-    validator: etag
-    authenticated: false
-    tags: [same, same]
   bad.statuses:
     kind: cache
     operation: /paths/~1users~1{userId}/get
     validator: etag
     authenticated: false
     statuses: [700]
-  bad.mutations:
-    kind: cache
-    operation: /paths/~1users~1{userId}/get
-    validator: etag
-    authenticated: false
-    mutations:
-      _private: {operation: "/paths/~1users~1{userId}/patch", invalidate_tags: [a]}
-      class: {operation: "/paths/~1users~1{userId}/patch", invalidate_tags: [a]}
-      5: {operation: "/paths/~1users~1{userId}/patch", invalidate_tags: [a]}
-      empty: {operation: "/paths/~1users~1{userId}/patch", invalidate_tags: []}
-      extra: {operation: "/paths/~1users~1{userId}/patch", invalidate_tags: [a], more: 1}
-  bad.mutation_list:
-    kind: cache
-    operation: /paths/~1users~1{userId}/get
-    validator: etag
-    authenticated: false
-    mutations: []
