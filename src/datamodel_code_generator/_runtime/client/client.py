@@ -214,7 +214,6 @@ _NOT_MODIFIED: Final = 304
 _MAX_STATUS: Final = 599
 _ERROR_STATUS: Final = 400
 _SWITCHING: Final = 101
-_SOCKET_SCHEMES: Final = (("wss:", "https:"), ("ws:", "http:"))
 _UNAUTHORIZED: Final = 401
 _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
 
@@ -1482,15 +1481,6 @@ class _SessionCall(_Call):
         return planned
 
 
-def _http_location(location: str) -> str:
-    """Return a ws or wss URL as the http or https URL of its handshake, and any other location unchanged."""
-    lowered = location[:4].lower()
-    for socket_scheme, http_scheme in _SOCKET_SCHEMES:
-        if lowered.startswith(socket_scheme):
-            return http_scheme + location[len(socket_scheme) :]
-    return location
-
-
 class _SocketCall(_SessionCall):
     """The handshake of a WebSocket helper: a session child call whose open has one cap for all of its phases.
 
@@ -1523,12 +1513,40 @@ class _SocketCall(_SessionCall):
         self.phase_caps = (cap, cap, cap, cap)
         return ResolvedTimeoutOptions(connect=cap.effective, read=cap.effective, write=cap.effective, pool=None)
 
-    @staticmethod
-    def redirect_headers(headers: HeadersView) -> HeadersView:
-        """Read a ws or wss Location as the http or https URL a handshake requests, so the shared policy applies."""
-        return HeadersView(
-            (name, _http_location(value) if name.lower() == "location" else value) for name, value in headers.items()
+    def retry(
+        self,
+        info: ResponseInfo | None,
+        error: TransportError | None,
+        *,
+        replayable: bool,
+        retry_owner: Literal["sdk", "transport"],
+    ) -> RetryDelay | None:
+        """Retry only a handshake proven unsent; a received refusal or an uncertain open stays terminal."""
+        if info is None and error is not None and error.delivery_state is DeliveryState.NOT_SENT:
+            return super().retry(info, error, replayable=replayable, retry_owner=retry_owner)
+        self.check("send")
+        self.stop_reason = (
+            "callback_failure"
+            if self.retry_blocked
+            else "auth_unrefreshable"
+            if info is not None and info.status_code == _UNAUTHORIZED
+            else "status_not_retryable"
+            if info is not None
+            else "transport_not_retryable"
         )
+        return None
+
+    def redirected(  # ruff: ignore[no-self-use] - Overrides the shared redirect policy.
+        self,
+        request: PreparedRequest[EncodedAttempt],  # ruff: ignore[unused-method-argument]
+        info: ResponseInfo,  # ruff: ignore[unused-method-argument]
+        visited: frozenset[tuple[str, str]],  # ruff: ignore[unused-method-argument]
+        *,
+        replayable: bool,  # ruff: ignore[unused-method-argument]
+        schemes: tuple[SecuritySchemeEntry, ...],  # ruff: ignore[unused-method-argument]
+    ) -> PreparedRequest[EncodedAttempt] | None:
+        """Keep every received handshake refusal terminal."""
+        return None
 
 
 class _SessionWait(LogicalCallContext):
@@ -3369,6 +3387,13 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
     def _status_plan(self, info: ResponseInfo, source: BodySource | None, call: _Call) -> RetryDelay | None:
         """Plan a status retry, invalidating a rejected credential first and keeping the response when that fails."""
+        if isinstance(call, _SocketCall) and info.status_code != _SWITCHING:
+            return call.retry(
+                info,
+                None,
+                replayable=source is None or source.replayable,
+                retry_owner=self._shared.transport.retry_owner,
+            )
         planned = (
             call.retry(
                 info,
@@ -4375,6 +4400,13 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
     async def _status_plan(self, info: ResponseInfo, source: AsyncBodySource | None, call: _Call) -> RetryDelay | None:
         """Plan a status retry, invalidating a rejected credential first and keeping the response when that fails."""
+        if isinstance(call, _SocketCall) and info.status_code != _SWITCHING:
+            return call.retry(
+                info,
+                None,
+                replayable=source is None or source.replayable,
+                retry_owner=self._shared.transport.retry_owner,
+            )
         planned = (
             call.retry(
                 info,

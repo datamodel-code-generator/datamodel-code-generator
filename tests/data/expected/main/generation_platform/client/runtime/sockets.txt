@@ -5,7 +5,7 @@
     1 text ServerMessage{'kind': 'joined', 'user': 'ann'} raw=b'{"kind": "joined", "user": "ann"}'
     2 text ServerMessage{'kind': 'said', 'text': 'HI'} raw=b'{"kind": "said", "text": "HI"}'
     iterated 3 text ServerMessage{'kind': 'said', 'text': 'BYE'} raw=b'{"kind": "said", "text": "BYE"}'
-    progress {'reconnects': 0, 'network_send_count': 1, 'network_send_budget_used': 1, 'messages_sent': 2, 'messages_received': 3}
+    progress {'network_send_count': 1, 'network_send_budget_used': 1, 'messages_sent': 2, 'messages_received': 3}
   receive after the server closed ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1000, clean=True) [operation_id='roomSocket'] web_socket_closed_error
   send after the server closed ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1000, clean=True) [operation_id='roomSocket'] web_socket_closed_error
   ping after the server closed ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1000, clean=True) [operation_id='roomSocket'] web_socket_closed_error
@@ -24,34 +24,16 @@
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
   undeclared success ! UnexpectedStatusError: UnexpectedStatusError(status_code=200, operation_id='roomSocket', call_id='<call>') [operation_id='roomSocket', status_code=200, body_bytes=b'plain', truncated=False] unexpected_status_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-  retried = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
-    attempts 3 redirects 0
+  not retried ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=503, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] room_socket_http_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
-  not retried ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=503, operation_id='roomSocket', call_id='<call>', retry_stop_reason='disabled') [operation_id='roomSocket', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] room_socket_http_error
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-  retry after too long ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=429, operation_id='roomSocket', call_id='<call>', retry_stop_reason='server_delay_exceeds_limit') [operation_id='roomSocket', status_code=429, error_decoded=False, error_decode_error=UnexpectedMediaTypeError(), body_bytes=b'', truncated=False] room_socket_http_error
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-  redirected = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
-    attempts 1 redirects 1
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-    server GET /rooms/r2/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
-  redirected to a wss URL = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
-    attempts 1 redirects 1
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-    server GET /rooms/r3/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
-  redirected to a ws URL ! RedirectPolicyError: RedirectPolicyError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] redirect_policy_error
+  retry after not honored ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=429, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=429, error_decoded=False, error_decode_error=UnexpectedMediaTypeError(), body_bytes=b'', truncated=False] room_socket_http_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
   redirect not followed ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='roomSocket', call_id='<call>') [operation_id='roomSocket', status_code=302, body_bytes=b'', truncated=False] unexpected_status_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
   subprotocol not selected ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', condition='negotiation') [operation_id='roomSocket', condition='negotiation', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect'] web_socket_handshake_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | no close
-  session without room for a retry ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=503, operation_id='roomSocket', call_id='<call>', retry_stop_reason='parent_budget_exhausted') [operation_id='roomSocket', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] room_socket_http_error
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
   managed header ! ConfigurationError: ConfigurationError(operation_id='roomSocket', call_id='<call>', field_path='headers.Upgrade', condition='managed') [operation_id='roomSocket', field_path=('headers', 'Upgrade'), condition='managed'] configuration_error
   no send slot ! SessionLimitError: SessionLimitError(kind='network_sends', limit=0) [kind='network_sends', limit=0] session_limit_error
-  reconnecting ! ProtocolConfigurationError: ProtocolConfigurationError(condition='missing_metadata') [field_path=('ws_options', 'reconnect'), condition='missing_metadata'] protocol_configuration_error
   compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
   options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('ws_options',), condition='invalid_value'] protocol_configuration_error
   request options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
@@ -109,16 +91,16 @@
   iteration after closing []
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 4000 'bye'
     server GET /feed/socket [] | closed 1000 ''
+  send once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
+    server GET /feed/socket [] | closed 1000 ''
   ping once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
   idle on a stepped clock ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=60.0) [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
   idle on a frozen clock ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.05) [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
-  fragmented 1 text str'100000' raw=b'100000'
+  whole 1 text str'100000' raw=b'100000'
     server GET /secure/socket [authorization: Bearer first-material] | closed 1000 ''
   send past its timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write', effective_timeout=1e-09) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout_error
-  send overdue between fragments ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TransportError] delivery_unknown_error
-  send cut off midway ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TransportError] delivery_unknown_error
   hooked normal end
     hook call_start outcome=None status=None
     hook attempt_start outcome=None status=None
@@ -156,12 +138,11 @@
     hook call_end outcome=error status=404
   connect ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, error_decoded=True, error_data=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] room_socket_http_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-  refreshed after invalid_token = WebSocketSession(helper_id='secure.chat', state='open', subprotocol=None)
-    provider ['get', 'invalidate current=True', 'get', 'refresh']
+  rejected token not refreshed ! SecureSocketHTTPError: SecureSocketHTTPError(status_code=401, operation_id='secureSocket', call_id='<call>', retry_stop_reason='auth_unrefreshable') [operation_id='secureSocket', status_code=401, error_decoded=False, body_bytes=b'', truncated=False] secure_socket_http_error
+    provider ['get']
     server GET /secure/socket [authorization: Bearer first-material, x-trace: t1] | refused
-    server GET /secure/socket [authorization: Bearer second-material, x-trace: t1] | closed 1000 ''
-  no refresh without retries ! SecureSocketHTTPError: SecureSocketHTTPError(status_code=401, operation_id='secureSocket', call_id='<call>', retry_stop_reason='disabled') [operation_id='secureSocket', status_code=401, error_decoded=False, body_bytes=b'', truncated=False] secure_socket_http_error
-    provider ['get', 'invalidate current=True']
+  no refresh without retries ! SecureSocketHTTPError: SecureSocketHTTPError(status_code=401, operation_id='secureSocket', call_id='<call>', retry_stop_reason='auth_unrefreshable') [operation_id='secureSocket', status_code=401, error_decoded=False, body_bytes=b'', truncated=False] secure_socket_http_error
+    provider ['get']
     server GET /secure/socket [authorization: Bearer first-material, x-trace: t1] | refused
   received with debug logging 1 text str'secret-reply' raw=b'secret-reply'
     server GET /secure/socket [authorization: Bearer first-material] | closed 1000 ''
@@ -177,9 +158,14 @@
   wrong accept ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', condition='invalid_header') [operation_id='feedSocket', condition='invalid_header', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect', cause=InvalidHeaderValue] web_socket_handshake_error
   subprotocol not offered ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', condition='negotiation') [operation_id='feedSocket', condition='negotiation', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect', cause=NegotiationError] web_socket_handshake_error
   header line too long ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', condition='size') [operation_id='feedSocket', condition='size', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=InvalidMessage] web_socket_handshake_error
-  refused connection ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  refused connection retry=1 ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  refused connection retry=0 ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  refused retry exhausts session budget ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  refused retry with failed permit release ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+    refused permit cleanup entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   untrusted certificate ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=SSLCertVerificationError] transport_error
   peer hanging up during a ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
+  peer hanging up during a whole send ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TransportError] delivery_unknown_error
   unanswered ping ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
   after the unanswered ping ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='receive') [operation_id='feedSocket'] protocol_state_error
   unanswered keepalive ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
@@ -261,6 +247,10 @@
   async another default ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
   async ping cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
   async open timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=1.0) [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=TimeoutError] phase_timeout_error
+  async refused connection ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  async refused retry exhausts session budget ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  async refused retry with failed permit release ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+    async refused permit cleanup entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   async hooked normal end
     hook call_start outcome=None status=None
     hook attempt_start outcome=None status=None

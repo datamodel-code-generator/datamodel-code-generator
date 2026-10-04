@@ -4332,10 +4332,9 @@ stream open raises `CleanupError` once its cleanup timeout passes.
 ## WebSocket sessions
 
 A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
-the call's retries, redirects, authentication, limiter, and hooks: a 101 hands the connection to the session, and any
-other response raises the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the
-call's options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are
-imported from:
+initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises
+the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the call's options, then
+`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
 
 - `{package}.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,
   `Message`, `PingReceipt`, and the connector contracts `WebSocketConnector`, `AsyncWebSocketConnector`,
@@ -4363,8 +4362,12 @@ raises `ProtocolSizeError` after the connection closed with 1009. A receive that
 raises `PhaseTimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
 reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises `PhaseTimeoutError`
 and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`, closes the session,
-and is never sent again. Sessions never reconnect, so `WSOptions(reconnect=True)` raises `ProtocolConfigurationError`,
-as does `WSOptions(compression="deflate")` for a helper that does not permit compression.
+and is never sent again. Messages are written whole: in a `WebSocketSession`, the send timeout is checked before the
+write starts, and a started write runs until it completes or the connection fails. Sessions never reconnect.
+`WSOptions(compression="deflate")` raises `ProtocolConfigurationError` for a helper that does not permit compression.
+Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or invalidated
+by a refused upgrade. Only a transport failure proven `NOT_SENT` before handover may use the call's existing retry
+policy.
 
 `ProtocolClientOptions(websocket_connector=...)` borrows a connector, which is never closed; without one, the client
 opens its connections with the `websockets` library, a dependency of this package. `websocket_transport` sets the TLS

@@ -64,11 +64,6 @@ _WS: Final = (
     ("ping_interval", True, True, False),
     ("pong_timeout", True, True, False),
     ("close_timeout", True, False, False),
-    ("resume_ack_timeout", True, False, False),
-    ("max_ack_buffer_messages", False, False, False),
-    ("max_ack_buffer_bytes", False, False, False),
-    ("max_unacked", False, False, False),
-    ("max_reconnects", False, True, True),
 )
 _PROXY_SCHEMES: Final = ("http", "https")
 _CACHE: Final = (("max_entry_bytes", False, False, False), ("max_ttl", True, False, False))
@@ -232,7 +227,7 @@ class WSOptions:
     """WebSocket limits; durations are finite positive seconds, None removes a limit where it is allowed.
 
     `idle_timeout` bounds a receive waiting for a message and inherits the call's stream idle timeout. Compression is
-    `deflate` only where the helper permits it. Reconnection stays off unless enabled, and only max_reconnects takes 0.
+    `deflate` only where the helper permits it.
     """
 
     open_timeout: float | Unset | None = UNSET
@@ -243,18 +238,11 @@ class WSOptions:
     ping_interval: float | Unset | None = UNSET
     pong_timeout: float | Unset | None = UNSET
     close_timeout: float | Unset = UNSET
-    resume_ack_timeout: float | Unset = UNSET
-    max_ack_buffer_messages: int | Unset = UNSET
-    max_ack_buffer_bytes: int | Unset = UNSET
-    max_unacked: int | Unset = UNSET
     compression: Literal["deflate"] | Unset | None = UNSET
-    reconnect: bool | Unset = UNSET
-    max_reconnects: int | Unset | None = UNSET
 
     def __post_init__(self) -> None:
-        """Reject booleans as limits, other compressions, a nonboolean reconnect switch, and forbidden None or zero."""
+        """Reject booleans as limits, other compressions, and forbidden None or zero."""
         check_limits(self, _WS)
-        _instance(self.reconnect, (bool, Unset), "reconnect")
         if not isinstance(self.compression, Unset) and self.compression not in {None, "deflate"}:
             raise ProtocolConfigurationError(field_path=("compression",), condition="invalid_value")
 

@@ -1,9 +1,10 @@
 """WebSocket helpers: the handshake as one child call of a session of their own, and the sessions holding the socket.
 
 A helper opens its channel's operation through the client's call path with an adapter of its own, which hands the
-request to a WebSocket connector, so retries, redirects, authentication, limiters, hooks, and send budgets apply to the
-handshake as to any call. The 101 is handed over as a streaming handle whose close closes the connection; the session
-reads and writes whole messages through the connection and ends that handle once it closes or fails.
+request to a WebSocket connector, so authentication, limiters, hooks, and send budgets apply to the handshake as to any
+call; a refused handshake is never redirected or retried, and only a handshake proven unsent is retried. The 101 is
+handed over as a streaming handle whose close closes the connection; the session reads and writes whole messages through
+the connection and ends that handle once it closes or fails.
 """
 
 from __future__ import annotations
@@ -19,7 +20,6 @@ from typing_extensions import Self, TypeVar
 from ..client.errors import (
     AdapterContractError,
     AdapterExecutionError,
-    BudgetExceededError,
     ClientClosedError,
     ConfigurationError,
     DeadlineExceededError,
@@ -184,13 +184,7 @@ _SOCKET: Final = ResolvedWSOptions(
     ping_interval=20.0,
     pong_timeout=20.0,
     close_timeout=5.0,
-    resume_ack_timeout=30.0,
-    max_ack_buffer_messages=16,
-    max_ack_buffer_bytes=16777216,
-    max_unacked=100,
     compression=None,
-    reconnect=False,
-    max_reconnects=5,
 )
 _SENDS: Final = 16
 
@@ -215,18 +209,12 @@ def _socket(layers: tuple[object, ...], idle: float | None) -> ResolvedWSOptions
         ping_interval=_first(layers, "ping_interval", d.ping_interval),
         pong_timeout=_first(layers, "pong_timeout", d.pong_timeout),
         close_timeout=_first(layers, "close_timeout", d.close_timeout),
-        resume_ack_timeout=_first(layers, "resume_ack_timeout", d.resume_ack_timeout),
-        max_ack_buffer_messages=_first(layers, "max_ack_buffer_messages", d.max_ack_buffer_messages),
-        max_ack_buffer_bytes=_first(layers, "max_ack_buffer_bytes", d.max_ack_buffer_bytes),
-        max_unacked=_first(layers, "max_unacked", d.max_unacked),
         compression=_first(layers, "compression", d.compression),
-        reconnect=_first(layers, "reconnect", d.reconnect),
-        max_reconnects=_first(layers, "max_reconnects", d.max_reconnects),
     )
 
 
 def _invalid(
-    plan: ChannelPlan[SendT, RecvT], path: tuple[str, ...], condition: Literal["invalid_value", "missing_metadata"]
+    plan: ChannelPlan[SendT, RecvT], path: tuple[str, ...], condition: Literal["invalid_value"]
 ) -> ProtocolConfigurationError:
     return ProtocolConfigurationError(
         field_path=path, condition=condition, helper_id=plan.helper_id, operation=plan.operation
@@ -242,8 +230,8 @@ def _limits(
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
-    An idle timeout neither layer sets is the call's merged stream idle timeout. Reconnecting needs resume metadata,
-    and compression the helper's permission, so either is refused without them.
+    An idle timeout neither layer sets is the call's merged stream idle timeout. Compression requires the helper's
+    permission.
     """
     for name, value, kind in (
         ("ws_options", ws_options, WSOptions),
@@ -257,8 +245,6 @@ def _limits(
     kinds = (ws_options, UNSET if defaults is None else defaults.options)
     sessions = (session_options, UNSET if defaults is None else defaults.session)
     socket = _socket(kinds, core.call_settings(request, plan.call).stream_idle_timeout)
-    if socket.reconnect:
-        raise _invalid(plan, ("ws_options", "reconnect"), "missing_metadata")
     if socket.compression is not None and not plan.compression:
         raise _invalid(plan, ("ws_options", "compression"), "invalid_value")
     protocols = core.protocol_options()
@@ -275,7 +261,6 @@ def _limits(
 
 def _progress(session: OperationSession, sent: int = 0, received: int = 0) -> ProtocolProgress:
     return MappingProxyType({
-        "reconnects": 0,
         "network_send_count": session.network_send_count,
         "network_send_budget_used": session.network_send_budget_used,
         "messages_sent": sent,
@@ -303,33 +288,6 @@ def _session(plan: ChannelPlan[SendT, RecvT], limits: _Limits) -> OperationSessi
             parent_session_id=session.session_id,
         )
     return session
-
-
-def _refused(
-    plan: ChannelPlan[SendT, RecvT], session: OperationSession, error: BudgetExceededError
-) -> SessionLimitError:
-    """Return the session's limit error for a handshake whose retries its session had no send slot for."""
-    return SessionLimitError(
-        kind="network_sends",
-        limit=error.limit,
-        progress=_progress(session),
-        helper_id=plan.helper_id,
-        operation=plan.operation,
-        operation_id=error.operation_id,
-        call_id=error.call_id,
-        parent_session_id=error.parent_session_id,
-        info=error.info,
-        cause=error,
-        resource_attempt_count=error.resource_attempt_count,
-        redirect_count=error.redirect_count,
-        auth_exchange_count=error.auth_exchange_count,
-        network_send_count=error.network_send_count,
-        network_send_budget_used=error.network_send_budget_used,
-        auth_exchange_budget_used=error.auth_exchange_budget_used,
-        auth_refresh_ids=error.auth_refresh_ids,
-        auth_refresh_pending=error.auth_refresh_pending,
-        wire_send_count=error.wire_send_count,
-    )
 
 
 def _checked_headers(headers: HeadersView) -> None:
@@ -661,7 +619,7 @@ class _Sockets(Generic[SendT, RecvT]):
 
     @property
     def progress(self) -> ProtocolProgress:
-        """Return the reconnections, none without resume metadata, the session's sends, and the messages so far."""
+        """Return the session's sends and the messages sent and received so far."""
         return _progress(self._session, self._sent, self._received)
 
     def _stamped(self, error: ErrorT) -> ErrorT:
@@ -1319,20 +1277,15 @@ def connect_socket(  # noqa: PLR0913
     injected = _connector(core)
     connector = cast("WebSocketConnector", core.owned_connector(plan.connectors[0]) if injected is None else injected)
     adapter = _Handshake(plan, limits, connector)
-    try:
-        response, call = core.open_socket(
-            plan.call,
-            arguments,
-            adapter,
-            options=limits.options,
-            session=session,
-            open_timeout=limits.socket.open_timeout,
-            check=_checked_headers,
-        )
-    except BudgetExceededError as error:
-        if error.budget_kind != "parent_network":
-            raise
-        raise _refused(plan, session, error) from None
+    response, call = core.open_socket(
+        plan.call,
+        arguments,
+        adapter,
+        options=limits.options,
+        session=session,
+        open_timeout=limits.socket.open_timeout,
+        check=_checked_headers,
+    )
     assert adapter.opened is not None
     return WebSocketSession(plan, limits, session, response, call, adapter.opened, native=native)
 
@@ -1356,19 +1309,14 @@ async def aconnect_socket(  # noqa: PLR0913
         "AsyncWebSocketConnector", core.owned_connector(plan.connectors[1]) if injected is None else injected
     )
     adapter = _AsyncHandshake(plan, limits, connector)
-    try:
-        response, call = await core.open_socket(
-            plan.call,
-            arguments,
-            adapter,
-            options=limits.options,
-            session=session,
-            open_timeout=limits.socket.open_timeout,
-            check=_checked_headers,
-        )
-    except BudgetExceededError as error:
-        if error.budget_kind != "parent_network":
-            raise
-        raise _refused(plan, session, error) from None
+    response, call = await core.open_socket(
+        plan.call,
+        arguments,
+        adapter,
+        options=limits.options,
+        session=session,
+        open_timeout=limits.socket.open_timeout,
+        check=_checked_headers,
+    )
     assert adapter.opened is not None
     return AsyncWebSocketSession(plan, limits, session, response, call, adapter.opened, native=native)
