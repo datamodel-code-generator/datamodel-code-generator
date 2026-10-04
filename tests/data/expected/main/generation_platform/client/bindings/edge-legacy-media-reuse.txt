@@ -142,27 +142,15 @@ render pydantic_v2.BaseModel default
   class EmptyResponse1(AnyRequestItem):
       pass
   model_bindings.py
-  _model_0 symbol='models:ScalarRequestItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/scalar/content/application~1json/itemSchema', root=LeafNode()
-  _model_1 symbol='models:ScalarResponseItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/responses/scalar/content/application~1json/itemSchema', root=LeafNode()
-  _model_2 symbol='models:ObjectRequestItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:ObjectResponseItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_4 symbol='models:UnionRequestItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/union/content/application~1json/itemSchema', root=UnionNode(members=(LeafNode(), LeafNode()))
-  _model_5 symbol='models:UnionResponseItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/responses/union/content/application~1json/itemSchema', root=UnionNode(members=(LeafNode(), LeafNode()))
-  _model_6 symbol='models:AnyRequestItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/any/content/application~1json/itemSchema', root=LeafNode()
-  _model_7 symbol='models:AnyResponseItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/responses/any/content/application~1json/itemSchema', root=LeafNode()
-  _model_8 symbol='models:EmptyRequestItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/empty/content/application~1json/itemSchema', root=LeafNode()
-  _model_9 symbol='models:EmptyResponseItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/responses/empty/content/application~1json/itemSchema', root=LeafNode()
-  codec_0 -> PydanticModelCodec[models.ScalarRequestItem]
-  codec_1 -> PydanticModelCodec[models.ScalarResponseItem]
-  codec_2 -> PydanticModelCodec[models.ObjectRequestItem]
-  codec_3 -> PydanticModelCodec[models.ObjectResponseItem]
-  codec_4 -> PydanticModelCodec[models.EnumRequestItem]
-  codec_5 -> PydanticModelCodec[models.EnumRequestItem]
-  codec_6 -> PydanticModelCodec[models.UnionRequestItem]
-  codec_7 -> PydanticModelCodec[models.UnionResponseItem]
-  codec_8 -> PydanticModelCodec[models.AnyRequestItem]
-  codec_9 -> PydanticModelCodec[models.AnyResponseItem]
-  codec_10 -> PydanticModelCodec[models.EmptyRequestItem]
-  codec_11 -> PydanticModelCodec[models.EmptyResponseItem]
+  codec_0 models.ScalarRequestItem
+  codec_1 models.ScalarResponseItem
+  codec_2 models.ObjectRequestItem
+  codec_3 models.ObjectResponseItem
+  codec_4 models.EnumRequestItem
+  codec_5 models.EnumRequestItem
+  codec_6 models.UnionRequestItem
+  codec_7 models.UnionResponseItem
+  codec_8 models.AnyRequestItem
+  codec_9 models.AnyResponseItem
+  codec_10 models.EmptyRequestItem
+  codec_11 models.EmptyResponseItem

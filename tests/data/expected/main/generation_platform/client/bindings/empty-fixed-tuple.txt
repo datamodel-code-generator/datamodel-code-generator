@@ -12,10 +12,8 @@ render pydantic_v2.BaseModel typing
   class Record(BaseModel):
       value: Tuple[()]
   model_bindings.py
-  _model_0 symbol='models:Record', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
-    FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=()))
-  codec_0 -> PydanticModelCodec[models.Record]
-  codec_1 -> PydanticModelCodec[models.Record]
+  codec_0 models.Record
+  codec_1 models.Record
 change pydantic_v2.BaseModel typing element-type
   @@ -11 +11 @@
   -    value: Tuple[()]
@@ -32,10 +30,8 @@ render pydantic_v2.BaseModel standard
   class Record(BaseModel):
       value: tuple[()]
   model_bindings.py
-  _model_0 symbol='models:Record', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
-    FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=()))
-  codec_0 -> PydanticModelCodec[models.Record]
-  codec_1 -> PydanticModelCodec[models.Record]
+  codec_0 models.Record
+  codec_1 models.Record
 change pydantic_v2.BaseModel standard element-type
   @@ -10 +10 @@
   -    value: tuple[()]
@@ -55,10 +51,8 @@ render pydantic_v2.dataclass typing
   class Record:
       value: Tuple[()]
   model_bindings.py
-  _model_0 symbol='models:Record', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
-    FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=()))
-  codec_0 -> PydanticModelCodec[models.Record]
-  codec_1 -> PydanticModelCodec[models.Record]
+  codec_0 models.Record
+  codec_1 models.Record
 change pydantic_v2.dataclass typing element-type
   @@ -13 +13 @@
   -    value: Tuple[()]
@@ -77,10 +71,8 @@ render pydantic_v2.dataclass standard
   class Record:
       value: tuple[()]
   model_bindings.py
-  _model_0 symbol='models:Record', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
-    FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=()))
-  codec_0 -> PydanticModelCodec[models.Record]
-  codec_1 -> PydanticModelCodec[models.Record]
+  codec_0 models.Record
+  codec_1 models.Record
 change pydantic_v2.dataclass standard element-type
   @@ -12 +12 @@
   -    value: tuple[()]
@@ -100,10 +92,9 @@ render dataclasses.dataclass typing
   class Record:
       value: Tuple[()]
   model_bindings.py
-  _model_0 symbol='models:Record', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
-    FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=()))
-  codec_0 -> StructuralModelCodec[models.Record]
-  codec_1 -> StructuralModelCodec[models.Record]
+  codec_0 models.Record
+  codec_1 models.Record
+  map models:Record value=value
 change dataclasses.dataclass typing element-type
   @@ -13 +13 @@
   -    value: Tuple[()]
@@ -122,10 +113,9 @@ render dataclasses.dataclass standard
   class Record:
       value: tuple[()]
   model_bindings.py
-  _model_0 symbol='models:Record', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
-    FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=()))
-  codec_0 -> StructuralModelCodec[models.Record]
-  codec_1 -> StructuralModelCodec[models.Record]
+  codec_0 models.Record
+  codec_1 models.Record
+  map models:Record value=value
 change dataclasses.dataclass standard element-type
   @@ -12 +12 @@
   -    value: tuple[()]
@@ -143,10 +133,9 @@ render typing.TypedDict typing
   class Record(TypedDict):
       value: Tuple[()]
   model_bindings.py
-  _model_0 symbol='models:Record', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
-    FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=()))
-  codec_0 -> StructuralModelCodec[models.Record]
-  codec_1 -> StructuralModelCodec[models.Record]
+  codec_0 models.Record
+  codec_1 models.Record
+  map models:Record value=value
 change typing.TypedDict typing element-type
   @@ -11 +11 @@
   -    value: Tuple[()]
@@ -164,10 +153,9 @@ render typing.TypedDict standard
   class Record(TypedDict):
       value: tuple[()]
   model_bindings.py
-  _model_0 symbol='models:Record', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
-    FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=()))
-  codec_0 -> StructuralModelCodec[models.Record]
-  codec_1 -> StructuralModelCodec[models.Record]
+  codec_0 models.Record
+  codec_1 models.Record
+  map models:Record value=value
 change typing.TypedDict standard element-type
   @@ -11 +11 @@
   -    value: tuple[()]
@@ -186,10 +174,8 @@ render msgspec.Struct typing
   class Record(Struct):
       value: Tuple[()]
   model_bindings.py
-  _model_0 symbol='models:Record', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
-    FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=()))
-  codec_0 -> StructuralModelCodec[models.Record]
-  codec_1 -> StructuralModelCodec[models.Record]
+  codec_0 models.Record
+  codec_1 models.Record
 change msgspec.Struct typing element-type
   @@ -12 +12 @@
   -    value: Tuple[()]
@@ -207,10 +193,8 @@ render msgspec.Struct standard
   class Record(Struct):
       value: tuple[()]
   model_bindings.py
-  _model_0 symbol='models:Record', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
-    FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=()))
-  codec_0 -> StructuralModelCodec[models.Record]
-  codec_1 -> StructuralModelCodec[models.Record]
+  codec_0 models.Record
+  codec_1 models.Record
 change msgspec.Struct standard element-type
   @@ -11 +11 @@
   -    value: tuple[()]

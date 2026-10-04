@@ -1,8 +1,8 @@
-"""Render model fixtures as client packages and report the models and model bindings each package ships.
+"""Render model fixtures as client packages and report the models and model codecs each package ships.
 
 Every component schema becomes the body and response of one operation, so the client binds every model. A change
 edits the generated models through a custom formatter, as a user formatter may, and the report shows what the
-edit changes in the shipped models and bindings. A rewrite instead changes the staged models after generation,
+edit changes in the shipped models and codecs. A rewrite instead changes the staged models after generation,
 as another process writing to the staging directory would.
 
 A render the generator refuses reports the error instead of a package, and the generator's own warnings are reported
@@ -47,6 +47,7 @@ GENERATOR = Path(datamodel_code_generator.__file__).parent
 PACKAGE = "client"
 BINDINGS = (PACKAGE, "_generated", "model_bindings.py")
 STAGING = ".datamodel-codegen-"
+STDLIB = frozenset({"dataclasses.dataclass", "typing.TypedDict"})
 
 
 def _document(source: Path, root: Path, case: dict[str, Any]) -> Path:
@@ -101,33 +102,47 @@ def _warnings(caught: list[warnings.WarningMessage]) -> list[str]:
     return lines
 
 
-def _shipped(diagnostics: list[str], modules: Modules) -> list[str]:
-    """Return the refusal or diagnostics, the models, and each model binding and codec of a rendered package."""
+def _shipped(diagnostics: list[str], modules: Modules, *, maps: bool) -> list[str]:
+    """Return the refusal or diagnostics, the models, and the codecs and field maps of a rendered package."""
     lines = [f"diagnostic {item}" for item in diagnostics]
     for parts, text in modules.items():
         if parts[0] != PACKAGE:
             lines.extend(["/".join(parts), *text.splitlines()])
     if BINDINGS in modules:
         lines.append("model_bindings.py")
-        lines.extend(_bindings(modules[BINDINGS]))
+        lines.extend(_codecs(modules[BINDINGS], maps=maps))
     return lines
 
 
-def _bindings(text: str) -> Iterator[str]:
-    """Yield each model binding on one line with one line per field binding, then the type of each codec."""
+def _constants(node: ast.expr) -> dict[str | None, Any]:
+    """Return the constant keyword arguments of a call."""
+    keywords = node.keywords if isinstance(node, ast.Call) else []
+    return {item.arg: item.value.value for item in keywords if isinstance(item.value, ast.Constant)}
+
+
+def _map(call: ast.Call) -> str:
+    """Return a model's module and name, then each wire name paired with the field that holds it."""
+    fields = next((item.value for item in call.keywords if item.arg == "fields"), None)
+    pairs = ", ".join(
+        f"{field['wire_name']}={field['native_name']}"
+        for field in map(_constants, fields.elts if isinstance(fields, ast.Tuple) else ())
+    )
+    return f"map {_constants(call)['symbol']} {pairs}".rstrip()
+
+
+def _codecs(text: str, *, maps: bool) -> Iterator[str]:
+    """Yield the type each codec reads and writes, then the field map of each dataclass or TypedDict model."""
+    models: list[str] = []
     for node in ast.parse(text).body:
         match node:
             case ast.FunctionDef(body=[ast.Return(value=ast.Call() as call)]) if node.name.startswith("_model_"):
-                yield f"{node.name} " + ", ".join(
-                    f"{item.arg}={ast.unparse(item.value)}" for item in call.keywords if item.arg != "fields"
-                )
-                for item in call.keywords:
-                    if item.arg == "fields" and isinstance(item.value, ast.Tuple):
-                        yield from (f"  {ast.unparse(field)}" for field in item.value.elts)
-            case ast.FunctionDef(returns=ast.expr() as returns) if node.name.startswith("codec_"):
-                yield f"{node.name} -> {ast.unparse(returns)}"
+                if maps and _constants(call)["native_kind"] in {"dataclass", "typed_dict"}:
+                    models.append(_map(call))
+            case ast.FunctionDef(returns=ast.Subscript(slice=type_)) if node.name.startswith("codec_"):
+                yield f"{node.name} {ast.unparse(type_)}"
             case _:
                 pass
+    yield from sorted(models)
 
 
 def _difference(before: list[str], after: list[str]) -> list[str]:
@@ -177,7 +192,7 @@ def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[.
                     if not isinstance(error, datamodel_code_generator.Error) and type(error).__name__ != raises:
                         raise
                     diagnostics, modules = [f"{type(error).__name__}: {error}"], {}
-            return [*_warnings(caught), *_shipped(diagnostics, modules)]
+            return [*_warnings(caught), *_shipped(diagnostics, modules, maps=backend in STDLIB)]
 
         yield f"{count} {backend} {variant}", render
 

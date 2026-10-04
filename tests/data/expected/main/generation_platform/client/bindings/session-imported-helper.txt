@@ -11,14 +11,14 @@ render dataclasses.dataclass default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-imported-helper.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic APIGenerationError
   diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/anyOf/1/$ref: A schema reference pointer does not exist
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Bad/properties/value: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Bad/properties/value: The custom_uuid.UUID type has no structural conversion
 render typing.TypedDict default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-imported-helper.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic APIGenerationError
   diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/anyOf/1/$ref: A schema reference pointer does not exist
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Bad/properties/value: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Bad/properties/value: The custom_uuid.UUID type has no structural conversion
 render msgspec.Struct default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-imported-helper.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic APIGenerationError
   diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Bad/properties/value/anyOf/1/$ref: A schema reference pointer does not exist
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Bad/properties/value: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Bad/properties/value: The custom_uuid.UUID type has no structural conversion

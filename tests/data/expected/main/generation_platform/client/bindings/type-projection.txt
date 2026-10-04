@@ -35,12 +35,10 @@ render pydantic_v2.BaseModel default
       native: Optional[UUID] = None
       bound_native: Optional[argparse.HelpFormatter._Section] = None
   model_bindings.py
-  _model_0 symbol='models:Child', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.Child]
-  codec_1 -> PydanticModelCodec[models.Child]
-  codec_2 -> PydanticModelCodec[uuid.UUID]
-  codec_3 -> PydanticModelCodec[uuid.UUID]
+  codec_0 models.Child
+  codec_1 models.Child
+  codec_2 uuid.UUID
+  codec_3 uuid.UUID
 change pydantic_v2.BaseModel default literal-order
   @@ -32 +32 @@
   -    literal: Optional[Literal[True, 1, 'one']] = None
@@ -111,12 +109,10 @@ render msgspec.Struct default
       native: Union[UUID, UnsetType] = UNSET
       bound_native: Union[argparse.HelpFormatter._Section, UnsetType] = UNSET
   model_bindings.py
-  _model_0 symbol='models:Child', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[models.Child]
-  codec_1 -> StructuralModelCodec[models.Child]
-  codec_2 -> StructuralModelCodec[uuid.UUID]
-  codec_3 -> StructuralModelCodec[uuid.UUID]
+  codec_0 models.Child
+  codec_1 models.Child
+  codec_2 uuid.UUID
+  codec_3 uuid.UUID
 change msgspec.Struct default builtin
   @@ -20 +20 @@
   -    flag: Union[bool, UnsetType] = UNSET

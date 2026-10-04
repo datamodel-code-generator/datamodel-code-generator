@@ -15,10 +15,7 @@ render pydantic_v2.BaseModel default
       value: StrictStr
       color: Color
   model_bindings.py
-  _model_0 symbol='models:Record', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
-    FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Record.color', native_name='color', wire_name='color', validation_key='color', validation_keys=('color',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.Record]
-  codec_1 -> PydanticModelCodec[models.Record]
-  codec_2 -> PydanticModelCodec[palette.Color]
-  codec_3 -> PydanticModelCodec[palette.Color]
+  codec_0 models.Record
+  codec_1 models.Record
+  codec_2 palette.Color
+  codec_3 palette.Color

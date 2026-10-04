@@ -22,14 +22,12 @@ render msgspec.Struct default
   
   Event: TypeAlias = Union[StartedEvent, StoppedEvent]
   model_bindings.py
-  _model_0 symbol='models:StartedEvent', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/StartedEvent', tag=('type', 'started')
-  _model_1 symbol='models:StoppedEvent', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/StoppedEvent', tag=('type', 'stopped')
-  codec_0 -> StructuralModelCodec[models.Event]
-  codec_1 -> StructuralModelCodec[models.Event]
-  codec_2 -> StructuralModelCodec[models.StartedEvent]
-  codec_3 -> StructuralModelCodec[models.StartedEvent]
-  codec_4 -> StructuralModelCodec[models.StoppedEvent]
-  codec_5 -> StructuralModelCodec[models.StoppedEvent]
+  codec_0 models.Event
+  codec_1 models.Event
+  codec_2 models.StartedEvent
+  codec_3 models.StartedEvent
+  codec_4 models.StoppedEvent
+  codec_5 models.StoppedEvent
 change msgspec.Struct default unexpected-emission
   @@ -12 +12 @@
   -    pass

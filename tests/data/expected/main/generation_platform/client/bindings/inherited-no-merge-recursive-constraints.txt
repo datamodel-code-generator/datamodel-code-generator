@@ -79,60 +79,12 @@ render pydantic_v2.BaseModel default
   
   RecursiveNode.model_rebuild()
   model_bindings.py
-  _model_0 symbol='models:RecursiveNode', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveNode'
-    FieldBinding(field_id='models:RecursiveNode.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:RecursiveNode.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:RecursiveNode.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:RecursiveNode.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_1 symbol='models:RecursiveBase', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveBase'
-    FieldBinding(field_id='models:RecursiveBase.nextValue', native_name='nextValue', wire_name='nextValue', validation_key='nextValue', validation_keys=('nextValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-    FieldBinding(field_id='models:RecursiveBase.childrenValue', native_name='childrenValue', wire_name='childrenValue', validation_key='childrenValue', validation_keys=('childrenValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-    FieldBinding(field_id='models:RecursiveBase.deepValue', native_name='deepValue', wire_name='deepValue', validation_key='deepValue', validation_keys=('deepValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-  _model_2 symbol='models:Child', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/childrenValue/properties/children/items'
-    FieldBinding(field_id='models:Child.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Child.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_3 symbol='models:Child1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue/properties/next/properties/children/items'
-    FieldBinding(field_id='models:Child1.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child1.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child1.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Next'))
-    FieldBinding(field_id='models:Child1.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_4 symbol='models:ChildrenValue', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/childrenValue'
-    FieldBinding(field_id='models:ChildrenValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:ChildrenValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:ChildrenValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:ChildrenValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:Child')))
-  _model_5 symbol='models:DeepValue', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue'
-    FieldBinding(field_id='models:DeepValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DeepValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DeepValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Next1'))
-    FieldBinding(field_id='models:DeepValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_6 symbol='models:Next', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/nextValue/properties/next'
-    FieldBinding(field_id='models:Next.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Next.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_7 symbol='models:Next1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue/properties/next'
-    FieldBinding(field_id='models:Next1.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next1.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next1.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Next1.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:Child1')))
-  _model_8 symbol='models:NextValue', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/nextValue'
-    FieldBinding(field_id='models:NextValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:NextValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:NextValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Next'))
-    FieldBinding(field_id='models:NextValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_9 symbol='models:RecursiveChild', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild'
-    FieldBinding(field_id='models:RecursiveChild.nextValue', native_name='nextValue', wire_name='nextValue', validation_key='nextValue', validation_keys=('nextValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NextValue'))
-    FieldBinding(field_id='models:RecursiveChild.childrenValue', native_name='childrenValue', wire_name='childrenValue', validation_key='childrenValue', validation_keys=('childrenValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ChildrenValue'))
-    FieldBinding(field_id='models:RecursiveChild.deepValue', native_name='deepValue', wire_name='deepValue', validation_key='deepValue', validation_keys=('deepValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:DeepValue'))
-  codec_0 -> PydanticModelCodec[models.RecursiveNode]
-  codec_1 -> PydanticModelCodec[models.RecursiveNode]
-  codec_2 -> PydanticModelCodec[models.RecursiveBase]
-  codec_3 -> PydanticModelCodec[models.RecursiveBase]
-  codec_4 -> PydanticModelCodec[models.RecursiveChild]
-  codec_5 -> PydanticModelCodec[models.RecursiveChild]
+  codec_0 models.RecursiveNode
+  codec_1 models.RecursiveNode
+  codec_2 models.RecursiveBase
+  codec_3 models.RecursiveBase
+  codec_4 models.RecursiveChild
+  codec_5 models.RecursiveChild
 render pydantic_v2.dataclass default
   models.py
   # generated by datamodel-codegen:
@@ -231,60 +183,12 @@ render pydantic_v2.dataclass default
       childrenValue: ChildrenValue
       deepValue: DeepValue
   model_bindings.py
-  _model_0 symbol='models:RecursiveNode', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveNode'
-    FieldBinding(field_id='models:RecursiveNode.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:RecursiveNode.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:RecursiveNode.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:RecursiveNode.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_1 symbol='models:RecursiveBase', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveBase'
-    FieldBinding(field_id='models:RecursiveBase.nextValue', native_name='nextValue', wire_name='nextValue', validation_key='nextValue', validation_keys=('nextValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-    FieldBinding(field_id='models:RecursiveBase.childrenValue', native_name='childrenValue', wire_name='childrenValue', validation_key='childrenValue', validation_keys=('childrenValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-    FieldBinding(field_id='models:RecursiveBase.deepValue', native_name='deepValue', wire_name='deepValue', validation_key='deepValue', validation_keys=('deepValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-  _model_2 symbol='models:Child', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/childrenValue/properties/children/items'
-    FieldBinding(field_id='models:Child.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Child.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_3 symbol='models:Child1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue/properties/next/properties/children/items'
-    FieldBinding(field_id='models:Child1.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child1.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child1.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Next'))
-    FieldBinding(field_id='models:Child1.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_4 symbol='models:ChildrenValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/childrenValue'
-    FieldBinding(field_id='models:ChildrenValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:ChildrenValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:ChildrenValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:ChildrenValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:Child')))
-  _model_5 symbol='models:DeepValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue'
-    FieldBinding(field_id='models:DeepValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DeepValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DeepValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Next1'))
-    FieldBinding(field_id='models:DeepValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_6 symbol='models:Next', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/nextValue/properties/next'
-    FieldBinding(field_id='models:Next.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Next.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_7 symbol='models:Next1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue/properties/next'
-    FieldBinding(field_id='models:Next1.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next1.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next1.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Next1.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:Child1')))
-  _model_8 symbol='models:NextValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/nextValue'
-    FieldBinding(field_id='models:NextValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:NextValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:NextValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Next'))
-    FieldBinding(field_id='models:NextValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_9 symbol='models:RecursiveChild', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild'
-    FieldBinding(field_id='models:RecursiveChild.nextValue', native_name='nextValue', wire_name='nextValue', validation_key='nextValue', validation_keys=('nextValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NextValue'))
-    FieldBinding(field_id='models:RecursiveChild.childrenValue', native_name='childrenValue', wire_name='childrenValue', validation_key='childrenValue', validation_keys=('childrenValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ChildrenValue'))
-    FieldBinding(field_id='models:RecursiveChild.deepValue', native_name='deepValue', wire_name='deepValue', validation_key='deepValue', validation_keys=('deepValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:DeepValue'))
-  codec_0 -> PydanticModelCodec[models.RecursiveNode]
-  codec_1 -> PydanticModelCodec[models.RecursiveNode]
-  codec_2 -> PydanticModelCodec[models.RecursiveBase]
-  codec_3 -> PydanticModelCodec[models.RecursiveBase]
-  codec_4 -> PydanticModelCodec[models.RecursiveChild]
-  codec_5 -> PydanticModelCodec[models.RecursiveChild]
+  codec_0 models.RecursiveNode
+  codec_1 models.RecursiveNode
+  codec_2 models.RecursiveBase
+  codec_3 models.RecursiveBase
+  codec_4 models.RecursiveChild
+  codec_5 models.RecursiveChild
 render dataclasses.dataclass default
   models.py
   # generated by datamodel-codegen:
@@ -382,60 +286,22 @@ render dataclasses.dataclass default
       childrenValue: ChildrenValue
       deepValue: DeepValue
   model_bindings.py
-  _model_0 symbol='models:RecursiveNode', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveNode'
-    FieldBinding(field_id='models:RecursiveNode.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:RecursiveNode.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:RecursiveNode.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:RecursiveNode.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_1 symbol='models:RecursiveBase', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveBase'
-    FieldBinding(field_id='models:RecursiveBase.nextValue', native_name='nextValue', wire_name='nextValue', validation_key='nextValue', validation_keys=('nextValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-    FieldBinding(field_id='models:RecursiveBase.childrenValue', native_name='childrenValue', wire_name='childrenValue', validation_key='childrenValue', validation_keys=('childrenValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-    FieldBinding(field_id='models:RecursiveBase.deepValue', native_name='deepValue', wire_name='deepValue', validation_key='deepValue', validation_keys=('deepValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-  _model_2 symbol='models:Child', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/childrenValue/properties/children/items'
-    FieldBinding(field_id='models:Child.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Child.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_3 symbol='models:Child1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue/properties/next/properties/children/items'
-    FieldBinding(field_id='models:Child1.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child1.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child1.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Next'))
-    FieldBinding(field_id='models:Child1.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_4 symbol='models:ChildrenValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/childrenValue'
-    FieldBinding(field_id='models:ChildrenValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:ChildrenValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:ChildrenValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:ChildrenValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:Child')))
-  _model_5 symbol='models:DeepValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue'
-    FieldBinding(field_id='models:DeepValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DeepValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DeepValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Next1'))
-    FieldBinding(field_id='models:DeepValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_6 symbol='models:Next', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/nextValue/properties/next'
-    FieldBinding(field_id='models:Next.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Next.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_7 symbol='models:Next1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue/properties/next'
-    FieldBinding(field_id='models:Next1.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next1.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next1.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Next1.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:Child1')))
-  _model_8 symbol='models:NextValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/nextValue'
-    FieldBinding(field_id='models:NextValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:NextValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:NextValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Next'))
-    FieldBinding(field_id='models:NextValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_9 symbol='models:RecursiveChild', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild'
-    FieldBinding(field_id='models:RecursiveChild.nextValue', native_name='nextValue', wire_name='nextValue', validation_key='nextValue', validation_keys=('nextValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NextValue'))
-    FieldBinding(field_id='models:RecursiveChild.childrenValue', native_name='childrenValue', wire_name='childrenValue', validation_key='childrenValue', validation_keys=('childrenValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ChildrenValue'))
-    FieldBinding(field_id='models:RecursiveChild.deepValue', native_name='deepValue', wire_name='deepValue', validation_key='deepValue', validation_keys=('deepValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:DeepValue'))
-  codec_0 -> StructuralModelCodec[models.RecursiveNode]
-  codec_1 -> StructuralModelCodec[models.RecursiveNode]
-  codec_2 -> StructuralModelCodec[models.RecursiveBase]
-  codec_3 -> StructuralModelCodec[models.RecursiveBase]
-  codec_4 -> StructuralModelCodec[models.RecursiveChild]
-  codec_5 -> StructuralModelCodec[models.RecursiveChild]
+  codec_0 models.RecursiveNode
+  codec_1 models.RecursiveNode
+  codec_2 models.RecursiveBase
+  codec_3 models.RecursiveBase
+  codec_4 models.RecursiveChild
+  codec_5 models.RecursiveChild
+  map models:Child name=name, count=count, next=next, children=children
+  map models:Child1 name=name, count=count, next=next, children=children
+  map models:ChildrenValue name=name, count=count, next=next, children=children
+  map models:DeepValue name=name, count=count, next=next, children=children
+  map models:Next name=name, count=count, next=next, children=children
+  map models:Next1 name=name, count=count, next=next, children=children
+  map models:NextValue name=name, count=count, next=next, children=children
+  map models:RecursiveBase nextValue=nextValue, childrenValue=childrenValue, deepValue=deepValue
+  map models:RecursiveChild nextValue=nextValue, childrenValue=childrenValue, deepValue=deepValue
+  map models:RecursiveNode name=name, count=count, next=next, children=children
 render typing.TypedDict default
   models.py
   # generated by datamodel-codegen:
@@ -522,60 +388,22 @@ render typing.TypedDict default
       childrenValue: ChildrenValue
       deepValue: DeepValue
   model_bindings.py
-  _model_0 symbol='models:RecursiveNode', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveNode'
-    FieldBinding(field_id='models:RecursiveNode.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:RecursiveNode.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:RecursiveNode.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:RecursiveNode.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_1 symbol='models:RecursiveBase', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveBase'
-    FieldBinding(field_id='models:RecursiveBase.nextValue', native_name='nextValue', wire_name='nextValue', validation_key='nextValue', validation_keys=('nextValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-    FieldBinding(field_id='models:RecursiveBase.childrenValue', native_name='childrenValue', wire_name='childrenValue', validation_key='childrenValue', validation_keys=('childrenValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-    FieldBinding(field_id='models:RecursiveBase.deepValue', native_name='deepValue', wire_name='deepValue', validation_key='deepValue', validation_keys=('deepValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-  _model_2 symbol='models:Child', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/childrenValue/properties/children/items'
-    FieldBinding(field_id='models:Child.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Child.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_3 symbol='models:Child1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue/properties/next/properties/children/items'
-    FieldBinding(field_id='models:Child1.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child1.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child1.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Next'))
-    FieldBinding(field_id='models:Child1.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_4 symbol='models:ChildrenValue', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/childrenValue'
-    FieldBinding(field_id='models:ChildrenValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:ChildrenValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:ChildrenValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:ChildrenValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:Child')))
-  _model_5 symbol='models:DeepValue', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue'
-    FieldBinding(field_id='models:DeepValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DeepValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DeepValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Next1'))
-    FieldBinding(field_id='models:DeepValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_6 symbol='models:Next', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/nextValue/properties/next'
-    FieldBinding(field_id='models:Next.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Next.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_7 symbol='models:Next1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue/properties/next'
-    FieldBinding(field_id='models:Next1.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next1.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next1.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Next1.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:Child1')))
-  _model_8 symbol='models:NextValue', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/nextValue'
-    FieldBinding(field_id='models:NextValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:NextValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:NextValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Next'))
-    FieldBinding(field_id='models:NextValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_9 symbol='models:RecursiveChild', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild'
-    FieldBinding(field_id='models:RecursiveChild.nextValue', native_name='nextValue', wire_name='nextValue', validation_key='nextValue', validation_keys=('nextValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NextValue'))
-    FieldBinding(field_id='models:RecursiveChild.childrenValue', native_name='childrenValue', wire_name='childrenValue', validation_key='childrenValue', validation_keys=('childrenValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ChildrenValue'))
-    FieldBinding(field_id='models:RecursiveChild.deepValue', native_name='deepValue', wire_name='deepValue', validation_key='deepValue', validation_keys=('deepValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:DeepValue'))
-  codec_0 -> StructuralModelCodec[models.RecursiveNode]
-  codec_1 -> StructuralModelCodec[models.RecursiveNode]
-  codec_2 -> StructuralModelCodec[models.RecursiveBase]
-  codec_3 -> StructuralModelCodec[models.RecursiveBase]
-  codec_4 -> StructuralModelCodec[models.RecursiveChild]
-  codec_5 -> StructuralModelCodec[models.RecursiveChild]
+  codec_0 models.RecursiveNode
+  codec_1 models.RecursiveNode
+  codec_2 models.RecursiveBase
+  codec_3 models.RecursiveBase
+  codec_4 models.RecursiveChild
+  codec_5 models.RecursiveChild
+  map models:Child name=name, count=count, next=next, children=children
+  map models:Child1 name=name, count=count, next=next, children=children
+  map models:ChildrenValue name=name, count=count, next=next, children=children
+  map models:DeepValue name=name, count=count, next=next, children=children
+  map models:Next name=name, count=count, next=next, children=children
+  map models:Next1 name=name, count=count, next=next, children=children
+  map models:NextValue name=name, count=count, next=next, children=children
+  map models:RecursiveBase nextValue=nextValue, childrenValue=childrenValue, deepValue=deepValue
+  map models:RecursiveChild nextValue=nextValue, childrenValue=childrenValue, deepValue=deepValue
+  map models:RecursiveNode name=name, count=count, next=next, children=children
 render msgspec.Struct default
   models.py
   # generated by datamodel-codegen:
@@ -663,57 +491,9 @@ render msgspec.Struct default
       childrenValue: ChildrenValue
       deepValue: DeepValue
   model_bindings.py
-  _model_0 symbol='models:RecursiveNode', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveNode'
-    FieldBinding(field_id='models:RecursiveNode.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:RecursiveNode.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:RecursiveNode.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:RecursiveNode.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_1 symbol='models:RecursiveBase', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveBase'
-    FieldBinding(field_id='models:RecursiveBase.nextValue', native_name='nextValue', wire_name='nextValue', validation_key='nextValue', validation_keys=('nextValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-    FieldBinding(field_id='models:RecursiveBase.childrenValue', native_name='childrenValue', wire_name='childrenValue', validation_key='childrenValue', validation_keys=('childrenValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-    FieldBinding(field_id='models:RecursiveBase.deepValue', native_name='deepValue', wire_name='deepValue', validation_key='deepValue', validation_keys=('deepValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RecursiveNode'))
-  _model_2 symbol='models:Child', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/childrenValue/properties/children/items'
-    FieldBinding(field_id='models:Child.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Child.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_3 symbol='models:Child1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue/properties/next/properties/children/items'
-    FieldBinding(field_id='models:Child1.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child1.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child1.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Next'))
-    FieldBinding(field_id='models:Child1.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_4 symbol='models:ChildrenValue', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/childrenValue'
-    FieldBinding(field_id='models:ChildrenValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:ChildrenValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:ChildrenValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:ChildrenValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:Child')))
-  _model_5 symbol='models:DeepValue', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue'
-    FieldBinding(field_id='models:DeepValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DeepValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DeepValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Next1'))
-    FieldBinding(field_id='models:DeepValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_6 symbol='models:Next', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/nextValue/properties/next'
-    FieldBinding(field_id='models:Next.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Next.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_7 symbol='models:Next1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/deepValue/properties/next'
-    FieldBinding(field_id='models:Next1.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next1.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Next1.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:RecursiveNode'),), nullable=True))
-    FieldBinding(field_id='models:Next1.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:Child1')))
-  _model_8 symbol='models:NextValue', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild/allOf/1/properties/nextValue'
-    FieldBinding(field_id='models:NextValue.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:NextValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:NextValue.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Next'))
-    FieldBinding(field_id='models:NextValue.children', native_name='children', wire_name='children', validation_key='children', validation_keys=('children',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:RecursiveNode')))
-  _model_9 symbol='models:RecursiveChild', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RecursiveChild'
-    FieldBinding(field_id='models:RecursiveChild.nextValue', native_name='nextValue', wire_name='nextValue', validation_key='nextValue', validation_keys=('nextValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NextValue'))
-    FieldBinding(field_id='models:RecursiveChild.childrenValue', native_name='childrenValue', wire_name='childrenValue', validation_key='childrenValue', validation_keys=('childrenValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ChildrenValue'))
-    FieldBinding(field_id='models:RecursiveChild.deepValue', native_name='deepValue', wire_name='deepValue', validation_key='deepValue', validation_keys=('deepValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:DeepValue'))
-  codec_0 -> StructuralModelCodec[models.RecursiveNode]
-  codec_1 -> StructuralModelCodec[models.RecursiveNode]
-  codec_2 -> StructuralModelCodec[models.RecursiveBase]
-  codec_3 -> StructuralModelCodec[models.RecursiveBase]
-  codec_4 -> StructuralModelCodec[models.RecursiveChild]
-  codec_5 -> StructuralModelCodec[models.RecursiveChild]
+  codec_0 models.RecursiveNode
+  codec_1 models.RecursiveNode
+  codec_2 models.RecursiveBase
+  codec_3 models.RecursiveBase
+  codec_4 models.RecursiveChild
+  codec_5 models.RecursiveChild

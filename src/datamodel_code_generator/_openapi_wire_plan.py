@@ -61,9 +61,9 @@ if TYPE_CHECKING:
 CodecReason: TypeAlias = (
     BindingReason
     | Literal[
-        "MC_ADAPTER_REQUIRED",
         "MC_ALIAS_COLLISION",
         "MC_BINDING_MISSING",
+        "MC_CODEC_UNSUPPORTED",
         "MC_PARAMETER_ENCODING",
         "MC_PATTERN_DIALECT",
         "MC_PATTERN_RESOURCE_LIMIT",

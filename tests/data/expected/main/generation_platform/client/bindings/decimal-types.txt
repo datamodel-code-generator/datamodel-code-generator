@@ -13,10 +13,8 @@ render pydantic_v2.BaseModel default
   class Prices(BaseModel):
       price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None
   model_bindings.py
-  _model_0 symbol='models:Prices', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Prices'
-    FieldBinding(field_id='models:Prices.price', native_name='price', wire_name='price', validation_key='price', validation_keys=('price',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.Prices]
-  codec_1 -> PydanticModelCodec[models.Prices]
+  codec_0 models.Prices
+  codec_1 models.Prices
 change pydantic_v2.BaseModel default equivalent-exponent
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None

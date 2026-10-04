@@ -24,19 +24,11 @@ render pydantic_v2.BaseModel default
   class ForwardDerived(ForwardBase):
       value: str
   model_bindings.py
-  _model_0 symbol='models:Base', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
-    FieldBinding(field_id='models:Base.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_1 symbol='models:ForwardDerived', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ForwardDerived'
-    FieldBinding(field_id='models:ForwardDerived.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_2 symbol='models:ForwardBase', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ForwardBase'
-    FieldBinding(field_id='models:ForwardBase.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_3 symbol='models:Holder', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder'
-    FieldBinding(field_id='models:Holder.base', native_name='base', wire_name='base', validation_key='base', validation_keys=('base',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:ForwardBase'))
-  codec_0 -> PydanticModelCodec[models.Base]
-  codec_1 -> PydanticModelCodec[models.Base]
-  codec_2 -> PydanticModelCodec[models.ForwardDerived]
-  codec_3 -> PydanticModelCodec[models.ForwardDerived]
-  codec_4 -> PydanticModelCodec[models.ForwardBase]
-  codec_5 -> PydanticModelCodec[models.ForwardBase]
-  codec_6 -> PydanticModelCodec[models.Holder]
-  codec_7 -> PydanticModelCodec[models.Holder]
+  codec_0 models.Base
+  codec_1 models.Base
+  codec_2 models.ForwardDerived
+  codec_3 models.ForwardDerived
+  codec_4 models.ForwardBase
+  codec_5 models.ForwardBase
+  codec_6 models.Holder
+  codec_7 models.Holder

@@ -21,12 +21,5 @@ render pydantic_v2.BaseModel default
       root: Optional[LocalRoots] = None
       local: Optional[Local] = None
   model_bindings.py
-  _model_0 symbol='models:Local', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/$defs/Local'
-    FieldBinding(field_id='models:Local.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_1 symbol='models:LocalRoots', native_kind='model', schema_id='https://dcg.invalid/inputs/root#'
-    FieldBinding(field_id='models:LocalRoots.root', native_name='root', wire_name='root', validation_key='root', validation_keys=('root',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_2 symbol='models:Uses', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/paths/~1bindings~10/post/requestBody/content/application~1json/schema'
-    FieldBinding(field_id='models:Uses.root', native_name='root', wire_name='root', validation_key='root', validation_keys=('root',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:LocalRoots'))
-    FieldBinding(field_id='models:Uses.local', native_name='local', wire_name='local', validation_key='local', validation_keys=('local',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Local'))
-  codec_0 -> PydanticModelCodec[models.Uses]
-  codec_1 -> PydanticModelCodec[models.Uses]
+  codec_0 models.Uses
+  codec_1 models.Uses

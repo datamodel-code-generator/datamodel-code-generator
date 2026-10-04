@@ -24,8 +24,4 @@ render pydantic_v2.BaseModel default
   class FieldEventsPostRequest(RootModel[List[ItemSchema]]):
       root: List[ItemSchema]
   model_bindings.py
-  _model_0 symbol='models:Batch', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Batch'
-    FieldBinding(field_id='models:Batch.events', native_name='events', wire_name='events', validation_key='events', validation_keys=('events',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:Event')))
-  _model_1 symbol='models:Event', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Event'
-    FieldBinding(field_id='models:Event.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.Batch]
+  codec_0 models.Batch
