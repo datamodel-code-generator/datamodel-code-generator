@@ -11,22 +11,13 @@ from .._runtime.protocols.caches import (
     CacheResult,
     CacheStore,
 )
-from .._runtime.protocols.circuit_records import (
-    CircuitKey,
-    CircuitPermit,
-    CircuitSnapshot,
-)
 from .._runtime.protocols.options import (
-    AsyncCircuitStore,
     CacheOptions,
-    CircuitBreakerOptions,
-    CircuitStore,
     PaginationOptions,
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
     QueueOptions,
-    ResolvedCircuitBreakerOptions,
     StreamOptions,
     UploadOptions,
     WebSocketTransportOptions,
@@ -87,7 +78,6 @@ from .._runtime.protocols.websocket_types import (
 
 if TYPE_CHECKING:
     from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
-    from .._runtime.protocols.circuits import AsyncMemoryCircuitStore, MemoryCircuitStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
@@ -103,11 +93,9 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AsyncCacheStore",
-    "AsyncCircuitStore",
     "AsyncEventStream",
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
-    "AsyncMemoryCircuitStore",
     "AsyncMemoryQueueStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
@@ -125,11 +113,6 @@ __all__ = [
     "CacheResult",
     "CacheStore",
     "CancelReceipt",
-    "CircuitBreakerOptions",
-    "CircuitKey",
-    "CircuitPermit",
-    "CircuitSnapshot",
-    "CircuitStore",
     "Continuation",
     "DrainReport",
     "EventStream",
@@ -137,7 +120,6 @@ __all__ = [
     "KeySet",
     "LroHandle",
     "MemoryCacheStore",
-    "MemoryCircuitStore",
     "MemoryQueueStore",
     "MemoryReplayStore",
     "Message",
@@ -163,7 +145,6 @@ __all__ = [
     "QueueStore",
     "ReplayStore",
     "RequestTarget",
-    "ResolvedCircuitBreakerOptions",
     "ResolvedQueueOptions",
     "ResolvedWSOptions",
     "ResolvedWebSocketTransportOptions",
@@ -211,10 +192,6 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
-    if name in {"AsyncMemoryCircuitStore", "MemoryCircuitStore"}:
-        from .._runtime.protocols import circuits
-
-        return getattr(circuits, name)
     if name in {"AsyncUploadHandle", "UploadHandle"}:
         from .._runtime.protocols import uploads
 
