@@ -43,7 +43,7 @@
   ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store')
   ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
-  ResumeState parameters=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at') keyword-only=True hints=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at', 'return') final=True
+  ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   Continuation.kind values=('cursor', 'offset', 'page', 'next_url', 'link')
@@ -223,40 +223,26 @@
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"expires_at":"2999-01-01T09:00:00+09:00","helper_fingerprint":"helper-secret","payload":"AP9wYXlsb2FkLXNlY3JldA==","security_fingerprint":"security-secret","sha256":"32a44d0df7cc7bfe76d0d579c1d93eeae27eeb6fbf391381b25de3afbe58808c","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
-  resume independent checksum=True body={"expires_at":"2999-01-01T09:00:00+09:00","helper_fingerprint":"helper-secret","payload":"AP9wYXlsb2FkLXNlY3JldA==","security_fingerprint":"security-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
-  resume payload=b'\x00\xffpayload-secret'
+  resume export={"helper":"helper-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
   resume export stable=True
   resume identity equality=True/False
   resume dict=False public=['export']
   resume round trip=ResumeState(version=1) distinct=True same=True
-  resume minimal export = b'{"expires_at":null,"helper_fingerprint":"","payload":"","security_fingerprint":"","sha256":"cd736bffc4125515667101b9bb3c624433abeb1c19e8d4042743924f75f939b4","state":null,"version":1}'
+  resume minimal export = b'{"helper":"","state":null,"version":1}'
   resume set state ! FrozenInstanceError: ResumeState is immutable []
   resume set new ! FrozenInstanceError: ResumeState is immutable []
   resume delete state ! FrozenInstanceError: ResumeState is immutable []
   resume copies=True/True
   resume pickle ! TypeError: ResumeState cannot be pickled []
-  resume export over limit ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777397) [condition='size', limit=16777216, observed_bytes=16777397] resume_state_too_large_error
-  resume helper None ! TypeError: helper_fingerprint must be a string []
+  resume helper None ! TypeError: helper must be a string []
   resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume security surrogate ! ValueError: A wire string must not contain lone surrogates []
   resume state integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  resume security bytes ! TypeError: security_fingerprint must be a string []
-  resume payload bytearray ! TypeError: payload must be bytes []
-  resume payload string ! TypeError: payload must be bytes []
-  resume expiry naive ! ValueError: expires_at must be timezone-aware []
-  resume expiry string ! TypeError: expires_at must be a datetime or None []
-  resume expiry past = ResumeState(version=1)
   resume state object ! TypeError: object is not a JSON value []
   resume state set ! TypeError: set is not a JSON value []
   resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
-  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 4 were given []
+  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
   import valid = ResumeState(version=1)
-  import valid future expiry = ResumeState(version=1)
-  import exact limit = ResumeState(version=1)
-  import over limit ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777217) [condition='size', limit=16777216, observed_bytes=16777217] resume_state_too_large_error
-  import over limit malformed ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777217) [condition='size', limit=16777216, observed_bytes=16777217] resume_state_too_large_error
   import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
@@ -270,33 +256,14 @@
   import version bool ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import version float ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import helper type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import security type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload alphabet ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload padding ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry naive ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry text ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry number ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry UTC designator ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry basic format ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry fraction ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload noncanonical ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import deeply nested state ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest uppercase ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest short ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import version 2 ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 0 ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 2 extra field ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 2 missing field ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version missing ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import version 2 wrong checksum ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
-  import wrong checksum ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
-  import tampered state ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
-  import expired ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error
-  import expired wrong checksum ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
   import secret=False
-  import exported independent envelope=True
+  import exported independent token=True
   PaginationOptions.max_pages None = None
   PaginationOptions.max_pages 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_pages',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_pages 1 = 1
@@ -543,7 +510,7 @@
   ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store')
   ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
-  ResumeState parameters=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at') keyword-only=True hints=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at', 'return') final=True
+  ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   Continuation.kind values=('cursor', 'offset', 'page', 'next_url', 'link')
@@ -723,40 +690,26 @@
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"expires_at":"2999-01-01T09:00:00+09:00","helper_fingerprint":"helper-secret","payload":"AP9wYXlsb2FkLXNlY3JldA==","security_fingerprint":"security-secret","sha256":"32a44d0df7cc7bfe76d0d579c1d93eeae27eeb6fbf391381b25de3afbe58808c","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
-  resume independent checksum=True body={"expires_at":"2999-01-01T09:00:00+09:00","helper_fingerprint":"helper-secret","payload":"AP9wYXlsb2FkLXNlY3JldA==","security_fingerprint":"security-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
-  resume payload=b'\x00\xffpayload-secret'
+  resume export={"helper":"helper-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
   resume export stable=True
   resume identity equality=True/False
   resume dict=False public=['export']
   resume round trip=ResumeState(version=1) distinct=True same=True
-  resume minimal export = b'{"expires_at":null,"helper_fingerprint":"","payload":"","security_fingerprint":"","sha256":"cd736bffc4125515667101b9bb3c624433abeb1c19e8d4042743924f75f939b4","state":null,"version":1}'
+  resume minimal export = b'{"helper":"","state":null,"version":1}'
   resume set state ! FrozenInstanceError: ResumeState is immutable []
   resume set new ! FrozenInstanceError: ResumeState is immutable []
   resume delete state ! FrozenInstanceError: ResumeState is immutable []
   resume copies=True/True
   resume pickle ! TypeError: ResumeState cannot be pickled []
-  resume export over limit ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777397) [condition='size', limit=16777216, observed_bytes=16777397] resume_state_too_large_error
-  resume helper None ! TypeError: helper_fingerprint must be a string []
+  resume helper None ! TypeError: helper must be a string []
   resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume security surrogate ! ValueError: A wire string must not contain lone surrogates []
   resume state integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  resume security bytes ! TypeError: security_fingerprint must be a string []
-  resume payload bytearray ! TypeError: payload must be bytes []
-  resume payload string ! TypeError: payload must be bytes []
-  resume expiry naive ! ValueError: expires_at must be timezone-aware []
-  resume expiry string ! TypeError: expires_at must be a datetime or None []
-  resume expiry past = ResumeState(version=1)
   resume state object ! TypeError: object is not a JSON value []
   resume state set ! TypeError: set is not a JSON value []
   resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
-  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 4 were given []
+  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
   import valid = ResumeState(version=1)
-  import valid future expiry = ResumeState(version=1)
-  import exact limit = ResumeState(version=1)
-  import over limit ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777217) [condition='size', limit=16777216, observed_bytes=16777217] resume_state_too_large_error
-  import over limit malformed ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777217) [condition='size', limit=16777216, observed_bytes=16777217] resume_state_too_large_error
   import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
@@ -770,33 +723,14 @@
   import version bool ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import version float ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import helper type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import security type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload alphabet ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload padding ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry naive ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry text ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry number ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry UTC designator ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry basic format ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry fraction ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload noncanonical ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import deeply nested state ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest uppercase ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest short ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import version 2 ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 0 ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 2 extra field ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 2 missing field ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version missing ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import version 2 wrong checksum ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
-  import wrong checksum ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
-  import tampered state ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
-  import expired ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error
-  import expired wrong checksum ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
   import secret=False
-  import exported independent envelope=True
+  import exported independent token=True
   PaginationOptions.max_pages None = None
   PaginationOptions.max_pages 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_pages',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_pages 1 = 1
@@ -1043,7 +977,7 @@
   ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store')
   ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
-  ResumeState parameters=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at') keyword-only=True hints=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at', 'return') final=True
+  ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   Continuation.kind values=('cursor', 'offset', 'page', 'next_url', 'link')
@@ -1223,40 +1157,26 @@
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"expires_at":"2999-01-01T09:00:00+09:00","helper_fingerprint":"helper-secret","payload":"AP9wYXlsb2FkLXNlY3JldA==","security_fingerprint":"security-secret","sha256":"32a44d0df7cc7bfe76d0d579c1d93eeae27eeb6fbf391381b25de3afbe58808c","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
-  resume independent checksum=True body={"expires_at":"2999-01-01T09:00:00+09:00","helper_fingerprint":"helper-secret","payload":"AP9wYXlsb2FkLXNlY3JldA==","security_fingerprint":"security-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
-  resume payload=b'\x00\xffpayload-secret'
+  resume export={"helper":"helper-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
   resume export stable=True
   resume identity equality=True/False
   resume dict=False public=['export']
   resume round trip=ResumeState(version=1) distinct=True same=True
-  resume minimal export = b'{"expires_at":null,"helper_fingerprint":"","payload":"","security_fingerprint":"","sha256":"cd736bffc4125515667101b9bb3c624433abeb1c19e8d4042743924f75f939b4","state":null,"version":1}'
+  resume minimal export = b'{"helper":"","state":null,"version":1}'
   resume set state ! FrozenInstanceError: ResumeState is immutable []
   resume set new ! FrozenInstanceError: ResumeState is immutable []
   resume delete state ! FrozenInstanceError: ResumeState is immutable []
   resume copies=True/True
   resume pickle ! TypeError: ResumeState cannot be pickled []
-  resume export over limit ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777397) [condition='size', limit=16777216, observed_bytes=16777397] resume_state_too_large_error
-  resume helper None ! TypeError: helper_fingerprint must be a string []
+  resume helper None ! TypeError: helper must be a string []
   resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume security surrogate ! ValueError: A wire string must not contain lone surrogates []
   resume state integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  resume security bytes ! TypeError: security_fingerprint must be a string []
-  resume payload bytearray ! TypeError: payload must be bytes []
-  resume payload string ! TypeError: payload must be bytes []
-  resume expiry naive ! ValueError: expires_at must be timezone-aware []
-  resume expiry string ! TypeError: expires_at must be a datetime or None []
-  resume expiry past = ResumeState(version=1)
   resume state object ! TypeError: object is not a JSON value []
   resume state set ! TypeError: set is not a JSON value []
   resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
-  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 4 were given []
+  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
   import valid = ResumeState(version=1)
-  import valid future expiry = ResumeState(version=1)
-  import exact limit = ResumeState(version=1)
-  import over limit ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777217) [condition='size', limit=16777216, observed_bytes=16777217] resume_state_too_large_error
-  import over limit malformed ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777217) [condition='size', limit=16777216, observed_bytes=16777217] resume_state_too_large_error
   import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
@@ -1270,33 +1190,14 @@
   import version bool ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import version float ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import helper type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import security type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload alphabet ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload padding ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry naive ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry text ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry number ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry UTC designator ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry basic format ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry fraction ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload noncanonical ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import deeply nested state ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest uppercase ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest short ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import version 2 ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 0 ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 2 extra field ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 2 missing field ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version missing ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import version 2 wrong checksum ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
-  import wrong checksum ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
-  import tampered state ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
-  import expired ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error
-  import expired wrong checksum ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
   import secret=False
-  import exported independent envelope=True
+  import exported independent token=True
   PaginationOptions.max_pages None = None
   PaginationOptions.max_pages 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_pages',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_pages 1 = 1
@@ -1543,7 +1444,7 @@
   ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store')
   ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
-  ResumeState parameters=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at') keyword-only=True hints=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at', 'return') final=True
+  ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   Continuation.kind values=('cursor', 'offset', 'page', 'next_url', 'link')
@@ -1723,40 +1624,26 @@
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"expires_at":"2999-01-01T09:00:00+09:00","helper_fingerprint":"helper-secret","payload":"AP9wYXlsb2FkLXNlY3JldA==","security_fingerprint":"security-secret","sha256":"32a44d0df7cc7bfe76d0d579c1d93eeae27eeb6fbf391381b25de3afbe58808c","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
-  resume independent checksum=True body={"expires_at":"2999-01-01T09:00:00+09:00","helper_fingerprint":"helper-secret","payload":"AP9wYXlsb2FkLXNlY3JldA==","security_fingerprint":"security-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
-  resume payload=b'\x00\xffpayload-secret'
+  resume export={"helper":"helper-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
   resume export stable=True
   resume identity equality=True/False
   resume dict=False public=['export']
   resume round trip=ResumeState(version=1) distinct=True same=True
-  resume minimal export = b'{"expires_at":null,"helper_fingerprint":"","payload":"","security_fingerprint":"","sha256":"cd736bffc4125515667101b9bb3c624433abeb1c19e8d4042743924f75f939b4","state":null,"version":1}'
+  resume minimal export = b'{"helper":"","state":null,"version":1}'
   resume set state ! FrozenInstanceError: ResumeState is immutable []
   resume set new ! FrozenInstanceError: ResumeState is immutable []
   resume delete state ! FrozenInstanceError: ResumeState is immutable []
   resume copies=True/True
   resume pickle ! TypeError: ResumeState cannot be pickled []
-  resume export over limit ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777397) [condition='size', limit=16777216, observed_bytes=16777397] resume_state_too_large_error
-  resume helper None ! TypeError: helper_fingerprint must be a string []
+  resume helper None ! TypeError: helper must be a string []
   resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume security surrogate ! ValueError: A wire string must not contain lone surrogates []
   resume state integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  resume security bytes ! TypeError: security_fingerprint must be a string []
-  resume payload bytearray ! TypeError: payload must be bytes []
-  resume payload string ! TypeError: payload must be bytes []
-  resume expiry naive ! ValueError: expires_at must be timezone-aware []
-  resume expiry string ! TypeError: expires_at must be a datetime or None []
-  resume expiry past = ResumeState(version=1)
   resume state object ! TypeError: object is not a JSON value []
   resume state set ! TypeError: set is not a JSON value []
   resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
-  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 4 were given []
+  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
   import valid = ResumeState(version=1)
-  import valid future expiry = ResumeState(version=1)
-  import exact limit = ResumeState(version=1)
-  import over limit ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777217) [condition='size', limit=16777216, observed_bytes=16777217] resume_state_too_large_error
-  import over limit malformed ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777217) [condition='size', limit=16777216, observed_bytes=16777217] resume_state_too_large_error
   import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
@@ -1770,33 +1657,14 @@
   import version bool ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import version float ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import helper type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import security type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload alphabet ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload padding ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry naive ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry text ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry number ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry UTC designator ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry basic format ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry fraction ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload noncanonical ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import deeply nested state ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest uppercase ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest short ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import version 2 ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 0 ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 2 extra field ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 2 missing field ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version missing ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import version 2 wrong checksum ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
-  import wrong checksum ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
-  import tampered state ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
-  import expired ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error
-  import expired wrong checksum ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
   import secret=False
-  import exported independent envelope=True
+  import exported independent token=True
   PaginationOptions.max_pages None = None
   PaginationOptions.max_pages 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_pages',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_pages 1 = 1
@@ -2043,7 +1911,7 @@
   ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store')
   ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
-  ResumeState parameters=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at') keyword-only=True hints=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at', 'return') final=True
+  ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
   ParameterTarget.location values=('path', 'query', 'header', 'cookie')
   Continuation.kind values=('cursor', 'offset', 'page', 'next_url', 'link')
@@ -2223,40 +2091,26 @@
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"expires_at":"2999-01-01T09:00:00+09:00","helper_fingerprint":"helper-secret","payload":"AP9wYXlsb2FkLXNlY3JldA==","security_fingerprint":"security-secret","sha256":"32a44d0df7cc7bfe76d0d579c1d93eeae27eeb6fbf391381b25de3afbe58808c","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
-  resume independent checksum=True body={"expires_at":"2999-01-01T09:00:00+09:00","helper_fingerprint":"helper-secret","payload":"AP9wYXlsb2FkLXNlY3JldA==","security_fingerprint":"security-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
-  resume payload=b'\x00\xffpayload-secret'
+  resume export={"helper":"helper-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
   resume export stable=True
   resume identity equality=True/False
   resume dict=False public=['export']
   resume round trip=ResumeState(version=1) distinct=True same=True
-  resume minimal export = b'{"expires_at":null,"helper_fingerprint":"","payload":"","security_fingerprint":"","sha256":"cd736bffc4125515667101b9bb3c624433abeb1c19e8d4042743924f75f939b4","state":null,"version":1}'
+  resume minimal export = b'{"helper":"","state":null,"version":1}'
   resume set state ! FrozenInstanceError: ResumeState is immutable []
   resume set new ! FrozenInstanceError: ResumeState is immutable []
   resume delete state ! FrozenInstanceError: ResumeState is immutable []
   resume copies=True/True
   resume pickle ! TypeError: ResumeState cannot be pickled []
-  resume export over limit ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777397) [condition='size', limit=16777216, observed_bytes=16777397] resume_state_too_large_error
-  resume helper None ! TypeError: helper_fingerprint must be a string []
+  resume helper None ! TypeError: helper must be a string []
   resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume security surrogate ! ValueError: A wire string must not contain lone surrogates []
   resume state integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  resume security bytes ! TypeError: security_fingerprint must be a string []
-  resume payload bytearray ! TypeError: payload must be bytes []
-  resume payload string ! TypeError: payload must be bytes []
-  resume expiry naive ! ValueError: expires_at must be timezone-aware []
-  resume expiry string ! TypeError: expires_at must be a datetime or None []
-  resume expiry past = ResumeState(version=1)
   resume state object ! TypeError: object is not a JSON value []
   resume state set ! TypeError: set is not a JSON value []
   resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
-  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 4 were given []
+  resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
   import valid = ResumeState(version=1)
-  import valid future expiry = ResumeState(version=1)
-  import exact limit = ResumeState(version=1)
-  import over limit ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777217) [condition='size', limit=16777216, observed_bytes=16777217] resume_state_too_large_error
-  import over limit malformed ! ResumeStateTooLargeError: ResumeStateTooLargeError(condition='size', limit=16777216, observed_bytes=16777217) [condition='size', limit=16777216, observed_bytes=16777217] resume_state_too_large_error
   import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
@@ -2270,33 +2124,14 @@
   import version bool ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import version float ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import helper type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import security type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload alphabet ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload padding ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry naive ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry text ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry number ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry UTC designator ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry basic format ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import expiry fraction ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import payload noncanonical ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import deeply nested state ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest uppercase ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest short ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import digest type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   import version 2 ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 0 ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 2 extra field ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version 2 missing field ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
   import version missing ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  import version 2 wrong checksum ! ResumeStateError: ResumeStateError(condition='version') [condition='version'] resume_state_error
-  import wrong checksum ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
-  import tampered state ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
-  import expired ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error
-  import expired wrong checksum ! ResumeStateError: ResumeStateError(condition='checksum') [condition='checksum'] resume_state_error
   import secret=False
-  import exported independent envelope=True
+  import exported independent token=True
   PaginationOptions.max_pages None = None
   PaginationOptions.max_pages 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_pages',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_pages 1 = 1

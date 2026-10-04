@@ -24,7 +24,7 @@ PLAN_0: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     offset=ParameterTarget(location='header', name='Upload-Offset'),
     max_chunk_bytes=4,
     partial_commit=True,
-    fingerprint='124b9ec5eabb15994ebfc65ee1ddabbbff2a87df94db360255c9f913da981a55',
+    fingerprint='23fcacceee627393eddcb01ee5db0667aefe43e036ae5b050e7f36278e594be6',
     size=ParameterTarget(location='header', name='Upload-Length'),
     expires_at=HeaderSelector(name='Upload-Expires'),
     probe_bindings=(
@@ -50,6 +50,10 @@ PLAN_0: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
         ),
     ),
     length=ParameterTarget(location='header', name='X-Chunk-Length'),
+    checksum=ParameterTarget(location='header', name='Upload-Checksum'),
+    checksum_algorithm='sha1',
+    checksum_encoding='base64',
+    checksum_prefix=True,
 )
 
 
@@ -110,7 +114,7 @@ PLAN_2: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     offset=ParameterTarget(location='query', name='offset'),
     max_chunk_bytes=4,
     partial_commit=False,
-    fingerprint='7186c0578e3ba5e5009242b1b30b049ab85b52aa1cf7499772d9f9701fde756c',
+    fingerprint='5fefd816d6747fc2b80a934a69e81db21f0bd4de6acd5d42faf26d656966714b',
     probe_bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='fileId'),
@@ -129,4 +133,8 @@ PLAN_2: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
             selector=BodySelector(pointer='/id'),
         ),
     ),
+    checksum=ParameterTarget(location='query', name='checksum'),
+    checksum_algorithm='sha256',
+    checksum_encoding='hex',
+    checksum_prefix=False,
 )
