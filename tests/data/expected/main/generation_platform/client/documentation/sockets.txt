@@ -416,9 +416,9 @@ wait for retained cleanup; it does not authorize another send or restore an expi
 ## WebSocket sessions
 
 A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
-initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the
-call's options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are
-imported from:
+initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises
+the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the call's options, then
+`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
 
 - `client.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,
   `Message`, `PingReceipt`, and the connector contracts `WebSocketConnector`, `AsyncWebSocketConnector`,

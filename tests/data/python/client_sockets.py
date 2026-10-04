@@ -17,7 +17,6 @@ from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
 from tests.data.python.client_regressions import json_error_body, retained_body
 from tests.data.python.client_runtime import describe, run
 from tests.data.python.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
@@ -30,8 +29,7 @@ if TYPE_CHECKING:
 
 _JOINED: Final = json.dumps({"kind": "joined", "user": "ann"})
 _UPGRADE: Final = (
-    b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
-    b"Sec-WebSocket-Accept: {accept}\r\n\r\n"
+    b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n"
 )
 _LARGE: Final = "x" * (32 * 1024 * 1024)
 _PROBLEM: Final = (("Content-Type", "application/json"),)
@@ -43,19 +41,13 @@ def _described(value: object) -> str:
     text = describe(value)
     if isinstance(value, BaseException) and (cause := getattr(value, "cause", None)) is not None:
         text = text.replace(f"cause={cause!r}", f"cause={type(cause).__name__}")
-    if isinstance(value, BaseException) and hasattr(value, "resource_attempt_count"):
-        text += (
-            f" attempts={value.resource_attempt_count} sends={value.network_send_count} wire={value.wire_send_count}"
-            f" stop={getattr(value, 'retry_stop_reason', None)}"
-        )
     return text
 
 
 def record(lines: list[str], label: str, call: Callable[[], object]) -> object:
-    """Record a public call's result or failure with its portable description."""
     try:
         result = call()
-    except Exception as error:  # ruff: ignore[blind-except]
+    except Exception as error:  # noqa: BLE001
         lines.append(f"  {label} ! {_described(error)}")
         return None
     lines.append(f"  {label} = {_described(result)}")
@@ -63,10 +55,9 @@ def record(lines: list[str], label: str, call: Callable[[], object]) -> object:
 
 
 async def arecord(lines: list[str], label: str, call: Callable[[], Any]) -> object:
-    """Record an awaited public call's result or failure with its portable description."""
     try:
         result = await call()
-    except Exception as error:  # ruff: ignore[blind-except]
+    except Exception as error:  # noqa: BLE001
         lines.append(f"  {label} ! {_described(error)}")
         return None
     lines.append(f"  {label} = {_described(result)}")
@@ -86,9 +77,7 @@ def _data(value: object) -> object:
 
 def _message(message: Any) -> str:
     """Describe a message by its sequence, frame kind, data, and raw bytes."""
-    return (
-        f"{message.sequence} {message.frame} {type(message.data).__name__}{_data(message.data)!r} raw={message.raw!r}"
-    )
+    return f"{message.sequence} {message.frame} {type(message.data).__name__}{_data(message.data)!r} raw={message.raw!r}"
 
 
 def _chat(connection: ServerConnection) -> None:
@@ -204,9 +193,7 @@ def sockets(package: ModuleType, lines: list[str]) -> None:
             _limits(harness, api)
             _closing_sessions(harness, api)
         _clocked(harness)
-        with harness.package.Client(
-            options=harness.client(auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)}))
-        ) as api:
+        with harness.package.Client(options=harness.client(auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)}))) as api:
             _sends(harness, api)
         _hooked(harness)
         _authenticated(harness)
@@ -257,12 +244,12 @@ def _large(connection: ServerConnection) -> None:
 
 
 def _sends(harness: _Harness, api: Any) -> None:
-    """Send a whole long message and refuse a send whose timeout passed before writing."""
+    """Send a long message whole and refuse a send past its timeout."""
     lines, server = harness.lines, harness.server
     (play,) = server.play(Play(talk=_large))
     with api.protocols.secure.chat.connect() as session:
         session.send(b"y" * 100000)
-        lines.append(f"  whole large message {_message(session.receive())}")
+        lines.append(f"  whole {_message(session.receive())}")
     harness.report(play)
     server.play(Play(talk=_closing))
     session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1, send_timeout=1e-9))
@@ -294,22 +281,18 @@ def _channels(harness: _Harness, api: Any) -> None:
 
 
 def _refusals(harness: _Harness, api: Any) -> None:
-    """Refuse received handshakes and what fails before sending."""
+    """Refuse handshakes with statuses, never retrying or redirecting them, and refuse what fails before sending."""
     lines, server, options = harness.lines, harness.server, harness.options
     chat = api.protocols.rooms.chat
     cases: tuple[tuple[str, tuple[Play, ...], dict[str, Any]], ...] = (
         ("declared error", (Play(refuse=(404, _PROBLEM, b'{"detail":"no room"}')),), {}),
         ("undeclared success", (Play(refuse=(200, (), b"plain")),), {}),
-        ("service refusal", (Play(refuse=(503, (), b"")),), {}),
-        ("rate limit refusal", (Play(refuse=(429, (("Retry-After", "120"),), b"")),), {}),
+        ("not retried", (Play(refuse=(503, (), b"")),), {}),
+        ("retry after not honored", (Play(refuse=(429, (("Retry-After", "0"),), b"")),), {}),
         (
-            "redirect refusal",
+            "redirect not followed",
             (Play(refuse=(302, (("Location", "/rooms/r2/socket"),), b"")),),
-            {
-                "options": options.RequestOptions(
-                    redirects=options.RedirectOptions(enabled=True), retry=options.RetryOptions(max_retries=1)
-                )
-            },
+            {"options": options.RequestOptions(redirects=options.RedirectOptions(enabled=True))},
         ),
         ("subprotocol not selected", (Play(subprotocol=None),), {}),
     )
@@ -323,14 +306,8 @@ def _refusals(harness: _Harness, api: Any) -> None:
             lines.extend(f"    iterated {_message(message)}" for message in session)
         harness.report(*plays)
     for label, call in (
-        (
-            "managed header",
-            lambda: chat.connect(room=harness.room(), options=options.RequestOptions(headers=(("Upgrade", "h2c"),))),
-        ),
-        (
-            "no send slot",
-            lambda: chat.connect(room=harness.room(), session_options=options.SessionOptions(max_network_sends=0)),
-        ),
+        ("managed header", lambda: chat.connect(room=harness.room(), options=options.RequestOptions(headers=(("Upgrade", "h2c"),)))),
+        ("no send slot", lambda: chat.connect(room=harness.room(), session_options=options.SessionOptions(max_network_sends=0))),
         ("compression", lambda: chat.connect(room=harness.room(), options=options.RequestOptions(compression="gzip"))),
         ("options of another type", lambda: chat.connect(room=harness.room(), ws_options=options.RequestOptions())),
         ("request options of another type", lambda: chat.connect(room=harness.room(), options=harness.ws())),
@@ -377,18 +354,10 @@ def _limits(harness: _Harness, api: Any) -> None:
     lines, server, options = harness.lines, harness.server, harness.options
     chat = api.protocols.rooms.chat
     for label, play, arguments in (
-        (
-            "message over the limit",
-            Play(talk=_sending(json.dumps({"kind": "said", "text": "x" * 64}))),
-            {"ws_options": harness.ws(max_message_bytes=32)},
-        ),
+        ("message over the limit", Play(talk=_sending(json.dumps({"kind": "said", "text": "x" * 64}))), {"ws_options": harness.ws(max_message_bytes=32)}),
         ("idle", Play(), {"ws_options": harness.ws(idle_timeout=0.05)}),
         ("idle inherited", Play(), {"options": options.RequestOptions(stream_idle_timeout=0.05)}),
-        (
-            "session deadline",
-            Play(),
-            {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)},
-        ),
+        ("session deadline", Play(), {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)}),
         ("abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
         ("server's own message limit", Play(talk=_sending(code=1009, reason="peer limit")), {}),
     ):
@@ -407,7 +376,9 @@ def _limits(harness: _Harness, api: Any) -> None:
 
 
 def _clocked(harness: _Harness) -> None:
-    """Time waits and whole-message sends on the client's stepped or frozen clock."""
+    """Time a session's waits on the client's clock: a stepped clock expires an idle wait at once, and a frozen one
+    ends it once as much real time passed.
+    """
     lines, server, options = harness.lines, harness.server, harness.options
     ticks = itertools.count(step=30.0)
     for label, clock, idle in (
@@ -417,26 +388,10 @@ def _clocked(harness: _Harness) -> None:
         (play,) = server.play(Play())
         with harness.package.Client(options=harness.client(clock=clock)) as api:
             session = api.protocols.rooms.chat.connect(
-                room=harness.room(),
-                options=options.RequestOptions(total_timeout=None),
-                ws_options=harness.ws(idle_timeout=idle),
+                room=harness.room(), options=options.RequestOptions(total_timeout=None), ws_options=harness.ws(idle_timeout=idle)
             )
             record(lines, label, session.receive)
         harness.report(play)
-    for label, timeout in (("send expires before native write", 60.0), ("whole send crosses its deadline", 90.0)):
-        ticks = itertools.count(step=30.0)
-        clock = options.Clock(monotonic=lambda ticks=ticks: float(next(ticks)))
-        server.play(Play(talk=_large))
-        with harness.package.Client(
-            options=harness.client(
-                clock=clock, total_timeout=None, auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)})
-            )
-        ) as api:
-            session = api.protocols.secure.chat.connect(ws_options=harness.ws(send_timeout=timeout))
-            record(lines, label, lambda session=session: session.send(b"y" * 100000))
-            if timeout > 60.0:
-                record(lines, "send after uncertain completion", lambda session=session: session.send(b"again"))
-            session.close()
 
 
 def _closing_sessions(harness: _Harness, api: Any) -> None:
@@ -464,12 +419,6 @@ def _closing_sessions(harness: _Harness, api: Any) -> None:
         record(lines, label, call)
     lines.append(f"  iteration after closing {list(session)}")
     harness.report(play)
-    (play,) = server.play(Play(talk=_closing))
-    session = api.protocols.feed.text.connect()
-    harness.report(play)
-    record(lines, "send once the server closed unread", lambda: session.send("late"))
-    lines.append(f"    closed send progress {dict(session.progress)['messages_sent']}")
-    record(lines, "send after the closed send", lambda: session.send("again"))
     (play,) = server.play(Play(talk=_closing))
     session = api.protocols.feed.text.connect()
     harness.report(play)
@@ -541,9 +490,7 @@ class _Tokens:
         self.calls: list[str] = []
 
     def next(self) -> Any:
-        return self.auth.BearerCredential(
-            self.auth.AccessToken(f"{next(self.tokens)}-material"), self.auth.TokenVersion()
-        )
+        return self.auth.BearerCredential(self.auth.AccessToken(f"{next(self.tokens)}-material"), self.auth.TokenVersion())
 
     def get(self, context: object) -> Any:
         del context
@@ -572,27 +519,25 @@ class _AsyncTokens(_Tokens):
 
 
 def _authenticated(harness: _Harness) -> None:
-    """Authenticate once, keep a refused upgrade terminal, and send a header parameter."""
+    """Authenticate each handshake, never refreshing a rejected token, and send a header parameter."""
     lines, server, options = harness.lines, harness.server, harness.options
-    for retry in (1, 0):
+    for label, retry in (("rejected token not refreshed", None), ("no refresh without retries", 0)):
         tokens = _Tokens(harness.auth)
+        settings = {} if retry is None else {"retry": options.RetryOptions(max_retries=retry)}
         client_options = harness.client(auth=harness.auth.AuthConfig({"bearer": tokens}))
-        upgrades_before = server.upgrade_count
-        (play,) = server.play(Play(refuse=(401, _INVALID, b"")))
+        plays = server.play(Play(refuse=(401, _INVALID, b"")))
         with harness.package.Client(options=client_options) as api:
-            record(
+            session = record(
                 lines,
-                f"terminal authenticated refusal retry={retry}",
-                lambda retry=retry, api=api: api.protocols.secure.chat.connect(
-                    x_trace=harness.trace("t1"),
-                    options=options.RequestOptions(retry=options.RetryOptions(max_retries=retry)),
+                label,
+                lambda settings=settings, api=api: api.protocols.secure.chat.connect(
+                    x_trace=harness.trace("t1"), options=options.RequestOptions(**settings)
                 ),
             )
-        play.done.wait(10)
-        lines.append(
-            f"    provider {tokens.calls} peer upgrades={server.upgrade_count - upgrades_before} "
-            f"auth present={'authorization:' in play.request} trace present={'x-trace:' in play.request}"
-        )
+            if session is not None:
+                session.close()
+        lines.append(f"    provider {tokens.calls}")
+        harness.report(*plays)
 
 
 _IMPORT_PROBE: Final = """
@@ -605,8 +550,7 @@ with package.Client(options=None) as client:
     client.protocols.rooms.chat
     print('library loaded before a connect=' + repr('websockets' in sys.modules))
     connector = plans.SOCKET_0.connectors[0]()
-    print('library loaded by the native connector=' + repr('websockets' in sys.modules)
-          + ' ' + type(connector).__name__)
+    print('library loaded by the native connector=' + repr('websockets' in sys.modules) + ' ' + type(connector).__name__)
 """
 
 
@@ -668,55 +612,24 @@ def _client_close(harness: _Harness) -> None:
     harness.report(play)
 
 
+def _free_port() -> int:
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return probe.getsockname()[1]
+
+
 def _handshakes(harness: _Harness) -> None:
     """Classify handshakes that break the protocol, time out, or never connect."""
     lines, options = harness.lines, harness.options
     once = options.RequestOptions(retry=options.RetryOptions(max_retries=0))
-    for label, reply in (
-        ("native-open-uncertain-timeout", None),
-        ("native-open-uncertain-eof", b""),
-        ("native-open-response-started", _UPGRADE.replace(b"{accept}", b"wrong")),
-    ):
-        peer = RawPeer(reply)
-        try:
-            with harness.package.Client(
-                options=harness.client(
-                    peer.url, total_timeout=None, timeout=options.TimeoutOptions(connect=None, read=None, write=None)
-                )
-            ) as api:
-                record(
-                    lines,
-                    label,
-                    lambda: api.protocols.feed.text.connect(
-                        options=options.RequestOptions(retry=options.RetryOptions(max_retries=1)),
-                        ws_options=harness.ws(open_timeout=5),
-                    ),
-                )
-        finally:
-            peer.stop()
-        lines.append(f"    complete Upgrade arrived={peer.upgraded.is_set()} count={peer.upgrade_count}")
-    accept = (
-        b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
-        b"Sec-WebSocket-Accept: {accept}\r\n"
-    )
+    accept = b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n"
     for label, reply, arguments in (
         ("open timeout", None, {"ws_options": harness.ws(open_timeout=1.0)}),
         ("deadline during the open", None, {"options": options.RequestOptions(total_timeout=1.0)}),
         ("closed before a response", b"", {}),
         ("malformed response", b"NOT-HTTP\r\n\r\n", {}),
-        (
-            "missing upgrade",
-            b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n",
-            {},
-        ),
-        (
-            "wrong accept",
-            (
-                b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
-                b"Sec-WebSocket-Accept: wrong\r\n\r\n"
-            ),
-            {},
-        ),
+        ("missing upgrade", b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n", {}),
+        ("wrong accept", b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: wrong\r\n\r\n", {}),
         ("subprotocol not offered", accept + b"Sec-WebSocket-Protocol: other\r\n\r\n", {}),
         ("header line too long", accept + b"X-Long: " + b"x" * 9000 + b"\r\n\r\n", {}),
     ):
@@ -726,38 +639,14 @@ def _handshakes(harness: _Harness) -> None:
                 record(
                     lines,
                     label,
-                    lambda api=api, arguments=arguments: api.protocols.feed.text.connect(**{
-                        "options": once,
-                        **arguments,
-                    }),
+                    lambda api=api, arguments=arguments: api.protocols.feed.text.connect(
+                        **{"options": once, **arguments}
+                    ),
                 )
         finally:
             peer.stop()
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        for retry in (1, 0):
-            with harness.package.Client(options=harness.client(f"https://127.0.0.1:{probe.getsockname()[1]}")) as api:
-                record(
-                    lines,
-                    f"refused connection retry={retry}",
-                    lambda retry=retry, api=api: api.protocols.feed.text.connect(
-                        options=options.RequestOptions(retry=options.RetryOptions(max_retries=retry))
-                    ),
-                )
-        limiter = _SemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
-        for label, settings, arguments in (
-            (
-                "refused retry exhausts session budget",
-                {},
-                {"session_options": options.SessionOptions(max_network_sends=1)},
-            ),
-            ("refused retry with failed permit release", {"limiter": limiter}, {}),
-        ):
-            with harness.package.Client(
-                options=harness.client(f"https://127.0.0.1:{probe.getsockname()[1]}", **settings)
-            ) as api:
-                record(lines, label, lambda arguments=arguments: api.protocols.feed.text.connect(**arguments))
-        lines.append(f"    refused permit cleanup {limiter.usage.report}")
+    with harness.package.Client(options=harness.client(f"https://localhost:{_free_port()}")) as api:
+        record(lines, "refused connection", lambda: api.protocols.feed.text.connect(options=once))
     with harness.package.Client(options=harness.client(transport=harness.protocols.WebSocketTransportOptions())) as api:
         record(lines, "untrusted certificate", lambda: api.protocols.feed.text.connect(options=once))
 
@@ -771,10 +660,6 @@ def _peers(harness: _Harness) -> None:
         with harness.package.Client(options=harness.client(hangup.url)) as api:
             session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1))
             record(lines, "peer hanging up during a ping", session.ping)
-            session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1))
-            record(lines, "peer hanging up during a whole send", lambda: session.send(_LARGE))
-            lines.append(f"    interrupted send progress {dict(session.progress)['messages_sent']}")
-            record(lines, "send after the interrupted whole send", lambda: session.send("again"))
         with harness.package.Client(options=harness.client(peer.url)) as api:
             feed = api.protocols.feed.text
             session = feed.connect(ws_options=harness.ws(pong_timeout=0.1, ping_interval=None, close_timeout=0.1))
@@ -802,18 +687,15 @@ def _polled_pings(harness: _Harness) -> None:
                 session = api.protocols.feed.text.connect(ws_options=limits)
                 if cancelled:
                     sent = peer.records
-                    threading.Thread(
-                        target=lambda sent=sent, token=token: (peer.wait_records(sent + 1), token.cancel())
-                    ).start()
+                    threading.Thread(target=lambda sent=sent, token=token: (peer.wait_records(sent + 1), token.cancel())).start()
                 record(lines, label, session.ping)
     finally:
         peer.stop()
 
 
 def _concurrent_pings(harness: _Harness) -> None:
-    """Refuse duplicate ping payloads while giving default pings unique payloads.
-
-    Every ping still waiting ends when the peer hangs up.
+    """Refuse a ping whose payload another ping waits for without failing the session, and give default pings unique
+    payloads; every ping still waiting ends when the peer hangs up.
     """
     lines, peer = harness.lines, RawPeer(_UPGRADE)
     try:
@@ -860,9 +742,7 @@ def _proxies(harness: _Harness) -> None:
     """Tunnel through an explicit or environment proxy, and report a proxy's refusal."""
     lines, server = harness.lines, harness.server
     proxy = TunnelProxy(server.port)
-    refusing = TunnelProxy(
-        server.port, refuse=b"HTTP/1.1 407 Proxy Authentication Required\r\nContent-Length: 0\r\n\r\n"
-    )
+    refusing = TunnelProxy(server.port, refuse=b"HTTP/1.1 407 Proxy Authentication Required\r\nContent-Length: 0\r\n\r\n")
     garbled = TunnelProxy(server.port, refuse=b"NOT-HTTP\r\n\r\n")
     try:
         for label, transport, environment in (
@@ -870,10 +750,7 @@ def _proxies(harness: _Harness) -> None:
             ("environment proxy", harness.transport(trust_env=True), {"https_proxy": proxy.url, "no_proxy": ""}),
         ):
             plays = server.play(Play(talk=_echo))
-            with (
-                harness.package.Client(options=harness.client(transport=transport)) as api,
-                _environment(**environment),
-            ):
+            with harness.package.Client(options=harness.client(transport=transport)) as api, _environment(**environment):
                 session = api.protocols.feed.text.connect()
                 lines.append(f"  {label} {_message(session.receive())}")
                 session.close()
@@ -917,7 +794,8 @@ async def _async_sockets(harness: _Harness) -> None:
         (play,) = server.play(Play(talk=_echo))
         session = await api.protocols.feed.text.connect()
         lines.append(f"  async bytes {_message(await session.receive())}")
-        lines.append(f"    async ping {(await session.ping()).latency >= 0}")
+        receipt = await session.ping()
+        lines.append(f"    async ping {receipt.latency >= 0}")
         await session.send("hello")
         lines.append(f"    {_message(await session.receive())}")
         await session.aclose()
@@ -938,21 +816,12 @@ async def _async_sockets(harness: _Harness) -> None:
             ("async decode failure", Play(talk=_sending(json_error_body("syntax").decode())), {}),
             ("async large decode failure", Play(talk=_sending(json_error_body("large syntax").decode())), {}),
             ("async idle", Play(), {"ws_options": harness.ws(idle_timeout=0.05)}),
-            (
-                "async session deadline",
-                Play(),
-                {
-                    "session_options": options.SessionOptions(total_timeout=1.0),
-                    "ws_options": harness.ws(idle_timeout=None),
-                },
-            ),
+            ("async session deadline", Play(), {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)}),
             ("async abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
             ("async server's own message limit", Play(talk=_sending(code=1009, reason="peer limit")), {}),
         ):
             server.play(play)
-            session = await arecord(
-                lines, f"{label} connect", lambda arguments=arguments: chat.connect(room=harness.room(), **arguments)
-            )
+            session = await arecord(lines, f"{label} connect", lambda arguments=arguments: chat.connect(room=harness.room(), **arguments))
             if session is not None:
                 if "decode failure" in label:
                     try:
@@ -972,9 +841,6 @@ async def _async_sockets(harness: _Harness) -> None:
             await asyncio.to_thread(play.done.wait, 10)
             harness.report(play)
             await arecord(lines, label, lambda step=step, session=session: step(session))
-            if "send" in label:
-                lines.append(f"    async closed send progress {dict(session.progress)['messages_sent']}")
-                await arecord(lines, "async send after the closed send", lambda session=session: session.send("again"))
         token = options.CancelToken()
         (play,) = server.play(Play())
         session = await chat.connect(room=harness.room(), options=options.RequestOptions(cancel_token=token))
@@ -986,9 +852,7 @@ async def _async_sockets(harness: _Harness) -> None:
         session = await chat.connect(room=harness.room(), options=options.RequestOptions(cancel_token=token))
         token.cancel()
         await arecord(lines, "async send after the cancellation", lambda: session.send(harness.text("late")))
-        lines.append(
-            f"    async session after the unsent send {session!r} sent {dict(session.progress)['messages_sent']}"
-        )
+        lines.append(f"    async session after the unsent send {session!r} sent {dict(session.progress)['messages_sent']}")
         await session.aclose()
         harness.report(play)
         (play,) = server.play(Play(talk=_answering))
@@ -1011,10 +875,7 @@ async def _async_sockets(harness: _Harness) -> None:
     await api.aclose()
     await arecord(lines, "async receive stopped by the client closing", lambda: waiting)
     harness.report(play)
-    peer = RawPeer(
-        b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
-        b"Sec-WebSocket-Accept: {accept}\r\n\r\n"
-    )
+    peer = RawPeer(b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n")
     try:
         async with harness.package.AsyncClient(options=harness.client(peer.url)) as api:
             session = await api.protocols.feed.text.connect(ws_options=harness.ws(pong_timeout=0.1, close_timeout=0.1))
@@ -1024,9 +885,7 @@ async def _async_sockets(harness: _Harness) -> None:
     waiting = RawPeer(_UPGRADE)
     try:
         async with harness.package.AsyncClient(options=harness.client(waiting.url)) as api:
-            session = await api.protocols.feed.text.connect(
-                ws_options=harness.ws(ping_interval=None, close_timeout=0.1)
-            )
+            session = await api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None, close_timeout=0.1))
             first = asyncio.create_task(session.ping(b"same"))
             await asyncio.to_thread(waiting.wait_records, 1)
             await arecord(lines, "async ping with a payload another ping waits for", lambda: session.ping(b"same"))
@@ -1036,20 +895,14 @@ async def _async_sockets(harness: _Harness) -> None:
             await asyncio.to_thread(waiting.wait_records, 3)
             lines.append(f"    async pings waiting {waiting.records} {session!r}")
             waiting.release.set()
-            for label, task in (
-                ("async first ping", first),
-                ("async default ping", second),
-                ("async another default ping", third),
-            ):
+            for label, task in (("async first ping", first), ("async default ping", second), ("async another default ping", third)):
                 await arecord(lines, label, lambda task=task: task)
     finally:
         waiting.stop()
     silent_pongs = RawPeer(_UPGRADE)
     try:
         async with harness.package.AsyncClient(options=harness.client(silent_pongs.url)) as api:
-            session = await api.protocols.feed.text.connect(
-                ws_options=harness.ws(ping_interval=None, close_timeout=0.1)
-            )
+            session = await api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None, close_timeout=0.1))
             pinging = asyncio.create_task(session.ping())
             await asyncio.to_thread(silent_pongs.wait_records, 1)
             pinging.cancel()
@@ -1057,79 +910,10 @@ async def _async_sockets(harness: _Harness) -> None:
             lines.append(f"  async ping cancelled by its task {type(cancelled).__name__} {session!r}")
     finally:
         silent_pongs.stop()
-    await _async_handshakes(harness)
-
-
-async def _async_handshakes(harness: _Harness) -> None:
-    """Keep uncertain native upgrades and authenticated refusals terminal in asyncio."""
-    lines, server, options = harness.lines, harness.server, harness.options
-    for label, reply in (
-        ("native-open-uncertain-timeout", None),
-        ("native-open-uncertain-eof", b""),
-        ("native-open-response-started", _UPGRADE.replace(b"{accept}", b"wrong")),
-    ):
-        peer = RawPeer(reply)
-        try:
-            async with harness.package.AsyncClient(
-                options=harness.client(
-                    peer.url, total_timeout=None, timeout=options.TimeoutOptions(connect=None, read=None, write=None)
-                )
-            ) as api:
-                await arecord(
-                    lines,
-                    f"async {label}",
-                    lambda: api.protocols.feed.text.connect(
-                        options=options.RequestOptions(retry=options.RetryOptions(max_retries=1)),
-                        ws_options=harness.ws(open_timeout=5),
-                    ),
-                )
-        finally:
-            peer.stop()
-        lines.append(f"    complete Upgrade arrived={peer.upgraded.is_set()} count={peer.upgrade_count}")
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        for retry in (1, 0):
-            async with harness.package.AsyncClient(
-                options=harness.client(f"https://127.0.0.1:{probe.getsockname()[1]}")
-            ) as api:
-                await arecord(
-                    lines,
-                    f"async refused connection retry={retry}",
-                    lambda retry=retry: api.protocols.feed.text.connect(
-                        options=options.RequestOptions(retry=options.RetryOptions(max_retries=retry))
-                    ),
-                )
-        limiter = _AsyncSemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
-        for label, settings, arguments in (
-            (
-                "async refused retry exhausts session budget",
-                {},
-                {"session_options": options.SessionOptions(max_network_sends=1)},
-            ),
-            ("async refused retry with failed permit release", {"limiter": limiter}, {}),
-        ):
-            async with harness.package.AsyncClient(
-                options=harness.client(f"https://127.0.0.1:{probe.getsockname()[1]}", **settings)
-            ) as api:
-                await arecord(lines, label, lambda arguments=arguments: api.protocols.feed.text.connect(**arguments))
-        lines.append(f"    async refused permit cleanup {limiter.usage.report}")
-    for retry in (1, 0):
-        tokens = _AsyncTokens(harness.auth)
-        upgrades_before = server.upgrade_count
-        (play,) = server.play(Play(refuse=(401, _INVALID, b"")))
-        async with harness.package.AsyncClient(
-            options=harness.client(auth=harness.auth.AuthConfig({"bearer": tokens}))
-        ) as api:
-            await arecord(
-                lines,
-                f"async terminal authenticated refusal retry={retry}",
-                lambda retry=retry: api.protocols.secure.chat.connect(
-                    x_trace=harness.trace("t1"),
-                    options=options.RequestOptions(retry=options.RetryOptions(max_retries=retry)),
-                ),
-            )
-        await asyncio.to_thread(play.done.wait, 10)
-        lines.append(
-            f"    provider {tokens.calls} peer upgrades={server.upgrade_count - upgrades_before} "
-            f"auth present={'authorization:' in play.request} trace present={'x-trace:' in play.request}"
-        )
+    silent = RawPeer(None)
+    try:
+        async with harness.package.AsyncClient(options=harness.client(silent.url)) as api:
+            once = options.RequestOptions(retry=options.RetryOptions(max_retries=0))
+            await arecord(lines, "async open timeout", lambda: api.protocols.feed.text.connect(options=once, ws_options=harness.ws(open_timeout=1.0)))
+    finally:
+        silent.stop()

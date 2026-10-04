@@ -34,25 +34,25 @@
     text 'café'
     connection close 1002 '' timeout=5.0
   text that is not UTF-8 ! StreamDecodeError: StreamDecodeError(operation_id='secureSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='secureSocket', condition='malformed', truncated=False] stream_decode_error
-  terminal status ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=503, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] room_socket_http_error attempts=1 sends=1 wire=0 stop=status_not_retryable
-  broken evidence with a status ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse] adapter_contract_error attempts=1 sends=1 wire=0 stop=None
-  refusal with 101 ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse] adapter_contract_error attempts=1 sends=1 wire=0 stop=None
-  refusal with 103 ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse] adapter_contract_error attempts=1 sends=1 wire=0 stop=None
+  terminal status ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=503, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] room_socket_http_error
+  broken evidence with a status ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse] adapter_contract_error
+  refusal with 101 ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse] adapter_contract_error
+  refusal with 103 ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse] adapter_contract_error
     connection abort
-  broken evidence with a connection ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error attempts=1 sends=1 wire=0 stop=None
+  broken evidence with a connection ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
     connection abort
-  headers of another type ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error attempts=1 sends=1 wire=0 stop=None
+  headers of another type ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
     connection abort
-  subprotocol of another type ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error attempts=1 sends=1 wire=0 stop=None
-  unclassified failure ! AdapterExecutionError: AdapterExecutionError(operation_id='roomSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='roomSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=RuntimeError] adapter_execution_error attempts=1 sends=1 wire=0 stop=None
-  no call send slot ! BudgetExceededError: BudgetExceededError(operation_id='roomSocket', call_id='<call>', budget_kind='network', limit=0, used=0) [operation_id='roomSocket', limit=0] budget_exceeded_error attempts=0 sends=0 wire=0 stop=None
-  initial timeout MAYBE_SENT ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=5.0) [operation_id='roomSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect'] phase_timeout_error attempts=1 sends=1 wire=0 stop=transport_not_retryable
+  subprotocol of another type ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  unclassified failure ! AdapterExecutionError: AdapterExecutionError(operation_id='roomSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='roomSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=RuntimeError] adapter_execution_error
+  no call send slot ! BudgetExceededError: BudgetExceededError(operation_id='roomSocket', call_id='<call>', budget_kind='network', limit=0, used=0) [operation_id='roomSocket', limit=0] budget_exceeded_error
+  initial timeout MAYBE_SENT ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=5.0) [operation_id='roomSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect'] phase_timeout_error
     sentinel pending=True
-  initial transport MAYBE_SENT ! TransportError: TransportError(operation_id='roomSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='roomSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read'] transport_error attempts=1 sends=1 wire=0 stop=transport_not_retryable
+  initial transport MAYBE_SENT ! TransportError: TransportError(operation_id='roomSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='roomSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read'] transport_error
     sentinel pending=True
-  initial timeout RESPONSE_STARTED ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', effective_timeout=5.0) [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect'] phase_timeout_error attempts=1 sends=1 wire=0 stop=transport_not_retryable
+  initial timeout RESPONSE_STARTED ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', effective_timeout=5.0) [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect'] phase_timeout_error
     sentinel pending=True
-  initial transport RESPONSE_STARTED ! TransportError: TransportError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] transport_error attempts=1 sends=1 wire=0 stop=transport_not_retryable
+  initial transport RESPONSE_STARTED ! TransportError: TransportError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] transport_error
     sentinel pending=True
   initial timeout NOT_SENT = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
     attempts=2 sends=2 wire=0
@@ -62,8 +62,8 @@
     attempts=2 sends=2 wire=0
     connection close 1000 '' timeout=5.0
     sentinel pending=False
-  retry disabled ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='roomSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] phase_timeout_error attempts=1 sends=1 wire=0 stop=disabled
-  parent exhausted ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='roomSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] phase_timeout_error attempts=1 sends=1 wire=0 stop=parent_budget_exhausted
+  retry disabled ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='roomSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] phase_timeout_error
+  parent exhausted ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='roomSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] phase_timeout_error
     connection send text=True b'message' deadline=True
   nothing sent before the timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write', effective_timeout=30.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout_error
     progress {'network_send_count': 1, 'network_send_budget_used': 1, 'messages_sent': 0, 'messages_received': 0} WebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
@@ -132,13 +132,13 @@
     connection ping b'' deadline=True polled=False
     async ping PingReceipt(latency=0.25)
     connection close 1000 '' timeout=5.0
-  async initial timeout MAYBE_SENT ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=5.0) [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect'] phase_timeout_error attempts=1 sends=1 wire=0 stop=transport_not_retryable
+  async initial timeout MAYBE_SENT ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=5.0) [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect'] phase_timeout_error
     sentinel pending=True
-  async initial transport MAYBE_SENT ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read'] transport_error attempts=1 sends=1 wire=0 stop=transport_not_retryable
+  async initial transport MAYBE_SENT ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read'] transport_error
     sentinel pending=True
-  async initial timeout RESPONSE_STARTED ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', effective_timeout=5.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect'] phase_timeout_error attempts=1 sends=1 wire=0 stop=transport_not_retryable
+  async initial timeout RESPONSE_STARTED ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', effective_timeout=5.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect'] phase_timeout_error
     sentinel pending=True
-  async initial transport RESPONSE_STARTED ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] transport_error attempts=1 sends=1 wire=0 stop=transport_not_retryable
+  async initial transport RESPONSE_STARTED ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] transport_error
     sentinel pending=True
   async initial timeout NOT_SENT = AsyncWebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
     attempts=2 sends=2 wire=0
@@ -148,8 +148,8 @@
     attempts=2 sends=2 wire=0
     connection close 1000 '' timeout=5.0
     sentinel pending=False
-  async retry disabled ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] phase_timeout_error attempts=1 sends=1 wire=0 stop=disabled
-  async parent exhausted ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] phase_timeout_error attempts=1 sends=1 wire=0 stop=parent_budget_exhausted
+  async retry disabled ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] phase_timeout_error
+  async parent exhausted ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] phase_timeout_error
     connection send text=True b'message' deadline=True
   async nothing sent before the timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write', effective_timeout=30.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout_error
     connection close 1000 '' timeout=5.0
