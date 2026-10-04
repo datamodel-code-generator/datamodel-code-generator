@@ -51,7 +51,7 @@ from .records import (
     record_instance,
 )
 from .resume import MalformedStateError as _MalformedError
-from .resume import ResumeState, helper_state, state_fields
+from .resume import ResumeState, state_fields
 from .resume import require_state as _require
 from .resume import state_array as _array
 from .resume import state_count as _count
@@ -108,12 +108,9 @@ _REFERENCE: Final = re.compile(
     r"(?:[A-Za-z0-9\-._~:/?@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*"
 )
 _USERINFO: Final = re.compile(r"(?:[A-Za-z][A-Za-z0-9+.\-]*:)?//[^/?#]*@")
-_DIGEST: Final = re.compile(r"[0-9a-f]{64}")
-_STATE: Final = frozenset({"arguments", "body", "page"})
-_PAGE_FIELDS: Final = 7
-_LEFT_FIELDS: Final = 3
+_STATE: Final = frozenset({"arguments", "body", "page", "skip"})
+_PAGE_FIELDS: Final = 4
 _BODY_FIELDS: Final = 3
-_PAIR: Final = 2
 
 
 @final
@@ -639,8 +636,9 @@ class _Walk(Generic[T, P]):
     """The pages of one helper call: its request, limits, session, the last page's link, and the items delivered.
 
     Its continuations are remembered by digest along the line of pages it extends. A walk that follows a server's URLs
-    keeps the origins it may follow them to once its first fetch resolves them. It keeps the body, status, and media
-    type of its last page, which a checkpoint saves while the page has items left.
+    keeps the origins it may follow them to once its first fetch resolves them. It keeps the link before its last page,
+    which a checkpoint continues from while that page has items left, and a resumed walk the items of its next page
+    already delivered, which it skips.
     """
 
     __slots__ = (
@@ -651,10 +649,11 @@ class _Walk(Generic[T, P]):
         "origins",
         "paths",
         "plan",
+        "previous",
         "request",
-        "saved",
         "seed",
         "session",
+        "skip",
         "start",
     )
 
@@ -677,7 +676,8 @@ class _Walk(Generic[T, P]):
         self.start: int | None = None
         self.origins: frozenset[Origin] = frozenset()
         self.seed: bytes | None = None
-        self.saved: tuple[bytes, int, str | None] | None = None
+        self.previous: _Link | None = None
+        self.skip = 0
         self.paths: dict[str, str] | None = None
 
     def progress(self) -> ProtocolProgress:
@@ -983,10 +983,10 @@ class _Walk(Generic[T, P]):
             raise _data_error(plan, info, "type", rule.read)
         return _followed(plan, rule.read, reference, url, info, limit, self.origins, stripped)
 
-    def build(  # noqa: PLR0913, PLR0917
-        self, data: P, wire: WireValue, content: bytes, info: ResponseInfo, url: str, stripped: frozenset[str]
-    ) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...], bytes]:
-        """Return a decoded page, what the next request writes, its bindings' values, and the page's body.
+    def build(
+        self, data: P, wire: WireValue, _content: bytes, info: ResponseInfo, url: str, stripped: frozenset[str]
+    ) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...]]:
+        """Return a decoded page, what the next request writes, and its bindings' values.
 
         The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
         another type fails its response's validation first, in every mode. What the next request writes is the cursor
@@ -1011,24 +1011,20 @@ class _Walk(Generic[T, P]):
         else:
             cursor = self.follow(rule, wire, info, url, stripped)
         if isinstance(cursor, Missing):
-            return Page(items=items, data=data, response=info), cursor, (), content
+            return Page(items=items, data=data, response=info), cursor, ()
         bound = self.bound(wire, info)
         self.dotted(bound if plan.follows else (*bound, cursor), info)
         continuation = Continuation(kind=rule.kind, value=cursor)
         page = Page(items=items, data=data, response=info, continuation=continuation)
-        return page, cursor, bound, content
+        return page, cursor, bound
 
-    def record(
-        self, page: Page[T, P], cursor: WireValue | Missing, bound: tuple[WireValue, ...], content: bytes
-    ) -> Page[T, P]:
+    def record(self, page: Page[T, P], cursor: WireValue | Missing, bound: tuple[WireValue, ...]) -> Page[T, P]:
         """Link a fetched page after the last one, noting whether its continuation was seen before on its line.
 
         The line of a walk that follows URLs starts with the first page's own URL, as if the first page continued from
-        it, so a first page that gives its own URL is a cycle too. The page's body is kept for checkpoints.
+        it, so a first page that gives its own URL is a cycle too. The link before the page is kept for checkpoints.
         """
-        info = page.response
-        self.saved = content, info.status_code, info.content_type
-        previous = self.link
+        previous = self.previous = self.link
         index = 0 if previous is None else previous.index + 1
         continuation = page.continuation
         digest = None if continuation is None else sha256(continuation_json(continuation)).digest()
@@ -1065,40 +1061,29 @@ class _Walk(Generic[T, P]):
     def checkpoint(self, remaining: int) -> ResumeState:
         """Return a checkpoint of the walk, with the given number of its last page's items left to deliver.
 
-        It saves the wire values of the caller's arguments and of the JSON body the next request sends, the last
-        page's position, continuation, bindings' values, and the history of its line, and that page's body while items
-        are left, bound to the helper's fingerprint and the security the call runs under. The caller's options and
-        whatever its auth adds are never saved.
+        A walk with items left of its last page continues from the link before that page, skipping the items of it
+        already delivered; any other continues after its last page, skipping what a resumed walk has yet to skip. It
+        saves the wire values of the caller's arguments and of the JSON body the next request sends, and that link's
+        position, continuation, and bindings' values, under the helper's identity; never a page, the cycle history,
+        the caller's options, or whatever its auth adds.
         """
-        plan, link, request, core = self.plan, self.link, self.request, self.core
-        options = self.limits.options
+        plan, request, core = self.plan, self.request, self.core
+        link, skip = self.link, self.skip
+        if remaining:
+            last, link = cast("_Link", link), self.previous
+            skip = last.items - (0 if link is None else link.items) - remaining
         body = request.body if link is None or plan.continued.body is not None else UNSET
         arguments, saved_body = core.saved_request(
-            plan, plan.call, request.arguments, body, request.media_type, options
+            plan, plan.call, request.arguments, body, request.media_type, self.limits.options
         )
-        facts, exportable = core.checkpoint_security(plan.call, options)
-        saved = self.saved if remaining else None
-        page: WireValue = None
-        if link is not None:
-            history = sorted((index, digest.hex()) for digest, index in _line(link).seen.items())
-            page = (
-                link.index,
-                link.items,
-                () if link.digest is None else (link.cursor,),
-                link.bound,
-                link.seen,
-                tuple((digest, index) for index, digest in history),
-                None if saved is None else (remaining, *saved[1:]),
-            )
+        page: WireValue = (
+            None
+            if link is None
+            else (link.index, link.items, () if link.digest is None else (link.cursor,), link.bound)
+        )
         kept = saved_request(arguments, saved_body)
-        state: WireValue = {"arguments": kept[0], "body": kept[1], "page": page}
-        return helper_state(
-            helper_fingerprint=plan.fingerprint,
-            security_fingerprint=sha256(canonical_json(facts)).hexdigest(),
-            state=state,
-            payload=b"" if saved is None else saved[0],
-            exportable=exportable,
-        )
+        state: WireValue = {"arguments": kept[0], "body": kept[1], "page": page, "skip": skip}
+        return ResumeState(helper=plan.fingerprint, state=state)
 
     def resumable(self, remaining: int = 0) -> ResumeState | None:
         """Return a checkpoint of the walk for an error to keep, or None when the call cannot be checkpointed.
@@ -1162,37 +1147,25 @@ def _page_link(plan: PaginationPlan[T, P], page: object) -> _Link:
     return link
 
 
-def _digest(value: WireValue) -> bytes:
-    _require(isinstance(value, str) and _DIGEST.fullmatch(value) is not None)
-    return bytes.fromhex(cast("str", value))
-
-
-def _resume_error(
-    plan: PaginationPlan[T, P], condition: Literal["fingerprint", "security", "expired", "malformed"]
-) -> ResumeStateError:
+def _resume_error(plan: PaginationPlan[T, P], condition: Literal["fingerprint", "malformed"]) -> ResumeStateError:
     return ResumeStateError(condition=condition, helper_id=plan.helper_id, operation=plan.operation)
 
 
 def _restored(
     core: ClientCore | AsyncClientCore, plan: PaginationPlan[T, P], state: object, limits: _Limits
-) -> tuple[_Walk[T, P], tuple[T, ...], int]:
-    """Return the walk a checkpoint continues, with the items it left of its last page and the position among them.
+) -> _Walk[T, P]:
+    """Return the walk a checkpoint continues, with the items of its next page it skips.
 
-    The checkpoint must be this helper's, made under the security the call runs with, and unexpired by the client's
-    wall clock. Its continuation is checked as one a server just gave, and a state or saved page that does not fit the
-    helper is malformed.
+    The checkpoint must be this helper's. Its continuation is checked as one a server just gave, and a state that does
+    not fit the helper is malformed.
     """
     if not isinstance(state, ResumeState):
         raise _invalid(plan, ("state",))
-    helper, security, state_json, payload, expires_at = state_fields(state)
+    helper, state_json = state_fields(state)
     if helper != plan.fingerprint:
         raise _resume_error(plan, "fingerprint")
-    if security != sha256(canonical_json(core.checkpoint_security(plan.call, limits.options)[0])).hexdigest():
-        raise _resume_error(plan, "security")
-    if expires_at is not None and expires_at.timestamp() <= core.clock.time():
-        raise _resume_error(plan, "expired")
     try:
-        return _walked(core, plan, decode_json(state_json), payload, limits)
+        return _walked(core, plan, decode_json(state_json), limits)
     except _MalformedError:
         raise _resume_error(plan, "malformed") from None
 
@@ -1254,58 +1227,39 @@ def _checked(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> tuple[str
 
 
 def _walked(
-    core: ClientCore | AsyncClientCore, plan: PaginationPlan[T, P], state: WireValue, payload: bytes, limits: _Limits
-) -> tuple[_Walk[T, P], tuple[T, ...], int]:
-    """Return the walk of a checkpoint's decoded state, with the items it left of its last page and their position.
+    core: ClientCore | AsyncClientCore, plan: PaginationPlan[T, P], state: WireValue, limits: _Limits
+) -> _Walk[T, P]:
+    """Return the walk of a checkpoint's decoded state, with the items of its next page it skips.
 
     The next request is prepared as its call would prepare it, without sending, and so is the first one, which gives an
     offset or page number its start as the first page read it, unless a followed URL replaced it without the body the
-    checkpoint left out.
+    checkpoint left out. A walk past its last page skips nothing.
     """
     _require(isinstance(state, Mapping) and frozenset(state) == _STATE)
     fields = cast("Mapping[str, WireValue]", state)
     request = resent(core, plan.call, fields["arguments"], fields["body"])
-    first = _Walk(plan, request, limits, core)
+    skip = _count(fields["skip"])
+    walk = first = _Walk(plan, request, limits, core)
     if (page := fields["page"]) is None or not plan.follows or plan.continued.body is not None:
         first.sent(*_checked(core, first))
-    if page is None:
-        _require(not payload)
-        return first, (), 0
-    saved = _array(page)
-    _require(len(saved) == _PAGE_FIELDS)
-    link = _relinked(plan, request, saved)
-    walk = _Walk(plan, request, limits, core, link)
-    if link.digest is not None:
-        _continued(core, walk, first.start)
-        _checked(core, walk)
-    if (left := saved[6]) is None:
-        _require(not payload)
-        return walk, (), 0
-    if (size := len(payload)) > (limit := limits.max_page_bytes):
-        raise ProtocolSizeError(
-            kind="page", limit=limit, observed=size, unit="bytes", helper_id=plan.helper_id, operation=plan.operation
-        )
-    rest = _array(left)
-    _require(len(rest) == _LEFT_FIELDS)
-    remaining, status, content_type = _count(rest[0]), _count(rest[1]), _text(rest[2])
-    try:
-        data, wire = core.saved_page(plan.call, payload, status, content_type, limits.options)[:2]
-    except SDKError:
-        raise _MalformedError from None
-    native = plan.items(data)
-    selected = resolve(wire, plan.items_selector.pointer)
-    _require(selected is not MISSING and selected is not None and native is not None)
-    entries = tuple(native or ())
-    _require(0 < remaining <= len(entries) <= link.items)
-    walk.saved = payload, status, content_type
-    walk.delivered = link.items - remaining
-    return walk, entries, len(entries) - remaining
+    if page is not None:
+        saved = _array(page)
+        _require(len(saved) == _PAGE_FIELDS)
+        link = _relinked(plan, request, saved)
+        walk = _Walk(plan, request, limits, core, link)
+        _require(link.digest is not None or not skip)
+        if link.digest is not None:
+            _continued(core, walk, first.start)
+            _checked(core, walk)
+    walk.skip = skip
+    return walk
 
 
 def _relinked(plan: PaginationPlan[T, P], request: _Request, saved: tuple[WireValue, ...]) -> _Link:
-    """Return the link of the last page a checkpoint saved: its position, continuation, bindings, and line history.
+    """Return the link a checkpoint continues after: its position, continuation, and bindings.
 
-    A literal binding's value is the plan's, whatever the state saved.
+    A literal binding's value is the plan's, whatever the state saved. Its line starts with its own continuation, so a
+    page giving it again is a cycle.
     """
     index, items = _count(saved[0]), _count(saved[1])
     cursor, bound = _array(saved[2]), _array(saved[3])
@@ -1327,13 +1281,9 @@ def _relinked(plan: PaginationPlan[T, P], request: _Request, saved: tuple[WireVa
         value if binding.selector is not None else binding.literal
         for binding, value in zip(plan.bindings[: len(bound)], bound, strict=True)
     )
-    seen = None if saved[4] is None else _count(saved[4], index)
-    history: dict[bytes, int] = {}
-    for entry in map(_array, _array(saved[5])):
-        _require(len(entry) == _PAIR)
-        history[_digest(entry[0])] = _count(entry[1], index)
     digest = sha256(continuation_json(Continuation(kind=rule.kind, value=value))).digest() if cursor else None
-    return _Link(plan.fingerprint, request, index, items, value, bound, digest, seen, None, _History(history, index))
+    history = _History({} if digest is None else {digest: index}, index)
+    return _Link(plan.fingerprint, request, index, items, value, bound, digest, None, None, history)
 
 
 def _continued(core: ClientCore | AsyncClientCore, walk: _Walk[T, P], start: int | None) -> None:
@@ -1421,21 +1371,26 @@ class _Traversal(Generic[T, P]):
         return self._items[self._position - 1]
 
     def _buffer(self, page: Page[T, P]) -> None:
+        """Deliver a fetched page's items, skipping, as delivered, those a resumed walk delivered before."""
+        walk = self._walk
         self._items = page.items
-        self._position = 0
+        self._position = skipped = min(walk.skip, len(page.items))
+        walk.skip = 0
+        walk.delivered += skipped
 
-    def _resumed(self, items: tuple[T, ...], position: int) -> Self:
-        """Deliver the items a checkpoint left of its last page first, keeping the pager to items."""
-        if items:
-            self._items, self._position, self._mode = items, position, "items"
+    def _resumed(self) -> Self:
+        """Keep a pager that skips items of its first page to items."""
+        if self._walk.skip:
+            self._mode = "items"
         return self
 
     def checkpoint(self) -> ResumeState:
         """Return a checkpoint the helper's `resume` continues from, sending nothing.
 
-        It holds the items left of the last page and the position after it, the progress so far, and the cycle
-        history, but neither the session nor the call's options. A pager that failed or closed is checkpointed as it
-        stopped, and one fetching a page refuses with ProtocolStateError.
+        It holds where the pager continues: the last page while it has items left, skipping those delivered, or else
+        the position after it, with the progress so far, but neither pages, the cycle history, the session, nor the
+        call's options. A pager that failed or closed is checkpointed as it stopped, and one fetching a page refuses
+        with ProtocolStateError.
         """
         action = "checkpoint"
         if not self._lock.acquire(blocking=False):
@@ -1656,7 +1611,7 @@ def _origins(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> None:
 
 def _fetch(
     core: ClientCore, walk: _Walk[T, P], session: OperationSession
-) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...], bytes]:
+) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...]]:
     """Fetch the walk's next page as a child call of its session."""
     _origins(core, walk)
     request, limits = walk.request, walk.limits
@@ -1676,7 +1631,7 @@ def _fetch(
 
 async def _afetch(
     core: AsyncClientCore, walk: _Walk[T, P], session: OperationSession
-) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...], bytes]:
+) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...]]:
     """Fetch the walk's next page as an asyncio child call of its session."""
     _origins(core, walk)
     request, limits = walk.request, walk.limits
@@ -1821,12 +1776,12 @@ def resume_pages(  # noqa: PLR0913
 ) -> Pager[T, P]:
     """Return a pager continuing a helper's checkpoint in a session of its own, checking the checkpoint now.
 
-    It sends nothing until it is iterated, and delivers the items the checkpoint left of its last page first.
+    It sends nothing until it is iterated, and fetches the page a checkpoint stopped in again, skipping the items it
+    delivered of it.
     """
     limits = _limits(core, plan, pagination_options, options, session_options)
-    walk, items, position = _restored(core, plan, state, limits)
-    _coded(walk)
-    return Pager(core, walk)._resumed(items, position)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    walk = _coded(_restored(core, plan, state, limits))
+    return Pager(core, walk)._resumed()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 def aresume_pages(  # noqa: PLR0913
@@ -1840,9 +1795,9 @@ def aresume_pages(  # noqa: PLR0913
 ) -> AsyncPager[T, P]:
     """Return an asyncio pager continuing a helper's checkpoint in a session of its own, checking the checkpoint now.
 
-    It sends nothing until it is iterated, and delivers the items the checkpoint left of its last page first.
+    It sends nothing until it is iterated, and fetches the page a checkpoint stopped in again, skipping the items it
+    delivered of it.
     """
     limits = _limits(core, plan, pagination_options, options, session_options)
-    walk, items, position = _restored(core, plan, state, limits)
-    _coded(walk)
-    return AsyncPager(core, walk)._resumed(items, position)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    walk = _coded(_restored(core, plan, state, limits))
+    return AsyncPager(core, walk)._resumed()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
