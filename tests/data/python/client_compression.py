@@ -307,8 +307,8 @@ def _helpers(harness: _Harness, lines: list[str]) -> None:
         check.close()
         resumed = api.protocols.checks.run.resume(state, options=gzip, poll_options=fast)
         record(lines, "check", resumed.wait)
-        state = resumed.checkpoint()
         record(lines, "completed check resume", lambda: api.protocols.checks.run.resume(state, options=gzip))
+        exchange.respond(json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}))
         record(lines, "completed check inherited resume", api.protocols.checks.run.resume(state).wait)
         exchange.respond(raw_response(200, b'data: {"text":"a"}\n\n', "text/event-stream"))
         with api.protocols.events.watch.open(body=harness.query(), options=gzip) as stream:
@@ -409,11 +409,10 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
         check = await api.protocols.checks.run.start(
             options=gzip, poll_options=harness.protocols.PollOptions(interval=0.000001)
         )
-        await arecord(lines, "async check", check.wait)
         state = check.checkpoint()
-        await arecord(
-            lines, "async completed check resume", lambda: api.protocols.checks.run.resume(state, options=gzip)
-        )
+        await arecord(lines, "async check", check.wait)
+        record(lines, "async completed check resume", lambda: api.protocols.checks.run.resume(state, options=gzip))
+        exchange.respond(json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}))
         resumed = api.protocols.checks.run.resume(state)
         await arecord(lines, "async inherited completed check", resumed.wait)
 

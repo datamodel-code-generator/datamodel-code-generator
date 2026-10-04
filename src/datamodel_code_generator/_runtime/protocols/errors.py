@@ -40,8 +40,8 @@ from .records import (
     Selector,
 )
 from .references import OperationRef
-from .resume import ResumeState, ResumeStateError, ResumeStateTooLargeError
-from .sources import UploadIdentity, UploadProgress
+from .resume import ResumeState, ResumeStateError
+from .sources import UploadProgress
 
 __all__ = (
     "CacheInvalidationError",
@@ -62,7 +62,6 @@ __all__ = (
     "ProtocolDataError",
     "ProtocolStateError",
     "ResumeStateError",
-    "ResumeStateTooLargeError",
     "SessionLimitError",
     "StreamDecodeError",
     "StreamInterruptedError",
@@ -175,12 +174,6 @@ def _upload_progress(value: object) -> None:
 def _aware(value: object) -> None:
     if not isinstance(value, datetime) or value.utcoffset() is None:
         msg = "expires_at must be a timezone-aware datetime"
-        raise ValueError(msg)
-
-
-def _identity(value: object, *, optional: bool) -> None:
-    if not isinstance(value, UploadIdentity) and not (optional and value is None):
-        msg = "an identity must be an UploadIdentity"
         raise ValueError(msg)
 
 
@@ -1568,17 +1561,16 @@ class UploadDeliveryUnknownError(DeliveryUnknownError):
 
 
 class UploadSourceChangedError(ProtocolDataError):
-    """Upload content whose identity, a range's length or digest, or a file's status changed; nothing more is sent.
+    """Upload content whose size is not the upload's; nothing more is sent.
 
-    `expected` and `actual` are the identities of the whole content, or of the checked range at `offset`.
+    `expected_size` is the upload's size and `actual_size` the size the source has now.
     """
 
     def __init__(  # noqa: PLR0913
         self,
         *,
-        expected: UploadIdentity,
-        actual: UploadIdentity | None,
-        offset: int | None = None,
+        expected_size: int,
+        actual_size: int,
         location: Selector | RequestTarget | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
@@ -1598,11 +1590,9 @@ class UploadSourceChangedError(ProtocolDataError):
         auth_refresh_pending: int = 0,
         wire_send_count: int | None = None,
     ) -> None:
-        """Keep the expected and observed identities and the offset of the checked range."""
-        _identity(expected, optional=False)
-        _identity(actual, optional=True)
-        if offset is not None:
-            error_count(offset, "offset")
+        """Keep the upload's size and the size the source has now."""
+        error_count(expected_size, "expected_size")
+        error_count(actual_size, "actual_size")
         super().__init__(
             condition="inconsistent",
             location=location,
@@ -1624,12 +1614,11 @@ class UploadSourceChangedError(ProtocolDataError):
             auth_refresh_pending=auth_refresh_pending,
             wire_send_count=wire_send_count,
         )
-        self.expected = expected
-        self.actual = actual
-        self.offset = offset
+        self.expected_size = expected_size
+        self.actual_size = actual_size
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("offset", self.offset))
+        return (*super()._details(), ("expected_size", self.expected_size), ("actual_size", self.actual_size))
 
 
 class UploadOffsetError(ProtocolDataError):
@@ -1759,7 +1748,7 @@ class UploadExpiredError(ResumeStateError):
 
 
 class NonResumableSourceError(ProtocolConfigurationError):
-    """An upload source without a resumable identity, such as a one-shot stream; use an ordinary upload instead."""
+    """An upload source that cannot be read again, such as a one-shot stream or a reader that cannot seek."""
 
     def __init__(  # noqa: PLR0913
         self,

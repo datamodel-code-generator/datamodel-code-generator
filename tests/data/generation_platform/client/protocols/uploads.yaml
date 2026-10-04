@@ -24,6 +24,7 @@ helpers:
           value: {literal: 1.0.0}
       offset: {in: header, name: Upload-Offset}
       length: {in: header, name: X-Chunk-Length}
+      checksum: {target: {in: header, name: Upload-Checksum}, algorithm: sha1, algorithm_prefix: true}
     max_chunk_bytes: 4
     partial_commit: allowed
     completion: {kind: length}
@@ -75,6 +76,7 @@ helpers:
         - target: {in: path, name: fileId}
           value: {source: initial, selector: {from: body, pointer: /id}}
       offset: {in: query, name: offset}
+      checksum: {target: {in: query, name: checksum}, algorithm: sha256, encoding: hex}
     max_chunk_bytes: 4
     partial_commit: forbidden
     completion: {kind: length}
