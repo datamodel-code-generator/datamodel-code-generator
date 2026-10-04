@@ -188,12 +188,7 @@ OPERATION_5: Final[OperationPlan[CookieResponse, CookieErrorData]] = OperationPl
         (),
         CookieHTTPError,
     ),
-    idempotency=IdempotencyPlan(
-        header_name='session',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='session'),
     security=security.OPERATION_5,
     codecs=CookieRequestCodecs,
 )
@@ -215,12 +210,7 @@ OPERATION_6: Final[OperationPlan[QueryResponse, QueryErrorData]] = OperationPlan
         (),
         QueryHTTPError,
     ),
-    idempotency=IdempotencyPlan(
-        header_name='token',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='token'),
     security=security.OPERATION_6,
     codecs=QueryRequestCodecs,
 )
@@ -242,12 +232,7 @@ OPERATION_7: Final[OperationPlan[IgnoredResponse, IgnoredErrorData]] = Operation
         (),
         IgnoredHTTPError,
     ),
-    idempotency=IdempotencyPlan(
-        header_name='Authorization',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='Authorization'),
     codecs=IgnoredRequestCodecs,
 )
 
@@ -279,12 +264,7 @@ OPERATION_8: Final[OperationPlan[DirectionResponse, DirectionErrorData]] = Opera
         ),
     ),
     request_id_header='X-Idempotency',
-    idempotency=IdempotencyPlan(
-        header_name='X-Idempotency',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='X-Idempotency'),
     retry_after_ms_header='X-Idempotency',
     should_retry_header='X-Retry-Control',
     codecs=DirectionRequestCodecs,
@@ -307,12 +287,7 @@ OPERATION_9: Final[OperationPlan[UnusedResponse, UnusedErrorData]] = OperationPl
         (),
         UnusedHTTPError,
     ),
-    idempotency=IdempotencyPlan(
-        header_name='X-Auth-Key',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='X-Auth-Key'),
     security=security.OPERATION_9,
     codecs=UnusedRequestCodecs,
 )
