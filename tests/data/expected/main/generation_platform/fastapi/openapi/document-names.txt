@@ -208,10 +208,11 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/Body_class"
+                "$ref": "#/components/schemas/FieldUsersIdPutRequest"
               }
             }
           }
@@ -311,15 +312,22 @@
   },
   "components": {
     "schemas": {
-      "Body_class": {
+      "FieldUsersIdPutRequest": {
         "properties": {
           "id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Id"
           }
         },
         "type": "object",
-        "title": "Body_class"
+        "title": "FieldUsersIdPutRequest"
       },
       "HTTPValidationError": {
         "properties": {

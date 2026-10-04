@@ -45,24 +45,10 @@ render pydantic_v2.BaseModel
   write server/.dcg-target-manifest.json
   layout routers
   get_pet: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
-    parameter /paths/~1pets~1{petId}/get/parameters/0: fastapi_native native_supported
-    parameter /paths/~1pets~1{petId}/get/parameters/1: fastapi_native native_supported
-    parameter /paths/~1pets~1{petId}/get/parameters/2: fastapi_native native_supported
-    parameter /paths/~1pets~1{petId}/get/parameters/3: codec_adapter opaque_native_semantics at /paths/~1pets~1{petId}/get/parameters/3/schema
-    parameter /paths/~1pets~1{petId}/get/parameters/4: codec_adapter unsupported_wire_shape
-    primary_response /paths/~1pets~1{petId}/get/responses/200: codec_adapter unsupported_wire_shape at /paths/~1pets~1{petId}/get/responses/200
   add_pet: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler sync
-    body /paths/~1pets/post/requestBody: fastapi_native native_supported
-    primary_response /paths/~1pets/post/responses/201: fastapi_native native_supported
   post__uploads: POST /uploads -> /uploads [tag:files] status 204 primary 204 None body typed handler sync
-    body /paths/~1uploads/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1uploads/post/responses/204
   put__notes: PUT /notes -> /notes [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1notes/put/requestBody: codec_adapter unsupported_wire_shape
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1notes/put/responses/204
   post__raw: POST /raw -> /raw [untagged] status 204 primary 204 None body request handler sync
-    body /paths/~1raw/post/requestBody: raw_request explicit_raw
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1raw/post/responses/204
   group tag:pets -> pets (2)
   group tag:files -> files (1)
   group untagged -> untagged (2)
@@ -160,12 +146,12 @@ render pydantic_v2.BaseModel
     | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
     | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
-    | Native form bodies follow FastAPI's form extraction, which treats an empty field as missing and applies its default; set the operation's `body_modes` entry to `request` when the exact submitted values matter.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     | Operations with the `request` body mode receive the Starlette `Request` and read and validate their body themselves.
     |
     | ## Regenerating

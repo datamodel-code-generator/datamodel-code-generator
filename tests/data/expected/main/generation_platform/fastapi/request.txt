@@ -39,11 +39,7 @@ render pydantic_v2.BaseModel
   write server/.dcg-target-manifest.json
   layout routers
   post_json: POST /json -> /json [tag:json] status 204 primary 204 None body typed handler sync
-    body /paths/~1json/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json/post/responses/204
   post_text: POST /text -> /text [tag:raw] status 204 primary 204 None body request handler sync
-    body /paths/~1text/post/requestBody: raw_request explicit_raw
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1text/post/responses/204
   group tag:json -> json (1)
   group tag:raw -> raw (1)
   S_OPERATION_EXCLUDED selection /paths/~1json~1optional/post: POST /json/optional is matched by no include rule: Two request modes.
@@ -123,11 +119,12 @@ render pydantic_v2.BaseModel
     | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
     | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     | Operations with the `request` body mode receive the Starlette `Request` and read and validate their body themselves.
     |
     | ## Regenerating

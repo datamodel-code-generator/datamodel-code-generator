@@ -15,6 +15,53 @@
         "operationId": "listAdapters",
         "parameters": [
           {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]+$",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "mail",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "email",
+              "title": "Mail"
+            }
+          },
+          {
+            "name": "other",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Other"
+            }
+          },
+          {
+            "name": "none",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/FieldAdaptersGetQueryNoneParameter"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": "ten",
+              "title": "Count"
+            }
+          },
+          {
             "name": "stamp",
             "in": "query",
             "required": false,
@@ -79,53 +126,6 @@
                   "type": "object"
                 }
               }
-            }
-          },
-          {
-            "name": "code",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Z]+$"
-            }
-          },
-          {
-            "name": "mail",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "email"
-            }
-          },
-          {
-            "name": "other",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "not": {
-                "const": "x"
-              }
-            }
-          },
-          {
-            "name": "none",
-            "in": "query",
-            "schema": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "enum": [
-                null
-              ]
-            }
-          },
-          {
-            "name": "count",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": "ten"
             }
           },
           {
@@ -221,7 +221,7 @@
             "schema": {
               "type": "integer",
               "maximum": 50,
-              "minimum": -2147483648,
+              "minimum": -3000000000,
               "description": "Page size.",
               "default": 10,
               "title": "Limit"
@@ -246,23 +246,6 @@
               "type": "boolean",
               "default": false,
               "title": "Flag"
-            }
-          },
-          {
-            "name": "tags",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 4
-              },
-              "minItems": 1,
-              "default": [
-                "a"
-              ],
-              "title": "Tags"
             }
           },
           {
@@ -295,13 +278,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "enum": [
-                "fast",
-                "slow"
-              ],
-              "type": "string",
-              "default": "fast",
-              "title": "Mode"
+              "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryModeParameter"
             }
           },
           {
@@ -338,6 +315,21 @@
             "schema": {
               "type": "string",
               "title": "X-Trace"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 4
+              },
+              "minItems": 1,
+              "default": [
+                "a"
+              ]
             }
           },
           {
@@ -471,6 +463,20 @@
   },
   "components": {
     "schemas": {
+      "FieldAdaptersGetQueryNoneParameter": {
+        "enum": [
+          null
+        ],
+        "title": "FieldAdaptersGetQueryNoneParameter"
+      },
+      "FieldItemsItemIdPartsPartGetQueryModeParameter": {
+        "type": "string",
+        "enum": [
+          "fast",
+          "slow"
+        ],
+        "title": "FieldItemsItemIdPartsPartGetQueryModeParameter"
+      },
       "FieldItemsItemIdPartsPartGetResponse": {
         "type": "string",
         "title": "FieldItemsItemIdPartsPartGetResponse"

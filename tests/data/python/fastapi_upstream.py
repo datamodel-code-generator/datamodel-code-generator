@@ -25,21 +25,19 @@ if TYPE_CHECKING:
 
 
 class _Uploads:
-    """Serve the forms operations without subclassing their Protocol, keeping every file the upload receives.
-
-    The report tells from the kept files whether the request closed them; only the upload operation is driven.
-    """
+    """Serve the forms operations without subclassing their Protocol, recording the upload each request receives."""
 
     def __init__(self) -> None:
-        self.files: list[Any] = []
         self.calls: list[str] = []
 
-    def upload(self, *, file: Any, note: object) -> Response:  # noqa: ANN401
-        self.files.append(file)
-        self.calls.append(f"upload({file.filename!r}, {type(note).__name__})")
+    def upload(self, *, body: Any) -> Response:  # noqa: ANN401
+        self.calls.append(f"upload({body.file!r}, {type(body.note).__name__})")
         return Response(status_code=204)
 
     def post_form(self, **_: object) -> None:
+        return None
+
+    def post_notes(self, **_: object) -> None:
         return None
 
     def upload_many(self, **_: object) -> None:
@@ -101,7 +99,6 @@ async def _drive(app: FastAPI, length: int, chunks: list[bytes], ending: str) ->
 
 
 def _outcome(app: FastAPI, uploads: _Uploads, files: list[Any], length: int, scenario: dict[str, Any]) -> str:
-    uploads.files.clear()
     uploads.calls.clear()
     files.clear()
     answer = asyncio.run(_drive(app, length, [chunk.encode() for chunk in scenario["chunks"]], scenario["ending"]))
@@ -109,7 +106,7 @@ def _outcome(app: FastAPI, uploads: _Uploads, files: list[Any], length: int, sce
 
 
 def _observe(monkeypatch: pytest.MonkeyPatch) -> list[Any]:
-    """Record every file the multipart parser allocates once a request fails, before any handler receives it."""
+    """Record every file the multipart parser allocates, before any handler receives its contents."""
     parsed: list[Any] = []
     initialize = ParsedFile.__init__
 
@@ -124,10 +121,9 @@ def _observe(monkeypatch: pytest.MonkeyPatch) -> list[Any]:
 def fastapi_upstream_report(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     """Drive each upload scenario through the generated server and report how the request ended.
 
-    A completed upload reports the file the handler received; the failures record the files the parser allocated.
+    Each scenario reports the files the parser allocated and whether the request closed them.
     """
     fixture = json.loads((SOURCE / "uploads.json").read_text(encoding="utf-8"))
-    (name, complete), *failures = fixture["scenarios"].items()
     length = fixture["content_length"]
     monkeypatch.syspath_prepend(str(root))
     package = "upstream_uploads"
@@ -136,9 +132,11 @@ def fastapi_upstream_report(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
         server, _ = _import(package)
         uploads = _Uploads()
         app = server.create_app(untagged=uploads)
-        lines = [f"{name}: {_outcome(app, uploads, uploads.files, length, complete)}"]
         parsed = _observe(monkeypatch)
-        lines.extend(f"{name}: {_outcome(app, uploads, parsed, length, scenario)}" for name, scenario in failures)
+        lines = [
+            f"{name}: {_outcome(app, uploads, parsed, length, scenario)}"
+            for name, scenario in fixture["scenarios"].items()
+        ]
     finally:
         forget_generated(package)
     return "\n".join(lines) + "\n"

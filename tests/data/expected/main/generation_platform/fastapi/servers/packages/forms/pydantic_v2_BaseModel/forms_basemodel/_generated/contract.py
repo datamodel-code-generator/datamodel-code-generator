@@ -6,13 +6,18 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias, TypedDict
 
+import forms_basemodel_models
+from pydantic import TypeAdapter
 from typing_extensions import Never
 
+from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.server.application import Dependency, OperationPlan
+from .._runtime.server.requests import BodyAdapter, BodyMedia
 from .._runtime.server.responses import OperationResponses, ResponsePlan
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1forms/post',
+    '/paths/~1notes/post',
     '/paths/~1uploads/post',
     '/paths/~1batches/post',
 ]
@@ -21,6 +26,7 @@ OperationDependencies = TypedDict(
     'OperationDependencies',
     {
         '/paths/~1forms/post': Sequence[Dependency],
+        '/paths/~1notes/post': Sequence[Dependency],
         '/paths/~1uploads/post': Sequence[Dependency],
         '/paths/~1batches/post': Sequence[Dependency],
     },
@@ -36,7 +42,31 @@ class PostForm:
         name='post_form',
         key='/paths/~1forms/post',
         service='untagged',
-        keywords=('name', 'count', 'tags'),
+        keywords=('body',),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses=(ResponsePlan(status='204'),),
+        primary=(204, None),
+    )
+
+
+class PostNotes:
+    """Plans of the post_notes operation."""
+
+    OPERATION: Final = OperationPlan(
+        name='post_notes',
+        key='/paths/~1notes/post',
+        service='untagged',
+        keywords=('body',),
+    )
+    BODY: Final = BodyAdapter(
+        media=(
+            BodyMedia(
+                media_type='application/x-www-form-urlencoded',
+                kind='form',
+                adapter=TypeAdapter(forms_basemodel_models.FieldNotesPostRequest),
+            ),
+        ),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
@@ -51,7 +81,17 @@ class Upload:
         name='upload',
         key='/paths/~1uploads/post',
         service='untagged',
-        keywords=('file', 'note'),
+        keywords=('body',),
+    )
+    BODY: Final = BodyAdapter(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                adapter=TypeAdapter(forms_basemodel_models.FieldUploadsPostRequest),
+                fields=(FieldPlan('file', 'string'), FieldPlan('note', 'string')),
+            ),
+        ),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
@@ -66,7 +106,20 @@ class UploadMany:
         name='upload_many',
         key='/paths/~1batches/post',
         service='untagged',
-        keywords=('files', 'label'),
+        keywords=('body',),
+    )
+    BODY: Final = BodyAdapter(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                adapter=TypeAdapter(forms_basemodel_models.FieldBatchesPostRequest),
+                fields=(
+                    FieldPlan('files', 'string', repeated=True),
+                    FieldPlan('label', 'string'),
+                ),
+            ),
+        ),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),

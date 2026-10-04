@@ -47,7 +47,8 @@ generate
   unchanged target server/errors.py (target)
   unchanged target server/auth_types.py (target)
   unchanged target server/py.typed (target)
-  23 runtime modules ['unchanged']
+  22 runtime modules ['unchanged']
   deleted target server/routers/pets.py (target)
   deleted target server/routers/store.py (target)
+  1 runtime modules ['deleted']
 mode models.py: 0604

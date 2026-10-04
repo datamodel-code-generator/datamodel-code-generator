@@ -5,30 +5,15 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
-from decimal import Decimal
 from enum import Enum
-from functools import cached_property
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
+from datamodel_code_generator._codec_type_source import type_reason
 from datamodel_code_generator._fastapi.naming import normalize
-from datamodel_code_generator._fastapi.native import (
-    ANNOTATIONS,
-    ARRAY_LENGTHS,
-    BOUNDS,
-    CODEC_FORMATS,
-    INTEGER_RANGES,
-    SHAPES,
-    STRING_LENGTHS,
-    GraphCheck,
-    at,
-    kinds,
-    leaf_kind,
-    number,
-)
 from datamodel_code_generator._fastapi.routes import (
     MARKER,
     RouteError,
@@ -40,18 +25,25 @@ from datamodel_code_generator._fastapi.routes import (
     route_path,
     stem_conflicts,
 )
+from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._openapi_wire_plan import parameter_plans
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
-from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire
 from datamodel_code_generator._target_contract import (
+    BuiltinType,
+    ConstructorType,
     GeneratedSymbolType,
     GenericType,
+    ImportedType,
     LiteralMapping,
     LiteralScalar,
     LiteralSequence,
+    LiteralType,
+    NoneType,
     SourceLocation,
+    UnionType,
 )
+from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -60,15 +52,16 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
     from datamodel_code_generator._fastapi.context import ArgumentLocation
-    from datamodel_code_generator._fastapi.native import Reason, Schema
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.media import LexicalKind, MediaKind
+    from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FinalPythonType,
         FrozenLiteral,
+        GeneratedTypeContractBatch,
+        ModelFieldFacts,
         OperationContract,
         SymbolId,
         TypeUseBinding,
@@ -78,12 +71,27 @@ if TYPE_CHECKING:
 
 Site: TypeAlias = Literal["parameter", "body", "primary_response"]
 Transport: TypeAlias = Literal["fastapi_native", "codec_adapter", "raw_request"]
-ScalarKind: TypeAlias = Literal["str", "int", "float", "bool", "date", "aware_datetime", "uuid", "literal"]
+Reason: TypeAlias = Literal[
+    "native_supported",
+    "explicit_raw",
+    "parameter_style",
+    "parameter_shape",
+    "parameter_content",
+    "repeated_path",
+    "media_form",
+    "media_text",
+    "media_binary",
+    "media_selection",
+    "media_untyped",
+    "response_empty",
+]
 ArgumentKind: TypeAlias = Literal["request", "principal", "native", "adapter", "body", "media_type"]
 SchemeKind: TypeAlias = Literal["api_key", "basic", "bearer", "custom"]
 Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
-NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Form", "File"]
+NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Cookie"]
+ValueKind: TypeAlias = Literal["scalar", "sequence"]
 SettingT = TypeVar("SettingT")
+Schema: TypeAlias = "Mapping[str, WireValue]"
 
 RESERVED: Final = frozenset({"request", "principal", "body", "media_type"})
 BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
@@ -95,20 +103,19 @@ _LOCATIONS: Final[dict[object, ParameterLocation]] = {
     "header": "header",
     "cookie": "cookie",
 }
-_STYLES: Final = {"path": "simple", "query": "form", "header": "simple"}
-_APIS: Final[dict[str, NativeApi]] = {"path": "Path", "query": "Query", "header": "Header"}
-_SCALARS: Final[dict[str, ScalarKind]] = {"string": "str", "integer": "int", "number": "float", "boolean": "bool"}
-_FORMAT_SCALARS: Final[dict[str, ScalarKind]] = {"date": "date", "date-time": "aware_datetime", "uuid": "uuid"}
-_LEXICAL: Final[dict[str, LexicalKind]] = {"str": "string", "int": "integer", "float": "number", "bool": "boolean"}
-_DEFAULT_TYPES: Final[dict[str, tuple[type, ...]]] = {
-    "str": (str,),
-    "int": (int,),
-    "float": (int, float),
-    "bool": (bool,),
-}
-_SCALAR_KEYWORDS: Final = frozenset({"type", "enum", "const", *BOUNDS, *STRING_LENGTHS})
-_ARRAY_KEYWORDS: Final = frozenset({"type", "items", *ARRAY_LENGTHS})
-_FORM_KEYWORDS: Final = frozenset({"type", "properties", "required"})
+_STYLES: Final = {"path": "simple", "query": "form", "header": "simple", "cookie": "cookie"}
+_APIS: Final[dict[str, NativeApi]] = {"path": "Path", "query": "Query", "header": "Header", "cookie": "Cookie"}
+_SCALAR_BUILTINS: Final = frozenset({"str", "int", "float", "bool", "bytes", "object"})
+_SCALAR_MODULES: Final = frozenset({"datetime", "decimal", "ipaddress", "pydantic", "pydantic.networks", "uuid"})
+_MODEL_IMPORTS: Final = frozenset({"BaseModel", "RootModel"})
+_DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
+CONSTRAINED: Final = frozenset({
+    ("pydantic", "conbytes"),
+    ("pydantic", "condecimal"),
+    ("pydantic", "confloat"),
+    ("pydantic", "conint"),
+    ("pydantic", "constr"),
+})
 _HTTP_SCHEMES: Final[dict[str, SchemeKind]] = {"basic": "basic", "bearer": "bearer"}
 _API_KEY_LOCATIONS: Final = frozenset({"header", "query", "cookie"})
 _INFO: Final = (
@@ -146,24 +153,14 @@ class Decision:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class Scalar:
-    """The native surface of a scalar: a builtin, date, aware datetime, UUID, or a Literal of values."""
-
-    kind: ScalarKind
-    values: tuple[str | int | float | bool, ...] = ()
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class NativeField:
-    """A native Path, Query, Header, Form, or File declaration and the FieldInfo keywords it projects."""
+    """A native Path, Query, Header, or Cookie declaration: the model's type, the alias, and its documentation."""
 
     api: NativeApi
     alias: str
-    scalar: Scalar | None
-    array: bool = False
+    type: FinalPythonType
     keywords: tuple[tuple[str, object], ...] = ()
-    items: tuple[tuple[str, object], ...] = ()
-    default: object = Default.REQUIRED
+    default: Default | LiteralScalar | LiteralSequence = Default.REQUIRED
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -178,7 +175,7 @@ class MediaSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterSpec:
-    """One effective parameter, its wire plan, and how the server receives it."""
+    """One effective parameter, its wire plan, the model's type, and how the server receives it."""
 
     location: ParameterLocation
     wire_name: str
@@ -187,29 +184,24 @@ class ParameterSpec:
     plan: ParameterPlan | None
     decision: Decision
     source: SourceLocation
+    type: FinalPythonType | None = None
     native: NativeField | None = None
-    default: WireValue | Unset = UNSET
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class FormField:
-    """One property of a native form or multipart body."""
-
-    name: str
-    required: bool
-    native: NativeField
+    default: Default | LiteralScalar | LiteralSequence = Default.ABSENT
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class BodySpec:
-    """A request body: its media, requiredness, decision, and the properties or plans it is read with."""
+    """A request body: its media, requiredness, decision, and the plans a URL-encoded form adapter reads."""
 
     required: bool
     media: tuple[MediaSpec, ...]
     decision: Decision
-    fields: tuple[FormField, ...] = ()
     form_fields: tuple[FieldPlan, ...] = ()
-    form_additional: FieldPlan | None = None
+
+    @property
+    def form(self) -> bool:
+        """Return whether FastAPI reads the body natively as a form model."""
+        return self.decision.transport == "fastapi_native" and self.media[0].kind == "form"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -423,17 +415,6 @@ def _encoded(media: MediaSpec) -> WireDeclaration | None:
     )
 
 
-def _literal(values: tuple[WireValue, ...]) -> tuple[Scalar | None, Reason]:
-    """Return the native Literal of an enum or const, which FastAPI reads from lexical strings only for strings."""
-    present = [value for value in values if value is not None]
-    literals = tuple(value for value in present if isinstance(value, (str, int, float, bool)))
-    if not literals or len(literals) != len(present):
-        return None, "native_shape_mismatch"
-    if not all(isinstance(value, str) for value in literals):
-        return None, "source_assertion_not_projected"
-    return Scalar(kind="literal", values=literals), "native_supported"
-
-
 class Planner:  # noqa: PLR0904
     """Plan every selected operation of one server target from the accepted batch and its wire plan."""
 
@@ -451,10 +432,11 @@ class Planner:  # noqa: PLR0904
         self.wire = wire
         self.uses = {use.id: use for use in request.batch.type_uses}
         self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
+        self.imports = symbol_imports(request.batch)
         self.members: dict[SymbolId, list[FieldUseBinding]] = {}
         for member in request.batch.fields:
             self.members.setdefault(member.consumer, []).append(member)
-        self.facts = {
+        self.facts: dict[SymbolId, ModelFieldFacts] = {
             member.consumer: member.model_facts
             for member in reversed(request.batch.fields)
             if member.model_facts is not None
@@ -477,16 +459,6 @@ class Planner:  # noqa: PLR0904
             **self.revision.handler_modes,
         }
         self.raise_problems()
-
-    @cached_property
-    def request_check(self) -> GraphCheck:
-        """Return the model-graph check of request bodies, indexed once per target."""
-        return GraphCheck(self.symbols, self.members, self.wire, "request", self.backend)
-
-    @cached_property
-    def response_check(self) -> GraphCheck:
-        """Return the model-graph check of primary responses, indexed once per target."""
-        return GraphCheck(self.symbols, self.members, self.wire, "response", self.backend)
 
     def raise_problems(self) -> None:
         """Stop the phase when it reported any failure."""
@@ -674,159 +646,183 @@ class Planner:  # noqa: PLR0904
         """Return the first type use of a declaration."""
         return next((self.uses[use] for use in uses if use in self.uses), None)
 
+    def bound(self, use: TypeUseBinding | None) -> TypeUseBinding | None:
+        """Return a request use, reporting a schema the model generator gave no type."""
+        if use is not None and use.schema is not None and (use.state != "bound" or use.type is None):
+            self.problems.append(
+                Diagnostic(
+                    code="BND_MODEL_SCOPE_REQUIRED"
+                    if use.state == "not_generated"
+                    else use.reason or "MC_BINDING_MISSING",
+                    severity="error",
+                    stage="binding",
+                    message="The use has no generated native type",
+                    source_uri=self.request.documents.root_uri,
+                    source_pointer=use.id.use_site.pointer,
+                )
+            )
+        return use
+
     def parameter(
         self, operation: OperationContract, declaration: WireDeclaration, repeated: set[str]
     ) -> ParameterSpec:
-        """Decide how the server receives one effective parameter."""
+        """Decide how the server receives one effective parameter: natively when FastAPI reads its style and type."""
         location = _LOCATIONS[fact(declaration, "in")]
         name = declaration.name or ""
         uses = _uses(declaration)
-        use = self.use(uses)
+        use = self.bound(self.use(uses))
         plan = self.parameter_plans.get(operation.id, {}).get((location, name))
+        value, default = self.parameter_type(use)
+        kind = (
+            None
+            if value is None or (plan is not None and plan.kind != "string" and self.literal(value))
+            else self.kind(value)
+        )
+        reason = _parameter_reason(plan, location, kind, repeated=name in repeated)
         spec = ParameterSpec(
             location=location,
             wire_name=name,
             required=fact(declaration, "required") is True,
             use=use,
             plan=plan,
-            decision=Decision(site="parameter", transport="codec_adapter", reason="unsupported_wire_shape", uses=uses),
+            decision=Decision(site="parameter", transport="codec_adapter", reason=reason, uses=uses),
             source=declaration.use_site,
-            default=self.default(use),
-        )
-        if plan is None or use is None or not _natively_serialized(plan, location, repeated=name in repeated):
-            return spec
-        native, reason, source = self.native_parameter(declaration, use, plan)
-        if native is None:
-            return replace(spec, decision=replace(spec.decision, reason=reason, source=source))
-        decision = replace(spec.decision, transport="fastapi_native", reason="native_supported")
-        return replace(spec, native=native, decision=decision)
-
-    def default(self, use: TypeUseBinding | None) -> WireValue | Unset:
-        """Return the schema default an omitted adapter parameter decodes, if the schema declares one."""
-        if use is None or use.schema is None:
-            return UNSET
-        _, schema = self.wire.schema(use.schema)
-        return schema.get("default", UNSET)
-
-    def native_parameter(
-        self, declaration: WireDeclaration, use: TypeUseBinding, plan: ParameterPlan
-    ) -> tuple[NativeField | None, Reason, SourceLocation | None]:
-        """Return the native declaration of a builtin-typed parameter, or the reason it needs the adapter."""
-        bound = self.bound(use.type)
-        if use.schema is None or bound is False:
-            return None, "opaque_native_semantics", use.schema
-        location, schema = self.wire.schema(use.schema)
-        return self.native_value(
-            declaration, location, schema, bound, api=_APIS[plan.location], alias=plan.name, required=plan.required
-        )
-
-    def native_value(  # noqa: PLR0913
-        self,
-        declaration: WireDeclaration | None,
-        location: SourceLocation,
-        schema: Schema,
-        bound: str | None,
-        *,
-        api: NativeApi,
-        alias: str,
-        required: bool,
-    ) -> tuple[NativeField | None, Reason, SourceLocation | None]:
-        """Return the native declaration of a scalar or one-level list value, or why the adapter reads it."""
-        array = (kinds(schema) or frozenset()) - {"null"} == frozenset({"array"})
-        item_location, item = self.wire.schema(at(location, "items")) if array else (location, schema)
-        scalar, reason = self.scalar(item, bound)
-        if scalar is None:
-            return None, reason, item_location
-        checks = ((_ARRAY_KEYWORDS, schema, location), (_SCALAR_KEYWORDS, item, item_location)) if array else ()
-        for allowed, value, value_location in checks or ((_SCALAR_KEYWORDS, schema, location),):
-            if (extra := _extra(value, allowed)) is not None:
-                return None, extra[0], at(value_location, extra[1])
-        keywords = dict(_documentation(declaration, schema))
-        items = {**_constraints(item, scalar), **({"allow_inf_nan": False} if scalar.kind == "float" else {})}
-        if array:
-            keywords.update({name: schema[source] for source, name in ARRAY_LENGTHS.items() if source in schema})
-        else:
-            keywords.update(items)
-            items = {}
-        default: object = Default.REQUIRED if required else Default.ABSENT
-        if "default" in schema and not required:
-            if not _typed_default(schema["default"], scalar, array=array):
-                return None, "source_assertion_not_projected", at(location, "default")
-            default = schema["default"]
-        field = NativeField(
-            api=api,
-            alias=alias,
-            scalar=scalar,
-            array=array,
-            keywords=tuple(keywords.items()),
-            items=tuple(items.items()),
+            type=value,
             default=default,
         )
-        return field, "native_supported", None
+        if reason != "native_supported" or plan is None or value is None:
+            return spec
+        native = NativeField(
+            api=_APIS[location],
+            alias=plan.name,
+            type=value,
+            keywords=tuple(self.documentation(declaration, use)),
+            default=Default.REQUIRED if plan.required else default,
+        )
+        return replace(spec, native=native, decision=replace(spec.decision, transport="fastapi_native"))
 
-    def bound(self, value: FinalPythonType | None) -> str | Literal[False]:
-        """Return the builtin leaf a parameter's final type projects to, or False for opaque or unbound types."""
-        seen: set[int] = set()
-        while isinstance(value, GeneratedSymbolType) and value.symbol not in seen:
+    def parameter_type(
+        self, use: TypeUseBinding | None
+    ) -> tuple[FinalPythonType | None, Default | LiteralScalar | LiteralSequence]:
+        """Return a parameter's type and default through the root models and aliases whose type alone validates."""
+        value = None if use is None else use.type
+        default: Default | LiteralScalar | LiteralSequence = Default.ABSENT
+        seen: set[SymbolId] = set()
+        while (
+            isinstance(value, GeneratedSymbolType)
+            and value.symbol not in seen
+            and self.symbols[value.symbol].kind in {"root", "alias"}
+            and (facts := self.facts.get(value.symbol)) is not None
+            and self.plain(value.symbol, facts)
+        ):
             seen.add(value.symbol)
-            symbol = self.symbols[value.symbol]
-            if symbol.kind == "enum":
-                return "literal"
-            facts = self.facts.get(symbol.id)
-            if symbol.kind not in {"root", "alias"} or facts is None:
-                return False
             value = facts.type
-        if isinstance(value, GenericType) and len(value.arguments) == 1:
-            return self.bound(value.arguments[0])
-        kind, _ = leaf_kind(value)
-        return kind if kind is not None and kind != "any" else False
+            default = _default(facts) if default is Default.ABSENT else default
+        return value, default
 
-    @staticmethod
-    def scalar(schema: Schema, bound: str | None) -> tuple[Scalar | None, Reason]:
-        """Return the native scalar surface of a value schema, or why a builtin declaration cannot read it."""
-        present = (kinds(schema) or frozenset()) - {"null"}
-        values = schema.get("enum", (schema["const"],) if "const" in schema else None)
-        if isinstance(values, tuple):
-            return _literal(values)
-        if len(present) != 1 or (kind := _SCALARS.get(next(iter(present)))) is None:
-            return None, "native_shape_mismatch"
-        format_ = schema.get("format")
-        if kind == "str" and isinstance(format_, str) and format_ in _FORMAT_SCALARS:
-            kind = _FORMAT_SCALARS[format_]
-        elif kind == "str" and format_ in CODEC_FORMATS:
-            return None, "source_assertion_not_projected"
-        if bound not in {None, "literal", kind} and not (kind == "float" and bound == "int"):
-            reason: Reason = (
-                "source_assertion_not_projected" if kind in _FORMAT_SCALARS.values() else "native_shape_mismatch"
-            )
-            return None, reason
-        return Scalar(kind=kind), "native_supported"
+    def plain(self, symbol: SymbolId, facts: ModelFieldFacts) -> bool:
+        """Return whether a root model or alias validates exactly as its type alone: no constraint or config."""
+        settings = () if (model := self.symbols[symbol].facts) is None else model.configuration
+        return (
+            all(name in _DOCUMENTATION for name, _ in facts.backend.emitted.constructor_keywords)
+            and not any(setting.present for setting in settings)
+            and type_reason(facts.type, self.imports) is None
+        )
+
+    def kind(self, value: FinalPythonType) -> ValueKind | None:
+        """Return whether FastAPI reads a parameter type as a scalar, as a sequence of scalars, or as neither."""
+        kind: ValueKind | None = None
+        match value:
+            case UnionType():
+                found = {self.kind(member) for member in value.members if not isinstance(member, NoneType)}
+                kind = found.pop() if len(found) == 1 else None
+            case GenericType() if value.base == BuiltinType("list") and len(value.arguments) == 1:
+                kind = "sequence" if self.kind(value.arguments[0]) == "scalar" else None
+            case _ if self.scalar(value):
+                kind = "scalar"
+            case _:
+                pass
+        return kind
+
+    def literal(self, value: FinalPythonType) -> bool:
+        """Return whether a type accepts only enum members or literals, which FastAPI matches against query text."""
+        match value:
+            case UnionType():
+                members = value.members
+            case GenericType():
+                members = value.arguments
+            case GeneratedSymbolType():
+                return self.symbols[value.symbol].kind == "enum"
+            case _:
+                return isinstance(value, LiteralType)
+        return any(self.literal(member) for member in members)
+
+    def scalar(self, value: FinalPythonType) -> bool:
+        """Return whether FastAPI reads a type as one scalar value: a builtin, enum, literal, or constrained scalar."""
+        match value:
+            case BuiltinType():
+                return value.name in _SCALAR_BUILTINS
+            case ConstructorType():
+                return (value.callable.import_.from_, value.callable.import_.import_) in CONSTRAINED
+            case ImportedType():
+                return value.import_.from_ in _SCALAR_MODULES and value.import_.import_ not in _MODEL_IMPORTS
+            case GeneratedSymbolType():
+                return self.symbols[value.symbol].kind == "enum"
+            case _:
+                pass
+        return isinstance(value, LiteralType)
+
+    def documentation(self, declaration: WireDeclaration, use: TypeUseBinding | None) -> Iterator[tuple[str, object]]:
+        """Yield a parameter's documentation keywords: its schema's title, description, deprecation, and examples."""
+        schema: Schema = {} if use is None or use.schema is None else self.wire.schema(use.schema)[1]
+        if isinstance(title := schema.get("title"), str):
+            yield "title", title
+        if isinstance(description := fact(declaration, "description"), str) or isinstance(
+            description := schema.get("description"), str
+        ):
+            yield "description", description
+        if fact(declaration, "deprecated") is True or schema.get("deprecated") is True:
+            yield "deprecated", True
+        if isinstance(examples := schema.get("examples"), tuple) and examples:
+            yield "examples", examples
 
     def body(self, operation: OperationContract, declaration: WireDeclaration) -> BodySpec:
-        """Decide how the server receives a request body."""
+        """Decide how the server receives a request body: FastAPI reads one JSON or URL-encoded model natively."""
         media = tuple(self.media(child) for child in declaration.children if child.kind == "media")
-        uses = tuple(item.use.id for item in media if item.use is not None)
+        uses = tuple(use.id for item in media if (use := self.bound(item.use)) is not None)
         spec = BodySpec(
             required=fact(declaration, "required") is True,
             media=media,
-            decision=Decision(site="body", transport="codec_adapter", reason="unsupported_wire_shape", uses=uses),
+            decision=Decision(site="body", transport="codec_adapter", reason="media_selection", uses=uses),
         )
         if self.body_modes.get(operation.id.use_site.pointer, self.config.body_mode) == "request":
             return replace(spec, decision=replace(spec.decision, transport="raw_request", reason="explicit_raw"))
-        if len(media) == 1 and media[0].kind in {"form", "multipart"}:
-            return self.form_body(operation, spec, media[0])
+        if len(media) != 1:
+            self.unsupported(operation, (item for item in media if item.kind == "multipart"))
+            return spec
+        item = media[0]
+        match item.kind:
+            case "json":
+                native = replace(spec.decision, transport="fastapi_native", reason="native_supported")
+                return replace(spec, decision=native)
+            case "form" | "multipart":
+                return self.form_body(operation, spec, item)
+            case "text":
+                return replace(spec, decision=replace(spec.decision, reason="media_text"))
+            case _:
+                pass
+        return replace(spec, decision=replace(spec.decision, reason="media_binary"))
+
+    def unsupported(self, operation: OperationContract, media: Iterable[MediaSpec], encoding: str = "") -> None:
+        """Report request media that only the request body mode reads."""
         self.problems.extend(
             _problem(
                 "F_MEDIA_UNSUPPORTED",
-                f"{_label(operation)} needs body_mode='request' for {item.media_type}",
+                f"{_label(operation)} needs body_mode='request' for {encoding}{item.media_type}",
                 item.declaration.use_site,
             )
             for item in media
-            if item.kind == "multipart"
         )
-        if len(media) == 1 and media[0].kind == "json" and media[0].use is not None:
-            return replace(spec, decision=self.json_body(media[0], required=spec.required))
-        return spec
 
     def media(self, declaration: WireDeclaration) -> MediaSpec:
         """Return one media declaration with its normalized type, kind, and type use."""
@@ -838,114 +834,39 @@ class Planner:  # noqa: PLR0904
             declaration=declaration,
         )
 
-    def json_body(self, media: MediaSpec, *, required: bool) -> Decision:
-        """Decide whether FastAPI's Body reads a JSON body natively."""
-        assert media.use is not None
-        decision = Decision(
-            site="body", transport="codec_adapter", reason="native_required_mismatch", uses=(media.use.id,)
-        )
-        if not required:
-            return replace(decision, source=media.declaration.use_site)
-        if media.use.schema is not None and "null" in (kinds(self.wire.schema(media.use.schema)[1]) or ()):
-            return replace(decision, reason="native_nullable_mismatch", source=media.use.schema)
-        reason, source = self.request_check.check(media.use)
-        if reason == "native_supported":
-            return replace(decision, transport="fastapi_native", reason=reason)
-        return replace(decision, reason=reason, source=source)
-
     def form_body(self, operation: OperationContract, spec: BodySpec, media: MediaSpec) -> BodySpec:
-        """Decide whether FastAPI's Form and File read a form body natively, or which adapter reads it."""
-        fields, reason, source = self.form_fields(media)
-        if fields is not None and spec.required:
-            native = replace(spec.decision, transport="fastapi_native", reason=reason)
-            return replace(spec, fields=fields, decision=native)
-        if media.kind == "multipart" or media.use is None:
-            self.problems.append(
-                _problem(
-                    "F_MEDIA_UNSUPPORTED",
-                    f"{_label(operation)} needs body_mode='request' for {media.media_type}",
-                    media.declaration.use_site,
-                )
-            )
-        elif (encoded := _encoded(media)) is not None:
-            self.problems.append(
-                _problem(
-                    "F_MEDIA_UNSUPPORTED",
-                    f"{_label(operation)} needs body_mode='request' for the {encoded.name} encoding of "
-                    f"{media.media_type}",
-                    encoded.use_site,
-                )
-            )
-        if fields is not None:
-            reason, source = "native_required_mismatch", media.declaration.use_site
-        form_fields, additional = self.form_plans(media)
-        decision = replace(spec.decision, reason=reason, source=source)
-        return replace(spec, decision=decision, form_fields=form_fields, form_additional=additional)
-
-    def form_fields(self, media: MediaSpec) -> tuple[tuple[FormField, ...] | None, Reason, SourceLocation | None]:
-        """Return the native fields of a flat form schema, or why FastAPI's Form cannot read it."""
-        if media.use is None or media.use.schema is None:
-            return None, "unsupported_wire_shape", media.declaration.use_site
-        location, schema = self.wire.schema(media.use.schema)
-        if kinds(schema) not in {None, frozenset({"object"})} or schema.get("additionalProperties", True) is not True:
-            return None, "native_shape_mismatch", location
-        if (extra := _extra(schema, _FORM_KEYWORDS)) is not None:
-            return None, extra[0], at(location, extra[1])
+        """Read a URL-encoded BaseModel natively as a FastAPI form model; adapt other forms to the model."""
+        decision = replace(spec.decision, reason="media_form")
+        if (use := media.use) is None or (media.kind == "multipart" and use.type is None):
+            self.unsupported(operation, (media,))
+            return replace(spec, decision=decision)
         if (encoded := _encoded(media)) is not None:
-            return None, "unsupported_wire_shape", encoded.use_site
-        properties = schema.get("properties")
-        required = schema.get("required")
-        names: frozenset[str] = (
-            frozenset(str(name) for name in required) if isinstance(required, tuple) else frozenset()
+            self.unsupported(operation, (media,), f"the {encoded.name} encoding of ")
+            return replace(spec, decision=decision)
+        if media.kind == "form" and spec.required and self.form_model(use.type):
+            return replace(spec, decision=replace(decision, transport="fastapi_native", reason="native_supported"))
+        return replace(spec, decision=decision, form_fields=self.form_plans(use.type))
+
+    def form_plans(self, value: FinalPythonType | None) -> tuple[FieldPlan, ...]:
+        """Return the members a form adapter reads as text: each model field by wire name, repeated for a list."""
+        members = self.members.get(value.symbol, ()) if isinstance(value, GeneratedSymbolType) else ()
+        return tuple(
+            FieldPlan(member.wire_name, repeated=self.kind(facts.type) == "sequence")
+            for member in members
+            if member.wire_name is not None and (facts := member.model_facts) is not None
         )
-        declared: Mapping[str, WireValue] = properties if isinstance(properties, Mapping) else {}
-        fields: list[FormField] = []
-        for name in declared:
-            field_location, value = self.wire.schema(at(location, "properties", name))
-            native, reason, source = self.form_field(
-                name, field_location, value, required=name in names, multipart=media.kind == "multipart"
+
+    def form_model(self, value: FinalPythonType | None) -> bool:
+        """Return whether FastAPI reads a type as a form model: a BaseModel of scalar and repeated scalar fields."""
+        return (
+            self.backend == DataModelType.PydanticV2BaseModel.value
+            and isinstance(value, GeneratedSymbolType)
+            and self.symbols[value.symbol].kind == "model"
+            and all(
+                (facts := member.model_facts) is not None and self.kind(facts.type) is not None
+                for member in self.members.get(value.symbol, ())
             )
-            if native is None:
-                return None, reason, source
-            fields.append(FormField(name=name, required=name in names, native=native))
-        return tuple(fields), "native_supported", None
-
-    def form_field(
-        self, name: str, location: SourceLocation, schema: Schema, *, required: bool, multipart: bool
-    ) -> tuple[NativeField | None, Reason, SourceLocation | None]:
-        """Return one native form property, or the reason it needs an adapter."""
-        array = (kinds(schema) or frozenset()) - {"null"} == frozenset({"array"})
-        _, item = self.wire.schema(at(location, "items")) if array else (location, schema)
-        if (
-            multipart
-            and item.get("format") == "binary"
-            and (kinds(item) or frozenset()) - {"null"} == frozenset({"string"})
-        ):
-            default = Default.REQUIRED if required else Default.ABSENT
-            field = NativeField(api="File", alias=name, scalar=None, array=array, default=default)
-            return field, "native_supported", None
-        return self.native_value(None, location, schema, None, api="Form", alias=name, required=required)
-
-    def form_plans(self, media: MediaSpec) -> tuple[tuple[FieldPlan, ...], FieldPlan | None]:
-        """Return the URL-encoded field plans a form adapter decodes the body with."""
-        if media.use is None or media.use.schema is None:
-            return (), FieldPlan("", "string")
-        location, schema = self.wire.schema(media.use.schema)
-        properties = schema.get("properties")
-        declared: Mapping[str, WireValue] = properties if isinstance(properties, Mapping) else {}
-        fields = tuple(self.form_plan(name, *self.wire.schema(at(location, "properties", name))) for name in declared)
-        additional = schema.get("additionalProperties", True)
-        if additional is False:
-            return fields, None
-        if isinstance(additional, Mapping) and additional:
-            return fields, self.form_plan("", *self.wire.schema(at(location, "additionalProperties")))
-        return fields, FieldPlan("", "string")
-
-    def form_plan(self, name: str, location: SourceLocation, schema: Schema) -> FieldPlan:
-        """Return the lexical kind of one URL-encoded member and whether it repeats."""
-        if (kinds(schema) or frozenset()) - {"null"} == frozenset({"array"}):
-            return FieldPlan(name, _lexical(self.wire.schema(at(location, "items"))[1]), repeated=True)
-        return FieldPlan(name, _lexical(schema))
+        )
 
     def response(self, operation: OperationContract, declaration: WireDeclaration) -> ResponseSpec:
         """Return one declared response with its media and effective headers."""
@@ -988,7 +909,7 @@ class Planner:  # noqa: PLR0904
         status = _DEFAULT_STATUS if _DEFAULT_STATUS in exact else min(successful or exact)
         response = exact[status]
         media = _default_media(response)
-        decision = self.primary_decision(operation, status, response, media)
+        decision = _primary_decision(operation, status, response, media)
         return PrimarySpec(status=status, response=response, media=media, decision=decision)
 
     def chosen(
@@ -1010,33 +931,8 @@ class Planner:  # noqa: PLR0904
                 )
             )
             return None
-        decision = self.primary_decision(operation, choice.status_code, response, media)
+        decision = _primary_decision(operation, choice.status_code, response, media)
         return PrimarySpec(status=choice.status_code, response=response, media=media, decision=decision)
-
-    def primary_decision(
-        self, operation: OperationContract, status: int, response: ResponseSpec, media: MediaSpec | None
-    ) -> Decision:
-        """Decide whether a bare primary value goes to FastAPI's response_model or through the codec adapter."""
-        bodyless = operation.method == "head" or status in BODYLESS_STATUSES or status < _MIN_CONTENT_STATUS
-        use = None if bodyless or media is None else media.use
-        decision = Decision(
-            site="primary_response",
-            transport="codec_adapter",
-            reason="unsupported_wire_shape",
-            source=response.declaration.use_site,
-            uses=() if use is None else (use.id,),
-        )
-        if (
-            use is None
-            or media is None
-            or media.media_type != _JSON
-            or any(header.required for header in response.headers)
-        ):
-            return decision
-        reason, source = self.response_check.check(use)
-        if reason == "native_supported":
-            return replace(decision, transport="fastapi_native", reason=reason, source=None)
-        return replace(decision, reason=reason, source=source)
 
     def arguments(
         self,
@@ -1067,22 +963,11 @@ class Planner:  # noqa: PLR0904
         ]
         raw = body is not None and body.decision.transport == "raw_request"
         if body is not None and not raw:
-            candidates.extend(
-                _candidate(
-                    names,
-                    "file" if field.native.api == "File" else "form",
-                    field.name,
-                    required=field.required,
-                    native=field.native,
-                )
-                for field in body.fields
-            )
-            if not body.fields:
-                candidates.append((
-                    "body",
-                    True,
-                    Argument(name="body", kind="body", location="body", required=body.required),
-                ))
+            candidates.append((
+                "body",
+                True,
+                Argument(name="body", kind="body", location="body", required=body.required),
+            ))
             if len(body.media) > 1:
                 argument = Argument(name="media_type", kind="media_type", location="media_type", required=body.required)
                 candidates.append(("media_type", True, argument))
@@ -1173,19 +1058,64 @@ def _member(source: object, key: str) -> WireValue | None:
         return None
 
 
-def _natively_serialized(plan: ParameterPlan, location: ParameterLocation, *, repeated: bool) -> bool:
-    match plan.shape:
-        case "object":
-            return False
-        case "array" if location != "query" or not plan.explode:
-            return False
+def _primary_decision(
+    operation: OperationContract, status: int, response: ResponseSpec, media: MediaSpec | None
+) -> Decision:
+    """Decide whether a bare primary value goes to FastAPI's response_model or through the response codecs."""
+    bodyless = operation.method == "head" or status in BODYLESS_STATUSES or status < _MIN_CONTENT_STATUS
+    use = None if bodyless or media is None else media.use
+    decision = Decision(
+        site="primary_response",
+        transport="codec_adapter",
+        reason="response_empty",
+        source=response.declaration.use_site,
+        uses=() if use is None else (use.id,),
+    )
+    if media is None or bodyless:
+        return decision
+    if media.media_type == _JSON and use is not None and use.type is not None:
+        return replace(decision, transport="fastapi_native", reason="native_supported", source=None)
+    reason: Reason = (
+        "media_text" if media.kind == "text" else "media_untyped" if media.kind == "json" else "media_binary"
+    )
+    return replace(decision, reason=reason)
+
+
+def symbol_imports(batch: GeneratedTypeContractBatch) -> dict[int, str]:
+    """Return the `module:Name` import location of every emitted model symbol."""
+    return {
+        symbol.id: f"{artifact_module(symbol.artifact)}:{symbol.name}"
+        for symbol in batch.symbols
+        if symbol.artifact is not None
+    }
+
+
+def _parameter_reason(
+    plan: ParameterPlan | None, location: ParameterLocation, kind: ValueKind | None, *, repeated: bool
+) -> Reason:
+    """Return why an adapter reads a parameter, or native support when FastAPI reads its style and type."""
+    if plan is not None and plan.content_media_type is not None:
+        return "parameter_content"
+    if plan is None or kind is None or kind != {"scalar": "scalar", "array": "sequence"}.get(plan.shape):
+        return "parameter_shape"
+    if _STYLES.get(location) != plan.style or (kind == "sequence" and (location != "query" or not plan.explode)):
+        return "parameter_style"
+    if location == "path" and repeated:
+        return "repeated_path"
+    return "native_supported"
+
+
+def _default(facts: ModelFieldFacts) -> Default | LiteralScalar | LiteralSequence:
+    """Return the literal default a root model or alias declares, or absence."""
+    emitted = facts.backend.emitted
+    match emitted.emitted_default_kind, emitted.emitted_default_value:
+        case "literal", LiteralScalar() as value:
+            return value
+        case "literal", LiteralSequence() as value if all(isinstance(item, LiteralScalar) for item in value.items):
+            return value
         case _:
             pass
-    return (
-        plan.content_media_type is None
-        and _STYLES.get(location) == plan.style
-        and not (location == "path" and repeated)
-    )
+    return Default.ABSENT
 
 
 def _candidate(  # noqa: PLR0913
@@ -1251,58 +1181,3 @@ def _default_media(response: ResponseSpec) -> MediaSpec | None:
         or next((item for item in response.media if item.media_type.partition(";")[0].endswith("+json")), None)
         or next(iter(response.media), None)
     )
-
-
-def _extra(schema: Schema, allowed: Iterable[str]) -> tuple[Reason, str] | None:
-    permitted = frozenset(allowed)
-    return next(
-        (
-            ("native_shape_mismatch" if keyword in SHAPES else "source_assertion_not_projected", keyword)
-            for keyword in schema
-            if keyword not in permitted and keyword not in ANNOTATIONS and not keyword.startswith("x-")
-        ),
-        None,
-    )
-
-
-def _documentation(declaration: WireDeclaration | None, schema: Schema) -> Iterator[tuple[str, object]]:
-    if isinstance(title := schema.get("title"), str):
-        yield "title", title
-    description = None if declaration is None else fact(declaration, "description")
-    if isinstance(description, str) or isinstance(description := schema.get("description"), str):
-        yield "description", description
-    if (declaration is not None and fact(declaration, "deprecated") is True) or schema.get("deprecated") is True:
-        yield "deprecated", True
-    if isinstance(examples := schema.get("examples"), tuple) and examples:
-        yield "examples", examples
-
-
-def _constraints(schema: Schema, scalar: Scalar) -> dict[str, object]:
-    keywords: dict[str, object] = {
-        name: value for source, name in BOUNDS.items() if number(value := schema.get(source))
-    }
-    if scalar.kind == "str":
-        keywords.update({name: schema[source] for source, name in STRING_LENGTHS.items() if source in schema})
-    if scalar.kind == "int" and (limits := INTEGER_RANGES.get(str(schema.get("format")))) is not None:
-        low, high = limits
-        lower = next(((name, bound) for name in ("ge", "gt") if number(bound := keywords.pop(name, None))), None)
-        upper = next(((name, bound) for name in ("le", "lt") if number(bound := keywords.pop(name, None))), None)
-        keywords.update((lower,) if lower is not None and Decimal(str(lower[1])) >= low else (("ge", low),))
-        keywords.update((upper,) if upper is not None and Decimal(str(upper[1])) <= high else (("le", high),))
-    return keywords
-
-
-def _lexical(schema: Schema) -> LexicalKind:
-    present = (kinds(schema) or frozenset()) - {"null"}
-    if len(present) != 1 or (kind := _SCALARS.get(next(iter(present)))) is None:
-        return "string"
-    return _LEXICAL.get(kind, "string")
-
-
-def _typed_default(value: WireValue, scalar: Scalar, *, array: bool) -> bool:
-    if array:
-        return isinstance(value, tuple) and all(_typed_default(item, scalar, array=False) for item in value)
-    if scalar.kind == "literal":
-        return isinstance(value, (str, int, float, bool)) and value in scalar.values
-    types = _DEFAULT_TYPES.get(scalar.kind)
-    return types is not None and isinstance(value, types) and (scalar.kind == "bool" or not isinstance(value, bool))

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pydantic.dataclasses import dataclass
+from typing_extensions import TypeAliasType
 
 
 @dataclass
@@ -11,6 +12,9 @@ class FieldFormsPostRequest:
     name: str
     count: int | None = 1
     tags: list[str] | None = None
+
+
+FieldNotesPostRequest = TypeAliasType("FieldNotesPostRequest", dict[str, str])
 
 
 @dataclass

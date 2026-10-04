@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Final, Literal, TypeAlias, TypedDict
 
-import pets_basemodel_models
+from pydantic import TypeAdapter
 from typing_extensions import Never
 
 from .._runtime.model_codecs.parameters import ParameterPlan
@@ -54,7 +54,7 @@ class ListPets:
     class Parameters:
         """The adapter parameters of list_pets."""
 
-        session: pets_basemodel_models.FieldPetsGetCookieSessionParameter | Unset
+        session: str | Unset
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -66,7 +66,7 @@ class ListPets:
                     style='form',
                     explode=True,
                 ),
-                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
+                adapter=TypeAdapter(str),
             ),
         ),
         record=Parameters,
@@ -79,7 +79,7 @@ class ListPets:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                        codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
                     ),
                 ),
             ),
@@ -89,7 +89,7 @@ class ListPets:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
                     ),
                 ),
             ),
@@ -115,7 +115,7 @@ class CreatePet:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
+                        codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
                     ),
                 ),
             ),
@@ -140,7 +140,7 @@ class ListMyPets:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
+                        codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
                     ),
                 ),
             ),
@@ -166,7 +166,7 @@ class GetPet:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
+                        codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
                     ),
                 ),
             ),
@@ -176,7 +176,7 @@ class GetPet:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
+                        codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
                     ),
                 ),
             ),
@@ -216,7 +216,7 @@ class GetInventory:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
+                        codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
                     ),
                 ),
             ),

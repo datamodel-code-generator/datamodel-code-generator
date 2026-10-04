@@ -136,14 +136,6 @@ def _resources() -> tuple[SchemaResource, ...]:
 
 
 @cache
-def _request_view() -> DirectionalView:
-    return DirectionalView(
-        direction='request',
-        flagged=('https://dcg.invalid/inputs/root#/paths/~1pets/post/requestBody/content/application~1json/schema',),
-    )
-
-
-@cache
 def _response_view() -> DirectionalView:
     return DirectionalView(
         direction='response',
@@ -152,11 +144,6 @@ def _response_view() -> DirectionalView:
             'https://dcg.invalid/inputs/root#/paths/~1pets~1%7Bid%7D/get/responses/200/content/application~1json/schema',
         ),
     )
-
-
-@cache
-def request_bundle() -> SchemaBundle:
-    return SchemaBundle(_resources(), _request_view())
 
 
 @cache
@@ -260,42 +247,6 @@ def _model_1() -> ModelBinding:
 
 CONTEXT_0: Final = CodecContext(
     surface='server',
-    direction='request',
-    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/post/requestBody/content/application~1json/schema',
-    operation_id='/paths/~1pets/post',
-    media_type='application/json',
-)
-
-
-@cache
-def codec_0() -> PydanticModelCodec[variants_reuse_dataclass_models.Pet]:
-    """Codec of /paths/~1pets/post request_body (request application/json)."""
-    return PydanticModelCodec(
-        UseBinding(
-            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='variants_reuse_dataclass_models:Pet')",
-            direction='request',
-            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/post/requestBody/content/application~1json/schema',
-            operation_id='/paths/~1pets/post',
-            media_type='application/json',
-            backend='pydantic_v2.dataclass',
-            native_kind='dataclass',
-            native_export='variants_reuse_dataclass_models:Pet',
-            projection_mode='native',
-            converter_strategy='pydantic_type_adapter',
-            type=ModelNode(symbol='variants_reuse_dataclass_models:Pet'),
-            models=(_model_0(), _model_1()),
-        ),
-        variants_reuse_dataclass_models.Pet,
-        {
-            'variants_reuse_dataclass_models:Owner': variants_reuse_dataclass_models.Owner,
-            'variants_reuse_dataclass_models:Pet': variants_reuse_dataclass_models.Pet,
-        },
-        request_bundle,
-    )
-
-
-CONTEXT_1: Final = CodecContext(
-    surface='server',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/post/responses/201/content/application~1json/schema',
     operation_id='/paths/~1pets/post',
@@ -304,7 +255,7 @@ CONTEXT_1: Final = CodecContext(
 
 
 @cache
-def codec_1() -> PydanticModelCodec[variants_reuse_dataclass_models.Pet]:
+def codec_0() -> PydanticModelCodec[variants_reuse_dataclass_models.Pet]:
     """Codec of /paths/~1pets/post response_body (response 201 application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -331,11 +282,11 @@ def codec_1() -> PydanticModelCodec[variants_reuse_dataclass_models.Pet]:
 
 
 @cache
-def outbound_1() -> NativeOutboundCodec[variants_reuse_dataclass_models.Pet]:
-    return NativeOutboundCodec(codec_1(), CONTEXT_1)
+def outbound_0() -> NativeOutboundCodec[variants_reuse_dataclass_models.Pet]:
+    return NativeOutboundCodec(codec_0(), CONTEXT_0)
 
 
-CONTEXT_2: Final = CodecContext(
+CONTEXT_1: Final = CodecContext(
     surface='server',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7Bid%7D/get/responses/200/content/application~1json/schema',
@@ -345,7 +296,7 @@ CONTEXT_2: Final = CodecContext(
 
 
 @cache
-def codec_2() -> PydanticModelCodec[variants_reuse_dataclass_models.Pet]:
+def codec_1() -> PydanticModelCodec[variants_reuse_dataclass_models.Pet]:
     """Codec of /paths/~1pets~1{id}/get response_body (response 200 application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -372,11 +323,11 @@ def codec_2() -> PydanticModelCodec[variants_reuse_dataclass_models.Pet]:
 
 
 @cache
-def outbound_2() -> NativeOutboundCodec[variants_reuse_dataclass_models.Pet]:
-    return NativeOutboundCodec(codec_2(), CONTEXT_2)
+def outbound_1() -> NativeOutboundCodec[variants_reuse_dataclass_models.Pet]:
+    return NativeOutboundCodec(codec_1(), CONTEXT_1)
 
 
-CONTEXT_3: Final = CodecContext(
+CONTEXT_2: Final = CodecContext(
     surface='server',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1owners/get/responses/200/content/application~1json/schema',
@@ -386,7 +337,7 @@ CONTEXT_3: Final = CodecContext(
 
 
 @cache
-def codec_3() -> PydanticModelCodec[variants_reuse_dataclass_models.FieldOwnersGetResponse]:
+def codec_2() -> PydanticModelCodec[variants_reuse_dataclass_models.FieldOwnersGetResponse]:
     """Codec of /paths/~1owners/get response_body (response 200 application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -410,5 +361,5 @@ def codec_3() -> PydanticModelCodec[variants_reuse_dataclass_models.FieldOwnersG
 
 
 @cache
-def outbound_3() -> NativeOutboundCodec[variants_reuse_dataclass_models.FieldOwnersGetResponse]:
-    return NativeOutboundCodec(codec_3(), CONTEXT_3)
+def outbound_2() -> NativeOutboundCodec[variants_reuse_dataclass_models.FieldOwnersGetResponse]:
+    return NativeOutboundCodec(codec_2(), CONTEXT_2)

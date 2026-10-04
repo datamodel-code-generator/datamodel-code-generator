@@ -15,6 +15,16 @@
       "post": {
         "summary": "Subscribe",
         "operationId": "subscribe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Subscription"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "201": {
             "description": "Subscribed.",
@@ -25,44 +35,18 @@
               }
             }
           },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
           "default": {
             "description": "Unexpected."
-          },
-          "400": {
-            "description": "Unexpected. The response may also have no content.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unexpected. The response may also have no content.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unexpected. The response may also have no content.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__588558bc295c"
-                }
-              }
-            }
           },
           "500": {
             "description": "Unexpected. The response may also have no content.",
@@ -71,16 +55,6 @@
                 "schema": {
                   "$ref": "#/components/schemas/dcg_server_error__588558bc295c"
                 }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Subscription__986fd3c7bfdb"
               }
             }
           }
@@ -193,20 +167,20 @@
         "responses": {
           "200": {
             "description": "The events.",
-            "headers": {
-              "X-Map": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Event__fcc2f28cb876"
-                  }
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldEventsGetResponse"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Event__fcc2f28cb876"
+                      }
+                    }
+                  ]
                 },
                 "example": [
                   {
@@ -214,6 +188,13 @@
                     "kind": "created"
                   }
                 ]
+              }
+            },
+            "headers": {
+              "X-Map": {
+                "schema": {
+                  "type": "object"
+                }
               }
             }
           },
@@ -285,7 +266,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Animal__968918e172f8"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Animal"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Animal__968918e172f8"
+                    }
+                  ]
                 }
               }
             }
@@ -409,7 +397,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FieldEventsGetResponse__807321d2eb29"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldEventsGetResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FieldEventsGetResponse__807321d2eb29"
+                    }
+                  ]
                 }
               },
               "text/plain": {
@@ -436,67 +431,151 @@
   },
   "components": {
     "schemas": {
-      "Subscription__986fd3c7bfdb": {
+      "Animal": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Cat"
+          },
+          {
+            "$ref": "#/components/schemas/Dog"
+          }
+        ],
+        "title": "Animal",
+        "discriminator": {
+          "propertyName": "pet_type",
+          "mapping": {
+            "cat": "#/components/schemas/Cat",
+            "dog": "#/components/schemas/Dog"
+          }
+        }
+      },
+      "Cat": {
+        "properties": {
+          "pet_type": {
+            "type": "string",
+            "const": "cat",
+            "title": "Pet Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pet_type"
+        ],
+        "title": "Cat"
+      },
+      "Dog": {
+        "properties": {
+          "pet_type": {
+            "type": "string",
+            "const": "dog",
+            "title": "Pet Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pet_type"
+        ],
+        "title": "Dog"
+      },
+      "Event": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "Event"
+      },
+      "FieldEventsGetResponse": {
+        "items": {
+          "$ref": "#/components/schemas/Event"
+        },
+        "type": "array",
+        "title": "FieldEventsGetResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Subscription": {
+        "properties": {
+          "callbackUrl": {
+            "type": "string",
+            "minLength": 1,
+            "format": "uri",
+            "title": "Callbackurl"
+          }
+        },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "callbackUrl"
         ],
-        "additionalProperties": false,
-        "properties": {
-          "callbackUrl": {
-            "type": "string",
-            "format": "uri"
-          }
-        }
+        "title": "Subscription"
       },
-      "dcg_http_error__588558bc295c": {
-        "type": "object",
+      "ValidationError": {
         "properties": {
-          "detail": {}
-        },
-        "required": [
-          "detail"
-        ]
-      },
-      "dcg_validation_error__588558bc295c": {
-        "type": "object",
-        "properties": {
-          "detail": {
-            "type": "array",
+          "loc": {
             "items": {
-              "type": "object",
-              "properties": {
-                "loc": {
-                  "type": "array",
-                  "items": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "integer"
-                      }
-                    ]
-                  }
-                },
-                "msg": {
+              "anyOf": [
+                {
                   "type": "string"
                 },
-                "type": {
-                  "type": "string"
+                {
+                  "type": "integer"
                 }
-              },
-              "required": [
-                "loc",
-                "msg",
-                "type"
               ]
-            }
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
+        "type": "object",
         "required": [
-          "detail"
-        ]
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
       },
       "dcg_server_error__588558bc295c": {
         "type": "string"
@@ -568,6 +647,55 @@
             "$ref": "#/components/schemas/State__b233ea901f0d"
           }
         }
+      },
+      "dcg_http_error__588558bc295c": {
+        "type": "object",
+        "properties": {
+          "detail": {}
+        },
+        "required": [
+          "detail"
+        ]
+      },
+      "dcg_validation_error__588558bc295c": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "loc": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "integer"
+                      }
+                    ]
+                  }
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "loc",
+                "msg",
+                "type"
+              ]
+            }
+          }
+        },
+        "required": [
+          "detail"
+        ]
       },
       "FieldEventsGetResponse__807321d2eb29": {
         "type": "array",

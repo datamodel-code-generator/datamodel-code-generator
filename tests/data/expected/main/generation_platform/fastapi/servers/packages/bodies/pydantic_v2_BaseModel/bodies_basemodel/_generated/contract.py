@@ -6,13 +6,14 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias, TypedDict
 
+import bodies_basemodel_models
+from pydantic import TypeAdapter
 from typing_extensions import Never
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import BodyAdapter, BodyMedia
 from .._runtime.server.responses import OperationResponses, ResponsePlan
-from . import model_bindings
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1items/post',
@@ -59,17 +60,6 @@ class PostItem:
         service='untagged',
         keywords=('body',),
     )
-    BODY: Final = BodyAdapter(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-            ),
-        ),
-        required=False,
-        names=frozenset({'name'}),
-    )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
         primary=(204, None),
@@ -84,17 +74,6 @@ class PostAccount:
         key='/paths/~1accounts/post',
         service='untagged',
         keywords=('body',),
-    )
-    BODY: Final = BodyAdapter(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
-                envelope=True,
-            ),
-        ),
-        names=frozenset({'id', 'name'}),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
@@ -116,16 +95,15 @@ class PostProfile:
             BodyMedia(
                 media_type='application/json; profile=a',
                 kind='json',
-                codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                adapter=TypeAdapter(bodies_basemodel_models.FieldProfilesPostRequest),
             ),
             BodyMedia(
                 media_type='application/json; profile=b',
                 kind='json',
-                codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
+                adapter=TypeAdapter(bodies_basemodel_models.FieldProfilesPostRequest1),
             ),
         ),
         required=False,
-        names=frozenset({'a', 'b'}),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
@@ -147,16 +125,15 @@ class PostVariant:
             BodyMedia(
                 media_type='application/json; profile=v1',
                 kind='json',
-                codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
+                adapter=TypeAdapter(bodies_basemodel_models.FieldVariantsPostRequest),
             ),
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
+                adapter=TypeAdapter(bodies_basemodel_models.FieldVariantsPostRequest1),
             ),
         ),
         required=False,
-        names=frozenset({'a', 'c'}),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
@@ -178,20 +155,19 @@ class PutDocument:
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
+                adapter=TypeAdapter(bodies_basemodel_models.Item),
             ),
             BodyMedia(
                 media_type='application/vnd.item+json',
                 kind='json',
-                codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
+                adapter=TypeAdapter(bodies_basemodel_models.Item),
             ),
             BodyMedia(
                 media_type='text/*',
                 kind='text',
-                codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
+                adapter=TypeAdapter(bodies_basemodel_models.FieldDocumentsPutRequest),
             ),
         ),
-        names=frozenset({'name'}),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
@@ -214,7 +190,7 @@ class PutArchive:
             BodyMedia(
                 media_type='text/*',
                 kind='text',
-                codec=(model_bindings.codec_9, model_bindings.CONTEXT_9),
+                adapter=TypeAdapter(bodies_basemodel_models.FieldArchivesPutRequest),
             ),
         ),
     )
@@ -256,17 +232,16 @@ class PostForm:
             BodyMedia(
                 media_type='application/x-www-form-urlencoded',
                 kind='form',
-                codec=(model_bindings.codec_10, model_bindings.CONTEXT_10),
+                adapter=TypeAdapter(bodies_basemodel_models.FieldFormsPostRequest),
                 fields=(
+                    FieldPlan('__pydantic_extra__', 'string'),
                     FieldPlan('name', 'string'),
                     FieldPlan('tags', 'string', repeated=True),
-                    FieldPlan('count', 'integer'),
+                    FieldPlan('count', 'string'),
                 ),
-                additional=FieldPlan('', 'integer'),
             ),
         ),
         required=False,
-        names=frozenset({'count', 'name', 'tags'}),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
@@ -281,7 +256,7 @@ class PostNativeForm:
         name='post_native_form',
         key='/paths/~1native-forms/post',
         service='untagged',
-        keywords=('name', 'count'),
+        keywords=('body',),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
@@ -296,7 +271,17 @@ class Upload:
         name='upload',
         key='/paths/~1uploads/post',
         service='untagged',
-        keywords=('file', 'note'),
+        keywords=('body',),
+    )
+    BODY: Final = BodyAdapter(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                adapter=TypeAdapter(bodies_basemodel_models.FieldUploadsPostRequest),
+                fields=(FieldPlan('file', 'string'), FieldPlan('note', 'string')),
+            ),
+        ),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
@@ -312,17 +297,6 @@ class PostCheck:
         key='/paths/~1checks/post',
         service='untagged',
         keywords=('body',),
-    )
-    BODY: Final = BodyAdapter(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=(model_bindings.codec_11, model_bindings.CONTEXT_11),
-            ),
-        ),
-        required=False,
-        names=frozenset({'code', 'scores'}),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),

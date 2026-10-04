@@ -45,12 +45,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "enum": [
-                "cat",
-                "dog"
-              ],
-              "type": "string",
-              "title": "Kind"
+              "$ref": "#/components/schemas/FieldPetsGetQueryKindParameter"
             }
           },
           {
@@ -323,7 +318,6 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "maximum": 9223372036854775807,
               "minimum": 1,
               "title": "Petid"
             }
@@ -393,7 +387,6 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "maximum": 9223372036854775807,
               "minimum": 1,
               "title": "Petid"
             }
@@ -430,6 +423,14 @@
   },
   "components": {
     "schemas": {
+      "FieldPetsGetQueryKindParameter": {
+        "type": "string",
+        "enum": [
+          "cat",
+          "dog"
+        ],
+        "title": "FieldPetsGetQueryKindParameter"
+      },
       "FieldPetsGetResponse": {
         "items": {
           "$ref": "#/components/schemas/Pet"

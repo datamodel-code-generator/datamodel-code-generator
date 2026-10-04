@@ -56,8 +56,8 @@ class _ListPetsResponseCodecs(ResponseCodecs[_ListPetsResponseCodec]):
 
 ListPetsResponseCodecs: Final = _ListPetsResponseCodecs(
     (
-        ('200', (('application/json', model_bindings.outbound_1),)),
-        ('default', (('application/json', model_bindings.outbound_2),)),
+        ('200', (('application/json', model_bindings.outbound_0),)),
+        ('default', (('application/json', model_bindings.outbound_1),)),
     ),
 )
 
@@ -93,7 +93,7 @@ class _CreatePetResponseCodecs(ResponseCodecs[NativeOutboundCodec[models.Pet]]):
 
 
 CreatePetResponseCodecs: Final = _CreatePetResponseCodecs(
-    (('201', (('application/json', model_bindings.outbound_3),)),),
+    (('201', (('application/json', model_bindings.outbound_2),)),),
 )
 
 
@@ -133,7 +133,7 @@ class _ListMyPetsResponseCodecs(
 
 
 ListMyPetsResponseCodecs: Final = _ListMyPetsResponseCodecs(
-    (('200', (('application/json', model_bindings.outbound_4),)),),
+    (('200', (('application/json', model_bindings.outbound_3),)),),
 )
 
 
@@ -187,8 +187,8 @@ class _GetPetResponseCodecs(ResponseCodecs[_GetPetResponseCodec]):
 
 GetPetResponseCodecs: Final = _GetPetResponseCodecs(
     (
-        ('200', (('application/json', model_bindings.outbound_5),)),
-        ('404', (('application/json', model_bindings.outbound_6),)),
+        ('200', (('application/json', model_bindings.outbound_4),)),
+        ('404', (('application/json', model_bindings.outbound_5),)),
     ),
 )
 
@@ -239,7 +239,7 @@ class _GetInventoryResponseCodecs(
 
 
 GetInventoryResponseCodecs: Final = _GetInventoryResponseCodecs(
-    (('200', (('application/json', model_bindings.outbound_7),)),),
+    (('200', (('application/json', model_bindings.outbound_6),)),),
 )
 
 

@@ -24,15 +24,6 @@ _BUNDLE = r"""{
       }
      },
      {
-      "name": "code",
-      "in": "query",
-      "schema": {
-       "type": "string",
-       "pattern": "^[A-Z]+$",
-       "default": "AB"
-      }
-     },
-     {
       "name": "filter",
       "in": "query",
       "style": "deepObject",
@@ -59,7 +50,10 @@ _BUNDLE = r"""{
        "type": "array",
        "items": {
         "type": "integer"
-       }
+       },
+       "default": [
+        3
+       ]
       }
      },
      {
@@ -252,43 +246,9 @@ _BUNDLE = r"""{
     ]
    ],
    "fragment": {
-    "parameters": [
-     {
-      "name": "file.name",
-      "in": "path",
-      "required": true,
-      "schema": {
-       "type": "string",
-       "pattern": "^[a-z]+\\.txt$"
-      }
-     }
-    ],
     "responses": {
      "204": {
       "description": "Done."
-     },
-     "400": {
-      "description": "Invalid request",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__f2e57eafd422"
-        },
-        "example": {
-         "detail": "Invalid request"
-        }
-       }
-      }
-     },
-     "422": {
-      "description": "Validation Error",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_validation_error__f2e57eafd422"
-        }
-       }
-      }
      },
      "500": {
       "description": "Internal Server Error",
@@ -310,43 +270,9 @@ _BUNDLE = r"""{
    "route_path": "/men\u00fc/{item}",
    "slots": [],
    "fragment": {
-    "parameters": [
-     {
-      "name": "item",
-      "in": "path",
-      "required": true,
-      "schema": {
-       "type": "string",
-       "pattern": "^[a-z]+$"
-      }
-     }
-    ],
     "responses": {
      "204": {
       "description": "Done."
-     },
-     "400": {
-      "description": "Invalid request",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__f2e57eafd422"
-        },
-        "example": {
-         "detail": "Invalid request"
-        }
-       }
-      }
-     },
-     "422": {
-      "description": "Validation Error",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_validation_error__f2e57eafd422"
-        }
-       }
-      }
      },
      "500": {
       "description": "Internal Server Error",
@@ -409,6 +335,38 @@ _BUNDLE = r"""{
       "schema": {
        "type": "boolean",
        "const": true
+      }
+     },
+     {
+      "name": "tier",
+      "in": "query",
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer",
+         "enum": [
+          1,
+          2
+         ]
+        },
+        {
+         "type": "null"
+        }
+       ]
+      }
+     },
+     {
+      "name": "levels",
+      "in": "query",
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "integer",
+        "enum": [
+         1,
+         2
+        ]
+       }
       }
      }
     ],

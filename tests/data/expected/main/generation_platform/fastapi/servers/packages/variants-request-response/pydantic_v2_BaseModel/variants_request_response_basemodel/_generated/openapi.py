@@ -13,16 +13,6 @@ _BUNDLE = r"""{
    "route_path": "/pets",
    "slots": [],
    "fragment": {
-    "requestBody": {
-     "required": true,
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/Pet__1342d41e951c"
-       }
-      }
-     }
-    },
     "responses": {
      "201": {
       "description": "Created.",
@@ -30,42 +20,6 @@ _BUNDLE = r"""{
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/Pet__63397f21d697"
-        }
-       }
-      }
-     },
-     "400": {
-      "description": "Invalid request",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__f2ee72118e9e"
-        },
-        "example": {
-         "detail": "Invalid request"
-        }
-       }
-      }
-     },
-     "415": {
-      "description": "Unsupported media type",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__f2ee72118e9e"
-        },
-        "example": {
-         "detail": "Unsupported media type"
-        }
-       }
-      }
-     },
-     "422": {
-      "description": "Validation Error",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_validation_error__f2ee72118e9e"
         }
        }
       }
@@ -152,28 +106,6 @@ _BUNDLE = r"""{
  ],
  "components": {
   "schemas": {
-   "Pet__1342d41e951c": {
-    "type": "object",
-    "required": [
-     "name"
-    ],
-    "properties": {
-     "id": {
-      "type": "integer",
-      "readOnly": true
-     },
-     "name": {
-      "$ref": "#/components/schemas/Name__402bf2920c94"
-     },
-     "secret": {
-      "type": "string",
-      "writeOnly": true
-     },
-     "owner": {
-      "$ref": "#/components/schemas/Owner__640c1bb01f99"
-     }
-    }
-   },
    "Pet__63397f21d697": {
     "type": "object",
     "required": [
@@ -196,77 +128,10 @@ _BUNDLE = r"""{
      }
     }
    },
-   "dcg_http_error__f2ee72118e9e": {
-    "type": "object",
-    "properties": {
-     "detail": {}
-    },
-    "required": [
-     "detail"
-    ]
-   },
-   "dcg_validation_error__f2ee72118e9e": {
-    "type": "object",
-    "properties": {
-     "detail": {
-      "type": "array",
-      "items": {
-       "type": "object",
-       "properties": {
-        "loc": {
-         "type": "array",
-         "items": {
-          "anyOf": [
-           {
-            "type": "string"
-           },
-           {
-            "type": "integer"
-           }
-          ]
-         }
-        },
-        "msg": {
-         "type": "string"
-        },
-        "type": {
-         "type": "string"
-        }
-       },
-       "required": [
-        "loc",
-        "msg",
-        "type"
-       ]
-      }
-     }
-    },
-    "required": [
-     "detail"
-    ]
-   },
    "dcg_server_error__f2ee72118e9e": {
     "type": "string"
    },
    "Owner__5421fe55d7f3": {
-    "type": "object",
-    "required": [
-     "name"
-    ],
-    "properties": {
-     "name": {
-      "type": "string"
-     },
-     "email": {
-      "type": "string"
-     }
-    }
-   },
-   "Name__402bf2920c94": {
-    "type": "string",
-    "minLength": 1
-   },
-   "Owner__640c1bb01f99": {
     "type": "object",
     "required": [
      "name"

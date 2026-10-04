@@ -6,7 +6,7 @@ from __future__ import annotations
 from enum import Enum, IntEnum, StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, RootModel, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
 
 
 class Filter(BaseModel):
@@ -37,11 +37,15 @@ class FieldSearchGetQueryIdsParameter(RootModel[list[int]]):
 
 
 class FieldSearchGetHeaderXIdsParameter(RootModel[list[int]]):
-    root: list[int]
+    root: list[int] = [3]
 
 
 class FieldRatiosGetQueryRatiosParameter(RootModel[list[float]]):
     root: list[float]
+
+
+class FieldRatiosGetQueryLimitsParameter(RootModel[list[conint(ge=1)]]):
+    root: list[conint(ge=1)] = Field([1, 2], examples=[[1]], title='Limits')
 
 
 class FieldRepeatIdAgainIdGetPathIdParameter(RootModel[int]):
@@ -84,3 +88,25 @@ class FieldItemsLevelGetHeaderXFlagParameter(RootModel[Literal[True]]):
 class FieldItemsLevelGetQueryKindParameter(StrEnum):
     a = 'a'
     b = 'b'
+
+
+class FieldItemsLevelGetQueryTierParameter1(IntEnum):
+    integer_1 = 1
+    integer_2 = 2
+
+
+class FieldItemsLevelGetQueryTierParameter(
+    RootModel[FieldItemsLevelGetQueryTierParameter1 | None]
+):
+    root: FieldItemsLevelGetQueryTierParameter1 | None
+
+
+class FieldItemsLevelGetQueryLevelsParameterEnum(IntEnum):
+    integer_1 = 1
+    integer_2 = 2
+
+
+class FieldItemsLevelGetQueryLevelsParameter(
+    RootModel[list[FieldItemsLevelGetQueryLevelsParameterEnum]]
+):
+    root: list[FieldItemsLevelGetQueryLevelsParameterEnum]

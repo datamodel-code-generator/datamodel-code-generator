@@ -2,7 +2,7 @@
 """Endpoints of the untagged operations; regenerate them instead of editing."""
 
 from collections.abc import Sequence
-from typing import Annotated, Final, Literal
+from typing import Annotated, Final
 
 import responses_dataclass_models
 from fastapi import APIRouter, Path, Query
@@ -20,7 +20,7 @@ def _add_get_greeting(router: APIRouter, wiring: Wiring) -> None:
 
     def get_greeting(
         *,
-        mode: Annotated[Literal['bare', 'result', 'value'], Query(
+        mode: Annotated[responses_dataclass_models.FieldGreetingsGetQueryModeParameter, Query(
             alias='mode',
             default_factory=absent,
         )],

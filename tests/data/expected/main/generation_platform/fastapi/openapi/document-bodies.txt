@@ -58,42 +58,25 @@
         ],
         "summary": "Post Optional",
         "operationId": "postOptional",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Item"
+              }
+            }
+          }
+        },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
           },
           "422": {
             "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -105,15 +88,6 @@
                 "schema": {
                   "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
                 }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Item__4d00166669b6"
               }
             }
           }
@@ -128,42 +102,26 @@
         ],
         "summary": "Post Nullable",
         "operationId": "postNullable",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldJsonNullablePostRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
           },
           "422": {
             "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -174,27 +132,6 @@
               "text/plain": {
                 "schema": {
                   "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": [
-                  "object",
-                  "null"
-                ],
-                "required": [
-                  "name"
-                ],
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  }
                 }
               }
             }
@@ -210,42 +147,26 @@
         ],
         "summary": "Post Envelope",
         "operationId": "postEnvelope",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Account"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
           },
           "422": {
             "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -257,16 +178,6 @@
                 "schema": {
                   "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
                 }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Account__70058ec0a642"
               }
             }
           }
@@ -535,7 +446,7 @@
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/Body_postForm"
+                "$ref": "#/components/schemas/FieldFormPostRequest"
               }
             }
           },
@@ -660,42 +571,26 @@
         ],
         "summary": "Post Either Form",
         "operationId": "postEitherForm",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldFormEitherPostRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
           },
           "422": {
             "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -706,30 +601,6 @@
               "text/plain": {
                 "schema": {
                   "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "either": {
-                    "type": [
-                      "string",
-                      "integer"
-                    ]
-                  },
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "type": "integer"
-                    }
-                  }
                 }
               }
             }
@@ -829,165 +700,11 @@
         ],
         "summary": "Post Closed Form",
         "operationId": "postClosedForm",
-        "responses": {
-          "204": {
-            "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
-          "required": true,
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": []
-      }
-    },
-    "/form/choice": {
-      "post": {
-        "tags": [
-          "form"
-        ],
-        "summary": "Post Choice Form",
-        "operationId": "postChoiceForm",
-        "responses": {
-          "204": {
-            "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  }
-                },
-                "minProperties": 1
-              }
-            }
-          }
-        },
-        "security": []
-      }
-    },
-    "/upload": {
-      "post": {
-        "tags": [
-          "form"
-        ],
-        "summary": "Upload",
-        "operationId": "upload",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_upload"
+                "$ref": "#/components/schemas/FieldFormClosedPostRequest"
               }
             }
           },
@@ -1020,11 +737,233 @@
         },
         "security": []
       }
+    },
+    "/form/choice": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Choice Form",
+        "operationId": "postChoiceForm",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldFormChoicePostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/upload": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Upload",
+        "operationId": "upload",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "extra": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
     }
   },
   "components": {
     "schemas": {
-      "Body_postForm": {
+      "Account": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Account"
+      },
+      "FieldFormChoicePostRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "title": "FieldFormChoicePostRequest"
+      },
+      "FieldFormClosedPostRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FieldFormClosedPostRequest"
+      },
+      "FieldFormEitherPostRequest": {
+        "properties": {
+          "either": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Either"
+          },
+          "items": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "title": "FieldFormEitherPostRequest"
+      },
+      "FieldFormPostRequest": {
         "properties": {
           "name": {
             "type": "string",
@@ -1032,15 +971,29 @@
             "title": "Name"
           },
           "count": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Count",
             "default": 1
           },
           "tags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Tags"
           }
         },
@@ -1048,33 +1001,20 @@
         "required": [
           "name"
         ],
-        "title": "Body_postForm"
+        "title": "FieldFormPostRequest"
       },
-      "Body_upload": {
+      "FieldJsonNullablePostRequest": {
         "properties": {
-          "file": {
+          "name": {
             "type": "string",
-            "contentMediaType": "application/octet-stream",
-            "title": "File"
-          },
-          "extra": {
-            "items": {
-              "type": "string",
-              "contentMediaType": "application/octet-stream"
-            },
-            "type": "array",
-            "title": "Extra"
-          },
-          "note": {
-            "type": "string",
-            "title": "Note"
+            "title": "Name"
           }
         },
         "type": "object",
         "required": [
-          "file"
+          "name"
         ],
-        "title": "Body_upload"
+        "title": "FieldJsonNullablePostRequest"
       },
       "HTTPValidationError": {
         "properties": {
@@ -1204,21 +1144,6 @@
         "required": [
           "detail"
         ]
-      },
-      "Account__70058ec0a642": {
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer",
-            "readOnly": true
-          },
-          "name": {
-            "type": "string"
-          }
-        }
       }
     }
   }

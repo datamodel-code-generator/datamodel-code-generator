@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Final, Literal, TypeAlias, TypedDict
 
 import models
+from pydantic import TypeAdapter
 from typing_extensions import Never
 
 from .._runtime.model_codecs.parameters import ParameterPlan
@@ -49,7 +50,7 @@ class GetValue:
             ParameterArgument(
                 name='x_label',
                 plan=ParameterPlan(location='header', name='X-Label', style='simple'),
-                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
+                adapter=TypeAdapter(models.FieldValuesIdGetHeaderXLabelParameter),
             ),
         ),
         record=Parameters,
@@ -62,7 +63,7 @@ class GetValue:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                        codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
                     ),
                 ),
             ),

@@ -3,13 +3,14 @@
 
 from __future__ import annotations
 
+import typing
 from abc import abstractmethod
-from typing import Literal, Protocol
+from typing import Protocol
 
 import parameters_basemodel_models
 from fastapi.responses import Response
 
-from .model_codecs import DecodedValue, Unset
+from .model_codecs import Unset
 from .responses import (
     GetFileResponsePayload,
     GetItemResponsePayload,
@@ -29,11 +30,11 @@ class UntaggedService(Protocol):
     def search(
         self,
         *,
-        session: parameters_basemodel_models.FieldSearchGetCookieSessionParameter,
-        code: parameters_basemodel_models.FieldSearchGetQueryCodeParameter,
-        filter: DecodedValue[parameters_basemodel_models.Filter] | Unset,
-        ids: parameters_basemodel_models.FieldSearchGetQueryIdsParameter | Unset,
-        x_ids: parameters_basemodel_models.FieldSearchGetHeaderXIdsParameter | Unset,
+        session: str,
+        code: str,
+        filter: parameters_basemodel_models.Filter | Unset,
+        ids: list[int] | Unset,
+        x_ids: list[int],
         blob: parameters_basemodel_models.Blob | Unset,
         note: str | Unset,
     ) -> None | HTTPResult[SearchResponsePayload] | Response: ...
@@ -43,13 +44,14 @@ class UntaggedService(Protocol):
         self,
         *,
         ratios: list[float],
+        limits: list[int],
     ) -> None | HTTPResult[GetRatiosResponsePayload] | Response: ...
 
     @abstractmethod
     def repeat(
         self,
         *,
-        id: parameters_basemodel_models.FieldRepeatIdAgainIdGetPathIdParameter,
+        id: int,
     ) -> None | HTTPResult[RepeatResponsePayload] | Response: ...
 
     @abstractmethod
@@ -63,14 +65,14 @@ class UntaggedService(Protocol):
     def get_file(
         self,
         *,
-        file_name: parameters_basemodel_models.FieldFilesFileNameGetPathFileNameParameter,
+        file_name: str,
     ) -> None | HTTPResult[GetFileResponsePayload] | Response: ...
 
     @abstractmethod
     def get_menu(
         self,
         *,
-        item: parameters_basemodel_models.FieldMenüItemGetPathItemParameter,
+        item: str,
     ) -> None | HTTPResult[GetMenuResponsePayload] | Response: ...
 
     @abstractmethod
@@ -80,6 +82,8 @@ class UntaggedService(Protocol):
         level: parameters_basemodel_models.FieldItemsLevelGetPathLevelParameter,
         mode: parameters_basemodel_models.FieldItemsLevelGetQueryModeParameter | Unset,
         ratio: parameters_basemodel_models.FieldItemsLevelGetQueryRatioParameter | Unset,
-        x_flag: parameters_basemodel_models.FieldItemsLevelGetHeaderXFlagParameter | Unset,
-        kind: Literal['a', 'b'] | Unset,
+        x_flag: typing.Literal[True] | Unset,
+        kind: parameters_basemodel_models.FieldItemsLevelGetQueryKindParameter | Unset,
+        tier: parameters_basemodel_models.FieldItemsLevelGetQueryTierParameter1 | None | Unset,
+        levels: list[parameters_basemodel_models.FieldItemsLevelGetQueryLevelsParameterEnum] | Unset,
     ) -> None | HTTPResult[GetItemResponsePayload] | Response: ...
