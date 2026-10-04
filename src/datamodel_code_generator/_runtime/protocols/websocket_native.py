@@ -391,6 +391,13 @@ class AsyncNativeConnector(_Connector):
         return AsyncNativeConnection(connection, options.max_message_bytes)
 
 
+def _undelivered(error: ConnectionClosed, closed: Exception) -> Exception:
+    """Return a send's closed connection, retaining uncertainty when an I/O failure may have written it."""
+    if isinstance(error.__cause__, OSError):
+        return TransportError(delivery_state=DeliveryState.MAYBE_SENT, phase="write", cause=error)
+    return closed
+
+
 class NativeConnection:
     """An open threading connection: whole messages in and out, pings, and closing."""
 
@@ -413,21 +420,13 @@ class NativeConnection:
         return _closed(error, self._connection.protocol.parser_exc, self._limit)
 
     def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
-        """Send one whole message, keeping a completed write past its deadline uncertain."""
+        """Send one whole message, refusing it when its deadline passed before writing."""
         if deadline is not None and deadline.remaining() <= 0:
             raise TimeoutError
         try:
             self._connection.send(data, text=text)
         except ConnectionClosed as error:
-            raise self._undelivered(error) from None
-        if deadline is not None and deadline.remaining() <= 0:
-            raise TransportError(delivery_state=DeliveryState.MAYBE_SENT, phase="write", cause=TimeoutError())
-
-    def _undelivered(self, error: ConnectionClosed) -> Exception:
-        """Return a send's closed connection, retaining uncertainty when an I/O failure may have written it."""
-        if isinstance(error.__cause__, OSError):
-            return TransportError(delivery_state=DeliveryState.MAYBE_SENT, phase="write", cause=error)
-        return self._closed(error)
+            raise _undelivered(error, self._closed(error)) from None
 
     def receive(self, *, deadline: Deadline | None) -> WSFrame:
         """Return the next whole message, raising TimeoutError when the deadline passes first."""
@@ -499,9 +498,7 @@ class AsyncNativeConnection:
         try:
             await self._connection.send(data, text=text)
         except ConnectionClosed as error:
-            maybe = isinstance(error.__cause__, OSError)
-            written = TransportError(delivery_state=DeliveryState.MAYBE_SENT, phase="write", cause=error)
-            raise (written if maybe else self._closed(error)) from None
+            raise _undelivered(error, self._closed(error)) from None
 
     async def receive(self, *, deadline: Deadline | None) -> WSFrame:
         """Return the next whole message; the client bounds the await by the deadline itself."""

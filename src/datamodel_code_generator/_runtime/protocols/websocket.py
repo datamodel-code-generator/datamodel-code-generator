@@ -20,7 +20,6 @@ from typing_extensions import Self, TypeVar
 from ..client.errors import (
     AdapterContractError,
     AdapterExecutionError,
-    BudgetExceededError,
     ClientClosedError,
     ConfigurationError,
     DeadlineExceededError,
@@ -289,33 +288,6 @@ def _session(plan: ChannelPlan[SendT, RecvT], limits: _Limits) -> OperationSessi
             parent_session_id=session.session_id,
         )
     return session
-
-
-def _refused(
-    plan: ChannelPlan[SendT, RecvT], session: OperationSession, error: BudgetExceededError
-) -> SessionLimitError:
-    """Return the session's limit error for a handshake whose retries its session had no send slot for."""
-    return SessionLimitError(
-        kind="network_sends",
-        limit=error.limit,
-        progress=_progress(session),
-        helper_id=plan.helper_id,
-        operation=plan.operation,
-        operation_id=error.operation_id,
-        call_id=error.call_id,
-        parent_session_id=error.parent_session_id,
-        info=error.info,
-        cause=error,
-        resource_attempt_count=error.resource_attempt_count,
-        redirect_count=error.redirect_count,
-        auth_exchange_count=error.auth_exchange_count,
-        network_send_count=error.network_send_count,
-        network_send_budget_used=error.network_send_budget_used,
-        auth_exchange_budget_used=error.auth_exchange_budget_used,
-        auth_refresh_ids=error.auth_refresh_ids,
-        auth_refresh_pending=error.auth_refresh_pending,
-        wire_send_count=error.wire_send_count,
-    )
 
 
 def _checked_headers(headers: HeadersView) -> None:
@@ -1305,20 +1277,15 @@ def connect_socket(  # noqa: PLR0913
     injected = _connector(core)
     connector = cast("WebSocketConnector", core.owned_connector(plan.connectors[0]) if injected is None else injected)
     adapter = _Handshake(plan, limits, connector)
-    try:
-        response, call = core.open_socket(
-            plan.call,
-            arguments,
-            adapter,
-            options=limits.options,
-            session=session,
-            open_timeout=limits.socket.open_timeout,
-            check=_checked_headers,
-        )
-    except BudgetExceededError as error:
-        if error.budget_kind != "parent_network":
-            raise
-        raise _refused(plan, session, error) from None
+    response, call = core.open_socket(
+        plan.call,
+        arguments,
+        adapter,
+        options=limits.options,
+        session=session,
+        open_timeout=limits.socket.open_timeout,
+        check=_checked_headers,
+    )
     assert adapter.opened is not None
     return WebSocketSession(plan, limits, session, response, call, adapter.opened, native=native)
 
@@ -1342,19 +1309,14 @@ async def aconnect_socket(  # noqa: PLR0913
         "AsyncWebSocketConnector", core.owned_connector(plan.connectors[1]) if injected is None else injected
     )
     adapter = _AsyncHandshake(plan, limits, connector)
-    try:
-        response, call = await core.open_socket(
-            plan.call,
-            arguments,
-            adapter,
-            options=limits.options,
-            session=session,
-            open_timeout=limits.socket.open_timeout,
-            check=_checked_headers,
-        )
-    except BudgetExceededError as error:
-        if error.budget_kind != "parent_network":
-            raise
-        raise _refused(plan, session, error) from None
+    response, call = await core.open_socket(
+        plan.call,
+        arguments,
+        adapter,
+        options=limits.options,
+        session=session,
+        open_timeout=limits.socket.open_timeout,
+        check=_checked_headers,
+    )
     assert adapter.opened is not None
     return AsyncWebSocketSession(plan, limits, session, response, call, adapter.opened, native=native)

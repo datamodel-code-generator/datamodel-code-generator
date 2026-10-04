@@ -1521,21 +1521,20 @@ class _SocketCall(_SessionCall):
         replayable: bool,
         retry_owner: Literal["sdk", "transport"],
     ) -> RetryDelay | None:
-        """Retry only a proven unsent initial handshake through the ordinary session policy."""
+        """Retry only a handshake proven unsent; a received refusal or an uncertain open stays terminal."""
+        if info is None and error is not None and error.delivery_state is DeliveryState.NOT_SENT:
+            return super().retry(info, error, replayable=replayable, retry_owner=retry_owner)
         self.check("send")
-        if self.retry_blocked:
-            self.stop_reason = "callback_failure"
-            return None
-        if error is not None and error.delivery_state is not DeliveryState.NOT_SENT:
-            self.stop_reason = "transport_not_retryable"
-            return None
-        if info is not None:
-            self.stop_reason = "auth_unrefreshable" if info.status_code == _UNAUTHORIZED else "status_not_retryable"
-            return None
-        if self.streaming or error is None:
-            self.stop_reason = "transport_not_retryable"
-            return None
-        return super().retry(info, error, replayable=replayable, retry_owner=retry_owner)
+        self.stop_reason = (
+            "callback_failure"
+            if self.retry_blocked
+            else "auth_unrefreshable"
+            if info is not None and info.status_code == _UNAUTHORIZED
+            else "status_not_retryable"
+            if info is not None
+            else "transport_not_retryable"
+        )
+        return None
 
     def redirected(  # ruff: ignore[no-self-use] - Overrides the shared redirect policy.
         self,

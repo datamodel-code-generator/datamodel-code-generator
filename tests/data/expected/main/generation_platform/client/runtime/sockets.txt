@@ -91,6 +91,8 @@
   iteration after closing []
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 4000 'bye'
     server GET /feed/socket [] | closed 1000 ''
+  send once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
+    server GET /feed/socket [] | closed 1000 ''
   ping once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
   idle on a stepped clock ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=60.0) [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
@@ -156,9 +158,14 @@
   wrong accept ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', condition='invalid_header') [operation_id='feedSocket', condition='invalid_header', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect', cause=InvalidHeaderValue] web_socket_handshake_error
   subprotocol not offered ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', condition='negotiation') [operation_id='feedSocket', condition='negotiation', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect', cause=NegotiationError] web_socket_handshake_error
   header line too long ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', condition='size') [operation_id='feedSocket', condition='size', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=InvalidMessage] web_socket_handshake_error
-  refused connection ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  refused connection retry=1 ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  refused connection retry=0 ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  refused retry exhausts session budget ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  refused retry with failed permit release ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+    refused permit cleanup entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   untrusted certificate ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=SSLCertVerificationError] transport_error
   peer hanging up during a ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
+  peer hanging up during a whole send ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TransportError] delivery_unknown_error
   unanswered ping ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
   after the unanswered ping ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='receive') [operation_id='feedSocket'] protocol_state_error
   unanswered keepalive ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
@@ -240,6 +247,10 @@
   async another default ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
   async ping cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
   async open timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=1.0) [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=TimeoutError] phase_timeout_error
+  async refused connection ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  async refused retry exhausts session budget ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+  async refused retry with failed permit release ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] transport_error
+    async refused permit cleanup entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   async hooked normal end
     hook call_start outcome=None status=None
     hook attempt_start outcome=None status=None
