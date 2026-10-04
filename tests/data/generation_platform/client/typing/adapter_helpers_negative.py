@@ -63,4 +63,3 @@ def wrong_calls(  # noqa: PLR0913, PLR0917
     unsigned_message.verify(body, [], stripe_keys, verifier=verifier, now=now)  # error
     unsigned_message.decode_unverified(body, [])  # error
     unsigned_message.decode_unverified("{}")  # error
-    unsigned_message.decode_unverified(body, replay_store=None)  # error

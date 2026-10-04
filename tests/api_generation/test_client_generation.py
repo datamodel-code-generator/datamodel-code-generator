@@ -99,7 +99,6 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "sockets",
         "caching",
         "compatibility",
-        "circuits",
         "compression",
     ],
 )
@@ -221,7 +220,6 @@ def test_client_helper_digests(first: str, second: str, expected: str, tmp_path:
         "stream-resume",
         "sockets",
         "caching",
-        "circuits",
         "compression",
     ],
 )
@@ -279,10 +277,6 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
         "toml-retry-header-missing",
         "toml-retry-replay-missing",
         "toml-retry-scope-missing",
-        "circuit-values",
-        "circuit-invalid",
-        "toml-circuit-values",
-        "toml-circuit-type",
         "compression-values",
         "compression-invalid",
         "toml-compression-values",

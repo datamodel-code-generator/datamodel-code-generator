@@ -17,9 +17,6 @@ async def wrong_fetches(client: Client, async_client: AsyncClient, result: Cache
     helper.fetch(user_id=user, cache_options=PaginationOptions())  # error
     helper.fetch(user_id=user, session_options=SessionOptions())  # error
     helper.fetch()  # error
-    helper.invalidate("users")  # error
-    helper.mutations.rename(user_id=user)  # error
     listing: CacheResult[ListUsersResponse] = helper.fetch(user_id=user)  # error
     result.source = "network"  # error
-    client.protocols.users.listing.mutations.create()  # error
     del unawaited, listing

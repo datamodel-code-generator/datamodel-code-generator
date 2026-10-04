@@ -19,7 +19,6 @@ from ..client.errors import (
     ProtocolConfigurationError,
     ProtocolError,
     ProtocolStoreError,
-    ResultUnavailableError,
     RetryStopReason,
     TransportError,
     error_choice,
@@ -28,9 +27,6 @@ from ..client.errors import (
     error_time,
 )
 from ..client.responses import HeadersView, ResponseInfo
-from ..model_codecs.unset import UNSET, Unset
-from .caches import string_tuple
-from .circuit_records import CircuitKey
 from .records import (
     PROGRESS_KEYS,
     PollSnapshot,
@@ -44,11 +40,9 @@ from .resume import ResumeState, ResumeStateError
 from .sources import UploadProgress
 
 __all__ = (
-    "CacheInvalidationError",
     "CacheProtocolError",
     "CacheStoreError",
     "CacheValidatorConflictError",
-    "CircuitOpenError",
     "ConcurrentReceiveError",
     "DeliveryUnknownError",
     "HandshakeResponse",
@@ -78,7 +72,6 @@ __all__ = (
 
 E_co = TypeVar("E_co", covariant=True, default=object)
 P_co = TypeVar("P_co", covariant=True, default=object)
-T_co = TypeVar("T_co", covariant=True, default=object)
 
 _DataCondition: TypeAlias = Literal["missing", "null", "type", "value", "malformed", "inconsistent"]
 _SessionLimitKind: TypeAlias = Literal["network_sends", "pages", "items", "polls", "reconnects", "parts"]
@@ -157,12 +150,6 @@ def _context(helper_id: object, operation: object) -> None:
     if operation is not None and not isinstance(operation, OperationRef):
         msg = "operation must be an OperationRef or None"
         raise ValueError(msg)
-
-
-def _circuit_key(value: object) -> None:
-    if not isinstance(value, CircuitKey):
-        msg = "key must be a CircuitKey"
-        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
 
 
 def _upload_progress(value: object) -> None:
@@ -527,61 +514,6 @@ class PollingStateError(ProtocolDataError):
             auth_refresh_pending=auth_refresh_pending,
             wire_send_count=wire_send_count,
         )
-
-
-class CircuitOpenError(ProtocolError):
-    """An open circuit, or a half-open one already probing, refused the call before any credential or send."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        key: CircuitKey,
-        retry_at: float,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the circuit's key and the monotonic time at which it admits a call again."""
-        _circuit_key(key)
-        when = error_time(retry_at, "retry_at")
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.key = key
-        self.retry_at = when
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("group", self.key.group))
 
 
 class PollWaitLimitError(ProtocolError):
@@ -1084,60 +1016,6 @@ class CacheValidatorConflictError(ProtocolConfigurationError):
             secondary_errors=secondary_errors,
         )
         self.header_name = header_name
-
-
-class CacheInvalidationError(CacheStoreError, Generic[T_co]):
-    """A tag invalidation the store failed; a mutation's completed result stays available and is never sent again."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        tags: tuple[str, ...],
-        completed_result: T_co | Unset = UNSET,
-        entry_id: str | None = None,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the tags and the mutation's result, if any; the store action is fixed."""
-        if not string_tuple(tags):
-            msg = "tags must be a tuple of strings"
-            raise ValueError(msg)
-        super().__init__(
-            action="invalidate",
-            entry_id=entry_id,
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.tags = tags
-        self._completed_result = completed_result
-
-    @property
-    def completed_result(self) -> T_co | Unset:
-        """Return the mutation's result, or UNSET for a manual invalidation."""
-        return self._completed_result
-
-    @property
-    def has_completed_result(self) -> bool:
-        """Return whether a mutation completed before the invalidation failed."""
-        return not isinstance(self._completed_result, Unset)
-
-    def require_result(self) -> T_co:
-        """Return the mutation's completed result, or raise ResultUnavailableError."""
-        if isinstance(result := self._completed_result, Unset):
-            raise ResultUnavailableError(operation_id=self.operation_id, call_id=self.call_id)
-        return result
 
 
 class ConcurrentReceiveError(ProtocolStateError):
