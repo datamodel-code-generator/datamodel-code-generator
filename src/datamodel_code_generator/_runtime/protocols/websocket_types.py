@@ -47,13 +47,7 @@ class ResolvedWSOptions:
     ping_interval: float | None
     pong_timeout: float | None
     close_timeout: float
-    resume_ack_timeout: float
-    max_ack_buffer_messages: int
-    max_ack_buffer_bytes: int
-    max_unacked: int
     compression: Literal["deflate"] | None
-    reconnect: bool
-    max_reconnects: int | None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

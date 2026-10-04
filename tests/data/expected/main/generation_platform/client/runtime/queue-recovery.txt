@@ -6,7 +6,7 @@ sync
   before_intent effects: 1
   before_intent stale CAS: False
   before_intent recorded success drain: {}
-  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k1 body={"item":"tea","quantity":2} duplicate=False
   after_intent: interrupted
   after_intent drain: {'succeeded': 1}
   after_intent entry: succeeded count=2 intent=False outcome=success/None
@@ -14,7 +14,7 @@ sync
   after_intent effects: 1
   after_intent stale CAS: False
   after_intent recorded success drain: {}
-  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k2 body={"item":"tea","quantity":2} duplicate=False
   after_effect: interrupted
   after_effect drain: {'succeeded': 1}
   after_effect entry: succeeded count=2 intent=False outcome=success/None
@@ -22,8 +22,8 @@ sync
   after_effect effects: 1
   after_effect stale CAS: False
   after_effect recorded success drain: {}
-  server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=False
-  server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=True
+  server POST /orders coding=gzip key=k3 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k3 body={"item":"tea","quantity":2} duplicate=True
   unkeyed crash drain: {'succeeded': 1}
   unkeyed crash entry: succeeded count=2 intent=False outcome=success/None
   unkeyed identity: key=None payload=True time=True
@@ -52,7 +52,7 @@ sync
   recorded unknown no resend: {}
   explicit retry: pending count=1 intent=True outcome=unknown/transport_error
   cancel explicit retry: delivery_unknown count=1 intent=False outcome=cancelled/None
-  server POST /orders key=k4 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k4 body={"item":"tea","quantity":2} duplicate=False
   auth basepath mismatch: QueueBindingError
   auth basepath retained: pending count=0 intent=False outcome=none
   provider calls: 0
@@ -72,8 +72,8 @@ sync
   concurrent old owner: {'succeeded': 0, 'rescheduled': 0, 'dead': 0, 'unknown': 0, 'deferred': 0, 'cancelled': 0}
   concurrent settled: succeeded count=2 intent=False outcome=success/None
   concurrent effects: 1
-  server POST /orders key=k5 body={"item":"tea","quantity":2} duplicate=False
-  server POST /orders key=k5 body={"item":"tea","quantity":2} duplicate=True
+  server POST /orders coding=gzip key=k5 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k5 body={"item":"tea","quantity":2} duplicate=True
   corrupt unkeyed_key: {'dead': 1}
   corrupt unkeyed_key entry: dead count=0 intent=False outcome=permanent/malformed_entry
   corrupt missing_key: {'dead': 1}
@@ -126,7 +126,7 @@ async
   before_intent effects: 1
   before_intent stale CAS: False
   before_intent recorded success drain: {}
-  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k1 body={"item":"tea","quantity":2} duplicate=False
   after_intent: interrupted
   after_intent drain: {'succeeded': 1}
   after_intent entry: succeeded count=2 intent=False outcome=success/None
@@ -134,7 +134,7 @@ async
   after_intent effects: 1
   after_intent stale CAS: False
   after_intent recorded success drain: {}
-  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k2 body={"item":"tea","quantity":2} duplicate=False
   after_effect: interrupted
   after_effect drain: {'succeeded': 1}
   after_effect entry: succeeded count=2 intent=False outcome=success/None
@@ -142,8 +142,8 @@ async
   after_effect effects: 1
   after_effect stale CAS: False
   after_effect recorded success drain: {}
-  server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=False
-  server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=True
+  server POST /orders coding=gzip key=k3 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k3 body={"item":"tea","quantity":2} duplicate=True
   unkeyed crash drain: {'succeeded': 1}
   unkeyed crash entry: succeeded count=2 intent=False outcome=success/None
   unkeyed identity: key=None payload=True time=True
@@ -172,7 +172,7 @@ async
   recorded unknown no resend: {}
   explicit retry: pending count=1 intent=True outcome=unknown/transport_error
   cancel explicit retry: delivery_unknown count=1 intent=False outcome=cancelled/None
-  server POST /orders key=k4 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k4 body={"item":"tea","quantity":2} duplicate=False
   auth basepath mismatch: QueueBindingError
   auth basepath retained: pending count=0 intent=False outcome=none
   provider calls: 0
@@ -192,8 +192,8 @@ async
   concurrent old owner: {'succeeded': 0, 'rescheduled': 0, 'dead': 0, 'unknown': 0, 'deferred': 0, 'cancelled': 0}
   concurrent settled: succeeded count=2 intent=False outcome=success/None
   concurrent effects: 1
-  server POST /orders key=k5 body={"item":"tea","quantity":2} duplicate=False
-  server POST /orders key=k5 body={"item":"tea","quantity":2} duplicate=True
+  server POST /orders coding=gzip key=k5 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders coding=gzip key=k5 body={"item":"tea","quantity":2} duplicate=True
   corrupt unkeyed_key: {'dead': 1}
   corrupt unkeyed_key entry: dead count=0 intent=False outcome=permanent/malformed_entry
   corrupt missing_key: {'dead': 1}
