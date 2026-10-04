@@ -16,7 +16,7 @@
   order of a payment kind added since ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","payment":{"kind":"crypto"}}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.union_tag_invalid) at /payment')] response_validation_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a card with a transfer's members ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","payment":{"kind":"card","iban":"X"}}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.extra_forbidden) at /payment')] response_validation_error
+  order of a card with a transfer's members ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","payment":{"kind":"card","iban":"X"}}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /payment')] response_validation_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   order of a status that changed its type ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":3}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.enum) at /status')] response_validation_error
@@ -28,7 +28,7 @@
   problem ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, error_decoded=True, error_data=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] get_order_http_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem that changed its shape ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, error_decoded=False, error_decode_error=NativeValidationError('The native type rejected the value (native.extra_forbidden) at /message'), body_bytes=b'{"message":"gone"}', truncated=False] get_order_http_error
+  problem that changed its shape ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, error_decoded=False, error_decode_error=NativeValidationError('The native type rejected the value (native.missing) at /code'), body_bytes=b'{"message":"gone"}', truncated=False] get_order_http_error
 # evolution-forbid msgspec.Struct
   > GET https://evolution.example.com/orders/1?view=brief
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
