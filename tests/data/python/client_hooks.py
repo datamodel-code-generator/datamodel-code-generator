@@ -14,6 +14,7 @@ from tests.data.python.client_runtime import (
     abroken,
     aoutcome,
     arecord,
+    argument,
     broken,
     json_response,
     outcome,
@@ -126,8 +127,8 @@ def hooks(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     http = exchange.client()
     watched = options.ClientOptions(hooks=(Recorder(lines, "a"),), context={"tenant": "t1", "retry": 0})
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
-    trace = types.ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t").value
+    pet = argument(package, "getPet", "path", "petId", 3)
+    trace = argument(package, "listPets", "header", "X-Trace", "t")
     with package.Client(http_client=http, options=watched) as api:
         exchange.respond(json_response(200, _PET))
         record(lines, "get", lambda: api.pets.get_pet(pet_id=pet))
@@ -266,7 +267,7 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
     options, errors, types = _modules(package)
     exchange = Exchange(lines)
     http = exchange.async_client()
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     watched = options.ClientOptions(hooks=(AsyncRecorder(lines, "g"), Recorder(lines, "h")))
     async with package.AsyncClient(http_client=http, options=watched) as api:
         exchange.respond(json_response(200, _PET), raw_response(200, b"ok", "text/plain"))

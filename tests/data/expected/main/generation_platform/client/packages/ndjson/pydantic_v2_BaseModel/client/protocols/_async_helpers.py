@@ -14,7 +14,6 @@ from models import SearchQuery as _dcg_type_4
 
 from .._runtime.client.client import AsyncClientCore
 from .._runtime.protocols.streams import AsyncEventStream, UnknownEvent, aopen_events
-from ..model_codecs import ModelValue, RequestMedia
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import StreamOptions, _plans
 
@@ -83,7 +82,7 @@ class AsyncRecordsAllNdjson:
     async def open(
         self,
         *,
-        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        topic: _dcg_type_0 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -109,7 +108,7 @@ class AsyncRecordsLenientNdjson:
     async def open(
         self,
         *,
-        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        topic: _dcg_type_0 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -135,7 +134,7 @@ class AsyncRecordsTaggedNdjson:
     async def open(
         self,
         *,
-        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        topic: _dcg_type_0 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -161,8 +160,8 @@ class AsyncSearchAllNdjson:
     async def open(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
+        body: _dcg_type_4,
+        media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

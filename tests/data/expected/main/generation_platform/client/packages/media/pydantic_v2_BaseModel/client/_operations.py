@@ -9,7 +9,7 @@ from models import Address as _dcg_type_0
 from models import Draft as _dcg_type_1
 
 from ._generated import model_bindings
-from ._runtime.client.codecs import envelope_value, native_value
+from ._runtime.client.codecs import native_value
 from ._runtime.client.multipart import PartPlan, file_part, value_part
 from ._runtime.client.operations import (
     BodyMedia,
@@ -22,7 +22,6 @@ from ._runtime.client.operations import (
     ServerPlan,
     binary_branch,
     empty_branch,
-    envelope_branch,
     form_branch,
     model_branch,
     multipart_branch,
@@ -32,107 +31,82 @@ from ._runtime.client.operations import (
 )
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
-from .model_codecs import DecodedValue
 from .types.documents import (
     ReadDocumentErrorData,
     ReadDocumentHTTPError,
-    ReadDocumentRequestCodecs,
     ReadDocumentResponse,
     ReplaceNoteErrorData,
     ReplaceNoteHTTPError,
-    ReplaceNoteRequestCodecs,
     ReplaceNoteResponse,
     StoreDocumentErrorData,
     StoreDocumentHTTPError,
-    StoreDocumentRequestCodecs,
     StoreDocumentResponse,
     StoreNoteErrorData,
     StoreNoteHTTPError,
-    StoreNoteRequestCodecs,
     StoreNoteResponse,
 )
 from .types.files import (
     ReplaceFileErrorData,
     ReplaceFileHTTPError,
-    ReplaceFileRequestCodecs,
     ReplaceFileResponse,
     StoreFileErrorData,
     StoreFileHTTPError,
-    StoreFileRequestCodecs,
     StoreFileResponse,
 )
 from .types.forms import (
     ReadPartsErrorData,
     ReadPartsHTTPError,
-    ReadPartsRequestCodecs,
     ReadPartsResponse,
     ReadProfileErrorData,
     ReadProfileHTTPError,
-    ReadProfileRequestCodecs,
     ReadProfileResponse,
     ReadUploadErrorData,
     ReadUploadHTTPError,
-    ReadUploadRequestCodecs,
     ReadUploadResponse,
     SubmitAlbumErrorData,
     SubmitAlbumHTTPError,
-    SubmitAlbumRequestCodecs,
     SubmitAlbumResponse,
     SubmitAnythingErrorData,
     SubmitAnythingHTTPError,
-    SubmitAnythingRequestCodecs,
     SubmitAnythingResponse,
     SubmitAvatarErrorData,
     SubmitAvatarHTTPError,
-    SubmitAvatarRequestCodecs,
     SubmitAvatarResponse,
     SubmitCardErrorData,
     SubmitCardHTTPError,
-    SubmitCardRequestCodecs,
     SubmitCardResponse,
     SubmitCoverErrorData,
     SubmitCoverHTTPError,
-    SubmitCoverRequestCodecs,
     SubmitCoverResponse,
     SubmitFormErrorData,
     SubmitFormHTTPError,
-    SubmitFormRequestCodecs,
     SubmitFormResponse,
     SubmitLabelsErrorData,
     SubmitLabelsHTTPError,
-    SubmitLabelsRequestCodecs,
     SubmitLabelsResponse,
     SubmitPairsErrorData,
     SubmitPairsHTTPError,
-    SubmitPairsRequestCodecs,
     SubmitPairsResponse,
     SubmitPartsErrorData,
     SubmitPartsHTTPError,
-    SubmitPartsRequestCodecs,
     SubmitPartsResponse,
     SubmitPhotosErrorData,
     SubmitPhotosHTTPError,
-    SubmitPhotosRequestCodecs,
     SubmitPhotosResponse,
     SubmitProfileErrorData,
     SubmitProfileHTTPError,
-    SubmitProfileRequestCodecs,
     SubmitProfileResponse,
     SubmitScansErrorData,
     SubmitScansHTTPError,
-    SubmitScansRequestCodecs,
     SubmitScansResponse,
     SubmitSearchErrorData,
     SubmitSearchHTTPError,
-    SubmitSearchRequestCodecs,
     SubmitSearchResponse,
     SubmitStickersErrorData,
     SubmitStickersHTTPError,
-    SubmitStickersRequestCodecs,
     SubmitStickersResponse,
     SubmitUploadErrorData,
     SubmitUploadHTTPError,
-    SubmitUploadRequestCodecs,
     SubmitUploadResponse,
 )
 
@@ -174,7 +148,6 @@ OPERATION_0: Final[OperationPlan[SubmitFormResponse, SubmitFormErrorData]] = Ope
         default='application/x-www-form-urlencoded',
         required=True,
     ),
-    codecs=SubmitFormRequestCodecs,
 )
 
 OPERATION_1: Final[OperationPlan[SubmitProfileResponse, SubmitProfileErrorData]] = OperationPlan(
@@ -194,7 +167,6 @@ OPERATION_1: Final[OperationPlan[SubmitProfileResponse, SubmitProfileErrorData]]
         default='multipart/form-data',
         required=True,
     ),
-    codecs=SubmitProfileRequestCodecs,
 )
 
 OPERATION_2: Final[OperationPlan[ReadProfileResponse, ReadProfileErrorData]] = OperationPlan(
@@ -224,7 +196,6 @@ OPERATION_2: Final[OperationPlan[ReadProfileResponse, ReadProfileErrorData]] = O
         (),
         ReadProfileHTTPError,
     ),
-    codecs=ReadProfileRequestCodecs,
 )
 
 OPERATION_3: Final[OperationPlan[SubmitAnythingResponse, SubmitAnythingErrorData]] = OperationPlan(
@@ -244,7 +215,6 @@ OPERATION_3: Final[OperationPlan[SubmitAnythingResponse, SubmitAnythingErrorData
         default='multipart/form-data',
         required=True,
     ),
-    codecs=SubmitAnythingRequestCodecs,
 )
 
 OPERATION_4: Final[OperationPlan[SubmitPartsResponse, SubmitPartsErrorData]] = OperationPlan(
@@ -257,7 +227,6 @@ OPERATION_4: Final[OperationPlan[SubmitPartsResponse, SubmitPartsErrorData]] = O
         media=(BodyMedia(media_type='multipart/form-data', kind='multipart'),),
         default='multipart/form-data',
     ),
-    codecs=SubmitPartsRequestCodecs,
 )
 
 OPERATION_5: Final[OperationPlan[ReadPartsResponse, ReadPartsErrorData]] = OperationPlan(
@@ -279,7 +248,6 @@ OPERATION_5: Final[OperationPlan[ReadPartsResponse, ReadPartsErrorData]] = Opera
         (),
         ReadPartsHTTPError,
     ),
-    codecs=ReadPartsRequestCodecs,
 )
 
 OPERATION_6: Final[OperationPlan[SubmitPairsResponse, SubmitPairsErrorData]] = OperationPlan(
@@ -296,7 +264,6 @@ OPERATION_6: Final[OperationPlan[SubmitPairsResponse, SubmitPairsErrorData]] = O
         media=(BodyMedia(media_type='application/x-www-form-urlencoded', kind='form'),),
         default='application/x-www-form-urlencoded',
     ),
-    codecs=SubmitPairsRequestCodecs,
 )
 
 OPERATION_7: Final[OperationPlan[SubmitUploadResponse, SubmitUploadErrorData]] = OperationPlan(
@@ -346,7 +313,6 @@ OPERATION_7: Final[OperationPlan[SubmitUploadResponse, SubmitUploadErrorData]] =
         default='multipart/form-data',
         required=True,
     ),
-    codecs=SubmitUploadRequestCodecs,
 )
 
 OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = OperationPlan(
@@ -359,7 +325,7 @@ OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = Ope
             parts_branch(
                 '200',
                 'multipart/form-data',
-                PartsReader[str | int | _dcg_type_0 | DecodedValue[_dcg_type_1] | bytes](
+                PartsReader[str | int | _dcg_type_0 | _dcg_type_1 | bytes](
                     (
                         value_part(
                             'title',
@@ -386,7 +352,7 @@ OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = Ope
                         value_part(
                             'draft',
                             'json',
-                            envelope_value(model_bindings.codec_28, model_bindings.CONTEXT_28),
+                            native_value(model_bindings.codec_28, model_bindings.CONTEXT_28),
                         ),
                         file_part('photo', required=True),
                         file_part('pages', repeated=True),
@@ -435,7 +401,6 @@ OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = Ope
         (),
         ReadUploadHTTPError,
     ),
-    codecs=ReadUploadRequestCodecs,
 )
 
 OPERATION_9: Final[OperationPlan[SubmitAvatarResponse, SubmitAvatarErrorData]] = OperationPlan(
@@ -465,7 +430,6 @@ OPERATION_9: Final[OperationPlan[SubmitAvatarResponse, SubmitAvatarErrorData]] =
             ),
         ),
     ),
-    codecs=SubmitAvatarRequestCodecs,
 )
 
 OPERATION_10: Final[OperationPlan[SubmitScansResponse, SubmitScansErrorData]] = OperationPlan(
@@ -490,7 +454,6 @@ OPERATION_10: Final[OperationPlan[SubmitScansResponse, SubmitScansErrorData]] = 
         ),
         default='multipart/form-data',
     ),
-    codecs=SubmitScansRequestCodecs,
 )
 
 OPERATION_11: Final[OperationPlan[SubmitPhotosResponse, SubmitPhotosErrorData]] = OperationPlan(
@@ -510,7 +473,6 @@ OPERATION_11: Final[OperationPlan[SubmitPhotosResponse, SubmitPhotosErrorData]] 
         default='multipart/form-data',
         required=True,
     ),
-    codecs=SubmitPhotosRequestCodecs,
 )
 
 OPERATION_12: Final[OperationPlan[SubmitLabelsResponse, SubmitLabelsErrorData]] = OperationPlan(
@@ -534,7 +496,6 @@ OPERATION_12: Final[OperationPlan[SubmitLabelsResponse, SubmitLabelsErrorData]] 
         default='multipart/form-data',
         required=True,
     ),
-    codecs=SubmitLabelsRequestCodecs,
 )
 
 OPERATION_13: Final[OperationPlan[StoreFileResponse, StoreFileErrorData]] = OperationPlan(
@@ -575,7 +536,6 @@ OPERATION_13: Final[OperationPlan[StoreFileResponse, StoreFileErrorData]] = Oper
         ),
         required=True,
     ),
-    codecs=StoreFileRequestCodecs,
 )
 
 OPERATION_14: Final[OperationPlan[ReplaceFileResponse, ReplaceFileErrorData]] = OperationPlan(
@@ -585,7 +545,6 @@ OPERATION_14: Final[OperationPlan[ReplaceFileResponse, ReplaceFileErrorData]] = 
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), (), ReplaceFileHTTPError),
     body=RequestBody(media=(BodyMedia(media_type='*/*', kind='binary'),)),
-    codecs=ReplaceFileRequestCodecs,
 )
 
 OPERATION_15: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] = OperationPlan(
@@ -659,7 +618,6 @@ OPERATION_15: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] 
         default='application/x-www-form-urlencoded',
         required=True,
     ),
-    codecs=SubmitSearchRequestCodecs,
 )
 
 OPERATION_16: Final[OperationPlan[SubmitCoverResponse, SubmitCoverErrorData]] = OperationPlan(
@@ -713,7 +671,6 @@ OPERATION_16: Final[OperationPlan[SubmitCoverResponse, SubmitCoverErrorData]] = 
         default='multipart/form-data',
         required=True,
     ),
-    codecs=SubmitCoverRequestCodecs,
 )
 
 OPERATION_17: Final[OperationPlan[SubmitCardResponse, SubmitCardErrorData]] = OperationPlan(
@@ -738,7 +695,6 @@ OPERATION_17: Final[OperationPlan[SubmitCardResponse, SubmitCardErrorData]] = Op
         default='multipart/form-data',
         required=True,
     ),
-    codecs=SubmitCardRequestCodecs,
 )
 
 OPERATION_18: Final[OperationPlan[SubmitStickersResponse, SubmitStickersErrorData]] = OperationPlan(
@@ -813,7 +769,6 @@ OPERATION_18: Final[OperationPlan[SubmitStickersResponse, SubmitStickersErrorDat
         default='multipart/form-data',
         required=True,
     ),
-    codecs=SubmitStickersRequestCodecs,
 )
 
 OPERATION_19: Final[OperationPlan[SubmitAlbumResponse, SubmitAlbumErrorData]] = OperationPlan(
@@ -865,7 +820,6 @@ OPERATION_19: Final[OperationPlan[SubmitAlbumResponse, SubmitAlbumErrorData]] = 
         default='multipart/form-data',
         required=True,
     ),
-    codecs=SubmitAlbumRequestCodecs,
 )
 
 OPERATION_20: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]] = OperationPlan(
@@ -878,7 +832,7 @@ OPERATION_20: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]
             wire_branch('200', 'application/json'),
             text_branch('200', 'text/plain'),
             empty_branch('202'),
-            envelope_branch(
+            model_branch(
                 '3XX',
                 'application/json',
                 'json',
@@ -902,7 +856,6 @@ OPERATION_20: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]
         default='application/json',
         required=True,
     ),
-    codecs=StoreDocumentRequestCodecs,
 )
 
 OPERATION_21: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] = OperationPlan(
@@ -912,7 +865,7 @@ OPERATION_21: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] 
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            envelope_branch(
+            model_branch(
                 '200',
                 'application/vnd.api+json',
                 'json',
@@ -947,7 +900,6 @@ OPERATION_21: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] 
             ),
         ),
     ),
-    codecs=ReadDocumentRequestCodecs,
 )
 
 OPERATION_22: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = OperationPlan(
@@ -963,7 +915,6 @@ OPERATION_22: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = Oper
         ),
         required=True,
     ),
-    codecs=StoreNoteRequestCodecs,
 )
 
 OPERATION_23: Final[OperationPlan[ReplaceNoteResponse, ReplaceNoteErrorData]] = OperationPlan(
@@ -978,5 +929,4 @@ OPERATION_23: Final[OperationPlan[ReplaceNoteResponse, ReplaceNoteErrorData]] = 
             BodyMedia(media_type='text/plain', kind='text'),
         ),
     ),
-    codecs=ReplaceNoteRequestCodecs,
 )

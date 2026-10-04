@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import importlib
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.data.python.client_runtime import Exchange, arecord, json_response, record, run
+from tests.data.python.client_runtime import Exchange, arecord, json_response, record, request_body, run
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -36,10 +35,10 @@ def unions(package: ModuleType, lines: list[str]) -> None:
                 record(lines, label, method)
 
 
-def _split(exchange: Exchange, api: Any, codecs: Any, payload: dict[str, object]) -> Callable[[], Any]:
+def _split(exchange: Exchange, api: Any, package: ModuleType, payload: dict[str, object]) -> Callable[[], Any]:
     """Queue the shape the server returns without its write-only property, and return the call that sends it."""
     exchange.respond(json_response(200, {key: value for key, value in payload.items() if key != "secret"}))
-    return lambda: api.default.shape(body=codecs.body().from_wire(payload))
+    return lambda: api.default.shape(body=request_body(package, "shape", None, payload))
 
 
 def split_unions(package: ModuleType, lines: list[str]) -> None:
@@ -47,16 +46,15 @@ def split_unions(package: ModuleType, lines: list[str]) -> None:
 
     Each member is told apart by the schema of its own variant, in both execution modes.
     """
-    codecs = importlib.import_module(f"{package.__name__}.types.default").ShapeRequestCodecs
     exchange = Exchange(lines)
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         for payload in _SPLIT:
-            record(lines, f"split {payload}", _split(exchange, api, codecs, payload))
-    run(lambda: _async_split_unions(package, codecs, lines))
+            record(lines, f"split {payload}", _split(exchange, api, package, payload))
+    run(lambda: _async_split_unions(package, lines))
 
 
-async def _async_split_unions(package: ModuleType, codecs: Any, lines: list[str]) -> None:
+async def _async_split_unions(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
         for payload in _SPLIT:
-            await arecord(lines, f"async split {payload}", _split(exchange, api, codecs, payload))
+            await arecord(lines, f"async split {payload}", _split(exchange, api, package, payload))

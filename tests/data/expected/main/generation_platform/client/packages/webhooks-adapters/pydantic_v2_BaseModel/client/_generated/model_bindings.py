@@ -16,7 +16,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
 from .._runtime.model_codecs.wire import freeze_wire
@@ -269,11 +268,6 @@ def codec_0() -> PydanticModelCodec[models.Invoice]:
     )
 
 
-@cache
-def outbound_0() -> NativeOutboundCodec[models.Invoice]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
-
-
 CONTEXT_1: Final = CodecContext(
     surface='client',
     direction='request',
@@ -307,11 +301,6 @@ def codec_1() -> PydanticModelCodec[models.Customer]:
     )
 
 
-@cache
-def outbound_1() -> NativeOutboundCodec[models.Customer]:
-    return NativeOutboundCodec(codec_1(), CONTEXT_1)
-
-
 CONTEXT_2: Final = CodecContext(
     surface='client',
     direction='request',
@@ -343,8 +332,3 @@ def codec_2() -> PydanticModelCodec[models.Message]:
         {'models:Message': models.Message},
         request_bundle,
     )
-
-
-@cache
-def outbound_2() -> NativeOutboundCodec[models.Message]:
-    return NativeOutboundCodec(codec_2(), CONTEXT_2)

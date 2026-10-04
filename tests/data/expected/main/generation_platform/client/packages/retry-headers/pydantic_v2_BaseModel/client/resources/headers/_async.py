@@ -12,7 +12,6 @@ from models import FieldParameterPostHeaderXRequestKeyParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue, ResponseMedia
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.headers import (
@@ -54,8 +53,8 @@ class AsyncHeadersResource:
     async def parameter(
         self,
         *,
-        x_request_key: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['text/plain'] | ResponseMedia[ParameterResponse] | None = None,
+        x_request_key: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> ParameterResponse:
         """Call POST /parameter."""
@@ -69,7 +68,7 @@ class AsyncHeadersResource:
     async def api_key(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[ApiKeyResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> ApiKeyResponse:
         """Call POST /api-key."""
@@ -83,7 +82,7 @@ class AsyncHeadersResource:
     async def bearer(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[BearerResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> BearerResponse:
         """Call POST /bearer."""
@@ -97,7 +96,7 @@ class AsyncHeadersResource:
     async def oauth(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[OauthResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> OauthResponse:
         """Call POST /oauth."""
@@ -111,7 +110,7 @@ class AsyncHeadersResource:
     async def openid(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[OpenidResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> OpenidResponse:
         """Call POST /openid."""
@@ -125,7 +124,7 @@ class AsyncHeadersResource:
     async def cookie(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[CookieResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> CookieResponse:
         """Call POST /cookie."""
@@ -139,7 +138,7 @@ class AsyncHeadersResource:
     async def query(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[QueryResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> QueryResponse:
         """Call POST /query."""
@@ -153,7 +152,7 @@ class AsyncHeadersResource:
     async def ignored(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[IgnoredResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> IgnoredResponse:
         """Call POST /ignored."""
@@ -167,8 +166,8 @@ class AsyncHeadersResource:
     async def direction(
         self,
         *,
-        x_retry_control: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['text/plain'] | ResponseMedia[DirectionResponse] | None = None,
+        x_retry_control: _dcg_type_1 | Unset = UNSET,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> DirectionResponse:
         """Call POST /direction."""
@@ -182,7 +181,7 @@ class AsyncHeadersResource:
     async def unused(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[UnusedResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> UnusedResponse:
         """Call POST /unused."""
@@ -204,8 +203,8 @@ class AsyncHeadersWithResponse:
     async def parameter(
         self,
         *,
-        x_request_key: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['text/plain'] | ResponseMedia[ParameterResponse] | None = None,
+        x_request_key: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ParameterResponse]:
         """Call POST /parameter."""
@@ -219,7 +218,7 @@ class AsyncHeadersWithResponse:
     async def api_key(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[ApiKeyResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ApiKeyResponse]:
         """Call POST /api-key."""
@@ -233,7 +232,7 @@ class AsyncHeadersWithResponse:
     async def bearer(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[BearerResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[BearerResponse]:
         """Call POST /bearer."""
@@ -247,7 +246,7 @@ class AsyncHeadersWithResponse:
     async def oauth(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[OauthResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[OauthResponse]:
         """Call POST /oauth."""
@@ -261,7 +260,7 @@ class AsyncHeadersWithResponse:
     async def openid(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[OpenidResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[OpenidResponse]:
         """Call POST /openid."""
@@ -275,7 +274,7 @@ class AsyncHeadersWithResponse:
     async def cookie(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[CookieResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CookieResponse]:
         """Call POST /cookie."""
@@ -289,7 +288,7 @@ class AsyncHeadersWithResponse:
     async def query(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[QueryResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[QueryResponse]:
         """Call POST /query."""
@@ -303,7 +302,7 @@ class AsyncHeadersWithResponse:
     async def ignored(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[IgnoredResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[IgnoredResponse]:
         """Call POST /ignored."""
@@ -317,8 +316,8 @@ class AsyncHeadersWithResponse:
     async def direction(
         self,
         *,
-        x_retry_control: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['text/plain'] | ResponseMedia[DirectionResponse] | None = None,
+        x_retry_control: _dcg_type_1 | Unset = UNSET,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[DirectionResponse]:
         """Call POST /direction."""
@@ -332,7 +331,7 @@ class AsyncHeadersWithResponse:
     async def unused(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[UnusedResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UnusedResponse]:
         """Call POST /unused."""
@@ -354,8 +353,8 @@ class AsyncHeadersWithRawResponse:
     async def parameter(
         self,
         *,
-        x_request_key: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['text/plain'] | ResponseMedia[ParameterResponse] | None = None,
+        x_request_key: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /parameter."""
@@ -369,7 +368,7 @@ class AsyncHeadersWithRawResponse:
     async def api_key(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[ApiKeyResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /api-key."""
@@ -383,7 +382,7 @@ class AsyncHeadersWithRawResponse:
     async def bearer(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[BearerResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /bearer."""
@@ -397,7 +396,7 @@ class AsyncHeadersWithRawResponse:
     async def oauth(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[OauthResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /oauth."""
@@ -411,7 +410,7 @@ class AsyncHeadersWithRawResponse:
     async def openid(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[OpenidResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /openid."""
@@ -425,7 +424,7 @@ class AsyncHeadersWithRawResponse:
     async def cookie(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[CookieResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /cookie."""
@@ -439,7 +438,7 @@ class AsyncHeadersWithRawResponse:
     async def query(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[QueryResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /query."""
@@ -453,7 +452,7 @@ class AsyncHeadersWithRawResponse:
     async def ignored(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[IgnoredResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /ignored."""
@@ -467,8 +466,8 @@ class AsyncHeadersWithRawResponse:
     async def direction(
         self,
         *,
-        x_retry_control: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['text/plain'] | ResponseMedia[DirectionResponse] | None = None,
+        x_retry_control: _dcg_type_1 | Unset = UNSET,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /direction."""
@@ -482,7 +481,7 @@ class AsyncHeadersWithRawResponse:
     async def unused(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[UnusedResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /unused."""
@@ -504,8 +503,8 @@ class AsyncHeadersWithStreamingResponse:
     def parameter(
         self,
         *,
-        x_request_key: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['text/plain'] | ResponseMedia[ParameterResponse] | None = None,
+        x_request_key: _dcg_type_0 | Unset = UNSET,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /parameter."""
@@ -519,7 +518,7 @@ class AsyncHeadersWithStreamingResponse:
     def api_key(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[ApiKeyResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /api-key."""
@@ -533,7 +532,7 @@ class AsyncHeadersWithStreamingResponse:
     def bearer(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[BearerResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /bearer."""
@@ -547,7 +546,7 @@ class AsyncHeadersWithStreamingResponse:
     def oauth(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[OauthResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /oauth."""
@@ -561,7 +560,7 @@ class AsyncHeadersWithStreamingResponse:
     def openid(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[OpenidResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /openid."""
@@ -575,7 +574,7 @@ class AsyncHeadersWithStreamingResponse:
     def cookie(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[CookieResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /cookie."""
@@ -589,7 +588,7 @@ class AsyncHeadersWithStreamingResponse:
     def query(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[QueryResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /query."""
@@ -603,7 +602,7 @@ class AsyncHeadersWithStreamingResponse:
     def ignored(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[IgnoredResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /ignored."""
@@ -617,8 +616,8 @@ class AsyncHeadersWithStreamingResponse:
     def direction(
         self,
         *,
-        x_retry_control: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['text/plain'] | ResponseMedia[DirectionResponse] | None = None,
+        x_retry_control: _dcg_type_1 | Unset = UNSET,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /direction."""
@@ -632,7 +631,7 @@ class AsyncHeadersWithStreamingResponse:
     def unused(
         self,
         *,
-        response_media_type: Literal['text/plain'] | ResponseMedia[UnusedResponse] | None = None,
+        response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /unused."""

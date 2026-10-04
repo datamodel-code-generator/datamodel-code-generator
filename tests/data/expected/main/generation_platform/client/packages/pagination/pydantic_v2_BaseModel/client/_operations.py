@@ -20,51 +20,34 @@ from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.archive import (
     ListArchiveErrorData,
     ListArchiveHTTPError,
-    ListArchiveRequestCodecs,
     ListArchiveResponse,
 )
 from .types.labels import (
     ListLabelsErrorData,
     ListLabelSetsErrorData,
     ListLabelSetsHTTPError,
-    ListLabelSetsRequestCodecs,
     ListLabelSetsResponse,
     ListLabelsHTTPError,
-    ListLabelsRequestCodecs,
     ListLabelsResponse,
 )
-from .types.loose import (
-    ListLooseErrorData,
-    ListLooseHTTPError,
-    ListLooseRequestCodecs,
-    ListLooseResponse,
-)
-from .types.nested import (
-    ListNestedErrorData,
-    ListNestedHTTPError,
-    ListNestedRequestCodecs,
-    ListNestedResponse,
-)
+from .types.loose import ListLooseErrorData, ListLooseHTTPError, ListLooseResponse
+from .types.nested import ListNestedErrorData, ListNestedHTTPError, ListNestedResponse
 from .types.secure import (
     ListSecureUsersErrorData,
     ListSecureUsersHTTPError,
-    ListSecureUsersRequestCodecs,
     ListSecureUsersResponse,
 )
 from .types.statuses import (
     ListStatusesErrorData,
     ListStatusesHTTPError,
-    ListStatusesRequestCodecs,
     ListStatusesResponse,
 )
 from .types.users import (
     ListUsersErrorData,
     ListUsersHTTPError,
-    ListUsersRequestCodecs,
     ListUsersResponse,
     SearchUsersErrorData,
     SearchUsersHTTPError,
-    SearchUsersRequestCodecs,
     SearchUsersResponse,
 )
 
@@ -121,7 +104,6 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse, ListUsersErrorData]] = Opera
             encoder=Encoder(model_bindings.codec_2, model_bindings.CONTEXT_2),
         ),
     ),
-    codecs=ListUsersRequestCodecs,
 )
 
 OPERATION_1: Final[OperationPlan[SearchUsersResponse, SearchUsersErrorData]] = OperationPlan(
@@ -163,7 +145,6 @@ OPERATION_1: Final[OperationPlan[SearchUsersResponse, SearchUsersErrorData]] = O
         default='application/json',
         required=True,
     ),
-    codecs=SearchUsersRequestCodecs,
 )
 
 OPERATION_2: Final[OperationPlan[ListLooseResponse, ListLooseErrorData]] = OperationPlan(
@@ -195,7 +176,6 @@ OPERATION_2: Final[OperationPlan[ListLooseResponse, ListLooseErrorData]] = Opera
             encoder=Encoder(model_bindings.codec_9, model_bindings.CONTEXT_9),
         ),
     ),
-    codecs=ListLooseRequestCodecs,
 )
 
 OPERATION_3: Final[OperationPlan[ListNestedResponse, ListNestedErrorData]] = OperationPlan(
@@ -226,7 +206,6 @@ OPERATION_3: Final[OperationPlan[ListNestedResponse, ListNestedErrorData]] = Ope
             encoder=Encoder(model_bindings.codec_11, model_bindings.CONTEXT_11),
         ),
     ),
-    codecs=ListNestedRequestCodecs,
 )
 
 OPERATION_4: Final[OperationPlan[ListLabelsResponse, ListLabelsErrorData]] = OperationPlan(
@@ -257,7 +236,6 @@ OPERATION_4: Final[OperationPlan[ListLabelsResponse, ListLabelsErrorData]] = Ope
             encoder=Encoder(model_bindings.codec_13, model_bindings.CONTEXT_13),
         ),
     ),
-    codecs=ListLabelsRequestCodecs,
 )
 
 OPERATION_5: Final[OperationPlan[ListLabelSetsResponse, ListLabelSetsErrorData]] = OperationPlan(
@@ -288,7 +266,6 @@ OPERATION_5: Final[OperationPlan[ListLabelSetsResponse, ListLabelSetsErrorData]]
             encoder=Encoder(model_bindings.codec_16, model_bindings.CONTEXT_16),
         ),
     ),
-    codecs=ListLabelSetsRequestCodecs,
 )
 
 OPERATION_6: Final[OperationPlan[ListArchiveResponse, ListArchiveErrorData]] = OperationPlan(
@@ -319,7 +296,6 @@ OPERATION_6: Final[OperationPlan[ListArchiveResponse, ListArchiveErrorData]] = O
             encoder=Encoder(model_bindings.codec_19, model_bindings.CONTEXT_19),
         ),
     ),
-    codecs=ListArchiveRequestCodecs,
 )
 
 OPERATION_7: Final[OperationPlan[ListStatusesResponse, ListStatusesErrorData]] = OperationPlan(
@@ -351,7 +327,6 @@ OPERATION_7: Final[OperationPlan[ListStatusesResponse, ListStatusesErrorData]] =
             encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
         ),
     ),
-    codecs=ListStatusesRequestCodecs,
 )
 
 OPERATION_8: Final[OperationPlan[ListSecureUsersResponse, ListSecureUsersErrorData]] = OperationPlan(
@@ -383,5 +358,4 @@ OPERATION_8: Final[OperationPlan[ListSecureUsersResponse, ListSecureUsersErrorDa
         ),
     ),
     security=security.OPERATION_8,
-    codecs=ListSecureUsersRequestCodecs,
 )

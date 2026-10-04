@@ -4,4 +4,3 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['checks.method'].operation /paths/~1chat/post: The WebSocket helper 'checks.method' opens POST /chat, which is not a GET operation
   E_CONFIG_VALUE config protocols.helpers['checks.body'].operation /paths/~1upload/get: The WebSocket helper 'checks.body' opens GET /upload, which takes a request body
   E_CONFIG_VALUE config protocols.helpers['checks.schema'].send.schema /paths/~1chat/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
-  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].receive.schema /paths/~1chat/get: The WebSocket helper 'checks.envelope' codes an envelope-projected message, which is not supported yet

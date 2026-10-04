@@ -65,7 +65,6 @@ _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
             "CodecConfigurationError",
             "CodecError",
             "CodecResourceLimitError",
-            "CodecSelectionError",
             "ModelProjectionError",
             "NativeIssue",
             "NativeValidationError",
@@ -74,7 +73,6 @@ _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
             "WireValidationError",
         ),
     ),
-    ("outbound", ("EnvelopeOutboundCodec", "ModelCodec", "NativeOutboundCodec", "OutboundCodec")),
     (
         "parameters",
         (
@@ -87,12 +85,25 @@ _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
         ),
     ),
     ("unset", ("UNSET", "Unset")),
-    ("values", ("DecodedValue", "ModelInput", "ModelValue", "ProjectionIssue")),
-    ("wire", ("JSONValue", "PresenceTree", "WireValue", "freeze_wire", "presence_of", "thaw_wire")),
+    ("wire", ("JSONValue", "WireValue")),
 )
 _SURFACE_PUBLIC: Final[dict[Surface, tuple[tuple[str, str], ...]]] = {
-    "client": (("selectors", "RequestMedia"), ("selectors", "ResponseMedia")),
-    "server": (),
+    "client": (),
+    "server": (
+        ("errors", "CodecSelectionError"),
+        ("outbound", "EnvelopeOutboundCodec"),
+        ("outbound", "ModelCodec"),
+        ("outbound", "NativeOutboundCodec"),
+        ("outbound", "OutboundCodec"),
+        ("values", "DecodedValue"),
+        ("values", "ModelInput"),
+        ("values", "ModelValue"),
+        ("values", "ProjectionIssue"),
+        ("wire", "PresenceTree"),
+        ("wire", "freeze_wire"),
+        ("wire", "presence_of"),
+        ("wire", "thaw_wire"),
+    ),
 }
 
 
@@ -250,7 +261,7 @@ class _Renderer:
         codec, body = self.codec(binding, runtime)
         sections.append(_function(f"codec_{index}", f"{codec}[{static}]", body, _description(use)))
         outbound = None
-        if not context.inbound:
+        if not context.inbound and self.surface == "server":
             outbound = f"outbound_{index}"
             facade = self.records.name(
                 "outbound", "EnvelopeOutboundCodec" if binding.projection_mode == "envelope" else "NativeOutboundCodec"

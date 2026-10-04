@@ -14,6 +14,7 @@ from tests.data.python.client_runtime import (
     abroken,
     aoutcome,
     arecord,
+    argument,
     broken,
     json_response,
     outcome,
@@ -321,7 +322,7 @@ def _sync_ownership(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     http = exchange.client()
     configured = options.ClientOptions(limiter=limiter, hooks=(events,), cancel_token=token, total_timeout=30)
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     with package.Client(http_client=http, options=configured) as api:
         exchange.respond(json_response(200, _PET))
         record(lines, "limited typed", lambda: api.pets.with_response.get_pet(pet_id=pet))
@@ -381,7 +382,7 @@ def _sync_waiting_body(package: ModuleType, lines: list[str]) -> None:
     result: list[str] = []
     configured = options.ClientOptions(limiter=limiter, total_timeout=30)
     with package.Client(http_client=http, options=configured) as api:
-        pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+        pet = argument(package, "getPet", "path", "petId", 3)
         with api.pets.with_streaming_response.get_pet(pet_id=pet):
             upload = threading.Thread(
                 target=lambda: record(
@@ -408,7 +409,7 @@ def _sync_failures(package: ModuleType, lines: list[str]) -> None:
     options, bodies, types = _modules(package)
     exchange = Exchange(lines)
     http = exchange.client()
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     with package.Client(http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))) as api:
         for label, acquire_failure, release_failure, response, secondary, attempts in (
             ("acquire failure", RuntimeError("acquire failed"), None, None, False, 1),
@@ -486,7 +487,7 @@ def _sync_hooks(package: ModuleType, lines: list[str]) -> None:
     options, _, types = _modules(package)
     exchange = Exchange(lines)
     http = exchange.client()
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     with package.Client(http_client=http) as api:
         for event, sent in _HOOK_FAILURES:
             limiter = _SemaphoreLimiter()
@@ -516,7 +517,7 @@ def _sync_modes(package: ModuleType, lines: list[str]) -> None:
     options, _, types = _modules(package)
     exchange = Exchange(lines)
     http = exchange.client()
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     opposite = _AsyncSemaphoreLimiter()
 
     def configured_client() -> object:
@@ -606,7 +607,7 @@ async def _async_ownership(package: ModuleType, lines: list[str]) -> None:
     configured = options.ClientOptions(
         limiter=limiter, hooks=(_AsyncEvents(events),), cancel_token=token, total_timeout=30
     )
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     async with package.AsyncClient(http_client=http, options=configured) as api:
         exchange.respond(json_response(200, _PET))
         await arecord(lines, "async limited typed", lambda: api.pets.with_response.get_pet(pet_id=pet))
@@ -666,7 +667,7 @@ async def _async_waiting_body(package: ModuleType, lines: list[str]) -> None:
     result: list[str] = []
     configured = options.ClientOptions(limiter=limiter, total_timeout=30)
     async with package.AsyncClient(http_client=http, options=configured) as api:
-        pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+        pet = argument(package, "getPet", "path", "petId", 3)
         async with api.pets.with_streaming_response.get_pet(pet_id=pet):
             upload = asyncio.create_task(
                 arecord(
@@ -696,7 +697,7 @@ async def _async_failures(package: ModuleType, lines: list[str]) -> None:
     options, bodies, types = _modules(package)
     exchange = Exchange(lines)
     http = exchange.async_client()
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     async with package.AsyncClient(
         http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
     ) as api:
@@ -776,7 +777,7 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
     options, _, types = _modules(package)
     exchange = Exchange(lines)
     http = exchange.async_client()
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     async with package.AsyncClient(http_client=http) as api:
         for event, sent in _HOOK_FAILURES:
             limiter = _AsyncSemaphoreLimiter()
@@ -810,7 +811,7 @@ async def _async_modes(package: ModuleType, lines: list[str]) -> None:
     options, _, types = _modules(package)
     exchange = Exchange(lines)
     http = exchange.async_client()
-    pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    pet = argument(package, "getPet", "path", "petId", 3)
     opposite = _SemaphoreLimiter()
 
     async def configured_client() -> object:

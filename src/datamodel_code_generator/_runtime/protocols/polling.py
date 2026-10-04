@@ -73,7 +73,6 @@ if TYPE_CHECKING:
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
     from ..client.timing import Clock, Deadline
-    from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
     from .pagination import PageBinding
@@ -1083,7 +1082,7 @@ class LroHandle(_Operation[T, P]):
         super().__init__(core, plan, limits, session)
         self._core = core
 
-    def _create(self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None) -> None:
+    def _create(self, arguments: tuple[object, ...], body: object, media_type: str | None) -> None:
         """Send the create request as the session's first child call and settle what it gives."""
         core, plan = self._core, self._plan
         with self._mapped(created=False):
@@ -1235,9 +1234,7 @@ class AsyncLroHandle(_Operation[T, P]):
         super().__init__(core, plan, limits, session)
         self._core = core
 
-    async def _create(
-        self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None
-    ) -> None:
+    async def _create(self, arguments: tuple[object, ...], body: object, media_type: str | None) -> None:
         """Send the create request as the session's first child call and settle what it gives."""
         core, plan = self._core, self._plan
         with self._mapped(created=False):
@@ -1456,7 +1453,7 @@ def start_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     arguments: tuple[object, ...],
     *,
     body: object = ...,
-    media_type: str | MediaSelector | None = ...,
+    media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
@@ -1472,7 +1469,7 @@ def start_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     *,
     handle: type[H],
     body: object = ...,
-    media_type: str | MediaSelector | None = ...,
+    media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
@@ -1487,7 +1484,7 @@ def start_operation(  # noqa: PLR0913
     *,
     handle: type[LroHandle[Any, Any]] = LroHandle,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     poll_options: object = None,
     options: object = None,
     session_options: object = None,
@@ -1510,7 +1507,7 @@ async def astart_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     arguments: tuple[object, ...],
     *,
     body: object = ...,
-    media_type: str | MediaSelector | None = ...,
+    media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
@@ -1526,7 +1523,7 @@ async def astart_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     *,
     handle: type[AH],
     body: object = ...,
-    media_type: str | MediaSelector | None = ...,
+    media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
@@ -1541,7 +1538,7 @@ async def astart_operation(  # noqa: PLR0913
     *,
     handle: type[AsyncLroHandle[Any, Any]] = AsyncLroHandle,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     poll_options: object = None,
     options: object = None,
     session_options: object = None,

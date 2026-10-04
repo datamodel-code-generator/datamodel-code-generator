@@ -11,7 +11,6 @@ from models import FieldArchiveCursorGetPathCursorParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue, ResponseMedia
 from ...options import RequestOptions
 from ...responses import RawResponse, Response
 from ...types.archive import ListArchiveResponse
@@ -42,8 +41,8 @@ class ArchiveResource:
     def list_archive(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
-        response_media_type: Literal['application/json'] | ResponseMedia[ListArchiveResponse] | None = None,
+        cursor: _dcg_type_0,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListArchiveResponse:
         """Call GET /archive/{cursor}."""
@@ -65,8 +64,8 @@ class ArchiveWithResponse:
     def list_archive(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
-        response_media_type: Literal['application/json'] | ResponseMedia[ListArchiveResponse] | None = None,
+        cursor: _dcg_type_0,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListArchiveResponse]:
         """Call GET /archive/{cursor}."""
@@ -88,8 +87,8 @@ class ArchiveWithRawResponse:
     def list_archive(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
-        response_media_type: Literal['application/json'] | ResponseMedia[ListArchiveResponse] | None = None,
+        cursor: _dcg_type_0,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /archive/{cursor}."""
@@ -111,8 +110,8 @@ class ArchiveWithStreamingResponse:
     def list_archive(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0],
-        response_media_type: Literal['application/json'] | ResponseMedia[ListArchiveResponse] | None = None,
+        cursor: _dcg_type_0,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /archive/{cursor}."""

@@ -18,9 +18,8 @@ from .._runtime.protocols.websocket_connectors import (
     async_native_connector,
     native_connector,
 )
-from ..model_codecs import ModelValue
 
-SOCKET_0: Final[ChannelPlan[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_1]] = ChannelPlan(
+SOCKET_0: Final[ChannelPlan[_dcg_type_0, _dcg_type_1]] = ChannelPlan(
     helper_id='rooms.chat',
     operation=OperationRef(pointer='/paths/~1rooms~1{room}~1socket/get'),
     call=_operations.OPERATION_0,

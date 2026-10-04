@@ -1,16 +1,16 @@
-use /paths/~1animals~1any/put request_body: envelope alias models:FieldAnimalsAnyPutRequest models=[('models:Cat', 'dataclass', 'ignore', False), ('models:Dog', 'dataclass', 'ignore', True)]
-use /paths/~1kin/put request_body: envelope alias models:FieldKinPutRequest models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'ignore', False)]
+use /paths/~1animals~1any/put request_body: native alias models:FieldAnimalsAnyPutRequest models=[('models:Cat', 'dataclass', 'ignore', False), ('models:Dog', 'dataclass', 'ignore', True)]
+use /paths/~1kin/put request_body: native alias models:FieldKinPutRequest models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'ignore', False)]
 use /paths/~1tree/put request_body: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
 use /paths/~1tree/put response_body 200: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
 use /paths/~1mixed/post request_body: native alias models:Mixed models=[('models:Large', 'dataclass', 'ignore', True), ('models:Small', 'dataclass', 'ignore', True)]
 use /paths/~1values/post request_body: native dataclass models:Values models=[('models:Values', 'dataclass', 'ignore', True)]
 use /paths/~1values/post response_body 200: native dataclass models:Values models=[('models:Values', 'dataclass', 'ignore', True)]
-animal-client-cat: input issues=DIRECTIONAL_REQUIRED@/id:models:Cat.id wire={"meow":true} extras={}
-animal-server-dog: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"bark":1,"name":"Rex"} extras={}
-animal-server-dog-extra: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"meow":true,"bark":1} extras={"/meow":true}
+animal-client-cat: ModelProjectionError The native use has an unplanned projection gap at /id
+animal-server-dog: ModelProjectionError The native use has an unplanned projection gap at /id
+animal-server-dog-extra: ModelProjectionError The native use has an unplanned projection gap at /id
 animal-server-both: WireValidationError schema.anyOf@
-animal-any-decode-cat: input issues=DIRECTIONAL_REQUIRED@/id:models:Cat.id wire={"meow":true,"nick-name":"Tom"} extras={}
-animal-any-decode-dog: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"bark":3,"x":1} extras={"/x":1}
+animal-any-decode-cat: ModelProjectionError The native use has an unplanned projection gap at /id
+animal-any-decode-dog: ModelProjectionError The native use has an unplanned projection gap at /id
 animal-any-decode-null: model None wire=null presence=[''] extras={}
 animal-any-encode-cat: wire={"nick-name":"Tom","meow":true}
 animal-any-encode-dog: wire={"bark":3}

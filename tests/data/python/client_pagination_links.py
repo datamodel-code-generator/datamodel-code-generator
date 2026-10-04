@@ -16,7 +16,7 @@ from tests.data.python.client_pagination import (
     headed_page,
     user_page,
 )
-from tests.data.python.client_runtime import Exchange, arecord, record, run
+from tests.data.python.client_runtime import Exchange, arecord, record, request_body, run
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -96,9 +96,9 @@ def _urls(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
     """
     users = api.protocols.users
     arguments = {
-        "limit": harness.argument("users", "ListUsers", "query", "limit", 1),
-        "x_trace": harness.argument("users", "ListUsers", "header", "X-Trace", "t"),
-        "session": harness.argument("users", "ListUsers", "cookie", "session", "s"),
+        "limit": harness.argument("listUsers", "query", "limit", 1),
+        "x_trace": harness.argument("listUsers", "header", "X-Trace", "t"),
+        "session": harness.argument("listUsers", "cookie", "session", "s"),
     }
     patched = harness.options.RequestOptions(headers=(("X-Client", "c"),), query=(("debug", "1"),))
     exchange.respond(
@@ -149,7 +149,7 @@ def _vectors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -
     limits = harness.protocols.PaginationOptions(max_cursor_bytes=48)
     exchange.respond(_links("<?page=2>; rel=next", "<?page=9>; rel=last; title=long"))
     drained(lines, "Link fields over the cursor size", users.linked.iterate(pagination_options=limits))
-    trace = harness.argument("users", "ListUsers", "header", "X-Trace", "mine")
+    trace = harness.argument("listUsers", "header", "X-Trace", "mine")
     exchange.respond(
         headed_page("1", headers=(("Link", "<?page=2>; rel=next"), ("X-Snapshot", "s1"))),
         headed_page("2", headers=(("Link", "<?page=3>; rel=next"), ("X-Snapshot", "s2"))),
@@ -160,8 +160,7 @@ def _vectors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -
 
 def _search(harness: Harness, wire: object) -> object:
     """Return the search request body of a wire value, as its body codec builds it."""
-    types = importlib.import_module(f"{harness.package.__name__}.types.searches")
-    return types.SearchRequestCodecs.body().from_wire(wire)
+    return request_body(harness.package, "search", None, wire)
 
 
 def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -220,8 +219,8 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
     token = getattr(auth, f"{prefix}StaticTokenProvider")(auth.AccessToken("token"))
     key = getattr(auth, f"{prefix}StaticCredentialProvider")(auth.ApiKeyCredential("key"))
     arguments = {
-        "x_trace": harness.argument("users", "ListUsers", "header", "X-Trace", "t"),
-        "session": harness.argument("users", "ListUsers", "cookie", "session", "s"),
+        "x_trace": harness.argument("listUsers", "header", "X-Trace", "t"),
+        "session": harness.argument("listUsers", "cookie", "session", "s"),
         "options": options.RequestOptions(headers=(("Authorization", "Basic c2VjcmV0"),)),
     }
     patched = (("X-Api-Key", "k"), ("Authorization", "Basic c2VjcmV0"))

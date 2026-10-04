@@ -133,6 +133,7 @@ class ClientTarget:
             batch,
             replace(wire, schema_ids=tuple(item for item in wire.schema_ids if item[0] in uses)),
             backend,
+            envelopes=False,
         )
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
@@ -146,7 +147,7 @@ class ClientTarget:
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
         helpers = tuple(sorted((*pages, *polls, *caches, *uploads, *queues), key=lambda spec: order[spec.helper.name]))
         streams = plan_streams(streamed, protocols, plan, codecs, wire, request, stream_problems)
-        sockets = plan_sockets(opened, codecs, socket_problems)
+        sockets = plan_sockets(opened, socket_problems)
         webhooks = plan_webhooks(events, codecs, hooked)
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
@@ -253,10 +254,10 @@ def _label(use: TypeUseId) -> str:
 def _inseparable(codecs: CodecPlan) -> Iterator[Diagnostic]:
     """Yield a diagnostic for each received use whose union members only their schemas tell apart.
 
-    Responses are converted natively, which cannot choose among such members; an envelope keeps its schema decoding.
+    Responses are converted natively, which cannot choose among such members.
     """
     for use, binding in codecs.bindings:
-        if use.role in _RESPONSE_ROLES and binding.projection_mode == "native" and needs_schema(binding):
+        if use.role in _RESPONSE_ROLES and needs_schema(binding):
             yield Diagnostic(
                 code="E_CONFIG_VALUE",
                 severity="error",
@@ -594,7 +595,6 @@ class _TargetData:
                 "response": f"{types}.{spec.pascal}Response",
                 "error_data": f"{types}.{spec.pascal}ErrorData",
                 "http_error": f"{types}.{spec.pascal}HTTPError",
-                "request_codecs": f"{types}.{spec.pascal}RequestCodecs",
                 "header_decoder": f"{types}.decode_{spec.name}_header" if headers else None,
             },
         }
