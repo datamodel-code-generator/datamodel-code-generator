@@ -4355,10 +4355,12 @@ raises `ProtocolSizeError` after the connection closed with 1009. A receive that
 raises `PhaseTimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
 reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises `PhaseTimeoutError`
 and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`, closes the session,
-and is never sent again. Sessions never reconnect. `WSOptions(compression="deflate")` raises
-`ProtocolConfigurationError` for a helper that does not permit compression. Received handshake refusals are terminal,
-including redirects and 401s; credentials are never refreshed or invalidated by a refused upgrade. Only a transport
-failure proven `NOT_SENT` before handover may use the call's existing retry policy.
+and is never sent again. Messages are written whole: in a `WebSocketSession`, the send timeout is checked before the
+write starts, and a started write runs until it completes or the connection fails. Sessions never reconnect.
+`WSOptions(compression="deflate")` raises `ProtocolConfigurationError` for a helper that does not permit compression.
+Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or invalidated
+by a refused upgrade. Only a transport failure proven `NOT_SENT` before handover may use the call's existing retry
+policy.
 
 `ProtocolClientOptions(websocket_connector=...)` borrows a connector, which is never closed; without one, the client
 opens its connections with the `websockets` library, a dependency of this package. `websocket_transport` sets the TLS
