@@ -83,6 +83,8 @@
   > GET https://api.example.com/tags/.a?cursor=c
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   tag header 'a' ['1', '2']
+  tags of no tag ! RequestEncodingError: RequestEncodingError(operation_id='listTags', call_id='<call>', location='path.tags') [operation_id='listTags', location=('path', 'tags'), cause=ParameterEncodingError('An empty array or object cannot fill a path segment')] request_encoding_error
+  tag pages of no tag [] ! RequestEncodingError: RequestEncodingError(operation_id='listTags', call_id='<call>', location='path.tags') [operation_id='listTags', location=('path', 'tags'), cause=ParameterEncodingError('An empty array or object cannot fill a path segment')] request_encoding_error
   labels first page '' ! RequestEncodingError: RequestEncodingError(operation_id='listLabels', call_id='<call>', location='path.name') [operation_id='listLabels', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
   reserved first page '%2e' ! RequestEncodingError: RequestEncodingError(operation_id='listReserved', call_id='<call>', location='path.name') [operation_id='listReserved', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
   > GET https://api.example.com/files/..json
