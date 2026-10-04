@@ -72,7 +72,7 @@ _WS: Final = (
 )
 _PROXY_SCHEMES: Final = ("http", "https")
 _CACHE: Final = (("max_entry_bytes", False, False, False), ("max_ttl", True, False, False))
-_CACHE_METHODS: Final = ("lookup", "fingerprint_vary", "compare_exchange", "delete", "invalidate")
+_CACHE_METHODS: Final = ("get", "set", "delete")
 QUEUE_FIELDS: Final = (
     ("max_entries", False, False, False),
     ("parallelism", False, False, False),
