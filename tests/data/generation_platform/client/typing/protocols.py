@@ -115,7 +115,7 @@ def resume(state: ResumeState) -> ResumeState:
     assert_type(exported, bytes)
     restored = import_state(exported)
     assert_type(restored, ResumeState)
-    return ResumeState(helper_fingerprint="helper", security_fingerprint="security", state={"page": (1, 2)})
+    return ResumeState(helper="helper", state={"page": (1, 2)})
 
 
 def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:
@@ -152,7 +152,7 @@ def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:
     except ResumeStateError as resume_error:
         assert_type(
             resume_error.condition,
-            Literal["version", "fingerprint", "security", "expired", "malformed", "checksum", "size"],
+            Literal["version", "fingerprint", "expired", "malformed"],
         )
 
 

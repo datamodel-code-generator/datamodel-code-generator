@@ -82,6 +82,7 @@ __all__ = (
     "Tree",
     "UploadAbort",
     "UploadAppend",
+    "UploadChecksum",
     "UploadCreate",
     "UploadProbe",
     "WebSocketHelper",
@@ -570,12 +571,26 @@ class UploadProbe:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class UploadChecksum:
+    """Where an append writes the checksum of the bytes it sends, by which algorithm, and how it is spelled.
+
+    `algorithm_prefix` writes the algorithm's name and a space before the digest, as the tus checksum extension does.
+    """
+
+    target: RequestTarget
+    algorithm: Literal["md5", "sha1", "sha256", "sha512"]
+    encoding: Literal["base64", "hex"] = "base64"
+    algorithm_prefix: bool = False
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class UploadAppend:
-    """The operation that appends one chunk, and where it writes the chunk's offset and length."""
+    """The operation that appends one chunk, and where it writes the chunk's offset, length, and checksum."""
 
     operation: OperationSelector
     offset: RequestTarget
     length: RequestTarget | None = None
+    checksum: UploadChecksum | None = None
     bindings: tuple[Binding, ...] = ()
 
 
@@ -710,6 +725,7 @@ _RECORDS: Final = frozenset({
     CacheHelper,
     UploadCreate,
     UploadProbe,
+    UploadChecksum,
     UploadAppend,
     LengthCompletion,
     OperationCompletion,
@@ -1491,8 +1507,18 @@ class _Validator:  # noqa: PLR0904
             "bindings": (self.bindings, ()),
             "offset": (self.target, REQUIRED),
             "length": (self.target, OMITTED),
+            "checksum": (self.upload_checksum, OMITTED),
         }
         return self.record(value, at, spec, "an upload append")
+
+    def upload_checksum(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "target": (self.target, REQUIRED),
+            "algorithm": (self.choice("md5", "sha1", "sha256", "sha512"), REQUIRED),
+            "encoding": (self.choice("base64", "hex"), "base64"),
+            "algorithm_prefix": (self.boolean, False),
+        }
+        return self.record(value, at, spec, "an upload checksum")
 
     def upload_completion(self, value: object, at: str) -> object:
         variants: dict[str, Spec] = {
@@ -1966,6 +1992,8 @@ def _upload_links(tree: Tree, at: str) -> Iterator[Link]:
     )
     append = tree["append"]
     written = tuple((f"{at}.append.{name}", append[name]) for name in ("offset", "length") if name in append)
+    if (checksum := append.get("checksum")) is not None:
+        written = (*written, (f"{at}.append.checksum.target", checksum["target"]))
     yield Link(
         at=f"{at}.append.operation",
         ref=append["operation"],
