@@ -1,2 +1,0 @@
-APIGenerationError
-  E_CONFIG_VALUE config operations[0].runtime.circuit_group: operations[0].runtime.circuit_group must be a string
