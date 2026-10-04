@@ -18,15 +18,11 @@ render pydantic_v2.BaseModel
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/model_codecs/__init__.py (copied runtime)
   write server/_runtime/model_codecs/bindings.py (copied runtime)
-  write server/_runtime/model_codecs/codec.py (copied runtime)
   write server/_runtime/model_codecs/context.py (copied runtime)
   write server/_runtime/model_codecs/errors.py (copied runtime)
   write server/_runtime/model_codecs/media.py (copied runtime)
   write server/_runtime/model_codecs/outbound.py (copied runtime)
   write server/_runtime/model_codecs/parameters.py (copied runtime)
-  write server/_runtime/model_codecs/patterns.py (copied runtime)
-  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
-  write server/_runtime/model_codecs/schema.py (copied runtime)
   write server/_runtime/model_codecs/unset.py (copied runtime)
   write server/_runtime/model_codecs/values.py (copied runtime)
   write server/_runtime/model_codecs/wire.py (copied runtime)
@@ -35,7 +31,6 @@ render pydantic_v2.BaseModel
   write server/_runtime/server/codecs.py (copied runtime)
   write server/_runtime/server/errors.py (copied runtime)
   write server/_runtime/server/openapi.py (copied runtime)
-  write server/_runtime/server/requests.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
@@ -43,74 +38,28 @@ render pydantic_v2.BaseModel
   write server/.dcg-target-manifest.json
   layout routers
   post_discriminated: POST /discriminated -> /discriminated [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1discriminated/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Discriminated/properties/pet
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1discriminated/post/responses/204
   post_ranges: POST /ranges -> /ranges [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1ranges/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1ranges/post/responses/204
   post_wide: POST /wide -> /wide [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1wide/post/requestBody: codec_adapter source_assertion_not_projected at /components/schemas/Wide/properties/big
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1wide/post/responses/204
   post_described: POST /described -> /described [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1described/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Described/properties/name
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1described/post/responses/204
   post_patterned: POST /patterned -> /patterned [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1patterned/post/requestBody: codec_adapter source_assertion_not_projected at /components/schemas/Patterned/properties/code/pattern
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1patterned/post/responses/204
   post_bounded: POST /bounded -> /bounded [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1bounded/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Bounded/minProperties
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1bounded/post/responses/204
   post_painted: POST /painted -> /painted [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1painted/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1painted/post/responses/204
   post_holder: POST /holder -> /holder [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1holder/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1holder/post/responses/204
   post_wrapper: POST /wrapper -> /wrapper [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1wrapper/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/MaybeInner
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1wrapper/post/responses/204
   post_extended: POST /extended -> /extended [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1extended/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Extended/allOf
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1extended/post/responses/204
   post_defaulted: POST /defaulted -> /defaulted [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1defaulted/post/requestBody: codec_adapter native_required_mismatch at /components/schemas/Defaulted/properties/a
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1defaulted/post/responses/204
   post_listed: POST /listed -> /listed [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1listed/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Listed/properties/items
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1listed/post/responses/204
   post_mapped: POST /mapped -> /mapped [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1mapped/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Mapped/properties/counts
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1mapped/post/responses/204
   post_opaque: POST /opaque -> /opaque [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1opaque/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Opaque/properties/mail
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1opaque/post/responses/204
   post_anything: POST /anything -> /anything [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1anything/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Anything/properties/value
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1anything/post/responses/204
   post_constant: POST /constant -> /constant [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1constant/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1constant/post/responses/204
   post_stamped: POST /stamped -> /stamped [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1stamped/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Stamped/properties/at
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1stamped/post/responses/204
   post_closed: POST /closed -> /closed [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1closed/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1closed/post/responses/204
   post_twice: POST /twice -> /twice [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1twice/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1twice/post/responses/204
   post_node: POST /node -> /node [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1node/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1node/post/responses/204
   post_extra: POST /extra -> /extra [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1extra/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Extra/additionalProperties
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1extra/post/responses/204
   post_nested: POST /nested -> /nested [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1nested/post/requestBody: codec_adapter source_assertion_not_projected at /components/schemas/Nested/properties/grid/items
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1nested/post/responses/204
   post_box: POST /box -> /box [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1box/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Label
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1box/post/responses/204
   group untagged -> untagged (23)
   file server/README.md
     | # Native checks
@@ -193,11 +142,12 @@ render pydantic_v2.BaseModel
     | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
     | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     |
     | ## Regenerating
     |
@@ -228,15 +178,11 @@ render pydantic_v2.dataclass
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/model_codecs/__init__.py (copied runtime)
   write server/_runtime/model_codecs/bindings.py (copied runtime)
-  write server/_runtime/model_codecs/codec.py (copied runtime)
   write server/_runtime/model_codecs/context.py (copied runtime)
   write server/_runtime/model_codecs/errors.py (copied runtime)
   write server/_runtime/model_codecs/media.py (copied runtime)
   write server/_runtime/model_codecs/outbound.py (copied runtime)
   write server/_runtime/model_codecs/parameters.py (copied runtime)
-  write server/_runtime/model_codecs/patterns.py (copied runtime)
-  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
-  write server/_runtime/model_codecs/schema.py (copied runtime)
   write server/_runtime/model_codecs/unset.py (copied runtime)
   write server/_runtime/model_codecs/values.py (copied runtime)
   write server/_runtime/model_codecs/wire.py (copied runtime)
@@ -245,7 +191,6 @@ render pydantic_v2.dataclass
   write server/_runtime/server/codecs.py (copied runtime)
   write server/_runtime/server/errors.py (copied runtime)
   write server/_runtime/server/openapi.py (copied runtime)
-  write server/_runtime/server/requests.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
@@ -253,74 +198,28 @@ render pydantic_v2.dataclass
   write server/.dcg-target-manifest.json
   layout routers
   post_discriminated: POST /discriminated -> /discriminated [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1discriminated/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Discriminated/properties/pet
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1discriminated/post/responses/204
   post_ranges: POST /ranges -> /ranges [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1ranges/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1ranges/post/responses/204
   post_wide: POST /wide -> /wide [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1wide/post/requestBody: codec_adapter source_assertion_not_projected at /components/schemas/Wide/properties/big
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1wide/post/responses/204
   post_described: POST /described -> /described [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1described/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Described/properties/name
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1described/post/responses/204
   post_patterned: POST /patterned -> /patterned [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1patterned/post/requestBody: codec_adapter source_assertion_not_projected at /components/schemas/Patterned/properties/code/pattern
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1patterned/post/responses/204
   post_bounded: POST /bounded -> /bounded [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1bounded/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Bounded/minProperties
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1bounded/post/responses/204
   post_painted: POST /painted -> /painted [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1painted/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1painted/post/responses/204
   post_holder: POST /holder -> /holder [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1holder/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1holder/post/responses/204
   post_wrapper: POST /wrapper -> /wrapper [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1wrapper/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/MaybeInner
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1wrapper/post/responses/204
   post_extended: POST /extended -> /extended [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1extended/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Extended/allOf
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1extended/post/responses/204
   post_defaulted: POST /defaulted -> /defaulted [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1defaulted/post/requestBody: codec_adapter native_required_mismatch at /components/schemas/Defaulted/properties/a
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1defaulted/post/responses/204
   post_listed: POST /listed -> /listed [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1listed/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Listed/properties/items
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1listed/post/responses/204
   post_mapped: POST /mapped -> /mapped [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1mapped/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Mapped/properties/counts
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1mapped/post/responses/204
   post_opaque: POST /opaque -> /opaque [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1opaque/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Opaque/properties/mail
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1opaque/post/responses/204
   post_anything: POST /anything -> /anything [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1anything/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Anything/properties/value
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1anything/post/responses/204
   post_constant: POST /constant -> /constant [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1constant/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1constant/post/responses/204
   post_stamped: POST /stamped -> /stamped [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1stamped/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Stamped/properties/at
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1stamped/post/responses/204
   post_closed: POST /closed -> /closed [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1closed/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1closed/post/responses/204
   post_twice: POST /twice -> /twice [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1twice/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Code
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1twice/post/responses/204
   post_node: POST /node -> /node [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1node/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1node/post/responses/204
   post_extra: POST /extra -> /extra [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1extra/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Extra/additionalProperties
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1extra/post/responses/204
   post_nested: POST /nested -> /nested [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1nested/post/requestBody: codec_adapter source_assertion_not_projected at /components/schemas/Nested/properties/grid/items
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1nested/post/responses/204
   post_box: POST /box -> /box [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1box/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Label
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1box/post/responses/204
   group untagged -> untagged (23)
   file server/README.md
     | # Native checks
@@ -403,11 +302,12 @@ render pydantic_v2.dataclass
     | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
     | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     |
     | ## Regenerating
     |

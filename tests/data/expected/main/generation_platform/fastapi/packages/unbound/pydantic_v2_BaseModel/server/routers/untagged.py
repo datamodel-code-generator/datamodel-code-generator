@@ -5,8 +5,9 @@ from collections.abc import Sequence
 from typing import Annotated, Final
 
 import models
+import pydantic
 from fastapi import APIRouter, Depends, Path, Query
-from pydantic import AwareDatetime
+from pydantic import Field
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -21,8 +22,11 @@ def _add_get_value(router: APIRouter, wiring: Wiring) -> None:
 
     def get_value(
         *,
-        id: Annotated[int, Path(alias='id', ge=1)],
-        at: Annotated[AwareDatetime, Query(alias='at', default_factory=absent)],
+        id: Annotated[int, Field(ge=1), Path(alias='id')],
+        at: Annotated[pydantic.AwareDatetime, Query(
+            alias='at',
+            default_factory=absent,
+        )],
         tags: Annotated[list[str], Query(alias='tags', default_factory=absent)],
         parameters: Annotated[contract.GetValue.Parameters, Depends(contract.GetValue.PARAMETERS)],
     ) -> object:

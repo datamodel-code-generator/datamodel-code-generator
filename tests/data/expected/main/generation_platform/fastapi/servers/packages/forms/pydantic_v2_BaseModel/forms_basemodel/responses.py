@@ -19,6 +19,16 @@ class _PostFormResponseCodecs(ResponseCodecs[Never]):
 PostFormResponseCodecs: Final = _PostFormResponseCodecs(())
 
 
+PostNotesResponsePayload: TypeAlias = Never
+
+
+class _PostNotesResponseCodecs(ResponseCodecs[Never]):
+    """Outbound codecs of the post_notes response bodies."""
+
+
+PostNotesResponseCodecs: Final = _PostNotesResponseCodecs(())
+
+
 UploadResponsePayload: TypeAlias = Never
 
 
@@ -43,6 +53,8 @@ __all__ = [
     'HTTPResult',
     'PostFormResponseCodecs',
     'PostFormResponsePayload',
+    'PostNotesResponseCodecs',
+    'PostNotesResponsePayload',
     'UNSET',
     'Unset',
     'UploadManyResponseCodecs',

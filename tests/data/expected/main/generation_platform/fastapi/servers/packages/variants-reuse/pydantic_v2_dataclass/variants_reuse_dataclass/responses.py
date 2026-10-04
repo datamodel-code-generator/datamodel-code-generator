@@ -48,7 +48,7 @@ class _CreatePetResponseCodecs(
 
 
 CreatePetResponseCodecs: Final = _CreatePetResponseCodecs(
-    (('201', (('application/json', model_bindings.outbound_1),)),),
+    (('201', (('application/json', model_bindings.outbound_0),)),),
 )
 
 
@@ -88,7 +88,7 @@ class _GetPetResponseCodecs(
 
 
 GetPetResponseCodecs: Final = _GetPetResponseCodecs(
-    (('200', (('application/json', model_bindings.outbound_2),)),),
+    (('200', (('application/json', model_bindings.outbound_1),)),),
 )
 
 
@@ -128,7 +128,7 @@ class _ListOwnersResponseCodecs(
 
 
 ListOwnersResponseCodecs: Final = _ListOwnersResponseCodecs(
-    (('200', (('application/json', model_bindings.outbound_3),)),),
+    (('200', (('application/json', model_bindings.outbound_2),)),),
 )
 
 

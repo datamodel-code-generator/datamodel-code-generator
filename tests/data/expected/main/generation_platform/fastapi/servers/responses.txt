@@ -7,13 +7,13 @@ app standard
   get_greeting(mode=absent)
 < 200 application/json "hello"
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=value
-  get_greeting(mode='value')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
 < 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -43,13 +43,13 @@ app plain
   get_greeting(mode=absent)
 < 200 text/plain; charset=utf-8 hello
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=value
-  get_greeting(mode='value')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
 < 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -67,13 +67,13 @@ app included
   get_greeting(mode=absent)
 < 200 text/plain; charset=utf-8 hello
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=value
-  get_greeting(mode='value')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
 < 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -94,13 +94,13 @@ app standard
   get_greeting(mode=absent)
 < 200 application/json "hello"
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=value
-  get_greeting(mode='value')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
 < 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -130,13 +130,13 @@ app plain
   get_greeting(mode=absent)
 < 200 text/plain; charset=utf-8 hello
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=value
-  get_greeting(mode='value')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
 < 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -154,13 +154,13 @@ app included
   get_greeting(mode=absent)
 < 200 text/plain; charset=utf-8 hello
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=value
-  get_greeting(mode='value')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
 < 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1

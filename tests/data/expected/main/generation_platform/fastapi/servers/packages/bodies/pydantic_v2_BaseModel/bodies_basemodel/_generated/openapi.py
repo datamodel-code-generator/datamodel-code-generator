@@ -13,54 +13,9 @@ _BUNDLE = r"""{
    "route_path": "/items",
    "slots": [],
    "fragment": {
-    "requestBody": {
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/Item__4487967d9c82"
-       }
-      }
-     }
-    },
     "responses": {
      "204": {
       "description": "Done."
-     },
-     "400": {
-      "description": "Invalid request",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__155f96e10e70"
-        },
-        "example": {
-         "detail": "Invalid request"
-        }
-       }
-      }
-     },
-     "415": {
-      "description": "Unsupported media type",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__155f96e10e70"
-        },
-        "example": {
-         "detail": "Unsupported media type"
-        }
-       }
-      }
-     },
-     "422": {
-      "description": "Validation Error",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_validation_error__155f96e10e70"
-        }
-       }
-      }
      },
      "500": {
       "description": "Internal Server Error",
@@ -82,55 +37,9 @@ _BUNDLE = r"""{
    "route_path": "/accounts",
    "slots": [],
    "fragment": {
-    "requestBody": {
-     "required": true,
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/Account__a01c1ff29cd2"
-       }
-      }
-     }
-    },
     "responses": {
      "204": {
       "description": "Done."
-     },
-     "400": {
-      "description": "Invalid request",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__155f96e10e70"
-        },
-        "example": {
-         "detail": "Invalid request"
-        }
-       }
-      }
-     },
-     "415": {
-      "description": "Unsupported media type",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__155f96e10e70"
-        },
-        "example": {
-         "detail": "Unsupported media type"
-        }
-       }
-      }
-     },
-     "422": {
-      "description": "Validation Error",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_validation_error__155f96e10e70"
-        }
-       }
-      }
      },
      "500": {
       "description": "Internal Server Error",
@@ -653,35 +562,24 @@ _BUNDLE = r"""{
    "route_path": "/uploads",
    "slots": [],
    "fragment": {
-    "responses": {
-     "204": {
-      "description": "Done."
-     },
-     "500": {
-      "description": "Internal Server Error",
-      "content": {
-       "text/plain": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_server_error__155f96e10e70"
-        }
-       }
-      }
-     }
-    },
-    "security": []
-   }
-  },
-  {
-   "key": "/paths/~1checks/post",
-   "method": "post",
-   "route_path": "/checks",
-   "slots": [],
-   "fragment": {
     "requestBody": {
+     "required": true,
      "content": {
-      "application/json": {
+      "multipart/form-data": {
        "schema": {
-        "$ref": "#/components/schemas/Check__76bc402ece8f"
+        "type": "object",
+        "required": [
+         "file"
+        ],
+        "properties": {
+         "file": {
+          "type": "string",
+          "format": "binary"
+         },
+         "note": {
+          "type": "string"
+         }
+        }
        }
       }
      }
@@ -741,6 +639,30 @@ _BUNDLE = r"""{
    }
   },
   {
+   "key": "/paths/~1checks/post",
+   "method": "post",
+   "route_path": "/checks",
+   "slots": [],
+   "fragment": {
+    "responses": {
+     "204": {
+      "description": "Done."
+     },
+     "500": {
+      "description": "Internal Server Error",
+      "content": {
+       "text/plain": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_server_error__155f96e10e70"
+        }
+       }
+      }
+     }
+    },
+    "security": []
+   }
+  },
+  {
    "key": "/paths/~1raw/post",
    "method": "post",
    "route_path": "/raw",
@@ -778,17 +700,8 @@ _BUNDLE = r"""{
  ],
  "components": {
   "schemas": {
-   "Item__4487967d9c82": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": [
-     "name"
-    ],
-    "properties": {
-     "name": {
-      "type": "string"
-     }
-    }
+   "dcg_server_error__155f96e10e70": {
+    "type": "string"
    },
    "dcg_http_error__155f96e10e70": {
     "type": "object",
@@ -839,38 +752,15 @@ _BUNDLE = r"""{
      "detail"
     ]
    },
-   "dcg_server_error__155f96e10e70": {
-    "type": "string"
-   },
-   "Account__a01c1ff29cd2": {
+   "Item__4487967d9c82": {
     "type": "object",
+    "additionalProperties": false,
     "required": [
      "name"
     ],
     "properties": {
-     "id": {
-      "type": "integer",
-      "readOnly": true
-     },
      "name": {
       "type": "string"
-     }
-    }
-   },
-   "Check__76bc402ece8f": {
-    "type": "object",
-    "additionalProperties": false,
-    "properties": {
-     "code": {
-      "type": "string",
-      "x-python-type": "int"
-     },
-     "scores": {
-      "type": "array",
-      "items": {
-       "type": "integer",
-       "minimum": 0
-      }
      }
     }
    }

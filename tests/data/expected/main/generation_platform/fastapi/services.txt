@@ -43,15 +43,9 @@ render pydantic_v2.BaseModel
   write server/.dcg-target-manifest.json
   layout routers
   list_pets: GET /pets -> /pets [tag:pets] status 200 primary 200 application/json body typed handler sync
-    primary_response /paths/~1pets/get/responses/200: fastapi_native native_supported
   delete_pet: DELETE /pets/{petId} -> /pets/{petId} [tag:pets] status 204 primary 204 None body typed handler sync
-    parameter /paths/~1pets~1{petId}/delete/parameters/0: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1pets~1{petId}/delete/responses/204
   move_pet: POST /pets/{petId}/moves -> /pets/{petId}/moves [tag:pets] status 201 primary 201 None body typed handler sync
-    parameter /paths/~1pets~1{petId}~1moves/post/parameters/0: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1pets~1{petId}~1moves/post/responses/201
   get_health: GET /health -> /health [untagged] status 204 primary 204 None body typed handler async
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1health/get/responses/204
   group tag:pets -> pets (3)
   group untagged -> untagged (1)
   file server/README.md
@@ -120,11 +114,12 @@ render pydantic_v2.BaseModel
     | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
     | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     |
     | ## Regenerating
     |

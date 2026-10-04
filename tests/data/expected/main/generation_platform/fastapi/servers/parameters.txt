@@ -5,30 +5,38 @@ service UntaggedService without its methods: TypeError
 > GET /search
 < 422 application/json [{"type": "missing", "loc": ["cookie", "session"]}]
 > GET /search
-< 422 application/json [{"type": "value_error", "loc": ["cookie", "session"]}]
+< 422 application/json [{"type": "string_too_short", "loc": ["cookie", "session"]}]
 > GET /search
-  search(session=FieldSearchGetCookieSessionParameter(root='abc'), code=FieldSearchGetQueryCodeParameter(root='AB'), filter=UNSET, ids=UNSET, x_ids=UNSET, blob=UNSET, note=UNSET)
+  search(session='abc', code='AB', filter=UNSET, ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
 < 204 - b''
 > GET /search?code=XY&filter%5Bname%5D=n&ids=1,2&blob=%7B%22a%22%3A1%7D&note=hi
-  search(session=FieldSearchGetCookieSessionParameter(root='abc'), code=FieldSearchGetQueryCodeParameter(root='XY'), filter=ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Filter|ModelNode(symbol='parameters_basemodel_models:Filter')", wire=mappingproxy({'name': 'n'}), presence=PresenceTree(pointer='', container='object', members=(('name', PresenceTree(pointer='/name', container='value', members=())),)), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/id', schema_location='https://dcg.invalid/inputs/root#/components/schemas/Filter', field_id='parameters_basemodel_models:Filter.id', message='The native type requires a property that this direction excludes'),), kind='input'), ids=FieldSearchGetQueryIdsParameter(root=[1, 2]), x_ids=FieldSearchGetHeaderXIdsParameter(root=[3, 4]), blob=Blob(a=1), note='hi')
-< 204 - b''
+< 422 application/json [{"type": "missing", "loc": ["query", "filter", "id"]}]
 > GET /search?code=ab&ids=1,x&blob=%7B%22b%22%3A1%7D
-< 422 application/json [{"type": "value_error", "loc": ["query", "code"]}, {"type": "type_error", "loc": ["query", "ids"]}, {"type": "extra_forbidden", "loc": ["query", "blob"]}]
+< 422 application/json [{"type": "type_error", "loc": ["query", "ids"]}, {"type": "extra_forbidden", "loc": ["query", "blob", "b"]}]
 > GET /search?blob=%7B
 < 422 application/json [{"type": "json_invalid", "loc": ["query", "blob"]}]
 > GET /search?code=A&code=B
-< 400 application/json {"detail":"Invalid request"}
+  search(session='abc', code='B', filter=UNSET, ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+< 204 - b''
 > GET /search?filter%5Bname%5D=n&filter%5Bid%5D=1
-< 422 application/json [{"type": "value_error", "loc": ["query", "filter", "id"]}]
+  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+< 204 - b''
 > GET /ratios?ratios=1&ratios=2.5
-  get_ratios(ratios=[1.0, 2.5])
+  get_ratios(ratios=[1.0, 2.5], limits=[1, 2])
 < 204 - b''
 > GET /ratios?ratios=nan
-< 422 application/json [{"type": "finite_number", "loc": ["query", "ratios", 0]}]
+  get_ratios(ratios=[nan], limits=[1, 2])
+< 204 - b''
 > GET /ratios?ratios=inf
-< 422 application/json [{"type": "finite_number", "loc": ["query", "ratios", 0]}]
+  get_ratios(ratios=[inf], limits=[1, 2])
+< 204 - b''
+> GET /ratios?ratios=1&limits=3&limits=4
+  get_ratios(ratios=[1.0], limits=[3, 4])
+< 204 - b''
+> GET /ratios?ratios=1&limits=0
+< 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limits", 0]}]
 > GET /repeat/1/again/1
-  repeat(id=FieldRepeatIdAgainIdGetPathIdParameter(root=1))
+  repeat(id=1)
 < 204 - b''
 > GET /repeat/1/again/01
 < 422 application/json [{"type": "value_error", "loc": ["path", "id"]}]
@@ -37,7 +45,7 @@ service UntaggedService without its methods: TypeError
 > GET /repeat/x/again/x
 < 422 application/json [{"type": "type_error", "loc": ["path", "id"]}]
 > GET /repeat/1/again/1
-  repeat(id=FieldRepeatIdAgainIdGetPathIdParameter(root=1))
+  repeat(id=1)
 < 204 - b''
 > GET /repeat/1/again/1
 < 400 application/json {"detail":"Invalid request"}
@@ -47,31 +55,37 @@ service UntaggedService without its methods: TypeError
 > GET /notes/seven
 < 422 application/json [{"type": "int_parsing", "loc": ["path", "dcg_p0"]}]
 > GET /files/a.txt
-  get_file(file_name=FieldFilesFileNameGetPathFileNameParameter(root='a.txt'))
+  get_file(file_name='a.txt')
 < 204 - b''
 > GET /files/A.txt
-< 422 application/json [{"type": "value_error", "loc": ["path", "file.name"]}]
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["path", "dcg_p0"]}]
 > GET /men%C3%BC/tea
-  get_menu(item=FieldMenüItemGetPathItemParameter(root='tea'))
+  get_menu(item='tea')
 < 204 - b''
 > GET /%6Den%c3%bc/tea
-  get_menu(item=FieldMenüItemGetPathItemParameter(root='tea'))
+  get_menu(item='tea')
 < 204 - b''
 > GET /men%C3%BC/Tea
-< 422 application/json [{"type": "value_error", "loc": ["path", "item"]}]
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["path", "item"]}]
 > GET /items/1?mode=1
-  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=<FieldItemsLevelGetQueryModeParameter.integer_1: 1>, ratio=UNSET, x_flag=UNSET, kind=UNSET)
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=<FieldItemsLevelGetQueryModeParameter.integer_1: 1>, ratio=UNSET, x_flag=UNSET, kind=UNSET, tier=UNSET, levels=UNSET)
 < 204 - b''
 > GET /items/2?mode=2&ratio=1.5&kind=b
-  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_2: 2>, mode=<FieldItemsLevelGetQueryModeParameter.integer_2: 2>, ratio=<FieldItemsLevelGetQueryRatioParameter.number_1_5: 1.5>, x_flag=FieldItemsLevelGetHeaderXFlagParameter(root=True), kind='b')
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_2: 2>, mode=<FieldItemsLevelGetQueryModeParameter.integer_2: 2>, ratio=<FieldItemsLevelGetQueryRatioParameter.number_1_5: 1.5>, x_flag=True, kind=<FieldItemsLevelGetQueryKindParameter.b: 'b'>, tier=UNSET, levels=UNSET)
 < 204 - b''
 > GET /items/3
-< 422 application/json [{"type": "value_error", "loc": ["path", "level"]}]
+< 422 application/json [{"type": "enum", "loc": ["path", "level"]}]
 > GET /items/1?mode=3
-< 422 application/json [{"type": "value_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > GET /items/1?ratio=2
-< 422 application/json [{"type": "value_error", "loc": ["query", "ratio"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "ratio"]}]
 > GET /items/1
-< 422 application/json [{"type": "value_error", "loc": ["header", "X-Flag"]}]
+< 422 application/json [{"type": "literal_error", "loc": ["header", "X-Flag"]}]
 > GET /items/1?kind=c
-< 422 application/json [{"type": "literal_error", "loc": ["query", "kind"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "kind"]}]
+> GET /items/1?tier=2
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=UNSET, ratio=UNSET, x_flag=UNSET, kind=UNSET, tier=<FieldItemsLevelGetQueryTierParameter1.integer_2: 2>, levels=UNSET)
+< 204 - b''
+> GET /items/1?levels=1&levels=2
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=UNSET, ratio=UNSET, x_flag=UNSET, kind=UNSET, tier=UNSET, levels=[<FieldItemsLevelGetQueryLevelsParameterEnum.integer_1: 1>, <FieldItemsLevelGetQueryLevelsParameterEnum.integer_2: 2>])
+< 204 - b''

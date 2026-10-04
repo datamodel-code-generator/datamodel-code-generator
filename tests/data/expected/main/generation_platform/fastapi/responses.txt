@@ -43,19 +43,13 @@ render pydantic_v2.BaseModel
   write server/.dcg-target-manifest.json
   layout routers
   create: POST /created -> /created [tag:results] status 201 primary 201 application/vnd.thing+json body typed handler sync
-    primary_response /paths/~1created/post/responses/201: codec_adapter unsupported_wire_shape at /paths/~1created/post/responses/201
   only_default: GET /defaults -> /defaults [tag:results] status 200 primary - body typed handler sync
   only_ranges: GET /ranges -> /ranges [tag:results] status 200 primary - body typed handler sync
   only_errors: GET /errors -> /errors [tag:results] status 404 primary 404 application/json body typed handler sync
-    primary_response /paths/~1errors/get/responses/404: fastapi_native native_supported
   get_optional: GET /optional -> /optional [tag:results] status 200 primary 200 application/json body typed handler sync
-    primary_response /paths/~1optional/get/responses/200: codec_adapter native_nullable_mismatch at /components/schemas/Loose/properties/name
   get_secret: GET /secret -> /secret [tag:results] status 200 primary 200 application/json body typed handler sync
-    primary_response /paths/~1secret/get/responses/200: codec_adapter envelope_required at /components/schemas/Secret/properties/token/writeOnly
   head_secret: HEAD /secret -> /secret [tag:results] status 200 primary 200 application/json body typed handler sync
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1secret/head/responses/200
   download: GET /download -> /download [tag:files] status 200 primary 200 application/octet-stream body typed handler sync
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1download/get/responses/200
   group tag:results -> results (7)
   group tag:files -> files (1)
   file server/README.md
@@ -128,11 +122,12 @@ render pydantic_v2.BaseModel
     | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
     | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     |
     | ## Regenerating
     |
@@ -188,19 +183,13 @@ render pydantic_v2.dataclass
   write server/.dcg-target-manifest.json
   layout routers
   create: POST /created -> /created [tag:results] status 201 primary 201 application/vnd.thing+json body typed handler sync
-    primary_response /paths/~1created/post/responses/201: codec_adapter unsupported_wire_shape at /paths/~1created/post/responses/201
   only_default: GET /defaults -> /defaults [tag:results] status 200 primary - body typed handler sync
   only_ranges: GET /ranges -> /ranges [tag:results] status 200 primary - body typed handler sync
   only_errors: GET /errors -> /errors [tag:results] status 404 primary 404 application/json body typed handler sync
-    primary_response /paths/~1errors/get/responses/404: fastapi_native native_supported
   get_optional: GET /optional -> /optional [tag:results] status 200 primary 200 application/json body typed handler sync
-    primary_response /paths/~1optional/get/responses/200: codec_adapter native_nullable_mismatch at /components/schemas/Loose/properties/name
   get_secret: GET /secret -> /secret [tag:results] status 200 primary 200 application/json body typed handler sync
-    primary_response /paths/~1secret/get/responses/200: codec_adapter envelope_required at /components/schemas/Secret/properties/token/writeOnly
   head_secret: HEAD /secret -> /secret [tag:results] status 200 primary 200 application/json body typed handler sync
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1secret/head/responses/200
   download: GET /download -> /download [tag:files] status 200 primary 200 application/octet-stream body typed handler sync
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1download/get/responses/200
   group tag:results -> results (7)
   group tag:files -> files (1)
   file server/README.md
@@ -273,11 +262,12 @@ render pydantic_v2.dataclass
     | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
     | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     |
     | A `pydantic_v2.dataclass` value cannot tell an omitted optional field from one set to `None`, and a `PATCH` body may mean a different change for each.
     | To send a response that keeps a field omitted, return the value a response codec builds from the wire value, or snapshot a dataclass with its explicit presence:

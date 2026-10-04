@@ -4,13 +4,13 @@
 from collections.abc import Sequence
 from typing import Annotated, Final
 
-from fastapi import APIRouter, File, Form, UploadFile
+import forms_basemodel_models
+from fastapi import APIRouter, Depends, Form
 from fastapi.responses import Response
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
-from .._runtime.server.requests import absent, present
 from .._runtime.server.responses import respond
 from ..services import UntaggedService
 
@@ -20,14 +20,11 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
 
     def post_form(
         *,
-        name: Annotated[str, Form(alias='name')],
-        count: Annotated[int, Form(alias='count')] = 1,
-        tags: Annotated[list[str], Form(alias='tags', default_factory=absent)],
+        body: Annotated[forms_basemodel_models.FieldFormsPostRequest, Form(
+            media_type='application/x-www-form-urlencoded',
+        )],
     ) -> Response:
-        return respond(
-            post_form_handler(name=name, count=count, tags=present(tags)),
-            contract.PostForm.RESPONSES,
-        )
+        return respond(post_form_handler(body=body), contract.PostForm.RESPONSES)
 
     router.add_api_route(
         '/forms',
@@ -49,18 +46,43 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
+def _add_post_notes(router: APIRouter, wiring: Wiring) -> None:
+    post_notes_handler = wiring.handlers['post_notes']
+
+    def post_notes(
+        *,
+        body: Annotated[forms_basemodel_models.FieldNotesPostRequest, Depends(contract.PostNotes.BODY)],
+    ) -> Response:
+        return respond(post_notes_handler(body=body), contract.PostNotes.RESPONSES)
+
+    router.add_api_route(
+        '/notes',
+        post_notes,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postNotes',
+        response_description='Done.',
+        openapi_extra={
+            'x-dcg-operation': {
+                'version': 1,
+                'package': 'forms_basemodel',
+                'operation': '/paths/~1notes/post',
+            },
+        },
+        dependencies=wiring.dependencies.get('/paths/~1notes/post'),
+    )
+
+
 def _add_upload(router: APIRouter, wiring: Wiring) -> None:
     upload_handler = wiring.handlers['upload']
 
     def upload(
         *,
-        file: Annotated[UploadFile, File(alias='file')],
-        note: Annotated[str, Form(alias='note', default_factory=absent)],
+        body: Annotated[forms_basemodel_models.FieldUploadsPostRequest, Depends(contract.Upload.BODY)],
     ) -> Response:
-        return respond(
-            upload_handler(file=file, note=present(note)),
-            contract.Upload.RESPONSES,
-        )
+        return respond(upload_handler(body=body), contract.Upload.RESPONSES)
 
     router.add_api_route(
         '/uploads',
@@ -87,13 +109,9 @@ def _add_upload_many(router: APIRouter, wiring: Wiring) -> None:
 
     def upload_many(
         *,
-        files: Annotated[list[UploadFile], File(alias='files')],
-        label: Annotated[str, Form(alias='label', default_factory=absent)],
+        body: Annotated[forms_basemodel_models.FieldBatchesPostRequest, Depends(contract.UploadMany.BODY)],
     ) -> Response:
-        return respond(
-            upload_many_handler(files=files, label=present(label)),
-            contract.UploadMany.RESPONSES,
-        )
+        return respond(upload_many_handler(body=body), contract.UploadMany.RESPONSES)
 
     router.add_api_route(
         '/batches',
@@ -117,6 +135,7 @@ def _add_upload_many(router: APIRouter, wiring: Wiring) -> None:
 
 LITERAL_ROUTES: Final = (
     (contract.PostForm.OPERATION, _add_post_form),
+    (contract.PostNotes.OPERATION, _add_post_notes),
     (contract.Upload.OPERATION, _add_upload),
     (contract.UploadMany.OPERATION, _add_upload_many),
 )

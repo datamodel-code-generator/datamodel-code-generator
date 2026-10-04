@@ -135,10 +135,6 @@ def _decisions(project: GeneratedProject) -> list[str]:
         lines.extend(
             f"    slot {slot['slot']} = {slot['wire_name']} #{slot['occurrence']}" for slot in operation["path_slots"]
         )
-        for projection in operation["projections"]:
-            use = projection["use_ids"][0]["use_site"]["pointer"] if projection["use_ids"] else "-"
-            source = "" if projection["source"] is None else f" at {projection['source']['pointer']}"
-            lines.append(f"    {projection['site']} {use}: {projection['transport']} {projection['reason']}{source}")
     lines.extend(
         f"  group {group['key']} -> {group['file_stem']} ({len(group['operations'])})" for group in data["groups"]
     )

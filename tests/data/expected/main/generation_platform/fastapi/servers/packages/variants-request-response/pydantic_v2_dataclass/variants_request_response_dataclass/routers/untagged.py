@@ -5,13 +5,13 @@ from collections.abc import Sequence
 from typing import Annotated, Final
 
 import variants_request_response_dataclass_models
-from fastapi import APIRouter, Depends, Path
-from fastapi.responses import Response
+from fastapi import APIRouter, Body, Path
+from pydantic import Field
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
-from .._runtime.server.responses import respond
+from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
 
@@ -20,17 +20,20 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
 
     def create_pet(
         *,
-        body: Annotated[variants_request_response_dataclass_models.PetRequest, Depends(contract.CreatePet.BODY)],
-    ) -> Response:
-        return respond(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+        body: Annotated[variants_request_response_dataclass_models.PetRequest, Body(
+            media_type='application/json',
+        )],
+    ) -> object:
+        return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
 
     router.add_api_route(
         '/pets',
         create_pet,
         methods=['POST'],
         status_code=201,
-        response_model=None,
-        response_class=Response,
+        response_model=variants_request_response_dataclass_models.PetResponse,
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
         operation_id='createPet',
         response_description='Created.',
         openapi_extra={
@@ -47,16 +50,17 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
 def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
     get_pet_handler = wiring.handlers['get_pet']
 
-    def get_pet(*, id: Annotated[int, Path(alias='id', ge=1)]) -> Response:
-        return respond(get_pet_handler(id=id), contract.GetPet.RESPONSES)
+    def get_pet(*, id: Annotated[int, Field(ge=1), Path(alias='id')]) -> object:
+        return dispatch(get_pet_handler(id=id), contract.GetPet.RESPONSES)
 
     router.add_api_route(
         '/pets/{id}',
         get_pet,
         methods=['GET'],
         status_code=200,
-        response_model=None,
-        response_class=Response,
+        response_model=variants_request_response_dataclass_models.PetResponse,
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
         operation_id='getPet',
         response_description='The pet.',
         openapi_extra={
@@ -73,16 +77,17 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
 def _add_list_owners(router: APIRouter, wiring: Wiring) -> None:
     list_owners_handler = wiring.handlers['list_owners']
 
-    def list_owners() -> Response:
-        return respond(list_owners_handler(), contract.ListOwners.RESPONSES)
+    def list_owners() -> object:
+        return dispatch(list_owners_handler(), contract.ListOwners.RESPONSES)
 
     router.add_api_route(
         '/owners',
         list_owners,
         methods=['GET'],
         status_code=200,
-        response_model=None,
-        response_class=Response,
+        response_model=variants_request_response_dataclass_models.FieldOwnersGetResponse,
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
         operation_id='listOwners',
         response_description='The owners.',
         openapi_extra={

@@ -3,13 +3,17 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 
 
 class FieldFormsPostRequest(BaseModel):
     name: str
     count: int | None = 1
     tags: list[str] | None = None
+
+
+class FieldNotesPostRequest(RootModel[dict[str, str]]):
+    root: dict[str, str]
 
 
 class FieldUploadsPostRequest(BaseModel):

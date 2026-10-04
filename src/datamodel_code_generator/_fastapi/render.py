@@ -16,14 +16,14 @@ from datamodel_code_generator._fastapi._compiled_templates import application as
 from datamodel_code_generator._fastapi._compiled_templates import readme as readme_template
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
-from datamodel_code_generator._fastapi.plan import BODYLESS_STATUSES, Default, fact
+from datamodel_code_generator._fastapi.plan import BODYLESS_STATUSES, CONSTRAINED, Default, fact, symbol_imports
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, MARKER, tags
 from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, invalid
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
-from datamodel_code_generator._runtime.model_codecs.unset import Unset
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
+from datamodel_code_generator._target_contract import ConstructorType, LiteralScalar, LiteralSequence
 from datamodel_code_generator._target_render import field_plan, parameter_plan, runtime_sources
 
 if TYPE_CHECKING:
@@ -40,9 +40,9 @@ if TYPE_CHECKING:
         MediaSpec,
         NativeField,
         OperationSpec,
+        ParameterSpec,
         Requirement,
         ResponseSpec,
-        Scalar,
         SchemeKind,
         SchemeSpec,
         ServerPlan,
@@ -52,15 +52,22 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
-    from datamodel_code_generator._target_contract import FinalPythonType, GeneratedTypeContractBatch, TypeUseId
+    from datamodel_code_generator._target_contract import (
+        FinalPythonType,
+        GeneratedEnumMember,
+        GeneratedTypeContractBatch,
+        TypeArgument,
+        TypeUseId,
+    )
 
 WIDTH: Final = 88
 _MIN_CONTENT_STATUS: Final = 200
-_SCALARS: Final = {"str": "str", "int": "int", "float": "float", "bool": "bool"}
-_IMPORTED: Final = {
-    "date": ("datetime", "date"),
-    "aware_datetime": ("pydantic", "AwareDatetime"),
-    "uuid": ("uuid", "UUID"),
+_BASES: Final = {
+    "conbytes": (None, "bytes"),
+    "condecimal": ("decimal", "Decimal"),
+    "confloat": (None, "float"),
+    "conint": (None, "int"),
+    "constr": (None, "str"),
 }
 _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _PUBLIC: Final = {
@@ -107,6 +114,37 @@ def _items(values: Iterable[Doc]) -> tuple[tuple[str, Doc], ...]:
     return tuple(("", value) for value in values)
 
 
+class _Annotations(TypeSource):
+    """Spell final types as runtime annotations that type checkers also read.
+
+    A constrained scalar such as `conint(ge=1)` becomes `Annotated[int, Field(ge=1)]`, which validates the same.
+    """
+
+    __slots__ = ()
+
+    def parts(self, value: FinalPythonType) -> tuple[str, tuple[str, ...]]:
+        """Return a type's runtime base and the Annotated metadata that constrains a constrained scalar."""
+        if (
+            not isinstance(value, ConstructorType)
+            or ((imported := value.callable.import_).from_, imported.import_) not in CONSTRAINED
+        ):
+            return self.runtime(value), ()
+        module, name = _BASES[imported.import_]
+        base = name if module is None else self._namespace.name(module, name)
+        metadata = self._namespace.name("pydantic", "StringConstraints" if name == "str" else "Field")
+        return base, (f"{metadata}({self._keywords(value.keywords)})",)
+
+    def literal(self, value: LiteralScalar) -> str:
+        """Return the Python literal of a scalar value."""
+        return self._spell(value, static=False)
+
+    def _spell(self, value: FinalPythonType | TypeArgument | GeneratedEnumMember, *, static: bool) -> str:
+        if static or not isinstance(value, ConstructorType):
+            return super()._spell(value, static=static)
+        base, metadata = self.parts(value)
+        return f"{self._namespace.name('typing', 'Annotated')}[{base}, {', '.join(metadata)}]" if metadata else base
+
+
 class Module:
     """One generated module: collision-free import aliases, type spellings, and runtime imports at its depth."""
 
@@ -115,7 +153,7 @@ class Module:
     ) -> None:
         """Reserve the names the module defines, and remember its depth and whether it imports public modules only."""
         self.namespace = Namespace(reserved)
-        self.types = TypeSource(self.namespace, symbols)
+        self.types = _Annotations(self.namespace, symbols)
         self.level = level
         self.public = public
 
@@ -134,6 +172,16 @@ class Module:
     def static(self, value: FinalPythonType) -> str:
         """Return the static spelling of a final type."""
         return self.types.static(value)
+
+    def annotation(self, value: FinalPythonType, *metadata: str) -> str:
+        """Return the spelling FastAPI validates with: the model's runtime type, readable by type checkers.
+
+        Extra metadata, such as a FastAPI parameter declaration, joins the type's own Annotated metadata.
+        """
+        base, own = self.types.parts(value)
+        if not (items := (*own, *metadata)):
+            return base
+        return f"{self.name('typing', 'Annotated')}[{base}, {', '.join(items)}]"
 
     def imports(self) -> str:
         """Return the module's import statements."""
@@ -172,7 +220,7 @@ class ServerRenderer:  # noqa: PLR0904
         self.batch = batch
         self.wire = wire
         self.codecs = codecs
-        self.symbols = dict(codecs.imports)
+        self.symbols = symbol_imports(batch)
         self.use_bindings: dict[TypeUseId, UseBinding] = dict(codecs.bindings)
         self.services = {group.key: group.stem for group in plan.groups}
 
@@ -323,7 +371,7 @@ class ServerRenderer:  # noqa: PLR0904
             arguments=", ".join((*arguments, *(("authorizer=authorize",) if plan.schemes else ()))),
             schemes=[{"name": scheme.name, "credential": _credential(scheme)} for scheme in plan.schemes],
             basic=any(scheme.kind == "basic" for scheme in plan.schemes),
-            forms=any(spec.body is not None and spec.body.fields for spec in plan.operations),
+            forms=any(spec.body is not None and spec.body.form for spec in plan.operations),
             raw_request=any(
                 spec.body is not None and spec.body.decision.transport == "raw_request" for spec in plan.operations
             ),
@@ -506,12 +554,11 @@ class ServerRenderer:  # noqa: PLR0904
         annotated = module.name("typing", "Annotated")
         if body.decision.transport == "fastapi_native":
             media = body.media[0]
-            assert media.use is not None
-            assert media.use.type is not None
-            api = module.name("fastapi", "Body")
-            return (
-                f"{argument.name}: {annotated}[{module.static(media.use.type)}, {api}(media_type={media.media_type!r})]"
-            )
+            keywords = [f"media_type={media.media_type!r}"]
+            if not body.required:
+                keywords.append(f"default_factory={module.local('_runtime.server.requests', 'absent')}")
+            api = module.name("fastapi", "Form" if body.form else "Body")
+            return Group(f"{argument.name}: {annotated}[{_body(module, media)}, {api}(", _items(keywords), ")]")
         depends = module.name("fastapi", "Depends")
         kind = self.body_type(module, body)
         if len(body.media) > 1:
@@ -519,28 +566,22 @@ class ServerRenderer:  # noqa: PLR0904
         return f"{argument.name}: {annotated}[{kind}, {depends}({plan}.BODY)]"
 
     def body_type(self, module: Module, body: BodySpec) -> str:
-        """Return the type the handler receives for an adapter body, with UNSET for an optional one."""
+        """Return the type the handler receives for a body, with UNSET for an optional one."""
         kinds = dict.fromkeys(self.media_type(module, media, sent=False) for media in body.media)
         if not body.required:
             kinds[module.local("_runtime.model_codecs.unset", "Unset")] = None
         return " | ".join(kinds)
 
     def media_type(self, module: Module, media: MediaSpec, *, sent: bool) -> str:
-        """Return one media's payload type: the codec's type, its envelope, or the media surface."""
+        """Return one media's payload type: the model's type, its envelope, or the media surface."""
         use = media.use
         if media.kind == "binary" or use is None or use.type is None:
-            return (
-                module.local("_runtime.model_codecs.wire", "WireValue")
-                if media.kind == "json"
-                else "str"
-                if media.kind == "text"
-                else "bytes"
-            )
+            return module.name("typing", "Any") if media.kind == "json" else "str" if media.kind == "text" else "bytes"
         static = module.static(use.type)
+        if not sent:
+            return static
         binding = self.use_bindings.get(use.id)
         envelope = binding is not None and binding.projection_mode == "envelope"
-        if not sent:
-            return f"{module.local('_runtime.model_codecs.values', 'DecodedValue')}[{static}]" if envelope else static
         values = [static, f"{module.local('_runtime.model_codecs.values', 'ModelValue')}[{static}]"]
         if envelope:
             values.append(f"{module.local('_runtime.model_codecs.values', 'ModelInput')}[{static}]")
@@ -592,28 +633,21 @@ class ServerRenderer:  # noqa: PLR0904
         """Return the keyword-only parameters of one operation's method, typed as the endpoint passes them."""
         return [f"{argument.name}: {self.surface(module, spec, argument, principal)}" for argument in spec.arguments]
 
-    def surface(self, module: Module, spec: OperationSpec, argument: Argument, principal: str) -> str:  # noqa: PLR0911
+    def surface(self, module: Module, spec: OperationSpec, argument: Argument, principal: str) -> str:
         """Return the type a method receives for one argument."""
         match argument.kind:
             case "request":
                 return module.name("fastapi", "Request")
             case "principal":
                 return f"{principal} | None" if spec.security is not None and spec.security.anonymous else principal
-            case "native" if argument.native is not None:
-                return _surface(module, argument.native)
-            case "adapter":
-                return self.parameter_type(module, argument)
+            case "native" | "adapter" if argument.parameter is not None:
+                return _parameter_type(module, argument.parameter)
             case "media_type":
                 return "str | None"
             case _:
                 pass
         body = spec.body
         assert body is not None
-        if body.decision.transport == "fastapi_native":
-            use = body.media[0].use
-            assert use is not None
-            assert use.type is not None
-            return module.static(use.type)
         return self.body_type(module, body)
 
     def returns(self, module: Module, spec: OperationSpec) -> Chain:
@@ -725,13 +759,13 @@ class ServerRenderer:  # noqa: PLR0904
                 "    class Parameters:",
                 f'        """The adapter parameters of {spec.python_name}."""',
                 "",
-                *(f"        {argument.name}: {self.parameter_type(module, argument)}" for argument in adapters),
+                *(f"        {argument.name}: {_parameter_type(module, argument.parameter)}" for argument in adapters),
                 "",
             ))
-            adapter = self.parameter_adapter(module, spec, adapters)
+            adapter = _parameter_adapter(module, spec, adapters)
             lines.append(f"    PARAMETERS: {final} = {layout(adapter, 4, len('PARAMETERS: Final = '), WIDTH)}")
         if spec.body is not None and spec.body.decision.transport == "codec_adapter":
-            body = self.body_adapter(module, spec.body)
+            body = _body_adapter(module, spec.body)
             lines.append(f"    BODY: {final} = {layout(body, 4, len('BODY: Final = '), WIDTH)}")
         responses = self.responses_plan(module, spec)
         lines.append(f"    RESPONSES: {final} = {layout(responses, 4, len('RESPONSES: Final = '), WIDTH)}")
@@ -755,90 +789,6 @@ class ServerRenderer:  # noqa: PLR0904
             )
             items.append(("security=", plan))
         return Group(f"{module.local('_runtime.server.application', 'OperationPlan')}(", tuple(items), ")")
-
-    def parameter_type(self, module: Module, argument: Argument) -> str:
-        """Return the handler type of one adapter parameter: its codec's type, or the media surface without a schema."""
-        parameter = argument.parameter
-        assert parameter is not None
-        assert parameter.plan is not None
-        if (use := parameter.use) is None:
-            json = media_kind(parameter.plan.content_media_type or "") == "json"
-            static = module.local("_runtime.model_codecs.wire", "WireValue") if json else "str"
-        else:
-            assert use.type is not None
-            static = module.static(use.type)
-            if self.envelope(use.id):
-                static = f"{module.local('_runtime.model_codecs.values', 'DecodedValue')}[{static}]"
-        if parameter.required or not isinstance(parameter.default, Unset):
-            return static
-        return f"{static} | {module.local('_runtime.model_codecs.unset', 'Unset')}"
-
-    def parameter_adapter(self, module: Module, spec: OperationSpec, adapters: list[Argument]) -> Group:
-        """Return the ParameterAdapter constructor of an operation's adapter parameters."""
-        arguments: list[Doc] = []
-        names: set[str] = set()
-        for argument in adapters:
-            parameter = argument.parameter
-            assert parameter is not None
-            assert parameter.plan is not None
-            entries: list[tuple[str, Doc]] = [
-                ("name=", repr(argument.name)),
-                ("plan=", parameter_plan(module.local, parameter.plan)),
-            ]
-            if (use := parameter.use) is not None:
-                entries.append(("codec=", self.codec(module, use.id)))
-                if self.envelope(use.id):
-                    entries.append(("envelope=", "True"))
-                names.update(self.property_names(use.id))
-            if not isinstance(parameter.default, Unset):
-                entries.append((
-                    "default=",
-                    f"{module.local('_runtime.model_codecs.wire', 'freeze_wire')}({_python(parameter.default)})",
-                ))
-            arguments.append(
-                Group(f"{module.local('_runtime.server.requests', 'ParameterArgument')}(", tuple(entries), ")")
-            )
-        items: list[tuple[str, Doc]] = [
-            ("arguments=", Group("(", _items(arguments), ")", ",")),
-            ("record=", "Parameters"),
-        ]
-        if path := _raw_path(module, spec, adapters):
-            items.append(("path=", path))
-        if names:
-            items.append(("names=", _frozenset(names)))
-        return Group(f"{module.local('_runtime.server.requests', 'ParameterAdapter')}(", tuple(items), ")")
-
-    def property_names(self, use: TypeUseId) -> set[str]:
-        """Return the declared property names a use's codec knows, which error locations may show."""
-        binding = self.use_bindings.get(use)
-        return set() if binding is None else {field.wire_name for model in binding.models for field in model.fields}
-
-    def body_adapter(self, module: Module, body: BodySpec) -> Group:
-        """Return the BodyAdapter constructor of an adapter body."""
-        media: list[Doc] = []
-        names: set[str] = set()
-        for item in body.media:
-            entries: list[tuple[str, Doc]] = [
-                ("media_type=", repr(item.media_type)),
-                ("kind=", repr(_request_kind(item))),
-            ]
-            if item.kind != "binary" and item.use is not None and item.use.id in self.accessors:
-                entries.append(("codec=", self.codec(module, item.use.id)))
-                if self.envelope(item.use.id):
-                    entries.append(("envelope=", "True"))
-                names.update(self.property_names(item.use.id))
-            if item.kind == "form":
-                fields = Group("(", _items(field_plan(module.local, plan) for plan in body.form_fields), ")", ",")
-                entries.append(("fields=", fields))
-                if body.form_additional is not None:
-                    entries.append(("additional=", field_plan(module.local, body.form_additional)))
-            media.append(Group(f"{module.local('_runtime.server.requests', 'BodyMedia')}(", tuple(entries), ")"))
-        items: list[tuple[str, Doc]] = [("media=", Group("(", _items(media), ")", ","))]
-        if not body.required:
-            items.append(("required=", "False"))
-        if names:
-            items.append(("names=", _frozenset(names)))
-        return Group(f"{module.local('_runtime.server.requests', 'BodyAdapter')}(", tuple(items), ")")
 
     def responses_plan(self, module: Module, spec: OperationSpec) -> Group:
         """Return the OperationResponses constructor of one operation."""
@@ -995,13 +945,6 @@ def _credential(scheme: SchemeSpec) -> str:
 
 
 def _native(module: Module, name: str, field: NativeField) -> Doc:
-    annotated = module.name("typing", "Annotated")
-    if field.scalar is None:
-        upload = module.name("fastapi", "UploadFile")
-        surface = f"list[{upload}]" if field.array else upload
-    else:
-        surface = _scalar(module, field.scalar, field.items)
-        surface = f"list[{surface}]" if field.array else surface
     keywords = [f"alias={field.alias!r}"]
     if field.api == "Header":
         keywords.append("convert_underscores=False")
@@ -1009,13 +952,92 @@ def _native(module: Module, name: str, field: NativeField) -> Doc:
     default = ""
     if field.default is Default.ABSENT:
         keywords.append(f"default_factory={module.local('_runtime.server.requests', 'absent')}")
-    elif field.default is not Default.REQUIRED and field.array:
-        value = _python(field.default)
-        keywords.extend((f"default_factory=lambda: {value}", f"json_schema_extra={{'default': {value}}}"))
-    elif field.default is not Default.REQUIRED:
-        default = f" = {_python(field.default)}"
-    api = module.name("fastapi", field.api)
-    return Group(f"{name}: {annotated}[{surface}, {api}(", _items(keywords), f")]{default}")
+    elif not isinstance(field.default, Default):
+        default = f" = {_default(module, field.default)}"
+    base, metadata = module.types.parts(field.type)
+    head = ", ".join((base, *metadata, f"{module.name('fastapi', field.api)}("))
+    return Group(f"{name}: {module.name('typing', 'Annotated')}[{head}", _items(keywords), f")]{default}")
+
+
+def _body(module: Module, media: MediaSpec) -> str:
+    return (
+        module.name("typing", "Any")
+        if media.use is None or media.use.type is None
+        else module.annotation(media.use.type)
+    )
+
+
+def _adapter(module: Module, value: FinalPythonType) -> str:
+    return f"{module.name('pydantic', 'TypeAdapter')}({module.annotation(value)})"
+
+
+def _default(module: Module, value: LiteralScalar | LiteralSequence) -> str:
+    if isinstance(value, LiteralScalar):
+        return module.types.literal(value)
+    return f"[{', '.join(module.types.literal(item) for item in value.items if isinstance(item, LiteralScalar))}]"
+
+
+def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
+    """Return the type a method receives for a parameter: the model's type, or Any without one, with UNSET if absent."""
+    assert parameter is not None
+    if parameter.type is not None:
+        text = module.static(parameter.type)
+    elif parameter.plan is not None and media_kind(parameter.plan.content_media_type or "text/plain") == "text":
+        text = "str"
+    else:
+        text = module.name("typing", "Any")
+    if parameter.required or parameter.default is not Default.ABSENT:
+        return text
+    return f"{text} | {module.local('_runtime.model_codecs.unset', 'Unset')}"
+
+
+def _parameter_adapter(module: Module, spec: OperationSpec, adapters: list[Argument]) -> Group:
+    """Return the ParameterAdapter constructor of an operation's adapter parameters."""
+    arguments: list[Doc] = []
+    for argument in adapters:
+        parameter = argument.parameter
+        assert parameter is not None
+        assert parameter.plan is not None
+        entries: list[tuple[str, Doc]] = [
+            ("name=", repr(argument.name)),
+            ("plan=", parameter_plan(module.local, parameter.plan)),
+        ]
+        if parameter.type is not None:
+            entries.append(("adapter=", _adapter(module, parameter.type)))
+        if isinstance(parameter.default, (LiteralScalar, LiteralSequence)):
+            entries.append(("default=", _default(module, parameter.default)))
+        arguments.append(
+            Group(f"{module.local('_runtime.server.requests', 'ParameterArgument')}(", tuple(entries), ")")
+        )
+    items: list[tuple[str, Doc]] = [
+        ("arguments=", Group("(", _items(arguments), ")", ",")),
+        ("record=", "Parameters"),
+    ]
+    if path := _raw_path(module, spec, adapters):
+        items.append(("path=", path))
+    return Group(f"{module.local('_runtime.server.requests', 'ParameterAdapter')}(", tuple(items), ")")
+
+
+def _body_adapter(module: Module, body: BodySpec) -> Group:
+    """Return the BodyAdapter constructor of an adapter body."""
+    media: list[Doc] = []
+    for item in body.media:
+        entries: list[tuple[str, Doc]] = [
+            ("media_type=", repr(item.media_type)),
+            ("kind=", repr(_request_kind(item))),
+        ]
+        if item.kind != "binary" and item.use is not None and item.use.type is not None:
+            entries.append(("adapter=", _adapter(module, item.use.type)))
+        if item.kind in {"form", "multipart"} and (fields := body.form_fields):
+            entries.append((
+                "fields=",
+                Group("(", _items(field_plan(module.local, plan) for plan in fields), ")", ","),
+            ))
+        media.append(Group(f"{module.local('_runtime.server.requests', 'BodyMedia')}(", tuple(entries), ")"))
+    items: list[tuple[str, Doc]] = [("media=", Group("(", _items(media), ")", ","))]
+    if not body.required:
+        items.append(("required=", "False"))
+    return Group(f"{module.local('_runtime.server.requests', 'BodyAdapter')}(", tuple(items), ")")
 
 
 def _registration(module: Module, spec: OperationSpec, package: str) -> Group:
@@ -1075,22 +1097,15 @@ def _value(module: Module, spec: OperationSpec, argument: Argument, record: str)
         return "body[0]"
     if argument.kind == "body" and spec.body is not None and len(spec.body.media) > 1:
         return "body[1]"
-    if argument.native is not None and argument.native.default is Default.ABSENT:
-        return f"{module.local('_runtime.server.requests', 'present')}({argument.name})"
-    return argument.name
-
-
-def _scalar(module: Module, scalar: Scalar, constraints: tuple[tuple[str, object], ...]) -> str:
-    if scalar.kind == "literal":
-        text = f"{module.name('typing', 'Literal')}[{', '.join(repr(value) for value in scalar.values)}]"
-    elif (imported := _IMPORTED.get(scalar.kind)) is not None:
-        text = module.name(*imported)
-    else:
-        text = _SCALARS[scalar.kind]
-    if not constraints:
-        return text
-    keywords = ", ".join(f"{key}={_python(value)}" for key, value in constraints)
-    return f"{module.name('typing', 'Annotated')}[{text}, {module.name('pydantic', 'Field')}({keywords})]"
+    native = argument.native
+    body = spec.body
+    absent = (native is not None and native.default is Default.ABSENT) or (
+        argument.kind == "body"
+        and body is not None
+        and body.decision.transport == "fastapi_native"
+        and not body.required
+    )
+    return f"{module.local('_runtime.server.requests', 'present')}({argument.name})" if absent else argument.name
 
 
 def _raw_path(module: Module, spec: OperationSpec, adapters: list[Argument]) -> Group | None:
@@ -1187,18 +1202,6 @@ def _content_status(status: int) -> bool:
     return status >= _MIN_CONTENT_STATUS and status not in BODYLESS_STATUSES
 
 
-def _surface(module: Module, field: NativeField) -> str:
-    if field.scalar is None:
-        upload = module.name("fastapi", "UploadFile")
-        text = f"list[{upload}]" if field.array else upload
-    else:
-        scalar = _scalar(module, field.scalar, ())
-        text = f"list[{scalar}]" if field.array else scalar
-    if field.default is Default.ABSENT:
-        return f"{text} | {module.local('_runtime.model_codecs.unset', 'Unset')}"
-    return text
-
-
 def _dependency_sequence(module: Module) -> str:
     return f"{module.name('collections.abc', 'Sequence')}[{module.local('_runtime.server.application', 'Dependency')}]"
 
@@ -1233,7 +1236,7 @@ def _frozenset(names: set[str]) -> str:
 
 
 def _request_kind(media: MediaSpec) -> str:
-    return media.kind if media.kind in {"json", "text", "form"} else "binary"
+    return media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"
 
 
 def _response_kind(media: MediaSpec) -> str:

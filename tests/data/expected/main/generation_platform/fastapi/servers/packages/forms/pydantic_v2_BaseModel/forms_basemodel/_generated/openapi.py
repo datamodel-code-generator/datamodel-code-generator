@@ -32,14 +32,145 @@ _BUNDLE = r"""{
    }
   },
   {
+   "key": "/paths/~1notes/post",
+   "method": "post",
+   "route_path": "/notes",
+   "slots": [],
+   "fragment": {
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "type": "object",
+        "additionalProperties": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Done."
+     },
+     "400": {
+      "description": "Invalid request",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__2830a3e5adaa"
+        },
+        "example": {
+         "detail": "Invalid request"
+        }
+       }
+      }
+     },
+     "415": {
+      "description": "Unsupported media type",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__2830a3e5adaa"
+        },
+        "example": {
+         "detail": "Unsupported media type"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_validation_error__2830a3e5adaa"
+        }
+       }
+      }
+     },
+     "500": {
+      "description": "Internal Server Error",
+      "content": {
+       "text/plain": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_server_error__2830a3e5adaa"
+        }
+       }
+      }
+     }
+    },
+    "security": []
+   }
+  },
+  {
    "key": "/paths/~1uploads/post",
    "method": "post",
    "route_path": "/uploads",
    "slots": [],
    "fragment": {
+    "requestBody": {
+     "required": true,
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "file"
+        ],
+        "properties": {
+         "file": {
+          "type": "string",
+          "format": "binary"
+         },
+         "note": {
+          "type": "string"
+         }
+        }
+       }
+      }
+     }
+    },
     "responses": {
      "204": {
       "description": "Done."
+     },
+     "400": {
+      "description": "Invalid request",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__2830a3e5adaa"
+        },
+        "example": {
+         "detail": "Invalid request"
+        }
+       }
+      }
+     },
+     "415": {
+      "description": "Unsupported media type",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__2830a3e5adaa"
+        },
+        "example": {
+         "detail": "Unsupported media type"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_validation_error__2830a3e5adaa"
+        }
+       }
+      }
      },
      "500": {
       "description": "Internal Server Error",
@@ -61,9 +192,70 @@ _BUNDLE = r"""{
    "route_path": "/batches",
    "slots": [],
    "fragment": {
+    "requestBody": {
+     "required": true,
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "files"
+        ],
+        "properties": {
+         "files": {
+          "type": "array",
+          "items": {
+           "type": "string",
+           "format": "binary"
+          }
+         },
+         "label": {
+          "type": "string"
+         }
+        }
+       }
+      }
+     }
+    },
     "responses": {
      "204": {
       "description": "Done."
+     },
+     "400": {
+      "description": "Invalid request",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__2830a3e5adaa"
+        },
+        "example": {
+         "detail": "Invalid request"
+        }
+       }
+      }
+     },
+     "415": {
+      "description": "Unsupported media type",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__2830a3e5adaa"
+        },
+        "example": {
+         "detail": "Unsupported media type"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_validation_error__2830a3e5adaa"
+        }
+       }
+      }
      },
      "500": {
       "description": "Internal Server Error",
@@ -84,6 +276,55 @@ _BUNDLE = r"""{
   "schemas": {
    "dcg_server_error__2830a3e5adaa": {
     "type": "string"
+   },
+   "dcg_http_error__2830a3e5adaa": {
+    "type": "object",
+    "properties": {
+     "detail": {}
+    },
+    "required": [
+     "detail"
+    ]
+   },
+   "dcg_validation_error__2830a3e5adaa": {
+    "type": "object",
+    "properties": {
+     "detail": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "loc": {
+         "type": "array",
+         "items": {
+          "anyOf": [
+           {
+            "type": "string"
+           },
+           {
+            "type": "integer"
+           }
+          ]
+         }
+        },
+        "msg": {
+         "type": "string"
+        },
+        "type": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "loc",
+        "msg",
+        "type"
+       ]
+      }
+     }
+    },
+    "required": [
+     "detail"
+    ]
    }
   }
  }
@@ -94,6 +335,7 @@ PLAN: Final = OpenAPIPackagePlan(
     repeated=False,
     operation_keys=(
         '/paths/~1forms/post',
+        '/paths/~1notes/post',
         '/paths/~1uploads/post',
         '/paths/~1batches/post',
     ),

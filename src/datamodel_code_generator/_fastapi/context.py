@@ -16,9 +16,9 @@ if TYPE_CHECKING:
 CONTEXT_VERSION: Final = 1
 
 FrozenJSONMap: TypeAlias = "Mapping[str, WireValue]"
-RenderKind: TypeAlias = NativeKind | Literal["surface", "request", "principal", "upload", "media_type", "result"]
+RenderKind: TypeAlias = NativeKind | Literal["surface", "request", "principal", "media_type", "result"]
 ArgumentLocation: TypeAlias = Literal[
-    "path", "query", "querystring", "header", "cookie", "form", "file", "body", "request", "principal", "media_type"
+    "path", "query", "querystring", "header", "cookie", "body", "request", "principal", "media_type"
 ]
 
 
@@ -71,9 +71,9 @@ class FastAPIProjectionView:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class NativeDeclarationView:
-    """A native FastAPI declaration: its API, alias, requiredness, default kind, and projected FieldInfo keywords."""
+    """A native FastAPI parameter: its API, alias, requiredness, default kind, and documentation keywords."""
 
-    api: Literal["Path", "Query", "Header", "Body", "Form", "File"]
+    api: Literal["Path", "Query", "Header", "Cookie"]
     alias: str | None
     required: bool
     default_kind: Literal["required", "literal", "factory"]
@@ -96,8 +96,6 @@ class ArgumentView:
     source_pointer: str | None
     is_request: bool
     is_principal: bool
-    is_file: bool
-    parameter_codec_id: str | None
     bound_type: RenderType | None
     projection: FastAPIProjectionView | None
     native_declaration: NativeDeclarationView | None

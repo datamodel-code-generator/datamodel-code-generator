@@ -18,15 +18,11 @@ render pydantic_v2.BaseModel
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/model_codecs/__init__.py (copied runtime)
   write server/_runtime/model_codecs/bindings.py (copied runtime)
-  write server/_runtime/model_codecs/codec.py (copied runtime)
   write server/_runtime/model_codecs/context.py (copied runtime)
   write server/_runtime/model_codecs/errors.py (copied runtime)
   write server/_runtime/model_codecs/media.py (copied runtime)
   write server/_runtime/model_codecs/outbound.py (copied runtime)
   write server/_runtime/model_codecs/parameters.py (copied runtime)
-  write server/_runtime/model_codecs/patterns.py (copied runtime)
-  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
-  write server/_runtime/model_codecs/schema.py (copied runtime)
   write server/_runtime/model_codecs/unset.py (copied runtime)
   write server/_runtime/model_codecs/values.py (copied runtime)
   write server/_runtime/model_codecs/wire.py (copied runtime)
@@ -43,18 +39,6 @@ render pydantic_v2.BaseModel
   write server/.dcg-target-manifest.json
   layout routers
   get_values: GET /values -> /values [untagged] status 204 primary 204 None body typed handler sync
-    parameter /paths/~1values/get/parameters/0: fastapi_native native_supported
-    parameter /paths/~1values/get/parameters/1: fastapi_native native_supported
-    parameter /paths/~1values/get/parameters/2: fastapi_native native_supported
-    parameter /paths/~1values/get/parameters/3: codec_adapter source_assertion_not_projected at /paths/~1values/get/parameters/3/schema
-    parameter /paths/~1values/get/parameters/4: codec_adapter native_shape_mismatch at /paths/~1values/get/parameters/4/schema
-    parameter /paths/~1values/get/parameters/5: codec_adapter native_shape_mismatch at /paths/~1values/get/parameters/5/schema
-    parameter /paths/~1values/get/parameters/6: codec_adapter source_assertion_not_projected at /paths/~1values/get/parameters/6/schema
-    parameter /paths/~1values/get/parameters/7: codec_adapter opaque_native_semantics at /paths/~1values/get/parameters/7/schema
-    parameter /paths/~1values/get/parameters/8: codec_adapter opaque_native_semantics at /paths/~1values/get/parameters/8/schema
-    parameter -: codec_adapter unsupported_wire_shape
-    parameter -: codec_adapter unsupported_wire_shape
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1values/get/responses/204
   group untagged -> untagged (1)
   file server/README.md
     | # Types
@@ -115,11 +99,12 @@ render pydantic_v2.BaseModel
     | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
     | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     |
     | ## Regenerating
     |

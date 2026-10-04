@@ -36,7 +36,7 @@ Layout: TypeAlias = Literal["routers", "single"]
 HandlerMode: TypeAlias = Literal["sync", "async"]
 BodyMode: TypeAlias = Literal["typed", "request"]
 
-_PARAMETER_LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie", "form", "file"})
+_PARAMETER_LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie"})
 _LAYOUTS: Final = frozenset({"routers", "single"})
 _HANDLER_MODES: Final = frozenset({"sync", "async"})
 _BODY_MODES: Final = frozenset({"typed", "request"})

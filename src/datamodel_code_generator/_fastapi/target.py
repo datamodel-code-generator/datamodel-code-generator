@@ -218,11 +218,6 @@ def _excluded(plan: ServerPlan, request: TargetRequest) -> tuple[Diagnostic, ...
 def _codec_uses(plan: ServerPlan) -> frozenset[TypeUseId]:
     uses: set[TypeUseId] = set()
     for spec in plan.operations:
-        uses.update(
-            parameter.use.id for parameter in spec.parameters if parameter.native is None and parameter.use is not None
-        )
-        if spec.body is not None and spec.body.decision.transport == "codec_adapter":
-            uses.update(media.use.id for media in spec.body.media if media.use is not None and media.kind != "binary")
         for response in spec.responses:
             uses.update(media.use.id for media in response.media if media.use is not None and media.kind != "binary")
             uses.update(
@@ -244,7 +239,11 @@ def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
 
 
 def _dependencies(plan: ServerPlan, wire: WirePlan, models: tuple[ModelArtifact, ...]) -> tuple[str, ...]:
-    forms = any(spec.body is not None and spec.body.fields for spec in plan.operations)
+    forms = any(
+        (body := spec.body) is not None
+        and (body.form or (body.decision.transport == "codec_adapter" and body.media[0].kind == "multipart"))
+        for spec in plan.operations
+    )
     return (
         *DEPENDENCIES,
         *((FORMS,) if forms else ()),
@@ -420,7 +419,6 @@ class _TargetData:
             "signature_sha256": self.renderer.signature_digest(spec),
             "codec_sha256": self.fingerprints.codec(uses, self.use_bindings, self.type_uses, self.wire),
             "docs_sha256": self.docs_digest(spec.key),
-            "projections": projections,
             "path_slots": [
                 {"wire_name": slot.wire_name, "slot": slot.slot, "occurrence": slot.occurrence}
                 for slot in spec.route.slots
