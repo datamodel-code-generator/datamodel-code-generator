@@ -1,19 +1,12 @@
 # compression pydantic_v2.BaseModel
 # values
   client gzip = 'gzip'
-  call gzip = 'gzip'
   client upper = 'gzip'
-  call upper = 'gzip'
   client none = None
-  call none = None
   client brotli ! ConfigurationError: ConfigurationError(field_path='compression', condition='invalid_value') [field_path=('compression',), condition='invalid_value'] configuration_error
-  call brotli ! ConfigurationError: ConfigurationError(field_path='compression', condition='invalid_value') [field_path=('compression',), condition='invalid_value'] configuration_error
   client identity ! ConfigurationError: ConfigurationError(field_path='compression', condition='invalid_value') [field_path=('compression',), condition='invalid_value'] configuration_error
-  call identity ! ConfigurationError: ConfigurationError(field_path='compression', condition='invalid_value') [field_path=('compression',), condition='invalid_value'] configuration_error
   client not a token ! ConfigurationError: ConfigurationError(field_path='compression', condition='invalid_value') [field_path=('compression',), condition='invalid_value'] configuration_error
-  call not a token ! ConfigurationError: ConfigurationError(field_path='compression', condition='invalid_value') [field_path=('compression',), condition='invalid_value'] configuration_error
   client type ! ConfigurationError: ConfigurationError(field_path='compression', condition='invalid_type') [field_path=('compression',), condition='invalid_type'] configuration_error
-  call type ! ConfigurationError: ConfigurationError(field_path='compression', condition='invalid_type') [field_path=('compression',), condition='invalid_type'] configuration_error
 # inherited
   > POST https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"name":"compressed"}'
@@ -52,9 +45,6 @@
   > POST https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"name":"n"}'
   raw view = 201
-  > POST https://api.example.com/items
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"name":"n"}'
-  call off = Item(name='n')
   header conflict ! ConfigurationError: ConfigurationError(operation_id='putBlob', call_id='<call>', field_path='headers.Content-Encoding', condition='managed') [operation_id='putBlob', field_path=('headers', 'Content-Encoding'), condition='managed'] configuration_error
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: br, content-type: application/json, content-length: 12] b'{"name":"n"}'
@@ -70,6 +60,9 @@
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>] gzip again b'keptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkept'
   redirect keeps the body = None
   client header conflict ! ConfigurationError: ConfigurationError(operation_id='createItem', call_id='<call>', field_path='headers.Content-Encoding', condition='managed') [operation_id='createItem', field_path=('headers', 'Content-Encoding'), condition='managed'] configuration_error
+  > PUT https://api.example.com/blobs
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 8] b'disabled'
+  client disabled = None
 # signed
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>, x-signed: yes] gzip b'signed'
@@ -94,21 +87,6 @@
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip again b'framed'
     streamed length absent True chunked=True
   async typed file length = None
-# explicit
-  > POST https://api.example.com/items
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"name":"n"}'
-  call declared = Item(name='n')
-  call undeclared ! ConfigurationError: ConfigurationError(operation_id='createNote', call_id='<call>', field_path='compression', condition='not_applicable') [operation_id='createNote', field_path=('compression',), condition='not_applicable'] configuration_error
-  call bodyless ! ConfigurationError: ConfigurationError(operation_id='listItems', call_id='<call>', field_path='compression', condition='not_applicable') [operation_id='listItems', field_path=('compression',), condition='not_applicable'] configuration_error
-  call without body ! ConfigurationError: ConfigurationError(operation_id='createItem', call_id='<call>', field_path='compression', condition='not_applicable') [operation_id='createItem', field_path=('compression',), condition='not_applicable'] configuration_error
-  call raw request ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='compression', condition='not_applicable') [field_path=('compression',), condition='not_applicable'] configuration_error
-  call raw view ! ConfigurationError: ConfigurationError(operation_id='createNote', call_id='<call>', field_path='compression', condition='not_applicable') [operation_id='createNote', field_path=('compression',), condition='not_applicable'] configuration_error
-  > POST https://api.example.com/notes
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 12] b'{"name":"n"}'
-  view undeclared = None
-  > POST https://api.example.com/items
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"name":"n"}'
-  view declared = Item(name='n')
 # helpers
   > POST https://api.example.com/search
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"text":"q"}'
@@ -120,23 +98,19 @@
   > GET https://api.example.com/feed?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   followed pages ['a', 'b']
-  bodyless pages ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
-  no items ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  > GET https://api.example.com/items
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  bodyless pages = (Item(name='a'),)
   > POST https://api.example.com/search
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"q"}'
-  after the last page ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
-  > POST https://api.example.com/search
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"q"}'
-  zero next page ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
-  > POST https://api.example.com/search
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"q"}'
-  zero resume ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
   > POST https://api.example.com/search?cursor=c2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
   next page = (Item(name='b'),)
   > POST https://api.example.com/feed
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"q"}'
-  next followed page ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
+  > GET https://api.example.com/feed?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  next followed page = (Item(name='b'),)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
   > GET https://api.example.com/jobs/j1
@@ -147,36 +121,43 @@
   > POST https://api.example.com/checks/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"id":"c1"}'
   check = Outcome(value='ok')
-  completed check resume ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  > POST https://api.example.com/checks/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"id":"c1"}'
   completed check inherited resume = Outcome(value='ok')
   > POST https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"text":"q"}'
   events [Message(text='a')]
-  > GET https://api.example.com/items
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  inherited bodyless pages = (Item(name='a'),)
+  > POST https://api.example.com/search
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"q"}'
+  disabled helper body = (Item(name='a'),)
 # stream_resume
   > POST https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
   resumable first text='a'
   > POST https://api.example.com/events?cursor=c1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
-  own compressed resume text='a'
+  resumable resume text='a'
   > POST https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
   tail first text='a'
-  bodyless reopen compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
   > GET https://api.example.com/events?cursor=c1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
-  tail plain resume text='a'
-  disabled reconnect compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
-  zero reconnect compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  tail resume text='a'
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   bodyless open text='a'
   > POST https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"text":"a"}'
   cursor body resume text='a'
+# native
+  native sync default = None
+    arrivals=1 method=b'PUT' path=b'/blobs' encoding=b'gzip' length=b'40' bytes=40 sha256=ad0d2624cc9bb9509e8990f8ac009233b9ac8592d083b72b7b0faff722df9402 mtime=0
+  native sync disabled = None
+    arrivals=1 method=b'PUT' path=b'/blobs' encoding=None length=b'20' bytes=20 sha256=ad0d2624cc9bb9509e8990f8ac009233b9ac8592d083b72b7b0faff722df9402 mtime=None
+  native async default = None
+    arrivals=1 method=b'PUT' path=b'/blobs' encoding=b'gzip' length=b'40' bytes=40 sha256=ad0d2624cc9bb9509e8990f8ac009233b9ac8592d083b72b7b0faff722df9402 mtime=0
+  native async disabled = None
+    arrivals=1 method=b'PUT' path=b'/blobs' encoding=None length=b'20' bytes=20 sha256=ad0d2624cc9bb9509e8990f8ac009233b9ac8592d083b72b7b0faff722df9402 mtime=None
 # async
   > POST https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"name":"n"}'
@@ -192,37 +173,38 @@
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 12] b'{"name":"n"}'
   async undeclared = None
-  async call undeclared ! ConfigurationError: ConfigurationError(operation_id='createNote', call_id='<call>', field_path='compression', condition='not_applicable') [operation_id='createNote', field_path=('compression',), condition='not_applicable'] configuration_error
   > POST https://api.example.com/search
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"text":"q"}'
   > POST https://api.example.com/search?cursor=c2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
   async cursor pages ['a', 'b']
-  async bodyless pages ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
-  > POST https://api.example.com/search
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
-  async zero next ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
-  > POST https://api.example.com/search
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
-  async zero resume ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  > GET https://api.example.com/items
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async bodyless pages = (Item(name='a'),)
   > POST https://api.example.com/checks
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
   > POST https://api.example.com/checks/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"id":"c1"}'
   async check = Outcome(value='ok')
-  async completed check resume ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  > POST https://api.example.com/checks/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"id":"c1"}'
   async inherited completed check = Outcome(value='ok')
   async helper header conflict ! ConfigurationError: ConfigurationError(operation_id='createJob', call_id='<call>', field_path='headers.Content-Encoding', condition='managed') [operation_id='createJob', field_path=('headers', 'Content-Encoding'), condition='managed'] configuration_error
+  > PUT https://api.example.com/blobs
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 8] b'disabled'
+  async disabled = None
   > POST https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"text":"q"}'
   async resumable first text='a'
   > POST https://api.example.com/events?cursor=c1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
-  async own compressed resume text='a'
+  async resumable resume text='a'
   > POST https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
   async tail first text='a'
-  async bodyless reopen compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  > GET https://api.example.com/events?cursor=c1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  async tail resume text='a'
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   async bodyless open text='a'

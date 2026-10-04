@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import importlib
 import io
@@ -11,6 +12,7 @@ import httpx2
 
 from tests.data.python.client_pagination import adrained, drained
 from tests.data.python.client_runtime import Exchange, arecord, argument, json_response, raw_response, record, run
+from tests.data.python.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -28,27 +30,27 @@ class _Harness:
         self.protocols = importlib.import_module(f"{package.__name__}.protocols")
         self.models = importlib.import_module(f"{package.__name__}_models")
 
-    def settings(self, compression: object = None, **options: Any) -> Any:
+    def settings(self, *compression: object, **options: Any) -> Any:
         options.setdefault("retry", self.options.RetryOptions(max_retries=1, initial_delay=0))
-        return self.options.ClientOptions(compression=compression, **options)
+        return self.options.ClientOptions(**dict(zip(("compression",), compression, strict=False)), **options)
 
-    def client(self, compression: object = None, **options: Any) -> Any:
+    def client(self, *compression: object, **options: Any) -> Any:
         return self.package.Client(
             http_client=self.exchange.client(),
             http_client_ownership="owned",
-            options=self.settings(compression, **options),
+            options=self.settings(*compression, **options),
         )
 
-    def async_client(self, compression: object = None, **options: Any) -> Any:
+    def async_client(self, *compression: object, **options: Any) -> Any:
         return self.package.AsyncClient(
             http_client=self.exchange.async_client(),
             http_client_ownership="owned",
-            options=self.settings(compression, **options),
+            options=self.settings(*compression, **options),
         )
 
-    def call(self, *compression: object, **options: Any) -> Any:
-        """Return call options, selecting a coding only when one is given."""
-        return self.options.RequestOptions(**dict(zip(("compression",), compression, strict=False)), **options)
+    def call(self, **options: Any) -> Any:
+        """Return request options that inherit the client's compression setting."""
+        return self.options.RequestOptions(**options)
 
     def length(self, value: int) -> Any:
         """Return a typed Content-Length parameter whose value compression must replace."""
@@ -81,12 +83,11 @@ def _values(harness: _Harness, lines: list[str]) -> None:
         ("type", 5),
     ):
         record(lines, f"client {label}", lambda value=value: options.ClientOptions(compression=value).compression)
-        record(lines, f"call {label}", lambda value=value: options.RequestOptions(compression=value).compression)
 
 
 def _inherited(harness: _Harness, lines: list[str]) -> None:
     exchange, bodies = harness.exchange, harness.bodies
-    with harness.client("gzip") as api:
+    with harness.client() as api:
         exchange.respond(_created())
         record(lines, "declared body", lambda: api.items.create_item(body=harness.item("compressed")))
         exchange.respond(_created())
@@ -113,8 +114,6 @@ def _inherited(harness: _Harness, lines: list[str]) -> None:
         record(lines, "stream once", lambda: api.items.put_blob(body=bodies.StreamBody(iter((b"one", b"shot")))))
         exchange.respond(_created())
         record(lines, "raw view", lambda: api.items.with_raw_response.create_item(body=harness.item()).info.status_code)
-        exchange.respond(_created())
-        record(lines, "call off", lambda: api.items.create_item(body=harness.item(), options=harness.call(None)))
         conflict = harness.call(headers=(("Content-Encoding", "br"),))
         record(lines, "header conflict", lambda: api.items.put_blob(body=b"x", options=conflict))
         exchange.respond(_stored())
@@ -128,8 +127,11 @@ def _inherited(harness: _Harness, lines: list[str]) -> None:
         )
         exchange.respond(raw_response(307, Location="https://api.example.com/blobs?moved=1"), _stored())
         record(lines, "redirect keeps the body", lambda: api.items.put_blob(body=b"kept" * 50, options=moved))
-    with harness.client("gzip", headers=(("Content-Encoding", "br"),)) as api:
+    with harness.client(headers=(("Content-Encoding", "br"),)) as api:
         record(lines, "client header conflict", lambda: api.items.create_item(body=harness.item()))
+    with harness.client(None) as api:
+        exchange.respond(_stored())
+        record(lines, "client disabled", lambda: api.items.put_blob(body=b"disabled"))
 
 
 class _DigestSigner:
@@ -214,29 +216,6 @@ def _framing(harness: _Harness, lines: list[str]) -> None:
     run(asynchronous)
 
 
-def _explicit(harness: _Harness, lines: list[str]) -> None:
-    exchange = harness.exchange
-    gzip = harness.call("gzip")
-    with harness.client() as api:
-        exchange.respond(_created())
-        record(lines, "call declared", lambda: api.items.create_item(body=harness.item(), options=gzip))
-        record(lines, "call undeclared", lambda: api.items.create_note(body=harness.item(), options=gzip))
-        record(lines, "call bodyless", lambda: api.items.list_items(options=gzip))
-        record(lines, "call without body", lambda: api.items.create_item(options=gzip))
-        record(
-            lines,
-            "call raw request",
-            lambda: api.request_raw("PUT", "https://api.example.com/blobs", body=b"x", options=gzip),
-        )
-        record(
-            lines, "call raw view", lambda: api.items.with_raw_response.create_note(body=harness.item(), options=gzip)
-        )
-        view = api.with_options(gzip)
-        exchange.respond(_stored(), _created())
-        record(lines, "view undeclared", lambda: view.items.create_note(body=harness.item()))
-        record(lines, "view declared", lambda: view.items.create_item(body=harness.item()))
-
-
 def _results(*pages: tuple[list[str], str | None]) -> list[Any]:
     return [
         json_response(200, {"data": [{"name": name} for name in names], "next_cursor": cursor})
@@ -246,121 +225,84 @@ def _results(*pages: tuple[list[str], str | None]) -> list[Any]:
 
 def _helpers(harness: _Harness, lines: list[str]) -> None:
     exchange, protocols = harness.exchange, harness.protocols
-    gzip = harness.call("gzip")
     with harness.client() as api:
         helpers = api.protocols.items
         exchange.respond(*_results((["a"], "c2"), (["b"], None)))
-        drained(lines, "cursor pages", helpers.search_all.iterate(body=harness.query(), options=gzip))
+        drained(lines, "cursor pages", helpers.search_all.iterate(body=harness.query()))
         exchange.respond(
             json_response(200, {"data": [{"name": "a"}], "next": "https://api.example.com/feed?page=2"}),
             json_response(200, {"data": [{"name": "b"}]}),
         )
-        drained(lines, "followed pages", helpers.feed_all.iterate(body=harness.query(), options=gzip))
-        record(lines, "bodyless pages", lambda: helpers.listing.page(options=gzip))
-        record(
-            lines,
-            "no items",
-            lambda: helpers.search_all.iterate(
-                body=harness.query(), options=gzip, pagination_options=protocols.PaginationOptions(max_items=0)
-            ),
-        )
+        drained(lines, "followed pages", helpers.feed_all.iterate(body=harness.query()))
         exchange.respond(*_results((["a"], None)))
-        last = helpers.search_all.page(body=harness.query())
-        record(lines, "after the last page", lambda: helpers.search_all.next_page(last, options=gzip))
+        record(lines, "bodyless pages", lambda: helpers.listing.page().items)
         exchange.respond(*_results((["a"], "c2")))
         first = helpers.search_all.page(body=harness.query())
-        zero = protocols.PaginationOptions(max_items=0)
-        record(
-            lines, "zero next page", lambda: helpers.search_all.next_page(first, options=gzip, pagination_options=zero)
-        )
-        exchange.respond(*_results((["a"], "c2")))
-        with helpers.search_all.iterate(body=harness.query()) as pager:
-            next(pager)
-            state = pager.checkpoint()
-        record(lines, "zero resume", lambda: helpers.search_all.resume(state, options=gzip, pagination_options=zero))
         exchange.respond(*_results((["b"], None)))
-        record(lines, "next page", lambda: helpers.search_all.next_page(first, options=gzip).items)
+        record(lines, "next page", lambda: helpers.search_all.next_page(first).items)
         exchange.respond(json_response(200, {"data": [{"name": "a"}], "next": "https://api.example.com/feed?page=2"}))
         followed = helpers.feed_all.page(body=harness.query())
-        record(lines, "next followed page", lambda: helpers.feed_all.next_page(followed, options=gzip))
+        exchange.respond(json_response(200, {"data": [{"name": "b"}]}))
+        record(lines, "next followed page", lambda: helpers.feed_all.next_page(followed).items)
         exchange.respond(
             json_response(202, {"id": "j1", "status": "running"}),
             json_response(200, {"id": "j1", "status": "done", "result": {"value": "ok"}}),
         )
         fast = protocols.PollOptions(interval=0.000001)
-        handle = api.protocols.jobs.run.start(body=harness.query(), options=gzip, poll_options=fast)
+        handle = api.protocols.jobs.run.start(body=harness.query(), poll_options=fast)
         record(lines, "job", handle.wait)
         exchange.respond(
             json_response(202, {"id": "c1", "status": "running"}),
             json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}),
         )
-        check = api.protocols.checks.run.start(options=gzip, poll_options=fast)
+        check = api.protocols.checks.run.start(poll_options=fast)
         state = check.checkpoint()
         check.close()
-        resumed = api.protocols.checks.run.resume(state, options=gzip, poll_options=fast)
+        resumed = api.protocols.checks.run.resume(state, poll_options=fast)
         record(lines, "check", resumed.wait)
-        state = resumed.checkpoint()
-        record(lines, "completed check resume", lambda: api.protocols.checks.run.resume(state, options=gzip))
+        exchange.respond(json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}))
         record(lines, "completed check inherited resume", api.protocols.checks.run.resume(state).wait)
         exchange.respond(raw_response(200, b'data: {"text":"a"}\n\n', "text/event-stream"))
-        with api.protocols.events.watch.open(body=harness.query(), options=gzip) as stream:
+        with api.protocols.events.watch.open(body=harness.query()) as stream:
             lines.append(f"  events {[event.data for event in stream]}")
-    with harness.client("gzip") as api:
+    with harness.client(None) as api:
         exchange.respond(*_results((["a"], None)))
-        record(lines, "inherited bodyless pages", lambda: api.protocols.items.listing.page().items)
+        record(lines, "disabled helper body", lambda: api.protocols.items.search_all.page(body=harness.query()).items)
 
 
 def _stream_resume(harness: _Harness, lines: list[str]) -> None:
-    """Admit only reachable compressed stream requests, and recheck the saved reopen on resume."""
+    """Compress each stream open and resume according to that operation's declaration."""
     exchange, protocols = harness.exchange, harness.protocols
-    gzip = harness.call("gzip")
     event = raw_response(200, b'id: c1\ndata: {"text":"a"}\n\n', "text/event-stream")
     reconnect = protocols.StreamOptions(reconnect=True)
     with harness.client() as api:
         for name in ("resumable", "tail"):
             helper = getattr(api.protocols.events, name)
             exchange.respond(event)
-            with helper.open(body=harness.query(), options=gzip, stream_options=reconnect) as stream:
+            with helper.open(body=harness.query(), stream_options=reconnect) as stream:
                 lines.append(f"  {name} first {next(stream).data}")
                 state = stream.checkpoint()
-            if name == "tail":
-                record(
-                    lines,
-                    "bodyless reopen compression",
-                    lambda helper=helper, state=state: helper.resume(state, options=gzip),
-                )
-                exchange.respond(event)
-                with helper.resume(state) as stream:
-                    lines.append(f"  tail plain resume {next(stream).data}")
-            else:
-                exchange.respond(event)
-                with helper.resume(state, options=gzip) as stream:
-                    lines.append(f"  own compressed resume {next(stream).data}")
+            exchange.respond(event)
+            with helper.resume(state) as stream:
+                lines.append(f"  {name} resume {next(stream).data}")
         helper = api.protocols.events.push
-        record(lines, "disabled reconnect compression", lambda: helper.open(options=gzip))
-        record(
-            lines,
-            "zero reconnect compression",
-            lambda: helper.open(options=gzip, stream_options=protocols.StreamOptions(reconnect=True, max_reconnects=0)),
-        )
         exchange.respond(event)
-        with helper.open(options=gzip, stream_options=reconnect) as stream:
+        with helper.open(stream_options=reconnect) as stream:
             lines.append(f"  bodyless open {next(stream).data}")
             state = stream.checkpoint()
         exchange.respond(event)
-        with helper.resume(state, options=gzip) as stream:
+        with helper.resume(state) as stream:
             lines.append(f"  cursor body resume {next(stream).data}")
 
 
 async def _async(harness: _Harness, lines: list[str]) -> None:
     exchange, bodies = harness.exchange, harness.bodies
-    gzip = harness.call("gzip")
 
     async def chunks() -> AsyncIterator[bytes]:  # ruff: ignore[unused-async]
         yield b"async "
         yield b"stream"
 
-    async with harness.async_client("gzip") as api:
+    async with harness.async_client() as api:
         exchange.respond(_created())
         await arecord(lines, "async declared", lambda: api.items.create_item(body=harness.item()))
         exchange.respond(raw_response(503), _stored())
@@ -371,84 +313,100 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
         await arecord(lines, "async stream", lambda: api.items.put_blob(body=bodies.AsyncStreamBody(chunks())))
         exchange.respond(_stored())
         await arecord(lines, "async undeclared", lambda: api.items.create_note(body=harness.item()))
-        await arecord(lines, "async call undeclared", lambda: api.items.create_note(body=harness.item(), options=gzip))
         exchange.respond(*_results((["a"], "c2"), (["b"], None)))
-        await adrained(
-            lines, "async cursor pages", api.protocols.items.search_all.iterate(body=harness.query(), options=gzip)
-        )
-        await arecord(lines, "async bodyless pages", lambda: api.protocols.items.listing.page(options=gzip))
-        exchange.respond(*_results((["a"], "c2")))
-        first = await api.protocols.items.search_all.page(body=harness.query())
-        zero = harness.protocols.PaginationOptions(max_items=0)
-        await arecord(
-            lines,
-            "async zero next",
-            lambda: api.protocols.items.search_all.next_page(first, options=gzip, pagination_options=zero),
-        )
-        exchange.respond(*_results((["a"], "c2")))
-        async with api.protocols.items.search_all.iterate(body=harness.query()) as pager:
-            await anext(pager)
-            state = pager.checkpoint()
-        await arecord(
-            lines,
-            "async zero resume",
-            lambda: api.protocols.items.search_all.resume(state, options=gzip, pagination_options=zero),
-        )
+        await adrained(lines, "async cursor pages", api.protocols.items.search_all.iterate(body=harness.query()))
+        exchange.respond(*_results((["a"], None)))
+        page = await api.protocols.items.listing.page()
+        record(lines, "async bodyless pages", lambda: page.items)
         exchange.respond(
             json_response(202, {"id": "c1", "status": "running"}),
             json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}),
         )
-        check = await api.protocols.checks.run.start(
-            options=gzip, poll_options=harness.protocols.PollOptions(interval=0.000001)
-        )
-        await arecord(lines, "async check", check.wait)
+        check = await api.protocols.checks.run.start(poll_options=harness.protocols.PollOptions(interval=0.000001))
         state = check.checkpoint()
-        await arecord(
-            lines, "async completed check resume", lambda: api.protocols.checks.run.resume(state, options=gzip)
-        )
+        await arecord(lines, "async check", check.wait)
+        exchange.respond(json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}))
         resumed = api.protocols.checks.run.resume(state)
         await arecord(lines, "async inherited completed check", resumed.wait)
-
         await arecord(
             lines,
             "async helper header conflict",
             lambda: api.protocols.jobs.run.start(
-                body=harness.query(), options=harness.call("gzip", headers=(("Content-Encoding", "br"),))
+                body=harness.query(), options=harness.call(headers=(("Content-Encoding", "br"),))
             ),
         )
-
+    async with harness.async_client(None) as api:
+        exchange.respond(_stored())
+        await arecord(lines, "async disabled", lambda: api.items.put_blob(body=b"disabled"))
     event = raw_response(200, b'id: c1\ndata: {"text":"a"}\n\n', "text/event-stream")
     async with harness.async_client() as api:
         for name in ("resumable", "tail"):
             helper = getattr(api.protocols.events, name)
             exchange.respond(event)
-            async with await helper.open(body=harness.query(), options=gzip) as stream:
+            async with await helper.open(body=harness.query()) as stream:
                 lines.append(f"  async {name} first {(await anext(stream)).data}")
                 state = stream.checkpoint()
-            if name == "tail":
-                await arecord(
-                    lines,
-                    "async bodyless reopen compression",
-                    lambda helper=helper, state=state: helper.resume(state, options=gzip),
-                )
-            else:
-                exchange.respond(event)
-                async with await helper.resume(state, options=gzip) as stream:
-                    lines.append(f"  async own compressed resume {(await anext(stream)).data}")
+            exchange.respond(event)
+            async with await helper.resume(state) as stream:
+                lines.append(f"  async {name} resume {(await anext(stream)).data}")
         exchange.respond(event)
         async with await api.protocols.events.push.open() as stream:
             lines.append(f"  async bodyless open {(await anext(stream)).data}")
             state = stream.checkpoint()
         exchange.respond(event)
-        async with await api.protocols.events.push.resume(state, options=gzip) as stream:
+        async with await api.protocols.events.push.resume(state) as stream:
             lines.append(f"  async cursor body resume {(await anext(stream)).data}")
 
 
+def _native(harness: _Harness, lines: list[str]) -> None:
+    """Observe default gzip and client disable over the SDK's native sync and async transports."""
+    options = harness.options
+    for mode in ("sync", "async"):
+        for label, selection in (("default", {}), ("disabled", {"compression": None})):
+            server = NativeFixture()
+            server.status, server.body = 204, b""
+            settings = options.ClientOptions(
+                base_url=server.url,
+                transport=options.TransportOptions(ssl_context=server.verify),
+                retry=options.RetryOptions(max_retries=0),
+                **selection,
+            )
+            try:
+                if mode == "sync":
+                    with harness.package.Client(options=settings) as api:
+                        record(
+                            lines, f"native {mode} {label}", lambda: api.items.put_blob(body=b"native declared body")
+                        )
+                else:
+
+                    async def send(settings: Any = settings, label: str = label, mode: str = mode) -> None:
+                        async with harness.package.AsyncClient(options=settings) as api:
+                            await arecord(
+                                lines,
+                                f"native {mode} {label}",
+                                lambda: api.items.put_blob(body=b"native declared body"),
+                            )
+
+                    run(send)
+                for (method, path, body), fields in zip(server.requests, server.request_headers, strict=True):
+                    headers = {name.lower(): value for name, value in fields}
+                    encoded = headers.get(b"content-encoding")
+                    decoded = gzip.decompress(body) if encoded == b"gzip" else body
+                    lines.append(
+                        f"    arrivals={len(server.requests)} method={method!r} path={path!r} encoding={encoded!r} "
+                        f"length={headers.get(b'content-length')!r} bytes={len(body)} "
+                        f"sha256={hashlib.sha256(decoded).hexdigest()} "
+                        f"mtime={int.from_bytes(body[4:8], 'little') if encoded == b'gzip' else None}"
+                    )
+            finally:
+                server.stop()
+
+
 def compression(package: ModuleType, lines: list[str]) -> None:
-    """Select gzip on clients, views, calls, and helpers, and report which requests are sent compressed."""
+    """Report declared gzip and client disable on ordinary calls, helpers, retries, and native transports."""
     exchange = Exchange(lines)
     harness = _Harness(package, exchange)
-    for step in (_values, _inherited, _signed, _framing, _explicit, _helpers, _stream_resume):
+    for step in (_values, _inherited, _signed, _framing, _helpers, _stream_resume, _native):
         lines.append(f"# {step.__name__.strip('_')}")
         step(harness, lines)
     lines.append("# async")

@@ -16,7 +16,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from functools import partial
-from hashlib import sha256
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
@@ -59,14 +58,13 @@ from .errors import (
     StreamResumeExhaustedError,
 )
 from .options import StreamOptions, layered
-from .records import canonical_json
 from .resume import (
     MalformedStateError,
     ResumeState,
-    helper_state,
     require_state,
+    saved_expiry,
     state_array,
-    state_count,
+    state_expiry,
     state_fields,
 )
 from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected, server_expiry, written
@@ -116,7 +114,6 @@ ProtocolErrorT = TypeVar("ProtocolErrorT", bound=ProtocolError)
 _TERMINATOR: Final = re.compile(rb"[\r\n]")
 _RETRY_DIGITS: Final = 18
 _RETRY: Final = re.compile(rb"[0-9]{1,%d}" % _RETRY_DIGITS)
-_MAX_RETRY: Final = 10**_RETRY_DIGITS - 1
 _BOM: Final = b"\xef\xbb\xbf"
 _CR: Final = 0x0D
 _LF: Final = 0x0A
@@ -129,7 +126,7 @@ _DATA_ERRORS: Final = (
     ParameterEncodingError,
     WireValidationError,
 )
-_STATE: Final = frozenset({"cursor", "sequence", "reconnects", "retry_ms", "bound", "arguments", "body"})
+_STATE: Final = frozenset({"cursor", "bound", "arguments", "body", "expires_at"})
 _ENCODING_ERRORS: Final = (RequestEncodingError, ParameterEncodingError)
 
 
@@ -574,19 +571,6 @@ def _limits(
     )
 
 
-def _coded(plan: EventPlan[T], limits: _Limits, body: object, *, reopened: bool = False) -> None:
-    """Refuse a coding unless an initial or reachable reopen request has a body its operation accepts."""
-    if (options := limits.options) is not None and isinstance(selected := options.compression, str):
-        from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
-
-        present = not isinstance(body, Unset)
-        children = [] if reopened else [(plan.call, present)]
-        if (resume := plan.resume) is not None and (reopened or (limits.reconnect and limits.max_reconnects != 0)):
-            bound_body = any(position is None for position, _ in resume.writes)
-            children.append((resume.reopened, (resume.own and present) or bound_body))
-        helper_children(selected, children)
-
-
 def _unpatched(
     core: ClientCore | AsyncClientCore, plan: EventPlan[T], resume: StreamResumePlan, request: RequestOptions | None
 ) -> None:
@@ -905,14 +889,6 @@ def _fitting(
     core.restored_request(call, wire, saved)
 
 
-def _security(
-    core: ClientCore | AsyncClientCore, resume: StreamResumePlan, options: RequestOptions | None
-) -> tuple[str, bool]:
-    """Return the digest of the security a checkpoint is bound to, that of the reopen, and whether it may leave."""
-    facts, exportable = core.checkpoint_security(resume.call, options)
-    return sha256(canonical_json(facts)).hexdigest(), exportable
-
-
 class _State(Enum):
     OPEN = "open"
     ENDED = "ended"
@@ -1009,10 +985,10 @@ class _Events(Generic[T]):
     def checkpoint(self) -> ResumeState:
         """Return a checkpoint the helper's `resume` reopens the stream from, sending nothing.
 
-        It saves the cursor of the last event delivered, the counts so far, the last reconnection time, the bindings'
-        values, and the caller's first request when the reopen repeats it, but never events, the response, the session,
-        or the call's options. A stream that ended, failed, or closed checkpoints as it stood; one running a step
-        refuses with ProtocolStateError, and so does one that delivered no cursor yet.
+        It saves the cursor of the last event delivered, the bindings' values, the caller's first request when the
+        reopen repeats it, and the server's expiry, under the helper's identity, but never events, counts, the
+        response, the session, or the call's options. A stream that ended, failed, or closed checkpoints as it stood;
+        one running a step refuses with ProtocolStateError, and so does one that delivered no cursor yet.
         """
         action = "checkpoint"
         if not self._lock.acquire(blocking=False):
@@ -1023,7 +999,7 @@ class _Events(Generic[T]):
             self._lock.release()
 
     def _saved(self) -> ResumeState:
-        """Return a checkpoint of the stream, bound to the helper and the security its reopen runs under.
+        """Return a checkpoint of the stream under the helper's identity.
 
         A helper without resume metadata refuses, and so does a call giving an argument a checkpoint never saves, or a
         cursor or binding value the reopen writes as one, such as a security scheme's query field. The
@@ -1056,24 +1032,14 @@ class _Events(Generic[T]):
             blank = resume.blank
             kept = tuple(UNSET if index in blank else value for index, value in enumerate(given[0]))
             arguments, body = saved_request(*client.saved_request(plan, plan.call, kept, *given[1:], options))
-        security, exportable = _security(client, resume, options)
         state: WireValue = {
             "cursor": self._cursor,
-            "sequence": self._sequence,
-            "reconnects": self._reconnects,
-            "retry_ms": self._frames.retry,
             "bound": self._bound,
             "arguments": arguments,
             "body": body,
+            "expires_at": saved_expiry(self._expires_at),
         }
-        return helper_state(
-            helper_fingerprint=plan.fingerprint,
-            security_fingerprint=security,
-            state=state,
-            payload=b"",
-            exportable=exportable,
-            expires_at=self._expires_at,
-        )
+        return ResumeState(helper=plan.fingerprint, state=state)
 
     def _resumable(self) -> ResumeState | None:
         """Return a checkpoint for an error to keep, or None when the stream cannot be checkpointed.
@@ -1767,9 +1733,7 @@ def _resumed(plan: EventPlan[T], resume: StreamResumePlan, position: _Position, 
     return replace(position, bound=_bound(plan, resume, resume.operation, info, position.given, position.bound))
 
 
-def _resume_error(
-    plan: EventPlan[T], condition: Literal["fingerprint", "security", "expired", "malformed"]
-) -> ResumeStateError:
+def _resume_error(plan: EventPlan[T], condition: Literal["fingerprint", "expired", "malformed"]) -> ResumeStateError:
     return ResumeStateError(condition=condition, helper_id=plan.helper_id, operation=plan.operation)
 
 
@@ -1778,43 +1742,36 @@ def _restored(
 ) -> tuple[StreamResumePlan, _Position]:
     """Return where a checkpoint reopens the stream, refusing a checkpoint that does not fit the helper or the call.
 
-    The checkpoint must be this helper's, made under the security the reopen runs with, and unexpired; a state that does
-    not fit the helper, or whose reopen request cannot be encoded, is malformed.
+    The checkpoint must be this helper's and unexpired; a state that does not fit the helper, or whose reopen request
+    cannot be encoded, is malformed.
     """
     resume = cast("StreamResumePlan", plan.resume)
     if not isinstance(state, ResumeState):
         raise _invalid(plan, ("state",), "invalid_value")
-    helper, security, state_json, payload, expires_at = state_fields(state)
+    helper, state_json = state_fields(state)
     if helper != plan.fingerprint:
         raise _resume_error(plan, "fingerprint")
-    if security != _security(core, resume, limits.options)[0]:
-        raise _resume_error(plan, "security")
-    if expires_at is not None and expires_at.timestamp() <= limits.clock.time():
-        raise _resume_error(plan, "expired")
     try:
-        position = _restore(core, plan, resume, decode_json(state_json), payload, expires_at)
-        media_type = None if (given := position.given) is None else given[2]
-        try:
-            core.checked_page(
-                resume.reopened,
-                lambda: (*_reopen_request(core, plan, resume, position)[:2], None),
-                media_type,
-                limits.options,
-            )
-        except (RequestEncodingError, ProtocolDataError, CodecError):
-            raise MalformedStateError from None
+        position = _restore(core, plan, resume, decode_json(state_json))
     except MalformedStateError:
+        raise _resume_error(plan, "malformed") from None
+    if (expires_at := position.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
+        raise _resume_error(plan, "expired")
+    media_type = None if (given := position.given) is None else given[2]
+    try:
+        core.checked_page(
+            resume.reopened,
+            lambda: (*_reopen_request(core, plan, resume, position)[:2], None),
+            media_type,
+            limits.options,
+        )
+    except (RequestEncodingError, ProtocolDataError, CodecError):
         raise _resume_error(plan, "malformed") from None
     return resume, position
 
 
-def _restore(  # noqa: PLR0913, PLR0917
-    core: ClientCore | AsyncClientCore,
-    plan: EventPlan[T],
-    resume: StreamResumePlan,
-    state: WireValue,
-    payload: bytes,
-    expires_at: datetime | None,
+def _restore(
+    core: ClientCore | AsyncClientCore, plan: EventPlan[T], resume: StreamResumePlan, state: WireValue
 ) -> _Position:
     """Return the position a checkpoint's decoded state saved, refusing a state that does not fit the helper.
 
@@ -1822,14 +1779,14 @@ def _restore(  # noqa: PLR0913, PLR0917
     bindings take the plan's value whatever was saved. A saved dot segment a binding writes to a path parameter is
     refused as if a server had just given it, and the caller's first request is built again from its wire values.
     """
-    require_state(isinstance(state, Mapping) and frozenset(state) == _STATE and not payload)
+    require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
     fields = cast("Mapping[str, WireValue]", state)
-    cursor, retry = fields["cursor"], fields["retry_ms"]
+    cursor = fields["cursor"]
     if resume.cursor is None:
         require_state(cursor is None or (isinstance(cursor, str) and bool(cursor)))
     else:
         require_state(cursor is not None or resume.null == "clear")
-    require_state(retry is None or plan.kind == "sse")
+    expires_at = state_expiry(fields["expires_at"])
     saved = state_array(fields["bound"])
     require_state(len(saved) == len(resume.bindings))
     bound = tuple(
@@ -1856,9 +1813,6 @@ def _restore(  # noqa: PLR0913, PLR0917
         given=given,
         cursor=cursor,
         cursored=True,
-        sequence=state_count(fields["sequence"]),
-        reconnects=state_count(fields["reconnects"]),
-        retry_ms=None if retry is None else state_count(retry, _MAX_RETRY),
         bound=bound,
         expires_at=expires_at,
     )
@@ -1880,7 +1834,6 @@ def open_events(  # noqa: PLR0913
     A helper declaring resumption first reads the bindings' values and the server's expiry from the response.
     """
     limits = _limits(core, plan, stream_options, options, session_options)
-    _coded(plan, limits, body)
     session = _session(plan, limits, plan.operation, plan.call.operation_id)
     given = (arguments, body, media_type)
     try:
@@ -1910,7 +1863,6 @@ async def aopen_events(  # noqa: PLR0913
 ) -> AsyncEventStream[T]:
     """Open a helper's stream with asyncio, returning once its response is a declared success, as `open_events` does."""
     limits = _limits(core, plan, stream_options, options, session_options)
-    _coded(plan, limits, body)
     session = _session(plan, limits, plan.operation, plan.call.operation_id)
     given = (arguments, body, media_type)
     try:
@@ -1939,12 +1891,11 @@ def resume_events(  # noqa: PLR0913
     """Reopen a helper's stream after a checkpoint's cursor in a session of its own, checking the checkpoint first.
 
     It sends the reopen at once, which counts no reconnection, and returns once its response is a declared success;
-    sequences and reconnections count on from the checkpoint's.
+    sequences and reconnections count afresh.
     """
     limits = _limits(core, plan, stream_options, options, session_options)
     resume, position = _restored(core, plan, state, limits)
     request = _reopen_request(core, plan, resume, position)
-    _coded(plan, limits, request[1], reopened=True)
     session = _session(plan, limits, resume.operation, resume.call.operation_id)
     try:
         response = _sent(core, resume.reopened, request, limits, session, resume.media)
@@ -1969,7 +1920,6 @@ async def aresume_events(  # noqa: PLR0913
     limits = _limits(core, plan, stream_options, options, session_options)
     resume, position = _restored(core, plan, state, limits)
     request = _reopen_request(core, plan, resume, position)
-    _coded(plan, limits, request[1], reopened=True)
     session = _session(plan, limits, resume.operation, resume.call.operation_id)
     try:
         response = await _asent(core, resume.reopened, request, limits, session, resume.media)
