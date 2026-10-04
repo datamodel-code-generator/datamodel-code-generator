@@ -83,7 +83,6 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "uploads",
         "uploads-compression",
         "uploads-plans",
-        "queues",
         "webhooks",
         "webhooks-schema",
         "webhooks-public-keys",
@@ -160,8 +159,6 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-unmodeled",
         "protocols-cache-errors",
         "protocols-cache-checks",
-        "protocols-queue-errors",
-        "protocols-queue-checks",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
@@ -183,8 +180,6 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
         ("webhooks-public-keys", "webhooks-public-keys-python", "webhook-public-key-records"),
         ("webhooks-adapters", "webhooks-adapters-python", "webhook-adapter-records"),
         ("caching", "caching-python", "cache-records"),
-        ("queues", "queues-python", "queue-records"),
-        ("queues", "queues-schema", "queue-schema"),
     ],
 )
 def test_client_helper_digests(first: str, second: str, expected: str, tmp_path: Path) -> None:
@@ -204,7 +199,6 @@ def test_client_helper_digests(first: str, second: str, expected: str, tmp_path:
         "pagination-links",
         "polling",
         "uploads",
-        "queues",
         "streams",
         "ndjson",
         "stream-resume",

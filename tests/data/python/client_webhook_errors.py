@@ -68,19 +68,25 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
         secondary.clear()
         hints = get_type_hints(error_type.__init__)
         lines.extend((
-            f"  {name}: base={error_type.__bases__[0].__name__} sdk={isinstance(error, errors.SDKError)} "
-            f"reason={error.reason_code}",
+            (
+                f"  {name}: base={error_type.__bases__[0].__name__} sdk={isinstance(error, errors.SDKError)} "
+                f"reason={error.reason_code}"
+            ),
             f"    fields={','.join(sorted(vars(error)))}",
-            f"    context={error.helper_id == secret}/{error.operation is operation}/{error.info is info}/"
-            f"{error.cause is cause}/{error.secondary_errors == (cleanup,)} "
-            f"call={error.operation_id}/{error.call_id}/{error.parent_session_id}",
-            f"    hints={hints['operation'] == protocols.OperationRef | None}/"
-            f"{hints['helper_id'] == str | None}/{hints['info'] == responses.ResponseInfo | None} "
-            f"retained={all(getattr(error, key) == value for key, value in fields.items())}",
+            (
+                f"    context={error.helper_id == secret}/{error.operation is operation}/{error.info is info}/"
+                f"{error.cause is cause}/{error.secondary_errors == (cleanup,)} "
+                f"call={error.operation_id}/{error.call_id}/{error.parent_session_id}"
+            ),
+            (
+                f"    hints={hints['operation'] == protocols.OperationRef | None}/"
+                f"{hints['helper_id'] == str | None}/{hints['info'] == responses.ResponseInfo | None} "
+                f"retained={all(getattr(error, key) == value for key, value in fields.items())}"
+            ),
             f"    str={error} repr={error!r} secret={secret in str(error) or secret in repr(error)}",
         ))
     for label, create in (
-        ("protocol defaults", lambda: errors.ProtocolError()),
+        ("protocol defaults", errors.ProtocolError),
         (
             "configuration defaults",
             lambda: errors.ProtocolConfigurationError(field_path=(), condition="invalid_value"),
@@ -115,13 +121,25 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
         error = errors.ProtocolConfigurationError(field_path=(), condition=condition)
         lines.append(f"  configuration condition: {error.condition}")
     for condition in (
-        "malformed_signature", "invalid_signature", "missing_key", "timestamp_window", "missing_delivery_id"
+        "malformed_signature",
+        "invalid_signature",
+        "missing_key",
+        "timestamp_window",
+        "missing_delivery_id",
     ):
         error = errors.WebhookVerificationError(condition=condition)
         lines.append(f"  verification condition: {error.condition}")
     for action in (
-        "lookup", "fingerprint_vary", "compare_exchange", "delete", "invalidate", "claim", "put", "get",
-        "open", "read", "close", "purge_terminal", "admit", "record", "reset", "snapshot",
+        "lookup",
+        "fingerprint_vary",
+        "compare_exchange",
+        "delete",
+        "invalidate",
+        "claim",
+        "admit",
+        "record",
+        "reset",
+        "snapshot",
     ):
         error = errors.ProtocolStoreError(action=action)
         lines.append(f"  store action: {error.action} entry={error.entry_id}")
@@ -143,14 +161,14 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
         ),
         ("helper type", lambda: errors.ProtocolError(helper_id=3)),
         ("operation type", lambda: errors.ProtocolError(operation="private-webhook-marker")),
-        ("verification missing condition", lambda: errors.WebhookVerificationError()),
+        ("verification missing condition", errors.WebhookVerificationError),
         ("verification condition unknown", lambda: errors.WebhookVerificationError(condition="unknown")),
         ("verification condition type", lambda: errors.WebhookVerificationError(condition=None)),
         ("replay missing delivery", lambda: errors.WebhookReplayError(namespace="namespace")),
         ("replay missing namespace", lambda: errors.WebhookReplayError(delivery_id="delivery")),
         ("replay delivery type", lambda: errors.WebhookReplayError(delivery_id=3, namespace="namespace")),
         ("replay namespace type", lambda: errors.WebhookReplayError(delivery_id="delivery", namespace=None)),
-        ("store missing action", lambda: errors.ProtocolStoreError()),
+        ("store missing action", errors.ProtocolStoreError),
         ("store action unknown", lambda: errors.ProtocolStoreError(action="unknown")),
         ("store action type", lambda: errors.ProtocolStoreError(action=None)),
         ("store entry type", lambda: errors.ProtocolStoreError(action="claim", entry_id=3)),

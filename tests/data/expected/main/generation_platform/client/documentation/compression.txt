@@ -1101,7 +1101,3 @@ A protocol helper given a coding in its `options` checks once, before sending an
 apply it, or raises `ConfigurationError(field_path=('options', 'compression'),
 condition='no_applicable_helper_child')`; then only its requests with a body whose operation accepts the coding are
 compressed, and its bodyless polls and followed URLs are not. Token requests are never compressed.
-
-Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Queue
-`drain` refuses an explicit coding with `no_applicable_helper_child` before claiming entries or sending. Entries
-save no coding; inherited client or view codings apply only to declared queued operations with bodies.

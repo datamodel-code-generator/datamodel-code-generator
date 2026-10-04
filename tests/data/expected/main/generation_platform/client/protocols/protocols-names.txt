@@ -15,6 +15,6 @@ render pydantic_v2.BaseModel
   E_NAME_COLLISION config protocols.helpers['users.all.more']: The helper names 'users.all' and 'users.all.more' collide
   E_CONFIG_VALUE config protocols.helpers['broken']: protocols.helpers['broken'] must be a helper definition
   E_CONFIG_VALUE config protocols.helpers['kindless'].kind: protocols.helpers['kindless'] needs 'kind'
-  E_CONFIG_VALUE config protocols.helpers['graphql'].kind: protocols.helpers['graphql'].kind must be 'pagination', 'polling', 'sse', 'ndjson', 'websocket', 'webhook', 'cache', 'resumable_upload', 'batch' or 'queue'
-  E_CONFIG_VALUE config protocols.helpers['typed'].kind: protocols.helpers['typed'].kind must be 'pagination', 'polling', 'sse', 'ndjson', 'websocket', 'webhook', 'cache', 'resumable_upload', 'batch' or 'queue'
+  E_CONFIG_VALUE config protocols.helpers['graphql'].kind: protocols.helpers['graphql'].kind must be 'pagination', 'polling', 'sse', 'ndjson', 'websocket', 'webhook', 'cache' or 'resumable_upload'
+  E_CONFIG_VALUE config protocols.helpers['typed'].kind: protocols.helpers['typed'].kind must be 'pagination', 'polling', 'sse', 'ndjson', 'websocket', 'webhook', 'cache' or 'resumable_upload'
   E_CONFIG_VALUE config protocols.helpers['toggled'].enabled: protocols.helpers['toggled'].enabled must be a boolean

@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
 from urllib.parse import quote, unquote_plus, urlsplit
 
 import httpx2
-from typing_extensions import Self, TypeIs, cast  # noqa: UP035 - Preserve the existing Generic import.
+from typing_extensions import Self, TypeIs
 
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
@@ -324,7 +324,7 @@ def _protocol_options(
 ) -> ProtocolClientOptions | None:
     """Return the client's protocol settings, refusing defaults or stores for a helper the package lacks.
 
-    Defaults of another kind's helper, a cache or queue store the client's mode cannot call, and a WebSocket connector
+    Defaults of another kind's helper, a cache store the client's mode cannot call, and a WebSocket connector
     of the other execution mode are refused too.
     """
     if options is None or (protocols := options.protocols) is None or isinstance(protocols, Unset):
@@ -333,10 +333,6 @@ def _protocol_options(
         from ..protocols.options import checked_defaults  # noqa: PLC0415 - Only helper defaults load the helper settings.
 
         checked_defaults(helpers, defaults.helpers)
-    if not isinstance(queues := protocols.queue_stores, Unset) and queues:
-        from ..protocols.options import checked_stores  # noqa: PLC0415 - Only queue stores load the helper settings.
-
-        checked_stores(queues, defaults.helpers, asynchronous=asynchronous, kind="queue")
     if not isinstance(stores := protocols.cache_stores, Unset) and stores:
         from ..protocols.options import checked_stores  # noqa: PLC0415 - Only cache stores load the helper settings.
 
@@ -1473,7 +1469,7 @@ class _SessionCall(_Call):
     It keeps the URL of the hop it sends, credentials excluded, against which a page's relative URLs resolve.
     """
 
-    __slots__ = ("admission", "parent", "session", "url")
+    __slots__ = ("parent", "session", "url")
 
     def __init__(
         self,
@@ -1486,7 +1482,6 @@ class _SessionCall(_Call):
         """Bind the call to its session, ending it no later than the session or a helper's own bound does."""
         super().__init__(settings, scope, operation)
         self.session = self.parent = session
-        self.admission: Callable[[], object] | None = None
         self.url = ""
         for limit in (session.deadline, None if bound is None else on_clock(bound, settings.clock)):
             if limit is not None and ((deadline := self.deadline) is None or limit.at < deadline.at):
@@ -1738,12 +1733,6 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         if (protocols := self._shared.protocols) is None or isinstance(defaults := protocols.defaults, Unset):
             return None
         return defaults.get(name)
-
-    def queue_store(self, name: str) -> object:
-        """Return the queue store the client's protocol settings lend one helper, or None."""
-        if (protocols := self._shared.protocols) is None or isinstance(stores := protocols.queue_stores, Unset):
-            return None
-        return stores.get(name)
 
     def native_responses(self, options: RequestOptions | None, operation_id: str | None) -> bool:
         """Return whether a call with these options reads response values through their converters alone."""
@@ -2227,65 +2216,6 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
                 headers |= frozenset(name.lower() for name in capabilities.managed_headers)
                 query |= frozenset(capabilities.managed_query)
         return headers, query
-
-    def saved_response(
-        self,
-        info: ResponseInfo,
-        operation: OperationPlan[object, object] | None,
-        options: RequestOptions | None,
-    ) -> ResponseInfo:
-        """Copy response metadata without catalog, signer, or cookie credential positions."""
-        headers, _ = self._secret_positions(operation, options)
-        headers |= {"set-cookie", "set-cookie2"}
-        source = None if operation is None else operation.request_id_header
-        return replace(
-            info,
-            headers=HeadersView((name, value) for name, value in info.headers if name.lower() not in headers),
-            request_id=None if source is None or source.lower() in headers else info.request_id,
-            content_type=None if "content-type" in headers else info.content_type,
-        )
-
-    def queue_identity(
-        self,
-        operation: OperationPlan[object, object],
-        request: PreparedRequest[EncodedAttempt],
-        options: RequestOptions | None,
-    ) -> WireValue:
-        """Return immutable pre-auth replay facts, excluding every declared credential position."""
-        from base64 import b64encode  # noqa: PLC0415
-
-        auth = self._call_settings(options, operation.operation_id).auth
-        if auth is not None:
-            self._bound(operation, auth)
-        headers, query = self._secret_positions(operation, options)
-        target = absolute_target(request.url)
-        return {
-            "method": request.method,
-            "url": strip_query(target.url, query),
-            "headers": tuple((name.lower(), value) for name, value in request.headers if name.lower() not in headers),
-            "body": None if request.body is None else b64encode(request.body.content).decode("ascii"),
-        }
-
-    def saved_queue_request(
-        self,
-        operation: OperationPlan[object, object],
-        arguments: tuple[object, ...],
-        body: object,
-        media_type: str | MediaSelector | None,
-        options: RequestOptions | None,
-    ) -> WireValue:
-        """Prepare the non-auth request a queue binds, using the ordinary encoding and patch rules."""
-        request, _ = self._prepare(
-            operation,
-            arguments,
-            self._call_settings(options, operation.operation_id),
-            body=body,
-            media_type=media_type,
-            options=options,
-            accept=operation.responses.accept,
-            narrowed=False,
-        )
-        return self.queue_identity(operation, request, options)
 
     def unsaved_argument(
         self, operation: OperationPlan[object, object], saved: Sequence[WireValue | Unset]
@@ -2925,8 +2855,6 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         response_media_type: str | MediaSelector | None = None,
         session: OperationSession | None = None,
         deadline: Deadline | None = None,
-        replay_identity: WireValue = None,
-        admission: Callable[[], object] | None = None,
     ) -> Response[T]:
         """Execute one encoded logical call through its retry and redirect policy.
 
@@ -2939,8 +2867,6 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             if session is None
             else _SessionCall(settings, self._scope, operation, session, deadline)
         )
-        if isinstance(call, _SessionCall):
-            call.admission = admission
         events = call.events = self._started(call, operation.path, options)
         decoder = operation.responses
 
@@ -2958,10 +2884,6 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 accept=decoder.accept,
                 narrowed=response_media_type is not None,
             )
-            if replay_identity is not None and (
-                not isinstance(deferred, Unset) or self.queue_identity(operation, request, options) != replay_identity
-            ):
-                raise ProtocolConfigurationError(field_path=("payload",), condition="binding_mismatch")
             return request, deferred
 
         def receive(response: TransportResponse, info: ResponseInfo) -> Response[T]:
@@ -3674,7 +3596,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    def _send(  # noqa: PLR0912, PLR0915
+    def _send(
         self,
         request: PreparedRequest[BodyAttempt],
         source: BodySource | None,
@@ -3688,13 +3610,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             call.check("encode")
             call.retained()
-            if isinstance(call, _SessionCall) and call.admission is not None:
-                call.admission()
-                call.check("send")
             self._authorize(source, call)
-            if isinstance(call, _SessionCall) and call.admission is not None:
-                call.admission()
-                call.check("send")
             renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
@@ -3722,9 +3638,6 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             call.retained()
             _usable_credentials(call)
             io = call.io_context(trace)
-            if isinstance(call, _SessionCall) and call.admission is not None:
-                call.admission()
-                call.check("send")
             call.admit_send(redirect=call.hop_index != 0)
             if events is not None:
                 events.sending()
@@ -3937,8 +3850,6 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         response_media_type: str | MediaSelector | None = None,
         session: OperationSession | None = None,
         deadline: Deadline | None = None,
-        replay_identity: WireValue = None,
-        admission: Callable[[], object] | None = None,
     ) -> Response[T]:
         """Execute one encoded logical call through its retry and redirect policy.
 
@@ -3952,8 +3863,6 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             else _SessionCall(settings, self._scope, operation, session, deadline)
         )
         self._running(call.operation_id, call.call_id)
-        if isinstance(call, _SessionCall):
-            call.admission = admission
         events = call.events = await self._started(call, operation.path, options)
         decoder = operation.responses
 
@@ -3971,10 +3880,6 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 accept=decoder.accept,
                 narrowed=response_media_type is not None,
             )
-            if replay_identity is not None and (
-                not isinstance(deferred, Unset) or self.queue_identity(operation, request, options) != replay_identity
-            ):
-                raise ProtocolConfigurationError(field_path=("payload",), condition="binding_mismatch")
             return request, deferred
 
         async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> Response[T]:
@@ -4696,7 +4601,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    async def _send(  # noqa: PLR0912, PLR0915
+    async def _send(
         self,
         request: PreparedRequest[AsyncBodyAttempt],
         source: AsyncBodySource | None,
@@ -4710,13 +4615,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         try:
             call.check("encode")
             call.retained()
-            if isinstance(call, _SessionCall) and call.admission is not None:
-                await cast("Awaitable[None]", call.admission())
-                call.check("send")
             await self._authorize(source, call)
-            if isinstance(call, _SessionCall) and call.admission is not None:
-                await cast("Awaitable[None]", call.admission())
-                call.check("send")
             renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
@@ -4744,9 +4643,6 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             call.retained()
             _usable_credentials(call)
             io = call.io_context(trace)
-            if isinstance(call, _SessionCall) and call.admission is not None:
-                await cast("Awaitable[None]", call.admission())
-                call.check("send")
             call.admit_send(redirect=call.hop_index != 0)
             if events is not None:
                 events.sending()
