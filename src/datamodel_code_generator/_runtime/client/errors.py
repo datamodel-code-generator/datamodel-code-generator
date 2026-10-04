@@ -74,10 +74,6 @@ _StoreAction: TypeAlias = Literal[
     "read",
     "close",
     "purge_terminal",
-    "admit",
-    "record",
-    "reset",
-    "snapshot",
 ]
 
 _CONDITION: Final = re.compile(r"[a-z][a-z0-9_]{0,63}")
@@ -2109,10 +2105,6 @@ class ProtocolStoreError(ProtocolError):
                 "read",
                 "close",
                 "purge_terminal",
-                "admit",
-                "record",
-                "reset",
-                "snapshot",
             ),
             "action",
         )
@@ -2136,10 +2128,6 @@ class ProtocolStoreError(ProtocolError):
 
 class WebhookStoreError(ProtocolStoreError):
     """A replay store operation that failed, so the webhook cannot be accepted."""
-
-
-class CircuitStoreError(ProtocolStoreError):
-    """A circuit store operation that failed or returned the wrong type; no request is resent because of it."""
 
 
 class ReplayStoreFullError(WebhookStoreError):
