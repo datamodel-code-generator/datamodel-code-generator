@@ -15,6 +15,8 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from typing import Any
 
+from typing_extensions import NotRequired, Required, get_type_hints
+
 from datamodel_code_generator import DataModelType, InputFileType, generate
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
@@ -136,9 +138,11 @@ def native_value(row: dict[str, Any], module: Any, cls: Any) -> tuple[Any, Any]:
 
 
 def annotation_fact(value: Any) -> str:
-    """Record forward expressions/modules; resolved hints separately retain owner semantics."""
+    """Retain forward expressions and requiredness with a portable typing namespace."""
     if isinstance(value, typing.ForwardRef):
         return f"ForwardRef({value.__forward_arg__!r}, module={value.__forward_module__!r})"
+    if typing.get_origin(value) in {Required, NotRequired}:
+        return str(value).replace("typing_extensions.", "typing.", 1)
     return str(value)
 
 
@@ -157,7 +161,7 @@ def native_row(row: dict[str, Any], output: Path, target: str) -> dict[str, Any]
     )
     facts = {
         "annotations": {key: annotation_fact(value) for key, value in cls.__annotations__.items()},
-        "resolved_type_hints": {key: str(value) for key, value in typing.get_type_hints(cls).items()},
+        "resolved_type_hints": {key: str(value) for key, value in get_type_hints(cls).items()},
         "bases": [base.__module__ + "." + base.__qualname__ for base in cls.__bases__],
         "fields": fields,
     }
