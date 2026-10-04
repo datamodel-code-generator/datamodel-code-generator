@@ -2,72 +2,29 @@ schema_version: 1
 helpers:
   rfc8032.ed25519:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Push}
+    event_schema:
+      pointer: /components/schemas/Push
     signature:
       kind: ed25519
       header: X-Signature
       encoding: hex
-      prefix: ""
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
+      prefix: ''
   wycheproof.rsa:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Count}
+    event_schema:
+      pointer: /components/schemas/Count
     signature:
       kind: rsa-pss-sha256
       header: X-Signature
       encoding: hex
-      prefix: ""
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
-  standard.ed25519:
-    kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
-    signature:
-      kind: ed25519
-      header: webhook-signature
-      encoding: base64
-      prefix: "v1a,"
-      separator: " "
-      key_id: none
-      timestamp: {header: webhook-timestamp, unit: seconds}
-      delivery_id: {header: webhook-id}
-      signed_parts: [delivery-id, {literal: "."}, timestamp, {literal: "."}, raw-body]
-      field_constraints:
-        delivery-id: {ascii_bytes: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"}
-        timestamp: {ascii_bytes: "0123456789"}
-  keyed.rsa:
-    kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
-    signature:
-      kind: rsa-pss-sha256
-      header: X-Signature
-      encoding: base64url
-      prefix: "v1="
-      separator: ","
-      key_id: {header: X-Key-Id}
-      timestamp: {header: X-Timestamp, unit: milliseconds}
-      delivery_id: {header: X-Delivery}
-      signed_parts: [timestamp, {literal: "."}, delivery-id, {literal: "."}, raw-body]
-      field_constraints:
-        timestamp: {ascii_bytes: "0123456789"}
-        delivery-id: {ascii_bytes: "abcdefghijklmnopqrstuvwxyz0123456789-"}
+      prefix: ''
   github.push:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Push}
+    event_schema:
+      pointer: /components/schemas/Push
     signature:
-      kind: hmac-sha256
+      kind: body_hmac
       header: X-Hub-Signature-256
+      algorithm: hmac-sha256
       encoding: hex
-      prefix: "sha256="
-      separator: none
-      key_id: none
-      timestamp: none
-      delivery_id: none
-      signed_parts: [raw-body]
+      prefix: sha256=
