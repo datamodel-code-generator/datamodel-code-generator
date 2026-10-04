@@ -599,50 +599,6 @@
   "toml-protocols-type": {
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = 5\n"
   },
-  "circuit-values": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/get",
-        "runtime": {
-          "circuit_group": "payments v1"
-        }
-      }
-    ]
-  },
-  "circuit-invalid": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/get",
-        "runtime": {
-          "circuit_group": ""
-        }
-      },
-      {
-        "ref": "/paths/~1pets/get",
-        "runtime": {
-          "circuit_group": "   "
-        }
-      },
-      {
-        "ref": "/paths/~1pets/get",
-        "runtime": {
-          "circuit_group": "line\nbreak"
-        }
-      },
-      {
-        "ref": "/paths/~1pets/get",
-        "runtime": {
-          "circuit_group": 5
-        }
-      }
-    ]
-  },
-  "toml-circuit-values": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\n[operations.runtime]\ncircuit_group = \"payments\"\n"
-  },
-  "toml-circuit-type": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\n[operations.runtime]\ncircuit_group = 5\n"
-  },
   "compression-values": {
     "operations": [
       {

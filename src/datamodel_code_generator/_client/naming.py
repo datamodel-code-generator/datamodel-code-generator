@@ -21,7 +21,6 @@ RESERVED_MEMBERS: Final = frozenset({
     "close",
     "protocols",
     "request_raw",
-    "reset_circuit",
     "with_options",
     "with_raw_response",
     "with_response",

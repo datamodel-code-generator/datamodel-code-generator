@@ -1,10 +1,10 @@
-"""Reject other key types, stores of the other mode, positional or missing clocks, and other events and inputs."""
+"""Reject other key types, positional or missing clocks, and other events and inputs."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pets.protocols import AsyncMemoryReplayStore, KeySet, MemoryReplayStore
+from pets.protocols import KeySet
 from pets.webhooks import keys as key_types
 from pets.webhooks.keys import HmacKey
 from pets.webhooks.standard import message
@@ -16,8 +16,6 @@ if TYPE_CHECKING:
 
 async def wrong_calls(body: bytes, now: datetime, keys: KeySet[HmacKey]) -> None:
     """Reject each misuse of a helper."""
-    message.verify(body, [], keys, now=now, replay_store=AsyncMemoryReplayStore())  # error
-    await message.verify_async(body, [], keys, now=now, replay_store=MemoryReplayStore())  # error
     message.verify(body, [], KeySet(keys=("key",)), now=now)  # error
     message.verify(body, [], keys, now)  # error
     message.verify(body, [], keys)  # error
