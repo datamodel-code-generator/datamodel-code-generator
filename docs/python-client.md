@@ -850,7 +850,8 @@ keep `resume_state=None`. Otherwise
 item a limit refused still to come.
 
 A resumed pager continues with the saved continuation, bindings, and request, whose arguments and body are built from
-their wire values as their codecs build a caller's. A pager checkpointed in the middle of a page fetches that page again and skips the items it delivered of it, which count as
+their wire values as their codecs build a caller's. A pager checkpointed in the middle of a page fetches that page again
+and skips the items it delivered of it, which count as
 delivered; when the server's data changed in between, it skips the same number of items of the page it gets now. A
 literal binding sends the plan's value, never a saved one; a pager that skips items iterates items only, so
 `iter_pages()` raises `ProtocolStateError`. Its pages continue with `next_page` as any other. Pages and items count on
