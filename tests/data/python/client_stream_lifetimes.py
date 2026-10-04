@@ -21,6 +21,7 @@ import pytest
 from tests.data.python.client_runtime import (
     Exchange,
     aoutcome,
+    argument,
     injected,
     json_response,
     outcome,
@@ -172,7 +173,7 @@ def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType]:
 
 
 def _pet(package: ModuleType) -> object:
-    return _modules(package)[1].GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    return argument(package, "getPet", "path", "petId", 3)
 
 
 def _body(size: int = 3 * _CHUNK) -> Callable[[httpx2.Request], httpx2.Response]:

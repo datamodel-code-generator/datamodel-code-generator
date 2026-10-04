@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import importlib
 from typing import TYPE_CHECKING, Any
 
 from tests.data.python.client_pagination import Harness, adrained, afetched, drained, fetched, user_page, users
-from tests.data.python.client_runtime import Exchange, run
+from tests.data.python.client_runtime import Exchange, request_body, run
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -46,8 +45,7 @@ def _steps(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
 
 def _search(harness: Harness, wire: object) -> object:
     """Return the search request body of a wire value, as its body codec builds it."""
-    types = importlib.import_module(f"{harness.package.__name__}.types.searches")
-    return types.SearchRequestCodecs.body().from_wire(wire)
+    return request_body(harness.package, "search", None, wire)
 
 
 def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -56,7 +54,7 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     The total of an offset still counts from the first position, wherever the traversal starts.
     """
     listing = api.protocols.users
-    start = harness.argument("users", "ListUsers", "query", "offset", 40)
+    start = harness.argument("listUsers", "query", "offset", 40)
     exchange.respond(user_page("1", "2", has_more=True), user_page("3", has_more=False))
     drained(lines, "query start", listing.offsets.iterate(offset=start))
     exchange.respond(user_page("1", "2", total=42))
@@ -64,31 +62,30 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     exchange.respond(user_page("1", has_more=True), user_page("2", has_more=False))
     first = fetched(lines, "query start page", lambda: listing.offsets.page(offset=start))
     fetched(lines, "query start next page", lambda: listing.offsets.next_page(first))
-    numbered = harness.argument("users", "ListUsers", "header", "X-Page", 5)
+    numbered = harness.argument("listUsers", "header", "X-Page", 5)
     exchange.respond(users("1", **{"X-Has-More": "true"}), users("2", **{"X-Has-More": "false"}))
     drained(lines, "header start", listing.by_header.iterate(x_page=numbered))
     exchange.respond(user_page("1", total=45), user_page("2", total=45))
     body = _search(harness, {"query": "a", "window": {"start": 30}})
     drained(lines, "body start", api.protocols.searches.all.iterate(body=body))
-    types = importlib.import_module(f"{harness.package.__name__}.types.finds")
-    codec = types.FindRequestCodecs.parameter(location="querystring", name="criteria")
-    for label, arguments in (
-        ("querystring start", {"criteria": codec.from_wire({"term": "a", "start": 10})}),
-        ("querystring without a start", {"criteria": codec.from_wire({"term": "a"})}),
-        ("no querystring", {}),
+    for label, criteria in (
+        ("querystring start", {"term": "a", "start": 10}),
+        ("querystring without a start", {"term": "a"}),
+        ("no querystring", None),
     ):
+        arguments = {} if criteria is None else {"criteria": harness.argument("find", "querystring", "criteria", criteria)}
         exchange.respond(user_page("1", has_more=True), user_page("2", has_more=False))
         drained(lines, label, api.protocols.finds.all.iterate(**arguments))
     drained(lines, "text start", listing.offsets.iterate(offset="forty"))
     exchange.respond(user_page("1", has_more=True), user_page("2", has_more=False))
-    integral = harness.argument("users", "ListUsers", "query", "position", 40.0)
+    integral = harness.argument("listUsers", "query", "position", 40.0)
     drained(lines, "integral number start", listing.positions.iterate(position=integral))
-    fraction = harness.argument("users", "ListUsers", "query", "position", 40.5)
+    fraction = harness.argument("listUsers", "query", "position", 40.5)
     drained(lines, "fractional number start", listing.positions.iterate(position=fraction))
-    page = harness.argument("users", "ListUsers", "query", "page", 3)
+    page = harness.argument("listUsers", "query", "page", 3)
     exchange.respond(users("1", "2", **{"X-Total-Count": "3"}), users(**{"X-Total-Count": "3"}))
     drained(lines, "page number start ended by an empty page", listing.pages.iterate(page=page))
-    model = _search(harness, {"query": "a", "window": {"start": 1}}).value
+    model = _search(harness, {"query": "a", "window": {"start": 1}})
     texted = model.model_copy(update={"window": type(model.window).model_construct(start="x")})
     drained(lines, "text body start", api.protocols.searches.all.iterate(body=texted))
 

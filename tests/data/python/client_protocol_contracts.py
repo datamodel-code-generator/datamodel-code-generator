@@ -19,7 +19,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, get_args, get_origin, get_type_hints
 
-from tests.data.python.client_runtime import Exchange, arecord, json_response, record, run
+from tests.data.python.client_runtime import Exchange, arecord, argument, json_response, record, run
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -718,8 +718,7 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
 
 
 def _trace(package: ModuleType) -> object:
-    types = importlib.import_module(f"{package.__name__}.types.pets")
-    return types.ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t")
+    return argument(package, "listPets", "header", "X-Trace", "t")
 
 
 def _calls(package: ModuleType, options: ModuleType, client_options: Any, lines: list[str]) -> None:

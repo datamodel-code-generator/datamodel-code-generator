@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from tests.data.python.client_queue_credentials import _Provider
 from tests.data.python.client_queues import _AsyncStore, _Store, _Time
-from tests.data.python.client_runtime import Exchange, raw_response, run
+from tests.data.python.client_runtime import Exchange, argument, raw_response, run
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -29,7 +29,6 @@ async def _mode(package: ModuleType, lines: list[str], asynchronous: bool) -> No
     public = import_module(f"{package.__name__}.protocols")
     options = import_module(f"{package.__name__}.options")
     auth = import_module(f"{package.__name__}.auth")
-    codecs = import_module(f"{package.__name__}.types.cases")
     clock, exchange = _Time(), Exchange([])
     native = exchange.async_client() if asynchronous else exchange.client()
     provider = _Provider(auth, asynchronous)
@@ -59,12 +58,11 @@ async def _mode(package: ModuleType, lines: list[str], asynchronous: bool) -> No
         patches = {} if control["operation"] == "whole" else {"query": tuple(map(tuple, inputs["query"]))}
         api = client(store, headers=tuple(map(tuple, inputs["headers"])), **patches)
         operation = control["operation"]
-        codec = getattr(codecs, f"Get{operation.title()}RequestCodecs").parameter(
-            location=control["location"], name=control["name"]
-        )
         receipt = await _value(
             getattr(api.protocols.outbox.operations, operation).enqueue(**{
-                control["name"]: codec.from_wire(control["value"])
+                control["name"]: argument(
+                    package, f"get{operation.title()}", control["location"], control["name"], control["value"]
+                )
             })
         )
         entry = await _value(api.protocols.outbox.inspect(receipt.entry_id))
@@ -112,10 +110,11 @@ async def _mode(package: ModuleType, lines: list[str], asynchronous: bool) -> No
             else {"alpha": "cake", "zulu": "tea"}
         )
         name = "tag" if operation == "repeated" else "filter"
-        codec = getattr(codecs, f"Get{operation.title()}RequestCodecs").parameter(location="query", name=name)
         api = client(store, **patches)
         receipt = await _value(
-            getattr(api.protocols.outbox.operations, operation).enqueue(**{name: codec.from_wire(value)})
+            getattr(api.protocols.outbox.operations, operation).enqueue(**{
+                name: argument(package, f"get{operation.title()}", "query", name, value)
+            })
         )
         entry = await _value(api.protocols.outbox.inspect(receipt.entry_id))
         await close(api)

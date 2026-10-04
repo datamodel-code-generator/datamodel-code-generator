@@ -16,6 +16,7 @@ from tests.data.python.client_runtime import (
     Exchange,
     aoutcome,
     arecord,
+    argument,
     chunked_response,
     describe,
     injected,
@@ -199,8 +200,7 @@ class _Harness:
 
     def topic(self, wire: str) -> object:
         """Return the topic argument of the events operation for a wire value."""
-        types = importlib.import_module(f"{self.package.__name__}.types.events")
-        return types.StreamEventsRequestCodecs.parameter(location="query", name="topic").from_wire(wire)
+        return argument(self.package, "streamEvents", "query", "topic", wire)
 
 
 def streams(package: ModuleType, lines: list[str]) -> None:

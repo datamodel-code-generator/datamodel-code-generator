@@ -175,7 +175,7 @@ async def _matrix(package: ModuleType, lines: list[str], asynchronous: bool, pat
         instance = api(store)
         outbox = instance.protocols.orders.outbox
         receipt = await _value(
-            partial(outbox.operations.refresh.enqueue, order_id=queue.argument("GetOrder", "path", "orderId", "safe"))
+            partial(outbox.operations.refresh.enqueue, order_id=queue.argument("getOrder", "path", "orderId", "safe"))
         )
         original = store.entries[receipt.entry_id]
         now = queue.time.now()
@@ -327,7 +327,7 @@ async def _matrix(package: ModuleType, lines: list[str], asynchronous: bool, pat
             outbox = instance.protocols.orders.outbox
             enqueue = (
                 partial(
-                    outbox.operations.refresh.enqueue, order_id=queue.argument("GetOrder", "path", "orderId", "safe")
+                    outbox.operations.refresh.enqueue, order_id=queue.argument("getOrder", "path", "orderId", "safe")
                 )
                 if kind == "unkeyed_key"
                 else partial(outbox.operations.create_order.enqueue, body=queue.order)
