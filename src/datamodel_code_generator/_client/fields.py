@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import replace
-from typing import TYPE_CHECKING, Final, cast
+from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import RESERVED_ARGUMENTS, identifier, snake
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.model_facts import ModelFacts, ModelField
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._target_contract import FinalPythonType, TypeUseId
+    from datamodel_code_generator._target_contract import TypeUseId
 
 _KINDS: Final = frozenset({"json", "form"})
 _MEMBERS: Final = ("allOf", "anyOf", "oneOf")
@@ -74,9 +74,15 @@ class _Fields:
         Any other body is None, as is one whose schema requires a name that only extra properties could hold.
         """
         use = media.use
-        if media.kind not in _KINDS or media.members is not None or use is None or use.id not in self.codecs:
+        if (
+            media.kind not in _KINDS
+            or media.members is not None
+            or use is None
+            or (value := use.type) is None
+            or use.id not in self.codecs
+        ):
             return None
-        model = self.facts.model(cast("FinalPythonType", use.type))
+        model = self.facts.model(value)
         if model is None or use.schema is None:
             return None
         fields = self.facts.fields(model.id)
