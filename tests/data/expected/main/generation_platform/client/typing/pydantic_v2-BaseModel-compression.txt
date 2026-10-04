@@ -5,12 +5,12 @@ compression_negative.py 3 marked lines
 mypy compression_negative.py: 3/3 marked lines with one error, 0 elsewhere, 0 in other files
   10 arg-type
   11 arg-type
-  12 arg-type
+  12 call-arg
 pyright compression_negative.py: 3/3 marked lines with one error, 0 elsewhere, 0 in other files
   10 reportArgumentType
   11 reportArgumentType
-  12 reportArgumentType
+  12 reportCallIssue
 ty compression_negative.py: 3/3 marked lines with one error, 0 elsewhere, 0 in other files
   10 invalid-argument-type
   11 invalid-argument-type
-  12 invalid-argument-type
+  12 unknown-argument
