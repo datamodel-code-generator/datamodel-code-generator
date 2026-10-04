@@ -1260,7 +1260,12 @@
     },
     "model": {
       "input_filename": "auth.yaml"
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "auth-no-root": {
     "input": "auth-no-root.yaml",
@@ -1285,6 +1290,11 @@
     "input": "auth-context.yaml",
     "references": [
       "retry-security-context-external.yaml"
+    ],
+    "modules": [
+      [
+        "models.py"
+      ]
     ]
   },
   "helpers": {
