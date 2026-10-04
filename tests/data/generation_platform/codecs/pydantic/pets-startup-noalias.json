@@ -5,6 +5,8 @@
   "startup": [
     {"name": "native-gap", "use": "/paths/~1pets/post request_body", "binding": {"projection_mode": "native"},
      "decode": {"name": "Mimi", "status": "new", "nick-name": "Mi"}},
+    {"name": "envelope-gap", "use": "/paths/~1pets/post request_body", "binding": {"projection_mode": "envelope"},
+     "decode": {"name": "Mimi", "status": "new", "nick-name": "Mi"}},
     {"name": "patch-target", "use": "/paths/~1pets/post request_body",
      "patch": {"uri": "https://dcg.invalid/inputs/root", "pointer": "/components/schemas/Missing", "keyword": "required", "value": []},
      "decode": {"name": "Mimi", "status": "new"}},
