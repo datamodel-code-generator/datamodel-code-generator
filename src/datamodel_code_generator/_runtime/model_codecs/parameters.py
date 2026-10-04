@@ -310,8 +310,14 @@ def _encode_querystring(plan: ParameterPlan, value: WireValue) -> bytes:
 
 
 def _style_pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
-    """Return a style's pairs of a value; an empty array or object writes none, as an omitted value does."""
+    """Return a style's pairs of a value; an empty array or object writes none, as an omitted value does.
+
+    A path segment cannot be omitted, so a path parameter refuses an empty array or object.
+    """
     if not (entries := _entries(plan, value)):
+        if plan.location == "path":
+            msg = "An empty array or object cannot fill a path segment"
+            raise ParameterEncodingError(msg)
         return []
     match plan.location:
         case "path":

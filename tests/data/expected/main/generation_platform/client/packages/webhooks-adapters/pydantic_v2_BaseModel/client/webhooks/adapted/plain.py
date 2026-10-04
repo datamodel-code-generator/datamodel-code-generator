@@ -17,9 +17,7 @@ from ..._generated import model_bindings
 from ..._runtime.protocols.adapters import AdapterPlan, averify_adapted, verify_adapted
 from ..._runtime.protocols.webhook_events import EventDecoder
 from ..._runtime.protocols.webhooks import (
-    AsyncReplayStore,
     KeySet,
-    ReplayStore,
     VerifiedWebhook,
     Verifier,
     WebhookOptions,
@@ -33,7 +31,6 @@ K = TypeVar("K")
 
 _PLAN: Final[AdapterPlan[_dcg_type_0]] = AdapterPlan(
     helper_id='adapted.plain',
-    fingerprint='599bbad08283673d538acfedcefe3b91358b1bff901d889c5fb13f45fb5efaaf',
     timestamp=False,
     delivery_id=False,
     event=EventDecoder(
@@ -41,7 +38,6 @@ _PLAN: Final[AdapterPlan[_dcg_type_0]] = AdapterPlan(
         model_bindings.CONTEXT_2,
         validate=False,
     ),
-    duplicates='reject',
 )
 
 
@@ -52,22 +48,16 @@ def verify(
     *,
     verifier: Verifier[K],
     now: datetime,
-    replay_store: ReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0]:
-    """Verify a delivery with verifier and decode its event, claiming it in a store.
+    """Verify a delivery with verifier and decode its event.
 
     The verifier is called once, synchronously in both functions, and must authenticate
     the whole raw body and every fact it returns; a result that is not a
     VerifiedSignature, lacks a fact this helper requires, returns one it does not
-    declare, or has a naive timestamp raises AdapterContractError before decoding. This
-    webhook has no timestamp, so replay protection has no time window: a replay store
-    keeps a claim for replay_ttl after now. Duplicates are detected only until the claim
-    expires. The claim is made after decoding, before your code processes the event: if
-    processing then fails, a retried delivery is a duplicate, or rejected under
-    duplicates: reject, until the claim expires, so make processing durable or
-    idempotent before acknowledging, or use a store whose claims you can release.
-    Without a replay store, duplicate=False does not mean the delivery is new.
+    declare, or has a naive timestamp raises AdapterContractError before decoding.
+    Verification retains no delivery state; deduplicate in your application using
+    delivery_id when present.
     """
     return verify_adapted(
         _PLAN,
@@ -76,7 +66,6 @@ def verify(
         keys,
         verifier=verifier,
         now=now,
-        replay_store=replay_store,
         options=options,
     )
 
@@ -88,22 +77,16 @@ async def verify_async(
     *,
     verifier: Verifier[K],
     now: datetime,
-    replay_store: AsyncReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0]:
-    """Verify a delivery with verifier and decode its event, claiming it in an asyncio store.
+    """Verify a delivery with verifier and decode its event.
 
     The verifier is called once, synchronously in both functions, and must authenticate
     the whole raw body and every fact it returns; a result that is not a
     VerifiedSignature, lacks a fact this helper requires, returns one it does not
-    declare, or has a naive timestamp raises AdapterContractError before decoding. This
-    webhook has no timestamp, so replay protection has no time window: a replay store
-    keeps a claim for replay_ttl after now. Duplicates are detected only until the claim
-    expires. The claim is made after decoding, before your code processes the event: if
-    processing then fails, a retried delivery is a duplicate, or rejected under
-    duplicates: reject, until the claim expires, so make processing durable or
-    idempotent before acknowledging, or use a store whose claims you can release.
-    Without a replay store, duplicate=False does not mean the delivery is new.
+    declare, or has a naive timestamp raises AdapterContractError before decoding.
+    Verification retains no delivery state; deduplicate in your application using
+    delivery_id when present.
     """
     return await averify_adapted(
         _PLAN,
@@ -112,6 +95,5 @@ async def verify_async(
         keys,
         verifier=verifier,
         now=now,
-        replay_store=replay_store,
         options=options,
     )

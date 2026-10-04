@@ -80,12 +80,10 @@ from .operations import DATA_ERRORS, ResponseDecoder
 from .options import (
     DEFAULT_TRANSPORT,
     ClientOptions,
-    CompressionOrigin,
     HeaderPatch,
     IdempotencyKey,
     QueryPatch,
     RequestOptions,
-    ResolvedCompression,
     ServerSelection,
     Settings,
     TimeoutOptions,
@@ -142,8 +140,6 @@ if TYPE_CHECKING:
 
     from ..model_codecs.parameters import ParameterFragment, ParameterPlan
     from ..model_codecs.wire import WireValue
-    from ..protocols.circuit_records import CircuitKey, CircuitPermit
-    from ..protocols.circuits import Breaker
     from ..protocols.options import (
         ProtocolClientOptions,
         ProtocolDefaults,
@@ -213,7 +209,6 @@ _NOT_MODIFIED: Final = 304
 _MAX_STATUS: Final = 599
 _ERROR_STATUS: Final = 400
 _SWITCHING: Final = 101
-_SOCKET_SCHEMES: Final = (("wss:", "https:"), ("ws:", "http:"))
 _UNAUTHORIZED: Final = 401
 _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
 
@@ -225,7 +220,6 @@ class ClientDefaults:
     user_agent: str | None = None
     security_schemes: tuple[SecuritySchemeEntry, ...] = ()
     helpers: tuple[tuple[str, str], ...] = ()
-    circuit_groups: frozenset[str] = frozenset()
 
 
 _DEFAULT_SERVER: Final = ServerSelection()
@@ -235,12 +229,8 @@ def _layered(
     settings: Settings,
     layer: ClientOptions | RequestOptions,
     operation_id: str | None = None,
-    origin: CompressionOrigin = "call",
 ) -> Settings:
-    """Return the settings with one options layer applied: its set fields replace, UNSET ones inherit.
-
-    A request coding the layer selects keeps the layer as its origin: the client, a view, or the call.
-    """
+    """Return the settings with one options layer applied: its set fields replace, UNSET ones inherit."""
     base_url, server = settings.base_url, settings.server
     if not isinstance(layer.base_url, Unset):
         base_url, server = layer.base_url.rstrip("/"), _DEFAULT_SERVER
@@ -285,13 +275,7 @@ def _layered(
             if isinstance(layer.stream_total_timeout, Unset)
             else layer.stream_total_timeout
         ),
-        compression=(
-            settings.compression
-            if isinstance(coding := layer.compression, Unset)
-            else None
-            if coding is None
-            else ResolvedCompression(coding, origin)
-        ),
+        compression=layer.compression if isinstance(layer, ClientOptions) else settings.compression,
         clock=settings.clock,
     )
 
@@ -347,7 +331,7 @@ def _client_settings(options: object) -> Settings:
         case ClientOptions():
             if not isinstance(clock := options.clock, Unset):
                 settings = replace(settings, clock=clock)
-            return _layered(settings, options, origin="client")
+            return _layered(settings, options)
         case _:
             pass
     raise ConfigurationError(field_path=("options",), condition="invalid_type")
@@ -835,25 +819,24 @@ _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
 
 
 def _compressed(
-    coding: ResolvedCompression, call: _Call, request: PreparedRequest[EncodedAttempt], deferred: object
+    call: _Call, request: PreparedRequest[EncodedAttempt], deferred: object
 ) -> tuple[PreparedRequest[EncodedAttempt], bool]:
-    """Apply a selected coding to a request with a body whose operation accepts it, adding its Content-Encoding.
-
-    Elsewhere a coding the client or a view selected turns off, as one a helper's child call inherits does; one the
-    call selected is refused before sending. A Content-Encoding header the call already sends conflicts with it.
-    """
-    from .compression import applies, gzipped_attempt  # noqa: PLC0415 - Only a selected coding loads the encoder.
-
-    if not applies(coding, call.operation, body=request.body is not None or not isinstance(deferred, Unset)):
-        if coding.origin == "call" and not isinstance(call, _SessionCall):
-            raise ConfigurationError(field_path=("compression",), condition="not_applicable")
+    """Gzip a declared request body unless the client disabled it, replacing its entity framing."""
+    if (
+        call.settings.compression is None
+        or call.operation is None
+        or "gzip" not in call.operation.accepted_content_encodings
+        or (request.body is None and isinstance(deferred, Unset))
+    ):
         return request, False
     if request.headers.get_all("content-encoding"):
         raise ConfigurationError(field_path=("headers", "Content-Encoding"), condition="managed")
+    from .compression import gzipped_attempt  # noqa: PLC0415 - Only a declared body loads the encoder.
+
     body = None if request.body is None else gzipped_attempt(request.body, partial(call.check, "encode"))
     headers = HeadersView((
         *(pair for pair in request.headers if pair[0].lower() != "content-length"),
-        ("Content-Encoding", coding.token),
+        ("Content-Encoding", "gzip"),
     ))
     return PreparedRequest(method=request.method, url=request.url, headers=headers, body=body), True
 
@@ -870,88 +853,26 @@ def _agzip_source(source: AsyncBodySource) -> AsyncBodySource:
     return AsyncGzipSource(source)
 
 
-def _circuit(breaker: Breaker, call: _Call, url: str, root_auth: AuthConfig | None) -> CircuitKey | None:
-    """Return the key of a call's circuit, or None for a call of an operation outside every circuit group.
-
-    A call authenticating with other auth than the client's would share the client's partition, so it is refused.
-    """
-    if (operation := call.operation) is None or (group := operation.circuit_group) is None:
-        return None
-    if call.auth is not None and call.settings.auth is not root_auth:
-        raise ProtocolConfigurationError(field_path=("options", "auth"), condition="security_partition")
-    return breaker.call_key(url, group, authenticated=call.auth is not None)
-
-
-def _admission(
-    shared: _Shared[TransportAdapter], breaker: Breaker, call: _Call, url: str
-) -> tuple[Breaker, CircuitPermit] | None:
-    """Pass a call through its circuit, returning the breaker and permit to record its outcome with."""
-    key = _circuit(breaker, call, url, shared.root_auth)
-    return None if key is None else (breaker, breaker.admit(key))
-
-
-async def _aadmission(
-    shared: _Shared[AsyncTransportAdapter], breaker: Breaker, call: _Call, url: str
-) -> tuple[Breaker, CircuitPermit] | None:
-    """Pass an asyncio call through its circuit, returning the breaker and permit to record its outcome with."""
-    key = _circuit(breaker, call, url, shared.root_auth)
-    return None if key is None else (breaker, await breaker.aadmit(key))
-
-
 def _abandoned(
     call: _Call,
     owned: tuple[BodySource | None, BodyBindings | None],
-    admission: tuple[Breaker, CircuitPermit] | None,
     failure: BaseException,
 ) -> None:
-    """Release a failed call's body source and captured input, then record its outcome if it passed a circuit."""
-    try:
-        for resource in owned:
-            if resource is not None:
-                call.retry_blocked |= not _discarded(resource.close, failure)
-    finally:
-        if admission is not None:
-            admission[0].record(admission[1], failure, None)
+    """Release a failed call's body source and captured input."""
+    for resource in owned:
+        if resource is not None:
+            call.retry_blocked |= not _discarded(resource.close, failure)
 
 
 async def _aabandoned(
     call: _Call,
     owned: tuple[AsyncBodySource | None, AsyncBodyBindings | None],
-    admission: tuple[Breaker, CircuitPermit] | None,
     failure: BaseException,
 ) -> None:
-    """Release a failed asyncio call's body, then record its outcome, finishing the record even if cancelled."""
-    try:
-        for resource in owned:
-            if resource is not None:
-                await call.cleanup(resource.aclose, error=failure)
-    finally:
-        if admission is not None:
-            await asyncio.shield(admission[0].arecord(admission[1], failure, None))
-
-
-def _circuit_recorded(admission: tuple[Breaker, CircuitPermit], result: object, call: _Call) -> None:
-    """Record a returned call's final status, discarding its raw response when the store fails."""
-    info = call.last_info
-    assert info is not None
-    try:
-        admission[0].record(admission[1], None, info.status_code)
-    except BaseException as error:
-        if isinstance(result, RawResponse):
-            result.discard(error)
-        raise
-
-
-async def _acircuit_recorded(admission: tuple[Breaker, CircuitPermit], result: object, call: _Call) -> None:
-    """Record a returned asyncio call's final status, discarding its raw response when the store fails."""
-    info = call.last_info
-    assert info is not None
-    try:
-        await admission[0].arecord(admission[1], None, info.status_code)
-    except BaseException as error:
-        if isinstance(result, AsyncRawResponse):
-            await result.discard(error)
-        raise
+    """Release a failed asyncio call's body source and captured input."""
+    for resource in owned:
+        if resource is not None:
+            await call.cleanup(resource.aclose, error=failure)
 
 
 def _uncredentialed(
@@ -1508,15 +1429,6 @@ class _SessionCall(_Call):
         return planned
 
 
-def _http_location(location: str) -> str:
-    """Return a ws or wss URL as the http or https URL of its handshake, and any other location unchanged."""
-    lowered = location[:4].lower()
-    for socket_scheme, http_scheme in _SOCKET_SCHEMES:
-        if lowered.startswith(socket_scheme):
-            return http_scheme + location[len(socket_scheme) :]
-    return location
-
-
 class _SocketCall(_SessionCall):
     """The handshake of a WebSocket helper: a session child call whose open has one cap for all of its phases.
 
@@ -1549,12 +1461,40 @@ class _SocketCall(_SessionCall):
         self.phase_caps = (cap, cap, cap, cap)
         return ResolvedTimeoutOptions(connect=cap.effective, read=cap.effective, write=cap.effective, pool=None)
 
-    @staticmethod
-    def redirect_headers(headers: HeadersView) -> HeadersView:
-        """Read a ws or wss Location as the http or https URL a handshake requests, so the shared policy applies."""
-        return HeadersView(
-            (name, _http_location(value) if name.lower() == "location" else value) for name, value in headers.items()
+    def retry(
+        self,
+        info: ResponseInfo | None,
+        error: TransportError | None,
+        *,
+        replayable: bool,
+        retry_owner: Literal["sdk", "transport"],
+    ) -> RetryDelay | None:
+        """Retry only a handshake proven unsent; a received refusal or an uncertain open stays terminal."""
+        if info is None and error is not None and error.delivery_state is DeliveryState.NOT_SENT:
+            return super().retry(info, error, replayable=replayable, retry_owner=retry_owner)
+        self.check("send")
+        self.stop_reason = (
+            "callback_failure"
+            if self.retry_blocked
+            else "auth_unrefreshable"
+            if info is not None and info.status_code == _UNAUTHORIZED
+            else "status_not_retryable"
+            if info is not None
+            else "transport_not_retryable"
         )
+        return None
+
+    def redirected(  # ruff: ignore[no-self-use] - Overrides the shared redirect policy.
+        self,
+        request: PreparedRequest[EncodedAttempt],  # ruff: ignore[unused-method-argument]
+        info: ResponseInfo,  # ruff: ignore[unused-method-argument]
+        visited: frozenset[tuple[str, str]],  # ruff: ignore[unused-method-argument]
+        *,
+        replayable: bool,  # ruff: ignore[unused-method-argument]
+        schemes: tuple[SecuritySchemeEntry, ...],  # ruff: ignore[unused-method-argument]
+    ) -> PreparedRequest[EncodedAttempt] | None:
+        """Keep every received handshake refusal terminal."""
+        return None
 
 
 class _SessionWait(LogicalCallContext):
@@ -1575,14 +1515,12 @@ class _SessionWait(LogicalCallContext):
 class _Shared(Generic[AdapterT]):
     """What a client shares with its views: the transport, the fixed headers, and whether the transport was closed.
 
-    It also keeps the client's protocol helper settings and the breaker of its grouped operations' circuits.
+    It also keeps the client's protocol helper settings.
     """
 
     __slots__ = (
         "adapter",
         "adapter_closed",
-        "breaker",
-        "circuit_groups",
         "closing_tasks",
         "fixed",
         "loop",
@@ -1611,16 +1549,6 @@ class _Shared(Generic[AdapterT]):
         self.protocols: ProtocolClientOptions | None = None
         self.root_auth: AuthConfig | None = None
         self.socket_connector: object = None
-        self.breaker: Breaker | None = None
-        self.circuit_groups = defaults.circuit_groups
-
-    def protect(self, protocols: ProtocolClientOptions | None, clock: Clock, *, asynchronous: bool) -> None:
-        """Keep the client's protocol settings and create its breaker, on the client's clock, if they enable one."""
-        self.protocols = protocols
-        if protocols is not None and self.circuit_groups and not isinstance(protocols.circuit, Unset):
-            from ..protocols.circuits import breaker  # noqa: PLC0415 - Only circuit settings load the breaker.
-
-            self.breaker = breaker(protocols, clock, asynchronous=asynchronous)
 
 
 class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call and helper kind.
@@ -1723,23 +1651,11 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
             return _Call(settings, self._scope, operation)
         return _SessionCall(settings, self._scope, operation, session)
 
-    def circuit_key(self, group: object, origin: object) -> CircuitKey | None:
-        """Return the key of one of the package's circuit groups at an origin, or None when no breaker is enabled."""
-        from ..protocols import origins  # noqa: PLC0415 - Only circuit resets load the protocol origins.
-
-        if not isinstance(group, str) or group not in self._shared.circuit_groups:
-            raise ProtocolConfigurationError(field_path=("group",), condition="unknown_field")
-        if not isinstance(origin, origins.Origin):
-            raise ProtocolConfigurationError(field_path=("origin",), condition="invalid_value")
-        if (breaker := self._shared.breaker) is None:
-            return None
-        return breaker.key((origin.scheme, origin.host, origin.port), group)
-
     def view(self, options: object) -> Self:
         """Return a view with the options layered on these, sharing the transport and counting its calls here too."""
         if not isinstance(options, RequestOptions):
             raise ConfigurationError(field_path=("options",), condition="invalid_type")
-        settings = self._call_settings(options, None, "view")
+        settings = self._call_settings(options, None)
         view = type(self)(self._shared, settings, self._scope.view(), owned=False)
         if not isinstance(options.auth, Unset) and options.auth is not None:
             view._adopt_auth(options.auth)  # noqa: SLF001 - The new view admits ownership through its own scope.
@@ -1873,7 +1789,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         media_type = response_media_type or operation.response_media_type
         return decoder if media_type is None else decoder.narrowed(operation.operation_id, media_type)
 
-    def _call_settings(self, options: object, operation_id: str | None, origin: CompressionOrigin = "call") -> Settings:
+    def _call_settings(self, options: object, operation_id: str | None) -> Settings:
         """Return the settings a call runs with: this client's or view's, with the call's options layered on them."""
         if options is None:
             return self._settings
@@ -1885,7 +1801,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(options.auth, asynchronous=self._asynchronous)
-        return _layered(self._settings, options, operation_id, origin)
+        return _layered(self._settings, options, operation_id)
 
     def _bound(
         self, operation: OperationPlan[object, object] | None, config: AuthConfig | None
@@ -2247,11 +2163,12 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         body: object,
         media_type: str | None,
         options: RequestOptions | None,
-    ) -> tuple[tuple[WireValue | Unset, ...], tuple[WireValue, str, None] | None]:
+    ) -> tuple[tuple[WireValue | Unset, ...], tuple[WireValue, str, str | None] | None]:
         """Return the wire values of a helper call's arguments, and of its JSON body with its declared media type.
 
-        They are encoded and checked as the call's first request encodes them, and the body's third item is always None.
-        An argument `unsaved_argument` names is never saved, so a call giving one cannot be checkpointed.
+        They are encoded and checked as the call's first request encodes them; a body sent as a concrete media type
+        other than its declared one also gives the type sent. An argument `unsaved_argument` names is never saved, so a
+        call giving one cannot be checkpointed.
         """
         self._call_settings(options, operation.operation_id)
         saved = tuple(
@@ -2263,12 +2180,12 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         request = operation.body
         if request is None or isinstance(body, Unset):
             return saved, None
-        media = request.selected(operation.operation_id, media_type)
+        media, sent = request.selected(operation.operation_id, media_type)
         try:
             wire = media.wire(body)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation.operation_id, cause=error) from None
-        return saved, (wire, media.media_type, None)
+        return saved, (wire, media.media_type, None if sent == media.media_type else sent)
 
     @staticmethod
     def restored_request(
@@ -2278,8 +2195,9 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
     ) -> tuple[tuple[object, ...], object, str | None]:
         """Return the arguments, body, and media type of a request a checkpoint saved, built from their wire values.
 
-        Each value is validated against its schema and built into its native value; a value that does not fit raises
-        RequestEncodingError, and so does a body whose third item names a concrete media type, which nothing saves now.
+        Each value is validated against its schema and built into its native value, and a concrete media type is
+        selected as a call's is; a value that does not fit, or a concrete type that selects another declared media,
+        raises RequestEncodingError.
         """
         restored = tuple(
             value if isinstance(value, Unset) else _coded(operation, spec, partial(spec.restored, value))
@@ -2287,10 +2205,10 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         )
         if body is None or (request := operation.body) is None:
             return restored, UNSET, None
-        wire, media_type, concrete = body
-        if concrete is not None:
+        wire, declared, concrete = body
+        media_type = declared if concrete is None else concrete
+        if (media := request.selected(operation.operation_id, media_type)[0]).media_type != declared:
             raise RequestEncodingError(location=("body",), operation_id=operation.operation_id)
-        media = request.selected(operation.operation_id, media_type)
         try:
             return restored, media.restored(wire), media_type
         except (*DATA_ERRORS, ValueError, TypeError) as error:
@@ -2334,37 +2252,6 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         for position, value in given.items():
             spec = operation.parameters[position]
             _coded(operation, spec, partial(_parameter, spec, value))
-
-    def response_limit(self, operation: OperationPlan[object, object], options: RequestOptions | None) -> int | None:
-        """Return the largest successful response body a call of the operation accepts, or None without a limit."""
-        return self._call_settings(options, operation.operation_id).max_response_bytes
-
-    def saved_page(
-        self,
-        operation: OperationPlan[T, object],
-        content: bytes,
-        status_code: int,
-        content_type: str | None,
-        options: RequestOptions | None,
-    ) -> tuple[T, WireValue, ResponseInfo]:
-        """Decode a body a helper saved in a checkpoint as its response decoded it, without any other response metadata.
-
-        The response's metadata is not saved, so it is decoded under its status and media type alone, which the
-        returned metadata holds with an empty call identifier.
-        """
-        self._call_settings(options, operation.operation_id)
-        info = ResponseInfo(
-            status_code=status_code,
-            headers=HeadersView(() if content_type is None else (("Content-Type", content_type),)),
-            call_id="",
-            elapsed=0.0,
-            content_type=content_type,
-            resource_attempt_count=0,
-            network_send_count=0,
-            network_send_budget_used=0,
-        )
-        data, wire = operation.responses.decode_page(info, content)
-        return data, wire, info
 
     def _page_request(
         self,
@@ -2864,7 +2751,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, Httpx2Transport))
-        shared.protect(protocols, settings.clock, asynchronous=False)
+        shared.protocols = protocols
         shared.root_auth = settings.auth
         result = cls(shared, settings, Scope(), owned=owned)
         if settings.auth is not None:
@@ -3288,13 +3175,10 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
     ) -> T:
         """Own entry capture, the single encode, every hop, and final source release.
 
-        A WebSocket handshake sends through its own adapter instead of the client's. A call of a grouped operation
-        passes its circuit once encoded, before any credential or send, and records its outcome there once its hops
-        and retries end.
+        A WebSocket handshake sends through its own adapter instead of the client's.
         """
         entry: BodyBindings | None = None
         source: BodySource | None = None
-        admission: tuple[Breaker, CircuitPermit] | None = None
         adapter = self._shared.adapter if adapter is None else adapter
         try:
             entry = (
@@ -3313,8 +3197,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             request = call.prepared(request)
             if call.auth is not None:
                 self._auth_prepared(request, call)
-            coding = call.settings.compression
-            request, compressing = (request, False) if coding is None else _compressed(coding, call, request, deferred)
+            request, compressing = _compressed(call, request, deferred)
             call.check("encode")
             if not isinstance(deferred, Unset):
                 source = bind_body(deferred, entry=entry)
@@ -3323,15 +3206,10 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 abandoned, entry = entry, None
                 _released(abandoned.close, call.operation_id, call.call_id)
             call.check("encode")
-            if (breaker := self._shared.breaker) is not None:
-                admission = _admission(self._shared, breaker, call, request.url)
             result = self._exchange(request, source, call, receive, adapter)
-            if admission is not None:
-                admitted, admission = admission, None
-                _circuit_recorded(admitted, result, call)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            _abandoned(call, (source, entry), admission, failure)
+            _abandoned(call, (source, entry), failure)
             raise failure from None
         if source is not None:
             try:
@@ -3418,6 +3296,13 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
     def _status_plan(self, info: ResponseInfo, source: BodySource | None, call: _Call) -> RetryDelay | None:
         """Plan a status retry, invalidating a rejected credential first and keeping the response when that fails."""
+        if isinstance(call, _SocketCall) and info.status_code != _SWITCHING:
+            return call.retry(
+                info,
+                None,
+                replayable=source is None or source.replayable,
+                retry_owner=self._shared.transport.retry_owner,
+            )
         planned = (
             call.retry(
                 info,
@@ -3774,13 +3659,6 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             received.problem = error
         return received
 
-    def reset_circuit(self, group: object, origin: object) -> None:
-        """Close a circuit group's circuit at an origin for this client's partition, sending nothing."""
-        if (key := self.circuit_key(group, origin)) is not None:
-            breaker = self._shared.breaker
-            assert breaker is not None
-            breaker.reset(key)
-
     def close(self) -> None:
         """Stop new calls, wait for the active ones and open handles, and close the transport this client owns."""
         scope = self._scope
@@ -3856,7 +3734,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _async_adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, AsyncHttpx2Transport))
-        shared.protect(protocols, settings.clock, asynchronous=True)
+        shared.protocols = protocols
         shared.root_auth = settings.auth
         with suppress(RuntimeError):
             shared.loop = asyncio.get_running_loop()
@@ -4301,13 +4179,12 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         options: RequestOptions | None,
         adapter: AsyncTransportAdapter | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release, passing grouped calls' circuit.
+        """Own entry capture, the single encode, every hop, and final source release.
 
         A WebSocket handshake sends through its own adapter instead of the client's.
         """
         entry: AsyncBodyBindings | None = None
         source: AsyncBodySource | None = None
-        admission: tuple[Breaker, CircuitPermit] | None = None
         adapter = self._shared.adapter if adapter is None else adapter
         try:
             entry = (
@@ -4326,8 +4203,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             request = call.prepared(request)
             if call.auth is not None:
                 self._auth_prepared(request, call)
-            coding = call.settings.compression
-            request, compressing = (request, False) if coding is None else _compressed(coding, call, request, deferred)
+            request, compressing = _compressed(call, request, deferred)
             call.check("encode")
             if not isinstance(deferred, Unset):
                 source = await bind_async_body(deferred, entry=entry, cleanup=call.cleanup)
@@ -4336,15 +4212,10 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 abandoned, entry = entry, None
                 await call.cleanup(abandoned.aclose)
             call.check("encode")
-            if (breaker := self._shared.breaker) is not None:
-                admission = await _aadmission(self._shared, breaker, call, request.url)
             result = await self._exchange(request, source, call, receive, adapter)
-            if admission is not None:
-                admitted, admission = admission, None
-                await _acircuit_recorded(admitted, result, call)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            await _aabandoned(call, (source, entry), admission, failure)
+            await _aabandoned(call, (source, entry), failure)
             raise failure from None
         if source is not None:
             try:
@@ -4431,6 +4302,13 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
     async def _status_plan(self, info: ResponseInfo, source: AsyncBodySource | None, call: _Call) -> RetryDelay | None:
         """Plan a status retry, invalidating a rejected credential first and keeping the response when that fails."""
+        if isinstance(call, _SocketCall) and info.status_code != _SWITCHING:
+            return call.retry(
+                info,
+                None,
+                replayable=source is None or source.replayable,
+                retry_owner=self._shared.transport.retry_owner,
+            )
         planned = (
             call.retry(
                 info,
@@ -4794,13 +4672,6 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         except ProtocolError as error:
             received.problem = error
         return received
-
-    async def reset_circuit(self, group: object, origin: object) -> None:
-        """Close a circuit group's circuit at an origin for this client's partition, sending nothing."""
-        if (key := self.circuit_key(group, origin)) is not None:
-            breaker = self._shared.breaker
-            assert breaker is not None
-            await breaker.areset(key)
 
     async def aclose(self) -> None:
         """Stop new calls, wait for the active ones and open handles, and close the transport this client owns."""

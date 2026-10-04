@@ -184,7 +184,7 @@ def pagination_paths(package: ModuleType, lines: list[str]) -> None:
 
     A cursor its parameter cannot encode, or one making a dot segment of a segment the caller's argument shares, is
     refused before the next page is sent as any call's path value is; a literal binding encoding to `...` is sent. A
-    caller's own dot segment is refused before the first page.
+    caller's own dot segment, and an empty array that cannot fill its segment, are refused before the first page.
     """
     harness = Harness(package)
     exchange = Exchange(lines)
@@ -204,6 +204,9 @@ def pagination_paths(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(_tagged("1", cursor="c", headers=[("X-Tag", tag)]), users("2"))
             drained(lines, f"tag header {tag!r}", api.protocols.tags.all.iterate(tags=tags))
             exchange.responders.clear()
+        empty = harness.argument("listTags", "path", "tags", [])
+        record(lines, "tags of no tag", lambda: api.tags.list_tags(tags=empty))
+        drained(lines, "tag pages of no tag", api.protocols.tags.all.iterate(tags=empty))
         for resource, value in _FIRST_PAGES:
             arguments = path_arguments(harness.package, f"list{resource.title()}", {"name": value})
             exchange.respond(users("1"))

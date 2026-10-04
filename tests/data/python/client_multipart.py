@@ -287,7 +287,7 @@ def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
 
 
 def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Send bodies with file parts: each member's values through its part codec, refusing parts the schema forbids."""
+    """Send bodies with file parts, avatars, scans, labels, and photos, refusing parts the schema forbids."""
     bodies, options, _ = _modules(package)
     body, field, file = bodies.MultipartBody, bodies.FieldPart, bodies.FilePart
     meta = form_part(package, "submitUpload", "meta", {"city": "Oslo", "codes": [7]})

@@ -1,25 +1,25 @@
 # webhooks-adapters pydantic_v2.BaseModel
   {"meta": {"type": "invoice.paid"}, "type": "invoice", "id": "in_1", "amount": 5} = Invoice(type='invoice', id='in_1', amount=5)
   {"meta": {"type": "customer.created"}, "type": "c", "id": "cus_1", "email": "a@b"} = Customer(type='c', id='cus_1', email='a@b')
-  stripe.event = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
-  stripe.event = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
+  stripe.event = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
+  stripe.event = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
 # webhooks-adapters pydantic_v2.dataclass
   {"meta": {"type": "invoice.paid"}, "type": "invoice", "id": "in_1", "amount": 5} = Invoice(type='invoice', id='in_1', amount=5)
   {"meta": {"type": "customer.created"}, "type": "c", "id": "cus_1", "email": "a@b"} = Customer(type='c', id='cus_1', email='a@b')
-  stripe.event = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
-  stripe.event = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
+  stripe.event = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
+  stripe.event = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
 # webhooks-adapters dataclasses.dataclass
   {"meta": {"type": "invoice.paid"}, "type": "invoice", "id": "in_1", "amount": 5} = Invoice(type='invoice', id='in_1', amount=5)
   {"meta": {"type": "customer.created"}, "type": "c", "id": "cus_1", "email": "a@b"} = Customer(type='c', id='cus_1', email='a@b')
-  stripe.event = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
-  stripe.event = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
+  stripe.event = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
+  stripe.event = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
 # webhooks-adapters typing.TypedDict
   {"meta": {"type": "invoice.paid"}, "type": "invoice", "id": "in_1", "amount": 5} = {'type': 'invoice', 'id': 'in_1', 'amount': 5}
   {"meta": {"type": "customer.created"}, "type": "c", "id": "cus_1", "email": "a@b"} = {'type': 'c', 'id': 'cus_1', 'email': 'a@b'}
-  stripe.event = dict {'type': 'invoice.paid', 'id': 'in_1', 'amount': 1200} delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
-  stripe.event = dict {'type': 'customer.created', 'id': 'cus_1', 'email': 'a@example.com'} delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
+  stripe.event = dict {'type': 'invoice.paid', 'id': 'in_1', 'amount': 1200} delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
+  stripe.event = dict {'type': 'customer.created', 'id': 'cus_1', 'email': 'a@example.com'} delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
 # webhooks-adapters msgspec.Struct
   {"meta": {"type": "invoice.paid"}, "type": "invoice", "id": "in_1", "amount": 5} = Invoice(type='invoice', id='in_1', amount=5)
   {"meta": {"type": "customer.created"}, "type": "c", "id": "cus_1", "email": "a@b"} = Customer(type='c', id='cus_1', email='a@b')
-  stripe.event = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
-  stripe.event = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
+  stripe.event = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
+  stripe.event = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
