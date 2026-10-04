@@ -9,7 +9,6 @@ render
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
   write target server/_generated/model_bindings.py (target)
-  write target server/_generated/openapi.py (target)
   write target server/model_codecs.py (target)
   write target server/responses.py (target)
   write target server/errors.py (target)
@@ -19,7 +18,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  22 runtime modules ['write']
+  21 runtime modules ['write']
 {
   "bindings": [
     {
@@ -138,13 +137,6 @@ render
       "group": null,
       "kind": "model_bindings",
       "path": "_generated/model_bindings.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "openapi",
-      "path": "_generated/openapi.py",
       "sha256": "<sha256>",
       "size": "<masked>"
     },

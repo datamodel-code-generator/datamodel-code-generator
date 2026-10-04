@@ -35,13 +35,7 @@ def _add_handle_get_health(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getHealth',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'customized_basemodel',
-                'operation': '/paths/~1health/get',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1health/get'),
     )
 

@@ -46,13 +46,7 @@ def _add_get_maybe(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getMaybe',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'security_basemodel',
-                'operation': '/paths/~1maybe/get',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1maybe/get'),
     )
 
@@ -80,13 +74,7 @@ def _add_put_pet(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='putPet',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'security_basemodel',
-                'operation': '/paths/~1pets~1{petId}/put',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/put'),
     )
 
@@ -113,13 +101,7 @@ def _add_get_session(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getSession',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'security_basemodel',
-                'operation': '/paths/~1session/get',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1session/get'),
     )
 
@@ -146,13 +128,7 @@ def _add_get_custom(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getCustom',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'security_basemodel',
-                'operation': '/paths/~1custom/get',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1custom/get'),
     )
 

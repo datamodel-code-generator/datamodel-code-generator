@@ -9,7 +9,6 @@ generate {}
   written server/_generated/__init__.py
   written server/_generated/contract.py
   written server/_generated/model_bindings.py
-  written server/_generated/openapi.py
   written server/model_codecs.py
   written server/responses.py
   written server/errors.py
@@ -21,12 +20,9 @@ generate {}
   written server/.dcg-target-manifest.json
 spec api.yaml <- groups-secured-own.yaml
 generate {"config": {"update_groups": ["tag:a"]}}
-  written server/_generated/openapi.py
   written server/.dcg-target-manifest.json
 spec api.yaml <- groups-secured-shared.yaml
 generate {"config": {"update_groups": ["tag:a"]}}
-  APIGenerationError
-  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: /paths/~1b/get changed outside the updated groups
+  written server/.dcg-target-manifest.json
 generate {}
-  written server/_generated/openapi.py
   written server/.dcg-target-manifest.json

@@ -30,13 +30,7 @@ def _add_get_public(router: APIRouter, wiring: Wiring) -> None:
         operation_id='getPublic',
         tags=['public'],
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'security_basemodel',
-                'operation': '/paths/~1public/get',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1public/get'),
     )
 

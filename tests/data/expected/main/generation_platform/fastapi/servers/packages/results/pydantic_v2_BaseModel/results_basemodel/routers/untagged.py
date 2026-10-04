@@ -31,11 +31,37 @@ def _add_get_result(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='getResult',
         response_description='A thing.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'results_basemodel',
-                'operation': '/paths/~1results/get',
+        responses={
+            '200': {
+                'headers': {
+                    'X-Rate': {'schema': {'type': 'integer', 'minimum': 0}},
+                    'X-Tag': {'content': {'text/plain': {}}},
+                },
+            },
+            '201': {
+                'model': results_basemodel_models.Thing,
+                'description': 'Created.',
+                'headers': {
+                    'Location': {'required': True, 'schema': {'type': 'string'}},
+                },
+            },
+            '204': {'description': 'Nothing.'},
+            '2XX': {
+                'description': 'Other success.',
+                'content': {'application/json': {}},
+            },
+            '4XX': {'description': 'Client error.', 'content': {'text/plain': {}}},
+            'default': {
+                'description': 'Error.',
+                'content': {
+                    'application/problem+json': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['title'],
+                            'properties': {'title': {'type': 'string'}},
+                        },
+                    },
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1results/get'),
@@ -57,12 +83,8 @@ def _add_head_result(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='headResult',
         response_description='Exists.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'results_basemodel',
-                'operation': '/paths/~1results/head',
-            },
+        responses={
+            '200': {'model': results_basemodel_models.Thing, 'description': 'Exists.'},
         },
         dependencies=wiring.dependencies.get('/paths/~1results/head'),
     )
@@ -83,11 +105,12 @@ def _add_get_plain(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getPlain',
         response_description='A short text.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'results_basemodel',
-                'operation': '/paths/~1plain/get',
+        responses={
+            '200': {
+                'description': 'A short text.',
+                'content': {
+                    'text/plain': {'schema': {'type': 'string', 'maxLength': 3}},
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1plain/get'),
@@ -109,11 +132,12 @@ def _add_get_latin(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getLatin',
         response_description='A Latin-1 text.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'results_basemodel',
-                'operation': '/paths/~1latin/get',
+        responses={
+            '200': {
+                'description': 'A Latin-1 text.',
+                'content': {
+                    'text/plain; charset=iso-8859-1': {'schema': {'type': 'string'}},
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1latin/get'),
@@ -135,11 +159,10 @@ def _add_get_nothing(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getNothing',
         response_description='Anything.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'results_basemodel',
-                'operation': '/paths/~1nothing/get',
+        responses={
+            'default': {
+                'model': results_basemodel_models.FieldNothingGetResponse,
+                'description': 'Anything.',
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1nothing/get'),
@@ -161,13 +184,7 @@ def _add_post_empty(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postEmpty',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'results_basemodel',
-                'operation': '/paths/~1empty/post',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1empty/post'),
     )
 

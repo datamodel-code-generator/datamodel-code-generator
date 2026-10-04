@@ -49,12 +49,60 @@ def _add_search(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='search',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'parameters_basemodel',
-                'operation': '/paths/~1search/get',
-            },
+            'parameters': [
+                {
+                    'name': 'session',
+                    'in': 'cookie',
+                    'required': True,
+                    'schema': {'type': 'string', 'minLength': 2},
+                },
+                {
+                    'name': 'filter',
+                    'in': 'query',
+                    'style': 'deepObject',
+                    'explode': True,
+                    'schema': {
+                        'type': 'object',
+                        'additionalProperties': False,
+                        'required': ['id', 'name'],
+                        'properties': {
+                            'id': {'type': 'integer', 'readOnly': True},
+                            'name': {'type': 'string'},
+                        },
+                    },
+                },
+                {
+                    'name': 'ids',
+                    'in': 'query',
+                    'explode': False,
+                    'schema': {'type': 'array', 'items': {'type': 'integer'}},
+                },
+                {
+                    'name': 'X-Ids',
+                    'in': 'header',
+                    'schema': {
+                        'type': 'array',
+                        'items': {'type': 'integer'},
+                        'default': [3],
+                    },
+                },
+                {
+                    'name': 'blob',
+                    'in': 'query',
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                'type': 'object',
+                                'additionalProperties': False,
+                                'properties': {'a': {'type': 'integer'}},
+                            },
+                        },
+                    },
+                },
+                {'name': 'note', 'in': 'query', 'content': {'text/plain': {}}},
+            ],
         },
         dependencies=wiring.dependencies.get('/paths/~1search/get'),
     )
@@ -88,13 +136,7 @@ def _add_get_ratios(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getRatios',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'parameters_basemodel',
-                'operation': '/paths/~1ratios/get',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1ratios/get'),
     )
 
@@ -117,12 +159,16 @@ def _add_repeat(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='repeat',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'parameters_basemodel',
-                'operation': '/paths/~1repeat~1{id}~1again~1{id}/get',
-            },
+            'parameters': [
+                {
+                    'name': 'id',
+                    'in': 'path',
+                    'required': True,
+                    'schema': {'type': 'integer'},
+                },
+            ],
         },
         dependencies=wiring.dependencies.get('/paths/~1repeat~1{id}~1again~1{id}/get'),
     )
@@ -143,13 +189,7 @@ def _add_get_note(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getNote',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'parameters_basemodel',
-                'operation': '/paths/~1notes~1{note.id}/get',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1notes~1{note.id}/get'),
     )
 
@@ -177,13 +217,7 @@ def _add_get_file(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getFile',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'parameters_basemodel',
-                'operation': '/paths/~1files~1{file.name}/get',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1files~1{file.name}/get'),
     )
 
@@ -208,13 +242,7 @@ def _add_get_menu(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getMenu',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'parameters_basemodel',
-                'operation': '/paths/~1menü~1{item}/get',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1menü~1{item}/get'),
     )
 
@@ -252,12 +280,49 @@ def _add_get_item(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getItem',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'parameters_basemodel',
-                'operation': '/paths/~1items~1{level}/get',
-            },
+            'parameters': [
+                {
+                    'name': 'level',
+                    'in': 'path',
+                    'required': True,
+                    'schema': {'type': 'integer', 'enum': [1, 2]},
+                },
+                {
+                    'name': 'mode',
+                    'in': 'query',
+                    'schema': {'type': 'integer', 'enum': [1, 2]},
+                },
+                {
+                    'name': 'ratio',
+                    'in': 'query',
+                    'schema': {'type': 'number', 'enum': [0.5, 1.5]},
+                },
+                {
+                    'name': 'X-Flag',
+                    'in': 'header',
+                    'schema': {'type': 'boolean', 'const': True},
+                },
+                {
+                    'name': 'tier',
+                    'in': 'query',
+                    'schema': {
+                        'anyOf': [
+                            {'type': 'integer', 'enum': [1, 2]},
+                            {'type': 'null'},
+                        ],
+                    },
+                },
+                {
+                    'name': 'levels',
+                    'in': 'query',
+                    'schema': {
+                        'type': 'array',
+                        'items': {'type': 'integer', 'enum': [1, 2]},
+                    },
+                },
+            ],
         },
         dependencies=wiring.dependencies.get('/paths/~1items~1{level}/get'),
     )
