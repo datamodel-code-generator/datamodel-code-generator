@@ -11,7 +11,6 @@ import threading
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
-from hashlib import sha256
 from io import SEEK_END
 from types import CoroutineType, MappingProxyType
 from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, final
@@ -43,15 +42,16 @@ from .errors import (
     UploadSourceChangedError,
 )
 from .options import UploadOptions, layered
-from .records import HeaderSelector, canonical_json
+from .records import HeaderSelector
 from .resume import (
     MalformedStateError,
     ResumeState,
     ResumeStateError,
-    helper_state,
     require_state,
+    saved_expiry,
     state_array,
     state_count,
+    state_expiry,
     state_fields,
     state_text,
 )
@@ -90,7 +90,7 @@ C = TypeVar("C")
 
 _READ: Final = 65536
 _UNKNOWN: Final = frozenset({DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED})
-_STATE: Final = frozenset({"size", "chunk", "confirmed", "phase", "delivery", "bound"})
+_STATE: Final = frozenset({"size", "chunk", "confirmed", "phase", "delivery", "bound", "expires_at"})
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
 _GATEWAY_STATUSES: Final = frozenset({502, 504})
@@ -798,7 +798,7 @@ class _Upload(Generic[T]):
         """Return the state a later `resume` continues from, sending nothing; a complete upload has none.
 
         It keeps the upload's size and chunk size, the confirmed offset, a completion of unknown outcome, the values
-        later calls write, and the server's expiry, bound to the helper and the security the call runs under.
+        later calls write, and the server's expiry, under the helper's identity.
         """
         with self._guard:
             if (phase := self._phase) is _Phase.COMPLETE:
@@ -807,14 +807,6 @@ class _Upload(Generic[T]):
             return self._checkpoint()
 
     def _checkpoint(self) -> ResumeState:
-        plan = self._plan
-        options = self._limits.options
-        facts: list[WireValue] = []
-        exportable = True
-        for call in _children(plan):
-            fact, allowed = self._core_security(call, options)
-            facts.append(fact)
-            exportable = exportable and allowed
         delivery = self._delivery
         state: WireValue = {
             "size": self._size,
@@ -823,20 +815,9 @@ class _Upload(Generic[T]):
             "phase": self._phase.value,
             "delivery": None if delivery is None else delivery.value,
             "bound": self._bound,
+            "expires_at": saved_expiry(self._expires_at),
         }
-        return helper_state(
-            helper_fingerprint=plan.fingerprint,
-            security_fingerprint=sha256(canonical_json(tuple(facts))).hexdigest(),
-            state=state,
-            payload=b"",
-            exportable=exportable,
-            expires_at=self._expires_at,
-        )
-
-    def _core_security(
-        self, call: OperationPlan[Any, object], options: RequestOptions | None
-    ) -> tuple[WireValue, bool]:
-        raise NotImplementedError
+        return ResumeState(helper=self._plan.fingerprint, state=state)
 
 
 def _dotted(
@@ -892,11 +873,6 @@ def _probed_again(error: Exception) -> bool:
     return isinstance(error, (TransportError, HTTPStatusError, UnexpectedStatusError))
 
 
-def _children(plan: UploadPlan[Any, Any]) -> tuple[OperationPlan[Any, object], ...]:
-    """Return the operations a resumed upload may send: the probe, the append, and any completion."""
-    return (plan.probe, plan.append, *(() if plan.completion is None else (plan.completion,)))
-
-
 def _session(limits: _Limits) -> OperationSession:
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
 
@@ -930,11 +906,6 @@ class UploadHandle(_Upload[T]):
         """Keep the client core the handle's child calls are sent through."""
         super().__init__(plan, limits, session, content, chunk)
         self._core = core
-
-    def _core_security(
-        self, call: OperationPlan[Any, object], options: RequestOptions | None
-    ) -> tuple[WireValue, bool]:
-        return self._core.checkpoint_security(call, options)
 
     def _create(self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None) -> None:
         """Send the create request as the session's first child call and keep what it gives."""
@@ -1113,11 +1084,6 @@ class AsyncUploadHandle(_Upload[T]):
         """Keep the asyncio client core the handle's child calls are sent through."""
         super().__init__(plan, limits, session, content, chunk)
         self._core = core
-
-    def _core_security(
-        self, call: OperationPlan[Any, object], options: RequestOptions | None
-    ) -> tuple[WireValue, bool]:
-        return self._core.checkpoint_security(call, options)
 
     async def _create(
         self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None
@@ -1373,9 +1339,7 @@ class _Saved:
     expires_at: datetime | None
 
 
-def _resume_error(
-    plan: UploadPlan[Any, Any], condition: Literal["fingerprint", "security", "malformed"]
-) -> ResumeStateError:
+def _resume_error(plan: UploadPlan[Any, Any], condition: Literal["fingerprint", "malformed"]) -> ResumeStateError:
     return ResumeStateError(condition=condition, helper_id=plan.helper_id, operation=plan.operation)
 
 
@@ -1394,14 +1358,14 @@ def _bound(plan: UploadPlan[Any, Any], saved: WireValue) -> tuple[tuple[WireValu
     )
 
 
-def _decoded(plan: UploadPlan[Any, Any], state: WireValue, payload: bytes, expires_at: datetime | None) -> _Saved:
+def _decoded(plan: UploadPlan[Any, Any], state: WireValue) -> _Saved:
     """Return a checkpoint's state, refusing one whose form does not fit the helper.
 
     Only an upload in progress or one whose completion's outcome is unknown is saved.
     """
     from collections.abc import Mapping  # noqa: PLC0415
 
-    require_state(isinstance(state, Mapping) and frozenset(state) == _STATE and not payload)
+    require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
     fields = cast("Mapping[str, WireValue]", state)
     size, chunk, confirmed = (state_count(fields[name]) for name in ("size", "chunk", "confirmed"))
     phase, delivery = (state_text(fields[name]) for name in ("phase", "delivery"))
@@ -1423,26 +1387,24 @@ def _decoded(plan: UploadPlan[Any, Any], state: WireValue, payload: bytes, expir
         phase=resolved,
         delivery=None if delivery is None else DeliveryState(delivery),
         bound=bound,
-        expires_at=expires_at,
+        expires_at=state_expiry(fields["expires_at"]),
     )
 
 
-def _restored(core: ClientCore | AsyncClientCore, plan: UploadPlan[T, C], state: object, limits: _Limits) -> _Saved:
-    """Return what a checkpoint saved: this helper's, made under the security the call runs with, and unexpired."""
+def _restored(plan: UploadPlan[T, C], state: object, limits: _Limits) -> _Saved:
+    """Return what a checkpoint saved: this helper's, fitting it, and unexpired by the client's clock."""
     if not isinstance(state, ResumeState):
         raise _invalid(plan, ("state",))
-    helper, security, state_json, payload, expires_at = state_fields(state)
+    helper, state_json = state_fields(state)
     if helper != plan.fingerprint:
         raise _resume_error(plan, "fingerprint")
-    facts = tuple(core.checkpoint_security(call, limits.options)[0] for call in _children(plan))
-    if security != sha256(canonical_json(facts)).hexdigest():
-        raise _resume_error(plan, "security")
-    if expires_at is not None and expires_at.timestamp() <= limits.clock.time():
-        raise UploadExpiredError(expires_at=expires_at, helper_id=plan.helper_id, operation=plan.operation)
     try:
-        return _decoded(plan, decode_json(state_json), payload, expires_at)
+        saved = _decoded(plan, decode_json(state_json))
     except MalformedStateError:
         raise _resume_error(plan, "malformed") from None
+    if (expires_at := saved.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
+        raise UploadExpiredError(expires_at=expires_at, helper_id=plan.helper_id, operation=plan.operation)
+    return saved
 
 
 def _checked(
@@ -1485,7 +1447,7 @@ def _resume_start(
     limits: _Limits,
 ) -> tuple[_Saved, _Content]:
     """Check the checkpoint, its layout and saved values, then the source's size, before any read or send."""
-    saved = _restored(core, plan, state, limits)
+    saved = _restored(plan, state, limits)
     _layout(plan, limits, saved.size, saved.chunk)
     _checked(core, plan, limits.options, saved)
     content = _content(plan, source)

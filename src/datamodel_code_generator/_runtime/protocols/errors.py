@@ -41,7 +41,7 @@ from .records import (
     Selector,
 )
 from .references import OperationRef
-from .resume import ResumeState, ResumeStateError, ResumeStateTooLargeError
+from .resume import ResumeState, ResumeStateError
 from .sources import UploadProgress
 
 __all__ = (
@@ -67,7 +67,6 @@ __all__ = (
     "QueuePolicyConflictError",
     "QueueStoreError",
     "ResumeStateError",
-    "ResumeStateTooLargeError",
     "SessionLimitError",
     "StreamDecodeError",
     "StreamInterruptedError",

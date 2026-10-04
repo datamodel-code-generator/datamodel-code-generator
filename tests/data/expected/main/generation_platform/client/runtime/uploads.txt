@@ -461,15 +461,19 @@ refused checkpoints and sources
   resume with missing bound values ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume with a path value of dots ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/id')] protocol_data_error
   resume with a path value of another shape ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  resume with an expiry of another form ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  resume with a naive expiry ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  resume with an expiry with a Z suffix instead of an offset ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume with a path value of dots and an iterator for a source ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/id')] protocol_data_error
-  resume with a payload ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-a checkpoint of another security partition
-  resume ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+a checkpoint resumed under another security partition, with that client's own credentials
+  > HEAD https://api.example.com/files/u37
+    [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
+  resume = UploadHandle(phase='uploading', confirmed_bytes=8, total_bytes=10)
 server expiries
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   resume a checkpoint with an HTTP date in the past ! UploadExpiredError: UploadExpiredError(condition='expired') [condition='expired'] upload_expired_error
-  import its export ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error
+  import its export = ResumeState(version=1)
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > HEAD https://api.example.com/files/u40

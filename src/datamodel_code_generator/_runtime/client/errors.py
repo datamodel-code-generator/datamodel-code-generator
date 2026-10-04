@@ -1944,7 +1944,6 @@ class ProtocolSizeError(ProtocolError):
             "line",
             "event",
             "message",
-            "checkpoint",
             "body",
             "headers",
             "keys",
