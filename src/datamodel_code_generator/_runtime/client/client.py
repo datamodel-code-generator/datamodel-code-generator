@@ -2408,37 +2408,6 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
             spec = operation.parameters[position]
             _coded(operation, spec, partial(_parameter, spec, value, mode))
 
-    def response_limit(self, operation: OperationPlan[object, object], options: RequestOptions | None) -> int | None:
-        """Return the largest successful response body a call of the operation accepts, or None without a limit."""
-        return self._call_settings(options, operation.operation_id).max_response_bytes
-
-    def saved_page(
-        self,
-        operation: OperationPlan[T, object],
-        content: bytes,
-        status_code: int,
-        content_type: str | None,
-        options: RequestOptions | None,
-    ) -> tuple[T, WireValue, ResponseInfo]:
-        """Decode a body a helper saved in a checkpoint as its response decoded it, without any other response metadata.
-
-        The response's metadata is not saved, so it is decoded under its status and media type alone, which the
-        returned metadata holds with an empty call identifier.
-        """
-        settings = self._call_settings(options, operation.operation_id)
-        info = ResponseInfo(
-            status_code=status_code,
-            headers=HeadersView(() if content_type is None else (("Content-Type", content_type),)),
-            call_id="",
-            elapsed=0.0,
-            content_type=content_type,
-            resource_attempt_count=0,
-            network_send_count=0,
-            network_send_budget_used=0,
-        )
-        data, wire = operation.responses.decode_page(info, content, native=settings.validation.response == "native")
-        return data, wire, info
-
     def _page_request(
         self,
         call: _SessionCall,
