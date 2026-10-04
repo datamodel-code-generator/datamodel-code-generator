@@ -3063,6 +3063,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
 
     def __delete_duplicate_models(self, models: list[DataModel]) -> None:  # noqa: PLR0912
+        if not models:
+            return
+
         model_class_names: dict[str, DataModel] = {}
         shapes: dict[DataModel, _ModelShape] = {}
         model_to_duplicate_models: defaultdict[DataModel, list[DataModel]] = defaultdict(list)
