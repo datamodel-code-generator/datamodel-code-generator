@@ -3654,5 +3654,35 @@
       "msgspec.Struct"
     ],
     "model_only": true
+  },
+  "allowreserved-path-30": {
+    "input": "allowreserved-path-30.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "allowreserved-path-31": {
+    "input": "allowreserved-path-31.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "allowreserved-path-32": {
+    "input": "allowreserved-path-32.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
   }
 }
