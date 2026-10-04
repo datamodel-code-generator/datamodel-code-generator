@@ -21,7 +21,6 @@ from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
 from tests.data.python.client_caching import cache_backends, cache_stores, caching
-from tests.data.python.client_circuits import circuits
 from tests.data.python.client_compression import compression
 from tests.data.python.client_deadline_cleanup import deadline_cleanup
 from tests.data.python.client_deadline_files import deadline_files
@@ -59,7 +58,7 @@ from tests.data.python.client_query import query
 from tests.data.python.client_queue_credentials import queue_credentials
 from tests.data.python.client_queue_order import queue_order
 from tests.data.python.client_queue_recovery import queue_recovery, queue_restoration, queue_scope
-from tests.data.python.client_queues import queue_compression, queues
+from tests.data.python.client_queues import queues
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
 from tests.data.python.client_regressions import json_decode_errors, no_success
@@ -104,7 +103,7 @@ from tests.data.python.client_webhook_adapters import (
 from tests.data.python.client_webhook_contracts import webhook_contracts
 from tests.data.python.client_webhook_errors import webhook_errors
 from tests.data.python.client_webhook_public_keys import webhook_public_keys
-from tests.data.python.client_webhooks import webhook_backends, webhook_replay, webhook_verification
+from tests.data.python.client_webhooks import webhook_backends, webhook_verification
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -478,9 +477,21 @@ def media(package: ModuleType, lines: list[str]) -> None:
 
 
 def _files(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Send only declared media types, never a range, and narrow a response to one concrete media type."""
+    """Send concrete media types within declared ranges, never a range, and narrow a response to one concrete type.
+
+    A concrete type goes to its most specific declaration, whose encoding it takes, and text takes its named charset.
+    """
     address = request_body(package, "storeFile", "application/json", {"city": "Oslo"})
     record(lines, "store file of a media range", lambda: api.files.store_file(body=address, media_type="image/*"))
+    csv = request_body(package, "storeFile", "text/*", "a,b")
+    exchange.respond(raw_response(204), raw_response(204), raw_response(204), raw_response(204))
+    record(lines, "store png", lambda: api.files.store_file(body=b"\x89PNG", media_type="image/png"))
+    record(lines, "store pdf", lambda: api.files.store_file(body=b"%PDF", media_type="application/pdf"))
+    record(lines, "store csv in UTF-16", lambda: api.files.store_file(body=csv, media_type="text/csv; charset=utf-16"))
+    record(
+        lines, "replace with octets", lambda: api.files.replace_file(body=b"x", media_type="application/octet-stream")
+    )
+    record(lines, "store video outside the ranges", lambda: api.files.store_file(body=b"x", media_type="video/mp4"))
     exchange.respond(raw_response(201, b"png", "image/png"), raw_response(200, b"jpeg", "image/jpeg"))
     for label in ("store file narrowed", "store file narrowed to another image"):
         record(
@@ -807,12 +818,10 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "upload-compression": ("uploads-compression", ("pydantic_v2.BaseModel",), upload_compression),
     "uploads-oauth": ("uploads-oauth", ("pydantic_v2.BaseModel",), uploads_oauth),
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
-    "circuits": ("circuits", ("pydantic_v2.BaseModel",), circuits),
     "compression": ("compression", ("pydantic_v2.BaseModel",), compression),
     "queue-credentials": ("queue-credentials", ("pydantic_v2.BaseModel",), queue_credentials),
     "queue-order": ("queue-order", ("pydantic_v2.BaseModel",), queue_order),
     "queues": ("queues", ("pydantic_v2.BaseModel",), queues),
-    "queue-compression": ("queues", ("pydantic_v2.BaseModel",), queue_compression),
     "queue-recovery": ("queues", ("pydantic_v2.BaseModel",), queue_recovery),
     "queue-restoration": ("queues-restoration", ("pydantic_v2.BaseModel",), queue_restoration),
     "queue-scope": ("queues", ("pydantic_v2.BaseModel",), queue_scope),
@@ -843,7 +852,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     ),
     "webhook-verification": ("webhooks", ("pydantic_v2.BaseModel",), webhook_verification),
     "webhook-backends": ("webhooks", BACKENDS, webhook_backends),
-    "webhook-replay": ("webhooks", ("pydantic_v2.BaseModel",), webhook_replay),
     "webhook-public-keys": ("webhooks-public-keys", ("pydantic_v2.BaseModel",), webhook_public_keys),
     "webhook-adapters": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_adapters),
     "webhook-unsigned": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_unsigned),

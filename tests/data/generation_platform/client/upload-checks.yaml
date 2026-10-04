@@ -49,6 +49,7 @@ paths:
         - {name: Upload-Offset, in: header, required: true, schema: {type: integer}}
         - {name: X-Note, in: header, schema: {type: string}}
         - {name: session, in: cookie, schema: {type: string}}
+        - {name: X-Count, in: header, schema: {type: integer}}
       requestBody:
         required: true
         content:

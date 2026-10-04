@@ -230,7 +230,6 @@ _ERROR_NAMES: Final = (
     "BodyNotReplayableError",
     "BodyProtocolError",
     "BudgetExceededError",
-    "CircuitStoreError",
     "CleanupError",
     "ClientClosedError",
     "ConfigurationError",
@@ -249,7 +248,6 @@ _ERROR_NAMES: Final = (
     "ProtocolSizeError",
     "ProtocolStoreError",
     "RedirectPolicyError",
-    "ReplayStoreFullError",
     "RequestEncodingError",
     "RequestCancelledError",
     "ResponseConsumedError",
@@ -268,16 +266,12 @@ _ERROR_NAMES: Final = (
     "UnexpectedStatusError",
     "UnsupportedAsyncBackendError",
     "UnsupportedContentCodingError",
-    "WebhookReplayError",
-    "WebhookStoreError",
     "WebhookVerificationError",
 )
 _PROTOCOL_ERROR_NAMES: Final = (
-    "CacheInvalidationError",
     "CacheProtocolError",
     "CacheStoreError",
     "CacheValidatorConflictError",
-    "CircuitOpenError",
     "ConcurrentReceiveError",
     "DeliveryUnknownError",
     "HandshakeResponse",
@@ -295,7 +289,6 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "QueuePolicyConflictError",
     "QueueStoreError",
     "ResumeStateError",
-    "ResumeStateTooLargeError",
     "SessionLimitError",
     "StreamDecodeError",
     "StreamInterruptedError",
@@ -348,18 +341,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._runtime.protocols.caches import AsyncCacheStore, CacheEntry, CacheResult, CacheStore
-from .._runtime.protocols.circuit_records import CircuitKey, CircuitPermit, CircuitSnapshot
 from .._runtime.protocols.options import (
-    AsyncCircuitStore,
     CacheOptions,
-    CircuitBreakerOptions,
-    CircuitStore,
     PaginationOptions,
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
     QueueOptions,
-    ResolvedCircuitBreakerOptions,
     StreamOptions,
     UploadOptions,
     WebSocketTransportOptions,
@@ -394,19 +382,9 @@ from .._runtime.protocols.records import (
 )
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.resume import ResumeState, import_state
-from .._runtime.protocols.sources import (
-    AsyncRangeReader,
-    AsyncUploadSource,
-    PartReceipt,
-    RangeReader,
-    UploadIdentity,
-    UploadProgress,
-    UploadSource,
-)
+from .._runtime.protocols.sources import UploadProgress, UploadSource
 from .._runtime.protocols.webhooks import (
-    AsyncReplayStore,
     KeySet,
-    ReplayStore,
     ResolvedWebhookOptions,
     VerifiedSignature,
     VerifiedWebhook,
@@ -428,66 +406,41 @@ from .._runtime.protocols.websocket_types import (
 
 if TYPE_CHECKING:
     from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
-    from .._runtime.protocols.circuits import AsyncMemoryCircuitStore, MemoryCircuitStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
-    from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
-    from .._runtime.protocols.upload_sources import (
-        AsyncBytesUploadSource,
-        AsyncFileUploadSource,
-        BytesUploadSource,
-        FileUploadSource,
-    )
     from .._runtime.protocols.uploads import AsyncUploadHandle, UploadHandle
     from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
-    "AsyncBytesUploadSource",
     "AsyncCacheStore",
-    "AsyncCircuitStore",
     "AsyncEventStream",
-    "AsyncFileUploadSource",
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
-    "AsyncMemoryCircuitStore",
     "AsyncMemoryQueueStore",
-    "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncQueueStore",
-    "AsyncRangeReader",
-    "AsyncReplayStore",
     "AsyncUploadHandle",
-    "AsyncUploadSource",
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "AsyncWebSocketSession",
     "BlobRef",
     "BodySelector",
     "BodyTarget",
-    "BytesUploadSource",
     "CacheEntry",
     "CacheOptions",
     "CacheResult",
     "CacheStore",
     "CancelReceipt",
-    "CircuitBreakerOptions",
-    "CircuitKey",
-    "CircuitPermit",
-    "CircuitSnapshot",
-    "CircuitStore",
     "Continuation",
     "DrainReport",
     "EventStream",
-    "FileUploadSource",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
     "MemoryCacheStore",
-    "MemoryCircuitStore",
     "MemoryQueueStore",
-    "MemoryReplayStore",
     "Message",
     "OperationRef",
     "Origin",
@@ -495,7 +448,6 @@ __all__ = [
     "Pager",
     "PaginationOptions",
     "ParameterTarget",
-    "PartReceipt",
     "PingReceipt",
     "PollOptions",
     "PollSnapshot",
@@ -510,10 +462,7 @@ __all__ = [
     "QueueOutcome",
     "QueueReceipt",
     "QueueStore",
-    "RangeReader",
-    "ReplayStore",
     "RequestTarget",
-    "ResolvedCircuitBreakerOptions",
     "ResolvedQueueOptions",
     "ResolvedWSOptions",
     "ResolvedWebSocketTransportOptions",
@@ -525,7 +474,6 @@ __all__ = [
     "StreamOptions",
     "UnknownEvent",
     "UploadHandle",
-    "UploadIdentity",
     "UploadOptions",
     "UploadProgress",
     "UploadSource",
@@ -545,7 +493,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store, a builtin upload source, or a pagination, polling, stream, upload, or session type."""
+    """Load a memory store, or a pagination, polling, stream, upload, or session type."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -562,18 +510,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
-    if name in {"AsyncMemoryCircuitStore", "MemoryCircuitStore"}:
-        from .._runtime.protocols import circuits
-
-        return getattr(circuits, name)
     if name in {"AsyncUploadHandle", "UploadHandle"}:
         from .._runtime.protocols import uploads
 
         return getattr(uploads, name)
-    if name in {"AsyncBytesUploadSource", "AsyncFileUploadSource", "BytesUploadSource", "FileUploadSource"}:
-        from .._runtime.protocols import upload_sources
-
-        return getattr(upload_sources, name)
     if name in {"AsyncWebSocketSession", "WebSocketSession"}:
         from .._runtime.protocols import websocket
 
@@ -582,14 +522,6 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import queue_stores
 
         return getattr(queue_stores, name)
-    if name == "MemoryReplayStore":
-        from .._runtime.protocols.replay import MemoryReplayStore
-
-        return MemoryReplayStore
-    if name == "AsyncMemoryReplayStore":
-        from .._runtime.protocols.replay import AsyncMemoryReplayStore
-
-        return AsyncMemoryReplayStore
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
 '''
@@ -1016,11 +948,6 @@ class Module:
         ))
 
 
-def circuit_groups(plan: ClientPlan) -> tuple[str, ...]:
-    """Return the circuit groups a client's operations declare, sorted."""
-    return tuple(sorted({group for spec in plan.operations if (group := spec.circuit_group) is not None}))
-
-
 class _Typing:
     """Spell the payload types of a planned client: model types, or schema-less surfaces."""
 
@@ -1157,18 +1084,10 @@ class _Resources(_Typing):
             entries.append(("security_schemes=", f"{module.local('_generated', 'security')}.ROOT_SCHEMES"))
         name = module.local("_runtime.client.client", "ClientDefaults")
         helpers = (*self.helpers, *self.streams, *self.sockets)
-        if not helpers and not self.circuit_groups:
+        if not helpers:
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
-        if helpers:
-            entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
-        if groups := self.circuit_groups:
-            entries.append(("circuit_groups=", f"frozenset({{{', '.join(map(repr, groups))}}})"))
+        entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
-
-    @cached_property
-    def circuit_groups(self) -> tuple[str, ...]:
-        """Return the circuit groups the package's operations declare, sorted."""
-        return circuit_groups(self.plan)
 
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
@@ -1185,10 +1104,6 @@ class _Resources(_Typing):
         helpers_module = f".protocols.{_helpers_module(asynchronous=asynchronous)}"
         if protocols is not None:
             lazy.append((protocols, helpers_module))
-        circuit_groups = None
-        if groups := self.circuit_groups:
-            lazy.append(("Origin", ".protocols"))
-            circuit_groups = f"{module.name('typing', 'Literal')}[{', '.join(map(repr, groups))}]"
         values = {
             "defaults": self.defaults(module),
             "options": module.local("options", "ClientOptions"),
@@ -1226,7 +1141,6 @@ class _Resources(_Typing):
             ],
             protocols=protocols,
             protocols_module=helpers_module,
-            circuit_groups=circuit_groups,
             **values,
         )
 
@@ -1290,8 +1204,9 @@ class _Resources(_Typing):
     ) -> tuple[list[_Variant], tuple[_Argument, ...]]:
         """Return the body signatures of an operation and the body keywords of its implementation.
 
-        A binary body takes the bytes, file, stream, and factory inputs of the client's mode. A media range is never
-        named by a call, so a body declared only in media ranges takes nothing.
+        A binary body takes the bytes, file, stream, and factory inputs of the client's mode. A body declared in a
+        media range such as image/* takes the concrete media type a call sends within it as any string, and a body
+        without declared media takes nothing.
         """
         if (body := spec.body) is None:
             return [_Variant(())], ()
@@ -1299,10 +1214,7 @@ class _Resources(_Typing):
         unset = "" if body.required else module.local("options", "Unset")
         groups: dict[str, list[str]] = {}
         for media in body.media:
-            if not media_range(media.media_type):
-                groups.setdefault(self.body_surface(module, media, asynchronous=asynchronous), []).append(
-                    media.media_type
-                )
+            groups.setdefault(self.body_surface(module, media, asynchronous=asynchronous), []).append(media.media_type)
         if not groups:
             nothing = (
                 _Argument("body", module.local("options", "Unset"), "unset"),
@@ -1310,13 +1222,16 @@ class _Resources(_Typing):
             )
             return [_Variant(nothing)], nothing
 
+        def choices(entries: list[str]) -> str:
+            return "str" if any(media_range(media) for media in entries) else _literal(literal, entries)
+
         def selecting(entries: list[str]) -> _Argument:
             if body.default in entries:
-                return _Argument("media_type", f"{_literal(literal, entries)} | None", "none")
-            return _Argument("media_type", _literal(literal, entries))
+                return _Argument("media_type", f"{choices(entries)} | None", "none")
+            return _Argument("media_type", choices(entries))
 
         surfaces = _union(groups)
-        every = _literal(literal, [media for entries in groups.values() for media in entries])
+        every = choices([media for entries in groups.values() for media in entries])
         if spec.fields:
             return self.field_requests(module, spec, groups, selecting, every)
         implementation = (
@@ -1326,7 +1241,7 @@ class _Resources(_Typing):
         if len(groups) == 1 and (body.default is not None or body.required):
             surface, declared = next(iter(groups.items()))
             if body.default is None:
-                single = (_Argument("body", surface), _Argument("media_type", _literal(literal, declared)))
+                single = (_Argument("body", surface), _Argument("media_type", choices(declared)))
                 return [_Variant(single)], single
             return [_Variant(implementation)], implementation
         variants = [_Variant((_Argument("body", surface), selecting(media))) for surface, media in groups.items()]
@@ -1828,10 +1743,8 @@ class _Registry(_Typing):
 
     @staticmethod
     def protection_metadata(spec: OperationSpec) -> list[tuple[str, Doc]]:
-        """Return an operation's circuit group and accepted request codings, when it declares them."""
+        """Return an operation's accepted request codings, when it declares them."""
         entries: list[tuple[str, Doc]] = []
-        if spec.circuit_group is not None:
-            entries.append(("circuit_group=", repr(spec.circuit_group)))
         if spec.accepted_content_encodings:
             entries.append(("accepted_content_encodings=", _tuple(map(repr, spec.accepted_content_encodings))))
         return entries
@@ -2023,23 +1936,23 @@ class _Registry(_Typing):
 
 
 _RESUME_RUNTIME: Final = """
-A pager's `checkpoint()` returns a `ResumeState` without sending, and the helper's `resume(state)` returns a pager in a
-session of its own that sends nothing until it is iterated. A checkpoint saves the wire values of the call's arguments
-and of the JSON body later pages send, the last page's position, continuation, binding values, and cycle history, and
-the body of a page with items left, which `resume` decodes again and delivers first. It never saves the call's options,
-its session, or anything its auth adds; a call giving a cookie, a credential header, or a parameter or querystring field
-at a security scheme's position cannot be checkpointed and raises `ProtocolConfigurationError`, and no helper writes a
-cursor or binding to such a position or to any cookie, since cookies commonly carry session state. Pages and items count
-on from the checkpoint against the resumed call's limits, while its sends and timeout start afresh. `resume` builds the
-saved arguments and body as their codecs build a caller's, takes literal bindings from the helper, and prepares the
-request it sends next without sending. It raises `ResumeStateError` before sending for another helper's checkpoint, one
-made under another credential partition, allowed origins, server, declared security, or auth identity, and a malformed
+A pager's `checkpoint()` returns a `ResumeState` without sending, a small token the caller saves, and the helper's
+`resume(state)` returns a pager in a session of its own that sends nothing until it is iterated. A checkpoint saves the
+wire values of the call's arguments and of the JSON body later pages send, and where the pager continues: the position,
+continuation, and binding values of the last page, or of the page before it while the last page has items left, with
+how many of that page's items were delivered, which a resumed pager fetches again and skips. It never saves pages, the
+cycle history, the call's options, its session, or anything its auth adds; a call giving a cookie, a credential header,
+or a parameter or querystring field at a security scheme's position cannot be checkpointed and raises
+`ProtocolConfigurationError`, and no helper writes a cursor or binding to such a position or to any cookie, since
+cookies commonly carry session state. Pages and items count on from the checkpoint against the resumed call's limits,
+while its sends and timeout start afresh. `resume` builds the saved arguments and body as their codecs build a
+caller's, takes literal bindings from the helper, and prepares the request it sends next without sending, with the
+resuming client's own auth. It raises `ResumeStateError` before sending for another helper's checkpoint and a malformed
 state, a value its codec refuses, a media type the operation does not declare, a saved value that cannot be encoded into
 a request, and an offset or page number other than the one the pages reach included, while a refusal of the resumed
-call's options is raised as the call raises it, and checks the saved continuation and page as a server's.
-`SessionLimitError` and `PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state` when the
-call can be checkpointed. `ResumeState.export()` requires `ProtocolSecurityContext.credential_partition` when the
-operation declares security or the call configures auth; `import_state` reads the export back.
+call's options is raised as the call raises it, and checks the saved continuation as a server's. `SessionLimitError` and
+`PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state` when the call can be checkpointed.
+`ResumeState.export()` gives the token's JSON, and `import_state` reads it back.
 """
 _HELPER_OPTIONS: Final = (
     ("pagination_options", ".", "PaginationOptions"),
@@ -2085,13 +1998,13 @@ _RECONNECT_LIMITS: Final = """| reconnections, counted across resumes | 5; None 
 _RESUMED: Final = """
 A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
 cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
-a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the event and reconnection counts, the
-last `retry` time, the bindings' values, and the caller's first request when the reopen repeats it, never events,
-responses, the session, or the call's options. A call given a cookie or credential argument cannot be checkpointed:
-`checkpoint()` raises `ProtocolConfigurationError` with the condition `wrong_capability`, and `ProtocolDataError` for a
-cursor the reopen request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of
-its own, writing the cursor, and omitting a cleared one, and returns once its response is a declared success; it
-refuses another helper's state, one made under other security, an expired one, and one that does not fit with
+a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the bindings' values, the server's
+expiry, and the caller's first request when the reopen repeats it, never events, counts, responses, the session, or
+the call's options. A call given a cookie or credential argument cannot be checkpointed: `checkpoint()` raises
+`ProtocolConfigurationError` with the condition `wrong_capability`, and `ProtocolDataError` for a cursor the reopen
+request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of its own, writing
+the cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
+reconnections afresh; it refuses another helper's state, an expired one, and one that does not fit with
 `ResumeStateError` before sending. `StreamInterruptedError` keeps a checkpoint as `resume_state`, and no options, the
 client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
 
@@ -2150,12 +2063,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         module = Module(
             {
                 *(name.format(index) for index in range(len(self.helpers)) for name in names),
-                *(
-                    f"MUTATION_{index}_{position}"
-                    for index, spec in enumerate(self.helpers)
-                    if isinstance(spec, CacheSpec)
-                    for position in range(len(spec.mutations))
-                ),
                 *(f"STREAM_{index}" for index in range(len(streams))),
                 *(f"SOCKET_{index}" for index in range(len(sockets))),
             },
@@ -2191,7 +2098,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         )
 
     def cache(self, module: Module, index: int, spec: CacheSpec) -> list[str]:
-        """Return a cache helper's plan and the plans of its mutations, each naming only settings it declares."""
+        """Return a cache helper's plan, naming only settings it declares."""
         helper, operations = spec.helper, module.root("_operations")
         tree = helper.tree
         plan = module.local(_CACHE, "CachePlan")
@@ -2207,27 +2114,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             entries.append(("statuses=", _call("frozenset", (("", _tuple(map(repr, statuses))),))))
         if names := sorted({name.lower() for name in tree["vary_allowlist"]}):
             entries.append(("vary_allowlist=", _call("frozenset", (("", _tuple(map(repr, names))),))))
-        if spec.tags:
-            entries.append(("tags=", _tuple(map(repr, spec.tags))))
         head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{self.response(module, spec.operation)}]] = "
-        sections = [head + layout(_call(plan, entries), 0, len(head), WIDTH)]
-        mutation = module.local(_CACHE, "CacheMutationPlan")
-        for position, item in enumerate(spec.mutations):
-            head = (
-                f"MUTATION_{index}_{position}: {module.name('typing', 'Final')}"
-                f"[{mutation}[{self.response(module, item.operation)}]] = "
-            )
-            value = _call(
-                mutation,
-                (
-                    ("helper_id=", repr(helper.name)),
-                    ("operation=", self.reference(module, item.operation)),
-                    ("call=", f"{operations}.OPERATION_{item.operation.index}"),
-                    ("tags=", _tuple(map(repr, item.tags))),
-                ),
-            )
-            sections.append(head + layout(value, 0, len(head), WIDTH))
-        return sections
+        return [head + layout(_call(plan, entries), 0, len(head), WIDTH)]
 
     def items(self, module: Module, index: int, spec: PaginationSpec) -> str:
         """Return a pagination helper's typed items accessor."""
@@ -2497,7 +2385,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             root,
             *(name for children in nodes.values() for name, _ in children.values()),
             *handles.values(),
-            *(f"{name}Mutations" for name, spec in leaves.items() if isinstance(spec, CacheSpec) and spec.mutations),
             *(name for operations, aliases in queued.values() for name in (operations, *aliases)),
         }
         module = Module(names, self.resources.symbols, level=2)
@@ -2561,11 +2448,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         handle: str | None,
         asynchronous: bool,
     ) -> list[str]:
-        """Return a helper's class, then a polling helper's own handle class or a cache helper's mutations class.
-
-        A polling helper has its own handle class when it cancels remotely, and a cache helper a mutations class when
-        it declares mutations.
-        """
+        """Return a helper's class and a polling helper's handle class when it cancels remotely."""
         route = f"{spec.operation.contract.method.upper()} {spec.operation.contract.path}"
         what = f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {route}"
         if isinstance(spec, PollingSpec):
@@ -2586,24 +2469,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 self.node(name, what, core, self.methods(module, index, spec, asynchronous=asynchronous), leaf=True)
             ]
         members = self.fetch(module, index, spec, asynchronous=asynchronous)
-        if not spec.mutations:
-            return [self.node(name, what, core, members, leaf=True)]
-        mutations = f"{name}Mutations"
-        members.append(
-            f"    @{module.name('functools', 'cached_property')}\n    def mutations(self) -> {mutations}:\n"
-            f'        """The mutations that invalidate entries of this helper."""\n'
-            f"        return {mutations}(self._core)"
-        )
-        return [
-            self.node(name, what, core, members, leaf=True),
-            self.node(
-                mutations,
-                f"the mutations of the {spec.helper.name} cache helper",
-                core,
-                self.mutations(module, index, spec, asynchronous=asynchronous),
-                leaf=True,
-            ),
-        ]
+        return [self.node(name, what, core, members, leaf=True)]
 
     @staticmethod
     def node(name: str, what: str, core: str, members: list[str], *, leaf: bool = False) -> str:
@@ -2737,7 +2603,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
 
     def fetch(self, module: Module, index: int, spec: CacheSpec, *, asynchronous: bool) -> list[str]:
-        """Return a cache helper's fetch and invalidate methods."""
+        """Return a cache helper's fetch method."""
         operation = spec.operation
         arguments = [self.resources.parameter(module, parameter) for parameter in operation.parameters]
         options = [
@@ -2752,56 +2618,17 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *((f"{name}=", name) for name, _, _ in _CACHE_OPTIONS),
         ]
         result = f"{module.local('_runtime.protocols.caches', 'CacheResult')}[{self.response(module, operation)}]"
-        fetch, invalidate = (
-            module.local(_CACHE, name)
-            for name in (("afetch", "ainvalidate") if asynchronous else ("fetch", "invalidate"))
-        )
+        fetch = module.local(_CACHE, "afetch" if asynchronous else "fetch")
         route = f"{operation.contract.method.upper()} {operation.contract.path}"
         signature = tuple(argument.parameter(module) for argument in (*arguments, *options))
-        wait, coroutine = ("await ", "async ") if asynchronous else ("", "")
+        wait = "await " if asynchronous else ""
         return [
             "\n".join((
                 _signature("fetch", signature, result, asynchronous=asynchronous, stub=False),
                 f'        """Fetch {route} through the helper\'s cache, revalidating a stale entry."""',
                 f"        return {wait}{layout(_call(fetch, passed), 8, 7 + len(wait), WIDTH)}",
             )),
-            "\n".join((
-                f"    {coroutine}def invalidate(self, tags: tuple[str, ...]) -> int:",
-                '        """Remove the stored entries that carry any of the tags, returning how many."""',
-                f"        return {wait}{invalidate}(self._core, {plan}, tags)",
-            )),
         ]
-
-    def mutations(self, module: Module, index: int, spec: CacheSpec, *, asynchronous: bool) -> list[str]:
-        """Return a method per mutation of a cache helper, taking its operation's parameters, body, and options."""
-        resources = self.resources
-        methods: list[str] = []
-        call = module.local(_CACHE, "amutate" if asynchronous else "mutate")
-        wait = "await " if asynchronous else ""
-        for position, item in enumerate(spec.mutations):
-            operation = replace(item.operation, fields=())
-            arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
-            body = resources.requests(module, operation, asynchronous=asynchronous)[1]
-            options = _Argument("options", f"{module.namespace.name('..options', 'RequestOptions')} | None", "none")
-            passed = [
-                ("", "self._core"),
-                ("", f"{module.namespace.name('.', '_plans')}.MUTATION_{index}_{position}"),
-                ("", _tuple(parameter.python_name for parameter in operation.parameters)),
-                *((f"{argument.name}=", argument.name) for argument in body),
-                ("options=", "options"),
-            ]
-            route = f"{operation.contract.method.upper()} {operation.contract.path}"
-            signature = tuple(argument.parameter(module) for argument in (*arguments, *body, options))
-            methods.append(
-                "\n".join((
-                    _signature(
-                        item.name, signature, self.response(module, operation), asynchronous=asynchronous, stub=False
-                    ),
-                    f'        """Call {route}, then remove the cached entries its tags name once it succeeds."""',
-                    f"        return {wait}{layout(_call(call, passed), 8, 7 + len(wait), WIDTH)}",
-                ))
-            )
-        return methods
 
     def handle(self, module: Module, index: int, spec: PollingSpec, name: str, *, asynchronous: bool) -> str:
         """Return a polling helper's own handle class, which also cancels its operation remotely."""
@@ -2996,6 +2823,13 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         )
         if (length := append.get("length")) is not None:
             entries.append(("length=", self.target(module, length)))
+        if (checksum := append.get("checksum")) is not None:
+            entries.extend((
+                ("checksum=", self.target(module, checksum["target"])),
+                ("checksum_algorithm=", repr(checksum["algorithm"])),
+                ("checksum_encoding=", repr(checksum["encoding"])),
+                ("checksum_prefix=", repr(checksum["algorithm_prefix"])),
+            ))
         if (completion := spec.completion) is not None:
             entries.extend((
                 ("completion_operation=", self.reference(module, completion)),
@@ -3025,7 +2859,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
         prefix = "Async" if asynchronous else ""
         handle = f"{module.local(_UPLOADS, f'{prefix}UploadHandle')}[{self.upload_result(module, spec)}]"
-        source = f"source: {module.namespace.name('.', f'{prefix}UploadSource')}"
+        source = f"source: {module.namespace.name('.', 'UploadSource')}"
         state = f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}"
         plan = ("", f"{module.namespace.name('.', '_plans')}.PLAN_{index}")
         forwarded = [(f"{name}=", name) for name, _, _ in _UPLOAD_OPTIONS]
@@ -3047,7 +2881,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         return [
             "\n".join((
                 layout(Group(f"{head}start(", items(("self", source, "*", *keywords)), f") -> {handle}:"), 4, 0, WIDTH),
-                f'        """Read the source, create the upload of {route}, and return its handle."""',
+                f'        """Measure the source, create the upload of {route}, and return its handle."""',
                 f"        return {wait}{layout(_call(start, started), 8, 7 + len(wait), WIDTH)}",
             )),
             "\n".join((
@@ -3057,7 +2891,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                     0,
                     WIDTH,
                 ),
-                '        """Check the source against a checkpoint and continue from the offset the server holds."""',
+                '        """Check a checkpoint and the source size, then continue from the server offset."""',
                 f"        return {wait}{layout(_call(resume, resumed), 8, 7 + len(wait), WIDTH)}",
             )),
         ]
@@ -3419,7 +3253,7 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ```json
 {json.dumps(metadata, indent=2, ensure_ascii=True)}
 ```
-{self.helper_readme()}{self._circuit_readme()}{self._compression_readme()}"""
+{self.helper_readme()}{self._compression_readme()}"""
 
     def _compression_readme(self) -> str:
         """List the operations that accept compressed request bodies, or nothing when none declares a coding."""
@@ -3428,8 +3262,8 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
         return f"""
 ## Request compression
 
-These operations accept the request content codings listed; `compression="gzip"` in `ClientOptions`, a view, or a
-call's `RequestOptions` compresses their bodies. See the runtime reference.
+These operations declare request compression. Their bodies are gzipped by default;
+`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
 
 ```json
 {json.dumps(accepted, indent=2, ensure_ascii=True)}
@@ -3443,25 +3277,6 @@ call's `RequestOptions` compresses their bodies. See the runtime reference.
             for spec in self.plan.operations
             if spec.accepted_content_encodings
         }
-
-    def _circuit_readme(self) -> str:
-        """Describe the package's circuit groups, or nothing when no operation declares one."""
-        if not (groups := circuit_groups(self.plan)):
-            return ""
-        members = {
-            group: [f"{spec.resource}.{spec.name}" for spec in self.plan.operations if spec.circuit_group == group]
-            for group in groups
-        }
-        return f"""
-## Circuit groups
-
-Calls of these operations pass a circuit of their group when `ProtocolClientOptions(circuit=CircuitBreakerOptions(
-enabled=True))` enables the breaker; `Client.reset_circuit(group, origin=...)` closes one. See the runtime reference.
-
-```json
-{json.dumps(members, indent=2, ensure_ascii=True)}
-```
-"""
 
     def helper_readme(self) -> str:
         """Describe the package's protocol helpers, or nothing when it has none."""
@@ -3536,7 +3351,7 @@ holds. `close()` or `aclose()` stops only local uploading. See the runtime refer
         caching = (
             """
 A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry; `invalidate` and its `mutations` remove tagged entries. See the runtime
+sends the request, revalidating a stale entry. See the runtime
 reference for their limits."""
             if "cache" in kinds
             else ""
@@ -3742,7 +3557,7 @@ A limiter permit is acquired before opening a body and released when its respons
 bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
-{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._circuit_runtime()}{self._compression_runtime()}"""  # noqa: S608
+{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""  # noqa: S608
 
     def _compression_runtime(self) -> str:
         """Describe request compression, or that no operation of the package accepts a request coding."""
@@ -3750,74 +3565,26 @@ wait for retained cleanup; it does not authorize another send or restore an expi
             return """
 ## Request compression
 
-No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
-off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.
+No operation of this package declares request compression, so every request is sent without SDK compression.
 """
         return """
 ## Request compression
 
-`compression: str | None` in `ClientOptions`, `RequestOptions` views, and calls selects a request content coding;
-`gzip` is the only coding with an encoder, `UNSET` inherits, and `None` turns compression off. Another value raises
-`ConfigurationError` when the options are made. A selected coding applies to a call only when it sends a body,
-including empty bytes and JSON null, and its operation accepts the coding; then the body is sent gzip-compressed
-(level 6, no file name, zero modification time) with `Content-Encoding: gzip`, and a Content-Encoding header the call
-already sends raises `ConfigurationError`. A coding the client or a view selects turns off for other calls, including
-`request_raw`; one a call selects raises `ConfigurationError` before sending for a call it cannot apply to.
+`ClientOptions(compression="gzip")` is the default. The SDK gzips only bodies of operations that declare gzip;
+`ClientOptions(compression=None)` disables it. Views and calls inherit the client setting. Undeclared operations,
+bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
+when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
 Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
 multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
 uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
 accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
 
-A protocol helper given a coding in its `options` checks once, before sending anything, that one of its requests can
-apply it, or raises `ConfigurationError(field_path=('options', 'compression'),
-condition='no_applicable_helper_child')`; then only its requests with a body whose operation accepts the coding are
-compressed, and its bodyless polls and followed URLs are not. Token requests are never compressed.
+Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
+followed URLs stay uncompressed. Token requests are never compressed.
 
-Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Queue
-`drain` refuses an explicit coding with `no_applicable_helper_child` before claiming entries or sending. Entries
-save no coding; inherited client or view codings apply only to declared queued operations with bodies.
-"""
-
-    def _circuit_runtime(self) -> str:
-        """Describe circuit breaking, or nothing for a package whose operations declare no circuit group."""
-        if not circuit_groups(self.plan):
-            return ""
-        return f"""
-## Circuit breakers
-
-Import `CircuitBreakerOptions` and the circuit store types from `{self.config.package}.protocols`. A circuit breaker
-runs only for operations with a circuit group and only when `ProtocolClientOptions(circuit=CircuitBreakerOptions(
-enabled=True))` is passed in `ClientOptions(protocols=...)`; otherwise calls take no circuit step.
-
-| Setting | Default |
-|---|---|
-| `enabled` | False |
-| `failure_threshold` | 5 consecutive failed calls |
-| `cooldown` | 30 seconds |
-| half-open probes | 1 at a time, fixed |
-| `circuit_store` | None: a memory store of this client, shared with its views |
-
-Each call of a grouped operation passes the circuit of its group, the origin of its URL, and the client's
-`ProtocolSecurityContext.credential_partition` (`anonymous` without a context) once its request is encoded and before
-any credential, limiter permit, or send. An authenticated call needs a security context, and a view or call with
-other auth than the client's is refused, each with `ProtocolConfigurationError` before sending. An open circuit
-raises `CircuitOpenError` with its `key` and the monotonic `retry_at` of its next admission; the call consumes no
-send, attempt, or token exchange, and is never retried.
-
-A call's outcome is recorded once, after its redirects and retries. Connect, read, and write transport failures and a
-final 500, 502, 503, or 504 response are failures; any other response is a success, which resets the count. Pool
-timeouts, 429, cancellation, deadlines, auth and token failures, and configuration, encoding, decoding, and validation
-errors leave the circuit unchanged. A streaming call completes when its response is handed over. The threshold of
-consecutive failures opens the circuit for the cooldown; then one call probes it, closing it on success and reopening
-it on failure, while other calls raise `CircuitOpenError`; a cancelled or neutral probe frees the slot.
-
-`circuit_store` borrows a `CircuitStore` (an `AsyncCircuitStore` for `AsyncClient`) and never closes it; clients
-sharing one store share circuits with the same key. Its methods receive `now` from the monotonic source of the
-client's clock, `ClientOptions(clock=...)`, which is process local. A store failure raises `CircuitStoreError`, or
-becomes a secondary error of a call that already failed; no request is resent because of it.
-`reset_circuit(group, origin=Origin(...))` closes one circuit of this client's partition without sending anything,
-and permits admitted before it cannot change the state after it.
+Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Entries save
+no coding; at drain, the client setting applies to declared queued operations with bodies.
 """
 
     def helper_runtime(self) -> str:
@@ -3860,8 +3627,9 @@ handle, a declared immediate status a handle that already holds the result, and 
 `ProtocolConfigurationError` before the create request. Each poll waits until the interval after the last response, an
 error response included, has passed, or the longer delay the helper's declared delay header gives, and a result fetch
 after a failed one waits the same way; nothing is sent early: a server delay longer than the allowed wait, or not
-shorter than what remains of the session, raises `PollWaitLimitError` without sending. A poll's state must equal a
-declared state value, JSON type included; any other value raises `PollingStateError`, and success is never inferred.
+shorter than what remains of the session, raises `PollWaitLimitError` without sending. A resumed handle polls at
+once, since a checkpoint keeps no server delay. A poll's state must equal a declared state value, JSON type included;
+any other value raises `PollingStateError`, and success is never inferred.
 
 `wait` returns the result: read from the final poll, fetched once by the result operation, or None. A failed or
 cancelled operation raises `OperationFailedError` or `OperationCancelledError` with its last poll, on every later
@@ -3871,18 +3639,20 @@ succeeded with its result fetch still due, which a later `wait` retries alone. `
 `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local polling. A call's
 options must not fix an idempotency key or patch a header or query parameter the helper writes.
 
-`checkpoint()` returns a `ResumeState` without sending, also after closing and while another thread or task polls:
-the phase, the polls so far, the wait left before the next poll or result fetch, the values the next requests write,
-and a settled operation's final poll and result bodies, never model objects, the session, or the call's options. The
-helper's `resume` is never awaited and returns a handle in a session of its own that sends nothing until `status` or
-`wait`; polls count on, while the session's timeout, deadline, and sends start afresh. Before returning, it refuses
-another helper's state, one made under other security, an expired one, and one that does not fit the helper with
-`ResumeStateError`, a saved dot segment for a path parameter with `ProtocolDataError`, and a saved body over the call's
-response size limit with `ProtocolSizeError`; a saved value the result fetch writes into its querystring or body is
-checked when the fetch request is built. `PollWaitLimitError` and a `SessionLimitError` of a created operation keep a
-checkpoint as `resume_state`. A helper that declares `expires_at` reads the server's expiry, an RFC 3339 date-time with
-an offset or an HTTP date, from the accepted create response, and its checkpoints expire then; a create response
-without a valid one fails `start` with `ProtocolDataError`, though the remote operation was created.
+`checkpoint()` returns a `ResumeState` without sending, also after closing and while another thread or task polls: a
+pending handle's values the next poll and a remote cancel write and those the create response gave the result fetch,
+or the values a due result fetch writes, and the server's expiry, never polls, results, model objects, the session, or
+the call's options; a settled operation has nothing left to continue, and its `checkpoint()` raises
+`ProtocolStateError`. The helper's `resume` is never awaited and returns a handle in a session of its own that sends
+nothing until `status` or `wait`: a pending one polls again at once, and one whose fetch is due fetches the result;
+polls, the session's timeout, deadline, and sends start afresh. Before returning,
+it refuses another helper's state, an expired one, and one that does not fit the helper with `ResumeStateError`, and a
+saved dot segment for a path parameter with `ProtocolDataError`; a saved value the result fetch writes into its
+querystring or body is checked when the fetch request is built. `PollWaitLimitError` and a `SessionLimitError` of a
+created operation keep a checkpoint as `resume_state`. A helper that declares `expires_at` reads the server's expiry,
+an RFC 3339 date-time with an offset or an HTTP date, from the accepted create response, and its checkpoints expire
+then; a create response without a valid one fails `start` with `ProtocolDataError`, though the remote operation was
+created.
 
 A helper that declares `remote_cancel` returns a handle of its own class whose `cancel_remote()` sends the cancel
 request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
@@ -3902,9 +3672,8 @@ call, every probe, append, and the completion are logical calls of their own, wi
 and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
 `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
 
-- `{self.config.package}.protocols`: `UploadOptions`, `UploadSource`, `AsyncUploadSource`, `UploadIdentity`,
-  `UploadProgress`, `UploadHandle`, `AsyncUploadHandle`, and the builtin `BytesUploadSource`, `FileUploadSource`,
-  `AsyncBytesUploadSource`, and `AsyncFileUploadSource`
+- `{self.config.package}.protocols`: `UploadOptions`, `UploadSource`, `UploadProgress`, `UploadHandle`, and
+  `AsyncUploadHandle`
 - `{self.config.package}.options`: `SessionOptions`
 
 | Limit | Effective default |
@@ -3912,15 +3681,16 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
 | chunks per upload | 10000; None removes it |
 | probes after an append of unknown outcome | 3; 0 probes none |
-| session total timeout | None (no limit), including reading the source at `start` or `resume` |
+| session total timeout | None (no limit) |
 | network sends per session | 10000; None removes it |
 
-A source has an immutable identity, its size and SHA-256 digest, and opens an independent reader for each range. Before
-anything is sent, `start` and `resume` read the whole source once and record each chunk's digest; each append reads
-its chunk again into one buffer and sends it only when it matches, so a source whose content changed raises
-`UploadSourceChangedError` and the handle sends nothing more. A one-shot stream or iterator is no source and raises
-`NonResumableSourceError`; send it as an ordinary upload. Sources a call is given are borrowed and never closed, and
-every reader the client opens is closed.
+A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
+to its end; sync and asyncio clients take the same sources and read one chunk at a time. `start` measures its size and
+creates the upload without reading it. Each append seeks to the confirmed offset and reads the rest of its chunk into
+one buffer; content shorter or longer than the upload's size raises `UploadSourceChangedError` and the handle sends
+nothing more. The content is not hashed: keep it unchanged while it is uploaded. A one-shot stream, iterator, or a
+reader that cannot seek raises `NonResumableSourceError`; send it as an ordinary upload. Sources are borrowed and never
+closed.
 
 `start` sends the create request once, resent only as shared retries allow. `advance` appends the chunk holding the
 confirmed offset, and `run` appends every remaining chunk and completes the upload: by length, returning None, or with
@@ -3930,11 +3700,12 @@ confirms it, and an offset inside it confirms its bytes only when partial commit
 passes the content, or commits part of a chunk that may not be raises `UploadOffsetError`, and probes that never answer
 raise `UploadDeliveryUnknownError`; so does a completion whose outcome is unknown, which is never sent again.
 
-`checkpoint()` saves the confirmed offset, the chunk layout and digests, and the values later calls write, sending
-nothing. `resume` checks it, then the source, then probes the server's offset once; it never creates the upload again.
-A checkpoint past the server's declared expiry raises `UploadExpiredError`. `advance` and `run` at once raise
-`ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local uploading. A call's
-options must not fix an idempotency key or patch a header or query parameter the helper writes.
+`checkpoint()` saves the content's size, the chunk size, the confirmed offset, the values later calls write, and a
+completion of unknown outcome, sending nothing; a complete upload has no checkpoint. `resume` checks it and the
+source's size, then probes the server's offset once; it never creates the upload again, and a completion of unknown
+outcome raises again. A checkpoint past the server's declared expiry raises `UploadExpiredError`. `advance` and `run`
+at once raise `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local
+uploading. A call's options must not fix an idempotency key or patch a header or query parameter the helper writes.
 """
 
     def queue_runtime(self) -> str:
@@ -4060,7 +3831,7 @@ another kind's options, fail construction. The session types are imported from:
 {self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""
 
     def cache_runtime(self) -> str:
-        """Describe cache helpers' stores, keys, freshness, revalidation, and invalidation, or nothing without them."""
+        """Describe cache helpers' stores, keys, freshness, and revalidation, or nothing without them."""
         if not any(isinstance(spec, CacheSpec) for spec in self.helpers):
             return ""
         return f"""
@@ -4068,7 +3839,7 @@ another kind's options, fail construction. The session types are imported from:
 
 A cache helper keeps entries only in the store `ProtocolClientOptions.cache_stores` lends it under its name, a
 `MemoryCacheStore` or `AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the
-client's mode; a client without one refuses `fetch`, `invalidate`, and the mutations with
+client's mode; a client without one refuses `fetch` with
 `ProtocolConfigurationError` before sending. The client never creates or closes a store. The types are imported from
 `{self.config.package}.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
 stores.
@@ -4089,9 +3860,11 @@ cannot see, such as a client certificate, need a partition of their own. Freshne
 only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
 `CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
 `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
-removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request. A mutation removes
-the entries its tags name only after it succeeds; a store failure then raises `CacheInvalidationError`, whose
-`require_result()` returns the mutation's result.
+removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request.
+The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
+Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
+Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.
+Concurrent custom-store writes use last-completing replacement.
 """
 
     @staticmethod
@@ -4174,10 +3947,9 @@ stream open raises `CleanupError` once its cleanup timeout passes.
 ## WebSocket sessions
 
 A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
-the call's retries, redirects, authentication, limiter, and hooks: a 101 hands the connection to the session, and any
-other response raises the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the
-call's options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are
-imported from:
+initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises
+the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the call's options, then
+`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
 
 - `{package}.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,
   `Message`, `PingReceipt`, and the connector contracts `WebSocketConnector`, `AsyncWebSocketConnector`,
@@ -4205,8 +3977,12 @@ raises `ProtocolSizeError` after the connection closed with 1009. A receive that
 raises `PhaseTimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
 reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises `PhaseTimeoutError`
 and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`, closes the session,
-and is never sent again. Sessions never reconnect, so `WSOptions(reconnect=True)` raises `ProtocolConfigurationError`,
-as does `WSOptions(compression="deflate")` for a helper that does not permit compression.
+and is never sent again. Messages are written whole: in a `WebSocketSession`, the send timeout is checked before the
+write starts, and a started write runs until it completes or the connection fails. Sessions never reconnect.
+`WSOptions(compression="deflate")` raises `ProtocolConfigurationError` for a helper that does not permit compression.
+Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or invalidated
+by a refused upgrade. Only a transport failure proven `NOT_SENT` before handover may use the call's existing retry
+policy.
 
 `ProtocolClientOptions(websocket_connector=...)` borrows a connector, which is never closed; without one, the client
 opens its connections with the `websockets` library, a dependency of this package. `websocket_transport` sets the TLS
