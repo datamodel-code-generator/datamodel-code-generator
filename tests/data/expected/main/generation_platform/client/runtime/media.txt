@@ -59,6 +59,19 @@
   note replace value ! RequestEncodingError: RequestEncodingError(operation_id='replaceNote', call_id='<call>', location='body') [operation_id='replaceNote', location=('body',), cause=ParameterEncodingError('A text body must be a string')] request_encoding_error
   store file of a media range ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
   > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: image/png, content-length: 4] b'\x89PNG'
+  store png = None
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: application/pdf, content-length: 4] b'%PDF'
+  store pdf = None
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: text/csv; charset=utf-16, content-length: 8] b'\xff\xfea\x00,\x00b\x00'
+  store csv in UTF-16 = None
+  > PUT https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 1] b'x'
+  replace with octets = None
+  store video outside the ranges ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
+  > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: application/json, content-length: 15] b'{"city":"Oslo"}'
   store file narrowed = b'png'
   > POST https://media.example.com/api/files
@@ -127,6 +140,19 @@
   note replace text = None
   note replace value ! RequestEncodingError: RequestEncodingError(operation_id='replaceNote', call_id='<call>', location='body') [operation_id='replaceNote', location=('body',), cause=ParameterEncodingError('A text body must be a string')] request_encoding_error
   store file of a media range ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: image/png, content-length: 4] b'\x89PNG'
+  store png = None
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: application/pdf, content-length: 4] b'%PDF'
+  store pdf = None
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: text/csv; charset=utf-16, content-length: 8] b'\xff\xfea\x00,\x00b\x00'
+  store csv in UTF-16 = None
+  > PUT https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 1] b'x'
+  replace with octets = None
+  store video outside the ranges ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: application/json, content-length: 15] b'{"city":"Oslo"}'
   store file narrowed = b'png'

@@ -68,6 +68,8 @@ querystring qs text/plain scalar/string: ?a%20b%2Bc => "a b+c"
 query q form* scalar/string: ParameterEncodingError JSON null cannot be written by a style-based parameter
 query q form* array/string: TypeError Unset is not a JSON value
 query q form* object/string: TypeError Unset is not a JSON value
+path p simple array/string: ParameterEncodingError An empty array or object cannot fill a path segment
+path p label* object/string: ParameterEncodingError An empty array or object cannot fill a path segment
 query q form* array/string: ParameterEncodingError The value does not have the parameter's declared shape
 query q form* array/string: ParameterEncodingError The tuple value does not have the string lexical kind
 query q form* object/string: ParameterEncodingError An object parameter member is not declared
@@ -108,6 +110,7 @@ invalid {'location': 'query', 'name': 'q', 'content_media_type': 'application/x-
 invalid {'location': 'header', 'name': 'h', 'style': 'form'}: ValueError header parameter style 'form' has no builtin form for scalar values
 invalid {'location': 'path', 'name': 'p'}: ValueError path parameter style None has no builtin form for scalar values
 path text path p simple scalar/string: a.b
+path text path p matrix array/string: ParameterEncodingError An empty array or object cannot fill a path segment
 python query i form* scalar/integer: ?i=2 => 2
 python query n form* scalar/number: ?n=1.5 => 1.5
 python query n form* scalar/number: ?n=1e-07 => 1E-7
