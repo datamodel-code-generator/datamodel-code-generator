@@ -5,18 +5,18 @@ pending operations
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   status = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
-  pending saved {"bound": ["j1", "running"], "cancel": [], "phase": "pending", "poll": null, "polls": 1, "result": null, "seed": ["j1"], "wait_ms": "0ms"} payload=b'' expires_at=None
+  pending saved {"bound": ["j1", "running"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   state repr ResumeState(version=1)
-  resumed LroHandle(phase='pending', polls=1) progress {'polls': 1, 'network_send_count': 0, 'network_send_budget_used': 0}
+  resumed LroHandle(phase='pending', polls=0) progress {'polls': 0, 'network_send_count': 0, 'network_send_budget_used': 0}
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: running] b''
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resumed wait = Report(rows=3)
-  resumed progress {'polls': 2, 'network_send_count': 2, 'network_send_budget_used': 2}
+  resumed progress {'polls': 1, 'network_send_count': 2, 'network_send_budget_used': 2}
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  before any poll saved {"bound": ["j1", "queued"], "cancel": [], "phase": "pending", "poll": null, "polls": 0, "result": null, "seed": ["j1"], "wait_ms": "0ms"} payload=b'' expires_at=None
+  before any poll saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   > GET https://api.example.com/jobs/j1/report
@@ -25,7 +25,7 @@ pending operations
   resumed with a coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error session=False
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  fetch written from the final poll saved {"bound": ["j1", 202], "cancel": [], "phase": "pending", "poll": null, "polls": 0, "result": null, "seed": [null], "wait_ms": "0ms"} payload=b'' expires_at=None
+  fetch written from the final poll saved {"bound": ["j1", 202], "cancel": [], "expires_at": null, "phase": "pending", "seed": [null]}
   > GET https://api.example.com/jobs/j1?since=202
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > POST https://api.example.com/reports
@@ -33,13 +33,13 @@ pending operations
   resumed fetch written from the final poll = Report(rows=9)
   > POST https://api.example.com/exports
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
-  querystring saved {"bound": ["e1"], "cancel": [], "phase": "pending", "poll": null, "polls": 0, "result": null, "seed": [], "wait_ms": "0ms"} payload=b'' expires_at=None
+  querystring saved {"bound": ["e1"], "cancel": [], "expires_at": null, "phase": "pending", "seed": []}
   > GET https://api.example.com/exports/status?%7B%22id%22%3A%22e1%22%7D
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resumed querystring = None
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  closed saved {"bound": ["j1", "queued"], "cancel": [], "phase": "pending", "poll": null, "polls": 0, "result": null, "seed": ["j1"], "wait_ms": "0ms"} payload=b'' expires_at=None
+  closed saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   > GET https://api.example.com/jobs/j1/report
@@ -53,25 +53,19 @@ settled operations
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   wait = Report(rows=6)
-  fetched saved {"bound": [], "cancel": [], "phase": "succeeded", "poll": ["done", 200, "application/json", 27], "polls": 1, "result": [200, "application/json", 10], "seed": [], "wait_ms": "0ms"} payload=b'{"id":"j1","status":"done"}{"rows":6}' expires_at=None
-  resumed wait = Report(rows=6)
-  resumed status = PollSnapshot(state='done', terminal=True, status=200, data=Job:j1)
-  resumed progress {'polls': 1, 'network_send_count': 0, 'network_send_budget_used': 0}
-  resumed under a smaller response limit ! ProtocolSizeError: ProtocolSizeError(kind='body', limit=20, observed=27) [kind='body', unit='bytes', limit=20] protocol_size_error session=False
+  checkpoint of a fetched result ! ProtocolStateError: ProtocolStateError(state='succeeded', action='checkpoint') [] protocol_state_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   failed wait ! OperationFailedError: PollSnapshot(state='failed', terminal=True, status=200, data=Job:j1) operation_failed_error session=True
-  resumed failed wait ! OperationFailedError: PollSnapshot(state='failed', terminal=True, status=200, data=Job:j1) operation_failed_error session=True
-  resumed failed status = PollSnapshot(state='failed', terminal=True, status=200, data=Job:j1)
+  failed checkpoint ! ProtocolStateError: ProtocolStateError(state='failed', action='checkpoint') [] protocol_state_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   cancelled wait ! OperationCancelledError: PollSnapshot(state='cancelled', terminal=True, status=200, data=Job:j1) operation_cancelled_error session=True
-  resumed cancelled wait ! OperationCancelledError: PollSnapshot(state='cancelled', terminal=True, status=200, data=Job:j1) operation_cancelled_error session=True
-  resumed cancelled status = PollSnapshot(state='cancelled', terminal=True, status=200, data=Job:j1)
+  cancelled checkpoint ! ProtocolStateError: ProtocolStateError(state='cancelled', action='checkpoint') [] protocol_state_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
@@ -79,53 +73,53 @@ settled operations
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   failed fetch ! GetReportHTTPError: GetReportHTTPError(status_code=500, operation_id='getReport', call_id='<call>', retry_stop_reason='disabled') [operation_id='getReport', status_code=500, error_decoded=False, body_bytes=b'{}', truncated=False] get_report_http_error session=True
-  fetch due saved {"bound": ["j1"], "cancel": [], "phase": "succeeded", "poll": ["done", 200, "application/json", 27], "polls": 1, "result": null, "seed": [], "wait_ms": "0ms"} payload=b'{"id":"j1","status":"done"}' expires_at=None
+  fetch due saved {"bound": ["j1"], "cancel": [], "expires_at": null, "phase": "fetch", "seed": []}
+  resumed fetch status ! ProtocolStateError: ProtocolStateError(state='succeeded', action='status') [] protocol_state_error session=True
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resumed fetch = Report(rows=7)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  immediate saved {"bound": [], "cancel": [], "phase": "succeeded", "poll": null, "polls": 0, "result": [200, "application/json", 47], "seed": [], "wait_ms": "0ms"} payload=b'{"id":"j3","status":"done","result":{"rows":1}}' expires_at=None
-  resumed immediate wait = Report(rows=1)
-  resumed immediate status ! ProtocolStateError: ProtocolStateError(state='succeeded', action='status') [] protocol_state_error session=True
+  immediate checkpoint ! ProtocolStateError: ProtocolStateError(state='succeeded', action='checkpoint') [] protocol_state_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j2?verbose=true
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   inline wait = Report(rows=8)
-  inline saved {"bound": [], "cancel": [], "phase": "succeeded", "poll": ["done", 200, "application/json", 46], "polls": 1, "result": null, "seed": [], "wait_ms": "0ms"} payload=b'{"id":"j2","status":"any","result":{"rows":8}}' expires_at=None
-  resumed inline wait = Report(rows=8)
+  inline checkpoint ! ProtocolStateError: ProtocolStateError(state='succeeded', action='checkpoint') [] protocol_state_error session=True
   > POST https://api.example.com/exports
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   > GET https://api.example.com/exports/status?%7B%22id%22%3A%22e1%22%7D
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   wait without a result = None
-  resumed without a result = None
+  checkpoint without a result ! ProtocolStateError: ProtocolStateError(state='succeeded', action='checkpoint') [] protocol_state_error session=True
 errors that keep a checkpoint
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   long server delay ! PollWaitLimitError resume_state=ResumeState
-  long server delay saved {"bound": ["j1", "queued"], "cancel": [], "phase": "pending", "poll": null, "polls": 0, "result": null, "seed": ["j1"], "wait_ms": "<=2min"} payload=b'' expires_at=None
-  resumed with the delay ! PollWaitLimitError kind='wait' required>limit=True limit=60.0 poll_wait_limit_error session=True
+  long server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  resumed polls at once = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   status after a huge server delay ! PollWaitLimitError resume_state=ResumeState
   wait after a huge server delay ! PollWaitLimitError resume_state=ResumeState
-  huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "phase": "pending", "poll": null, "polls": 0, "result": null, "seed": ["j1"], "wait_ms": "9007199254740991ms"} payload=b'' expires_at=None
-  checkpoint after a huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "phase": "pending", "poll": null, "polls": 0, "result": null, "seed": ["j1"], "wait_ms": "9007199254740991ms"} payload=b'' expires_at=None
-  resumed with the huge delay ! PollWaitLimitError kind='wait' required>limit=True limit=60.0 poll_wait_limit_error session=True
-  resumed with the huge delay and no wait limit ! PollWaitLimitError kind='deadline' required>=limit=True poll_wait_limit_error session=True
+  huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
+  checkpoint after a huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  resumed after the huge delay polls at once = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   first poll = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
   poll limit ! SessionLimitError resume_state=ResumeState
-  resumed at the same limit ! SessionLimitError: SessionLimitError(kind='polls', limit=1) [kind='polls', limit=1] session_limit_error session=True
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  resumed with a raised limit = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
-  raised progress {'polls': 2, 'network_send_count': 1, 'network_send_budget_used': 1}
+  resumed at the same limit polls afresh = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
+  resumed progress {'polls': 1, 'network_send_count': 1, 'network_send_budget_used': 1}
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
@@ -149,55 +143,23 @@ refused states
 malformed states
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  > POST https://api.example.com/jobs
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  > GET https://api.example.com/jobs/j1
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  failed source ! OperationFailedError: PollSnapshot(state='failed', terminal=True, status=200, data=Job:j1) operation_failed_error session=True
   unknown member ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
   unknown phase ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  phase of another type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  negative polls ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  wait past the most saved ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  wait past every float ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
+  fetch with values of the poll ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
+  fetch with values of the create response ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
   fetch value of another type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
   null fetch value ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
   object fetch value ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
   short bindings ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  pending with a saved poll ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  pending with a result ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
+  cancel values without a remote cancel ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
   header with a line break ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  leftover payload ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  state of another phase ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  undeclared state ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  short poll entry ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  poll body it cannot decode ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  failure with values ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
+  expiry of another form ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
+  expiry without an offset ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  fetch of a helper without one ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
   dot segment for a poll ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/id')] protocol_data_error session=False
   dot segment for a fetch ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/id')] protocol_data_error session=False
-  > POST https://api.example.com/jobs
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  immediate body without a result ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  immediate body of an accepted status ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  success without a result ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  immediate result with values ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  > POST https://api.example.com/jobs
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  > GET https://api.example.com/jobs/j2?verbose=true
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  inline result missing ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='missing') [operation_id='getJob', condition='missing', location=BodySelector(pointer='/result')] protocol_data_error session=True
-  > GET https://api.example.com/jobs/j2?verbose=true
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  inline result = Report(rows=2)
-  inline poll without a result ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  inline success with values ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  > POST https://api.example.com/exports
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
-  > GET https://api.example.com/exports/status?%7B%22id%22%3A%22e1%22%7D
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  success without a result = None
-  result body of a helper without one ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
-  success without a result with values ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error session=False
 remote cancellation
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -216,7 +178,7 @@ remote cancellation
   > DELETE https://api.example.com/jobs/j9
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
   cancel refused ! CancelJobHTTPError: CancelJobHTTPError(status_code=409, operation_id='cancelJob', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='cancelJob', status_code=409, error_decoded=False, body_bytes=b'{"message":"conflict"}', truncated=False] cancel_job_http_error session=True
-  tracked saved {"bound": ["j5"], "cancel": ["j9", "requested"], "phase": "pending", "poll": null, "polls": 1, "result": null, "seed": [], "wait_ms": "0ms"} payload=b'' expires_at=2999-01-01T00:00:00+00:00
+  tracked saved {"bound": ["j5"], "cancel": ["j9", "requested"], "expires_at": "2999-01-01T00:00:00+00:00", "phase": "pending", "seed": []}
   resumed class JobsTrackedHandle
   > DELETE https://api.example.com/jobs/j9
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
@@ -270,7 +232,7 @@ server expiries
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   resume past the expiry ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error session=False
-  import past the expiry ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error session=False
+  import past the expiry = ResumeState(version=1)
   > GET https://api.example.com/jobs/j5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   polling past the expiry = Report(rows=4)
@@ -292,32 +254,7 @@ server expiries
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   date past the last year ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/expires')] protocol_data_error session=True
-security
-  > POST https://api.example.com/jobs
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  anonymous export = True
-  anonymous resumes anonymous = LroHandle(phase='pending', polls=0)
-  > POST https://api.example.com/jobs
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  keyed export ! ProtocolConfigurationError: ProtocolConfigurationError(condition='security_partition') [field_path=('protocols', 'security'), condition='security_partition'] protocol_configuration_error session=False
-  keyed resumes anonymous ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error session=False
-  keyed resumes keyed = LroHandle(phase='pending', polls=0)
-  > POST https://api.example.com/jobs
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  keyed tenant export = True
-  keyed tenant resumes anonymous ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error session=False
-  keyed tenant resumes keyed ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error session=False
-  keyed tenant resumes keyed tenant = LroHandle(phase='pending', polls=0)
 checkpoints on the client clock
-  > POST https://api.example.com/jobs
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  saved wait less the clock's move wait_ms=90000
-  resumed wait past the limit ! PollWaitLimitError kind='wait' required_wait=90.0 limit=60.0
-  > GET https://api.example.com/jobs/j1
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  > GET https://api.example.com/jobs/j1/report
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed wait once the clock passes it = Report(rows=3)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   two-digit year by the client's wall clock expires_at=2099-01-01T00:00:00+00:00
@@ -325,21 +262,13 @@ checkpoints on the client clock
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   expiry before the client's wall clock = mappingproxy({'polls': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
   expiry at the client's wall clock ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error session=False
-  > POST https://api.example.com/jobs
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  async resumed wait past the limit ! PollWaitLimitError kind='wait' required_wait=90.0 limit=60.0
-  > GET https://api.example.com/jobs/j1
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  > GET https://api.example.com/jobs/j1/report
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async resumed wait once the clock passes it = Report(rows=3)
 async resume
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   status = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
-  resumed AsyncLroHandle(phase='pending', polls=1)
+  resumed AsyncLroHandle(phase='pending', polls=0)
   async resumed with a coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error session=False
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: running] b''
@@ -363,7 +292,7 @@ async remote cancellation
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   handle class AsyncJobsTrackedHandle
-  checkpoint while waiting saved {"bound": ["j5"], "cancel": ["j5", "requested"], "phase": "pending", "poll": null, "polls": 0, "result": null, "seed": [], "wait_ms": "<=1min"} payload=b'' expires_at=2999-01-01T00:00:00+00:00
+  checkpoint while waiting saved {"bound": ["j5"], "cancel": ["j5", "requested"], "expires_at": "2999-01-01T00:00:00+00:00", "phase": "pending", "seed": []}
   > DELETE https://api.example.com/jobs/j5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
   cancel while waiting = CancelReceipt(status=202, data=Job:cancelled)
