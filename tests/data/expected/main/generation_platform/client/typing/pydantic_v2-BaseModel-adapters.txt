@@ -1,8 +1,8 @@
 mypy pets and adapter_helpers.py: clean
 pyright pets and adapter_helpers.py: clean
 ty pets and adapter_helpers.py: clean
-adapter_helpers_negative.py 11 marked lines
-mypy adapter_helpers_negative.py: 10/11 marked lines with one error, 0 elsewhere, 0 in other files
+adapter_helpers_negative.py 10 marked lines
+mypy adapter_helpers_negative.py: 9/10 marked lines with one error, 0 elsewhere, 0 in other files
   56 misc
   57 misc
   58 misc
@@ -14,8 +14,7 @@ mypy adapter_helpers_negative.py: 10/11 marked lines with one error, 0 elsewhere
   64 arg-type
   64 call-arg
   65 arg-type
-  66 call-arg
-pyright adapter_helpers_negative.py: 10/11 marked lines with one error, 0 elsewhere, 0 in other files
+pyright adapter_helpers_negative.py: 9/10 marked lines with one error, 0 elsewhere, 0 in other files
   56 reportArgumentType
   57 reportArgumentType
   58 reportArgumentType
@@ -27,8 +26,7 @@ pyright adapter_helpers_negative.py: 10/11 marked lines with one error, 0 elsewh
   63 reportUnknownMemberType
   64 reportCallIssue
   65 reportArgumentType
-  66 reportCallIssue
-ty adapter_helpers_negative.py: 8/11 marked lines with one error, 0 elsewhere, 0 in other files
+ty adapter_helpers_negative.py: 7/10 marked lines with one error, 0 elsewhere, 0 in other files
   56 invalid-argument-type
   56 invalid-argument-type
   57 invalid-argument-type
@@ -42,4 +40,3 @@ ty adapter_helpers_negative.py: 8/11 marked lines with one error, 0 elsewhere, 0
   63 unresolved-attribute
   64 too-many-positional-arguments
   65 invalid-argument-type
-  66 unknown-argument

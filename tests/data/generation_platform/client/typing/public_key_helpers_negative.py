@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 
 from pets.protocols import KeySet
 from pets.webhooks.github import push
-from pets.webhooks.keyed import rsa
 from pets.webhooks.keys import Ed25519Key, HmacKey, RSAPSSKey
-from pets.webhooks.standard import ed25519
+from pets.webhooks.rfc8032 import ed25519
+from pets.webhooks.wycheproof import rsa
 
 if TYPE_CHECKING:
     from datetime import datetime

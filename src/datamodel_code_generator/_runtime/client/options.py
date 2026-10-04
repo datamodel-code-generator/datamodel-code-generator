@@ -643,7 +643,6 @@ def _is_limiter(value: object) -> TypeIs[Limiter | AsyncLimiter]:
     return callable(getattr(value, "acquire", None))
 
 
-CompressionOrigin: TypeAlias = Literal["client", "view", "call"]
 _CODING: Final = re.compile(r"[!#$%&'*+.^_`|~0-9a-z-]+")
 _ENCODERS: Final = frozenset({"gzip"})
 
@@ -660,14 +659,6 @@ def _compression(value: object) -> str | None:
     if not _CODING.fullmatch(token := value.lower()) or token not in _ENCODERS:
         raise ConfigurationError(field_path=("compression",), condition="invalid_value")
     return token
-
-
-@dataclass(frozen=True, slots=True)
-class ResolvedCompression:
-    """The request coding a layer selected and which layer selected it: the client, a view, or the call."""
-
-    token: str
-    origin: CompressionOrigin
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -695,7 +686,6 @@ class _Options:
     redirects: RedirectOptions | Unset = UNSET
     idempotency_key: IdempotencyKey | Unset | None = UNSET
     auth: AuthConfig | Unset | None = field(default=UNSET, repr=False)
-    compression: str | Unset | None = UNSET
 
     def _check_timing(self) -> None:
         checked_instance(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
@@ -739,8 +729,6 @@ class _Options:
             _positive_seconds(self.cleanup_timeout, ("cleanup_timeout",))
         if self.max_stream_bytes is not None and not isinstance(self.max_stream_bytes, Unset):
             checked_count(self.max_stream_bytes, ("max_stream_bytes",))
-        if not isinstance(self.compression, Unset):
-            object.__setattr__(self, "compression", _compression(self.compression))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -752,6 +740,7 @@ class ClientOptions(_Options):
     of each axis it sets. Its clock times every call, and no view or call changes it.
     """
 
+    compression: Literal["gzip"] | None = "gzip"
     transport: TransportOptions | Unset = UNSET
     protocols: protocol_names.ProtocolClientOptions | Unset | None = UNSET
     clock: Clock | Unset = UNSET
@@ -759,6 +748,7 @@ class ClientOptions(_Options):
     def __post_init__(self) -> None:
         """Validate ordinary options and the client-only construction settings, loading protocol types only if set."""
         _Options.__post_init__(self)
+        object.__setattr__(self, "compression", _compression(self.compression))
         checked_instance(self.transport, (TransportOptions, Unset), ("transport",))
         checked_instance(self.clock, (Clock, Unset), ("clock",))
         if self.protocols is not None and not isinstance(self.protocols, Unset):
@@ -805,7 +795,7 @@ class Settings:
     idempotency_key: IdempotencyKey | Unset | None = UNSET
     auth: AuthConfig | None = field(default=None, repr=False)
     clock: Clock = field(default=SYSTEM_CLOCK, repr=False)
-    compression: ResolvedCompression | None = None
+    compression: str | None = "gzip"
 
 
 def network_send_limit(settings: Settings) -> int | None:
