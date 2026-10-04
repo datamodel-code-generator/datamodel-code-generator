@@ -4327,7 +4327,7 @@ Standard Webhooks returns an authenticated delivery id and timestamp. Stripe-sty
 and no delivery id. Body HMAC and public-key signatures return neither fact. Other signature formats use an adapter.
 Each helper's `event_schema` selects a webhook or callback JSON request-body model, or an [event mapping](#event-mappings).
 Header names are case insensitive; prefixes match exactly. Hex accepts either case, base64 requires padding, and
-public-key base64url allows optional padding. Fixed presets need no signed-parts or framing declarations.
+public-key base64url allows optional padding.
 
 Invalid configuration is rejected during generation:
 
@@ -4352,8 +4352,8 @@ E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.prefix: prot
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.diagnostics -->
 
 An event whose model needs an envelope fails with `E_CLIENT_UNSUPPORTED` when the helper is enabled. A header value is
-read as ASCII; a format that keeps its timestamp and signatures in one header, such as `t=...,v1=...`, or signs in any
-other way the settings cannot describe, needs an [adapter signature](#adapter-signatures).
+read as ASCII; a scheme that signs in any way the presets cannot describe needs an
+[adapter signature](#adapter-signatures).
 
 ### Event mappings
 
