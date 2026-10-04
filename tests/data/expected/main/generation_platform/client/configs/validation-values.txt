@@ -20,7 +20,7 @@ resource_names=()
 operations=()
 signature_style='explicit'
 body_arguments='body'
-validation=ClientValidationConfig(request='native', response='schema', arguments='none', request_overrides=('none', 'schema', 'native'), response_overrides=('native',), argument_overrides=(), pydantic_strict=False)
+validation=ClientValidationConfig(request='native', response='schema', request_overrides=('none', 'schema', 'native'), response_overrides=('native',))
 default_base_url=None
 server_base_url=None
 protocols=None

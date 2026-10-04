@@ -116,8 +116,8 @@ def targeted(
 
     A write is a parameter's argument position without a pointer, a querystring's position with a pointer into its
     value, or no position with a pointer into the JSON body, every media of which is JSON. The header and query names
-    written follow, which a call's options must not patch. The operation skips the schema and argument checks, since
-    the server chose the values.
+    written follow, which a call's options must not patch. The operation skips the schema checks, since the server
+    chose the values.
     """
     parameters = list(call.parameters)
     writes: list[tuple[int | None, str | None]] = []
@@ -152,7 +152,7 @@ def targeted(
                 for media in body.media
             ),
         )
-    called = replace(call, parameters=tuple(parameters), body=body, checks=())
+    called = replace(call, parameters=tuple(parameters), body=body)
     return called, tuple(writes), frozenset(headers), frozenset(queries)
 
 

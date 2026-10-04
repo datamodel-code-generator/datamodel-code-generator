@@ -365,93 +365,6 @@
       "dataclasses.dataclass"
     ]
   },
-  "validation-arguments": {
-    "input": "validation.yaml",
-    "backends": [
-      "pydantic_v2.BaseModel",
-      "typing.TypedDict"
-    ],
-    "config": {
-      "validation": {
-        "request_overrides": [
-          "schema"
-        ],
-        "argument_overrides": [
-          "pydantic"
-        ]
-      }
-    }
-  },
-  "validation-arguments-lax": {
-    "input": "validation.yaml",
-    "modules": false,
-    "config": {
-      "validation": {
-        "arguments": "pydantic",
-        "pydantic_strict": false
-      }
-    }
-  },
-  "validation-arguments-msgspec": {
-    "input": "validation.yaml",
-    "backends": [
-      "msgspec.Struct"
-    ],
-    "config": {
-      "validation": {
-        "argument_overrides": [
-          "pydantic"
-        ]
-      }
-    }
-  },
-  "pets-arguments": {
-    "input": "pets.yaml",
-    "config": {
-      "resource_names": [
-        {
-          "tag": "photos",
-          "namespace": "photos"
-        }
-      ],
-      "operations": [
-        {
-          "ref": "/paths/~1pets/get",
-          "parameter_names": [
-            {
-              "in_": "query",
-              "name": "tags",
-              "python_name": "labels"
-            }
-          ],
-          "runtime": {
-            "request_id_header": "X-Request-Id"
-          }
-        },
-        {
-          "ref": {
-            "pointer": "/paths/~1pets/post"
-          },
-          "description": "Create a pet \"quoted\" \\ escaped."
-        },
-        {
-          "ref": "/paths/~1pets~1{petId}/get",
-          "response_media_type": "application/json"
-        },
-        {
-          "ref": "/paths/~1pets~1{petId}~1photo/put",
-          "resource": "pets.photos",
-          "name": "upload"
-        }
-      ],
-      "validation": {
-        "argument_overrides": [
-          "pydantic"
-        ]
-      }
-    },
-    "modules": false
-  },
   "fields": {
     "input": "fields.yaml",
     "backends": [
@@ -592,53 +505,7 @@
         "exclude_operations": [
           "/paths/~1search/post"
         ],
-        "reason": "The fields-structural and fields-arguments cases cover the union body."
-      }
-    }
-  },
-  "fields-arguments": {
-    "input": "fields.yaml",
-    "backends": [
-      "pydantic_v2.BaseModel",
-      "typing.TypedDict"
-    ],
-    "config": {
-      "body_arguments": "both",
-      "operations": [
-        {
-          "ref": "/paths/~1pets/post",
-          "body_field_names": [
-            {
-              "media_type": "application/json",
-              "name": "tag",
-              "python_name": "pet_tag"
-            },
-            {
-              "media_type": "application/x-www-form-urlencoded",
-              "name": "tag",
-              "python_name": "pet_tag"
-            }
-          ]
-        },
-        {
-          "ref": "/paths/~1pets~1{petId}~1visits/post",
-          "body_field_names": [
-            {
-              "media_type": "application/json",
-              "name": "options",
-              "python_name": "visit_options"
-            }
-          ]
-        },
-        {
-          "ref": "/paths/~1pets~1{petId}~1owner/put",
-          "body_arguments": "body"
-        }
-      ],
-      "validation": {
-        "argument_overrides": [
-          "pydantic"
-        ]
+        "reason": "The fields-structural case covers the union body."
       }
     }
   },
@@ -735,7 +602,7 @@
         "exclude_operations": [
           "/paths/~1search/post"
         ],
-        "reason": "The fields-structural and fields-arguments cases cover the union body."
+        "reason": "The fields-structural case covers the union body."
       }
     }
   },
@@ -788,7 +655,7 @@
         "exclude_operations": [
           "/paths/~1search/post"
         ],
-        "reason": "The fields-structural and fields-arguments cases cover the union body."
+        "reason": "The fields-structural case covers the union body."
       }
     }
   },
@@ -2316,9 +2183,6 @@
       "validation": {
         "request_overrides": [
           "schema"
-        ],
-        "argument_overrides": [
-          "pydantic"
         ]
       }
     }
@@ -2679,11 +2543,6 @@
           "reports"
         ],
         "reason": "Checked elsewhere"
-      },
-      "validation": {
-        "argument_overrides": [
-          "pydantic"
-        ]
       }
     },
     "modules": [
@@ -2765,11 +2624,6 @@
           "reports"
         ],
         "reason": "Checked elsewhere"
-      },
-      "validation": {
-        "argument_overrides": [
-          "pydantic"
-        ]
       }
     }
   },

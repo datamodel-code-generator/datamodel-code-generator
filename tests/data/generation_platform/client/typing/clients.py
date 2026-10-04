@@ -337,11 +337,9 @@ def validation(client: Client) -> None:
     strict = Client(options=ClientOptions(validation=ValidationOptions(request="schema", response="schema")))
     view = strict.with_options(RequestOptions(validation=ValidationOptions(response="native")))
     view.pets.get_pet(pet_id=pet, options=RequestOptions(validation=ValidationOptions(request="none")))
-    client.pets.get_pet(pet_id=pet, options=RequestOptions(validation=ValidationOptions(arguments="none")))
     inherited = ValidationOptions()
     assert_type(inherited.request, Literal["none", "native", "schema"] | Unset)
     assert_type(inherited.response, Literal["native", "schema"] | Unset)
-    assert_type(inherited.arguments, Literal["none", "pydantic"] | Unset)
     assert_type(ValidationOptions(request=UNSET).request, Literal["none", "native", "schema"] | Unset)
 
 

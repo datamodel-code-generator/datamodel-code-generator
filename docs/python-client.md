@@ -2982,8 +2982,6 @@ update naming only a media type ! ConfigurationError: ConfigurationError(operati
 - The model is built from the fields by its constructor, which validates Pydantic models and dataclasses, while stdlib
   dataclasses, TypedDicts, and msgspec Structs take the values as given. Under `native`, msgspec builds it through its
   converter instead, which validates it once; under `schema`, the serialized object is validated against its schema.
-- With Pydantic argument validation, the fields are validated with the operation's parameters, each at its
-  `("body", <wire name>)` location.
 
 ### Cost
 
@@ -3002,7 +3000,6 @@ another, and the other modes the package lets them select at runtime.
 |---|---|---|---|
 | `request` | `none`, `native`, `schema` | `none` | `none` sends the native value as it serializes; `native` first passes it through its model backend's own validation; `schema` validates the serialized value against its OpenAPI schema |
 | `response` | `native`, `schema` | `native` | `native` constructs the declared type through the backend's converter; `schema` validates the received value against its OpenAPI schema before constructing it |
-| `arguments` | `none`, `pydantic` | `none` | `pydantic` validates the arguments a call takes as native values with Pydantic before they are sent |
 
 What every mode still does:
 
@@ -3048,11 +3045,8 @@ model_package = "models"
 [validation]
 request = "none"
 response = "native"
-arguments = "none"
 request_overrides = ["schema"]
 response_overrides = ["schema"]
-argument_overrides = []
-pydantic_strict = true
 ```
 
 <!-- fmt: on -->
@@ -3074,7 +3068,7 @@ _DEFAULTS = ClientDefaults(user_agent=None, validation=ValidationModes(request=(
 
 ### Selecting a mode at runtime
 
-`pkg.options.ValidationOptions` has the three axes, each left `UNSET` to inherit. A call's `RequestOptions`, a
+`pkg.options.ValidationOptions` has the two axes, each left `UNSET` to inherit. A call's `RequestOptions`, a
 `with_options` view, the client's `ClientOptions`, and the generated default are layered in that order, axis by axis:
 
 ```python
@@ -3093,7 +3087,6 @@ that selects it, or from a call before any hook, request, or stream, and a value
 <!-- fmt: off -->
 
 ```text
-client selecting Pydantic arguments ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='not_allowed') [field_path=('validation', 'arguments'), condition='not_allowed'] configuration_error
 view selecting native requests ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='not_allowed') [field_path=('validation', 'request'), condition='not_allowed'] configuration_error
 request mode None ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='invalid_value') [field_path=('validation', 'request'), condition='invalid_value'] configuration_error
 response mode none ! ConfigurationError: ConfigurationError(field_path='validation.response', condition='invalid_value') [field_path=('validation', 'response'), condition='invalid_value'] configuration_error
@@ -3125,53 +3118,6 @@ A form-data part sends the headers its encoding declares as the call gives them.
 checks that each required one is present and reads as its declared type, and `schema` also validates each against its
 schema, such as its `pattern` or `minimum`.
 
-### Pydantic argument validation
-
-With `pydantic` among the `arguments` modes, a call validates the parameters and the body it takes as native values
-with Pydantic's `validate_call` before anything is encoded or sent: the body of the media type the call sends, unless
-it is sent as parts or as binary. `ModelValue` and `ModelInput` arguments keep their own strict validation, and
-omitted arguments stay omitted. Each branch of an operation has a private function whose parameters take the final
-types of its arguments, which the package builds the first time a call selects it:
-
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.validation.arguments -->
-<!-- fmt: off -->
-
-```python
-def _operation_1_0(
-    *,
-    body: _dcg_type_1 = OMITTED,
-) -> tuple[object, ...]:
-    return (body,)
-
-
-@cache
-def operation_1_0() -> ArgumentCheck:
-    """Return the validation of the arguments of create_pet sending application/json."""
-    return ArgumentCheck((('body', ('body',)),), _operation_1_0, strict=True)
-```
-
-<!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.arguments -->
-
-The validation uses `ConfigDict(strict=pydantic_strict, revalidate_instances="always", extra="allow")`, where
-`pydantic_strict` is `True` unless the target configuration sets it to `False` to let Pydantic coerce values; the
-validated or coerced values are the ones sent. That configuration applies to stdlib dataclasses and TypedDicts:
-an existing dataclass instance is validated again, and a closed TypedDict still refuses extra keys. Pydantic models
-and dataclasses keep their own configuration, so an instance changed after construction is sent as their
-configuration trusts it. A value Pydantic refuses raises `RequestEncodingError` at its argument, with the
-`ValidationError` as its cause, and nothing is sent.
-
-| Argument | Pydantic models or dataclasses | stdlib dataclasses | TypedDicts |
-|---|---|---|---|
-| A model changed after construction to a string `age` | sent as it is | refused, or converted without `pydantic_strict` | refused, or converted without `pydantic_strict` |
-| `"5"` for an integer parameter | converted for a model's `RootModel`; for a dataclass's alias, refused, or converted without `pydantic_strict` | refused, or converted without `pydantic_strict` | refused, or converted without `pydantic_strict` |
-| A mapping with an undeclared key as the body | refused | refused, since strict validation takes only instances, or kept without `pydantic_strict` | refused, as the TypedDict is closed |
-| `5` for a string parameter | refused | refused | refused |
-
-A package that allows Pydantic argument validation depends on `pydantic>=2.13.5` even when its default is `none`,
-and imports Pydantic only when a call first selects it. It is not available for msgspec Structs, which Pydantic
-cannot validate.
-
 ### When a mode is not available
 
 A package must be able to take every mode it allows for every use, or generation fails with `E_CONFIG_VALUE` naming the
@@ -3181,14 +3127,12 @@ use and the mode to select instead:
   stdlib dataclasses and TypedDicts do not. A form-data part's headers need none.
 - `response = "native"` is refused for a union whose members only their schemas tell apart, such as two object models
   read by a stdlib dataclass or TypedDict converter, unless the union's use returns `DecodedValue`.
-- `arguments = "pydantic"` is refused for an argument holding msgspec Structs.
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.validation.diagnostics -->
 <!-- fmt: off -->
 
 ```text
 E_CONFIG_VALUE binding validation.response /paths/~1orders~1{orderId}/get/responses/200: The 'native' response validation cannot take the response body 200 application/json of GET /orders/{orderId}, which tells its union members apart only by their schemas; select 'schema'
-E_CONFIG_VALUE binding validation.argument_overrides[0] /paths/~1pets/post/requestBody: The 'pydantic' arguments validation cannot take the request body application/json of POST /pets, which holds msgspec Structs that Pydantic cannot validate; select 'none'
 ```
 
 <!-- fmt: on -->
@@ -3202,9 +3146,7 @@ default modes and 349 ms with `schema`, most of it importing `jsonschema` with i
 call over a mock transport takes 64 µs with `none` and `native` responses, 66 µs with `native` requests, and 107 µs with
 `schema` for both; listing 20 pets takes 189 µs natively and 388 µs with `schema` (CPython 3.13, macOS arm64, Pydantic
 v2 models). msgspec lists them in 132 µs and stdlib dataclasses in 135 µs natively, and both in about 380 µs with
-`schema`. Pydantic argument validation adds 6–7 µs to a `create_pet` call with Pydantic models, stdlib dataclasses,
-or TypedDicts; with the latter two, the first call that selects it takes about 23 ms to import Pydantic and build its
-validation.
+`schema`.
 
 ## Timeouts, cancellation, and send limits
 

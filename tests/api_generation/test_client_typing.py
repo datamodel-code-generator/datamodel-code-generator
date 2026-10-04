@@ -48,25 +48,6 @@ def test_client_typing(backend: DataModelType, case: str, tmp_path: Path) -> Non
     )
 
 
-@pytest.mark.parametrize(
-    "backend",
-    [
-        DataModelType.PydanticV2BaseModel,
-        DataModelType.PydanticV2Dataclass,
-        DataModelType.DataclassesDataclass,
-        DataModelType.TypingTypedDict,
-    ],
-)
-def test_client_typing_arguments(backend: DataModelType, tmp_path: Path) -> None:
-    """Check a package that allows Pydantic argument validation, with its private argument checks."""
-    if not os.environ.get(ENABLED):
-        pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "pets-arguments"),
-        EXPECTED / f"{backend.value.replace('.', '-')}-arguments.txt",
-    )
-
-
 @pytest.mark.parametrize("case", ["fields-both", "fields-unpack"])
 @pytest.mark.parametrize(
     "backend",

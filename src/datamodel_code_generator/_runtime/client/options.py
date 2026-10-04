@@ -65,7 +65,6 @@ HeaderPatch: TypeAlias = tuple[tuple[str, str | None], ...]
 QueryPatch: TypeAlias = tuple[tuple[str, str | None], ...]
 RequestValidation: TypeAlias = Literal["none", "native", "schema"]
 ResponseValidation: TypeAlias = Literal["native", "schema"]
-ArgumentValidation: TypeAlias = Literal["none", "pydantic"]
 
 MAX_ERROR_BODY_LIMIT: Final = 1024 * 1024
 MAX_CONTEXT_BYTES: Final = 8 * 1024
@@ -82,7 +81,6 @@ _PAIR: Final = 2
 _MODES: Final = (
     ("request", frozenset({"none", "native", "schema"})),
     ("response", frozenset({"native", "schema"})),
-    ("arguments", frozenset({"none", "pydantic"})),
 )
 _JITTER: Final = frozenset({"full", "none"})
 _RETRY_OWNERS: Final = frozenset({"sdk", "transport"})
@@ -258,7 +256,7 @@ class ServerSelection:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ValidationOptions:
-    """How calls validate what they send, what they receive, and their arguments; UNSET inherits the lower layer's.
+    """How calls validate what they send and what they receive; UNSET inherits the lower layer's.
 
     `request` is `none` to send native values as they serialize, `native` to pass them through their model backend's
     validation first, and `schema` to validate the serialized value against its schema. `response` is `native` to
@@ -268,7 +266,6 @@ class ValidationOptions:
 
     request: RequestValidation | Unset = UNSET
     response: ResponseValidation | Unset = UNSET
-    arguments: ArgumentValidation | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse None and any mode that no package defines."""
@@ -283,7 +280,6 @@ class Validation:
 
     request: RequestValidation
     response: ResponseValidation
-    arguments: ArgumentValidation
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -292,15 +288,14 @@ class ValidationModes:
 
     request: tuple[RequestValidation, ...] = ("none",)
     response: tuple[ResponseValidation, ...] = ("native",)
-    arguments: tuple[ArgumentValidation, ...] = ("none",)
 
     def default(self) -> Validation:
         """Return the generated default of every axis."""
-        return Validation(self.request[0], self.response[0], self.arguments[0])
+        return Validation(self.request[0], self.response[0])
 
     def layered(self, current: Validation, layer: ValidationOptions, operation_id: str | None = None) -> Validation:
         """Return the modes with a layer's set fields applied, refusing a mode the package does not allow."""
-        for name, allowed in (("request", self.request), ("response", self.response), ("arguments", self.arguments)):
+        for name, allowed in (("request", self.request), ("response", self.response)):
             if not isinstance(value := getattr(layer, name), Unset) and value not in allowed:
                 raise ConfigurationError(
                     field_path=("validation", name), condition="not_allowed", operation_id=operation_id
@@ -308,7 +303,6 @@ class ValidationModes:
         return Validation(
             current.request if isinstance(layer.request, Unset) else layer.request,
             current.response if isinstance(layer.response, Unset) else layer.response,
-            current.arguments if isinstance(layer.arguments, Unset) else layer.arguments,
         )
 
 

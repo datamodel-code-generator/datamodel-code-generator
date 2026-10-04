@@ -13,7 +13,6 @@ from typing_extensions import TypeIs
 from datamodel_code_generator._api_types import OperationRef
 from datamodel_code_generator._client.naming import identifier, namespace_problem, token
 from datamodel_code_generator._runtime.client.options import (
-    ArgumentValidation,
     RequestValidation,
     ResponseValidation,
     is_base_url,
@@ -52,7 +51,6 @@ _BODY_ARGUMENTS: Final = frozenset({"body", "both"})
 _VALIDATION_AXES: Final = (
     ("request", "request_overrides", ("none", "native", "schema")),
     ("response", "response_overrides", ("native", "schema")),
-    ("arguments", "argument_overrides", ("none", "pydantic")),
 )
 _MIN_REDIRECT: Final = 300
 _MAX_REDIRECT: Final = 399
@@ -137,19 +135,16 @@ class ClientOperationConfig:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ClientValidationConfig:
-    """How ordinary calls validate what they send, what they receive, and their arguments.
+    """How ordinary calls validate what they send and what they receive.
 
     Each axis's mode is the generated default, and its overrides are the other modes a client, view, or call may select
-    at runtime; empty overrides fix the mode. pydantic_strict keeps Pydantic argument validation from coercing values.
+    at runtime; empty overrides fix the mode.
     """
 
     request: RequestValidation = "none"
     response: ResponseValidation = "native"
-    arguments: ArgumentValidation = "none"
     request_overrides: tuple[RequestValidation, ...] = ()
     response_overrides: tuple[ResponseValidation, ...] = ()
-    argument_overrides: tuple[ArgumentValidation, ...] = ()
-    pydantic_strict: bool = True
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -265,10 +260,6 @@ def _validation_problems(value: object) -> Iterator[Diagnostic]:
             yield _diagnostic(
                 "E_CONFIG_VALUE", f"validation.{overrides}", f"validation.{overrides} lists {repeated!r} twice"
             )
-    if type(value.pydantic_strict) is not bool:
-        yield _diagnostic(
-            "E_CONFIG_VALUE", "validation.pydantic_strict", "validation.pydantic_strict must be a boolean"
-        )
 
 
 def _resource_name_problems(value: object) -> Iterator[Diagnostic]:
@@ -599,11 +590,8 @@ def _operation_config(value: object, base: Path, option_path: str) -> ClientOper
 _VALIDATION_CONVERTERS: Final[Mapping[str, Converter]] = MappingProxyType({
     "request": _string,
     "response": _string,
-    "arguments": _string,
     "request_overrides": _strings,
     "response_overrides": _strings,
-    "argument_overrides": _strings,
-    "pydantic_strict": _boolean,
 })
 
 

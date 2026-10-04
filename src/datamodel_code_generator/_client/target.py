@@ -39,7 +39,7 @@ from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
 from datamodel_code_generator._client.sockets import plan_sockets, socket_uses
 from datamodel_code_generator._client.streams import plan_streams, stream_uses
 from datamodel_code_generator._client.uploads import plan_uploads
-from datamodel_code_generator._client.validation import admission_problems, allowed, argument_uses
+from datamodel_code_generator._client.validation import admission_problems
 from datamodel_code_generator._client.webhooks import (
     key_class,
     plan_webhooks,
@@ -147,7 +147,7 @@ class ClientTarget:
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
             *named,
-            *admission_problems(config.validation, ordinary, argument_uses(plan)),
+            *admission_problems(config.validation, ordinary),
             *helper_problems(
                 protocols,
                 plan,
@@ -193,7 +193,6 @@ class ClientTarget:
             fingerprints=fingerprints,
             webhooks=partial(webhook_files, webhooks, dict(codecs.imports), fingerprints),
         )
-        validation = config.validation
         return TargetRender(
             files=renderer.files(),
             target_data=data.data(protocols, fingerprints),
@@ -201,14 +200,7 @@ class ClientTarget:
                 *DEPENDENCIES,
                 *((WEBSOCKETS,) if sockets else ()),
                 *(VALIDATION if codecs.bindings else ()),
-                *dict.fromkeys((
-                    *BACKEND_DEPENDENCIES.get(backend, ()),
-                    *(
-                        (PYDANTIC,)
-                        if "pydantic" in allowed(validation.arguments, validation.argument_overrides)
-                        else ()
-                    ),
-                )),
+                *BACKEND_DEPENDENCIES.get(backend, ()),
                 *((PATTERNS,) if patterned(wire) else ()),
                 *webhook_dependencies(webhooks),
                 *model_dependencies(request.models),
