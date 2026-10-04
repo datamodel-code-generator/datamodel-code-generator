@@ -31,13 +31,6 @@ def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
         operation_id='getInventory',
         tags=['store'],
         response_description='Counts by status.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'pets_dataclass',
-                'operation': '/paths/~1store~1inventory/get',
-            },
-        },
         dependencies=wiring.dependencies.get('/paths/~1store~1inventory/get'),
     )
 

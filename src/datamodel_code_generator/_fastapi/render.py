@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import keyword
 from functools import cached_property
 from pathlib import PurePosixPath
@@ -17,7 +16,7 @@ from datamodel_code_generator._fastapi._compiled_templates import readme as read
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
 from datamodel_code_generator._fastapi.plan import BODYLESS_STATUSES, CONSTRAINED, Default, fact, symbol_imports
-from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, MARKER, tags
+from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
 from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, invalid
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
@@ -31,7 +30,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._fastapi.config import FastAPIConfig
     from datamodel_code_generator._fastapi.context import FastAPIContext
-    from datamodel_code_generator._fastapi.openapi import ServedDocs
+    from datamodel_code_generator._fastapi.documentation import Documentation
     from datamodel_code_generator._fastapi.plan import (
         Argument,
         BodySpec,
@@ -52,6 +51,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
+    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_contract import (
         FinalPythonType,
         GeneratedEnumMember,
@@ -203,12 +203,12 @@ class ServerRenderer:  # noqa: PLR0904
         codecs: CodecPlan,
         templates: TemplateSet | None = None,
         context: FastAPIContext | None = None,
-        docs: ServedDocs | None = None,
+        docs: Documentation | None = None,
     ) -> None:
         """Keep the plans; the model bindings module and its accessors are rendered when first used.
 
-        A template set overrides builtin roles and adds extra files, which render from the context. The served
-        document's fragments render into the package's OpenAPI plan module.
+        A template set overrides builtin roles and adds extra files, which render from the context. The documentation
+        adds what FastAPI cannot derive from the routes to its own document.
         """
         self.config = config
         self.package = package
@@ -308,7 +308,6 @@ class ServerRenderer:  # noqa: PLR0904
             self.file(generated / "__init__.py", "package", '"""Generated plans of this package."""\n'),
             self.file(generated / "contract.py", "contract", self.contract()),
             self.file(generated / "model_bindings.py", "model_bindings", self.bindings.source),
-            self.file(generated / "openapi.py", "openapi", self.openapi()),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs("server")),
             self.file(PurePosixPath("responses.py"), "responses", self.responses()),
             self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
@@ -408,9 +407,7 @@ class ServerRenderer:  # noqa: PLR0904
             *(repr(module.local(*item)) for item in _EXPORTS),
             "'build_router'",
             "'create_app'",
-            "'install_openapi'",
         })
-        keys = f"{module.local('_generated.contract', 'OperationKey')}, ..."
         return self.role("application.jinja2", application_template.render)(
             final=final,
             options=options,
@@ -421,12 +418,6 @@ class ServerRenderer:  # noqa: PLR0904
             schemes=f"{module.local('_generated', 'contract')}.SCHEMES",
             services=_services(services),
             settings=_settings(secured=secured),
-            install_signature=(
-                f"def install_openapi(\n    app: {fastapi},\n    *,\n"
-                f"    operation_keys: tuple[{keys}] | None = None,\n) -> None:"
-            ),
-            install=module.local("_runtime.server.openapi", "install"),
-            openapi=module.local("_generated", "openapi"),
             app_signature=_builder(
                 module,
                 "create_app",
@@ -535,7 +526,7 @@ class ServerRenderer:  # noqa: PLR0904
             "name": repr(spec.python_name),
             "principal": principal,
             "key": repr(spec.key),
-            "registration": layout(_registration(module, spec, self.config.package), 4, 0, WIDTH),
+            "registration": layout(self.registration(module, spec), 4, 0, WIDTH),
             "signature": layout(signature, 4, 0, WIDTH),
             "body": layout(body, 8, 0, WIDTH),
         }
@@ -705,35 +696,10 @@ class ServerRenderer:  # noqa: PLR0904
         )
         return head + module.imports() + "\n\n" + definitions + "\n\n" + "\n\n".join(sections)
 
-    def openapi(self) -> str:
-        """Return the OpenAPI plan module: the served version, the operation keys, and the JSON bundle.
-
-        The bundle is a raw string of ASCII JSON, which the runtime reads only when it composes a document.
-        """
-        docs = self.docs
-        assert docs is not None
-        module = Module({"PLAN", "_BUNDLE"}, {}, level=2)
-        final = module.name("typing", "Final")
-        bundle = json.dumps(docs.bundle(), indent=1)
-        plan = Group(
-            f"{module.local('_runtime.server.openapi', 'OpenAPIPackagePlan')}(",
-            (
-                ("package=", repr(docs.package)),
-                ("version=", repr(docs.version)),
-                ("repeated=", repr(docs.repeated)),
-                ("operation_keys=", Group("(", _items(repr(operation.key) for operation in docs.operations), ")", ",")),
-                ("bundle=", "_BUNDLE"),
-            ),
-            ")",
-        )
-        head = (
-            '"""The OpenAPI fragments this package adds to its served document; regenerate them instead of editing."""'
-            "\n\n"
-        )
-        return (
-            f'{head}{module.imports()}\n\n_BUNDLE = r"""{bundle}"""\n'
-            f"PLAN: {final} = {layout(plan, 0, len(f'PLAN: {final} = '), WIDTH)}\n"
-        )
+    def registration(self, module: Module, spec: OperationSpec) -> Group:
+        """Return the route registration of one operation, with what FastAPI cannot derive from the route documented."""
+        assert self.docs is not None
+        return _registration(module, spec, self.docs)
 
     def codec(self, module: Module, use: TypeUseId) -> str:
         """Return the (codec accessor, context) pair of one bound use."""
@@ -1040,7 +1006,7 @@ def _body_adapter(module: Module, body: BodySpec) -> Group:
     return Group(f"{module.local('_runtime.server.requests', 'BodyAdapter')}(", tuple(items), ")")
 
 
-def _registration(module: Module, spec: OperationSpec, package: str) -> Group:
+def _registration(module: Module, spec: OperationSpec, docs: Documentation) -> Group:
     contract = spec.contract
     facts = {name: getattr(value, "value", None) for name, value in contract.facts}
     items: list[tuple[str, Doc]] = [
@@ -1073,12 +1039,45 @@ def _registration(module: Module, spec: OperationSpec, package: str) -> Group:
         items.append(("deprecated=", "True"))
     if isinstance(description := _response_description(spec), str):
         items.append(("response_description=", repr(description)))
-    marker = Group("{", (("'version': ", "1"), ("'package': ", repr(package)), ("'operation': ", repr(spec.key))), "}")
-    items.extend((
-        ("openapi_extra=", Group("{", ((f"{MARKER!r}: ", marker),), "}")),
-        ("dependencies=", f"wiring.dependencies.get({spec.key!r})"),
-    ))
+    if responses := docs.responses(spec):
+        items.append(("responses=", _responses(module, spec, responses)))
+    if extra := docs.openapi_extra(spec):
+        items.append(("openapi_extra=", _json_literal(extra)))
+    items.append(("dependencies=", f"wiring.dependencies.get({spec.key!r})"))
     return Group("router.add_api_route(", tuple(items), ")")
+
+
+def _responses(module: Module, spec: OperationSpec, documented: dict[str, dict[str, JSONValue]]) -> Group:
+    """Return the responses a route documents; FastAPI documents a JSON body of a model from the model itself."""
+    models = {
+        response.status: media.use.type
+        for response in spec.responses
+        for media in response.media
+        if media.media_type == "application/json" and media.use is not None and media.use.type is not None
+    }
+    entries: list[tuple[str, Doc]] = []
+    for status, response in documented.items():
+        items: list[tuple[str, Doc]] = []
+        content = response.get("content")
+        if (model := models.get(status)) is not None and isinstance(content, dict) and content.pop("application/json"):
+            items.append(("'model': ", module.annotation(model)))
+            if not content:
+                del response["content"]
+        items.extend((f"{key!r}: ", _json_literal(item)) for key, item in response.items())
+        entries.append((f"{status!r}: ", Group("{", tuple(items), "}")))
+    return Group("{", tuple(entries), "}")
+
+
+def _json_literal(value: JSONValue) -> Doc:
+    """Return the Python literal of a JSON value, laid out like the rest of the module."""
+    match value:
+        case dict():
+            return Group("{", tuple((f"{key!r}: ", _json_literal(item)) for key, item in value.items()), "}")
+        case list():
+            return Group("[", _items(_json_literal(item) for item in value), "]")
+        case _:
+            pass
+    return repr(value)
 
 
 def _response_description(spec: OperationSpec) -> object:
@@ -1258,7 +1257,6 @@ from .application import (
     SchemeKey,
     build_router,
     create_app,
-    install_openapi,
 )
 from .errors import AuthConfigurationError, HandlerConfigurationError, OpenAPIConfigurationError
 from .responses import UNSET, HTTPResult, Unset
@@ -1282,7 +1280,6 @@ __all__ = [
     "Unset",
     "build_router",
     "create_app",
-    "install_openapi",
 ]
 '''
 _ERRORS: Final = '''"""Errors a generated server raises while it builds routers and applications."""

@@ -10,7 +10,6 @@ render pydantic_v2.BaseModel
   write server/_generated/__init__.py
   write server/_generated/contract.py
   write server/_generated/model_bindings.py
-  write server/_generated/openapi.py
   write server/model_codecs.py
   write server/responses.py
   write server/errors.py
@@ -51,7 +50,6 @@ render pydantic_v2.BaseModel
   write server/_runtime/server/application.py (copied runtime)
   write server/_runtime/server/codecs.py (copied runtime)
   write server/_runtime/server/errors.py (copied runtime)
-  write server/_runtime/server/openapi.py (copied runtime)
   write server/_runtime/server/requests.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)

@@ -16,7 +16,6 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._target_contract import OperationContract
 
-MARKER: Final = "x-dcg-operation"
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _SLOT_PREFIX: Final = "dcg_p"
 BUILDER_NAMES: Final = frozenset({
@@ -27,8 +26,6 @@ BUILDER_NAMES: Final = frozenset({
     "app",
     "build_router",
     "create_app",
-    "install_openapi",
-    "operation_keys",
     "authorizer",
     "credential_extractors",
     "dependencies",

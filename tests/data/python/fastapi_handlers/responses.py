@@ -61,8 +61,7 @@ def settings(_server: ModuleType, _models: ModuleType, _calls: list[str]) -> dic
 
 
 def applications(server: ModuleType, sets: dict[str, dict[str, object]]) -> dict[str, FastAPI]:
-    """Include the router in a user application with a plain-text default, then install the served document."""
+    """Include the router in a user application with a plain-text default."""
     included = FastAPI()
     included.include_router(server.build_router(**sets["included"]), default_response_class=PlainTextResponse)
-    server.install_openapi(included)
     return {"included": included}

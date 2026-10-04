@@ -38,13 +38,6 @@ def _add_handle_list_pets(router: APIRouter, wiring: Wiring) -> None:
         operation_id='listPets',
         tags=['pets'],
         response_description='Names.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'customized_basemodel',
-                'operation': '/paths/~1pets/get',
-            },
-        },
         dependencies=wiring.dependencies.get('/paths/~1pets/get'),
     )
 
@@ -71,13 +64,7 @@ def _add_handle_delete_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='deletePet',
         tags=['pets'],
         response_description='Deleted.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'customized_basemodel',
-                'operation': '/paths/~1pets~1{petId}/delete',
-            },
-        },
+        responses={'204': {'description': 'Deleted.'}},
         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/delete'),
     )
 
@@ -104,11 +91,12 @@ def _add_handle_move_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='movePet',
         tags=['pets'],
         response_description='Moved.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'customized_basemodel',
-                'operation': '/paths/~1pets~1{petId}~1moves/post',
+        responses={
+            '201': {
+                'description': 'Moved.',
+                'headers': {
+                    'Location': {'required': True, 'schema': {'type': 'string'}},
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}~1moves/post'),

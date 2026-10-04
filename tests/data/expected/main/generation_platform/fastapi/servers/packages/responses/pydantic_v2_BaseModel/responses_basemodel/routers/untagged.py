@@ -40,13 +40,6 @@ def _add_get_greeting(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='getGreeting',
         response_description='The greeting.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'responses_basemodel',
-                'operation': '/paths/~1greetings/get',
-            },
-        },
         dependencies=wiring.dependencies.get('/paths/~1greetings/get'),
     )
 
@@ -67,13 +60,6 @@ def _add_get_document(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='getDocument',
         response_description='The document, as a pet, a profiled error or raw bytes.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'responses_basemodel',
-                'operation': '/paths/~1documents~1{id}/get',
-            },
-        },
         dependencies=wiring.dependencies.get('/paths/~1documents~1{id}/get'),
     )
 
@@ -94,11 +80,10 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='getPet',
         response_description='The pet.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'responses_basemodel',
-                'operation': '/paths/~1pets~1{id}/get',
+        responses={
+            '404': {
+                'model': responses_basemodel_models.Error,
+                'description': 'Missing.',
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1pets~1{id}/get'),

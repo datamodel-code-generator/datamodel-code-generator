@@ -51,11 +51,13 @@ def _add_get_value(router: APIRouter, wiring: Wiring) -> None:
         operation_id='getValue',
         response_description='The value.',
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'server',
-                'operation': '/paths/~1values~1{id}/get',
-            },
+            'parameters': [
+                {
+                    'name': 'X-Label',
+                    'in': 'header',
+                    'schema': {'allOf': [{'type': 'string'}, {'minLength': 1}]},
+                },
+            ],
         },
         dependencies=wiring.dependencies.get('/paths/~1values~1{id}/get'),
     )

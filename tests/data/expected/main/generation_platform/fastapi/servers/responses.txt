@@ -35,9 +35,9 @@ app standard
   get_document(id=4)
 < 200 application/json; charset=utf-8 {"id":4,"name":"Mimi"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"anyOf": [{"$ref": "#/components/schemas/FieldGreetingsGetResponse"}, {"type": "string"}]}}}
+< {"application/json": {"schema": {"$ref": "#/components/schemas/FieldGreetingsGetResponse"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__7294ae050d69"}}}
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
 app plain
 > GET /greetings
   get_greeting(mode=absent)
@@ -59,9 +59,9 @@ app plain
   get_pet(id=2)
 < 404 application/json {"message":"Missing"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+< {"text/plain": {"schema": {"type": "string"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__7294ae050d69"}}}
+< {"text/plain": {"schema": {"$ref": "#/components/schemas/Error"}}}
 app included
 > GET /greetings
   get_greeting(mode=absent)
@@ -83,9 +83,9 @@ app included
   get_pet(id=2)
 < 404 application/json {"message":"Missing"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+< {"text/plain": {"schema": {"type": "string"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__7294ae050d69"}}}
+< {"text/plain": {"schema": {"$ref": "#/components/schemas/Error"}}}
 serve pydantic_v2.dataclass
 service UntaggedService: get_document, get_greeting, get_pet
 service UntaggedService without its methods: TypeError
@@ -122,9 +122,9 @@ app standard
   get_document(id=4)
 < 200 application/json; charset=utf-8 {"id":4,"name":"Mimi"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"anyOf": [{"$ref": "#/components/schemas/FieldGreetingsGetResponse"}, {"type": "string"}]}}}
+< {"application/json": {"schema": {"$ref": "#/components/schemas/FieldGreetingsGetResponse"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__95258823efb6"}}}
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
 app plain
 > GET /greetings
   get_greeting(mode=absent)
@@ -146,9 +146,9 @@ app plain
   get_pet(id=2)
 < 404 application/json {"message":"Missing"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+< {"text/plain": {"schema": {"type": "string"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__95258823efb6"}}}
+< {"text/plain": {"schema": {"$ref": "#/components/schemas/Error"}}}
 app included
 > GET /greetings
   get_greeting(mode=absent)
@@ -170,6 +170,6 @@ app included
   get_pet(id=2)
 < 404 application/json {"message":"Missing"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+< {"text/plain": {"schema": {"type": "string"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__95258823efb6"}}}
+< {"text/plain": {"schema": {"$ref": "#/components/schemas/Error"}}}

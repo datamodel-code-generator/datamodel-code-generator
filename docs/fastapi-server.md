@@ -187,7 +187,7 @@ callable = "rename"
 
 | Path | Owner | Contents |
 | --- | --- | --- |
-| `__init__.py`, `application.py` | generator | `create_app`, `build_router`, `install_openapi`, and the public types |
+| `__init__.py`, `application.py` | generator | `create_app`, `build_router`, and the public types |
 | `services.py` | generator | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | generator | Route registrations |
 | `responses.py`, `errors.py`, `auth_types.py`, `model_codecs.py` | generator | Results, errors, authentication, and codec types |
@@ -241,6 +241,16 @@ form-style cookies, header and path arrays, objects, enums and literals of non-s
 placeholders, request bodies with several media types, text and binary bodies, multipart forms, and forms of the
 `pydantic_v2.dataclass` backend. A multipart form body reaches the method as its model, with uploads read to
 `bytes`.
+
+## Served OpenAPI document
+
+The application serves FastAPI's own document, built from the routes and the models they declare, so routes
+added later and other routers appear in it as usual. Each generated route adds what FastAPI cannot derive from it,
+taken from the source document at generation time: `responses=` documents every declared response, through its
+model when the body is JSON, and `openapi_extra` documents the parameters, request bodies, and callbacks that
+adapters read, with schema references resolved in place (a schema that refers to itself documents the inner
+reference as `{}`). Path placeholders that are not Python identifiers, or that repeat, appear under the route's
+own placeholder names.
 
 ## Templates and hooks
 
