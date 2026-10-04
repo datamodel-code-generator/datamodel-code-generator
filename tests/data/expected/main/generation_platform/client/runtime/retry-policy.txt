@@ -304,7 +304,7 @@
   > POST https://api.example.com/key-only
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 9] b'automatic'
   automatic declared key = (None, None, None, None)
-    uuid4=False canonical=False counts=2/2 retries=1 unused=0
+    uuid4=True canonical=True counts=2/2 retries=1 unused=0
   unclassified before owner = ('TransportError', 'transport_not_retryable', 1, 1, 1, None, None, None, None, None)
     sends=1 cause-retained=True
   owner before never = ('TransportError', 'retry_owned_by_transport', 1, 1, 1, None, None, None, None, None)
@@ -459,4 +459,4 @@
   > POST https://api.example.com/key-only
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 9] b'automatic'
   async automatic declared key = None
-    uuid4=False canonical=False counts=2/2 retries=1 unused=0
+    uuid4=True canonical=True counts=2/2 retries=1 unused=0
