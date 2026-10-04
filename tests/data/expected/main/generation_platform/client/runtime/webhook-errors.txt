@@ -37,7 +37,7 @@
   protocol defaults: (None, None, None, None, None, None, None, ()) ProtocolError()
   configuration defaults: (None, None, None, None, None, None, None, ()) ProtocolConfigurationError(condition='invalid_value')
   verification defaults: (None, None, None, None, None, None, None, ()) WebhookVerificationError(condition='missing_key')
-  store defaults: (None, None, None, None, None, None, None, ()) ProtocolStoreError(action='lookup')
+  store defaults: (None, None, None, None, None, None, None, ()) ProtocolStoreError(action='get')
   configuration condition: unknown_field
   configuration condition: invalid_value
   configuration condition: missing_metadata
@@ -49,14 +49,12 @@
   verification condition: invalid_signature
   verification condition: missing_key
   verification condition: timestamp_window
-  store action: lookup entry=None
-  store action: fingerprint_vary entry=None
-  store action: compare_exchange entry=None
+  store action: get entry=None
+  store action: set entry=None
   store action: delete entry=None
-  store action: invalidate entry=None
+  store action: compare_exchange entry=None
   store action: claim entry=None
   store action: put entry=None
-  store action: get entry=None
   store action: open entry=None
   store action: read entry=None
   store action: close entry=None

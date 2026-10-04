@@ -13,7 +13,6 @@ from datamodel_code_generator._client.protocols import (
     StripeStyleSignature,
     Binding,
     CacheHelper,
-    CacheMutation,
     CountContinuation,
     CursorContinuation,
     EndCondition,
@@ -385,16 +384,6 @@ CACHING = ProtocolConfiguration(
             validator="both",
             authenticated=False,
             vary_allowlist=("Accept-Language",),
-            tags=("user:{userId}", "users"),
-            mutations={
-                "rename": CacheMutation(
-                    operation=OperationRef(pointer="/paths/~1users~1{userId}/patch"),
-                    invalidate_tags=("user:{userId}",),
-                ),
-                "remove": CacheMutation(
-                    operation="/paths/~1users~1{userId}/delete", invalidate_tags=("user:{userId}", "users")
-                ),
-            },
         ),
         "users.dated": CacheHelper(
             operation=USER_BY_ID, validator="last_modified", authenticated=False, statuses=(200, 203)
@@ -404,8 +393,6 @@ CACHING = ProtocolConfiguration(
             validator="etag",
             authenticated=False,
             vary_allowlist=("Accept-Language",),
-            tags=("users",),
-            mutations={"create": CacheMutation(operation="/paths/~1users/post", invalidate_tags=("users",))},
         ),
         "carts.current": CacheHelper(operation="/paths/~1carts~1current/get", validator="etag", authenticated=True),
         "secure.profile": CacheHelper(

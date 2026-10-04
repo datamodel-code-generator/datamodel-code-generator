@@ -291,7 +291,6 @@ Invalid field values raise `ValueError`.
 | `CacheStoreError` | `ProtocolStoreError` | `action`, the store method that failed, and `entry_id: str \| None = None` |
 | `CacheProtocolError` | `ProtocolDataError` | No other fields; `condition` is always `inconsistent` |
 | `CacheValidatorConflictError` | `ProtocolConfigurationError` | `header_name: Literal['If-None-Match', 'If-Modified-Since']`; `field_path` is the header's name and `condition` is always `binding_mismatch` |
-| `CacheInvalidationError[T]` | `CacheStoreError` | `tags: tuple[str, ...]`, `completed_result: T \| Unset = UNSET`, a read-only property; `has_completed_result` and `require_result()`, which raises `ResultUnavailableError` without a result; `action` is always `invalidate` |
 | `ConcurrentReceiveError` | `ProtocolStateError` | None; `state` is always `receiving` and `action` always `receive` |
 | `WebSocketClosedError` | `ProtocolError` | `code: int \| None`, `reason: str` of at most 123 UTF-8 bytes, `clean: bool` |
 | `WebSocketHandshakeError` | `TransportError` | `condition: Literal['invalid_message', 'invalid_header', 'upgrade', 'negotiation', 'security', 'size']`, `delivery_state`, `retry_stop_reason = None`; `phase` is always `connect` |
@@ -476,7 +475,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `sse`, `ndjson` | `operation`, `media`, `event_schema`, `completion`, and for `ndjson` `final_line` (`require_newline` or `allow_eof`) | `unknown` (`error`, the default, or `raw`), `error_events` (`{}`), `resume` (`{enabled: false}`) |
 | `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `compression` (`false`) |
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | None |
-| `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`), `tags` (`[]`), `mutations` (`{}`); see [cache helpers](#cache-helpers) |
+| `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`); see [cache helpers](#cache-helpers) |
 | `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, checksum?, bindings?}`, a `checksum` being `{target, algorithm, encoding?, algorithm_prefix?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
 | `queue` | `operations`, a nonempty mapping of aliases to `{operation, side_effects}` (see [queue helpers](#queue-helpers)) | Per operation, `key_binding` and `dedupe_ttl`, given together and required with side effects |
 
@@ -535,7 +534,7 @@ A webhook uses `StandardWebhooksSignature()`, `StripeStyleSignature(header="Stri
 `PublicKeySignature(kind="ed25519", header="X-Signature")` verifies raw-body public-key signatures.
 `AdapterSignature(timestamp="required", delivery_id="none")` declares application verification, and `NoSignature()`
 declares an unsigned webhook. An event mapping is an `EventMapping` with an `EventDiscriminator(from_="body",
-pointer=...)`, a cache mutation a `CacheMutation(operation=..., invalidate_tags=(...))`, and an upload takes
+pointer=...)`, and an upload takes
 `UploadCreate`, `UploadProbe`, `UploadAppend` with an optional `UploadChecksum`, `LengthCompletion()` or
 `OperationCompletion`, and `UploadAbort` records. A queue is a `QueueHelper` whose `operations` map aliases to `QueuedOperation(operation=..., side_effects=...,
 key_binding=..., dedupe_ttl=...)`. They are validated as the file is, with the same diagnostics, when the client configuration is constructed.
@@ -2093,14 +2092,6 @@ helpers:
     validator: both
     authenticated: false
     vary_allowlist: [Accept-Language]
-    tags: ["user:{userId}", users]
-    mutations:
-      rename:
-        operation: /paths/~1users~1{userId}/patch
-        invalidate_tags: ["user:{userId}"]
-      remove:
-        operation: /paths/~1users~1{userId}/delete
-        invalidate_tags: ["user:{userId}", users]
 ```
 
 <!-- fmt: on -->
@@ -2113,12 +2104,9 @@ helpers:
 | `authenticated` | Whether the fetch carries credentials. It must match every call: a call that the auth, a credential or cookie header, or a security scheme's field authenticates needs `true` and a credential partition, and any other call `false` |
 | `statuses` | The cacheable statuses, distinct, from 100 to 599 |
 | `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. A header credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, or a declared security scheme's header) fails generation with `E_CONFIG_VALUE`. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
-| `tags` | Text the stored entries carry; each `{name}` is replaced by the wire value of the required path or query parameter of that name, as text |
-| `mutations` | Method names mapped to `{operation, invalidate_tags}`: a POST, PUT, PATCH, or DELETE operation and the tags its success removes |
 
-`fetch` takes the operation's parameters as keywords, then `cache_options` and `options`, and returns a `CacheResult`;
-`invalidate(tags)` removes the entries carrying any of the tags and returns how many, and `mutations.<name>(...)` takes
-its operation's parameters and body like its method and returns its result. With asyncio, the three are coroutines:
+`fetch` takes the operation's parameters as keywords, then `cache_options` and `options`, and returns a `CacheResult`.
+With asyncio, `fetch` is a coroutine:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.helper -->
 <!-- fmt: off -->
@@ -2141,19 +2129,14 @@ its operation's parameters and body like its method and returns its result. With
             cache_options=cache_options,
             options=options,
         )
-
-    def invalidate(self, tags: tuple[str, ...]) -> int:
-        """Remove the stored entries that carry any of the tags, returning how many."""
-        return invalidate(self._core, _plans.PLAN_0, tags)
 ```
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.helper -->
 
-A helper needs the store `ProtocolClientOptions.cache_stores` lends it under its name, or `fetch`, `invalidate`, and the
-mutations raise `ProtocolConfigurationError(condition='missing_adapter')` before sending. The client checks the stores
+A helper needs the store `ProtocolClientOptions.cache_stores` lends it under its name, or `fetch` raises `ProtocolConfigurationError(condition='missing_adapter')` before sending. The client checks the stores
 when it is constructed: a name that is no cache helper of the package fails with `unknown_field`, and an object without
-the five store methods, or whose methods are coroutines for a `Client` or plain functions for an `AsyncClient`, with
+the three store methods, or whose methods are coroutines for a `Client` or plain functions for an `AsyncClient`, with
 `wrong_capability`. The client borrows a store: it never creates, closes, or keeps one after a call.
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.usage -->
@@ -2162,7 +2145,7 @@ the five store methods, or whose methods are coroutines for a `Client` or plain 
 ```python
 def cached_client() -> Client:
     """Lend a bounded memory store to the users.profile helper, which keeps its entries there."""
-    store = MemoryCacheStore(max_entries=1000, max_bytes=8 * 1024 * 1024)
+    store = MemoryCacheStore(max_entries=1000)
     return Client(options=ClientOptions(protocols=ProtocolClientOptions(cache_stores={"users.profile": store})))
 ```
 
@@ -2202,19 +2185,24 @@ and no `no-store`, its `Vary` names only allowlisted headers, and it is fresh or
 cannot be stored removes the entry it supersedes, and errors and decoding failures store nothing and keep the entry.
 Entries hold the body after content decoding and the headers without `Content-Encoding` or hop-by-hop fields.
 
-An entry's key is a SHA-256 digest of the method, the URL as the client interprets it, the `Accept` header, the
-credential partition, which is `anonymous` without a security context, and what identifies the credentials the call
-carries: each credential's scheme, kind, and required scopes, the audience of an SDK OAuth provider, and each signer's
-declared capabilities, never a secret. Calls with different partitions, schemes, scopes, or audiences never share an
-entry; give each tenant or permission set its own `ProtocolSecurityContext.credential_partition`. Token refreshes keep
-the key. Among the entries of one key, the store selects the one whose `Vary` fingerprints match the request's headers
-before auth; the store computes the fingerprints as keyed hashes, so header values never become keys. Besides the
-response's `Vary`, an entry varies on every header a client, view, or call header patch names, every declared header
-parameter, and `Cookie` when the operation declares a cookie parameter, except `Cache-Control`, `If-None-Match`, and
-`If-Modified-Since`. The key names these headers too, so a caller's own `X-Api-Key` or `X-On-Behalf-Of` patch keeps
-callers apart whichever of them fetched first. A header patch whose value is new on every call, such as a request ID or
-a `traceparent`, therefore disables caching for that helper: each fetch misses and stores an entry no other fetch can
-use.
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->
+`fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
+events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
+time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the credentials the
+auth binds, and selected by the request headers its `Vary` names and those a header patch or a declared parameter fills.
+A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper declared authenticated,
+and the client's own auth, not a view's or a call's; anything else raises `ProtocolConfigurationError`. A response whose
+`Vary` names a header the auth manages is never stored, and one partition is one permission set: credentials the client
+cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
+only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
+`CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
+`no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
+removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request.
+The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
+Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
+Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.
+Concurrent custom-store writes use last-completing replacement.
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->
 
 !!! warning "Credentials the cache cannot see"
     The auth adds its credentials after the cache looks a request up, so a response whose `Vary` names a header the
@@ -2228,40 +2216,27 @@ use.
 
 ### Stores
 
-`CacheStore` and `AsyncCacheStore` are the store protocols: `lookup(base_key, request_headers) -> CacheEntry | None`,
-`fingerprint_vary(names, request_headers) -> tuple[bytes, ...]`, `compare_exchange(base_key, expected_version, entry)
--> bool`, `delete(base_key, version) -> bool`, and `invalidate(tags) -> int`. `compare_exchange` stores an entry only
-when the slot of its key and Vary fingerprints holds `expected_version`, `None` for an empty slot; a fetch whose entry
-another fetch replaced first keeps the newer entry and returns its own network result. Every entry a fetch writes has a
-new `version`. A store's exception, or a result of another type, raises `CacheStoreError` with the store method as
-`action`, keeping the exception as `cause`; the request is never sent again for it.
+`CacheStore` and `AsyncCacheStore` provide `get(key) -> CacheEntry | None`, `set(key, entry) -> None`, and
+`delete(key) -> None`, using byte keys. Each key holds one representation. A Vary mismatch is a miss, and a successful
+cacheable response replaces the representation. Concurrent custom-store writes use last-completing replacement.
+A store exception or a result of another type raises `CacheStoreError` with the method as `action` and the exception
+as `cause`; the request is never sent again for it.
 
-`CacheEntry` has `version`, `vary`, `vary_fingerprints`, `status_code`, `headers`, `body`, `request_time`,
-`response_time`, `stored_at`, `freshness_seconds`, `initial_age_seconds`, `tags`, and `schema_fingerprint`, the helper's
-fingerprint; a looked-up entry of another fingerprint or status is not used, and the next stored response replaces it.
-Its representation names only the status.
+`CacheEntry` has `vary`, `vary_values`, `status_code`, `headers`, `body`, `request_time`, `response_time`, `stored_at`,
+`freshness_seconds`, `initial_age_seconds`, and `schema_fingerprint`. Plain Vary values preserve each named header's
+ordered values, including the distinction between a missing header and an empty value. Credential headers and cookies
+are excluded from these values and isolated by the opaque cache key. Values stay in private process memory and the
+entry's representation names only its status. A mismatched fingerprint or status cannot serve a fetch or a 304.
 
-`MemoryCacheStore(max_entries=128, max_bytes=16 MiB)` and `AsyncMemoryCacheStore` keep entries in the process, with a
-secret of their own for the fingerprints. A lookup fingerprints the request once for each set of `Vary` names among the
-key's entries. When an entry needs room, expired entries are evicted first, the earliest expired first, then the least
-recently used ones; an entry larger than `max_bytes`, counted in body bytes and header characters, is not stored.
-A store may be shared by clients on different clocks, so it judges which entries have expired for eviction by the
-system wall clock. Whether a fetch may use an entry is decided by the fetching client's clock.
-
-### Invalidation
-
-Only explicit calls remove entries. A mutation runs its operation as its method does and, after it returns a success,
-removes the entries carrying its rendered `invalidate_tags`; a failed call removes nothing. When the store then fails,
-`CacheInvalidationError` keeps the mutation's result, which `require_result()` returns, and the mutation is not sent
-again. `invalidate(tags)` raises `CacheInvalidationError` without a result.
+`MemoryCacheStore(max_entries=128)` and `AsyncMemoryCacheStore(max_entries=128)` bound entries by count. Reads and
+writes mark a key recently used, replacement keeps the count unchanged, and adding a key evicts the least recently
+used key when needed. Deletion is idempotent. Freshness and revalidation use the fetching client's clock.
 
 ### Cache generation checks
 
 The operation must be a GET without a request body; other methods fail with `E_CONFIG_VALUE`, and HEAD is not
 supported yet. Each cacheable status must be a declared 2xx success with one natively decoded JSON body, a helper
-declared anonymous cannot fetch an operation that requires credentials, a tag's placeholder must name one required
-path or query parameter whose values are strings, numbers, integers, or booleans, and a mutation's operation must be a
-POST, PUT, PATCH, or DELETE:
+declared anonymous cannot fetch an operation that requires credentials:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.diagnostics -->
 <!-- fmt: off -->
@@ -2280,13 +2255,6 @@ E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[1] /paths/~1u
 E_CONFIG_VALUE config protocols.helpers['secure.anonymous'].authenticated /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.anonymous' is declared anonymous, but GET /secure/users/{userId} requires credentials
 E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[1] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'authorization', which credentials travel in; the auth adds it after the cache looks a request up
 E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[2] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'Cookie', which credentials travel in; the auth adds it after the cache looks a request up
-E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[0] /paths/~1users/get: The tag '{fields}' of 'users.tagged' names no path or query parameter 'fields' of GET /users
-E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[1] /paths/~1users/get: The tag 'page:{page}' of 'users.tagged' names the optional parameter 'page' of GET /users
-E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[2] /paths/~1users/get: The tag '{role}' of 'users.tagged' names the optional parameter 'role' of GET /users
-E_CONFIG_VALUE config protocols.helpers['users.tagged'].mutations['refetch'].operation /paths/~1users~1{userId}/get: The mutation 'refetch' of 'users.tagged' calls GET /users/{userId}; only POST, PUT, PATCH, and DELETE invalidate
-E_CONFIG_VALUE config protocols.helpers['users.tagged'].mutations['create'].invalidate_tags[0] /paths/~1users/post: The tag '{userId}' of 'users.tagged' names no path or query parameter 'userId' of POST /users
-E_CONFIG_VALUE config protocols.helpers['items.ambiguous'].tags[0] /paths/~1items~1{id}/get: The tag 'item:{id}' of 'items.ambiguous' names more than one path or query parameter 'id' of GET /items/{id}
-E_CONFIG_VALUE config protocols.helpers['items.ambiguous'].tags[1] /paths/~1items~1{id}/get: The tag '{kinds}' of 'items.ambiguous' names the parameter 'kinds' of GET /items/{id}, which is not always a string, number, integer, or boolean
 ```
 
 <!-- fmt: on -->
@@ -3756,7 +3724,7 @@ Then each request the helper sends is compressed only when it has such a body:
 
 A cache helper's `fetch` sends a bodyless GET, so a coding its call selects raises
 `ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')` before the cache is
-looked up, whether the entry is stored or not; its mutations follow their operation.
+looked up, whether the entry is stored or not.
 
 Queue entries keep their wire body and entry policy, without call options or a content coding. To change a pending
 entry's delivery settings, use client, view, or request options at drain. Inherited codings apply only to queued
