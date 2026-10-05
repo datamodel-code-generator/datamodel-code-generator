@@ -4,7 +4,7 @@ ci:
 
 repos:
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: 0.38.0
+  rev: 0.38.2
   hooks:
     - id: check-github-workflows
       args: [ "--verbose" ]
@@ -14,12 +14,12 @@ repos:
     - id: tox-ini-fmt
       args: ["-p", "fix"]
 - repo: https://github.com/tox-dev/pyproject-fmt
-  rev: v2.29.4
+  rev: v2.30.1
   hooks:
     - id: pyproject-fmt
       args: ["--max-supported-python=3.14"]
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: 'v0.16.8'
+  rev: 'v0.16.10'
   hooks:
   - id: ruff-format
     exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/(model|_fastapi|_client)/_compiled_templates/"
