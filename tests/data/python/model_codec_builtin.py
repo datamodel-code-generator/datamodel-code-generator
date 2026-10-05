@@ -20,7 +20,7 @@ from datamodel_code_generator.api_types import APIGenerationError
 from datamodel_code_generator.fastapi import generate_fastapi
 from tests.data.python.client_generation import generate_client, model_config
 from tests.data.python.fastapi_generation import fastapi_config
-from tests.data.python.generated_packages import generated_root, import_generated_codecs
+from tests.data.python.generated_packages import generated_root, import_generated, import_generated_codecs
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -276,7 +276,9 @@ class _Runner:
                 case "envelope-outbound":
                     result = self.package.outbound.EnvelopeOutboundCodec(codec, context).from_wire(value)
                 case "envelope-snapshot":
-                    result = self.package.outbound.EnvelopeOutboundCodec(codec, context).snapshot(value, presence=presence)
+                    result = self.package.outbound.EnvelopeOutboundCodec(codec, context).snapshot(
+                        value, presence=presence
+                    )
                 case "mutate":
                     target = self.results[str(case["target"])]
                     native = self.native(case.get("native")) if "native" in case else value
@@ -328,6 +330,31 @@ def _codecs(package: GeneratedCodecs, lines: list[str] | None = None, *, strateg
     return codecs
 
 
+def _legacy_server_report(root: Path, package: str, fixture: dict[str, Any]) -> list[str]:
+    """Send the retained legacy union cases through the generated native FastAPI endpoint."""
+    from fastapi.testclient import TestClient
+
+    lines: list[str] = []
+    calls: list[str] = []
+
+    class Service:
+        def put__inline(self, *, body: BaseModel) -> None:
+            calls.append(
+                f"model {_native(body)} set={sorted(body.model_fields_set)} "
+                f"wire={body.model_dump_json(by_alias=True, exclude_unset=True)}"
+            )
+
+    with generated_root(root, package):
+        server = import_generated(package)
+        with TestClient(server.create_app(untagged=Service())) as api:
+            for case in fixture["cases"]:
+                calls.clear()
+                response = api.put("/inline", json=case["value"])
+                lines.extend(f"{case['name']}: {call}" for call in calls)
+                lines.append(f"{case['name']}: HTTP {response.status_code} {response.content!r}")
+    return lines
+
+
 def builtin_codec_report(source: Path, cases: Path, root: Path, *, server: bool = False) -> str:
     """Generate a client or server package, import it, and run every case through the generated codec of its use.
 
@@ -344,6 +371,8 @@ def builtin_codec_report(source: Path, cases: Path, root: Path, *, server: bool 
     accepted = root / "accepted"
     if diagnostics := generate_package(source, fixture, accepted, backend, fixture.get("config", {}), server=server):
         return _text([*lines, *diagnostics], package)
+    if server and package == "codec_legacy":
+        return _text([*lines, *_legacy_server_report(accepted, package, fixture)], package)
     with imported(accepted, package) as generated:
         codecs = _codecs(generated, lines, strategies=bool(fixture.get("strategies")))
         runner = _Runner(generated, codecs)

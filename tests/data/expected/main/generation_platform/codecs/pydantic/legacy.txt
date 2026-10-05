@@ -1,3 +1,4 @@
-use /paths/~1inline/put request_body: native model models:InlineHolder models=[('models:InlineHolder', 'model', 'ignore', True), ('models:Shape', 'model', 'ignore', True), ('models:Shape1', 'model', 'ignore', True)]
-inline-server-circle: model InlineHolder(b=1, shape=Shape(radius=1)) set=['b', 'shape'] wire={"b":1,"shape":{"radius":1}} presence=['', '/b', '/shape', '/shape/radius'] extras={}
-inline-server-square: model InlineHolder(b=1, shape=Shape1(side=2)) set=['b', 'shape'] wire={"b":1,"shape":{"side":2}} presence=['', '/b', '/shape', '/shape/side'] extras={}
+inline-server-circle: model InlineHolder(b=1, shape=Shape(radius=1)) set=['b', 'shape'] wire={"b":1,"shape":{"radius":1}}
+inline-server-circle: HTTP 204 b''
+inline-server-square: model InlineHolder(b=1, shape=Shape1(side=2)) set=['b', 'shape'] wire={"b":1,"shape":{"side":2}}
+inline-server-square: HTTP 204 b''
