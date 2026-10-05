@@ -9,9 +9,6 @@ app standard
 > GET /greetings?mode=result
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
-< 200 application/json "wire"
 > GET /greetings?mode=other
 < 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
@@ -28,12 +25,6 @@ app standard
 > GET /documents/2
   get_document(id=2)
 < 200 text/plain; charset=utf-8 raw
-> GET /documents/3
-  get_document(id=3)
-< 200 application/json; profile=v1 {"message":"v1"}
-> GET /documents/4
-  get_document(id=4)
-< 200 application/json; charset=utf-8 {"id":4,"name":"Mimi"}
 > openapi /greetings get 200
 < {"application/json": {"schema": {"$ref": "#/components/schemas/FieldGreetingsGetResponse"}}}
 > openapi /pets/{id} get 404
@@ -45,9 +36,6 @@ app plain
 > GET /greetings?mode=result
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
-< 200 application/json "wire"
 > GET /greetings?mode=other
 < 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
@@ -69,9 +57,6 @@ app included
 > GET /greetings?mode=result
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
-< 200 application/json "wire"
 > GET /greetings?mode=other
 < 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
@@ -96,9 +81,6 @@ app standard
 > GET /greetings?mode=result
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
-< 200 application/json "wire"
 > GET /greetings?mode=other
 < 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
@@ -115,12 +97,6 @@ app standard
 > GET /documents/2
   get_document(id=2)
 < 200 text/plain; charset=utf-8 raw
-> GET /documents/3
-  get_document(id=3)
-< 200 application/json; profile=v1 {"message":"v1"}
-> GET /documents/4
-  get_document(id=4)
-< 200 application/json; charset=utf-8 {"id":4,"name":"Mimi"}
 > openapi /greetings get 200
 < {"application/json": {"schema": {"$ref": "#/components/schemas/FieldGreetingsGetResponse"}}}
 > openapi /pets/{id} get 404
@@ -132,9 +108,6 @@ app plain
 > GET /greetings?mode=result
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
-< 200 application/json "wire"
 > GET /greetings?mode=other
 < 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
@@ -156,9 +129,6 @@ app included
 > GET /greetings?mode=result
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.value: 'value'>)
-< 200 application/json "wire"
 > GET /greetings?mode=other
 < 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings

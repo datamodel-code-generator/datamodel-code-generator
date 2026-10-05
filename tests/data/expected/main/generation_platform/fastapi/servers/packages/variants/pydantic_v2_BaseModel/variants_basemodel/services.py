@@ -9,13 +9,7 @@ from typing import Protocol
 import variants_basemodel_models
 from fastapi.responses import Response
 
-from .model_codecs import ModelValue
-from .responses import (
-    CreatePetResponsePayload,
-    GetPetResponsePayload,
-    HTTPResult,
-    ListOwnersResponsePayload,
-)
+from ._runtime.server.responses import HTTPResult
 
 
 class UntaggedService(Protocol):
@@ -28,8 +22,7 @@ class UntaggedService(Protocol):
         body: variants_basemodel_models.Pet,
     ) -> (
         variants_basemodel_models.Pet
-        | ModelValue[variants_basemodel_models.Pet]
-        | HTTPResult[CreatePetResponsePayload]
+        | HTTPResult[variants_basemodel_models.Pet]
         | Response
     ): ...
 
@@ -40,8 +33,7 @@ class UntaggedService(Protocol):
         id: int,
     ) -> (
         variants_basemodel_models.Pet
-        | ModelValue[variants_basemodel_models.Pet]
-        | HTTPResult[GetPetResponsePayload]
+        | HTTPResult[variants_basemodel_models.Pet]
         | Response
     ): ...
 
@@ -50,7 +42,6 @@ class UntaggedService(Protocol):
         self,
     ) -> (
         variants_basemodel_models.FieldOwnersGetResponse
-        | ModelValue[variants_basemodel_models.FieldOwnersGetResponse]
-        | HTTPResult[ListOwnersResponsePayload]
+        | HTTPResult[variants_basemodel_models.FieldOwnersGetResponse]
         | Response
     ): ...

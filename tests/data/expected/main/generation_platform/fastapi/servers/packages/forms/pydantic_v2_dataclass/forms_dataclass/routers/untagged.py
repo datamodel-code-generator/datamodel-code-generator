@@ -11,7 +11,7 @@ from fastapi.responses import Response
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
-from .._runtime.server.responses import respond
+from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
 
@@ -21,8 +21,8 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
     def post_form(
         *,
         body: Annotated[forms_dataclass_models.FieldFormsPostRequest, Depends(contract.PostForm.BODY)],
-    ) -> Response:
-        return respond(post_form_handler(body=body), contract.PostForm.RESPONSES)
+    ) -> object:
+        return dispatch(post_form_handler(body=body), contract.PostForm.RESPONSES)
 
     router.add_api_route(
         '/forms',
@@ -63,8 +63,8 @@ def _add_post_notes(router: APIRouter, wiring: Wiring) -> None:
     def post_notes(
         *,
         body: Annotated[forms_dataclass_models.FieldNotesPostRequest, Depends(contract.PostNotes.BODY)],
-    ) -> Response:
-        return respond(post_notes_handler(body=body), contract.PostNotes.RESPONSES)
+    ) -> object:
+        return dispatch(post_notes_handler(body=body), contract.PostNotes.RESPONSES)
 
     router.add_api_route(
         '/notes',
@@ -99,8 +99,8 @@ def _add_upload(router: APIRouter, wiring: Wiring) -> None:
     def upload(
         *,
         body: Annotated[forms_dataclass_models.FieldUploadsPostRequest, Depends(contract.Upload.BODY)],
-    ) -> Response:
-        return respond(upload_handler(body=body), contract.Upload.RESPONSES)
+    ) -> object:
+        return dispatch(upload_handler(body=body), contract.Upload.RESPONSES)
 
     router.add_api_route(
         '/uploads',
@@ -139,8 +139,8 @@ def _add_upload_many(router: APIRouter, wiring: Wiring) -> None:
     def upload_many(
         *,
         body: Annotated[forms_dataclass_models.FieldBatchesPostRequest, Depends(contract.UploadMany.BODY)],
-    ) -> Response:
-        return respond(upload_many_handler(body=body), contract.UploadMany.RESPONSES)
+    ) -> object:
+        return dispatch(upload_many_handler(body=body), contract.UploadMany.RESPONSES)
 
     router.add_api_route(
         '/batches',

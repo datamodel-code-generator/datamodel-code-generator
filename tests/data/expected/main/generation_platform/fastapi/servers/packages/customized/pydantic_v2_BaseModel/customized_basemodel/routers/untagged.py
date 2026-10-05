@@ -13,15 +13,15 @@ from fastapi.responses import Response
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
-from .._runtime.server.responses import respond
+from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
 
 def _add_handle_get_health(router: APIRouter, wiring: Wiring) -> None:
     handle_get_health_handler = wiring.async_handlers['handle_get_health']
 
-    async def handle_get_health() -> Response:
-        return respond(
+    async def handle_get_health() -> object:
+        return dispatch(
             await handle_get_health_handler(),
             contract.HandleGetHealth.RESPONSES,
         )

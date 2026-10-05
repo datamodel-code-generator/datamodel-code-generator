@@ -134,17 +134,6 @@ def _errors(response: Any) -> str:
     return json.dumps([{key: error[key] for key in ("type", "loc")} for error in response.json()["detail"]])
 
 
-def _codec(server: ModuleType, selector: dict[str, Any], lines: list[str]) -> None:
-    facade = getattr(server.responses, selector["facade"])
-    arguments = {key: value for key, value in selector.items() if key != "facade"}
-    try:
-        codec = facade.part(**arguments) if "name" in arguments else facade.body(**arguments)
-    except importlib.import_module(f"{server.__name__}.model_codecs").CodecSelectionError as error:
-        lines.append(f"codec {selector['facade']} {arguments}: CodecSelectionError: {error}")
-        return
-    lines.append(f"codec {selector['facade']} {arguments}: {type(codec).__name__}")
-
-
 def _interfaces(server: ModuleType) -> Iterator[str]:
     """Report each service Protocol's abstract methods, and that a subclass without them cannot be instantiated."""
     module = server.services
@@ -185,7 +174,7 @@ def _serve(  # noqa: PLR0913
 def fastapi_server_report(
     case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch
 ) -> tuple[str, dict[str, dict[tuple[str, ...], str]]]:
-    """Generate one server per backend, replay the case's builds, applications, requests, and codecs.
+    """Generate one server per backend, replay the case's builds, applications, and requests.
 
     Return the report and each backend's generated modules.
     """
@@ -223,8 +212,6 @@ def fastapi_server_report(
                 with TestClient(_WithoutRawPath(app)) as client:
                     for request in app_case.get("requests", ()):
                         _exchange(client, request, calls, lines, errors)
-            for selector in case.get("codecs", ()):
-                _codec(server, selector, lines)
         finally:
             forget_generated(package)
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", packages

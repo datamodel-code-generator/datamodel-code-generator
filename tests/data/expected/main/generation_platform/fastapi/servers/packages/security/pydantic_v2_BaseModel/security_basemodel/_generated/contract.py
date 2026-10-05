@@ -6,10 +6,12 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias, TypedDict
 
+import security_basemodel_models
+from pydantic import TypeAdapter
+
 from .._runtime.server.application import Dependency, OperationPlan
-from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
+from .._runtime.server.responses import Declared, OperationResponses
 from .._runtime.server.security import SchemePlan, SecurityPlan
-from . import model_bindings
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1pets/get',
@@ -76,19 +78,12 @@ class ListPets:
         security=SecurityPlan(requirements=((('api_key', ()),),)),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(security_basemodel_models.FieldPetsGetResponse),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )
 
 
@@ -100,10 +95,7 @@ class GetPublic:
         key='/paths/~1public/get',
         service='public',
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetMaybe:
@@ -117,10 +109,7 @@ class GetMaybe:
         asynchronous=True,
         security=SecurityPlan(requirements=((), (('bearer', ()),))),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PutPet:
@@ -138,10 +127,7 @@ class PutPet:
             ),
         ),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetSession:
@@ -160,10 +146,7 @@ class GetSession:
             ),
         ),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetCustom:
@@ -179,7 +162,4 @@ class GetCustom:
             requirements=((('digest', ()),), (('mtls', ()),), (('query_key', ()),)),
         ),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)

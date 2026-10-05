@@ -10,16 +10,8 @@ import security_basemodel_models
 from fastapi.responses import Response
 from typing_extensions import TypeVar
 
-from .model_codecs import ModelValue, Unset
-from .responses import (
-    GetCustomResponsePayload,
-    GetMaybeResponsePayload,
-    GetPublicResponsePayload,
-    GetSessionResponsePayload,
-    HTTPResult,
-    ListPetsResponsePayload,
-    PutPetResponsePayload,
-)
+from ._runtime.model_codecs.unset import Unset
+from ._runtime.server.responses import HTTPResult
 
 PrincipalT_contra = TypeVar("PrincipalT_contra", contravariant=True)
 
@@ -34,8 +26,7 @@ class PetsService(Protocol[PrincipalT_contra]):
         principal: PrincipalT_contra,
     ) -> (
         security_basemodel_models.FieldPetsGetResponse
-        | ModelValue[security_basemodel_models.FieldPetsGetResponse]
-        | HTTPResult[ListPetsResponsePayload]
+        | HTTPResult[security_basemodel_models.FieldPetsGetResponse]
         | Response
     ): ...
 
@@ -44,7 +35,7 @@ class PublicService(Protocol):
     """Implement the public operations: subclass this Protocol, or give an object its methods."""
 
     @abstractmethod
-    def get_public(self) -> None | HTTPResult[GetPublicResponsePayload] | Response: ...
+    def get_public(self) -> None | HTTPResult[None] | Response: ...
 
 
 class UntaggedService(Protocol[PrincipalT_contra]):
@@ -56,7 +47,7 @@ class UntaggedService(Protocol[PrincipalT_contra]):
         *,
         principal: PrincipalT_contra | None,
         query_principal: str | Unset,
-    ) -> None | HTTPResult[GetMaybeResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def put_pet(
@@ -64,18 +55,18 @@ class UntaggedService(Protocol[PrincipalT_contra]):
         *,
         principal: PrincipalT_contra,
         pet_id: int,
-    ) -> None | HTTPResult[PutPetResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     def get_session(
         self,
         *,
         principal: PrincipalT_contra,
-    ) -> None | HTTPResult[GetSessionResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     async def get_custom(
         self,
         *,
         principal: PrincipalT_contra,
-    ) -> None | HTTPResult[GetCustomResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...

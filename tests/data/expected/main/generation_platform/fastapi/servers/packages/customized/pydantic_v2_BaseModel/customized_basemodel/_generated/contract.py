@@ -6,17 +6,12 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias, TypedDict
 
+import customized_basemodel_models
+from pydantic import TypeAdapter
 from typing_extensions import Never
 
-from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.server.application import Dependency, OperationPlan
-from .._runtime.server.responses import (
-    HeaderPlan,
-    MediaPlan,
-    OperationResponses,
-    ResponsePlan,
-)
-from . import model_bindings
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1pets/get',
@@ -48,19 +43,12 @@ class HandleListPets:
         asynchronous=True,
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(customized_basemodel_models.FieldPetsGetResponse),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )
 
 
@@ -74,10 +62,7 @@ class HandleDeletePet:
         keywords=('pet_id',),
         asynchronous=True,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class HandleMovePet:
@@ -90,27 +75,7 @@ class HandleMovePet:
         keywords=('pet_id',),
         asynchronous=True,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='201',
-                headers=(
-                    HeaderPlan(
-                        name='Location',
-                        required=True,
-                        plan=ParameterPlan(
-                            location='header',
-                            name='Location',
-                            style='simple',
-                            required=True,
-                        ),
-                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
-                    ),
-                ),
-            ),
-        ),
-        primary=(201, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'201': Declared()}, primary=201)
 
 
 class HandleGetHealth:
@@ -122,7 +87,4 @@ class HandleGetHealth:
         service='untagged',
         asynchronous=True,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)

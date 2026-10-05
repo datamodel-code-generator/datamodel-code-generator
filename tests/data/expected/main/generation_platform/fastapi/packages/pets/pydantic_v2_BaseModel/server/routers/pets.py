@@ -15,7 +15,7 @@ from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
 from .._runtime.server.requests import absent, present
-from .._runtime.server.responses import dispatch, respond
+from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
 
@@ -150,8 +150,11 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
     def delete_pet(
         *,
         pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
-    ) -> Response:
-        return respond(delete_pet_handler(pet_id=pet_id), contract.DeletePet.RESPONSES)
+    ) -> object:
+        return dispatch(
+            delete_pet_handler(pet_id=pet_id),
+            contract.DeletePet.RESPONSES,
+        )
 
     router.add_api_route(
         '/pets/{petId}',

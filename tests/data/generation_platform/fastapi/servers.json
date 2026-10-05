@@ -162,26 +162,6 @@
         "url": "/pets/one"
       }
     ],
-    "codecs": [
-      {
-        "facade": "GetPetResponseCodecs",
-        "status_code": 200
-      },
-      {
-        "facade": "GetPetResponseCodecs",
-        "status_code": 404,
-        "media_type": "application/json"
-      },
-      {
-        "facade": "GetPetResponseCodecs",
-        "status_code": 500
-      },
-      {
-        "facade": "GetPetResponseCodecs",
-        "status_code": 200,
-        "name": "part"
-      }
-    ],
     "package_snapshots": [
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass"
@@ -702,38 +682,6 @@
       },
       {
         "method": "GET",
-        "url": "/results?case=model-value"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=csv"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=binary"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=image"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=html"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=bad-media"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=csv-bytes"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=binary-text"
-      },
-      {
-        "method": "GET",
         "url": "/results?case=headers",
         "show_headers": [
           "x-rate",
@@ -744,30 +692,6 @@
       },
       {
         "method": "GET",
-        "url": "/results?case=negative-rate"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=bad-name"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=crlf"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=owned"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=header-list"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=header-item"
-      },
-      {
-        "method": "GET",
         "url": "/results?case=created",
         "show_headers": [
           "x-rate",
@@ -775,10 +699,6 @@
           "x-other",
           "location"
         ]
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=created-without-location"
       },
       {
         "method": "GET",
@@ -794,7 +714,7 @@
       },
       {
         "method": "GET",
-        "url": "/results?case=range-object"
+        "url": "/results?case=invalid-body"
       },
       {
         "method": "GET",
@@ -802,19 +722,11 @@
       },
       {
         "method": "GET",
-        "url": "/results?case=client-error-bytes"
+        "url": "/results?case=client-error-number"
       },
       {
         "method": "GET",
         "url": "/results?case=problem"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=status-bool"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=status-low"
       },
       {
         "method": "GET",
@@ -827,10 +739,6 @@
       {
         "method": "GET",
         "url": "/results?case=response-html"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=response-header"
       },
       {
         "method": "HEAD",
@@ -882,63 +790,15 @@
       },
       {
         "method": "GET",
-        "url": "/results?case=response-created",
-        "show_headers": [
-          "location"
-        ]
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=response-created-without-location"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=response-negative-rate"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=response-no-content-body"
-      },
-      {
-        "method": "GET",
         "url": "/latin?case=latin"
       },
       {
         "method": "GET",
         "url": "/latin?case=euro"
-      }
-    ],
-    "codecs": [
-      {
-        "facade": "GetResultResponseCodecs",
-        "status_code": 200,
-        "media_type": "text/csv"
       },
       {
-        "facade": "GetResultResponseCodecs",
-        "status_code": 404
-      },
-      {
-        "facade": "GetResultResponseCodecs",
-        "status_code": 503
-      },
-      {
-        "facade": "GetResultResponseCodecs",
-        "status_code": 200,
-        "media_type": "text/html"
-      },
-      {
-        "facade": "GetResultResponseCodecs",
-        "status_code": 200,
-        "media_type": "not a media type"
-      },
-      {
-        "facade": "GetResultResponseCodecs",
-        "status_code": "200"
-      },
-      {
-        "facade": "GetNothingResponseCodecs",
-        "status_code": 200
+        "method": "GET",
+        "url": "/blob?case=blob"
       }
     ]
   },
@@ -1727,10 +1587,6 @@
           },
           {
             "method": "GET",
-            "url": "/greetings?mode=value"
-          },
-          {
-            "method": "GET",
             "url": "/greetings?mode=other"
           },
           {
@@ -1752,14 +1608,6 @@
           {
             "method": "GET",
             "url": "/documents/2"
-          },
-          {
-            "method": "GET",
-            "url": "/documents/3"
-          },
-          {
-            "method": "GET",
-            "url": "/documents/4"
           },
           {
             "openapi": [
@@ -1787,10 +1635,6 @@
           {
             "method": "GET",
             "url": "/greetings?mode=result"
-          },
-          {
-            "method": "GET",
-            "url": "/greetings?mode=value"
           },
           {
             "method": "GET",
@@ -1834,10 +1678,6 @@
           {
             "method": "GET",
             "url": "/greetings?mode=result"
-          },
-          {
-            "method": "GET",
-            "url": "/greetings?mode=value"
           },
           {
             "method": "GET",

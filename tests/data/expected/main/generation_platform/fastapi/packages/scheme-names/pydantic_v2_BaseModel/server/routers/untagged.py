@@ -10,7 +10,7 @@ from fastapi.responses import Response
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
-from .._runtime.server.responses import respond
+from .._runtime.server.responses import dispatch
 from .._runtime.server.security import PrincipalT, SecretT
 from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
 from ..services import UntaggedService
@@ -23,8 +23,8 @@ def _add_get_keys(router: APIRouter, wiring: Wiring) -> None:
     def get_keys(
         *,
         principal: Annotated[object, Depends(get_keys_principal)],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             get_keys_handler(principal=principal),
             contract.GetKeys.RESPONSES,
         )

@@ -26,7 +26,6 @@ from secured import (
     create_app,
 )
 from secured.auth_types import AuthContext, Credential, CredentialExtractor, CustomSecret
-from secured.responses import PutPetResponsePayload
 from secured.routers import pets, public
 from secured.services import PetsService, UntaggedService
 
@@ -96,8 +95,8 @@ class Untagged(UntaggedService[User]):
         name = "anonymous" if principal is None else principal.name
         return PlainTextResponse(name if isinstance(query_principal, Unset) else query_principal)
 
-    def put_pet(self, *, principal: object, pet_id: int) -> HTTPResult[PutPetResponsePayload]:
-        return HTTPResult(status_code=204, headers=(("x-pet", f"{principal} {pet_id}"),))
+    def put_pet(self, *, principal: object, pet_id: int) -> HTTPResult[None]:
+        return HTTPResult(204, headers={"x-pet": f"{principal} {pet_id}"})
 
     def get_session(self, *, principal: User) -> None:
         del principal

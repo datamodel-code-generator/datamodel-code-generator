@@ -10,13 +10,7 @@ import variants_modular_dataclass_models.field_owners_get_response as variants_m
 import variants_modular_dataclass_models.pet as variants_modular_dataclass_models_pet
 from fastapi.responses import Response
 
-from .model_codecs import ModelValue
-from .responses import (
-    CreatePetResponsePayload,
-    GetPetResponsePayload,
-    HTTPResult,
-    ListOwnersResponsePayload,
-)
+from ._runtime.server.responses import HTTPResult
 
 
 class UntaggedService(Protocol):
@@ -29,8 +23,7 @@ class UntaggedService(Protocol):
         body: variants_modular_dataclass_models_pet.Pet,
     ) -> (
         variants_modular_dataclass_models_pet.Pet
-        | ModelValue[variants_modular_dataclass_models_pet.Pet]
-        | HTTPResult[CreatePetResponsePayload]
+        | HTTPResult[variants_modular_dataclass_models_pet.Pet]
         | Response
     ): ...
 
@@ -41,8 +34,7 @@ class UntaggedService(Protocol):
         id: int,
     ) -> (
         variants_modular_dataclass_models_pet.Pet
-        | ModelValue[variants_modular_dataclass_models_pet.Pet]
-        | HTTPResult[GetPetResponsePayload]
+        | HTTPResult[variants_modular_dataclass_models_pet.Pet]
         | Response
     ): ...
 
@@ -51,7 +43,6 @@ class UntaggedService(Protocol):
         self,
     ) -> (
         variants_modular_dataclass_models_field_owners_get_response.FieldOwnersGetResponse
-        | ModelValue[variants_modular_dataclass_models_field_owners_get_response.FieldOwnersGetResponse]
-        | HTTPResult[ListOwnersResponsePayload]
+        | HTTPResult[variants_modular_dataclass_models_field_owners_get_response.FieldOwnersGetResponse]
         | Response
     ): ...

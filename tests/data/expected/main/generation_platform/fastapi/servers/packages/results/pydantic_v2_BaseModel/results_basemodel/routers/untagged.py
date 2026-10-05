@@ -11,7 +11,7 @@ from fastapi.responses import Response
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
-from .._runtime.server.responses import dispatch, respond
+from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
 
@@ -71,8 +71,8 @@ def _add_get_result(router: APIRouter, wiring: Wiring) -> None:
 def _add_head_result(router: APIRouter, wiring: Wiring) -> None:
     head_result_handler = wiring.handlers['head_result']
 
-    def head_result(*, case: Annotated[str, Query(alias='case')]) -> Response:
-        return respond(head_result_handler(case=case), contract.HeadResult.RESPONSES)
+    def head_result(*, case: Annotated[str, Query(alias='case')]) -> object:
+        return dispatch(head_result_handler(case=case), contract.HeadResult.RESPONSES)
 
     router.add_api_route(
         '/results',
@@ -93,8 +93,8 @@ def _add_head_result(router: APIRouter, wiring: Wiring) -> None:
 def _add_get_plain(router: APIRouter, wiring: Wiring) -> None:
     get_plain_handler = wiring.handlers['get_plain']
 
-    def get_plain(*, case: Annotated[str, Query(alias='case')]) -> Response:
-        return respond(get_plain_handler(case=case), contract.GetPlain.RESPONSES)
+    def get_plain(*, case: Annotated[str, Query(alias='case')]) -> object:
+        return dispatch(get_plain_handler(case=case), contract.GetPlain.RESPONSES)
 
     router.add_api_route(
         '/plain',
@@ -120,8 +120,8 @@ def _add_get_plain(router: APIRouter, wiring: Wiring) -> None:
 def _add_get_latin(router: APIRouter, wiring: Wiring) -> None:
     get_latin_handler = wiring.handlers['get_latin']
 
-    def get_latin(*, case: Annotated[str, Query(alias='case')]) -> Response:
-        return respond(get_latin_handler(case=case), contract.GetLatin.RESPONSES)
+    def get_latin(*, case: Annotated[str, Query(alias='case')]) -> object:
+        return dispatch(get_latin_handler(case=case), contract.GetLatin.RESPONSES)
 
     router.add_api_route(
         '/latin',
@@ -147,8 +147,8 @@ def _add_get_latin(router: APIRouter, wiring: Wiring) -> None:
 def _add_get_nothing(router: APIRouter, wiring: Wiring) -> None:
     get_nothing_handler = wiring.handlers['get_nothing']
 
-    def get_nothing(*, case: Annotated[str, Query(alias='case')]) -> Response:
-        return respond(get_nothing_handler(case=case), contract.GetNothing.RESPONSES)
+    def get_nothing(*, case: Annotated[str, Query(alias='case')]) -> object:
+        return dispatch(get_nothing_handler(case=case), contract.GetNothing.RESPONSES)
 
     router.add_api_route(
         '/nothing',
@@ -169,11 +169,40 @@ def _add_get_nothing(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
+def _add_get_blob(router: APIRouter, wiring: Wiring) -> None:
+    get_blob_handler = wiring.handlers['get_blob']
+
+    def get_blob(*, case: Annotated[str, Query(alias='case')]) -> object:
+        return dispatch(get_blob_handler(case=case), contract.GetBlob.RESPONSES)
+
+    router.add_api_route(
+        '/blob',
+        get_blob,
+        methods=['GET'],
+        status_code=200,
+        response_model=None,
+        response_class=Response,
+        operation_id='getBlob',
+        response_description='Raw bytes.',
+        responses={
+            '200': {
+                'description': 'Raw bytes.',
+                'content': {
+                    'application/octet-stream': {
+                        'schema': {'type': 'string', 'format': 'binary'},
+                    },
+                },
+            },
+        },
+        dependencies=wiring.dependencies.get('/paths/~1blob/get'),
+    )
+
+
 def _add_post_empty(router: APIRouter, wiring: Wiring) -> None:
     post_empty_handler = wiring.handlers['post_empty']
 
-    def post_empty(*, case: Annotated[str, Query(alias='case')]) -> Response:
-        return respond(post_empty_handler(case=case), contract.PostEmpty.RESPONSES)
+    def post_empty(*, case: Annotated[str, Query(alias='case')]) -> object:
+        return dispatch(post_empty_handler(case=case), contract.PostEmpty.RESPONSES)
 
     router.add_api_route(
         '/empty',
@@ -195,6 +224,7 @@ LITERAL_ROUTES: Final = (
     (contract.GetPlain.OPERATION, _add_get_plain),
     (contract.GetLatin.OPERATION, _add_get_latin),
     (contract.GetNothing.OPERATION, _add_get_nothing),
+    (contract.GetBlob.OPERATION, _add_get_blob),
     (contract.PostEmpty.OPERATION, _add_post_empty),
 )
 TEMPLATED_ROUTES: Final = ()

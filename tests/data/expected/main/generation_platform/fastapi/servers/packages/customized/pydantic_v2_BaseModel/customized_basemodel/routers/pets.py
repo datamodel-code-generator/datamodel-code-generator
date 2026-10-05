@@ -14,7 +14,7 @@ from fastapi.responses import Response
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
-from .._runtime.server.responses import dispatch, respond
+from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
 
@@ -48,8 +48,8 @@ def _add_handle_delete_pet(router: APIRouter, wiring: Wiring) -> None:
     async def handle_delete_pet(
         *,
         pet_id: Annotated[int, Path(alias='petId')],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             await handle_delete_pet_handler(pet_id=pet_id),
             contract.HandleDeletePet.RESPONSES,
         )
@@ -75,8 +75,8 @@ def _add_handle_move_pet(router: APIRouter, wiring: Wiring) -> None:
     async def handle_move_pet(
         *,
         pet_id: Annotated[int, Path(alias='petId')],
-    ) -> Response:
-        return respond(
+    ) -> object:
+        return dispatch(
             await handle_move_pet_handler(pet_id=pet_id),
             contract.HandleMovePet.RESPONSES,
         )

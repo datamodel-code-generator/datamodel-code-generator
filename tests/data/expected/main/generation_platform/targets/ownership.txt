@@ -10,9 +10,6 @@ render
   write target server/routers/untagged.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/_generated/model_bindings.py (target)
-  write target server/model_codecs.py (target)
-  write target server/responses.py (target)
   write target server/errors.py (target)
   write target server/auth_types.py (target)
   write target server/services.py (target)
@@ -20,7 +17,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  22 runtime modules ['write']
+  13 runtime modules ['write']
 publish
 write server/app.py
 render
@@ -34,9 +31,6 @@ render
   unchanged target server/routers/untagged.py (target)
   unchanged target server/_generated/__init__.py (target)
   unchanged target server/_generated/contract.py (target)
-  unchanged target server/_generated/model_bindings.py (target)
-  unchanged target server/model_codecs.py (target)
-  unchanged target server/responses.py (target)
   unchanged target server/errors.py (target)
   unchanged target server/auth_types.py (target)
   unchanged target server/services.py (target)
@@ -44,7 +38,7 @@ render
   unchanged target server/py.typed (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  22 runtime modules ['unchanged']
+  13 runtime modules ['unchanged']
 write server/routers/pets.py
 remove server/routers/store.py
 render
@@ -58,9 +52,6 @@ render
   unchanged target server/routers/untagged.py (target)
   unchanged target server/_generated/__init__.py (target)
   unchanged target server/_generated/contract.py (target)
-  unchanged target server/_generated/model_bindings.py (target)
-  unchanged target server/model_codecs.py (target)
-  unchanged target server/responses.py (target)
   unchanged target server/errors.py (target)
   unchanged target server/auth_types.py (target)
   unchanged target server/services.py (target)
@@ -68,7 +59,7 @@ render
   unchanged target server/py.typed (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  22 runtime modules ['unchanged']
+  13 runtime modules ['unchanged']
 publish
 render
   target=fastapi schema_version=1
@@ -81,9 +72,6 @@ render
   unchanged target server/routers/untagged.py (target)
   unchanged target server/_generated/__init__.py (target)
   unchanged target server/_generated/contract.py (target)
-  unchanged target server/_generated/model_bindings.py (target)
-  unchanged target server/model_codecs.py (target)
-  unchanged target server/responses.py (target)
   unchanged target server/errors.py (target)
   unchanged target server/auth_types.py (target)
   unchanged target server/services.py (target)
@@ -91,4 +79,4 @@ render
   unchanged target server/py.typed (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  22 runtime modules ['unchanged']
+  13 runtime modules ['unchanged']

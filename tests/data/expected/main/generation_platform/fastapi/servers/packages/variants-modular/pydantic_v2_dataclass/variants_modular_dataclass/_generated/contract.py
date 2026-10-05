@@ -6,11 +6,13 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias, TypedDict
 
+import variants_modular_dataclass_models.field_owners_get_response as variants_modular_dataclass_models_field_owners_get_response
+import variants_modular_dataclass_models.pet as variants_modular_dataclass_models_pet
+from pydantic import TypeAdapter
 from typing_extensions import Never
 
 from .._runtime.server.application import Dependency, OperationPlan
-from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
-from . import model_bindings
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1pets/post',
@@ -40,19 +42,12 @@ class CreatePet:
         keywords=('body',),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='201',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-                    ),
-                ),
+        responses={
+            '201': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(variants_modular_dataclass_models_pet.Pet),
             ),
-        ),
-        primary=(201, 'application/json'),
+        },
     )
 
 
@@ -66,19 +61,12 @@ class GetPet:
         keywords=('id',),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(variants_modular_dataclass_models_pet.Pet),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )
 
 
@@ -91,17 +79,10 @@ class ListOwners:
         service='untagged',
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(variants_modular_dataclass_models_field_owners_get_response.FieldOwnersGetResponse),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )

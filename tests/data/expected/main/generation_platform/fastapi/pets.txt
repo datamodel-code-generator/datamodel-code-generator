@@ -8,31 +8,19 @@ render pydantic_v2.BaseModel
   write server/routers/store.py
   write server/_generated/__init__.py
   write server/_generated/contract.py
-  write server/_generated/model_bindings.py
-  write server/model_codecs.py
-  write server/responses.py
   write server/errors.py
   write server/auth_types.py
   write server/services.py
   write server/README.md
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/model_codecs/__init__.py (copied runtime)
-  write server/_runtime/model_codecs/bindings.py (copied runtime)
-  write server/_runtime/model_codecs/codec.py (copied runtime)
-  write server/_runtime/model_codecs/context.py (copied runtime)
   write server/_runtime/model_codecs/errors.py (copied runtime)
   write server/_runtime/model_codecs/media.py (copied runtime)
-  write server/_runtime/model_codecs/outbound.py (copied runtime)
   write server/_runtime/model_codecs/parameters.py (copied runtime)
-  write server/_runtime/model_codecs/patterns.py (copied runtime)
-  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
-  write server/_runtime/model_codecs/schema.py (copied runtime)
   write server/_runtime/model_codecs/unset.py (copied runtime)
-  write server/_runtime/model_codecs/values.py (copied runtime)
   write server/_runtime/model_codecs/wire.py (copied runtime)
   write server/_runtime/server/__init__.py (copied runtime)
   write server/_runtime/server/application.py (copied runtime)
-  write server/_runtime/server/codecs.py (copied runtime)
   write server/_runtime/server/errors.py (copied runtime)
   write server/_runtime/server/requests.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
@@ -67,7 +55,7 @@ render pydantic_v2.BaseModel
     | ## Implementing the services
     |
     | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
-    | A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+    | A method takes the operation's arguments as keywords and returns the value to send, an `HTTPResult` with another declared status, headers, or both, or a `Response` sent as it is.
     | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
     | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
     |
@@ -130,31 +118,19 @@ render pydantic_v2.dataclass
   write server/routers/store.py
   write server/_generated/__init__.py
   write server/_generated/contract.py
-  write server/_generated/model_bindings.py
-  write server/model_codecs.py
-  write server/responses.py
   write server/errors.py
   write server/auth_types.py
   write server/services.py
   write server/README.md
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/model_codecs/__init__.py (copied runtime)
-  write server/_runtime/model_codecs/bindings.py (copied runtime)
-  write server/_runtime/model_codecs/codec.py (copied runtime)
-  write server/_runtime/model_codecs/context.py (copied runtime)
   write server/_runtime/model_codecs/errors.py (copied runtime)
   write server/_runtime/model_codecs/media.py (copied runtime)
-  write server/_runtime/model_codecs/outbound.py (copied runtime)
   write server/_runtime/model_codecs/parameters.py (copied runtime)
-  write server/_runtime/model_codecs/patterns.py (copied runtime)
-  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
-  write server/_runtime/model_codecs/schema.py (copied runtime)
   write server/_runtime/model_codecs/unset.py (copied runtime)
-  write server/_runtime/model_codecs/values.py (copied runtime)
   write server/_runtime/model_codecs/wire.py (copied runtime)
   write server/_runtime/server/__init__.py (copied runtime)
   write server/_runtime/server/application.py (copied runtime)
-  write server/_runtime/server/codecs.py (copied runtime)
   write server/_runtime/server/errors.py (copied runtime)
   write server/_runtime/server/requests.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
@@ -189,7 +165,7 @@ render pydantic_v2.dataclass
     | ## Implementing the services
     |
     | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
-    | A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+    | A method takes the operation's arguments as keywords and returns the value to send, an `HTTPResult` with another declared status, headers, or both, or a `Response` sent as it is.
     | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
     | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
     |
@@ -232,18 +208,6 @@ render pydantic_v2.dataclass
     | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
     | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
     | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
-    |
-    | A `pydantic_v2.dataclass` value cannot tell an omitted optional field from one set to `None`, and a `PATCH` body may mean a different change for each.
-    | To send a response that keeps a field omitted, return the value a response codec builds from the wire value, or snapshot a dataclass with its explicit presence:
-    |
-    | ```python
-    | from server.model_codecs import presence_of
-    | from server.responses import ListPetsResponseCodecs
-    |
-    | codec = ListPetsResponseCodecs.body(status_code=200)
-    | value = codec.from_wire(wire)
-    | value = codec.snapshot(instance, presence=presence_of(wire))
-    | ```
     |
     | ## Regenerating
     |

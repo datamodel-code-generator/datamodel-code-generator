@@ -4046,7 +4046,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
             self.file(PurePosixPath("auth.py"), "auth", _AUTH),
             self.file(PurePosixPath("bodies.py"), "bodies", _BODIES),
-            self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs("client")),
+            self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs()),
             self.file(PurePosixPath("transports.py"), "transports", _TRANSPORTS),
             self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _PROTOCOLS),
             self.file(PurePosixPath("resources", "__init__.py"), "package", '"""The resources of the clients."""\n'),

@@ -13,7 +13,7 @@ from typing_extensions import Never
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import BodyAdapter, BodyMedia
-from .._runtime.server.responses import OperationResponses, ResponsePlan
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1forms/post',
@@ -58,10 +58,7 @@ class PostForm:
             ),
         ),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PostNotes:
@@ -82,10 +79,7 @@ class PostNotes:
             ),
         ),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class Upload:
@@ -107,10 +101,7 @@ class Upload:
             ),
         ),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class UploadMany:
@@ -135,7 +126,4 @@ class UploadMany:
             ),
         ),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)

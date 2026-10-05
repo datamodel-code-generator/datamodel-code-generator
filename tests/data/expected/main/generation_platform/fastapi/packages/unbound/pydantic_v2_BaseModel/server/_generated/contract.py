@@ -15,8 +15,7 @@ from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
-from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
-from . import model_bindings
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal['/paths/~1values~1{id}/get']
 SchemeKey: TypeAlias = Never
@@ -56,17 +55,10 @@ class GetValue:
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(models.Value),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )

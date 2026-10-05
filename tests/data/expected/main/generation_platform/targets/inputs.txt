@@ -8,9 +8,6 @@ render
   write target server/routers/items.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/_generated/model_bindings.py (target)
-  write target server/model_codecs.py (target)
-  write target server/responses.py (target)
   write target server/errors.py (target)
   write target server/auth_types.py (target)
   write target server/services.py (target)
@@ -18,42 +15,10 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  21 runtime modules ['write']
+  12 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1users/get: GET /users is matched by no include rule: Items only
 {
-  "bindings": [
-    {
-      "adapter_identity": null,
-      "backend": "pydantic_v2.BaseModel",
-      "converter_strategy": "pydantic_type_adapter",
-      "strategy": "native",
-      "use_id": {
-        "declaration": null,
-        "direction": "response",
-        "location": null,
-        "media": "application/json",
-        "name": null,
-        "owner": {
-          "kind": "operation",
-          "source": {
-            "document": "/inputs/root",
-            "pointer": "/paths/~1items/get"
-          }
-        },
-        "projection": "value",
-        "role": "response_body",
-        "schema": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1items/get/responses/200/content/application~1json/schema"
-        },
-        "status": "200",
-        "use_site": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1items/get/responses/200"
-        }
-      }
-    }
-  ],
+  "bindings": [],
   "diagnostics": [
     {
       "artifact_path": null,
@@ -116,27 +81,6 @@ render
       "group": null,
       "kind": "contract",
       "path": "_generated/contract.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "model_bindings",
-      "path": "_generated/model_bindings.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "model_codecs",
-      "path": "model_codecs.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "responses",
-      "path": "responses.py",
       "sha256": "<sha256>",
       "size": "<masked>"
     },
@@ -314,9 +258,6 @@ render
   write target server/routers/users.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/_generated/model_bindings.py (target)
-  write target server/model_codecs.py (target)
-  write target server/responses.py (target)
   write target server/errors.py (target)
   write target server/auth_types.py (target)
   write target server/services.py (target)
@@ -324,7 +265,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  21 runtime modules ['write']
+  12 runtime modules ['write']
 render
   APIGenerationError
   E_OPERATION_REF error selection selection.include_operations[0] /paths/~1items/get: The operation reference names a document other than the root input

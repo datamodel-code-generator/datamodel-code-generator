@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias, TypedDict
 
 from .._runtime.server.application import Dependency, OperationPlan
-from .._runtime.server.responses import OperationResponses, ResponsePlan
+from .._runtime.server.responses import Declared, OperationResponses
 from .._runtime.server.security import SchemePlan, SecurityPlan
 
 OperationKey: TypeAlias = Literal['/paths/~1keys/get']
@@ -35,7 +35,4 @@ class GetKeys:
         keywords=('principal',),
         security=SecurityPlan(requirements=((('api-key', ()),), (('api_key', ()),))),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)

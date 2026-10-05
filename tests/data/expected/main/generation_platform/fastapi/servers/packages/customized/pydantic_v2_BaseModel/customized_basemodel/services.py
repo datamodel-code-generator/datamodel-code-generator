@@ -9,14 +9,7 @@ from typing import Protocol
 import customized_basemodel_models
 from fastapi.responses import Response
 
-from .model_codecs import ModelValue
-from .responses import (
-    HandleDeletePetResponsePayload,
-    HandleGetHealthResponsePayload,
-    HandleListPetsResponsePayload,
-    HandleMovePetResponsePayload,
-    HTTPResult,
-)
+from ._runtime.server.responses import HTTPResult
 
 
 class PetsService(Protocol):
@@ -27,8 +20,7 @@ class PetsService(Protocol):
         self,
     ) -> (
         customized_basemodel_models.FieldPetsGetResponse
-        | ModelValue[customized_basemodel_models.FieldPetsGetResponse]
-        | HTTPResult[HandleListPetsResponsePayload]
+        | HTTPResult[customized_basemodel_models.FieldPetsGetResponse]
         | Response
     ): ...
 
@@ -37,20 +29,18 @@ class PetsService(Protocol):
         self,
         *,
         pet_id: int,
-    ) -> None | HTTPResult[HandleDeletePetResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
     async def handle_move_pet(
         self,
         *,
         pet_id: int,
-    ) -> HTTPResult[HandleMovePetResponsePayload] | Response: ...
+    ) -> None | HTTPResult[None] | Response: ...
 
 
 class UntaggedService(Protocol):
     """Implement the untagged operations: subclass this Protocol, or give an object its methods."""
 
     @abstractmethod
-    async def handle_get_health(
-        self,
-    ) -> None | HTTPResult[HandleGetHealthResponsePayload] | Response: ...
+    async def handle_get_health(self) -> None | HTTPResult[None] | Response: ...

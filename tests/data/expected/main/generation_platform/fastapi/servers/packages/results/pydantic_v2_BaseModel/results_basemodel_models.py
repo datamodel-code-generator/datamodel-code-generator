@@ -54,5 +54,13 @@ class FieldNothingGetResponse(BaseModel):
     pass
 
 
+class FieldBlobGetQueryCaseParameter(RootModel[str]):
+    root: str
+
+
+class FieldBlobGetResponse(RootModel[bytes]):
+    root: bytes
+
+
 class FieldEmptyPostQueryCaseParameter(RootModel[str]):
     root: str

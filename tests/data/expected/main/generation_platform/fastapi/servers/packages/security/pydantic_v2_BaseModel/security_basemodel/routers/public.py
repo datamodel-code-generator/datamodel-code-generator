@@ -10,15 +10,15 @@ from fastapi.responses import Response
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
-from .._runtime.server.responses import respond
+from .._runtime.server.responses import dispatch
 from ..services import PublicService
 
 
 def _add_get_public(router: APIRouter, wiring: Wiring) -> None:
     get_public_handler = wiring.handlers['get_public']
 
-    def get_public() -> Response:
-        return respond(get_public_handler(), contract.GetPublic.RESPONSES)
+    def get_public() -> object:
+        return dispatch(get_public_handler(), contract.GetPublic.RESPONSES)
 
     router.add_api_route(
         '/public',

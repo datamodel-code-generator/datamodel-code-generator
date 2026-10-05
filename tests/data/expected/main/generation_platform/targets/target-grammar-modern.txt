@@ -10,9 +10,6 @@ render
   write target server/routers/untagged.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/_generated/model_bindings.py (target)
-  write target server/model_codecs.py (target)
-  write target server/responses.py (target)
   write target server/errors.py (target)
   write target server/auth_types.py (target)
   write target server/services.py (target)
@@ -20,4 +17,4 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  22 runtime modules ['write']
+  13 runtime modules ['write']
