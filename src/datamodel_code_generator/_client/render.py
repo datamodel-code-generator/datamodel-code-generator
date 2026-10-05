@@ -16,7 +16,6 @@ from datamodel_code_generator._client.caching import CacheSpec
 from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
-from datamodel_code_generator._client.queues import QueueSpec
 from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
@@ -284,10 +283,6 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "PollingStateError",
     "ProtocolDataError",
     "ProtocolStateError",
-    "QueueBindingError",
-    "QueueFullError",
-    "QueuePolicyConflictError",
-    "QueueStoreError",
     "ResumeStateError",
     "SessionLimitError",
     "StreamDecodeError",
@@ -347,24 +342,12 @@ from .._runtime.protocols.options import (
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
-    QueueOptions,
     StreamOptions,
     UploadOptions,
     WebSocketTransportOptions,
     WSOptions,
 )
 from .._runtime.protocols.origins import Origin
-from .._runtime.protocols.queues import (
-    AsyncQueueStore,
-    BlobRef,
-    DrainReport,
-    QueueEntry,
-    QueueLease,
-    QueueOutcome,
-    QueueReceipt,
-    QueueStore,
-    ResolvedQueueOptions,
-)
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
@@ -408,7 +391,6 @@ if TYPE_CHECKING:
     from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
-    from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
     from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
     from .._runtime.protocols.uploads import AsyncUploadHandle, UploadHandle
     from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
@@ -418,14 +400,11 @@ __all__ = [
     "AsyncEventStream",
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
-    "AsyncMemoryQueueStore",
     "AsyncPager",
-    "AsyncQueueStore",
     "AsyncUploadHandle",
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "AsyncWebSocketSession",
-    "BlobRef",
     "BodySelector",
     "BodyTarget",
     "CacheEntry",
@@ -434,13 +413,11 @@ __all__ = [
     "CacheStore",
     "CancelReceipt",
     "Continuation",
-    "DrainReport",
     "EventStream",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
     "MemoryCacheStore",
-    "MemoryQueueStore",
     "Message",
     "OperationRef",
     "Origin",
@@ -456,14 +433,7 @@ __all__ = [
     "ProtocolProgress",
     "ProtocolSecurityContext",
     "QuerystringTarget",
-    "QueueEntry",
-    "QueueLease",
-    "QueueOptions",
-    "QueueOutcome",
-    "QueueReceipt",
-    "QueueStore",
     "RequestTarget",
-    "ResolvedQueueOptions",
     "ResolvedWSOptions",
     "ResolvedWebSocketTransportOptions",
     "ResolvedWebhookOptions",
@@ -518,10 +488,6 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import websocket
 
         return getattr(websocket, name)
-    if name in {"AsyncMemoryQueueStore", "MemoryQueueStore"}:
-        from .._runtime.protocols import queue_stores
-
-        return getattr(queue_stores, name)
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
 '''
@@ -1065,7 +1031,7 @@ class _Resources(_Typing):
         user_agent: str | None,
         *,
         unpacked: bool = False,
-        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec | QueueSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
     ) -> None:
@@ -1973,7 +1939,6 @@ _HELPER_KINDS: Final = {
     "pagination": "pagination helper",
     "polling": "polling helper",
     "resumable_upload": "upload helper",
-    "queue": "queue helper",
     "sse": "SSE helper",
     "ndjson": "NDJSON helper",
     "websocket": "WebSocket helper",
@@ -2020,12 +1985,6 @@ reopen are delivered again.
 _CACHE: Final = "_runtime.protocols.cache"
 _CACHE_OPTIONS: Final = (("cache_options", ".", "CacheOptions"), _HELPER_OPTIONS[1])
 _DEFAULT_STATUSES: Final = [200]
-_QUEUE: Final = "_runtime.protocols.queue"
-_QUEUE_OPTIONS: Final = (("queue_options", ".", "QueueOptions"), *_HELPER_OPTIONS[1:])
-_QUEUE_CALLS: Final = {
-    False: ("enqueue_entry", "drain_queue", "inspect_entry", "cancel_entry", "retry_entry", "purge_entries"),
-    True: ("aenqueue_entry", "adrain_queue", "ainspect_entry", "acancel_entry", "aretry_entry", "apurge_entries"),
-}
 
 
 class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
@@ -2077,8 +2036,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 sections.append(self.upload(module, index, spec))
             elif isinstance(spec, CacheSpec):
                 sections.extend(self.cache(module, index, spec))
-            elif isinstance(spec, QueueSpec):
-                sections.append(self.queue(module, index, spec))
             else:
                 sections.extend((self.items(module, index, spec), self.plan(module, index, spec)))
         sections.extend(self.stream_plan(module, index, spec) for index, spec in enumerate(streams))
@@ -2376,16 +2333,10 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             for name, spec in leaves.items()
             if isinstance(spec, PollingSpec) and spec.cancel is not None
         }
-        queued = {
-            name: (f"_{name}Operations", tuple(f"_{name}Operation{index}" for index in range(len(spec.operations))))
-            for name, spec in leaves.items()
-            if isinstance(spec, QueueSpec)
-        }
         names = {
             root,
             *(name for children in nodes.values() for name, _ in children.values()),
             *handles.values(),
-            *(name for operations, aliases in queued.values() for name in (operations, *aliases)),
         }
         module = Module(names, self.resources.symbols, level=2)
         core = module.local("_runtime.client.client", f"{prefix}ClientCore")
@@ -2402,9 +2353,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             what = f"the {'.'.join(parts)} protocol helpers" if parts else "the protocol helpers of this API"
             sections.append(self.node(name, what, core, members))
         for index, (name, spec) in enumerate(leaves.items()):
-            if isinstance(spec, QueueSpec):
-                sections.extend(self.queue_classes(module, index, name, spec, queued[name], asynchronous=asynchronous))
-                continue
             sections.extend(
                 self.leaf(module, index, name, spec, core, handle=handles.get(name), asynchronous=asynchronous)
             )
@@ -2648,142 +2596,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             "\n"
             f"        return {wait}self._cancel_remote({module.namespace.name('.', '_plans')}.CANCEL_{index})"
         )
-
-    def queue(self, module: Module, index: int, spec: QueueSpec) -> str:
-        """Return a queue helper's plan: its name and each operation's alias, reference, fingerprint, and key period."""
-        runtime, helper = _QUEUE, spec.helper
-        queued = [
-            _call(
-                module.local(runtime, "QueuedPlan"),
-                (
-                    ("alias=", repr(item.alias)),
-                    ("operation=", self.reference(module, item.operation)),
-                    ("call=", f"{module.root('_operations')}.OPERATION_{item.operation.index}"),
-                    ("fingerprint=", repr(self.fingerprints[f"{helper.name}/{item.alias}"])),
-                    *((("dedupe_ttl=", repr(item.dedupe_ttl)),) if item.dedupe_ttl is not None else ()),
-                ),
-            )
-            for item in spec.operations
-        ]
-        plan = module.local(runtime, "QueuePlan")
-        value = _call(plan, (("helper_id=", repr(helper.name)), ("operations=", _tuple(queued))))
-        head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}] = "
-        return head + layout(value, 0, len(head), WIDTH)
-
-    def queue_classes(  # noqa: PLR0913, PLR0914
-        self,
-        module: Module,
-        index: int,
-        name: str,
-        spec: QueueSpec,
-        classes: tuple[str, tuple[str, ...]],
-        *,
-        asynchronous: bool,
-    ) -> list[str]:
-        """Return a queue helper's class, its operations namespace, and each operation's class with its enqueue.
-
-        The helper drains, inspects, cancels, retries, and purges entries; each operation's enqueue takes the
-        operation's arguments and saves a call, sending nothing.
-        """
-        prefix = "Async" if asynchronous else ""
-        core = module.local("_runtime.client.client", f"{prefix}ClientCore")
-        cached, helper = module.name("functools", "cached_property"), spec.helper
-        operations, aliases = classes
-        plan = f"{module.namespace.name('.', '_plans')}.PLAN_{index}"
-        enqueue, drain, inspect, cancel, retry, purge = (
-            module.local(_QUEUE, call) for call in _QUEUE_CALLS[asynchronous]
-        )
-        entry = f"{module.namespace.name('.', 'QueueEntry')} | None"
-        options = [
-            _Argument(option, f"{module.namespace.name(source, kind)} | None", "none")
-            for option, source, kind in _QUEUE_OPTIONS
-        ]
-        wait, define = ("await ", "async def") if asynchronous else ("", "def")
-        report = module.namespace.name(".", "DrainReport")
-        forwarded = [(f"{option}=", option) for option, _, _ in _QUEUE_OPTIONS]
-        members = [
-            (
-                f"    @{cached}\n    def operations(self) -> {operations}:\n"
-                f'        """The operations this queue saves calls of, by their aliases."""\n'
-                f"        return {operations}(self._core)"
-            ),
-            "\n".join((
-                _signature(
-                    "drain",
-                    tuple(argument.parameter(module) for argument in options),
-                    report,
-                    asynchronous=asynchronous,
-                    stub=False,
-                ),
-                '        """Deliver this queue\'s ready entries in creation order and report how each ended."""',
-                f"        return {wait}"
-                + layout(_call(drain, (("", "self._core"), ("", plan), *forwarded)), 8, 7 + len(wait), WIDTH),
-            )),
-            *(
-                f"    {define} {method}(self, entry_id: str) -> {entry}:\n"
-                f'        """{what}"""\n'
-                f"        return {wait}{call}(self._core, {plan}, entry_id)"
-                for method, call, what in (
-                    ("inspect", inspect, "Return an entry of this queue as its store holds it, or None."),
-                    (
-                        "cancel",
-                        cancel,
-                        "Cancel an entry: a pending one at once, a leased one at its drain's next boundary.",
-                    ),
-                    (
-                        "retry_unknown",
-                        retry,
-                        "Return an entry of unknown delivery to pending with its key, or end it if it cannot be.",
-                    ),
-                )
-            ),
-            (
-                f"    {define} purge_terminal(self, before: {module.name('datetime', 'datetime')}) -> "
-                f"tuple[{module.namespace.name('.', 'QueueEntry')}, ...]:\n"
-                '        """Remove and return the ended entries of this queue created before an instant."""\n'
-                f"        return {wait}{purge}(self._core, {plan}, before)"
-            ),
-        ]
-        sections = [self.node(name, f"the {helper.name} queue helper", core, members, leaf=True)]
-        sections.append(
-            self.node(
-                operations,
-                f"the operations of the {helper.name} queue helper, by their aliases",
-                core,
-                [
-                    f"    @{cached}\n    def {item.alias}(self) -> {alias}:\n"
-                    f'        """The {item.alias} operation: {item.operation.contract.method.upper()} '
-                    f'{item.operation.contract.path}."""\n'
-                    f"        return {alias}(self._core)"
-                    for item, alias in zip(spec.operations, aliases, strict=True)
-                ],
-                leaf=True,
-            )
-        )
-        resources = self.resources
-        receipt = module.namespace.name(".", "QueueReceipt")
-        for position, (item, alias) in enumerate(zip(spec.operations, aliases, strict=True)):
-            operation = replace(item.operation, fields=())
-            arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
-            body = resources.requests(module, operation, asynchronous=asynchronous)[1]
-            route = f"{operation.contract.method.upper()} {operation.contract.path}"
-            passed = [
-                ("", "self._core"),
-                ("", plan),
-                ("", str(position)),
-                ("", _tuple(parameter.python_name for parameter in operation.parameters)),
-                *((f"{argument.name}=", argument.name) for argument in body),
-                ("queue_options=", "queue_options"),
-            ]
-            signature = tuple(argument.parameter(module) for argument in (*arguments, *body, options[0]))
-            method = "\n".join((
-                _signature("enqueue", signature, receipt, asynchronous=asynchronous, stub=False),
-                f'        """Save a call of {route} in the queue\'s store, sending nothing."""',
-                f"        return {wait}{layout(_call(enqueue, passed), 8, 7 + len(wait), WIDTH)}",
-            ))
-            what = f"the {item.alias} operation of the {helper.name} queue helper: {route}"
-            sections.append(self.node(alias, what, core, [method], leaf=True))
-        return sections
 
     @staticmethod
     def upload_result(module: Module, spec: UploadSpec) -> str:
@@ -3152,7 +2964,7 @@ class ClientRenderer:
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         codecs: CodecPlan,
-        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec | QueueSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
@@ -3286,19 +3098,6 @@ These operations declare request compression. Their bodies are gzipped by defaul
             {
                 "helper": spec.helper.name,
                 "kind": spec.helper.kind,
-                "operations": {
-                    item.alias: {
-                        "operation": f"{item.operation.resource}.{item.operation.name}",
-                        "method": item.operation.contract.method.upper(),
-                        "path": item.operation.contract.path,
-                    }
-                    for item in spec.operations
-                },
-            }
-            if isinstance(spec, QueueSpec)
-            else {
-                "helper": spec.helper.name,
-                "kind": spec.helper.kind,
                 "operation": f"{spec.operation.resource}.{spec.operation.name}",
                 "method": spec.operation.contract.method.upper(),
                 "path": spec.operation.contract.path,
@@ -3356,22 +3155,13 @@ reference for their limits."""
             if "cache" in kinds
             else ""
         )
-        queues = (
-            """
-A queue helper's `operations.<alias>.enqueue` saves a call in the queue's store and sends nothing; only `drain` sends,
-delivering ready entries in creation order and with a stable idempotency key where they have side effects.
-`inspect`, `cancel`, `retry_unknown`, and `purge_terminal` manage its entries. See the runtime reference for
-their limits."""
-            if "queue" in kinds
-            else ""
-        )
         closing = "" if kinds else "\nSee the runtime reference for their limits."
         return f"""
 ## Protocol helpers
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.{
             streams
-        }{sockets}{pagination}{polling}{caching}{uploads}{queues}{closing}
+        }{sockets}{pagination}{polling}{caching}{uploads}{closing}
 
 ```json
 {json.dumps(helpers, indent=2, ensure_ascii=True)}
@@ -3582,20 +3372,11 @@ accepts only bodies encoded once. A redirect that drops the body also drops Cont
 
 Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
 followed URLs stay uncompressed. Token requests are never compressed.
-
-Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Entries save
-no coding; at drain, the client setting applies to declared queued operations with bodies.
 """
 
     def helper_runtime(self) -> str:
-        """Describe the package's pagination, polling, and upload sessions and cache and queue helpers, if any."""
-        return (
-            self.pagination_runtime()
-            + self.polling_runtime()
-            + self.cache_runtime()
-            + self.upload_runtime()
-            + self.queue_runtime()
-        )
+        """Describe the package's pagination, polling, and upload sessions and cache helpers, if any."""
+        return self.pagination_runtime() + self.polling_runtime() + self.cache_runtime() + self.upload_runtime()
 
     def polling_runtime(self) -> str:
         """Describe polling sessions and their limits, or nothing for a package without polling helpers."""
@@ -3708,73 +3489,6 @@ at once raise `ProtocolStateError`, and so does every step after `close()` or `a
 uploading. A call's options must not fix an idempotency key or patch a header or query parameter the helper writes.
 """
 
-    def queue_runtime(self) -> str:
-        """Describe queues, their stores, entries, and limits, or nothing for a package without queue helpers."""
-        if not any(isinstance(spec, QueueSpec) for spec in self.helpers):
-            return ""
-        return f"""
-## Queues
-
-A queue helper saves calls of its declared operations in a borrowed store and sends them only when the caller drains
-it; nothing runs in the background and nothing is sent when connectivity returns. `enqueue` sends nothing: it encodes
-and checks the call's arguments and JSON body as the call would, and saves their wire values with the operation's
-fingerprint and the client's security binding. Credential-bearing arguments are refused. Credentials, tokens and
-auth headers are never saved; a drain uses the client's current auth. Non-auth header and query patches are captured
-in the immutable saved request identity, and a drain refuses changes to that identity. Stored outcomes contain only
-response metadata with known credential header positions removed, never response bodies. The types are imported from:
-
-- `{self.config.package}.protocols`: `QueueOptions`, `QueueStore`, `AsyncQueueStore`, `QueueEntry`, `QueueLease`,
-  `QueueOutcome`, `QueueReceipt`, `DrainReport`, `ResolvedQueueOptions`, `BlobRef`, and the builtin
-  `MemoryQueueStore` and `AsyncMemoryQueueStore`
-- `{self.config.package}.options`: `ProtocolClientOptions(queue_stores=...)` and `SessionOptions`
-
-`ProtocolClientOptions.queue_stores[name]` lends each queue helper its store; the client never creates or closes one,
-and a call without it raises `ProtocolConfigurationError` before anything else. A client refuses a store under another
-helper's name, or one whose methods do not match its mode. An operation that may authenticate needs
-`ProtocolClientOptions.security`, whose partition binds every entry.
-
-| Limit | Effective default |
-|---|---|
-| entries per drain (`max_entries`) | 100 |
-| deliveries at once (`parallelism`) | 1 |
-| saved request bytes (`max_entry_body_bytes`) | 8 MiB |
-| deliveries per entry (`max_deliveries`) | 5 |
-| entry lifetime (`entry_ttl`) | 24 hours, at most the key's `dedupe_ttl` |
-| retry backoff (`retry_initial_delay`, `retry_max_delay`) | 5 seconds doubling up to 600, with full jitter |
-| lease (`lease_min`, `lease_grace`) | at least 90 seconds, and the delivery's time plus 30 |
-| delivery time (`max_delivery_timeout`) | 300 seconds, at most 300 |
-| drain session total timeout | 300 seconds; None removes it |
-| network sends per drain | 1000; None removes it |
-
-Each field comes from the call's `queue_options`, then `ProtocolClientOptions.defaults` for the helper, then the
-default above. `max_entries` and `parallelism` bound one drain, so `enqueue` refuses them, and the other fields are the
-entry's policy, fixed when it is enqueued, so `drain` refuses them; both raise `QueuePolicyConflictError`. A store
-that is full raises `QueueFullError` and discards nothing; any other store failure raises `QueueStoreError` with its
-cause, and no request is sent again because of it.
-
-`drain` claims ready entries in creation-time and ID order, in waves of `parallelism`, each delivery one child call of
-the drain's session with the shared retries inside it. Before the first send it saves the entry's send intent and
-delivery count, and sends nothing if that save fails; a keyed entry sends the same idempotency key on every attempt and
-every delivery. A response with a success status succeeds the entry. A status the shared retry policy retries, or a
-request proven unsent, reschedules it after a full-jitter backoff, never before the server's `Retry-After`; an HTTP
-error the policy does not retry ends it dead, and so does running out of deliveries or lifetime. Any other failed
-response, a request that may have arrived, and a send a native cancellation or interrupt stops end it of unknown
-delivery: it is never sent again unless `retry_unknown` returns it to pending with the same key. A failure
-before anything was sent, such as a token that cannot be acquired, defers the entry with its delivery count unchanged;
-a cancellation or a closed client is saved, then raised. An entry saved for another operation contract, partition,
-or auth raises `QueueBindingError` and is never migrated. A drain ends when nothing is ready, at `max_entries`, or when
-its session has no time or sends left, and returns a `DrainReport` of entry IDs: `succeeded`, `rescheduled`, `dead`,
-`unknown`, `deferred`, and `cancelled`. An entry is delivered at most once per drain.
-
-A claim leases its entries. Outcome-free crash leases without cancellation return to pending when expired, keeping
-the request, key, creation time, delivery count and send intent. The next explicit drain redelivers within TTL and
-delivery limits, providing bounded at-least-once delivery through trusted server deduplication. The SDK does not
-guarantee exactly-once effects. Recorded success and terminal unknown never recover automatically; unknown requires
-explicit `retry_unknown`. `cancel` ends a pending entry at once, cancelled, or of unknown delivery when a crash
-may have sent it, and asks the drain holding a leased one to end it at its next boundary. `purge_terminal(before)`
-removes the ended entries created before an instant and returns them.
-"""
-
     def pagination_runtime(self) -> str:
         """Describe pagination sessions and their limits, or nothing for a package without pagination helpers.
 
@@ -3782,11 +3496,7 @@ removes the ended entries created before an instant and returns them.
         page-number helper, and followed URLs only for one with a next-URL or Link helper; the cursor size limit
         applies to cursors and followed URLs.
         """
-        if not (
-            pages := [
-                spec for spec in self.helpers if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec | QueueSpec)
-            ]
-        ):
+        if not (pages := [spec for spec in self.helpers if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec)]):
             return ""
         kinds = {spec.continuation["kind"] for spec in pages}
         cursors = "cursor" in kinds

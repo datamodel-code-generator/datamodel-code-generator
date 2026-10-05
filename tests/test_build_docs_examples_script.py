@@ -5,22 +5,49 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+
+import pytest
 
 from scripts import build_docs_examples
-from tests.conftest import assert_output
-
-if TYPE_CHECKING:
-    import pytest
+from tests.conftest import TARGET_PYTHON, assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_docs_examples.py"
 EXPECTED_DOCS_EXAMPLES_PATH = ROOT / "tests" / "data" / "expected" / "docs_examples"
 
 
+@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_build_docs_examples_check_is_up_to_date() -> None:
     """Generated docs examples are committed."""
     subprocess.run([sys.executable, str(SCRIPT), "--check"], check=True)
+
+
+@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
+def test_docs_examples_use_rendered_clients(capsys: pytest.CaptureFixture[str]) -> None:
+    """All generated snippets match committed docs, including clients with model-only snapshots."""
+    result = build_docs_examples.update_docs_examples(check=True)
+    captured = capsys.readouterr()
+
+    assert_output(
+        f"return={result}\nstdout:\n{captured.out}stderr:\n{captured.err}",
+        EXPECTED_DOCS_EXAMPLES_PATH / "main_check_up_to_date.txt",
+    )
+
+
+@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
+def test_pagination_docs_example(tmp_path: Path) -> None:
+    """Pagination renders its tested client recipe with the exact committed documentation text."""
+    example = next(
+        example
+        for example in build_docs_examples.docs_examples()
+        if example.example_id == "python-client.pagination.helper"
+    )
+    content = example.path.read_text(encoding="utf-8")
+    expected_path = tmp_path / "pagination-docs.txt"
+    expected_path.write_text(content, encoding="utf-8")
+    updated, _ = build_docs_examples.replace_example(content, example)
+
+    assert_output(updated, expected_path)
 
 
 def test_docs_examples_registry() -> None:
@@ -52,6 +79,7 @@ def test_docs_example_render_helpers(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     output = "".join((
+        build_docs_examples.render_cli_example(),
         build_docs_examples.details("schema.yaml", "yaml", build_docs_examples.read_text(yaml_path)),
         build_docs_examples.render_file_example(language="yaml", path=yaml_path),
         build_docs_examples._file_example(
