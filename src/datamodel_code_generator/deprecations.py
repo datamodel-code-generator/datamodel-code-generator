@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Literal
 from datamodel_code_generator._registry_render import _render_registry_json, _render_registry_table
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
 DeprecationKind = Literal["cli-option", "python-api", "config", "behavior", "schema", "dependency"]
 DeprecationStatus = Literal["active", "scheduled"]
@@ -249,7 +249,7 @@ _CLI_MIGRATION_WARNINGS: ContextVar[set[DeprecationId] | None] = ContextVar("cli
 
 
 @contextmanager
-def cli_migration_warning_scope() -> Iterator[None]:
+def cli_migration_warning_scope() -> Generator[None, None, None]:
     """Deduplicate migration notices within one CLI invocation, including batch/watch."""
     token = _CLI_MIGRATION_WARNINGS.set(set())
     try:

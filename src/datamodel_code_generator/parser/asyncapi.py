@@ -24,7 +24,7 @@ from datamodel_code_generator.reference import is_url
 from datamodel_code_generator.util import BaseModel, create_module_getattr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Generator, Iterator
     from urllib.parse import ParseResult
 
     from datamodel_code_generator._source import YamlValue
@@ -285,7 +285,7 @@ class AsyncAPIParser(OpenAPIParser):
         )
 
     @contextmanager
-    def _asyncapi_context(self, context: AsyncAPIContext) -> Iterator[None]:
+    def _asyncapi_context(self, context: AsyncAPIContext) -> Generator[None, None, None]:
         previous_raw_obj = self.raw_obj
         self.raw_obj = context.raw_obj
         try:

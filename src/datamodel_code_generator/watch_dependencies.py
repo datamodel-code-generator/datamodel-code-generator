@@ -13,7 +13,7 @@ from threading import RLock
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Generator, Iterable, Mapping
 
 _JSON_CONFIG_FIELDS = frozenset({
     "aliases",
@@ -383,7 +383,7 @@ class WatchDependencies(_Weakrefable):
             self._publish()
 
     @contextmanager
-    def generation(self) -> Iterator[_CollectedGeneration]:
+    def generation(self) -> Generator[_CollectedGeneration, None, None]:
         """Collect one generation privately, publishing a complete graph only at its end."""
         collected = _CollectedGeneration(self)
         # A completed generation must acknowledge the inputs it observed, not later edits.

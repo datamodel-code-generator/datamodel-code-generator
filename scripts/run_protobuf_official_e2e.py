@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, cast
 from datamodel_code_generator import InputFileType, generate
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
     from types import ModuleType
 
 
@@ -59,7 +59,7 @@ def corpus_working_directory(corpus_root: Path, proto_path: Path) -> Path:
 
 
 @contextmanager
-def working_directory(path: Path) -> Iterator[None]:
+def working_directory(path: Path) -> Generator[None, None, None]:
     """Temporarily change cwd so list[Path] generation preserves corpus-relative imports."""
     old_cwd = Path.cwd()
     os.chdir(path)
