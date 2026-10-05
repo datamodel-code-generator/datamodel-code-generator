@@ -990,10 +990,7 @@
           "ref": "/paths/~1keyed/post",
           "runtime": {
             "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
+              "header_name": "Idempotency-Key"
             }
           }
         },
@@ -1001,10 +998,7 @@
           "ref": "/paths/~1key-only/post",
           "runtime": {
             "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": false,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
+              "header_name": "Idempotency-Key"
             }
           }
         },
@@ -1031,10 +1025,7 @@
           "ref": "/paths/~1keyed-safe/get",
           "runtime": {
             "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
+              "header_name": "Idempotency-Key"
             }
           }
         }
@@ -1054,10 +1045,7 @@
           "ref": "/paths/~1cookie/post",
           "runtime": {
             "idempotency": {
-              "header_name": "session",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "orders-v1"
+              "header_name": "session"
             }
           }
         },
@@ -1065,10 +1053,7 @@
           "ref": "/paths/~1query/post",
           "runtime": {
             "idempotency": {
-              "header_name": "token",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "orders-v1"
+              "header_name": "token"
             }
           }
         },
@@ -1076,10 +1061,7 @@
           "ref": "/paths/~1ignored/post",
           "runtime": {
             "idempotency": {
-              "header_name": "Authorization",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "orders-v1"
+              "header_name": "Authorization"
             }
           }
         },
@@ -1087,10 +1069,7 @@
           "ref": "/paths/~1direction/post",
           "runtime": {
             "idempotency": {
-              "header_name": "X-Idempotency",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "orders-v1"
+              "header_name": "X-Idempotency"
             },
             "retry_after_ms_header": "X-Idempotency",
             "should_retry_header": "X-Retry-Control",
@@ -1101,10 +1080,7 @@
           "ref": "/paths/~1unused/post",
           "runtime": {
             "idempotency": {
-              "header_name": "X-Auth-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "orders-v1"
+              "header_name": "X-Auth-Key"
             }
           }
         }
@@ -1124,10 +1100,7 @@
           "ref": "/paths/~1parameter/post",
           "runtime": {
             "idempotency": {
-              "header_name": "x-request-key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "orders-v1"
+              "header_name": "x-request-key"
             }
           }
         },
@@ -1135,10 +1108,7 @@
           "ref": "/paths/~1api-key/post",
           "runtime": {
             "idempotency": {
-              "header_name": "x-auth-key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "orders-v1"
+              "header_name": "x-auth-key"
             }
           }
         },
@@ -1146,10 +1116,7 @@
           "ref": "/paths/~1bearer/post",
           "runtime": {
             "idempotency": {
-              "header_name": "authorization",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "orders-v1"
+              "header_name": "authorization"
             }
           }
         },
@@ -1157,10 +1124,7 @@
           "ref": "/paths/~1oauth/post",
           "runtime": {
             "idempotency": {
-              "header_name": "AUTHORIZATION",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "orders-v1"
+              "header_name": "AUTHORIZATION"
             }
           }
         },
@@ -1168,10 +1132,7 @@
           "ref": "/paths/~1openid/post",
           "runtime": {
             "idempotency": {
-              "header_name": "Authorization",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "orders-v1"
+              "header_name": "Authorization"
             }
           }
         }
@@ -1190,10 +1151,7 @@
           "ref": "/paths/~1inherited/post",
           "runtime": {
             "idempotency": {
-              "header_name": "X-Idempotency",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "context-v1"
+              "header_name": "X-Idempotency"
             }
           }
         },
@@ -1201,10 +1159,7 @@
           "ref": "/paths/~1explicit/post",
           "runtime": {
             "idempotency": {
-              "header_name": "X-Idempotency",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "context-v1"
+              "header_name": "X-Idempotency"
             }
           }
         },
@@ -1212,10 +1167,7 @@
           "ref": "/paths/~1aliased-query/post",
           "runtime": {
             "idempotency": {
-              "header_name": "X-Idempotency",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "context-v1"
+              "header_name": "X-Idempotency"
             }
           }
         },
@@ -1223,10 +1175,7 @@
           "ref": "/paths/~1external-inherited/post",
           "runtime": {
             "idempotency": {
-              "header_name": "X-Idempotency",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "context-v1"
+              "header_name": "X-Idempotency"
             }
           }
         },
@@ -1234,10 +1183,7 @@
           "ref": "/paths/~1external-query/post",
           "runtime": {
             "idempotency": {
-              "header_name": "X-Idempotency",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "context-v1"
+              "header_name": "X-Idempotency"
             }
           }
         }
@@ -1256,10 +1202,7 @@
           "ref": "/paths/~1actual-header/post",
           "runtime": {
             "idempotency": {
-              "header_name": "X-Idempotency",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "context-v1"
+              "header_name": "X-Idempotency"
             }
           }
         },
@@ -1267,10 +1210,7 @@
           "ref": "/paths/~1aliased-header/post",
           "runtime": {
             "idempotency": {
-              "header_name": "X-Idempotency",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "context-v1"
+              "header_name": "X-Idempotency"
             }
           }
         },
@@ -1278,10 +1218,7 @@
           "ref": "/paths/~1external-explicit/post",
           "runtime": {
             "idempotency": {
-              "header_name": "X-Idempotency",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400,
-              "scope": "context-v1"
+              "header_name": "X-Idempotency"
             }
           }
         }

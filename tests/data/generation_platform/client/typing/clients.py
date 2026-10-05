@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator, Set
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
-from datetime import datetime, timezone
 from pathlib import Path
 from ssl import SSLContext, create_default_context
 from typing import BinaryIO, Literal
@@ -563,8 +562,8 @@ def fetch_with_retries(client: Client, url: str) -> bytes:
     return client.request_raw("GET", url, options=options).read()
 
 
-def keyed_view(client: Client, value: str, first_used_at: datetime) -> Client:
-    key = IdempotencyKey(value, first_used_at=first_used_at)
+def keyed_view(client: Client, value: str) -> Client:
+    key = IdempotencyKey(value)
     return client.with_options(RequestOptions(idempotency_key=key))
 
 
@@ -582,11 +581,9 @@ def configured_client(ca_file: str) -> Client:
 
 
 def idempotency_input(client: Client) -> None:
-    key = IdempotencyKey("stored-key", first_used_at=datetime(2026, 9, 28, tzinfo=timezone.utc))
+    key = IdempotencyKey("stored-key")
     assert_type(key.value, str)
-    assert_type(key.first_used_at, datetime | None)
     assert_type(IdempotencyKey.new(), IdempotencyKey)
-    assert_type(IdempotencyKey("prior-use-unknown").first_used_at, datetime | None)
     client.with_options(RequestOptions(idempotency_key=key))
     Client(options=ClientOptions(idempotency_key=IdempotencyKey.new()))
     client.with_options(RequestOptions(idempotency_key=None))
