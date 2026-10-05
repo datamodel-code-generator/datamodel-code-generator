@@ -206,6 +206,20 @@ def raw_path() -> RawText:
     return RawText(locations=("path",), styles=("simple",), explode_values=(False,), value_kinds=("string",))
 
 
+class ReservedPath(RawText):
+    """Encode a path string using the effective reserved-character policy supplied by its generated plan."""
+
+    def encode_parameter(self, *, value: object, plan: object, context: object) -> object:  # noqa: ARG002
+        """Escape path delimiters, keeping other reserved characters only when the public plan allows them."""
+        safe = ":@!$&'()*+" if plan.allow_reserved else ""
+        return self._contribution(plan, quote(value, safe=safe).encode())
+
+
+def reserved_path() -> ReservedPath:
+    """Carry a path string with the same capabilities as the existing raw path adapter."""
+    return ReservedPath(locations=("path",), styles=("simple",), explode_values=(False,), value_kinds=("string",))
+
+
 def raw_header() -> RawText:
     """Carry a header string as given, padding and non-ASCII text included, for the runtime to refuse."""
     return RawText(locations=("header",), styles=("simple",), explode_values=(False,), value_kinds=("string",))
