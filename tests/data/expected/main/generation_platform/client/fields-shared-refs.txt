@@ -15,7 +15,7 @@ from models import D as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue, RequestMedia
+from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.default import CreateSharedResponse
@@ -52,7 +52,7 @@ class AsyncDefaultResource:
         c: Unset = UNSET,
         b: Unset = UNSET,
         d: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateSharedResponse: ...
     @overload
@@ -64,7 +64,7 @@ class AsyncDefaultResource:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateSharedResponse: ...
     async def create_shared(
@@ -75,7 +75,7 @@ class AsyncDefaultResource:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateSharedResponse:
         """Call POST /shared."""
@@ -105,7 +105,7 @@ class AsyncDefaultWithResponse:
         c: Unset = UNSET,
         b: Unset = UNSET,
         d: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateSharedResponse]: ...
     @overload
@@ -117,7 +117,7 @@ class AsyncDefaultWithResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateSharedResponse]: ...
     async def create_shared(
@@ -128,7 +128,7 @@ class AsyncDefaultWithResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateSharedResponse]:
         """Call POST /shared."""
@@ -158,7 +158,7 @@ class AsyncDefaultWithRawResponse:
         c: Unset = UNSET,
         b: Unset = UNSET,
         d: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     @overload
@@ -170,7 +170,7 @@ class AsyncDefaultWithRawResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     async def create_shared(
@@ -181,7 +181,7 @@ class AsyncDefaultWithRawResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /shared."""
@@ -211,7 +211,7 @@ class AsyncDefaultWithStreamingResponse:
         c: Unset = UNSET,
         b: Unset = UNSET,
         d: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     @overload
@@ -223,7 +223,7 @@ class AsyncDefaultWithStreamingResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     def create_shared(
@@ -234,7 +234,7 @@ class AsyncDefaultWithStreamingResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /shared."""
@@ -260,7 +260,7 @@ from models import D as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue, RequestMedia
+from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.default import CreateSharedResponse
@@ -297,7 +297,7 @@ class DefaultResource:
         c: Unset = UNSET,
         b: Unset = UNSET,
         d: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateSharedResponse: ...
     @overload
@@ -309,7 +309,7 @@ class DefaultResource:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateSharedResponse: ...
     def create_shared(
@@ -320,7 +320,7 @@ class DefaultResource:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateSharedResponse:
         """Call POST /shared."""
@@ -350,7 +350,7 @@ class DefaultWithResponse:
         c: Unset = UNSET,
         b: Unset = UNSET,
         d: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateSharedResponse]: ...
     @overload
@@ -362,7 +362,7 @@ class DefaultWithResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateSharedResponse]: ...
     def create_shared(
@@ -373,7 +373,7 @@ class DefaultWithResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateSharedResponse]:
         """Call POST /shared."""
@@ -403,7 +403,7 @@ class DefaultWithRawResponse:
         c: Unset = UNSET,
         b: Unset = UNSET,
         d: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -415,7 +415,7 @@ class DefaultWithRawResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def create_shared(
@@ -426,7 +426,7 @@ class DefaultWithRawResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /shared."""
@@ -456,7 +456,7 @@ class DefaultWithStreamingResponse:
         c: Unset = UNSET,
         b: Unset = UNSET,
         d: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -468,7 +468,7 @@ class DefaultWithStreamingResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def create_shared(
@@ -479,7 +479,7 @@ class DefaultWithStreamingResponse:
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
         d: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /shared."""
