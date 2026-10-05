@@ -1,20 +1,13 @@
-use /paths/~1scalars/post parameter query code: native scalar None models=[]
-use /paths/~1scalars/post parameter query price: native scalar None models=[]
-use /paths/~1scalars/post parameter query pet: native union None models=[('models:Cat', 'model', 'ignore', True), ('models:Dog', 'model', 'ignore', True)]
-use /paths/~1scalars/post parameter header X-Counts: native map None models=[]
-use /paths/~1scalars/post request_body: native model models:Holder models=[('models:Cat', 'model', 'ignore', True), ('models:Dog', 'model', 'ignore', True), ('models:Holder', 'model', 'ignore', True)]
-use /paths/~1scalars/post response_body 200: native map None models=[]
-use /paths/~1scalars/post response_body 201: native scalar None models=[]
-code: model 'abc' wire="abc" presence=[''] extras={}
-code-invalid: WireValidationError schema.pattern@
-price: model Decimal('9.5') wire="9.5" presence=[''] extras={}
-price-invalid: NativeValidationError native.less_than_equal@[]
-pet: model Dog(kind='dog') set=['kind'] wire={"kind":"dog"} presence=['', '/kind'] extras={}
-counts: model {'a': 1, 'b': 2} wire={"a":1,"b":2} presence=['', '/a', '/b'] extras={}
-counts-invalid: WireValidationError schema.type@/a
-words: wire={"ab":1}
-words-invalid: WireValidationError schema.false@/AB
-holder: model Holder(pets=[Cat(kind='cat'), Dog(kind='dog')], label='abcd', mode='a') set=['label', 'mode', 'pets'] wire={"pets":[{"kind":"cat"},{"kind":"dog"}],"label":"abcd","mode":"a"} presence=['', '/pets', '/pets/0', '/pets/0/kind', '/pets/1', '/pets/1/kind', '/label', '/mode'] extras={}
-holder-invalid: WireValidationError schema.oneOf@/pets/0,schema.maxLength@/label,schema.enum@/mode
-name-null: wire=null
-name-text: wire="n"
+code: native 'abc' json="abc"
+code-invalid: ValidationError string_pattern_mismatch@[]
+price: native Decimal('9.5') json="9.5"
+price-invalid: ValidationError less_than_equal@[]
+pet: native Dog(kind='dog') set=['kind'] json={"kind":"dog"}
+counts: native {'a': 1, 'b': 2} json={"a":1,"b":2}
+counts-invalid: ValidationError int_parsing@['a']
+words: native {'ab': 1} json={"ab":1}
+words-invalid: native {'AB': 1} json={"AB":1}
+holder: native Holder(pets=[Cat(kind='cat'), Dog(kind='dog')], label='abcd', mode='a') set=['label', 'mode', 'pets'] json={"pets":[{"kind":"cat"},{"kind":"dog"}],"label":"abcd","mode":"a"}
+holder-invalid: HTTP 422 {"detail":[{"type":"union_tag_invalid","loc":["body","pets",0],"msg":"Input tag 'cow' found using 'kind' does not match any of the expected tags: 'cat', 'dog'","input":{"kind":"cow"},"ctx":{"discriminator":"'kind'","tag":"cow","expected_tags":"'cat', 'dog'"}},{"type":"string_too_long","loc":["body","label"],"msg":"String should have at most 4 characters","input":"abcde","ctx":{"max_length":4}},{"type":"literal_error","loc":["body","mode"],"msg":"Input should be 'a' or 'b'","input":"c","ctx":{"expected":"'a' or 'b'"}}]}
+name-null: native None json=null
+name-text: native 'n' json="n"

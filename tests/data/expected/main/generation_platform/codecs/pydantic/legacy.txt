@@ -1,4 +1,2 @@
-inline-server-circle: model InlineHolder(b=1, shape=Shape(radius=1)) set=['b', 'shape'] wire={"b":1,"shape":{"radius":1}}
-inline-server-circle: HTTP 204 b''
-inline-server-square: model InlineHolder(b=1, shape=Shape1(side=2)) set=['b', 'shape'] wire={"b":1,"shape":{"side":2}}
-inline-server-square: HTTP 204 b''
+inline-server-circle: native InlineHolder(b=1, shape=Shape(radius=1)) set=['b', 'shape'] json={"b":1,"shape":{"radius":1}}
+inline-server-square: native InlineHolder(b=1, shape=Shape1(side=2)) set=['b', 'shape'] json={"b":1,"shape":{"side":2}}
