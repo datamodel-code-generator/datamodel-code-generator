@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import yaml
 
-from datamodel_code_generator import DataModelType, Error, GenerateConfig
+from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError
 from datamodel_code_generator.fastapi import (
     APIGenerationError,
     BuiltinCodecCompatibility,
@@ -31,6 +31,7 @@ from datamodel_code_generator.fastapi import (
 )
 from datamodel_code_generator.remote_lock import RemoteLockError, RemoteReferenceLock
 from tests.data.python import fastapi_hooks
+from tests.data.python.client_generation import cyclic_input_failure
 
 if TYPE_CHECKING:
     import pytest
@@ -386,6 +387,40 @@ class _Scenario:
         self.monkeypatch.chdir(self.root)
 
 
+def _cyclic_target_report(scenario: _Scenario) -> str:
+    """Replay only the retained cyclic-input steps, requiring a handled refusal and an empty tree."""
+    cycles = {
+        "input-cycle-dict.yaml": ("input-cycle-dict.yaml", "/x-cycle/self", (12, 10)),
+        "input-cycle-list.yaml": ("input-cycle-list.yaml", "/x-cycle/0", (12, 10)),
+        "input-cycle-mutual.yaml": ("input-cycle-mutual.yaml", "/x-outer/nested/child/back~1to~0outer/0", (13, 11)),
+        "input-cycle-reference.yaml": ("input-cycle-reference-model.yaml", "/x-cycle/self", (6, 10)),
+    }
+    for step in scenario.case["steps"]:
+        ((name, value),) = step.items()
+        if name == "tree":
+            scenario.tree(value)
+            continue
+        spec = {**scenario.case, **value}
+        filename, pointer, location = cycles[spec["input"]["path"]]
+        scenario.lines.append(name)
+        try:
+            result = (generate_fastapi if name == "generate" else render_fastapi)(
+                _input(spec["input"], scenario.server),
+                model_config=_model({**scenario.case.get("model", {}), **value.get("model", {})}, scenario.root),
+                config=_config({**scenario.case.get("config", {}), **value.get("config", {})}),
+            )
+        except (APIGenerationError, InvalidFileFormatError) as error:
+            scenario.lines.append(
+                "  " + cyclic_input_failure(error, source=filename, pointer=pointer, location=location)
+            )
+        else:
+            if isinstance(result, GeneratedProject):
+                _report_project(result, scenario.root, scenario.lines)
+            else:
+                _report_generation(result, scenario.root, scenario.lines)
+    return "\n".join(scenario.lines) + "\n"
+
+
 def target_render_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch, server: str | None = None) -> str:
     """Run one scenario's renders, publications, and edits, reporting every observable outcome."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
@@ -393,6 +428,8 @@ def target_render_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyP
     shutil.copytree(SOURCE / "templates", root / "templates")
     monkeypatch.chdir(root)
     scenario = _Scenario(case, root, monkeypatch, server, [f"# {case_name}"])
+    if case_name in {"input-cycles", "input-cycle-reference"}:
+        return _cyclic_target_report(scenario)
     for step in case["steps"]:
         ((name, value),) = step.items()
         getattr(scenario, name)(value)
