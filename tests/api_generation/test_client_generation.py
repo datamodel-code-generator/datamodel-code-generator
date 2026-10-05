@@ -108,7 +108,15 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     assert_output(report, EXPECTED / f"{case}.txt")
     for backend, modules in rendered.items():
         assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
-    if case in {"auth", "auth-context"}:
+    if case in {
+        "auth",
+        "auth-context",
+        "fields",
+        "fields-arguments",
+        "fields-optional-models",
+        "fields-structural",
+        "fields-unpack",
+    }:
         assert_output(
             client_model_parity_report(case, tmp_path / "ordinary", rendered),
             EXPECTED / "bindings" / "capture-parity.txt",
