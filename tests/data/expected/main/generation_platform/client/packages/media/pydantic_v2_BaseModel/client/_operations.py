@@ -32,87 +32,36 @@ from ._runtime.client.operations import (
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.documents import (
-    ReadDocumentErrorData,
-    ReadDocumentHTTPError,
     ReadDocumentResponse,
-    ReplaceNoteErrorData,
-    ReplaceNoteHTTPError,
     ReplaceNoteResponse,
-    StoreDocumentErrorData,
-    StoreDocumentHTTPError,
     StoreDocumentResponse,
-    StoreNoteErrorData,
-    StoreNoteHTTPError,
     StoreNoteResponse,
 )
-from .types.files import (
-    ReplaceFileErrorData,
-    ReplaceFileHTTPError,
-    ReplaceFileResponse,
-    StoreFileErrorData,
-    StoreFileHTTPError,
-    StoreFileResponse,
-)
+from .types.files import ReplaceFileResponse, StoreFileResponse
 from .types.forms import (
-    ReadPartsErrorData,
-    ReadPartsHTTPError,
     ReadPartsResponse,
-    ReadProfileErrorData,
-    ReadProfileHTTPError,
     ReadProfileResponse,
-    ReadUploadErrorData,
-    ReadUploadHTTPError,
     ReadUploadResponse,
-    SubmitAlbumErrorData,
-    SubmitAlbumHTTPError,
     SubmitAlbumResponse,
-    SubmitAnythingErrorData,
-    SubmitAnythingHTTPError,
     SubmitAnythingResponse,
-    SubmitAvatarErrorData,
-    SubmitAvatarHTTPError,
     SubmitAvatarResponse,
-    SubmitCardErrorData,
-    SubmitCardHTTPError,
     SubmitCardResponse,
-    SubmitCoverErrorData,
-    SubmitCoverHTTPError,
     SubmitCoverResponse,
-    SubmitFormErrorData,
-    SubmitFormHTTPError,
     SubmitFormResponse,
-    SubmitLabelsErrorData,
-    SubmitLabelsHTTPError,
     SubmitLabelsResponse,
-    SubmitPairsErrorData,
-    SubmitPairsHTTPError,
     SubmitPairsResponse,
-    SubmitPartsErrorData,
-    SubmitPartsHTTPError,
     SubmitPartsResponse,
-    SubmitPhotosErrorData,
-    SubmitPhotosHTTPError,
     SubmitPhotosResponse,
-    SubmitProfileErrorData,
-    SubmitProfileHTTPError,
     SubmitProfileResponse,
-    SubmitScansErrorData,
-    SubmitScansHTTPError,
     SubmitScansResponse,
-    SubmitSearchErrorData,
-    SubmitSearchHTTPError,
     SubmitSearchResponse,
-    SubmitStickersErrorData,
-    SubmitStickersHTTPError,
     SubmitStickersResponse,
-    SubmitUploadErrorData,
-    SubmitUploadHTTPError,
     SubmitUploadResponse,
 )
 
 _SERVERS_0: Final = (ServerPlan(url='https://media.example.com/api/'),)
 
-OPERATION_0: Final[OperationPlan[SubmitFormResponse, SubmitFormErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[SubmitFormResponse]] = OperationPlan(
     operation_id='submitForm',
     method='POST',
     path='/forms',
@@ -129,7 +78,6 @@ OPERATION_0: Final[OperationPlan[SubmitFormResponse, SubmitFormErrorData]] = Ope
             ),
         ),
         (),
-        SubmitFormHTTPError,
     ),
     body=RequestBody(
         media=(
@@ -150,12 +98,12 @@ OPERATION_0: Final[OperationPlan[SubmitFormResponse, SubmitFormErrorData]] = Ope
     ),
 )
 
-OPERATION_1: Final[OperationPlan[SubmitProfileResponse, SubmitProfileErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[SubmitProfileResponse]] = OperationPlan(
     operation_id='submitProfile',
     method='POST',
     path='/profiles',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitProfileHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -169,7 +117,7 @@ OPERATION_1: Final[OperationPlan[SubmitProfileResponse, SubmitProfileErrorData]]
     ),
 )
 
-OPERATION_2: Final[OperationPlan[ReadProfileResponse, ReadProfileErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[ReadProfileResponse]] = OperationPlan(
     operation_id='readProfile',
     method='GET',
     path='/profiles',
@@ -194,16 +142,15 @@ OPERATION_2: Final[OperationPlan[ReadProfileResponse, ReadProfileErrorData]] = O
             ),
         ),
         (),
-        ReadProfileHTTPError,
     ),
 )
 
-OPERATION_3: Final[OperationPlan[SubmitAnythingResponse, SubmitAnythingErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[SubmitAnythingResponse]] = OperationPlan(
     operation_id='submitAnything',
     method='POST',
     path='/anything',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitAnythingHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -217,19 +164,19 @@ OPERATION_3: Final[OperationPlan[SubmitAnythingResponse, SubmitAnythingErrorData
     ),
 )
 
-OPERATION_4: Final[OperationPlan[SubmitPartsResponse, SubmitPartsErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[SubmitPartsResponse]] = OperationPlan(
     operation_id='submitParts',
     method='POST',
     path='/attachments',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitPartsHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(BodyMedia(media_type='multipart/form-data', kind='multipart'),),
         default='multipart/form-data',
     ),
 )
 
-OPERATION_5: Final[OperationPlan[ReadPartsResponse, ReadPartsErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[ReadPartsResponse]] = OperationPlan(
     operation_id='readParts',
     method='GET',
     path='/attachments',
@@ -246,11 +193,10 @@ OPERATION_5: Final[OperationPlan[ReadPartsResponse, ReadPartsErrorData]] = Opera
             ),
         ),
         (),
-        ReadPartsHTTPError,
     ),
 )
 
-OPERATION_6: Final[OperationPlan[SubmitPairsResponse, SubmitPairsErrorData]] = OperationPlan(
+OPERATION_6: Final[OperationPlan[SubmitPairsResponse]] = OperationPlan(
     operation_id='submitPairs',
     method='POST',
     path='/pairs',
@@ -258,7 +204,6 @@ OPERATION_6: Final[OperationPlan[SubmitPairsResponse, SubmitPairsErrorData]] = O
     responses=ResponseDecoder(
         (form_branch('200', 'application/x-www-form-urlencoded'),),
         (),
-        SubmitPairsHTTPError,
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/x-www-form-urlencoded', kind='form'),),
@@ -266,12 +211,12 @@ OPERATION_6: Final[OperationPlan[SubmitPairsResponse, SubmitPairsErrorData]] = O
     ),
 )
 
-OPERATION_7: Final[OperationPlan[SubmitUploadResponse, SubmitUploadErrorData]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[SubmitUploadResponse]] = OperationPlan(
     operation_id='submitUpload',
     method='POST',
     path='/uploads',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitUploadHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -315,7 +260,7 @@ OPERATION_7: Final[OperationPlan[SubmitUploadResponse, SubmitUploadErrorData]] =
     ),
 )
 
-OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = OperationPlan(
+OPERATION_8: Final[OperationPlan[ReadUploadResponse]] = OperationPlan(
     operation_id='readUpload',
     method='GET',
     path='/uploads',
@@ -399,16 +344,15 @@ OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = Ope
             ),
         ),
         (),
-        ReadUploadHTTPError,
     ),
 )
 
-OPERATION_9: Final[OperationPlan[SubmitAvatarResponse, SubmitAvatarErrorData]] = OperationPlan(
+OPERATION_9: Final[OperationPlan[SubmitAvatarResponse]] = OperationPlan(
     operation_id='submitAvatar',
     method='POST',
     path='/avatars',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitAvatarHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -432,12 +376,12 @@ OPERATION_9: Final[OperationPlan[SubmitAvatarResponse, SubmitAvatarErrorData]] =
     ),
 )
 
-OPERATION_10: Final[OperationPlan[SubmitScansResponse, SubmitScansErrorData]] = OperationPlan(
+OPERATION_10: Final[OperationPlan[SubmitScansResponse]] = OperationPlan(
     operation_id='submitScans',
     method='POST',
     path='/scans',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitScansHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -456,12 +400,12 @@ OPERATION_10: Final[OperationPlan[SubmitScansResponse, SubmitScansErrorData]] = 
     ),
 )
 
-OPERATION_11: Final[OperationPlan[SubmitPhotosResponse, SubmitPhotosErrorData]] = OperationPlan(
+OPERATION_11: Final[OperationPlan[SubmitPhotosResponse]] = OperationPlan(
     operation_id='submitPhotos',
     method='POST',
     path='/photos',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitPhotosHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -475,12 +419,12 @@ OPERATION_11: Final[OperationPlan[SubmitPhotosResponse, SubmitPhotosErrorData]] 
     ),
 )
 
-OPERATION_12: Final[OperationPlan[SubmitLabelsResponse, SubmitLabelsErrorData]] = OperationPlan(
+OPERATION_12: Final[OperationPlan[SubmitLabelsResponse]] = OperationPlan(
     operation_id='submitLabels',
     method='POST',
     path='/labels',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitLabelsHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -498,7 +442,7 @@ OPERATION_12: Final[OperationPlan[SubmitLabelsResponse, SubmitLabelsErrorData]] 
     ),
 )
 
-OPERATION_13: Final[OperationPlan[StoreFileResponse, StoreFileErrorData]] = OperationPlan(
+OPERATION_13: Final[OperationPlan[StoreFileResponse]] = OperationPlan(
     operation_id='storeFile',
     method='POST',
     path='/files',
@@ -517,7 +461,6 @@ OPERATION_13: Final[OperationPlan[StoreFileResponse, StoreFileErrorData]] = Oper
             empty_branch('204'),
         ),
         (),
-        StoreFileHTTPError,
     ),
     body=RequestBody(
         media=(
@@ -538,21 +481,21 @@ OPERATION_13: Final[OperationPlan[StoreFileResponse, StoreFileErrorData]] = Oper
     ),
 )
 
-OPERATION_14: Final[OperationPlan[ReplaceFileResponse, ReplaceFileErrorData]] = OperationPlan(
+OPERATION_14: Final[OperationPlan[ReplaceFileResponse]] = OperationPlan(
     operation_id='replaceFile',
     method='PUT',
     path='/files',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReplaceFileHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(media=(BodyMedia(media_type='*/*', kind='binary'),)),
 )
 
-OPERATION_15: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] = OperationPlan(
+OPERATION_15: Final[OperationPlan[SubmitSearchResponse]] = OperationPlan(
     operation_id='submitSearch',
     method='POST',
     path='/searches',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitSearchHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -620,12 +563,12 @@ OPERATION_15: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] 
     ),
 )
 
-OPERATION_16: Final[OperationPlan[SubmitCoverResponse, SubmitCoverErrorData]] = OperationPlan(
+OPERATION_16: Final[OperationPlan[SubmitCoverResponse]] = OperationPlan(
     operation_id='submitCover',
     method='POST',
     path='/covers',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitCoverHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -673,12 +616,12 @@ OPERATION_16: Final[OperationPlan[SubmitCoverResponse, SubmitCoverErrorData]] = 
     ),
 )
 
-OPERATION_17: Final[OperationPlan[SubmitCardResponse, SubmitCardErrorData]] = OperationPlan(
+OPERATION_17: Final[OperationPlan[SubmitCardResponse]] = OperationPlan(
     operation_id='submitCard',
     method='POST',
     path='/cards',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitCardHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -697,12 +640,12 @@ OPERATION_17: Final[OperationPlan[SubmitCardResponse, SubmitCardErrorData]] = Op
     ),
 )
 
-OPERATION_18: Final[OperationPlan[SubmitStickersResponse, SubmitStickersErrorData]] = OperationPlan(
+OPERATION_18: Final[OperationPlan[SubmitStickersResponse]] = OperationPlan(
     operation_id='submitStickers',
     method='POST',
     path='/stickers',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitStickersHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -771,12 +714,12 @@ OPERATION_18: Final[OperationPlan[SubmitStickersResponse, SubmitStickersErrorDat
     ),
 )
 
-OPERATION_19: Final[OperationPlan[SubmitAlbumResponse, SubmitAlbumErrorData]] = OperationPlan(
+OPERATION_19: Final[OperationPlan[SubmitAlbumResponse]] = OperationPlan(
     operation_id='submitAlbum',
     method='POST',
     path='/albums',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SubmitAlbumHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -822,7 +765,7 @@ OPERATION_19: Final[OperationPlan[SubmitAlbumResponse, SubmitAlbumErrorData]] = 
     ),
 )
 
-OPERATION_20: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]] = OperationPlan(
+OPERATION_20: Final[OperationPlan[StoreDocumentResponse]] = OperationPlan(
     operation_id='storeDocument',
     method='POST',
     path='/documents',
@@ -840,7 +783,6 @@ OPERATION_20: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]
             ),
         ),
         (text_branch('5XX', 'text/plain'),),
-        StoreDocumentHTTPError,
         success_statuses=frozenset({302}),
     ),
     body=RequestBody(
@@ -858,7 +800,7 @@ OPERATION_20: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]
     ),
 )
 
-OPERATION_21: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] = OperationPlan(
+OPERATION_21: Final[OperationPlan[ReadDocumentResponse]] = OperationPlan(
     operation_id='readDocument',
     method='GET',
     path='/documents/{id}',
@@ -873,7 +815,6 @@ OPERATION_21: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] 
             ),
         ),
         (),
-        ReadDocumentHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -902,12 +843,12 @@ OPERATION_21: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] 
     ),
 )
 
-OPERATION_22: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = OperationPlan(
+OPERATION_22: Final[OperationPlan[StoreNoteResponse]] = OperationPlan(
     operation_id='storeNote',
     method='POST',
     path='/notes',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), StoreNoteHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(media_type='application/json', kind='json'),
@@ -917,12 +858,12 @@ OPERATION_22: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = Oper
     ),
 )
 
-OPERATION_23: Final[OperationPlan[ReplaceNoteResponse, ReplaceNoteErrorData]] = OperationPlan(
+OPERATION_23: Final[OperationPlan[ReplaceNoteResponse]] = OperationPlan(
     operation_id='replaceNote',
     method='PUT',
     path='/notes',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReplaceNoteHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(media_type='application/json', kind='json'),

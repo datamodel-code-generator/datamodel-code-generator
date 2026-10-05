@@ -34,7 +34,7 @@
     text 'café'
     connection close 1002 '' timeout=5.0
   text that is not UTF-8 ! StreamDecodeError: StreamDecodeError(operation_id='secureSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='secureSocket', condition='malformed', truncated=False] stream_decode_error
-  terminal status ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=503, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] room_socket_http_error
+  terminal status ! InternalServerError: InternalServerError(status_code=503, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=503, body=b'', body_bytes=b'', truncated=False] internal_server_error
   broken evidence with a status ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse] adapter_contract_error
   refusal with 101 ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse] adapter_contract_error
   refusal with 103 ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse] adapter_contract_error

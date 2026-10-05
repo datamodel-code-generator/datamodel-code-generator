@@ -10,11 +10,11 @@
     wire=[('POST', b'/idempotent', b'owned'), ('POST', b'/idempotent', b'owned'), ('POST', b'/hop-1', b'owned')] pending=0
   owned reuse refused ! BodyNotReplayableError: BodyNotReplayableError(operation_id='postIdempotent', call_id='<call>', source_kind='file', condition='consumed') [operation_id='postIdempotent', condition='consumed'] body_not_replayable_error
     owned closed=True closes=1
-  borrowed unseekable not retried ! PostIdempotentHTTPError: PostIdempotentHTTPError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, error_decoded=True, error_data=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] post_idempotent_http_error
+  borrowed unseekable not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
     wire=[('POST', b'/idempotent', b'unseekable')] pending=1
   borrowed unseekable reuse ! BodyNotReplayableError: BodyNotReplayableError(operation_id='postIdempotent', call_id='<call>', source_kind='file', condition='consumed') [operation_id='postIdempotent', condition='consumed'] body_not_replayable_error
     file closes=0 reads=[65536, 65536]
-  owned unseekable not retried ! PostIdempotentHTTPError: PostIdempotentHTTPError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, error_decoded=True, error_data=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] post_idempotent_http_error
+  owned unseekable not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
     wire=[('POST', b'/idempotent', b'unseekable')] pending=1
   owned unseekable reuse ! BodyNotReplayableError: BodyNotReplayableError(operation_id='postIdempotent', call_id='<call>', source_kind='file', condition='consumed') [operation_id='postIdempotent', condition='consumed'] body_not_replayable_error
     file closes=1 reads=[65536, 65536]
@@ -22,11 +22,11 @@
     wire=[('POST', b'/idempotent', b'path body'), ('POST', b'/hop-0', b'path body'), ('POST', b'/idempotent', b'path body')] pending=0
   path changed between attempts ! BodyChangedError: BodyChangedError(operation_id='postIdempotent', call_id='<call>', source_kind='file', check='stat') [operation_id='postIdempotent'] body_changed_error
     wire=[('POST', b'/idempotent', b'path body')] pending=1
-  borrowed stream not retried ! PostIdempotentHTTPError: PostIdempotentHTTPError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, error_decoded=True, error_data=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] post_idempotent_http_error
+  borrowed stream not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
     wire=[('POST', b'/idempotent', b'one-shot')] pending=1
   borrowed stream reuse ! BodyNotReplayableError: BodyNotReplayableError(operation_id='postIdempotent', call_id='<call>', source_kind='stream', condition='consumed') [operation_id='postIdempotent', condition='consumed'] body_not_replayable_error
     stream begins=1 closes=0
-  owned stream not retried ! PostIdempotentHTTPError: PostIdempotentHTTPError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, error_decoded=True, error_data=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] post_idempotent_http_error
+  owned stream not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
     wire=[('POST', b'/idempotent', b'one-shot')] pending=1
   owned stream reuse ! BodyNotReplayableError: BodyNotReplayableError(operation_id='postIdempotent', call_id='<call>', source_kind='stream', condition='consumed') [operation_id='postIdempotent', condition='consumed'] body_not_replayable_error
     stream begins=1 closes=1
@@ -56,18 +56,18 @@
     file closed=True closes=1 reads=[65536, 65536, 65536, 65536, 65536, 65536]
   async owned reuse refused ! BodyNotReplayableError: BodyNotReplayableError(operation_id='postIdempotent', call_id='<call>', source_kind='file', condition='consumed') [operation_id='postIdempotent', condition='consumed'] body_not_replayable_error
     owned closes=1
-  async unseekable not retried ! PostIdempotentHTTPError: PostIdempotentHTTPError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, error_decoded=True, error_data=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] post_idempotent_http_error
+  async unseekable not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
     wire=[('POST', b'/idempotent', b'unseekable')] pending=1
     file closes=1 reads=[65536, 65536]
   async path reopened = FieldIdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'path body'), ('POST', b'/idempotent', b'path body'), ('POST', b'/hop-1', b'path body')] pending=0
   async path changed ! BodyChangedError: BodyChangedError(operation_id='postIdempotent', call_id='<call>', source_kind='file', check='stat') [operation_id='postIdempotent'] body_changed_error
     wire=[('POST', b'/idempotent', b'path body')] pending=1
-  async borrowed stream not retried ! PostIdempotentHTTPError: PostIdempotentHTTPError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, error_decoded=True, error_data=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] post_idempotent_http_error
+  async borrowed stream not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
     wire=[('POST', b'/idempotent', b'one-shot')] pending=1
   async borrowed stream reuse ! BodyNotReplayableError: BodyNotReplayableError(operation_id='postIdempotent', call_id='<call>', source_kind='stream', condition='consumed') [operation_id='postIdempotent', condition='consumed'] body_not_replayable_error
     stream begins=1 closes=0
-  async owned stream not retried ! PostIdempotentHTTPError: PostIdempotentHTTPError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, error_decoded=True, error_data=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] post_idempotent_http_error
+  async owned stream not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='postIdempotent', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False] internal_server_error
     wire=[('POST', b'/idempotent', b'one-shot')] pending=1
   async owned stream reuse ! BodyNotReplayableError: BodyNotReplayableError(operation_id='postIdempotent', call_id='<call>', source_kind='stream', condition='consumed') [operation_id='postIdempotent', condition='consumed'] body_not_replayable_error
     stream begins=1 closes=1

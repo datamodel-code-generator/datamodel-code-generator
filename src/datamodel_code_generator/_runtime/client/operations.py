@@ -31,15 +31,15 @@ from ..model_codecs.parameters import path_text, query_pairs
 from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire
 from .errors import (
+    APIStatusError,
     BodyProtocolError,
     ConfigurationError,
     DecodeError,
-    HTTPStatusError,
     RequestEncodingError,
     ResponseDecodeError,
     ResponseValidationError,
     UnexpectedMediaTypeError,
-    UnexpectedStatusError,
+    status_error,
 )
 from .media import charset, encode_text, essence, most_specific, normalized, with_charset
 from .multipart import (
@@ -68,7 +68,6 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
-E_co = TypeVar("E_co", covariant=True)
 
 FormData: TypeAlias = tuple[tuple[str, str], ...]
 BodyKind: TypeAlias = Literal["json", "text", "form", "multipart", "binary"]
@@ -684,11 +683,10 @@ def _matching(received: str, branches: Sequence[Branch[T]]) -> Branch[T] | None:
     return next(branch for branch in branches if branch.media_type == winner)
 
 
-class ResponseDecoder(Generic[T_co, E_co]):
-    """Dispatch a final response by status then media, decoding successes to T and failures to the error payload E."""
+class ResponseDecoder(Generic[T_co]):
+    """Dispatch a final response by status then media, decoding successes to T and failures to their error payload."""
 
     __slots__ = (
-        "_error_class",
         "_error_groups",
         "_errors",
         "_groups",
@@ -704,33 +702,31 @@ class ResponseDecoder(Generic[T_co, E_co]):
     def __init__(  # noqa: PLR0913
         self,
         success: tuple[Branch[T_co], ...],
-        errors: tuple[Branch[E_co], ...],
-        error_class: type[HTTPStatusError[E_co]],
+        errors: tuple[Branch[object], ...],
         *,
         success_statuses: frozenset[int] = frozenset(),
         head: bool = False,
         keys: frozenset[str] | None = None,
         permitted: str | None = None,
     ) -> None:
-        """Bind the success and failure branches, the operation's error class, and its extra success statuses.
+        """Bind the success and failure branches and the operation's extra success statuses.
 
         A narrowed decoder keeps the status keys of every success branch, so a status still selects its response, and
         permits a success body only of its concrete media type.
         """
         self._success = success
         self._errors = errors
-        self._error_class = error_class
         self._successes = success_statuses
         self._head = head
         self._keys = frozenset(branch.status for branch in success) if keys is None else keys
         self._groups = _grouped(success)
         self._error_groups = _grouped(errors)
-        self._narrowed: dict[str, ResponseDecoder[T_co, E_co]] = {}
+        self._narrowed: dict[str, ResponseDecoder[T_co]] = {}
         self._permitted = permitted
         media = dict.fromkeys(branch.media_type for branch in success if branch.media_type is not None)
         self.accept = None if head else permitted or ", ".join(media) or None
 
-    def narrowed(self, operation_id: str | None, media_type: str) -> ResponseDecoder[T_co, E_co]:
+    def narrowed(self, operation_id: str | None, media_type: str) -> ResponseDecoder[T_co]:
         """Return this decoder with successes restricted to one concrete media type, which Accept then names.
 
         Each status keeps the branch the media type dispatches to, the most specific one, and its bodyless branch.
@@ -751,7 +747,6 @@ class ResponseDecoder(Generic[T_co, E_co]):
         decoder = self._narrowed[wanted] = ResponseDecoder(
             success,
             self._errors,
-            self._error_class,
             success_statuses=self._successes,
             head=self._head,
             keys=self._keys,
@@ -816,20 +811,18 @@ class ResponseDecoder(Generic[T_co, E_co]):
         *,
         truncated: bool = False,
         problem: BaseException | None = None,
-    ) -> HTTPStatusError[E_co] | UnexpectedStatusError:
-        """Return the typed failure of a response that is not a success: its HTTP error, or an unexpected status."""
+    ) -> APIStatusError:
+        """Return the status failure of a response that is not a success: its HTTP error, or an unexpected status."""
         if _MIN_ERROR <= info.status_code <= _MAX_ERROR:
             return self._failure(info, body, truncated=truncated, problem=problem)
-        return UnexpectedStatusError(
-            info=info, body_bytes=body, truncated=truncated, call_id=info.call_id, cause=problem
-        )
+        return _unexpected(info, body, truncated=truncated, problem=problem)
 
     def _bodyless(self, status: int) -> bool:
         return self._head or status in BODYLESS_STATUSES
 
     def _branch(self, info: ResponseInfo, body: bytes) -> Branch[T_co]:
         if (key := status_key(info.status_code, self._keys)) is None:
-            raise UnexpectedStatusError(info=info, body_bytes=body, call_id=info.call_id)
+            raise _unexpected(info, body)
         branch = _select(info, body, self._groups.get(key, ()), bodyless=self._bodyless(info.status_code))
         if (
             (permitted := self._permitted) is not None
@@ -854,29 +847,36 @@ class ResponseDecoder(Generic[T_co, E_co]):
 
     def _failure(
         self, info: ResponseInfo, body: bytes, *, truncated: bool, problem: BaseException | None
-    ) -> HTTPStatusError[E_co]:
-        data: E_co | None = None
-        decoded = False
+    ) -> APIStatusError:
+        data: object = body
         key = status_key(info.status_code, self._error_groups.keys())
         declared = () if key is None else self._error_groups[key]
         if declared and not truncated:
             try:
                 branch = _select(info, body, declared, bodyless=self._bodyless(info.status_code))
                 data = branch.decode(body, info)
-                decoded = True
             except _InvalidBodyError as error:
                 problem = error.cause
             except (BodyProtocolError, UnexpectedMediaTypeError) as error:
                 problem = error
-        return self._error_class(
-            info=info,
-            error_data=data,
-            error_decoded=decoded,
-            body_bytes=body,
-            truncated=truncated,
-            error_decode_error=problem,
-            call_id=info.call_id,
+        return status_error(info.status_code)(
+            info=info, body=data, body_bytes=body, truncated=truncated, call_id=info.call_id, cause=problem
         )
+
+
+def _unexpected(
+    info: ResponseInfo, body: bytes, *, truncated: bool = False, problem: BaseException | None = None
+) -> APIStatusError:
+    """Return the failure of a final status the operation declares neither as a success nor as an error."""
+    return APIStatusError(
+        info=info,
+        body=body,
+        body_bytes=body,
+        truncated=truncated,
+        reason="unexpected_status",
+        call_id=info.call_id,
+        cause=problem,
+    )
 
 
 def _select(info: ResponseInfo, body: bytes, declared: Sequence[Branch[T]], *, bodyless: bool) -> Branch[T]:
@@ -899,14 +899,14 @@ def _select(info: ResponseInfo, body: bytes, declared: Sequence[Branch[T]], *, b
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class OperationPlan(Generic[T_co, E_co]):
+class OperationPlan(Generic[T_co]):
     """Everything fixed about one operation: method, path, servers, parameters, body, and response decoding."""
 
     operation_id: str | None
     method: str
     path: str
     servers: tuple[ServerPlan, ...]
-    responses: ResponseDecoder[T_co, E_co]
+    responses: ResponseDecoder[T_co]
     parameters: tuple[ParameterSpec, ...] = ()
     body: RequestBody | None = None
     request_id_header: str | None = None

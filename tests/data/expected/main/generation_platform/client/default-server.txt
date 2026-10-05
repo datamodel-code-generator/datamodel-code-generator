@@ -30,6 +30,6 @@ render pydantic_v2.BaseModel
   namespace client helpers [] bindings 0
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 default.get_status()
-    exports client.types.default.GetStatusResponse client.types.default.GetStatusErrorData client.types.default.GetStatusHTTPError
+    exports client.types.default.GetStatusResponse
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5', 'pets-models>=1']

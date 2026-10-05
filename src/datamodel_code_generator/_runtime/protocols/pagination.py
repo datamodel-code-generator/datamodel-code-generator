@@ -236,7 +236,7 @@ class PaginationPlan(Generic[T, P]):
 
     helper_id: str
     operation: OperationRef
-    call: OperationPlan[P, object]
+    call: OperationPlan[P]
     items: Callable[[P], Sequence[T] | None]
     items_selector: BodySelector
     continuation: CursorPlan | CountPlan | NextUrlPlan | LinkPlan
@@ -247,7 +247,7 @@ class PaginationPlan(Generic[T, P]):
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
     dotted: ReadPaths = field(init=False)
-    continued: OperationPlan[P, object] = field(init=False)
+    continued: OperationPlan[P] = field(init=False)
 
     def __post_init__(self) -> None:
         """Find where each binding and then the continuation is written, and derive the operation of later pages.
@@ -817,7 +817,7 @@ class _Walk(Generic[T, P]):
             raise self.limit(limit, "network_sends")
         return session
 
-    def operation(self) -> OperationPlan[P, object]:
+    def operation(self) -> OperationPlan[P]:
         """Return the operation the next page calls: the helper's for the first page, its continued one after it.
 
         The first page of an offset or page-number helper reads the position the caller's own value for its target
@@ -1148,7 +1148,7 @@ def saved_request(
 
 
 def resent(
-    core: ClientCore | AsyncClientCore, call: OperationPlan[object, object], arguments: WireValue, body: WireValue
+    core: ClientCore | AsyncClientCore, call: OperationPlan[object], arguments: WireValue, body: WireValue
 ) -> _Request:
     """Return the request a checkpoint saved, its arguments and any JSON body built as a caller builds them.
 

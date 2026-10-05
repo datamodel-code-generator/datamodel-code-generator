@@ -21,14 +21,14 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, error_decoded=True, error_data=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False] list_pets_http_error
+  list error ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  error info 500 HeadersView(<2 headers>) list_pets_http_error Error(code=7, message=None)
+  error info 500 HeadersView(<2 headers>) None internal_server_error Error(code=7, message=None)
   header error ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=500, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'', truncated=False] response_header_decode_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
@@ -36,24 +36,24 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error syntax ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, error_decoded=False, error_decode_error=WireValidationError('The body is not valid JSON at /'), body_bytes=b'{', truncated=False] list_pets_http_error
+  list error syntax ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=b'{', body_bytes=b'{', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error media ! ListPetsHTTPError: ListPetsHTTPError(status_code=503, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=503, error_decoded=False, error_decode_error=UnexpectedMediaTypeError(), body_bytes=b'down', truncated=False] list_pets_http_error
+  list error media ! InternalServerError: InternalServerError(status_code=503, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=503, body=b'down', body_bytes=b'down', truncated=False, cause=UnexpectedMediaTypeError()] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error bare ! ListPetsHTTPError: ListPetsHTTPError(status_code=502, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=502, error_decoded=False, error_decode_error=UnexpectedMediaTypeError(), body_bytes=b'down', truncated=False] list_pets_http_error
+  list error bare ! InternalServerError: InternalServerError(status_code=502, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=502, body=b'down', body_bytes=b'down', truncated=False, cause=UnexpectedMediaTypeError()] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list redirect ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='listPets', call_id='<call>') [operation_id='listPets', status_code=302, body_bytes=b'', truncated=False] unexpected_status_error
+  list redirect ! APIStatusError: APIStatusError(status_code=302, operation_id='listPets', call_id='<call>', reason='unexpected_status') [operation_id='listPets', status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   redirect info 302 HeadersView(<2 headers>)
@@ -78,7 +78,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list truncated ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, error_decoded=False, body_bytes=b'xxxx', truncated=True] list_pets_http_error
+  list truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True] internal_server_error
   list missing ! RequestEncodingError: RequestEncodingError(operation_id='listPets', call_id='<call>', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace')] request_encoding_error
   list invalid ! RequestEncodingError: RequestEncodingError(operation_id='listPets', call_id='<call>', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] request_encoding_error
   list options ! ConfigurationError: ConfigurationError(operation_id='listPets', field_path='options', condition='invalid_type') [operation_id='listPets', field_path=('options',), condition='invalid_type'] configuration_error
@@ -98,7 +98,7 @@
   create invalid body ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 24] b'{"name":"dog","tag":"x"}'
-  create rejected ! CreatePetHTTPError: CreatePetHTTPError(status_code=422, operation_id='createPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createPet', status_code=422, error_decoded=True, error_data=Error(code=22, message=None), body_bytes=b'{"code":22}', truncated=False] create_pet_http_error
+  create rejected ! UnprocessableEntityError: UnprocessableEntityError(status_code=422, operation_id='createPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createPet', status_code=422, body=Error(code=22, message=None), body_bytes=b'{"code":22}', truncated=False] unprocessable_entity_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   get = Pet(id=3, name='fox', tag=None)
@@ -116,13 +116,13 @@
   get text mismatch ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'{"id":3,"name":"fox"}', truncated=False, actual_media_type='application/json', expected_media_types=('text/plain',)] unexpected_media_type_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get missing ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=True, body_bytes=b'', truncated=False] get_pet_http_error
+  get missing ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, body_bytes=b'', truncated=False] not_found_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get missing body ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=False, error_decode_error=BodyProtocolError(), body_bytes=b'gone', truncated=False] get_pet_http_error
+  get missing body ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, body=b'gone', body_bytes=b'gone', truncated=False, cause=BodyProtocolError()] not_found_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get created ! UnexpectedStatusError: UnexpectedStatusError(status_code=201, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=201, body_bytes=b'{"id":3,"name":"fox"}', truncated=False] unexpected_status_error
+  get created ! APIStatusError: APIStatusError(status_code=201, operation_id='getPet', call_id='<call>', reason='unexpected_status') [operation_id='getPet', status_code=201, body=b'{"id":3,"name":"fox"}', body_bytes=b'{"id":3,"name":"fox"}', truncated=False] unexpected_status
   get undeclared ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='getPet', field_path=('response_media_type',), condition='undeclared'] configuration_error
   get invalid ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='getPet', field_path=('response_media_type',), condition='undeclared'] configuration_error
   > DELETE https://api.example.com/v1/pets/3
@@ -133,7 +133,7 @@
   delete body ! BodyProtocolError: BodyProtocolError(status_code=204, call_id='<call>') [condition='forbidden_body', body_bytes=b'x', truncated=False] body_protocol_error
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  delete ok ! UnexpectedStatusError: UnexpectedStatusError(status_code=200, call_id='<call>') [status_code=200, body_bytes=b'', truncated=False] unexpected_status_error
+  delete ok ! APIStatusError: APIStatusError(status_code=200, call_id='<call>', reason='unexpected_status') [status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   head = Response(None, 200, None, None, [('etag', '"v1"')])
@@ -265,7 +265,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async truncated ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, error_decoded=False, body_bytes=b'xxxx', truncated=True] list_pets_http_error
+  async truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True] internal_server_error
   async borrowed closed False
   async owned closed True
   async http_client ! ConfigurationError: ConfigurationError(field_path='http_client', condition='invalid_type') [field_path=('http_client',), condition='invalid_type'] configuration_error
@@ -292,14 +292,14 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, error_decoded=True, error_data={'code': 7, 'message': 'boom'}, body_bytes=b'{"code":7,"message":"boom"}', truncated=False] list_pets_http_error
+  list error ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body={'code': 7, 'message': 'boom'}, body_bytes=b'{"code":7,"message":"boom"}', truncated=False] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  error info 500 HeadersView(<2 headers>) list_pets_http_error {'code': 7}
+  error info 500 HeadersView(<2 headers>) None internal_server_error {'code': 7}
   header error ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=500, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'', truncated=False] response_header_decode_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
@@ -307,24 +307,24 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error syntax ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, error_decoded=False, error_decode_error=WireValidationError('The body is not valid JSON at /'), body_bytes=b'{', truncated=False] list_pets_http_error
+  list error syntax ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=b'{', body_bytes=b'{', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error media ! ListPetsHTTPError: ListPetsHTTPError(status_code=503, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=503, error_decoded=False, error_decode_error=UnexpectedMediaTypeError(), body_bytes=b'down', truncated=False] list_pets_http_error
+  list error media ! InternalServerError: InternalServerError(status_code=503, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=503, body=b'down', body_bytes=b'down', truncated=False, cause=UnexpectedMediaTypeError()] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error bare ! ListPetsHTTPError: ListPetsHTTPError(status_code=502, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=502, error_decoded=False, error_decode_error=UnexpectedMediaTypeError(), body_bytes=b'down', truncated=False] list_pets_http_error
+  list error bare ! InternalServerError: InternalServerError(status_code=502, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=502, body=b'down', body_bytes=b'down', truncated=False, cause=UnexpectedMediaTypeError()] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list redirect ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='listPets', call_id='<call>') [operation_id='listPets', status_code=302, body_bytes=b'', truncated=False] unexpected_status_error
+  list redirect ! APIStatusError: APIStatusError(status_code=302, operation_id='listPets', call_id='<call>', reason='unexpected_status') [operation_id='listPets', status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   redirect info 302 HeadersView(<2 headers>)
@@ -349,7 +349,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list truncated ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, error_decoded=False, body_bytes=b'xxxx', truncated=True] list_pets_http_error
+  list truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True] internal_server_error
   list missing ! RequestEncodingError: RequestEncodingError(operation_id='listPets', call_id='<call>', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace')] request_encoding_error
   list invalid ! RequestEncodingError: RequestEncodingError(operation_id='listPets', call_id='<call>', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] request_encoding_error
   list options ! ConfigurationError: ConfigurationError(operation_id='listPets', field_path='options', condition='invalid_type') [operation_id='listPets', field_path=('options',), condition='invalid_type'] configuration_error
@@ -369,7 +369,7 @@
   create invalid body ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 24] b'{"name":"dog","tag":"x"}'
-  create rejected ! CreatePetHTTPError: CreatePetHTTPError(status_code=422, operation_id='createPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createPet', status_code=422, error_decoded=True, error_data={'code': 22}, body_bytes=b'{"code":22}', truncated=False] create_pet_http_error
+  create rejected ! UnprocessableEntityError: UnprocessableEntityError(status_code=422, operation_id='createPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createPet', status_code=422, body={'code': 22}, body_bytes=b'{"code":22}', truncated=False] unprocessable_entity_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   get = {'id': 3, 'name': 'fox'}
@@ -387,13 +387,13 @@
   get text mismatch ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'{"id":3,"name":"fox"}', truncated=False, actual_media_type='application/json', expected_media_types=('text/plain',)] unexpected_media_type_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get missing ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=True, body_bytes=b'', truncated=False] get_pet_http_error
+  get missing ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, body_bytes=b'', truncated=False] not_found_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get missing body ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=False, error_decode_error=BodyProtocolError(), body_bytes=b'gone', truncated=False] get_pet_http_error
+  get missing body ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, body=b'gone', body_bytes=b'gone', truncated=False, cause=BodyProtocolError()] not_found_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  get created ! UnexpectedStatusError: UnexpectedStatusError(status_code=201, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=201, body_bytes=b'{"id":3,"name":"fox"}', truncated=False] unexpected_status_error
+  get created ! APIStatusError: APIStatusError(status_code=201, operation_id='getPet', call_id='<call>', reason='unexpected_status') [operation_id='getPet', status_code=201, body=b'{"id":3,"name":"fox"}', body_bytes=b'{"id":3,"name":"fox"}', truncated=False] unexpected_status
   get undeclared ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='getPet', field_path=('response_media_type',), condition='undeclared'] configuration_error
   get invalid ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='getPet', field_path=('response_media_type',), condition='undeclared'] configuration_error
   > DELETE https://api.example.com/v1/pets/3
@@ -404,7 +404,7 @@
   delete body ! BodyProtocolError: BodyProtocolError(status_code=204, call_id='<call>') [condition='forbidden_body', body_bytes=b'x', truncated=False] body_protocol_error
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  delete ok ! UnexpectedStatusError: UnexpectedStatusError(status_code=200, call_id='<call>') [status_code=200, body_bytes=b'', truncated=False] unexpected_status_error
+  delete ok ! APIStatusError: APIStatusError(status_code=200, call_id='<call>', reason='unexpected_status') [status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   head = Response(None, 200, None, None, [('etag', '"v1"')])
@@ -536,7 +536,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async truncated ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, error_decoded=False, body_bytes=b'xxxx', truncated=True] list_pets_http_error
+  async truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True] internal_server_error
   async borrowed closed False
   async owned closed True
   async http_client ! ConfigurationError: ConfigurationError(field_path='http_client', condition='invalid_type') [field_path=('http_client',), condition='invalid_type'] configuration_error

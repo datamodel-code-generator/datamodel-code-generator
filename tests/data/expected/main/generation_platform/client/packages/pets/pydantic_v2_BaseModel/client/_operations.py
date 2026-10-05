@@ -25,29 +25,15 @@ from ._runtime.client.operations import (
 )
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.pets import (
-    AttachFilesErrorData,
-    AttachFilesHTTPError,
     AttachFilesResponse,
-    CreatePetErrorData,
-    CreatePetHTTPError,
     CreatePetResponse,
-    DeletePetsByPetIdErrorData,
-    DeletePetsByPetIdHTTPError,
     DeletePetsByPetIdResponse,
-    GetPetErrorData,
-    GetPetHTTPError,
     GetPetResponse,
-    HeadPetErrorData,
-    HeadPetHTTPError,
     HeadPetResponse,
-    ListPetsErrorData,
-    ListPetsHTTPError,
     ListPetsResponse,
-    ReadFilesErrorData,
-    ReadFilesHTTPError,
     ReadFilesResponse,
 )
-from .types.pets.photos import UploadErrorData, UploadHTTPError, UploadResponse
+from .types.pets.photos import UploadResponse
 
 _SERVERS_0: Final = (
     ServerPlan(
@@ -56,7 +42,7 @@ _SERVERS_0: Final = (
     ),
 )
 
-OPERATION_0: Final[OperationPlan[ListPetsResponse, ListPetsErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
     operation_id='listPets',
     method='GET',
     path='/pets',
@@ -84,7 +70,6 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse, ListPetsErrorData]] = Operati
                 model_bindings.codec_7, model_bindings.CONTEXT_7,
             ),
         ),
-        ListPetsHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -131,7 +116,7 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse, ListPetsErrorData]] = Operati
     request_id_header='X-Request-Id',
 )
 
-OPERATION_1: Final[OperationPlan[CreatePetResponse, CreatePetErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     operation_id='createPet',
     method='POST',
     path='/pets',
@@ -153,7 +138,6 @@ OPERATION_1: Final[OperationPlan[CreatePetResponse, CreatePetErrorData]] = Opera
                 model_bindings.codec_11, model_bindings.CONTEXT_11,
             ),
         ),
-        CreatePetHTTPError,
     ),
     body=RequestBody(
         media=(
@@ -172,7 +156,7 @@ OPERATION_1: Final[OperationPlan[CreatePetResponse, CreatePetErrorData]] = Opera
     ),
 )
 
-OPERATION_2: Final[OperationPlan[GetPetResponse, GetPetErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[GetPetResponse]] = OperationPlan(
     operation_id='getPet',
     method='GET',
     path='/pets/{petId}',
@@ -193,7 +177,6 @@ OPERATION_2: Final[OperationPlan[GetPetResponse, GetPetErrorData]] = OperationPl
             ),
         ),
         (empty_branch('404'),),
-        GetPetHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -210,12 +193,12 @@ OPERATION_2: Final[OperationPlan[GetPetResponse, GetPetErrorData]] = OperationPl
     response_media_type='application/json',
 )
 
-OPERATION_3: Final[OperationPlan[DeletePetsByPetIdResponse, DeletePetsByPetIdErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[DeletePetsByPetIdResponse]] = OperationPlan(
     operation_id=None,
     method='DELETE',
     path='/pets/{petId}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), DeletePetsByPetIdHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -230,12 +213,12 @@ OPERATION_3: Final[OperationPlan[DeletePetsByPetIdResponse, DeletePetsByPetIdErr
     ),
 )
 
-OPERATION_4: Final[OperationPlan[HeadPetResponse, HeadPetErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[HeadPetResponse]] = OperationPlan(
     operation_id='headPet',
     method='HEAD',
     path='/pets/{petId}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('200'),), (), HeadPetHTTPError, head=True),
+    responses=ResponseDecoder((empty_branch('200'),), (), head=True),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -250,12 +233,12 @@ OPERATION_4: Final[OperationPlan[HeadPetResponse, HeadPetErrorData]] = Operation
     ),
 )
 
-OPERATION_5: Final[OperationPlan[UploadResponse, UploadErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[UploadResponse]] = OperationPlan(
     operation_id='uploadPhoto',
     method='PUT',
     path='/pets/{petId}/photo',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((binary_branch('200', 'image/*'),), (), UploadHTTPError),
+    responses=ResponseDecoder((binary_branch('200', 'image/*'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -274,12 +257,12 @@ OPERATION_5: Final[OperationPlan[UploadResponse, UploadErrorData]] = OperationPl
     ),
 )
 
-OPERATION_6: Final[OperationPlan[AttachFilesResponse, AttachFilesErrorData]] = OperationPlan(
+OPERATION_6: Final[OperationPlan[AttachFilesResponse]] = OperationPlan(
     operation_id='attachFiles',
     method='POST',
     path='/pets/{petId}/files',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), AttachFilesHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -316,7 +299,7 @@ OPERATION_6: Final[OperationPlan[AttachFilesResponse, AttachFilesErrorData]] = O
     ),
 )
 
-OPERATION_7: Final[OperationPlan[ReadFilesResponse, ReadFilesErrorData]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[ReadFilesResponse]] = OperationPlan(
     operation_id='readFiles',
     method='GET',
     path='/pets/{petId}/files',
@@ -345,7 +328,6 @@ OPERATION_7: Final[OperationPlan[ReadFilesResponse, ReadFilesErrorData]] = Opera
             ),
         ),
         (),
-        ReadFilesHTTPError,
     ),
     parameters=(
         ParameterSpec(

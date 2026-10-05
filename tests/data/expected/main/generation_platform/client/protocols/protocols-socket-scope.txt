@@ -66,12 +66,12 @@ render pydantic_v2.BaseModel
     "schema_version": 1
   }
   /selection/selected_operations/0 chat.chat_socket()
-    exports client.types.chat.ChatSocketResponse client.types.chat.ChatSocketErrorData client.types.chat.ChatSocketHTTPError
+    exports client.types.chat.ChatSocketResponse
     exports None
   /selection/selected_operations/1 chat.post_chat()
-    exports client.types.chat.PostChatResponse client.types.chat.PostChatErrorData client.types.chat.PostChatHTTPError
+    exports client.types.chat.PostChatResponse
     exports None
   /selection/selected_operations/2 upload.upload_socket()
-    exports client.types.upload.UploadSocketResponse client.types.upload.UploadSocketErrorData client.types.upload.UploadSocketHTTPError
+    exports client.types.upload.UploadSocketResponse
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'websockets>=17.1', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

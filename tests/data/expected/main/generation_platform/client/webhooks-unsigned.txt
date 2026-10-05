@@ -66,6 +66,6 @@ render pydantic_v2.BaseModel
     "schema_version": 1
   }
   /selection/selected_operations/0 events.list_events()
-    exports client.types.events.ListEventsResponse client.types.events.ListEventsErrorData client.types.events.ListEventsHTTPError
+    exports client.types.events.ListEventsResponse
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

@@ -17,43 +17,17 @@ from ._runtime.client.operations import (
     model_branch,
 )
 from ._runtime.model_codecs.parameters import ParameterPlan
-from .types.archive import (
-    ListArchiveErrorData,
-    ListArchiveHTTPError,
-    ListArchiveResponse,
-)
-from .types.labels import (
-    ListLabelsErrorData,
-    ListLabelSetsErrorData,
-    ListLabelSetsHTTPError,
-    ListLabelSetsResponse,
-    ListLabelsHTTPError,
-    ListLabelsResponse,
-)
-from .types.loose import ListLooseErrorData, ListLooseHTTPError, ListLooseResponse
-from .types.nested import ListNestedErrorData, ListNestedHTTPError, ListNestedResponse
-from .types.secure import (
-    ListSecureUsersErrorData,
-    ListSecureUsersHTTPError,
-    ListSecureUsersResponse,
-)
-from .types.statuses import (
-    ListStatusesErrorData,
-    ListStatusesHTTPError,
-    ListStatusesResponse,
-)
-from .types.users import (
-    ListUsersErrorData,
-    ListUsersHTTPError,
-    ListUsersResponse,
-    SearchUsersErrorData,
-    SearchUsersHTTPError,
-    SearchUsersResponse,
-)
+from .types.archive import ListArchiveResponse
+from .types.labels import ListLabelSetsResponse, ListLabelsResponse
+from .types.loose import ListLooseResponse
+from .types.nested import ListNestedResponse
+from .types.secure import ListSecureUsersResponse
+from .types.statuses import ListStatusesResponse
+from .types.users import ListUsersResponse, SearchUsersResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
-OPERATION_0: Final[OperationPlan[ListUsersResponse, ListUsersErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[ListUsersResponse]] = OperationPlan(
     operation_id='listUsers',
     method='GET',
     path='/users',
@@ -75,7 +49,6 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse, ListUsersErrorData]] = Opera
                 model_bindings.codec_5, model_bindings.CONTEXT_5,
             ),
         ),
-        ListUsersHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -106,7 +79,7 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse, ListUsersErrorData]] = Opera
     ),
 )
 
-OPERATION_1: Final[OperationPlan[SearchUsersResponse, SearchUsersErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[SearchUsersResponse]] = OperationPlan(
     operation_id='searchUsers',
     method='POST',
     path='/users/search',
@@ -121,7 +94,6 @@ OPERATION_1: Final[OperationPlan[SearchUsersResponse, SearchUsersErrorData]] = O
             ),
         ),
         (),
-        SearchUsersHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -147,7 +119,7 @@ OPERATION_1: Final[OperationPlan[SearchUsersResponse, SearchUsersErrorData]] = O
     ),
 )
 
-OPERATION_2: Final[OperationPlan[ListLooseResponse, ListLooseErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[ListLooseResponse]] = OperationPlan(
     operation_id='listLoose',
     method='GET',
     path='/loose',
@@ -162,7 +134,6 @@ OPERATION_2: Final[OperationPlan[ListLooseResponse, ListLooseErrorData]] = Opera
             ),
         ),
         (),
-        ListLooseHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -178,7 +149,7 @@ OPERATION_2: Final[OperationPlan[ListLooseResponse, ListLooseErrorData]] = Opera
     ),
 )
 
-OPERATION_3: Final[OperationPlan[ListNestedResponse, ListNestedErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[ListNestedResponse]] = OperationPlan(
     operation_id='listNested',
     method='GET',
     path='/nested',
@@ -193,7 +164,6 @@ OPERATION_3: Final[OperationPlan[ListNestedResponse, ListNestedErrorData]] = Ope
             ),
         ),
         (),
-        ListNestedHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -208,7 +178,7 @@ OPERATION_3: Final[OperationPlan[ListNestedResponse, ListNestedErrorData]] = Ope
     ),
 )
 
-OPERATION_4: Final[OperationPlan[ListLabelsResponse, ListLabelsErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[ListLabelsResponse]] = OperationPlan(
     operation_id='listLabels',
     method='GET',
     path='/labels',
@@ -223,7 +193,6 @@ OPERATION_4: Final[OperationPlan[ListLabelsResponse, ListLabelsErrorData]] = Ope
             ),
         ),
         (),
-        ListLabelsHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -238,7 +207,7 @@ OPERATION_4: Final[OperationPlan[ListLabelsResponse, ListLabelsErrorData]] = Ope
     ),
 )
 
-OPERATION_5: Final[OperationPlan[ListLabelSetsResponse, ListLabelSetsErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[ListLabelSetsResponse]] = OperationPlan(
     operation_id='listLabelSets',
     method='GET',
     path='/label-sets',
@@ -253,7 +222,6 @@ OPERATION_5: Final[OperationPlan[ListLabelSetsResponse, ListLabelSetsErrorData]]
             ),
         ),
         (),
-        ListLabelSetsHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -268,7 +236,7 @@ OPERATION_5: Final[OperationPlan[ListLabelSetsResponse, ListLabelSetsErrorData]]
     ),
 )
 
-OPERATION_6: Final[OperationPlan[ListArchiveResponse, ListArchiveErrorData]] = OperationPlan(
+OPERATION_6: Final[OperationPlan[ListArchiveResponse]] = OperationPlan(
     operation_id='listArchive',
     method='GET',
     path='/archive/{cursor}',
@@ -283,7 +251,6 @@ OPERATION_6: Final[OperationPlan[ListArchiveResponse, ListArchiveErrorData]] = O
             ),
         ),
         (),
-        ListArchiveHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -298,7 +265,7 @@ OPERATION_6: Final[OperationPlan[ListArchiveResponse, ListArchiveErrorData]] = O
     ),
 )
 
-OPERATION_7: Final[OperationPlan[ListStatusesResponse, ListStatusesErrorData]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[ListStatusesResponse]] = OperationPlan(
     operation_id='listStatuses',
     method='GET',
     path='/statuses',
@@ -313,7 +280,6 @@ OPERATION_7: Final[OperationPlan[ListStatusesResponse, ListStatusesErrorData]] =
             ),
         ),
         (),
-        ListStatusesHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -329,7 +295,7 @@ OPERATION_7: Final[OperationPlan[ListStatusesResponse, ListStatusesErrorData]] =
     ),
 )
 
-OPERATION_8: Final[OperationPlan[ListSecureUsersResponse, ListSecureUsersErrorData]] = OperationPlan(
+OPERATION_8: Final[OperationPlan[ListSecureUsersResponse]] = OperationPlan(
     operation_id='listSecureUsers',
     method='GET',
     path='/secure/users',
@@ -344,7 +310,6 @@ OPERATION_8: Final[OperationPlan[ListSecureUsersResponse, ListSecureUsersErrorDa
             ),
         ),
         (),
-        ListSecureUsersHTTPError,
     ),
     parameters=(
         ParameterSpec(

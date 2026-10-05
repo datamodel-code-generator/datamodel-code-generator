@@ -2,22 +2,14 @@
 """The types of the labels operations."""
 
 from ._operations import (
-    ListLabelsErrorData,
-    ListLabelSetsErrorData,
-    ListLabelSetsHTTPError,
     ListLabelSetsResponse,
-    ListLabelsHTTPError,
     ListLabelsResponse,
     decode_list_label_sets_header,
     decode_list_labels_header,
 )
 
 __all__ = [
-    'ListLabelSetsErrorData',
-    'ListLabelSetsHTTPError',
     'ListLabelSetsResponse',
-    'ListLabelsErrorData',
-    'ListLabelsHTTPError',
     'ListLabelsResponse',
     'decode_list_label_sets_header',
     'decode_list_labels_header',

@@ -115,13 +115,13 @@
     "schema_version": 1
   }
   /selection/selected_operations/0 rooms.room_socket(path:room=room, query:since=since)
-    exports client.types.rooms.RoomSocketResponse client.types.rooms.RoomSocketErrorData client.types.rooms.RoomSocketHTTPError
+    exports client.types.rooms.RoomSocketResponse
     exports None
   /selection/selected_operations/1 feed.feed_socket()
-    exports client.types.feed.FeedSocketResponse client.types.feed.FeedSocketErrorData client.types.feed.FeedSocketHTTPError
+    exports client.types.feed.FeedSocketResponse
     exports None
   /selection/selected_operations/2 secure.secure_socket(header:X-Trace=x_trace)
-    exports client.types.secure.SecureSocketResponse client.types.secure.SecureSocketErrorData client.types.secure.SecureSocketHTTPError
+    exports client.types.secure.SecureSocketResponse
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'websockets>=17.1', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
@@ -417,7 +417,7 @@ wait for retained cleanup; it does not authorize another send or restore an expi
 
 A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
 initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises
-the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the call's options, then
+the operation's `APIStatusError`. Each limit comes from the call's options, then
 `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
 
 - `client.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,

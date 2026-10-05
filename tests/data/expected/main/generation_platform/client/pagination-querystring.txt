@@ -205,9 +205,9 @@ render pydantic_v2.BaseModel
     "schema_version": 1
   }
   /selection/selected_operations/0 default.search(querystring:criteria=criteria)
-    exports client.types.default.SearchResponse client.types.default.SearchErrorData client.types.default.SearchHTTPError
+    exports client.types.default.SearchResponse
     exports client.types.default.decode_search_header
   /selection/selected_operations/1 default.lookup(querystring:filter=filter)
-    exports client.types.default.LookupResponse client.types.default.LookupErrorData client.types.default.LookupHTTPError
+    exports client.types.default.LookupResponse
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

@@ -110,7 +110,7 @@ def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tupl
             getattr(error, "network_send_count", None),
             getattr(error, "network_send_budget_used", None),
             getattr(error, "body_bytes", None),
-            getattr(error, "error_data", None),
+            getattr(error, "body", None),
             getattr(error, "field_path", None),
             getattr(error, "truncated", None),
             getattr(info, "status_code", None),

@@ -13,14 +13,14 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   saved error 418 'application/json' b'{"code":7,"message":"boom"}' b'{"code":7,"message":"boom"}' shared True r-1
-  saved error status ! ListPetsHTTPError: ListPetsHTTPError(status_code=418, operation_id='listPets', call_id='<call>', request_id='r-1', retry_stop_reason='status_not_retryable') [operation_id='listPets', status_code=418, error_decoded=True, error_data=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False] list_pets_http_error
-  saved error status again ! ListPetsHTTPError: ListPetsHTTPError(status_code=418, operation_id='listPets', call_id='<call>', request_id='r-1', retry_stop_reason='status_not_retryable') [operation_id='listPets', status_code=418, error_decoded=True, error_data=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False] list_pets_http_error
+  saved error status ! APIStatusError: APIStatusError(status_code=418, operation_id='listPets', call_id='<call>', request_id='r-1', retry_stop_reason='status_not_retryable') [operation_id='listPets', status_code=418, body=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False] api_status_error
+  saved error status again ! APIStatusError: APIStatusError(status_code=418, operation_id='listPets', call_id='<call>', request_id='r-1', retry_stop_reason='status_not_retryable') [operation_id='listPets', status_code=418, body=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False] api_status_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  saved truncated status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, error_decoded=False, body_bytes=b'0123', truncated=True] get_pet_http_error
+  saved truncated status ! InternalServerError: InternalServerError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, body=b'0123', body_bytes=b'0123', truncated=True] internal_server_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  saved redirect status ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=302, body_bytes=b'', truncated=False] unexpected_status_error
+  saved redirect status ! APIStatusError: APIStatusError(status_code=302, operation_id='getPet', call_id='<call>', reason='unexpected_status') [operation_id='getPet', status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved undecodable text text ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'\xff\xfe', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff\xfe', 0, 1, 'invalid start byte')] decode_error
@@ -103,15 +103,15 @@
   streaming options ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='options', condition='invalid_type') [operation_id='getPet', field_path=('options',), condition='invalid_type'] configuration_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  streaming error status ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=False, error_decode_error=BodyProtocolError(), body_bytes=b'missing', truncated=False] get_pet_http_error
+  streaming error status ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, body=b'missing', body_bytes=b'missing', truncated=False, cause=BodyProtocolError()] not_found_error
   streaming error read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='closed', action='read') [operation_id='getPet'] response_consumed_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  streaming truncated status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, error_decoded=False, body_bytes=b'0123', truncated=True] get_pet_http_error
+  streaming truncated status ! InternalServerError: InternalServerError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, body=b'0123', body_bytes=b'0123', truncated=True] internal_server_error
   streaming truncated read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='closed', action='read') [operation_id='getPet'] response_consumed_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  streaming broken coding status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, error_decoded=False, error_decode_error=ProtocolDataError(), body_bytes=b'', truncated=True] get_pet_http_error
+  streaming broken coding status ! InternalServerError: InternalServerError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, body=b'', body_bytes=b'', truncated=True, cause=ProtocolDataError()] internal_server_error
   streaming broken coding read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='closed', action='read') [operation_id='getPet'] response_consumed_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -119,7 +119,7 @@
   streaming broken read read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='failed', action='read') [operation_id='getPet'] response_consumed_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  partly read status ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=False, body_bytes=b'', truncated=True] get_pet_http_error
+  partly read status ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, body=b'', body_bytes=b'', truncated=True] not_found_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
@@ -157,7 +157,7 @@
     [host: hooks.example.com, accept-encoding: gzip, deflate] b''
   > GET https://hooks.example.com/down
     [host: hooks.example.com, accept-encoding: gzip, deflate] b''
-  request status ! HTTPStatusError: HTTPStatusError(status_code=503, call_id='<call>', retry_stop_reason='max_retries_exhausted') [status_code=503, error_decoded=False, body_bytes=b'down', truncated=False] http_status_error
+  request status ! InternalServerError: InternalServerError(status_code=503, call_id='<call>', retry_stop_reason='max_retries_exhausted') [status_code=503, body=b'down', body_bytes=b'down', truncated=False] internal_server_error
   > GET https://hooks.example.com/stream
     [host: hooks.example.com, accept-encoding: gzip, deflate] b''
   request streamed [b'str', b'eam']
@@ -259,7 +259,7 @@
   async saved gzip 200 'application/json' b'{"id":3,"name":"fox"}' b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb22\xd6Q\xcaK\xccMU\xb2RJ\xcb\xafP\xaa\x05\x00\xc4\x1a\xc5\x91\x15\x00\x00\x00' shared False
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async saved status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, error_decoded=False, body_bytes=b'0123', truncated=True] get_pet_http_error
+  async saved status ! InternalServerError: InternalServerError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, body=b'0123', body_bytes=b'0123', truncated=True] internal_server_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async saved coded ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='content_coded', limit=8, observed_bytes=24] response_too_large_error
@@ -294,19 +294,19 @@
   async capped broken ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async streaming error status ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=False, error_decode_error=BodyProtocolError(), body_bytes=b'missing', truncated=False] get_pet_http_error
+  async streaming error status ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, body=b'missing', body_bytes=b'missing', truncated=False, cause=BodyProtocolError()] not_found_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async streaming truncated status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, error_decoded=False, body_bytes=b'0123', truncated=True] get_pet_http_error
+  async streaming truncated status ! InternalServerError: InternalServerError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, body=b'0123', body_bytes=b'0123', truncated=True] internal_server_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async streaming broken coding status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, error_decoded=False, error_decode_error=ProtocolDataError(), body_bytes=b'', truncated=True] get_pet_http_error
+  async streaming broken coding status ! InternalServerError: InternalServerError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, body=b'', body_bytes=b'', truncated=True, cause=ProtocolDataError()] internal_server_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async streaming broken read status ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async partly read status ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=False, body_bytes=b'', truncated=True] get_pet_http_error
+  async partly read status ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, body=b'', body_bytes=b'', truncated=True] not_found_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async stopped block read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='closed', action='read') [operation_id='getPet'] response_consumed_error
@@ -332,7 +332,7 @@
   async moved again b'{}' ['failed.json', 'pet.json', 'raced.json']
   > POST https://hooks.example.com/ping
     [host: hooks.example.com, accept-encoding: gzip, deflate, content-length: 4] b'ping'
-  async request status ! HTTPStatusError: HTTPStatusError(status_code=503, call_id='<call>', retry_stop_reason='unsafe_operation') [status_code=503, error_decoded=False, body_bytes=b'down', truncated=False] http_status_error
+  async request status ! InternalServerError: InternalServerError(status_code=503, call_id='<call>', retry_stop_reason='unsafe_operation') [status_code=503, body=b'down', body_bytes=b'down', truncated=False] internal_server_error
   > GET https://hooks.example.com/stream
     [host: hooks.example.com, accept-encoding: gzip, deflate] b''
   async request streamed [b'str', b'eam']

@@ -219,12 +219,15 @@ _AUTH: Final = (
 _ERROR_NAMES: Final = (
     "AdapterContractError",
     "AdapterExecutionError",
+    "APIStatusError",
     "AuthConfigurationError",
+    "AuthenticationError",
     "AuthProviderClosedError",
     "AuthProviderExecutionError",
     "AuthReauthorizationRequiredError",
     "AuthRefreshError",
     "AuthTimeoutError",
+    "BadRequestError",
     "BodyChangedError",
     "BodyFactoryError",
     "BodyNotReplayableError",
@@ -233,20 +236,24 @@ _ERROR_NAMES: Final = (
     "CleanupError",
     "ClientClosedError",
     "ConfigurationError",
+    "ConflictError",
     "DecodeError",
     "DeadlineExceededError",
     "DecompressionLimitError",
     "DeliveryState",
-    "HTTPStatusError",
     "HookExecutionError",
+    "InternalServerError",
     "IOPhase",
     "LimiterExecutionError",
+    "NotFoundError",
     "OAuthExchangeError",
+    "PermissionDeniedError",
     "PhaseTimeoutError",
     "ProtocolConfigurationError",
     "ProtocolError",
     "ProtocolSizeError",
     "ProtocolStoreError",
+    "RateLimitError",
     "RedirectPolicyError",
     "RequestEncodingError",
     "RequestCancelledError",
@@ -263,7 +270,7 @@ _ERROR_NAMES: Final = (
     "TokenExpiredError",
     "TransportError",
     "UnexpectedMediaTypeError",
-    "UnexpectedStatusError",
+    "UnprocessableEntityError",
     "UnsupportedAsyncBackendError",
     "UnsupportedContentCodingError",
     "WebhookVerificationError",
@@ -751,7 +758,7 @@ def exports(spec: OperationSpec) -> tuple[str, ...]:
     """Return the public names the types module of a resource defines for one operation."""
     headers = (f"decode_{spec.name}_header",) if any(response.headers for response in spec.responses) else ()
     name = spec.pascal
-    return (f"{name}Response", f"{name}ErrorData", f"{name}HTTPError", *headers)
+    return (f"{name}Response", *headers)
 
 
 def _header_names(spec: OperationSpec) -> _Headers:
@@ -1486,7 +1493,7 @@ class _Types(_Typing):
         module = Module(reserved, self.symbols, level=len(resource.parts) + 2)
         sections = [section for spec in resource.operations for section in self.sections(module, spec)]
         return types_template.render(
-            docstring=f"The result types, errors, and header accessors of the {resource.namespace} operations.",
+            docstring=f"The result types and header accessors of the {resource.namespace} operations.",
             imports=module.imports(),
             sections=sections,
         )
@@ -1494,16 +1501,8 @@ class _Types(_Typing):
     def sections(self, module: Module, spec: OperationSpec) -> list[str]:
         """Return the definitions of one operation's types."""
         alias = module.name("typing", "TypeAlias")
-        name = spec.pascal
         successes = self.union(module, self.successes(spec), "None")
-        errors = dict.fromkeys(key for response in spec.responses if response.error for key in self.payloads(response))
-        sections = [
-            f"{name}Response: {alias} = {successes}\n{name}ErrorData: {alias} = {self.union(module, errors, 'None')}",
-            (
-                f"class {name}HTTPError({module.local('errors', 'HTTPStatusError')}[{name}ErrorData]):\n"
-                f'    """An error response of {spec.name}, with its decoded payload when one is declared."""'
-            ),
-        ]
+        sections = [f"{spec.pascal}Response: {alias} = {successes}"]
         if headers := _header_names(spec):
             sections.append(self.header_accessor(module, spec, headers))
         return sections
@@ -1641,10 +1640,7 @@ class _Registry(_Typing):
         plan = module.local(_RUNTIME, "OperationPlan")
         for spec in self.plan.operations:
             types = f"types.{spec.resource}"
-            result = (
-                f"{module.local(types, f'{spec.pascal}Response')}, {module.local(types, f'{spec.pascal}ErrorData')}"
-            )
-            head = f"OPERATION_{spec.index}: {final}[{plan}[{result}]] = "
+            head = f"OPERATION_{spec.index}: {final}[{plan}[{module.local(types, f'{spec.pascal}Response')}]] = "
             sections.append(head + layout(self.operation(module, spec, servers[spec.servers]), 0, len(head), WIDTH))
         return (
             '"""The operation registry of this package; regenerate it instead of editing."""\n\n'
@@ -1834,7 +1830,6 @@ class _Registry(_Typing):
         entries: list[tuple[str, Doc]] = [
             ("", _tuple(success)),
             ("", _tuple(errors)),
-            ("", module.local(f"types.{spec.resource}", f"{spec.pascal}HTTPError")),
         ]
         if spec.success_statuses:
             entries.append(("success_statuses=", f"frozenset({{{', '.join(map(str, spec.success_statuses))}}})"))
@@ -3659,7 +3654,7 @@ stream open raises `CleanupError` once its cleanup timeout passes.
 
 A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
 initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises
-the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the call's options, then
+the operation's `APIStatusError`. Each limit comes from the call's options, then
 `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
 
 - `{package}.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,

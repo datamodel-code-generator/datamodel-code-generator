@@ -180,7 +180,7 @@ class StreamResumePlan:
     """
 
     operation: OperationRef
-    call: OperationPlan[object, object]
+    call: OperationPlan[object]
     media: str
     write: RequestTarget
     own: bool = False
@@ -190,7 +190,7 @@ class StreamResumePlan:
     bindings: tuple[PageBinding, ...] = ()
     reconnect_on: tuple[Literal["transport_interruption", "incomplete_eof"], ...] = ("transport_interruption",)
     expires_at: HeaderSelector | None = None
-    reopened: OperationPlan[object, object] = field(init=False)
+    reopened: OperationPlan[object] = field(init=False)
     writes: Writes = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
@@ -239,7 +239,7 @@ class EventPlan(Generic[T]):
 
     helper_id: str
     operation: OperationRef
-    call: OperationPlan[object, object]
+    call: OperationPlan[object]
     media: str
     fingerprint: str
     event: NativeValue[T] | None = None
@@ -1668,7 +1668,7 @@ class _AsyncData(Generic[T]):
 
 def _sent(  # noqa: PLR0913, PLR0917
     core: ClientCore,
-    call: OperationPlan[object, object],
+    call: OperationPlan[object],
     request: _Given,
     limits: _Limits,
     session: OperationSession,
@@ -1690,7 +1690,7 @@ def _sent(  # noqa: PLR0913, PLR0917
 
 async def _asent(  # noqa: PLR0913, PLR0917
     core: AsyncClientCore,
-    call: OperationPlan[object, object],
+    call: OperationPlan[object],
     request: _Given,
     limits: _Limits,
     session: OperationSession,

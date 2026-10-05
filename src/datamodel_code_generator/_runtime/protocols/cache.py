@@ -102,7 +102,7 @@ class CachePlan(Generic[T]):
 
     helper_id: str
     operation: OperationRef
-    call: OperationPlan[T, object]
+    call: OperationPlan[T]
     validator: Literal["etag", "last_modified", "both"]
     authenticated: bool
     fingerprint: str

@@ -61,7 +61,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  second page failing ['1'] ! ListUsersHTTPError: ListUsersHTTPError(status_code=503, operation_id='listUsers', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listUsers', status_code=503, error_decoded=False, body_bytes=b'{"message":"busy"}', truncated=False] list_users_http_error
+  second page failing ['1'] ! InternalServerError: InternalServerError(status_code=503, operation_id='listUsers', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listUsers', status_code=503, body=b'{"message":"busy"}', body_bytes=b'{"message":"busy"}', truncated=False] internal_server_error
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resumed after the failed page ['2']

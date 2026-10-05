@@ -20,7 +20,7 @@ from contextlib import (
 from dataclasses import dataclass, replace
 from functools import partial
 from time import monotonic
-from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeGuard, TypeVar
 from urllib.parse import quote, unquote_plus, urlsplit
 
 import httpx2
@@ -44,11 +44,11 @@ from .coding import ContentDecoder
 from .errors import (
     AdapterContractError,
     AdapterExecutionError,
+    APIStatusError,
     CleanupError,
     ConfigurationError,
     DeliveryState,
     HookExecutionError,
-    HTTPStatusError,
     LimiterExecutionError,
     PhaseTimeoutError,
     ProtocolConfigurationError,
@@ -61,6 +61,7 @@ from .errors import (
     TransportError,
     UnsupportedAsyncBackendError,
     add_secondary,
+    is_http_error,
 )
 from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
@@ -428,7 +429,7 @@ def _relabels(value: str | None, media_type: str | None) -> bool:
             return True
 
 
-def _server_url(operation: OperationPlan[object, object], selection: ServerSelection) -> str:
+def _server_url(operation: OperationPlan[object], selection: ServerSelection) -> str:
     operation_id = operation.operation_id
     if selection.index >= len(operation.servers):
         raise ConfigurationError(field_path=("server", "index"), condition="out_of_range", operation_id=operation_id)
@@ -447,7 +448,7 @@ def _server_url(operation: OperationPlan[object, object], selection: ServerSelec
 
 
 def _encoding_error(
-    operation: OperationPlan[object, object], location: tuple[str, str], error: BaseException | None = None
+    operation: OperationPlan[object], location: tuple[str, str], error: BaseException | None = None
 ) -> RequestEncodingError:
     return RequestEncodingError(location=location, operation_id=operation.operation_id, cause=error)
 
@@ -491,7 +492,7 @@ def _exploded(plan: ParameterPlan) -> bool:
     return plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
 
 
-def _coded(operation: OperationPlan[object, object], spec: ParameterSpec, code: Callable[[], R]) -> R:
+def _coded(operation: OperationPlan[object], spec: ParameterSpec, code: Callable[[], R]) -> R:
     """Return what coding an argument gives, raising a codec's refusal as the argument's encoding error."""
     try:
         return code()
@@ -525,7 +526,7 @@ def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
     )
 
 
-def _parameters(operation: OperationPlan[object, object], arguments: tuple[object, ...]) -> _Request:
+def _parameters(operation: OperationPlan[object], arguments: tuple[object, ...]) -> _Request:
     """Return a call's request with its parameters encoded."""
     request = _Request()
     for spec, value in zip(operation.parameters, arguments, strict=True):
@@ -687,13 +688,13 @@ async def _araw(chunks: AsyncIterable[object]) -> AsyncIterator[bytes]:
             yield chunk
 
 
-def _received(decoder: ResponseDecoder[object, object], status: int, settings: Settings) -> _Body:
+def _received(decoder: ResponseDecoder[object], status: int, settings: Settings) -> _Body:
     success = decoder.success(status)
     return _Body(settings.max_response_bytes if success else settings.max_error_body_bytes, success=success)
 
 
 def _completed(
-    decoder: ResponseDecoder[T, object], info: ResponseInfo, body: _Body, settings: Settings, operation_id: str | None
+    decoder: ResponseDecoder[T], info: ResponseInfo, body: _Body, settings: Settings, operation_id: str | None
 ) -> Response[T]:
     if body.overflow:
         assert settings.max_response_bytes is not None
@@ -718,7 +719,7 @@ def _completed(
 
 
 def _page(  # noqa: PLR0913
-    decoder: ResponseDecoder[T, object],
+    decoder: ResponseDecoder[T],
     info: ResponseInfo,
     body: _Body,
     call: _Call,
@@ -749,10 +750,10 @@ def _page(  # noqa: PLR0913
     return data, wire, content
 
 
-RAW_DECODER: Final[ResponseDecoder[object, object]] = ResponseDecoder((), (), HTTPStatusError)
+RAW_DECODER: Final[ResponseDecoder[object]] = ResponseDecoder((), ())
 
 
-def stored_value(operation: OperationPlan[T, object], info: ResponseInfo, body: bytes, settings: Settings) -> T:
+def stored_value(operation: OperationPlan[T], info: ResponseInfo, body: bytes, settings: Settings) -> T:
     """Decode a stored success body as a call's decoder decodes a received one, under the call's settings."""
     received = _Body(settings.max_response_bytes, success=True)
     received.add(body)
@@ -777,8 +778,8 @@ class CacheRequest:
     credential_headers: frozenset[str]
 
 
-def _retry_error(error: BaseException) -> TypeIs[HTTPStatusError[object] | TransportError]:
-    return isinstance(error, (HTTPStatusError, TransportError))
+def _retry_error(error: BaseException) -> TypeGuard[APIStatusError | TransportError]:
+    return is_http_error(error) or isinstance(error, TransportError)
 
 
 _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
@@ -886,7 +887,7 @@ class _Authentication:
         return False
 
 
-def _parameter_names(operation: OperationPlan[object, object], location: str) -> Iterator[str]:
+def _parameter_names(operation: OperationPlan[object], location: str) -> Iterator[str]:
     for parameter in operation.parameters:
         plan = parameter.plan
         if plan.location == location:
@@ -1007,12 +1008,12 @@ class _Call(LogicalCallContext):
     )
 
     def __init__(
-        self, settings: Settings, scope: Scope[HandleT], operation: OperationPlan[object, object] | None = None
+        self, settings: Settings, scope: Scope[HandleT], operation: OperationPlan[object] | None = None
     ) -> None:
         super().__init__(settings, scope, None if operation is None else operation.operation_id)
         self.auth: _Authentication | None = None
         self.operation = operation
-        self.decoder: ResponseDecoder[object, object] = RAW_DECODER
+        self.decoder: ResponseDecoder[object] = RAW_DECODER
         self.events: CallEvents | None = None
         self.request_id_header = None if operation is None else operation.request_id_header
         self.retry_safety: Literal["method_default", "idempotent", "never"] = (
@@ -1327,7 +1328,7 @@ class _SessionCall(_Call):
         self,
         settings: Settings,
         scope: Scope[HandleT],
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         session: OperationSession,
         bound: Deadline | None = None,
     ) -> None:
@@ -1407,7 +1408,7 @@ class _SocketCall(_SessionCall):
         self,
         settings: Settings,
         scope: Scope[HandleT],
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         session: OperationSession,
         open_timeout: float | None,
     ) -> None:
@@ -1602,7 +1603,7 @@ class _Core(Generic[AdapterT, HandleT]):
         return connector
 
     def _raw_call(
-        self, operation: OperationPlan[object, object], options: RequestOptions | None, session: OperationSession | None
+        self, operation: OperationPlan[object], options: RequestOptions | None, session: OperationSession | None
     ) -> _Call:
         """Return the state of a raw call, a child of the helper session that gives one."""
         settings = self._call_settings(options, operation.operation_id)
@@ -1728,7 +1729,7 @@ class _Core(Generic[AdapterT, HandleT]):
         attempt, deferred = _encoded(body, None)
         return PreparedRequest(method=verb, url=target, headers=headers, body=attempt), deferred
 
-    def _base(self, operation: OperationPlan[object, object], settings: Settings) -> str:
+    def _base(self, operation: OperationPlan[object], settings: Settings) -> str:
         """Return a call's base URL, resolving the client's server selection once per server list."""
         if settings.base_url is not None:
             return settings.base_url
@@ -1742,7 +1743,7 @@ class _Core(Generic[AdapterT, HandleT]):
         return url
 
     @staticmethod
-    def _decoder(operation: OperationPlan[T, object], response_media_type: str | None) -> ResponseDecoder[T, object]:
+    def _decoder(operation: OperationPlan[T], response_media_type: str | None) -> ResponseDecoder[T]:
         """Return the operation's decoder, narrowed to the call's response media or else the operation's."""
         decoder = operation.responses
         media_type = response_media_type or operation.response_media_type
@@ -1763,7 +1764,7 @@ class _Core(Generic[AdapterT, HandleT]):
         return _layered(self._settings, options, operation_id)
 
     def _bound(
-        self, operation: OperationPlan[object, object] | None, config: AuthConfig | None
+        self, operation: OperationPlan[object] | None, config: AuthConfig | None
     ) -> BoundAuth | AsyncBoundAuth | None:
         """Select the auth a call binds without invoking callbacks, refusing missing credentials it requires."""
         security = None if operation is None else operation.security
@@ -1822,7 +1823,7 @@ class _Core(Generic[AdapterT, HandleT]):
 
     def _prepare(  # noqa: PLR0913
         self,
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         arguments: tuple[object, ...],
         settings: Settings,
         *,
@@ -1874,9 +1875,7 @@ class _Core(Generic[AdapterT, HandleT]):
             attempt, deferred = _encoded(encoded.content, encoded.media_type)
         return PreparedRequest(method=operation.method, url=url, headers=prepared, body=attempt), deferred
 
-    def _call_query(
-        self, operation: OperationPlan[object, object], pairs: list[str], options: RequestOptions | None
-    ) -> str:
+    def _call_query(self, operation: OperationPlan[object], pairs: list[str], options: RequestOptions | None) -> str:
         """Return a typed call's query: its parameters' pairs, patched when a layer patches them.
 
         An operation whose querystring parameter carries its whole query takes no query patch.
@@ -1910,7 +1909,7 @@ class _Core(Generic[AdapterT, HandleT]):
         _unframed((*self._settings.headers, call), media_type, accept, operation_id)
         return _headers(generated, (*self._settings.headers, params, call), media_type)
 
-    def call_settings(self, options: RequestOptions | None, operation: OperationPlan[object, object]) -> Settings:
+    def call_settings(self, options: RequestOptions | None, operation: OperationPlan[object]) -> Settings:
         """Return the settings a call of the operation runs with under these options."""
         return self._call_settings(options, operation.operation_id)
 
@@ -1921,7 +1920,7 @@ class _Core(Generic[AdapterT, HandleT]):
         return stores.get(name)
 
     def cache_request(
-        self, operation: OperationPlan[object, object], arguments: tuple[object, ...], options: RequestOptions | None
+        self, operation: OperationPlan[object], arguments: tuple[object, ...], options: RequestOptions | None
     ) -> CacheRequest:
         """Return what a cache fetch keys and sends: its settings, its request before auth, and its credentials.
 
@@ -1982,9 +1981,7 @@ class _Core(Generic[AdapterT, HandleT]):
             return None
         return security
 
-    def follow_origins(
-        self, operation: OperationPlan[object, object], options: RequestOptions | None
-    ) -> frozenset[Origin]:
+    def follow_origins(self, operation: OperationPlan[object], options: RequestOptions | None) -> frozenset[Origin]:
         """Return the origins a helper may follow a server's URLs to: its server's and those its security allows."""
         origins = {request_origin(self._base(operation, self._call_settings(options, operation.operation_id)))}
         if (context := self._security_context()) is not None:
@@ -1992,7 +1989,7 @@ class _Core(Generic[AdapterT, HandleT]):
         return frozenset(origins)
 
     def _secret_positions(
-        self, operation: OperationPlan[object, object] | None, options: RequestOptions | None
+        self, operation: OperationPlan[object] | None, options: RequestOptions | None
     ) -> tuple[frozenset[str], frozenset[str]]:
         """Return catalog and configured signer credential positions without acquiring credentials."""
         from .security import secret_names  # noqa: PLC0415
@@ -2007,7 +2004,7 @@ class _Core(Generic[AdapterT, HandleT]):
         return headers, query
 
     def unsaved_argument(
-        self, operation: OperationPlan[object, object], saved: Sequence[WireValue | Unset]
+        self, operation: OperationPlan[object], saved: Sequence[WireValue | Unset]
     ) -> tuple[str, str] | None:
         """Return the location and name of the first given argument a checkpoint never saves, or None.
 
@@ -2027,7 +2024,7 @@ class _Core(Generic[AdapterT, HandleT]):
     def saved_request(  # noqa: PLR0913, PLR0917
         self,
         plan: _PagePlan,
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         arguments: tuple[object, ...],
         body: object,
         media_type: str | None,
@@ -2058,7 +2055,7 @@ class _Core(Generic[AdapterT, HandleT]):
 
     @staticmethod
     def restored_request(
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         arguments: tuple[WireValue | Unset, ...],
         body: tuple[WireValue, str, str | None] | None,
     ) -> tuple[tuple[object, ...], object, str | None]:
@@ -2085,7 +2082,7 @@ class _Core(Generic[AdapterT, HandleT]):
 
     def checked_page(
         self,
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
         media_type: str | None,
         options: RequestOptions | None,
@@ -2110,7 +2107,7 @@ class _Core(Generic[AdapterT, HandleT]):
         return prepared.url, prepared.headers
 
     def checked_arguments(
-        self, operation: OperationPlan[object, object], given: Mapping[int, WireValue], options: RequestOptions | None
+        self, operation: OperationPlan[object], given: Mapping[int, WireValue], options: RequestOptions | None
     ) -> None:
         """Encode some arguments of a helper's request, by position, as its call encodes them, sending nothing.
 
@@ -2629,7 +2626,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
     def execute(  # noqa: PLR0913
         self,
-        operation: OperationPlan[T, object],
+        operation: OperationPlan[T],
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
@@ -2698,7 +2695,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
     def execute_page(  # noqa: PLR0913
         self,
         plan: _PagePlan,
-        operation: OperationPlan[T, object],
+        operation: OperationPlan[T],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
         build: Callable[[T, WireValue, bytes, ResponseInfo, str, frozenset[str]], R],
         *,
@@ -2756,7 +2753,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
     def execute_cached(  # noqa: PLR0913, PLR0917
         self,
-        operation: OperationPlan[T, object],
+        operation: OperationPlan[T],
         request: PreparedRequest[EncodedAttempt],
         settings: Settings,
         modified: Callable[[Response[T], bytes], tuple[Response[T], R]],
@@ -2802,7 +2799,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
     def execute_raw(  # noqa: PLR0912, PLR0913
         self,
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
@@ -2876,7 +2873,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
     def stream(  # noqa: PLR0913
         self,
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
@@ -2965,7 +2962,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
     def open_socket(  # noqa: PLR0913
         self,
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         arguments: tuple[object, ...],
         adapter: TransportAdapter,
         *,
@@ -3500,7 +3497,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         self,
         response: TransportResponse,
         info: ResponseInfo,
-        decoder: ResponseDecoder[object, object],
+        decoder: ResponseDecoder[object],
         call: LogicalCallContext,
     ) -> _Body:
         """Read a bounded response body while checking the logical deadline at each chunk."""
@@ -3614,7 +3611,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
     async def execute(  # noqa: PLR0913
         self,
-        operation: OperationPlan[T, object],
+        operation: OperationPlan[T],
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
@@ -3684,7 +3681,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
     async def execute_page(  # noqa: PLR0913
         self,
         plan: _PagePlan,
-        operation: OperationPlan[T, object],
+        operation: OperationPlan[T],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
         build: Callable[[T, WireValue, bytes, ResponseInfo, str, frozenset[str]], R],
         *,
@@ -3743,7 +3740,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
     async def execute_cached(  # noqa: PLR0913, PLR0917
         self,
-        operation: OperationPlan[T, object],
+        operation: OperationPlan[T],
         request: PreparedRequest[EncodedAttempt],
         settings: Settings,
         modified: Callable[[Response[T], bytes], tuple[Response[T], R]],
@@ -3792,7 +3789,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
     async def execute_raw(  # noqa: PLR0912, PLR0913
         self,
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
@@ -3869,7 +3866,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
     def stream(  # noqa: PLR0913
         self,
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
@@ -3961,7 +3958,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
     async def open_socket(  # noqa: PLR0913
         self,
-        operation: OperationPlan[object, object],
+        operation: OperationPlan[object],
         arguments: tuple[object, ...],
         adapter: AsyncTransportAdapter,
         *,
@@ -4497,7 +4494,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         self,
         response: AsyncTransportResponse,
         info: ResponseInfo,
-        decoder: ResponseDecoder[object, object],
+        decoder: ResponseDecoder[object],
         call: LogicalCallContext,
     ) -> _Body:
         """Read a bounded response body while checking the logical deadline at each chunk."""

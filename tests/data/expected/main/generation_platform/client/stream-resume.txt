@@ -634,36 +634,36 @@ render pydantic_v2.BaseModel
     "schema_version": 1
   }
   /selection/selected_operations/0 events.stream_events(query:topic=topic, header:Last-Event-ID=last_event_id, cookie:session=session)
-    exports client.types.events.StreamEventsResponse client.types.events.StreamEventsErrorData client.types.events.StreamEventsHTTPError
+    exports client.types.events.StreamEventsResponse
     exports client.types.events.decode_stream_events_header
   /selection/selected_operations/1 streams.reopen_stream(path:streamId=stream_id, header:Last-Event-ID=last_event_id, query:token=token, query:mode=mode)
-    exports client.types.streams.ReopenStreamResponse client.types.streams.ReopenStreamErrorData client.types.streams.ReopenStreamHTTPError
+    exports client.types.streams.ReopenStreamResponse
     exports client.types.streams.decode_reopen_stream_header
   /selection/selected_operations/2 rooms.stream_room(path:room=room, path:shard=shard, header:Last-Event-ID=last_event_id)
-    exports client.types.rooms.StreamRoomResponse client.types.rooms.StreamRoomErrorData client.types.rooms.StreamRoomHTTPError
+    exports client.types.rooms.StreamRoomResponse
     exports client.types.rooms.decode_stream_room_header
   /selection/selected_operations/3 replay.replay_events(query:from=from_)
-    exports client.types.replay.ReplayEventsResponse client.types.replay.ReplayEventsErrorData client.types.replay.ReplayEventsHTTPError
+    exports client.types.replay.ReplayEventsResponse
     exports None
   /selection/selected_operations/4 records.stream_records(query:after=after)
-    exports client.types.records.StreamRecordsResponse client.types.records.StreamRecordsErrorData client.types.records.StreamRecordsHTTPError
+    exports client.types.records.StreamRecordsResponse
     exports None
   /selection/selected_operations/5 feed.stream_feed()
-    exports client.types.feed.StreamFeedResponse client.types.feed.StreamFeedErrorData client.types.feed.StreamFeedHTTPError
+    exports client.types.feed.StreamFeedResponse
     exports None
   /selection/selected_operations/6 marks.stream_marks(query:tag=tag, header:Last-Event-ID=last_event_id, query:scope=scope)
-    exports client.types.marks.StreamMarksResponse client.types.marks.StreamMarksErrorData client.types.marks.StreamMarksHTTPError
+    exports client.types.marks.StreamMarksResponse
     exports None
   /selection/selected_operations/7 marks.stream_named_marks(query:tag=tag, header:Last-Event-ID=last_event_id, query:scope=scope)
-    exports client.types.marks.StreamNamedMarksResponse client.types.marks.StreamNamedMarksErrorData client.types.marks.StreamNamedMarksHTTPError
+    exports client.types.marks.StreamNamedMarksResponse
     exports None
   /selection/selected_operations/8 marks.stream_deep_marks(query:tag=tag, header:Last-Event-ID=last_event_id, query:scope=scope)
-    exports client.types.marks.StreamDeepMarksResponse client.types.marks.StreamDeepMarksErrorData client.types.marks.StreamDeepMarksHTTPError
+    exports client.types.marks.StreamDeepMarksResponse
     exports None
   /selection/selected_operations/9 marks.stream_keyed_marks(query:keyed=keyed)
-    exports client.types.marks.StreamKeyedMarksResponse client.types.marks.StreamKeyedMarksErrorData client.types.marks.StreamKeyedMarksHTTPError
+    exports client.types.marks.StreamKeyedMarksResponse
     exports None
   /selection/selected_operations/10 status.get_status()
-    exports client.types.status.GetStatusResponse client.types.status.GetStatusErrorData client.types.status.GetStatusHTTPError
+    exports client.types.status.GetStatusResponse
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

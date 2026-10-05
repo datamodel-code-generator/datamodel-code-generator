@@ -329,7 +329,7 @@
     event response_headers status=404
     event attempt_end status=404
     event call_end status=404
-  async recorded error ! GetUserHTTPError: GetUserHTTPError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', status_code=404, error_decoded=True, error_data=Error(message='no'), body_bytes=b'{"message":"no"}', truncated=False] get_user_http_error
+  async recorded error ! NotFoundError: NotFoundError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', status_code=404, body=Error(message='no'), body_bytes=b'{"message":"no"}', truncated=False] not_found_error
     get key=32
   async lookup failure ! CacheStoreError: CacheStoreError(action='get') [cause=OSError('disk')] cache_store_error
     get key=32

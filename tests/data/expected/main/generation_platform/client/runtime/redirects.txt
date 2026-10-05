@@ -1,7 +1,7 @@
 # retries pydantic_v2.BaseModel
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  disabled = ('UnexpectedStatusError', None, None, 301, 1, 0, 1, 1, 'NoneType')
+  disabled = ('APIStatusError', None, None, 301, 1, 0, 1, 1, 'NoneType')
     unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 301, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 301, 'https://api.example.com', 1, 1, None), ('call_end', 0, 301, 'https://api.example.com', 1, 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
@@ -53,7 +53,7 @@
     unused=0 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, 1, None), ('response_headers', 0, 200, 'https://xn--tst-qla.example.com', 1, 2, None), ('attempt_end', 0, 200, 'https://xn--tst-qla.example.com', 1, 2, None), ('call_end', 0, 200, 'https://xn--tst-qla.example.com', 1, 2, 'success')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  unsupported305 = ('UnexpectedStatusError', None, None, 305, 1, 0, 1, 1, 'NoneType')
+  unsupported305 = ('APIStatusError', None, None, 305, 1, 0, 1, 1, 'NoneType')
     unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 305, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 305, 'https://api.example.com', 1, 1, None), ('call_end', 0, 305, 'https://api.example.com', 1, 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''

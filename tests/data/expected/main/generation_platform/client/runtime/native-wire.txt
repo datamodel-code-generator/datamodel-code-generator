@@ -74,12 +74,12 @@ sync size call/9 raw=False: ResponseTooLargeError limit=8 bytes=0 truncated=None
   arrivals=1
 sync size call/9 raw=True: ResponseTooLargeError limit=8 bytes=0 truncated=None
   arrivals=1
-sync size error-default/65537 raw=False: GetSafeHTTPError limit=None bytes=65536 truncated=True
+sync size error-default/65537 raw=False: InternalServerError limit=None bytes=65536 truncated=True
   arrivals=1
 sync size error-default/65537 raw=True: status=500 bytes=65537
-sync size error-default/65537 raw=True: GetSafeHTTPError limit=None bytes=65536 truncated=True
+sync size error-default/65537 raw=True: InternalServerError limit=None bytes=65536 truncated=True
   arrivals=1
-sync size error-explicit/65537 raw=False: GetSafeHTTPError limit=None bytes=65536 truncated=True
+sync size error-explicit/65537 raw=False: InternalServerError limit=None bytes=65536 truncated=True
   arrivals=1
 sync size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 truncated=None
   arrivals=1
@@ -94,7 +94,7 @@ sync size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 t
   header events=1
   sync location 301/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
   header events=1
-  sync location 301/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=None cause=NoneType'
+  sync location 301/ipv6/False/False = 'APIStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=None cause=NoneType'
   header events=1
   sync location 301/ipv6/False/True = 'RawResponse status=301 attempts=1 sends=1 wire=1'
   header events=1
@@ -134,7 +134,7 @@ sync size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 t
   header events=1
   sync location 302/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
   header events=1
-  sync location 302/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=None cause=NoneType'
+  sync location 302/ipv6/False/False = 'APIStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=None cause=NoneType'
   header events=1
   sync location 302/ipv6/False/True = 'RawResponse status=302 attempts=1 sends=1 wire=1'
   header events=1
@@ -174,7 +174,7 @@ sync size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 t
   header events=1
   sync location 303/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
   header events=1
-  sync location 303/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=None cause=NoneType'
+  sync location 303/ipv6/False/False = 'APIStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=None cause=NoneType'
   header events=1
   sync location 303/ipv6/False/True = 'RawResponse status=303 attempts=1 sends=1 wire=1'
   header events=1
@@ -214,7 +214,7 @@ sync size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 t
   header events=1
   sync location 307/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
   header events=1
-  sync location 307/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=None cause=NoneType'
+  sync location 307/ipv6/False/False = 'APIStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=None cause=NoneType'
   header events=1
   sync location 307/ipv6/False/True = 'RawResponse status=307 attempts=1 sends=1 wire=1'
   header events=1
@@ -254,7 +254,7 @@ sync size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 t
   header events=1
   sync location 308/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
   header events=1
-  sync location 308/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=None cause=NoneType'
+  sync location 308/ipv6/False/False = 'APIStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=None cause=NoneType'
   header events=1
   sync location 308/ipv6/False/True = 'RawResponse status=308 attempts=1 sends=1 wire=1'
   header events=1
@@ -386,12 +386,12 @@ async size call/9 raw=False: ResponseTooLargeError limit=8 bytes=0 truncated=Non
   arrivals=1
 async size call/9 raw=True: ResponseTooLargeError limit=8 bytes=0 truncated=None
   arrivals=1
-async size error-default/65537 raw=False: GetSafeHTTPError limit=None bytes=65536 truncated=True
+async size error-default/65537 raw=False: InternalServerError limit=None bytes=65536 truncated=True
   arrivals=1
 async size error-default/65537 raw=True: status=500 bytes=65537
-async size error-default/65537 raw=True: GetSafeHTTPError limit=None bytes=65536 truncated=True
+async size error-default/65537 raw=True: InternalServerError limit=None bytes=65536 truncated=True
   arrivals=1
-async size error-explicit/65537 raw=False: GetSafeHTTPError limit=None bytes=65536 truncated=True
+async size error-explicit/65537 raw=False: InternalServerError limit=None bytes=65536 truncated=True
   arrivals=1
 async size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 truncated=None
   arrivals=1
@@ -406,7 +406,7 @@ async size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 
   header events=1
   async location 301/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
   header events=1
-  async location 301/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=None cause=NoneType'
+  async location 301/ipv6/False/False = 'APIStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=None cause=NoneType'
   header events=1
   async location 301/ipv6/False/True = 'AsyncRawResponse status=301 attempts=1 sends=1 wire=1'
   header events=1
@@ -446,7 +446,7 @@ async size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 
   header events=1
   async location 302/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
   header events=1
-  async location 302/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=None cause=NoneType'
+  async location 302/ipv6/False/False = 'APIStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=None cause=NoneType'
   header events=1
   async location 302/ipv6/False/True = 'AsyncRawResponse status=302 attempts=1 sends=1 wire=1'
   header events=1
@@ -486,7 +486,7 @@ async size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 
   header events=1
   async location 303/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
   header events=1
-  async location 303/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=None cause=NoneType'
+  async location 303/ipv6/False/False = 'APIStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=None cause=NoneType'
   header events=1
   async location 303/ipv6/False/True = 'AsyncRawResponse status=303 attempts=1 sends=1 wire=1'
   header events=1
@@ -526,7 +526,7 @@ async size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 
   header events=1
   async location 307/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
   header events=1
-  async location 307/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=None cause=NoneType'
+  async location 307/ipv6/False/False = 'APIStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=None cause=NoneType'
   header events=1
   async location 307/ipv6/False/True = 'AsyncRawResponse status=307 attempts=1 sends=1 wire=1'
   header events=1
@@ -566,7 +566,7 @@ async size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 
   header events=1
   async location 308/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
   header events=1
-  async location 308/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=None cause=NoneType'
+  async location 308/ipv6/False/False = 'APIStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=None cause=NoneType'
   header events=1
   async location 308/ipv6/False/True = 'AsyncRawResponse status=308 attempts=1 sends=1 wire=1'
   header events=1

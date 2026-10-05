@@ -30,6 +30,6 @@ render pydantic_v2.BaseModel
   namespace client helpers [] bindings 1
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 default.raw()
-    exports client.types.default.RawResponse client.types.default.RawErrorData client.types.default.RawHTTPError
+    exports client.types.default.RawResponse
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

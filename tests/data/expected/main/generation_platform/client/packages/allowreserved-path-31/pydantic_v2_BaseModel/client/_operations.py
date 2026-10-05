@@ -17,227 +17,85 @@ from ._runtime.client.operations import (
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.wire import (
-    ReadCompositeErrorData,
-    ReadCompositeHTTPError,
     ReadCompositeResponse,
-    ReadDeepObjectErrorData,
-    ReadDeepObjectHTTPError,
     ReadDeepObjectResponse,
-    ReadHeadersAndCookiesErrorData,
-    ReadHeadersAndCookiesHTTPError,
     ReadHeadersAndCookiesResponse,
-    ReadJsonErrorData,
-    ReadJsonHTTPError,
     ReadJsonResponse,
-    ReadLabelArrayFalseAbsentErrorData,
-    ReadLabelArrayFalseAbsentHTTPError,
     ReadLabelArrayFalseAbsentResponse,
-    ReadLabelArrayFalseErrorData,
-    ReadLabelArrayFalseFalseErrorData,
-    ReadLabelArrayFalseFalseHTTPError,
     ReadLabelArrayFalseFalseResponse,
-    ReadLabelArrayFalseHTTPError,
     ReadLabelArrayFalseResponse,
-    ReadLabelArrayTrueAbsentErrorData,
-    ReadLabelArrayTrueAbsentHTTPError,
     ReadLabelArrayTrueAbsentResponse,
-    ReadLabelArrayTrueErrorData,
-    ReadLabelArrayTrueFalseErrorData,
-    ReadLabelArrayTrueFalseHTTPError,
     ReadLabelArrayTrueFalseResponse,
-    ReadLabelArrayTrueHTTPError,
     ReadLabelArrayTrueResponse,
-    ReadLabelObjectFalseAbsentErrorData,
-    ReadLabelObjectFalseAbsentHTTPError,
     ReadLabelObjectFalseAbsentResponse,
-    ReadLabelObjectFalseErrorData,
-    ReadLabelObjectFalseFalseErrorData,
-    ReadLabelObjectFalseFalseHTTPError,
     ReadLabelObjectFalseFalseResponse,
-    ReadLabelObjectFalseHTTPError,
     ReadLabelObjectFalseResponse,
-    ReadLabelObjectTrueAbsentErrorData,
-    ReadLabelObjectTrueAbsentHTTPError,
     ReadLabelObjectTrueAbsentResponse,
-    ReadLabelObjectTrueErrorData,
-    ReadLabelObjectTrueFalseErrorData,
-    ReadLabelObjectTrueFalseHTTPError,
     ReadLabelObjectTrueFalseResponse,
-    ReadLabelObjectTrueHTTPError,
     ReadLabelObjectTrueResponse,
-    ReadLabelScalarFalseAbsentErrorData,
-    ReadLabelScalarFalseAbsentHTTPError,
     ReadLabelScalarFalseAbsentResponse,
-    ReadLabelScalarFalseErrorData,
-    ReadLabelScalarFalseFalseErrorData,
-    ReadLabelScalarFalseFalseHTTPError,
     ReadLabelScalarFalseFalseResponse,
-    ReadLabelScalarFalseHTTPError,
     ReadLabelScalarFalseResponse,
-    ReadMatrixArrayFalseAbsentErrorData,
-    ReadMatrixArrayFalseAbsentHTTPError,
     ReadMatrixArrayFalseAbsentResponse,
-    ReadMatrixArrayFalseErrorData,
-    ReadMatrixArrayFalseFalseErrorData,
-    ReadMatrixArrayFalseFalseHTTPError,
     ReadMatrixArrayFalseFalseResponse,
-    ReadMatrixArrayFalseHTTPError,
     ReadMatrixArrayFalseResponse,
-    ReadMatrixArrayTrueAbsentErrorData,
-    ReadMatrixArrayTrueAbsentHTTPError,
     ReadMatrixArrayTrueAbsentResponse,
-    ReadMatrixArrayTrueErrorData,
-    ReadMatrixArrayTrueFalseErrorData,
-    ReadMatrixArrayTrueFalseHTTPError,
     ReadMatrixArrayTrueFalseResponse,
-    ReadMatrixArrayTrueHTTPError,
     ReadMatrixArrayTrueResponse,
-    ReadMatrixObjectFalseAbsentErrorData,
-    ReadMatrixObjectFalseAbsentHTTPError,
     ReadMatrixObjectFalseAbsentResponse,
-    ReadMatrixObjectFalseErrorData,
-    ReadMatrixObjectFalseFalseErrorData,
-    ReadMatrixObjectFalseFalseHTTPError,
     ReadMatrixObjectFalseFalseResponse,
-    ReadMatrixObjectFalseHTTPError,
     ReadMatrixObjectFalseResponse,
-    ReadMatrixObjectTrueAbsentErrorData,
-    ReadMatrixObjectTrueAbsentHTTPError,
     ReadMatrixObjectTrueAbsentResponse,
-    ReadMatrixObjectTrueErrorData,
-    ReadMatrixObjectTrueFalseErrorData,
-    ReadMatrixObjectTrueFalseHTTPError,
     ReadMatrixObjectTrueFalseResponse,
-    ReadMatrixObjectTrueHTTPError,
     ReadMatrixObjectTrueResponse,
-    ReadMatrixScalarFalseAbsentErrorData,
-    ReadMatrixScalarFalseAbsentHTTPError,
     ReadMatrixScalarFalseAbsentResponse,
-    ReadMatrixScalarFalseErrorData,
-    ReadMatrixScalarFalseFalseErrorData,
-    ReadMatrixScalarFalseFalseHTTPError,
     ReadMatrixScalarFalseFalseResponse,
-    ReadMatrixScalarFalseHTTPError,
     ReadMatrixScalarFalseResponse,
-    ReadQueryArrayFalseAbsentErrorData,
-    ReadQueryArrayFalseAbsentHTTPError,
     ReadQueryArrayFalseAbsentResponse,
-    ReadQueryArrayFalseFalseErrorData,
-    ReadQueryArrayFalseFalseHTTPError,
     ReadQueryArrayFalseFalseResponse,
-    ReadQueryArrayFalseTrueErrorData,
-    ReadQueryArrayFalseTrueHTTPError,
     ReadQueryArrayFalseTrueResponse,
-    ReadQueryArrayTrueAbsentErrorData,
-    ReadQueryArrayTrueAbsentHTTPError,
     ReadQueryArrayTrueAbsentResponse,
-    ReadQueryArrayTrueFalseErrorData,
-    ReadQueryArrayTrueFalseHTTPError,
     ReadQueryArrayTrueFalseResponse,
-    ReadQueryArrayTrueTrueErrorData,
-    ReadQueryArrayTrueTrueHTTPError,
     ReadQueryArrayTrueTrueResponse,
-    ReadQueryObjectFalseAbsentErrorData,
-    ReadQueryObjectFalseAbsentHTTPError,
     ReadQueryObjectFalseAbsentResponse,
-    ReadQueryObjectFalseFalseErrorData,
-    ReadQueryObjectFalseFalseHTTPError,
     ReadQueryObjectFalseFalseResponse,
-    ReadQueryObjectFalseTrueErrorData,
-    ReadQueryObjectFalseTrueHTTPError,
     ReadQueryObjectFalseTrueResponse,
-    ReadQueryObjectTrueAbsentErrorData,
-    ReadQueryObjectTrueAbsentHTTPError,
     ReadQueryObjectTrueAbsentResponse,
-    ReadQueryObjectTrueFalseErrorData,
-    ReadQueryObjectTrueFalseHTTPError,
     ReadQueryObjectTrueFalseResponse,
-    ReadQueryObjectTrueTrueErrorData,
-    ReadQueryObjectTrueTrueHTTPError,
     ReadQueryObjectTrueTrueResponse,
-    ReadQueryScalarFalseAbsentErrorData,
-    ReadQueryScalarFalseAbsentHTTPError,
     ReadQueryScalarFalseAbsentResponse,
-    ReadQueryScalarFalseFalseErrorData,
-    ReadQueryScalarFalseFalseHTTPError,
     ReadQueryScalarFalseFalseResponse,
-    ReadQueryScalarFalseTrueErrorData,
-    ReadQueryScalarFalseTrueHTTPError,
     ReadQueryScalarFalseTrueResponse,
-    ReadQueryScalarTrueAbsentErrorData,
-    ReadQueryScalarTrueAbsentHTTPError,
     ReadQueryScalarTrueAbsentResponse,
-    ReadQueryScalarTrueFalseErrorData,
-    ReadQueryScalarTrueFalseHTTPError,
     ReadQueryScalarTrueFalseResponse,
-    ReadQueryScalarTrueTrueErrorData,
-    ReadQueryScalarTrueTrueHTTPError,
     ReadQueryScalarTrueTrueResponse,
-    ReadSimpleArrayFalseAbsentErrorData,
-    ReadSimpleArrayFalseAbsentHTTPError,
     ReadSimpleArrayFalseAbsentResponse,
-    ReadSimpleArrayFalseErrorData,
-    ReadSimpleArrayFalseFalseErrorData,
-    ReadSimpleArrayFalseFalseHTTPError,
     ReadSimpleArrayFalseFalseResponse,
-    ReadSimpleArrayFalseHTTPError,
     ReadSimpleArrayFalseResponse,
-    ReadSimpleArrayTrueAbsentErrorData,
-    ReadSimpleArrayTrueAbsentHTTPError,
     ReadSimpleArrayTrueAbsentResponse,
-    ReadSimpleArrayTrueErrorData,
-    ReadSimpleArrayTrueFalseErrorData,
-    ReadSimpleArrayTrueFalseHTTPError,
     ReadSimpleArrayTrueFalseResponse,
-    ReadSimpleArrayTrueHTTPError,
     ReadSimpleArrayTrueResponse,
-    ReadSimpleObjectFalseAbsentErrorData,
-    ReadSimpleObjectFalseAbsentHTTPError,
     ReadSimpleObjectFalseAbsentResponse,
-    ReadSimpleObjectFalseErrorData,
-    ReadSimpleObjectFalseFalseErrorData,
-    ReadSimpleObjectFalseFalseHTTPError,
     ReadSimpleObjectFalseFalseResponse,
-    ReadSimpleObjectFalseHTTPError,
     ReadSimpleObjectFalseResponse,
-    ReadSimpleObjectTrueAbsentErrorData,
-    ReadSimpleObjectTrueAbsentHTTPError,
     ReadSimpleObjectTrueAbsentResponse,
-    ReadSimpleObjectTrueErrorData,
-    ReadSimpleObjectTrueFalseErrorData,
-    ReadSimpleObjectTrueFalseHTTPError,
     ReadSimpleObjectTrueFalseResponse,
-    ReadSimpleObjectTrueHTTPError,
     ReadSimpleObjectTrueResponse,
-    ReadSimpleScalarFalseAbsentErrorData,
-    ReadSimpleScalarFalseAbsentHTTPError,
     ReadSimpleScalarFalseAbsentResponse,
-    ReadSimpleScalarFalseErrorData,
-    ReadSimpleScalarFalseFalseErrorData,
-    ReadSimpleScalarFalseFalseHTTPError,
     ReadSimpleScalarFalseFalseResponse,
-    ReadSimpleScalarFalseHTTPError,
     ReadSimpleScalarFalseResponse,
-    ReadSuffixErrorData,
-    ReadSuffixHTTPError,
     ReadSuffixResponse,
-    ReadTextErrorData,
-    ReadTextHTTPError,
     ReadTextResponse,
 )
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
-OPERATION_0: Final[OperationPlan[ReadSimpleScalarFalseResponse, ReadSimpleScalarFalseErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[ReadSimpleScalarFalseResponse]] = OperationPlan(
     operation_id='readSimpleScalarFalse',
     method='GET',
     path='/simple-scalar-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleScalarFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -251,16 +109,12 @@ OPERATION_0: Final[OperationPlan[ReadSimpleScalarFalseResponse, ReadSimpleScalar
     ),
 )
 
-OPERATION_1: Final[OperationPlan[ReadSimpleScalarFalseFalseResponse, ReadSimpleScalarFalseFalseErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[ReadSimpleScalarFalseFalseResponse]] = OperationPlan(
     operation_id='readSimpleScalarFalseFalse',
     method='GET',
     path='/simple-scalar-false-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleScalarFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -274,16 +128,12 @@ OPERATION_1: Final[OperationPlan[ReadSimpleScalarFalseFalseResponse, ReadSimpleS
     ),
 )
 
-OPERATION_2: Final[OperationPlan[ReadSimpleScalarFalseAbsentResponse, ReadSimpleScalarFalseAbsentErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[ReadSimpleScalarFalseAbsentResponse]] = OperationPlan(
     operation_id='readSimpleScalarFalseAbsent',
     method='GET',
     path='/simple-scalar-false-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleScalarFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -297,16 +147,12 @@ OPERATION_2: Final[OperationPlan[ReadSimpleScalarFalseAbsentResponse, ReadSimple
     ),
 )
 
-OPERATION_3: Final[OperationPlan[ReadSimpleArrayFalseResponse, ReadSimpleArrayFalseErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[ReadSimpleArrayFalseResponse]] = OperationPlan(
     operation_id='readSimpleArrayFalse',
     method='GET',
     path='/simple-array-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleArrayFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -321,16 +167,12 @@ OPERATION_3: Final[OperationPlan[ReadSimpleArrayFalseResponse, ReadSimpleArrayFa
     ),
 )
 
-OPERATION_4: Final[OperationPlan[ReadSimpleArrayFalseFalseResponse, ReadSimpleArrayFalseFalseErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[ReadSimpleArrayFalseFalseResponse]] = OperationPlan(
     operation_id='readSimpleArrayFalseFalse',
     method='GET',
     path='/simple-array-false-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleArrayFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -345,16 +187,12 @@ OPERATION_4: Final[OperationPlan[ReadSimpleArrayFalseFalseResponse, ReadSimpleAr
     ),
 )
 
-OPERATION_5: Final[OperationPlan[ReadSimpleArrayFalseAbsentResponse, ReadSimpleArrayFalseAbsentErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[ReadSimpleArrayFalseAbsentResponse]] = OperationPlan(
     operation_id='readSimpleArrayFalseAbsent',
     method='GET',
     path='/simple-array-false-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleArrayFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -369,12 +207,12 @@ OPERATION_5: Final[OperationPlan[ReadSimpleArrayFalseAbsentResponse, ReadSimpleA
     ),
 )
 
-OPERATION_6: Final[OperationPlan[ReadSimpleArrayTrueResponse, ReadSimpleArrayTrueErrorData]] = OperationPlan(
+OPERATION_6: Final[OperationPlan[ReadSimpleArrayTrueResponse]] = OperationPlan(
     operation_id='readSimpleArrayTrue',
     method='GET',
     path='/simple-array-true/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReadSimpleArrayTrueHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -390,16 +228,12 @@ OPERATION_6: Final[OperationPlan[ReadSimpleArrayTrueResponse, ReadSimpleArrayTru
     ),
 )
 
-OPERATION_7: Final[OperationPlan[ReadSimpleArrayTrueFalseResponse, ReadSimpleArrayTrueFalseErrorData]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[ReadSimpleArrayTrueFalseResponse]] = OperationPlan(
     operation_id='readSimpleArrayTrueFalse',
     method='GET',
     path='/simple-array-true-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleArrayTrueFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -415,16 +249,12 @@ OPERATION_7: Final[OperationPlan[ReadSimpleArrayTrueFalseResponse, ReadSimpleArr
     ),
 )
 
-OPERATION_8: Final[OperationPlan[ReadSimpleArrayTrueAbsentResponse, ReadSimpleArrayTrueAbsentErrorData]] = OperationPlan(
+OPERATION_8: Final[OperationPlan[ReadSimpleArrayTrueAbsentResponse]] = OperationPlan(
     operation_id='readSimpleArrayTrueAbsent',
     method='GET',
     path='/simple-array-true-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleArrayTrueAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -440,16 +270,12 @@ OPERATION_8: Final[OperationPlan[ReadSimpleArrayTrueAbsentResponse, ReadSimpleAr
     ),
 )
 
-OPERATION_9: Final[OperationPlan[ReadSimpleObjectFalseResponse, ReadSimpleObjectFalseErrorData]] = OperationPlan(
+OPERATION_9: Final[OperationPlan[ReadSimpleObjectFalseResponse]] = OperationPlan(
     operation_id='readSimpleObjectFalse',
     method='GET',
     path='/simple-object-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleObjectFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -466,16 +292,12 @@ OPERATION_9: Final[OperationPlan[ReadSimpleObjectFalseResponse, ReadSimpleObject
     ),
 )
 
-OPERATION_10: Final[OperationPlan[ReadSimpleObjectFalseFalseResponse, ReadSimpleObjectFalseFalseErrorData]] = OperationPlan(
+OPERATION_10: Final[OperationPlan[ReadSimpleObjectFalseFalseResponse]] = OperationPlan(
     operation_id='readSimpleObjectFalseFalse',
     method='GET',
     path='/simple-object-false-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleObjectFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -492,16 +314,12 @@ OPERATION_10: Final[OperationPlan[ReadSimpleObjectFalseFalseResponse, ReadSimple
     ),
 )
 
-OPERATION_11: Final[OperationPlan[ReadSimpleObjectFalseAbsentResponse, ReadSimpleObjectFalseAbsentErrorData]] = OperationPlan(
+OPERATION_11: Final[OperationPlan[ReadSimpleObjectFalseAbsentResponse]] = OperationPlan(
     operation_id='readSimpleObjectFalseAbsent',
     method='GET',
     path='/simple-object-false-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleObjectFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -518,16 +336,12 @@ OPERATION_11: Final[OperationPlan[ReadSimpleObjectFalseAbsentResponse, ReadSimpl
     ),
 )
 
-OPERATION_12: Final[OperationPlan[ReadSimpleObjectTrueResponse, ReadSimpleObjectTrueErrorData]] = OperationPlan(
+OPERATION_12: Final[OperationPlan[ReadSimpleObjectTrueResponse]] = OperationPlan(
     operation_id='readSimpleObjectTrue',
     method='GET',
     path='/simple-object-true/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleObjectTrueHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -545,16 +359,12 @@ OPERATION_12: Final[OperationPlan[ReadSimpleObjectTrueResponse, ReadSimpleObject
     ),
 )
 
-OPERATION_13: Final[OperationPlan[ReadSimpleObjectTrueFalseResponse, ReadSimpleObjectTrueFalseErrorData]] = OperationPlan(
+OPERATION_13: Final[OperationPlan[ReadSimpleObjectTrueFalseResponse]] = OperationPlan(
     operation_id='readSimpleObjectTrueFalse',
     method='GET',
     path='/simple-object-true-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleObjectTrueFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -572,16 +382,12 @@ OPERATION_13: Final[OperationPlan[ReadSimpleObjectTrueFalseResponse, ReadSimpleO
     ),
 )
 
-OPERATION_14: Final[OperationPlan[ReadSimpleObjectTrueAbsentResponse, ReadSimpleObjectTrueAbsentErrorData]] = OperationPlan(
+OPERATION_14: Final[OperationPlan[ReadSimpleObjectTrueAbsentResponse]] = OperationPlan(
     operation_id='readSimpleObjectTrueAbsent',
     method='GET',
     path='/simple-object-true-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadSimpleObjectTrueAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -599,16 +405,12 @@ OPERATION_14: Final[OperationPlan[ReadSimpleObjectTrueAbsentResponse, ReadSimple
     ),
 )
 
-OPERATION_15: Final[OperationPlan[ReadLabelScalarFalseResponse, ReadLabelScalarFalseErrorData]] = OperationPlan(
+OPERATION_15: Final[OperationPlan[ReadLabelScalarFalseResponse]] = OperationPlan(
     operation_id='readLabelScalarFalse',
     method='GET',
     path='/label-scalar-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelScalarFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -622,16 +424,12 @@ OPERATION_15: Final[OperationPlan[ReadLabelScalarFalseResponse, ReadLabelScalarF
     ),
 )
 
-OPERATION_16: Final[OperationPlan[ReadLabelScalarFalseFalseResponse, ReadLabelScalarFalseFalseErrorData]] = OperationPlan(
+OPERATION_16: Final[OperationPlan[ReadLabelScalarFalseFalseResponse]] = OperationPlan(
     operation_id='readLabelScalarFalseFalse',
     method='GET',
     path='/label-scalar-false-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelScalarFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -645,16 +443,12 @@ OPERATION_16: Final[OperationPlan[ReadLabelScalarFalseFalseResponse, ReadLabelSc
     ),
 )
 
-OPERATION_17: Final[OperationPlan[ReadLabelScalarFalseAbsentResponse, ReadLabelScalarFalseAbsentErrorData]] = OperationPlan(
+OPERATION_17: Final[OperationPlan[ReadLabelScalarFalseAbsentResponse]] = OperationPlan(
     operation_id='readLabelScalarFalseAbsent',
     method='GET',
     path='/label-scalar-false-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelScalarFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -668,12 +462,12 @@ OPERATION_17: Final[OperationPlan[ReadLabelScalarFalseAbsentResponse, ReadLabelS
     ),
 )
 
-OPERATION_18: Final[OperationPlan[ReadLabelArrayFalseResponse, ReadLabelArrayFalseErrorData]] = OperationPlan(
+OPERATION_18: Final[OperationPlan[ReadLabelArrayFalseResponse]] = OperationPlan(
     operation_id='readLabelArrayFalse',
     method='GET',
     path='/label-array-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReadLabelArrayFalseHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -688,16 +482,12 @@ OPERATION_18: Final[OperationPlan[ReadLabelArrayFalseResponse, ReadLabelArrayFal
     ),
 )
 
-OPERATION_19: Final[OperationPlan[ReadLabelArrayFalseFalseResponse, ReadLabelArrayFalseFalseErrorData]] = OperationPlan(
+OPERATION_19: Final[OperationPlan[ReadLabelArrayFalseFalseResponse]] = OperationPlan(
     operation_id='readLabelArrayFalseFalse',
     method='GET',
     path='/label-array-false-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelArrayFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -712,16 +502,12 @@ OPERATION_19: Final[OperationPlan[ReadLabelArrayFalseFalseResponse, ReadLabelArr
     ),
 )
 
-OPERATION_20: Final[OperationPlan[ReadLabelArrayFalseAbsentResponse, ReadLabelArrayFalseAbsentErrorData]] = OperationPlan(
+OPERATION_20: Final[OperationPlan[ReadLabelArrayFalseAbsentResponse]] = OperationPlan(
     operation_id='readLabelArrayFalseAbsent',
     method='GET',
     path='/label-array-false-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelArrayFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -736,12 +522,12 @@ OPERATION_20: Final[OperationPlan[ReadLabelArrayFalseAbsentResponse, ReadLabelAr
     ),
 )
 
-OPERATION_21: Final[OperationPlan[ReadLabelArrayTrueResponse, ReadLabelArrayTrueErrorData]] = OperationPlan(
+OPERATION_21: Final[OperationPlan[ReadLabelArrayTrueResponse]] = OperationPlan(
     operation_id='readLabelArrayTrue',
     method='GET',
     path='/label-array-true/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReadLabelArrayTrueHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -757,16 +543,12 @@ OPERATION_21: Final[OperationPlan[ReadLabelArrayTrueResponse, ReadLabelArrayTrue
     ),
 )
 
-OPERATION_22: Final[OperationPlan[ReadLabelArrayTrueFalseResponse, ReadLabelArrayTrueFalseErrorData]] = OperationPlan(
+OPERATION_22: Final[OperationPlan[ReadLabelArrayTrueFalseResponse]] = OperationPlan(
     operation_id='readLabelArrayTrueFalse',
     method='GET',
     path='/label-array-true-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelArrayTrueFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -782,16 +564,12 @@ OPERATION_22: Final[OperationPlan[ReadLabelArrayTrueFalseResponse, ReadLabelArra
     ),
 )
 
-OPERATION_23: Final[OperationPlan[ReadLabelArrayTrueAbsentResponse, ReadLabelArrayTrueAbsentErrorData]] = OperationPlan(
+OPERATION_23: Final[OperationPlan[ReadLabelArrayTrueAbsentResponse]] = OperationPlan(
     operation_id='readLabelArrayTrueAbsent',
     method='GET',
     path='/label-array-true-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelArrayTrueAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -807,16 +585,12 @@ OPERATION_23: Final[OperationPlan[ReadLabelArrayTrueAbsentResponse, ReadLabelArr
     ),
 )
 
-OPERATION_24: Final[OperationPlan[ReadLabelObjectFalseResponse, ReadLabelObjectFalseErrorData]] = OperationPlan(
+OPERATION_24: Final[OperationPlan[ReadLabelObjectFalseResponse]] = OperationPlan(
     operation_id='readLabelObjectFalse',
     method='GET',
     path='/label-object-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelObjectFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -833,16 +607,12 @@ OPERATION_24: Final[OperationPlan[ReadLabelObjectFalseResponse, ReadLabelObjectF
     ),
 )
 
-OPERATION_25: Final[OperationPlan[ReadLabelObjectFalseFalseResponse, ReadLabelObjectFalseFalseErrorData]] = OperationPlan(
+OPERATION_25: Final[OperationPlan[ReadLabelObjectFalseFalseResponse]] = OperationPlan(
     operation_id='readLabelObjectFalseFalse',
     method='GET',
     path='/label-object-false-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelObjectFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -859,16 +629,12 @@ OPERATION_25: Final[OperationPlan[ReadLabelObjectFalseFalseResponse, ReadLabelOb
     ),
 )
 
-OPERATION_26: Final[OperationPlan[ReadLabelObjectFalseAbsentResponse, ReadLabelObjectFalseAbsentErrorData]] = OperationPlan(
+OPERATION_26: Final[OperationPlan[ReadLabelObjectFalseAbsentResponse]] = OperationPlan(
     operation_id='readLabelObjectFalseAbsent',
     method='GET',
     path='/label-object-false-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelObjectFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -885,12 +651,12 @@ OPERATION_26: Final[OperationPlan[ReadLabelObjectFalseAbsentResponse, ReadLabelO
     ),
 )
 
-OPERATION_27: Final[OperationPlan[ReadLabelObjectTrueResponse, ReadLabelObjectTrueErrorData]] = OperationPlan(
+OPERATION_27: Final[OperationPlan[ReadLabelObjectTrueResponse]] = OperationPlan(
     operation_id='readLabelObjectTrue',
     method='GET',
     path='/label-object-true/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReadLabelObjectTrueHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -908,16 +674,12 @@ OPERATION_27: Final[OperationPlan[ReadLabelObjectTrueResponse, ReadLabelObjectTr
     ),
 )
 
-OPERATION_28: Final[OperationPlan[ReadLabelObjectTrueFalseResponse, ReadLabelObjectTrueFalseErrorData]] = OperationPlan(
+OPERATION_28: Final[OperationPlan[ReadLabelObjectTrueFalseResponse]] = OperationPlan(
     operation_id='readLabelObjectTrueFalse',
     method='GET',
     path='/label-object-true-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelObjectTrueFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -935,16 +697,12 @@ OPERATION_28: Final[OperationPlan[ReadLabelObjectTrueFalseResponse, ReadLabelObj
     ),
 )
 
-OPERATION_29: Final[OperationPlan[ReadLabelObjectTrueAbsentResponse, ReadLabelObjectTrueAbsentErrorData]] = OperationPlan(
+OPERATION_29: Final[OperationPlan[ReadLabelObjectTrueAbsentResponse]] = OperationPlan(
     operation_id='readLabelObjectTrueAbsent',
     method='GET',
     path='/label-object-true-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadLabelObjectTrueAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -962,16 +720,12 @@ OPERATION_29: Final[OperationPlan[ReadLabelObjectTrueAbsentResponse, ReadLabelOb
     ),
 )
 
-OPERATION_30: Final[OperationPlan[ReadMatrixScalarFalseResponse, ReadMatrixScalarFalseErrorData]] = OperationPlan(
+OPERATION_30: Final[OperationPlan[ReadMatrixScalarFalseResponse]] = OperationPlan(
     operation_id='readMatrixScalarFalse',
     method='GET',
     path='/matrix-scalar-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixScalarFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -985,16 +739,12 @@ OPERATION_30: Final[OperationPlan[ReadMatrixScalarFalseResponse, ReadMatrixScala
     ),
 )
 
-OPERATION_31: Final[OperationPlan[ReadMatrixScalarFalseFalseResponse, ReadMatrixScalarFalseFalseErrorData]] = OperationPlan(
+OPERATION_31: Final[OperationPlan[ReadMatrixScalarFalseFalseResponse]] = OperationPlan(
     operation_id='readMatrixScalarFalseFalse',
     method='GET',
     path='/matrix-scalar-false-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixScalarFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1008,16 +758,12 @@ OPERATION_31: Final[OperationPlan[ReadMatrixScalarFalseFalseResponse, ReadMatrix
     ),
 )
 
-OPERATION_32: Final[OperationPlan[ReadMatrixScalarFalseAbsentResponse, ReadMatrixScalarFalseAbsentErrorData]] = OperationPlan(
+OPERATION_32: Final[OperationPlan[ReadMatrixScalarFalseAbsentResponse]] = OperationPlan(
     operation_id='readMatrixScalarFalseAbsent',
     method='GET',
     path='/matrix-scalar-false-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixScalarFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1031,16 +777,12 @@ OPERATION_32: Final[OperationPlan[ReadMatrixScalarFalseAbsentResponse, ReadMatri
     ),
 )
 
-OPERATION_33: Final[OperationPlan[ReadMatrixArrayFalseResponse, ReadMatrixArrayFalseErrorData]] = OperationPlan(
+OPERATION_33: Final[OperationPlan[ReadMatrixArrayFalseResponse]] = OperationPlan(
     operation_id='readMatrixArrayFalse',
     method='GET',
     path='/matrix-array-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixArrayFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1055,16 +797,12 @@ OPERATION_33: Final[OperationPlan[ReadMatrixArrayFalseResponse, ReadMatrixArrayF
     ),
 )
 
-OPERATION_34: Final[OperationPlan[ReadMatrixArrayFalseFalseResponse, ReadMatrixArrayFalseFalseErrorData]] = OperationPlan(
+OPERATION_34: Final[OperationPlan[ReadMatrixArrayFalseFalseResponse]] = OperationPlan(
     operation_id='readMatrixArrayFalseFalse',
     method='GET',
     path='/matrix-array-false-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixArrayFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1079,16 +817,12 @@ OPERATION_34: Final[OperationPlan[ReadMatrixArrayFalseFalseResponse, ReadMatrixA
     ),
 )
 
-OPERATION_35: Final[OperationPlan[ReadMatrixArrayFalseAbsentResponse, ReadMatrixArrayFalseAbsentErrorData]] = OperationPlan(
+OPERATION_35: Final[OperationPlan[ReadMatrixArrayFalseAbsentResponse]] = OperationPlan(
     operation_id='readMatrixArrayFalseAbsent',
     method='GET',
     path='/matrix-array-false-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixArrayFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1103,12 +837,12 @@ OPERATION_35: Final[OperationPlan[ReadMatrixArrayFalseAbsentResponse, ReadMatrix
     ),
 )
 
-OPERATION_36: Final[OperationPlan[ReadMatrixArrayTrueResponse, ReadMatrixArrayTrueErrorData]] = OperationPlan(
+OPERATION_36: Final[OperationPlan[ReadMatrixArrayTrueResponse]] = OperationPlan(
     operation_id='readMatrixArrayTrue',
     method='GET',
     path='/matrix-array-true/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReadMatrixArrayTrueHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1124,16 +858,12 @@ OPERATION_36: Final[OperationPlan[ReadMatrixArrayTrueResponse, ReadMatrixArrayTr
     ),
 )
 
-OPERATION_37: Final[OperationPlan[ReadMatrixArrayTrueFalseResponse, ReadMatrixArrayTrueFalseErrorData]] = OperationPlan(
+OPERATION_37: Final[OperationPlan[ReadMatrixArrayTrueFalseResponse]] = OperationPlan(
     operation_id='readMatrixArrayTrueFalse',
     method='GET',
     path='/matrix-array-true-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixArrayTrueFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1149,16 +879,12 @@ OPERATION_37: Final[OperationPlan[ReadMatrixArrayTrueFalseResponse, ReadMatrixAr
     ),
 )
 
-OPERATION_38: Final[OperationPlan[ReadMatrixArrayTrueAbsentResponse, ReadMatrixArrayTrueAbsentErrorData]] = OperationPlan(
+OPERATION_38: Final[OperationPlan[ReadMatrixArrayTrueAbsentResponse]] = OperationPlan(
     operation_id='readMatrixArrayTrueAbsent',
     method='GET',
     path='/matrix-array-true-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixArrayTrueAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1174,16 +900,12 @@ OPERATION_38: Final[OperationPlan[ReadMatrixArrayTrueAbsentResponse, ReadMatrixA
     ),
 )
 
-OPERATION_39: Final[OperationPlan[ReadMatrixObjectFalseResponse, ReadMatrixObjectFalseErrorData]] = OperationPlan(
+OPERATION_39: Final[OperationPlan[ReadMatrixObjectFalseResponse]] = OperationPlan(
     operation_id='readMatrixObjectFalse',
     method='GET',
     path='/matrix-object-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixObjectFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1200,16 +922,12 @@ OPERATION_39: Final[OperationPlan[ReadMatrixObjectFalseResponse, ReadMatrixObjec
     ),
 )
 
-OPERATION_40: Final[OperationPlan[ReadMatrixObjectFalseFalseResponse, ReadMatrixObjectFalseFalseErrorData]] = OperationPlan(
+OPERATION_40: Final[OperationPlan[ReadMatrixObjectFalseFalseResponse]] = OperationPlan(
     operation_id='readMatrixObjectFalseFalse',
     method='GET',
     path='/matrix-object-false-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixObjectFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1226,16 +944,12 @@ OPERATION_40: Final[OperationPlan[ReadMatrixObjectFalseFalseResponse, ReadMatrix
     ),
 )
 
-OPERATION_41: Final[OperationPlan[ReadMatrixObjectFalseAbsentResponse, ReadMatrixObjectFalseAbsentErrorData]] = OperationPlan(
+OPERATION_41: Final[OperationPlan[ReadMatrixObjectFalseAbsentResponse]] = OperationPlan(
     operation_id='readMatrixObjectFalseAbsent',
     method='GET',
     path='/matrix-object-false-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixObjectFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1252,16 +966,12 @@ OPERATION_41: Final[OperationPlan[ReadMatrixObjectFalseAbsentResponse, ReadMatri
     ),
 )
 
-OPERATION_42: Final[OperationPlan[ReadMatrixObjectTrueResponse, ReadMatrixObjectTrueErrorData]] = OperationPlan(
+OPERATION_42: Final[OperationPlan[ReadMatrixObjectTrueResponse]] = OperationPlan(
     operation_id='readMatrixObjectTrue',
     method='GET',
     path='/matrix-object-true/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixObjectTrueHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1279,16 +989,12 @@ OPERATION_42: Final[OperationPlan[ReadMatrixObjectTrueResponse, ReadMatrixObject
     ),
 )
 
-OPERATION_43: Final[OperationPlan[ReadMatrixObjectTrueFalseResponse, ReadMatrixObjectTrueFalseErrorData]] = OperationPlan(
+OPERATION_43: Final[OperationPlan[ReadMatrixObjectTrueFalseResponse]] = OperationPlan(
     operation_id='readMatrixObjectTrueFalse',
     method='GET',
     path='/matrix-object-true-false/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixObjectTrueFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1306,16 +1012,12 @@ OPERATION_43: Final[OperationPlan[ReadMatrixObjectTrueFalseResponse, ReadMatrixO
     ),
 )
 
-OPERATION_44: Final[OperationPlan[ReadMatrixObjectTrueAbsentResponse, ReadMatrixObjectTrueAbsentErrorData]] = OperationPlan(
+OPERATION_44: Final[OperationPlan[ReadMatrixObjectTrueAbsentResponse]] = OperationPlan(
     operation_id='readMatrixObjectTrueAbsent',
     method='GET',
     path='/matrix-object-true-absent/{wire-name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadMatrixObjectTrueAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1333,16 +1035,12 @@ OPERATION_44: Final[OperationPlan[ReadMatrixObjectTrueAbsentResponse, ReadMatrix
     ),
 )
 
-OPERATION_45: Final[OperationPlan[ReadQueryScalarFalseTrueResponse, ReadQueryScalarFalseTrueErrorData]] = OperationPlan(
+OPERATION_45: Final[OperationPlan[ReadQueryScalarFalseTrueResponse]] = OperationPlan(
     operation_id='readQueryScalarFalseTrue',
     method='GET',
     path='/read-query-scalar-false-true',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryScalarFalseTrueHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1356,16 +1054,12 @@ OPERATION_45: Final[OperationPlan[ReadQueryScalarFalseTrueResponse, ReadQuerySca
     ),
 )
 
-OPERATION_46: Final[OperationPlan[ReadQueryScalarFalseFalseResponse, ReadQueryScalarFalseFalseErrorData]] = OperationPlan(
+OPERATION_46: Final[OperationPlan[ReadQueryScalarFalseFalseResponse]] = OperationPlan(
     operation_id='readQueryScalarFalseFalse',
     method='GET',
     path='/read-query-scalar-false-false',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryScalarFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form'),
@@ -1374,16 +1068,12 @@ OPERATION_46: Final[OperationPlan[ReadQueryScalarFalseFalseResponse, ReadQuerySc
     ),
 )
 
-OPERATION_47: Final[OperationPlan[ReadQueryScalarFalseAbsentResponse, ReadQueryScalarFalseAbsentErrorData]] = OperationPlan(
+OPERATION_47: Final[OperationPlan[ReadQueryScalarFalseAbsentResponse]] = OperationPlan(
     operation_id='readQueryScalarFalseAbsent',
     method='GET',
     path='/read-query-scalar-false-absent',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryScalarFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form'),
@@ -1392,16 +1082,12 @@ OPERATION_47: Final[OperationPlan[ReadQueryScalarFalseAbsentResponse, ReadQueryS
     ),
 )
 
-OPERATION_48: Final[OperationPlan[ReadQueryScalarTrueTrueResponse, ReadQueryScalarTrueTrueErrorData]] = OperationPlan(
+OPERATION_48: Final[OperationPlan[ReadQueryScalarTrueTrueResponse]] = OperationPlan(
     operation_id='readQueryScalarTrueTrue',
     method='GET',
     path='/read-query-scalar-true-true',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryScalarTrueTrueHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1416,16 +1102,12 @@ OPERATION_48: Final[OperationPlan[ReadQueryScalarTrueTrueResponse, ReadQueryScal
     ),
 )
 
-OPERATION_49: Final[OperationPlan[ReadQueryScalarTrueFalseResponse, ReadQueryScalarTrueFalseErrorData]] = OperationPlan(
+OPERATION_49: Final[OperationPlan[ReadQueryScalarTrueFalseResponse]] = OperationPlan(
     operation_id='readQueryScalarTrueFalse',
     method='GET',
     path='/read-query-scalar-true-false',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryScalarTrueFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', explode=True),
@@ -1434,16 +1116,12 @@ OPERATION_49: Final[OperationPlan[ReadQueryScalarTrueFalseResponse, ReadQuerySca
     ),
 )
 
-OPERATION_50: Final[OperationPlan[ReadQueryScalarTrueAbsentResponse, ReadQueryScalarTrueAbsentErrorData]] = OperationPlan(
+OPERATION_50: Final[OperationPlan[ReadQueryScalarTrueAbsentResponse]] = OperationPlan(
     operation_id='readQueryScalarTrueAbsent',
     method='GET',
     path='/read-query-scalar-true-absent',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryScalarTrueAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', explode=True),
@@ -1452,16 +1130,12 @@ OPERATION_50: Final[OperationPlan[ReadQueryScalarTrueAbsentResponse, ReadQuerySc
     ),
 )
 
-OPERATION_51: Final[OperationPlan[ReadQueryArrayFalseTrueResponse, ReadQueryArrayFalseTrueErrorData]] = OperationPlan(
+OPERATION_51: Final[OperationPlan[ReadQueryArrayFalseTrueResponse]] = OperationPlan(
     operation_id='readQueryArrayFalseTrue',
     method='GET',
     path='/read-query-array-false-true',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryArrayFalseTrueHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1476,16 +1150,12 @@ OPERATION_51: Final[OperationPlan[ReadQueryArrayFalseTrueResponse, ReadQueryArra
     ),
 )
 
-OPERATION_52: Final[OperationPlan[ReadQueryArrayFalseFalseResponse, ReadQueryArrayFalseFalseErrorData]] = OperationPlan(
+OPERATION_52: Final[OperationPlan[ReadQueryArrayFalseFalseResponse]] = OperationPlan(
     operation_id='readQueryArrayFalseFalse',
     method='GET',
     path='/read-query-array-false-false',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryArrayFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', shape='array'),
@@ -1494,16 +1164,12 @@ OPERATION_52: Final[OperationPlan[ReadQueryArrayFalseFalseResponse, ReadQueryArr
     ),
 )
 
-OPERATION_53: Final[OperationPlan[ReadQueryArrayFalseAbsentResponse, ReadQueryArrayFalseAbsentErrorData]] = OperationPlan(
+OPERATION_53: Final[OperationPlan[ReadQueryArrayFalseAbsentResponse]] = OperationPlan(
     operation_id='readQueryArrayFalseAbsent',
     method='GET',
     path='/read-query-array-false-absent',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryArrayFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', shape='array'),
@@ -1512,16 +1178,12 @@ OPERATION_53: Final[OperationPlan[ReadQueryArrayFalseAbsentResponse, ReadQueryAr
     ),
 )
 
-OPERATION_54: Final[OperationPlan[ReadQueryArrayTrueTrueResponse, ReadQueryArrayTrueTrueErrorData]] = OperationPlan(
+OPERATION_54: Final[OperationPlan[ReadQueryArrayTrueTrueResponse]] = OperationPlan(
     operation_id='readQueryArrayTrueTrue',
     method='GET',
     path='/read-query-array-true-true',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryArrayTrueTrueHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1537,16 +1199,12 @@ OPERATION_54: Final[OperationPlan[ReadQueryArrayTrueTrueResponse, ReadQueryArray
     ),
 )
 
-OPERATION_55: Final[OperationPlan[ReadQueryArrayTrueFalseResponse, ReadQueryArrayTrueFalseErrorData]] = OperationPlan(
+OPERATION_55: Final[OperationPlan[ReadQueryArrayTrueFalseResponse]] = OperationPlan(
     operation_id='readQueryArrayTrueFalse',
     method='GET',
     path='/read-query-array-true-false',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryArrayTrueFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1561,16 +1219,12 @@ OPERATION_55: Final[OperationPlan[ReadQueryArrayTrueFalseResponse, ReadQueryArra
     ),
 )
 
-OPERATION_56: Final[OperationPlan[ReadQueryArrayTrueAbsentResponse, ReadQueryArrayTrueAbsentErrorData]] = OperationPlan(
+OPERATION_56: Final[OperationPlan[ReadQueryArrayTrueAbsentResponse]] = OperationPlan(
     operation_id='readQueryArrayTrueAbsent',
     method='GET',
     path='/read-query-array-true-absent',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryArrayTrueAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1585,16 +1239,12 @@ OPERATION_56: Final[OperationPlan[ReadQueryArrayTrueAbsentResponse, ReadQueryArr
     ),
 )
 
-OPERATION_57: Final[OperationPlan[ReadQueryObjectFalseTrueResponse, ReadQueryObjectFalseTrueErrorData]] = OperationPlan(
+OPERATION_57: Final[OperationPlan[ReadQueryObjectFalseTrueResponse]] = OperationPlan(
     operation_id='readQueryObjectFalseTrue',
     method='GET',
     path='/read-query-object-false-true',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryObjectFalseTrueHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1611,16 +1261,12 @@ OPERATION_57: Final[OperationPlan[ReadQueryObjectFalseTrueResponse, ReadQueryObj
     ),
 )
 
-OPERATION_58: Final[OperationPlan[ReadQueryObjectFalseFalseResponse, ReadQueryObjectFalseFalseErrorData]] = OperationPlan(
+OPERATION_58: Final[OperationPlan[ReadQueryObjectFalseFalseResponse]] = OperationPlan(
     operation_id='readQueryObjectFalseFalse',
     method='GET',
     path='/read-query-object-false-false',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryObjectFalseFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1636,16 +1282,12 @@ OPERATION_58: Final[OperationPlan[ReadQueryObjectFalseFalseResponse, ReadQueryOb
     ),
 )
 
-OPERATION_59: Final[OperationPlan[ReadQueryObjectFalseAbsentResponse, ReadQueryObjectFalseAbsentErrorData]] = OperationPlan(
+OPERATION_59: Final[OperationPlan[ReadQueryObjectFalseAbsentResponse]] = OperationPlan(
     operation_id='readQueryObjectFalseAbsent',
     method='GET',
     path='/read-query-object-false-absent',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryObjectFalseAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1661,16 +1303,12 @@ OPERATION_59: Final[OperationPlan[ReadQueryObjectFalseAbsentResponse, ReadQueryO
     ),
 )
 
-OPERATION_60: Final[OperationPlan[ReadQueryObjectTrueTrueResponse, ReadQueryObjectTrueTrueErrorData]] = OperationPlan(
+OPERATION_60: Final[OperationPlan[ReadQueryObjectTrueTrueResponse]] = OperationPlan(
     operation_id='readQueryObjectTrueTrue',
     method='GET',
     path='/read-query-object-true-true',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryObjectTrueTrueHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1688,16 +1326,12 @@ OPERATION_60: Final[OperationPlan[ReadQueryObjectTrueTrueResponse, ReadQueryObje
     ),
 )
 
-OPERATION_61: Final[OperationPlan[ReadQueryObjectTrueFalseResponse, ReadQueryObjectTrueFalseErrorData]] = OperationPlan(
+OPERATION_61: Final[OperationPlan[ReadQueryObjectTrueFalseResponse]] = OperationPlan(
     operation_id='readQueryObjectTrueFalse',
     method='GET',
     path='/read-query-object-true-false',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryObjectTrueFalseHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1714,16 +1348,12 @@ OPERATION_61: Final[OperationPlan[ReadQueryObjectTrueFalseResponse, ReadQueryObj
     ),
 )
 
-OPERATION_62: Final[OperationPlan[ReadQueryObjectTrueAbsentResponse, ReadQueryObjectTrueAbsentErrorData]] = OperationPlan(
+OPERATION_62: Final[OperationPlan[ReadQueryObjectTrueAbsentResponse]] = OperationPlan(
     operation_id='readQueryObjectTrueAbsent',
     method='GET',
     path='/read-query-object-true-absent',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadQueryObjectTrueAbsentHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1740,12 +1370,12 @@ OPERATION_62: Final[OperationPlan[ReadQueryObjectTrueAbsentResponse, ReadQueryOb
     ),
 )
 
-OPERATION_63: Final[OperationPlan[ReadDeepObjectResponse, ReadDeepObjectErrorData]] = OperationPlan(
+OPERATION_63: Final[OperationPlan[ReadDeepObjectResponse]] = OperationPlan(
     operation_id='readDeepObject',
     method='GET',
     path='/deep',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReadDeepObjectHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1763,16 +1393,12 @@ OPERATION_63: Final[OperationPlan[ReadDeepObjectResponse, ReadDeepObjectErrorDat
     ),
 )
 
-OPERATION_64: Final[OperationPlan[ReadHeadersAndCookiesResponse, ReadHeadersAndCookiesErrorData]] = OperationPlan(
+OPERATION_64: Final[OperationPlan[ReadHeadersAndCookiesResponse]] = OperationPlan(
     operation_id='readHeadersAndCookies',
     method='GET',
     path='/controls',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        ReadHeadersAndCookiesHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Wire', style='simple'),
@@ -1790,12 +1416,12 @@ OPERATION_64: Final[OperationPlan[ReadHeadersAndCookiesResponse, ReadHeadersAndC
     ),
 )
 
-OPERATION_65: Final[OperationPlan[ReadTextResponse, ReadTextErrorData]] = OperationPlan(
+OPERATION_65: Final[OperationPlan[ReadTextResponse]] = OperationPlan(
     operation_id='readText',
     method='GET',
     path='/text/{key}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReadTextHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1809,12 +1435,12 @@ OPERATION_65: Final[OperationPlan[ReadTextResponse, ReadTextErrorData]] = Operat
     ),
 )
 
-OPERATION_66: Final[OperationPlan[ReadJsonResponse, ReadJsonErrorData]] = OperationPlan(
+OPERATION_66: Final[OperationPlan[ReadJsonResponse]] = OperationPlan(
     operation_id='readJSON',
     method='GET',
     path='/json/{key}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReadJsonHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1828,12 +1454,12 @@ OPERATION_66: Final[OperationPlan[ReadJsonResponse, ReadJsonErrorData]] = Operat
     ),
 )
 
-OPERATION_67: Final[OperationPlan[ReadSuffixResponse, ReadSuffixErrorData]] = OperationPlan(
+OPERATION_67: Final[OperationPlan[ReadSuffixResponse]] = OperationPlan(
     operation_id='readSuffix',
     method='GET',
     path='/suffix/{wire-name}.json',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReadSuffixHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -1847,12 +1473,12 @@ OPERATION_67: Final[OperationPlan[ReadSuffixResponse, ReadSuffixErrorData]] = Op
     ),
 )
 
-OPERATION_68: Final[OperationPlan[ReadCompositeResponse, ReadCompositeErrorData]] = OperationPlan(
+OPERATION_68: Final[OperationPlan[ReadCompositeResponse]] = OperationPlan(
     operation_id='readComposite',
     method='GET',
     path='/composite/prefix{wire-name}suffix',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReadCompositeHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(

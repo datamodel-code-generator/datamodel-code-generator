@@ -59,7 +59,7 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  status failure ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=True, body_bytes=b'', truncated=False] get_pet_http_error
+  status failure ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, body_bytes=b'', truncated=False] not_found_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -67,7 +67,7 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  status and release failure: GetPetHTTPError secondary ['LimiterExecutionError']
+  status and release failure: NotFoundError secondary ['LimiterExecutionError']
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -205,7 +205,7 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async status failure ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=True, body_bytes=b'', truncated=False] get_pet_http_error
+  async status failure ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, body_bytes=b'', truncated=False] not_found_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -213,7 +213,7 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async status and release failure: GetPetHTTPError secondary ['LimiterExecutionError']
+  async status and release failure: NotFoundError secondary ['LimiterExecutionError']
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''

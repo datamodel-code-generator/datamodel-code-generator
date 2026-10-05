@@ -159,12 +159,12 @@ render pydantic_v2.BaseModel
     "schema_version": 1
   }
   /selection/selected_operations/0 records.stream_records(query:topic=topic)
-    exports client.types.records.StreamRecordsResponse client.types.records.StreamRecordsErrorData client.types.records.StreamRecordsHTTPError
+    exports client.types.records.StreamRecordsResponse
     exports None
   /selection/selected_operations/1 search.search()
-    exports client.types.search.SearchResponse client.types.search.SearchErrorData client.types.search.SearchHTTPError
+    exports client.types.search.SearchResponse
     exports None
   /selection/selected_operations/2 status.get_status()
-    exports client.types.status.GetStatusResponse client.types.status.GetStatusErrorData client.types.status.GetStatusHTTPError
+    exports client.types.status.GetStatusResponse
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

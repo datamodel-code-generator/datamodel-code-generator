@@ -31,33 +31,33 @@ render pydantic_v2.BaseModel
   namespace client helpers [] bindings 22
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 headers.parameter(header:X-Request-Key=x_request_key)
-    exports client.types.headers.ParameterResponse client.types.headers.ParameterErrorData client.types.headers.ParameterHTTPError
+    exports client.types.headers.ParameterResponse
     exports client.types.headers.decode_parameter_header
   /selection/selected_operations/1 headers.api_key()
-    exports client.types.headers.ApiKeyResponse client.types.headers.ApiKeyErrorData client.types.headers.ApiKeyHTTPError
+    exports client.types.headers.ApiKeyResponse
     exports client.types.headers.decode_api_key_header
   /selection/selected_operations/2 headers.bearer()
-    exports client.types.headers.BearerResponse client.types.headers.BearerErrorData client.types.headers.BearerHTTPError
+    exports client.types.headers.BearerResponse
     exports client.types.headers.decode_bearer_header
   /selection/selected_operations/3 headers.oauth()
-    exports client.types.headers.OauthResponse client.types.headers.OauthErrorData client.types.headers.OauthHTTPError
+    exports client.types.headers.OauthResponse
     exports client.types.headers.decode_oauth_header
   /selection/selected_operations/4 headers.openid()
-    exports client.types.headers.OpenidResponse client.types.headers.OpenidErrorData client.types.headers.OpenidHTTPError
+    exports client.types.headers.OpenidResponse
     exports client.types.headers.decode_openid_header
   /selection/selected_operations/5 headers.cookie()
-    exports client.types.headers.CookieResponse client.types.headers.CookieErrorData client.types.headers.CookieHTTPError
+    exports client.types.headers.CookieResponse
     exports client.types.headers.decode_cookie_header
   /selection/selected_operations/6 headers.query()
-    exports client.types.headers.QueryResponse client.types.headers.QueryErrorData client.types.headers.QueryHTTPError
+    exports client.types.headers.QueryResponse
     exports client.types.headers.decode_query_header
   /selection/selected_operations/7 headers.ignored()
-    exports client.types.headers.IgnoredResponse client.types.headers.IgnoredErrorData client.types.headers.IgnoredHTTPError
+    exports client.types.headers.IgnoredResponse
     exports client.types.headers.decode_ignored_header
   /selection/selected_operations/8 headers.direction(header:X-Retry-Control=x_retry_control)
-    exports client.types.headers.DirectionResponse client.types.headers.DirectionErrorData client.types.headers.DirectionHTTPError
+    exports client.types.headers.DirectionResponse
     exports client.types.headers.decode_direction_header
   /selection/selected_operations/9 headers.unused()
-    exports client.types.headers.UnusedResponse client.types.headers.UnusedErrorData client.types.headers.UnusedHTTPError
+    exports client.types.headers.UnusedResponse
     exports client.types.headers.decode_unused_header
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

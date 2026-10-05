@@ -173,7 +173,7 @@ the last append stored but answered with an error
   advance = progress 8/10 complete=False
   > PATCH https://api.example.com/files/u11
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, upload-checksum: sha1 FrBr2bc4g14tE0/o1ZbpqwCGqYU=, content-type: application/offset+octet-stream, content-length: 2] b'89'
-  advance ! AppendFileHTTPError: AppendFileHTTPError(status_code=503, operation_id='appendFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='appendFile', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] append_file_http_error
+  advance ! InternalServerError: InternalServerError(status_code=503, operation_id='appendFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='appendFile', status_code=503, body=b'', body_bytes=b'', truncated=False] internal_server_error
   > HEAD https://api.example.com/files/u11
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   advance probes first = progress 10/10 complete=True
@@ -221,7 +221,7 @@ a probe after an error answer that claims bytes never sent
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u16
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
-  advance ! AppendFileHTTPError: AppendFileHTTPError(status_code=500, operation_id='appendFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='appendFile', status_code=500, error_decoded=False, body_bytes=b'', truncated=False] append_file_http_error
+  advance ! InternalServerError: InternalServerError(status_code=500, operation_id='appendFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='appendFile', status_code=500, body=b'', body_bytes=b'', truncated=False] internal_server_error
   > HEAD https://api.example.com/files/u16
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   advance ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=0, expected_offset=0, remote_offset=10, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single')] upload_offset_error [confirmed_offset=0, expected_offset=0, remote_offset=10, size=10] resume_state=True
@@ -305,7 +305,7 @@ a completion an error answered
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u26/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run ! CompleteFileHTTPError: CompleteFileHTTPError(status_code=500, operation_id='completeFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='completeFile', status_code=500, error_decoded=False, body_bytes=b'', truncated=False] complete_file_http_error
+  run ! InternalServerError: InternalServerError(status_code=500, operation_id='completeFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='completeFile', status_code=500, body=b'', body_bytes=b'', truncated=False] internal_server_error
   > POST https://api.example.com/files/u26/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
   run again = Stored(id='u26', size=10, sha256='84d89877f0d4041efb6bf91a16f0248f2fd573e6af05c19f96bedb9f882f7882')
@@ -318,7 +318,7 @@ a completion a gateway answered with 502
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u27/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=CompleteFileHTTPError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=InternalServerError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
   run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
   advance again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
   resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
@@ -331,7 +331,7 @@ a completion a gateway answered with 504
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   > POST https://api.example.com/files/u28/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=CompleteFileHTTPError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=InternalServerError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
   run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
   advance again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
   resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
@@ -588,7 +588,7 @@ async uploads
   advance = progress 8/10 complete=False
   > PATCH https://api.example.com/files/u51
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, upload-checksum: sha1 FrBr2bc4g14tE0/o1ZbpqwCGqYU=, content-type: application/offset+octet-stream, content-length: 2] b'89'
-  advance stored but refused ! AppendFileHTTPError: AppendFileHTTPError(status_code=503, operation_id='appendFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='appendFile', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] append_file_http_error
+  advance stored but refused ! InternalServerError: InternalServerError(status_code=503, operation_id='appendFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='appendFile', status_code=503, body=b'', body_bytes=b'', truncated=False] internal_server_error
   > HEAD https://api.example.com/files/u51
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   advance probes first = progress 10/10 complete=True
@@ -596,7 +596,7 @@ async uploads
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u52
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
-  advance stored but refused ! AppendFileHTTPError: AppendFileHTTPError(status_code=503, operation_id='appendFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='appendFile', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] append_file_http_error
+  advance stored but refused ! InternalServerError: InternalServerError(status_code=503, operation_id='appendFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='appendFile', status_code=503, body=b'', body_bytes=b'', truncated=False] internal_server_error
   > HEAD https://api.example.com/files/u52
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u52

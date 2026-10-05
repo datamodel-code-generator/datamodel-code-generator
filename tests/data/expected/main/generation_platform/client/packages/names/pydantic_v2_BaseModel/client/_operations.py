@@ -15,48 +15,28 @@ from ._runtime.client.operations import (
     empty_branch,
 )
 from ._runtime.model_codecs.parameters import ParameterPlan
-from .types.admin import (
-    CreateAdminUserErrorData,
-    CreateAdminUserHTTPError,
-    CreateAdminUserResponse,
-)
-from .types.admin.users import (
-    ListAdminUsersErrorData,
-    ListAdminUsersHTTPError,
-    ListAdminUsersResponse,
-)
-from .types.default import GetRootErrorData, GetRootHTTPError, GetRootResponse
-from .types.store import (
-    GetFilesByFileNameByExtErrorData,
-    GetFilesByFileNameByExtHTTPError,
-    GetFilesByFileNameByExtResponse,
-)
-from .types.u30e6_u30fc_u30b6_u30fc import (
-    HttpGetUsersErrorData,
-    HttpGetUsersHTTPError,
-    HttpGetUsersResponse,
-)
+from .types.admin import CreateAdminUserResponse
+from .types.admin.users import ListAdminUsersResponse
+from .types.default import GetRootResponse
+from .types.store import GetFilesByFileNameByExtResponse
+from .types.u30e6_u30fc_u30b6_u30fc import HttpGetUsersResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://names.example.com'),)
 
-OPERATION_0: Final[OperationPlan[GetRootResponse, GetRootErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[GetRootResponse]] = OperationPlan(
     operation_id=None,
     method='GET',
     path='/',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), GetRootHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
 )
 
-OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse, GetFilesByFileNameByExtErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse]] = OperationPlan(
     operation_id=None,
     method='GET',
     path='/files/{fileName}.{ext}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (empty_branch('204'),),
-        (),
-        GetFilesByFileNameByExtHTTPError,
-    ),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -94,26 +74,26 @@ OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse, GetFilesByFile
     ),
 )
 
-OPERATION_2: Final[OperationPlan[HttpGetUsersResponse, HttpGetUsersErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[HttpGetUsersResponse]] = OperationPlan(
     operation_id='HTTPGetUsers',
     method='GET',
     path='/users',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), HttpGetUsersHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
 )
 
-OPERATION_3: Final[OperationPlan[ListAdminUsersResponse, ListAdminUsersErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[ListAdminUsersResponse]] = OperationPlan(
     operation_id='listAdminUsers',
     method='GET',
     path='/admin/users',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ListAdminUsersHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
 )
 
-OPERATION_4: Final[OperationPlan[CreateAdminUserResponse, CreateAdminUserErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[CreateAdminUserResponse]] = OperationPlan(
     operation_id='createAdminUser',
     method='POST',
     path='/admin/users',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), CreateAdminUserHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
 )

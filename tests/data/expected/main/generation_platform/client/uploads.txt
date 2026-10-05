@@ -339,21 +339,21 @@ render pydantic_v2.BaseModel
     "schema_version": 1
   }
   /selection/selected_operations/0 files.create_file(header:Upload-Length=upload_length, header:Tus-Resumable=tus_resumable, header:X-Name=x_name)
-    exports client.types.files.CreateFileResponse client.types.files.CreateFileErrorData client.types.files.CreateFileHTTPError
+    exports client.types.files.CreateFileResponse
     exports client.types.files.decode_create_file_header
   /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
-    exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
+    exports client.types.files.ProbeFileResponse
     exports client.types.files.decode_probe_file_header
   /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length, header:Upload-Checksum=upload_checksum)
-    exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
+    exports client.types.files.AppendFileResponse
     exports client.types.files.decode_append_file_header
   /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset, query:checksum=checksum)
-    exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
+    exports client.types.files.PutFileChunkResponse
     exports None
   /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)
-    exports client.types.files.GetFileStatusResponse client.types.files.GetFileStatusErrorData client.types.files.GetFileStatusHTTPError
+    exports client.types.files.GetFileStatusResponse
     exports None
   /selection/selected_operations/5 files.complete_file(path:fileId=file_id)
-    exports client.types.files.CompleteFileResponse client.types.files.CompleteFileErrorData client.types.files.CompleteFileHTTPError
+    exports client.types.files.CompleteFileResponse
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

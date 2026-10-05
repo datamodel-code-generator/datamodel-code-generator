@@ -16,18 +16,11 @@ from ._runtime.client.operations import (
 )
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
-from .types.default import (
-    LookupErrorData,
-    LookupHTTPError,
-    LookupResponse,
-    SearchErrorData,
-    SearchHTTPError,
-    SearchResponse,
-)
+from .types.default import LookupResponse, SearchResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://search.example.com'),)
 
-OPERATION_0: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[SearchResponse]] = OperationPlan(
     operation_id='search',
     method='GET',
     path='/search',
@@ -42,7 +35,6 @@ OPERATION_0: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
             ),
         ),
         (),
-        SearchHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -58,7 +50,7 @@ OPERATION_0: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
     ),
 )
 
-OPERATION_1: Final[OperationPlan[LookupResponse, LookupErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[LookupResponse]] = OperationPlan(
     operation_id='lookup',
     method='GET',
     path='/lookup',
@@ -73,7 +65,6 @@ OPERATION_1: Final[OperationPlan[LookupResponse, LookupErrorData]] = OperationPl
             ),
         ),
         (),
-        LookupHTTPError,
     ),
     parameters=(
         ParameterSpec(

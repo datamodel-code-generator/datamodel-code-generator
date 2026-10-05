@@ -36,27 +36,27 @@ render pydantic_v2.BaseModel
   namespace client helpers [] bindings 25
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 pets.list_pets(query:limit=limit, query:tags=labels, header:X-Trace=x_trace, cookie:session=session)
-    exports client.types.pets.ListPetsResponse client.types.pets.ListPetsErrorData client.types.pets.ListPetsHTTPError
+    exports client.types.pets.ListPetsResponse
     exports client.types.pets.decode_list_pets_header
   /selection/selected_operations/1 pets.create_pet()
-    exports client.types.pets.CreatePetResponse client.types.pets.CreatePetErrorData client.types.pets.CreatePetHTTPError
+    exports client.types.pets.CreatePetResponse
     exports None
   /selection/selected_operations/2 pets.get_pet(path:petId=pet_id)
-    exports client.types.pets.GetPetResponse client.types.pets.GetPetErrorData client.types.pets.GetPetHTTPError
+    exports client.types.pets.GetPetResponse
     exports None
   /selection/selected_operations/3 pets.delete_pets_by_pet_id(path:petId=pet_id)
-    exports client.types.pets.DeletePetsByPetIdResponse client.types.pets.DeletePetsByPetIdErrorData client.types.pets.DeletePetsByPetIdHTTPError
+    exports client.types.pets.DeletePetsByPetIdResponse
     exports None
   /selection/selected_operations/4 pets.head_pet(path:petId=pet_id)
-    exports client.types.pets.HeadPetResponse client.types.pets.HeadPetErrorData client.types.pets.HeadPetHTTPError
+    exports client.types.pets.HeadPetResponse
     exports client.types.pets.decode_head_pet_header
   /selection/selected_operations/5 pets.photos.upload(path:petId=pet_id)
-    exports client.types.pets.photos.UploadResponse client.types.pets.photos.UploadErrorData client.types.pets.photos.UploadHTTPError
+    exports client.types.pets.photos.UploadResponse
     exports None
   /selection/selected_operations/6 pets.attach_files(path:petId=pet_id)
-    exports client.types.pets.AttachFilesResponse client.types.pets.AttachFilesErrorData client.types.pets.AttachFilesHTTPError
+    exports client.types.pets.AttachFilesResponse
     exports None
   /selection/selected_operations/7 pets.read_files(path:petId=pet_id)
-    exports client.types.pets.ReadFilesResponse client.types.pets.ReadFilesErrorData client.types.pets.ReadFilesHTTPError
+    exports client.types.pets.ReadFilesResponse
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

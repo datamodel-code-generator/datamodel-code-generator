@@ -1537,9 +1537,9 @@ and `raw_data`, the event's data text. `data()` iterates over the data of the sa
 the asyncio `data()` is not awaited. Representations name no data, event ID, or raw data. `StreamEvent`,
 `UnknownEvent`, `EventStream`, and `AsyncEventStream` are imported from `pkg.protocols`, in every package.
 
-The response's status and `Content-Type` are checked before `open` returns: an error status raises the operation's
-typed HTTP error, an undeclared status `UnexpectedStatusError`, and a body of another media type, or none,
-`UnexpectedMediaTypeError`. Its acquisition retries like any call. A stream then reads only the bytes its next event
+The response's status and `Content-Type` are checked before `open` returns: an error status raises its `APIStatusError`
+subclass, an undeclared status `APIStatusError` with the reason `unexpected_status`, and a body of another media type,
+or none, `UnexpectedMediaTypeError`. Its acquisition retries like any call. A stream then reads only the bytes its next event
 needs and owns the response until it ends, fails, or closes: close it with `with`, `async with`, `close()`, or
 `aclose()`, since leaving a loop early releases nothing. One consumer reads a stream at a time: a step, or a close,
 while another step runs raises `ProtocolStateError`, and so does every step after a failure or `close()`; after its end
@@ -1954,7 +1954,7 @@ never imports the WebSocket library.
 
 The handshake is one logical call of the operation, with initial authentication, limiter, hooks, and deadline.
 Only a 101 response whose headers validate opens the session: any other response is read up to `max_error_body_bytes`
-and raises the operation's typed `HTTPStatusError`, or `UnexpectedStatusError` for an undeclared status, so 101 need not
+and raises the status's `APIStatusError`, with the reason `unexpected_status` for an undeclared status, so 101 need not
 be declared. Received refusals are terminal, including redirects and 401s; a refused upgrade never invalidates or
 refreshes credentials. Only an initial transport failure proven `NOT_SENT` before session handover may use the call's
 existing retry policy. A handshake that may have reached the server is never sent again.

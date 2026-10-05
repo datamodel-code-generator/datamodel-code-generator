@@ -397,15 +397,15 @@ render pydantic_v2.BaseModel
     "schema_version": 1
   }
   /selection/selected_operations/0 users.list_users(query:limit=limit, header:X-Trace=x_trace, header:X-Context=x_context, cookie:session=session)
-    exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
+    exports client.types.users.ListUsersResponse
     exports client.types.users.decode_list_users_header
   /selection/selected_operations/1 searches.search()
-    exports client.types.searches.SearchResponse client.types.searches.SearchErrorData client.types.searches.SearchHTTPError
+    exports client.types.searches.SearchResponse
     exports None
   /selection/selected_operations/2 secure.list_secure_users()
-    exports client.types.secure.ListSecureUsersResponse client.types.secure.ListSecureUsersErrorData client.types.secure.ListSecureUsersHTTPError
+    exports client.types.secure.ListSecureUsersResponse
     exports client.types.secure.decode_list_secure_users_header
   /selection/selected_operations/3 keyed.list_keyed_users()
-    exports client.types.keyed.ListKeyedUsersResponse client.types.keyed.ListKeyedUsersErrorData client.types.keyed.ListKeyedUsersHTTPError
+    exports client.types.keyed.ListKeyedUsersResponse
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

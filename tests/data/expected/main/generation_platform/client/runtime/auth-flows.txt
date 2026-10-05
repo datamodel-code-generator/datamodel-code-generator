@@ -88,7 +88,7 @@
   signer claiming an exploded query field = ('AuthConfigurationError', 'name_collision', None, None, 'NoneType', (), 0, None, 0)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer static] b''
-  static token rejected = ('BearerHTTPError', None, None, 'auth_unrefreshable', 'NoneType', (), 1, None, 8)
+  static token rejected = ('AuthenticationError', None, None, 'auth_unrefreshable', 'NoneType', (), 1, None, 8)
     callbacks=()
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
@@ -100,7 +100,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer new] b''
-  refreshable rejected twice = ('BearerHTTPError', None, None, 'auth_recovery_exhausted', 'NoneType', (), 2, None, 8)
+  refreshable rejected twice = ('AuthenticationError', None, None, 'auth_recovery_exhausted', 'NoneType', (), 2, None, 8)
     callbacks=['get', 'invalidate', 'get', 'refresh', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
@@ -110,11 +110,11 @@
     callbacks=['get', 'invalidate', 'get']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  invalidate fails while recovering = ('BearerHTTPError', None, None, 'callback_failure', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  invalidate fails while recovering = ('AuthenticationError', None, None, 'callback_failure', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  invalidate fails locally = ('BearerHTTPError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  invalidate fails locally = ('AuthenticationError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
@@ -122,28 +122,28 @@
     callbacks=['get', 'invalidate', 'get', 'refresh']
   > POST https://api.example.com/unsafe
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  unsafe operation rejected = ('UnsafeAuthHTTPError', None, None, 'unsafe_operation', 'NoneType', (), 1, None, 8)
+  unsafe operation rejected = ('AuthenticationError', None, None, 'unsafe_operation', 'NoneType', (), 1, None, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/never
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  never operation rejected = ('NeverAuthHTTPError', None, None, 'operation_never', 'NoneType', (), 1, None, 8)
+  never operation rejected = ('AuthenticationError', None, None, 'operation_never', 'NoneType', (), 1, None, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  raw invalidate failure = ('BearerHTTPError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  raw invalidate failure = ('AuthenticationError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  streamed invalidate failure = ('BearerHTTPError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  streamed invalidate failure = ('AuthenticationError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token] b''
-  request_raw invalidate failure = ('HTTPStatusError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  request_raw invalidate failure = ('AuthenticationError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
   hook fails on the invalidation span = ('HookExecutionError', None, None, None, 'RuntimeError', (), 1, 'RESPONSE_STARTED', 0)
     callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_start', 'response_headers', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   > GET https://api.example.com/anonymous
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-sig: signed] b''
-  signed anonymous rejected = ('AnonymousHTTPError', None, None, 'status_not_retryable', 'NoneType', (), 1, None, 8)
+  signed anonymous rejected = ('AuthenticationError', None, None, 'status_not_retryable', 'NoneType', (), 1, None, 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
   retry token already expired = ('TokenExpiredError', 'expired', None, None, 'NoneType', (), 1, 'RESPONSE_STARTED', 0)
@@ -156,7 +156,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer narrowed] b''
-  refresh grants known empty scopes = ('OauthReadHTTPError', None, None, 'status_not_retryable', 'NoneType', (), 2, None, 9)
+  refresh grants known empty scopes = ('PermissionDeniedError', None, None, 'status_not_retryable', 'NoneType', (), 2, None, 9)
     callbacks=['get', 'invalidate', 'get', 'refresh'] resource_arrivals=2
   async known read grants=('read',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
   async known read grants=('read',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
@@ -170,7 +170,7 @@
   async unknown grants=None status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer static] b''
-  async static token rejected = ('BearerHTTPError', None, None, 'auth_unrefreshable', 'NoneType', (), 1, None, 8)
+  async static token rejected = ('AuthenticationError', None, None, 'auth_unrefreshable', 'NoneType', (), 1, None, 8)
     callbacks=()
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
@@ -182,7 +182,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer new] b''
-  async refreshable rejected twice = ('BearerHTTPError', None, None, 'auth_recovery_exhausted', 'NoneType', (), 2, None, 8)
+  async refreshable rejected twice = ('AuthenticationError', None, None, 'auth_recovery_exhausted', 'NoneType', (), 2, None, 8)
     callbacks=['get', 'invalidate', 'get', 'refresh', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
@@ -192,11 +192,11 @@
     callbacks=['get', 'invalidate', 'get']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async invalidate fails while recovering = ('BearerHTTPError', None, None, 'callback_failure', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  async invalidate fails while recovering = ('AuthenticationError', None, None, 'callback_failure', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async invalidate fails locally = ('BearerHTTPError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  async invalidate fails locally = ('AuthenticationError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
@@ -204,21 +204,21 @@
     callbacks=['get', 'invalidate', 'get', 'refresh']
   > POST https://api.example.com/unsafe
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async unsafe operation rejected = ('UnsafeAuthHTTPError', None, None, 'unsafe_operation', 'NoneType', (), 1, None, 8)
+  async unsafe operation rejected = ('AuthenticationError', None, None, 'unsafe_operation', 'NoneType', (), 1, None, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/never
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async never operation rejected = ('NeverAuthHTTPError', None, None, 'operation_never', 'NoneType', (), 1, None, 8)
+  async never operation rejected = ('AuthenticationError', None, None, 'operation_never', 'NoneType', (), 1, None, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async raw invalidate failure = ('BearerHTTPError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  async raw invalidate failure = ('AuthenticationError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async streamed invalidate failure = ('BearerHTTPError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  async streamed invalidate failure = ('AuthenticationError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token] b''
-  async request_raw invalidate failure = ('HTTPStatusError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  async request_raw invalidate failure = ('AuthenticationError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
   > GET https://api.example.com/empty
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
   async anonymous without opt-in = ('returned', 200)

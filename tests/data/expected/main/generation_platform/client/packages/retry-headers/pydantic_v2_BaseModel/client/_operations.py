@@ -17,41 +17,21 @@ from ._runtime.client.operations import (
 from ._runtime.client.retry import IdempotencyPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.headers import (
-    ApiKeyErrorData,
-    ApiKeyHTTPError,
     ApiKeyResponse,
-    BearerErrorData,
-    BearerHTTPError,
     BearerResponse,
-    CookieErrorData,
-    CookieHTTPError,
     CookieResponse,
-    DirectionErrorData,
-    DirectionHTTPError,
     DirectionResponse,
-    IgnoredErrorData,
-    IgnoredHTTPError,
     IgnoredResponse,
-    OauthErrorData,
-    OauthHTTPError,
     OauthResponse,
-    OpenidErrorData,
-    OpenidHTTPError,
     OpenidResponse,
-    ParameterErrorData,
-    ParameterHTTPError,
     ParameterResponse,
-    QueryErrorData,
-    QueryHTTPError,
     QueryResponse,
-    UnusedErrorData,
-    UnusedHTTPError,
     UnusedResponse,
 )
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
-OPERATION_0: Final[OperationPlan[ParameterResponse, ParameterErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[ParameterResponse]] = OperationPlan(
     operation_id='parameter',
     method='POST',
     path='/parameter',
@@ -66,7 +46,6 @@ OPERATION_0: Final[OperationPlan[ParameterResponse, ParameterErrorData]] = Opera
             ),
         ),
         (),
-        ParameterHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -76,7 +55,7 @@ OPERATION_0: Final[OperationPlan[ParameterResponse, ParameterErrorData]] = Opera
     ),
 )
 
-OPERATION_1: Final[OperationPlan[ApiKeyResponse, ApiKeyErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[ApiKeyResponse]] = OperationPlan(
     operation_id='api_key',
     method='POST',
     path='/api-key',
@@ -91,12 +70,11 @@ OPERATION_1: Final[OperationPlan[ApiKeyResponse, ApiKeyErrorData]] = OperationPl
             ),
         ),
         (),
-        ApiKeyHTTPError,
     ),
     security=security.OPERATION_1,
 )
 
-OPERATION_2: Final[OperationPlan[BearerResponse, BearerErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[BearerResponse]] = OperationPlan(
     operation_id='bearer',
     method='POST',
     path='/bearer',
@@ -111,12 +89,11 @@ OPERATION_2: Final[OperationPlan[BearerResponse, BearerErrorData]] = OperationPl
             ),
         ),
         (),
-        BearerHTTPError,
     ),
     security=security.OPERATION_2,
 )
 
-OPERATION_3: Final[OperationPlan[OauthResponse, OauthErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[OauthResponse]] = OperationPlan(
     operation_id='oauth',
     method='POST',
     path='/oauth',
@@ -131,12 +108,11 @@ OPERATION_3: Final[OperationPlan[OauthResponse, OauthErrorData]] = OperationPlan
             ),
         ),
         (),
-        OauthHTTPError,
     ),
     security=security.OPERATION_3,
 )
 
-OPERATION_4: Final[OperationPlan[OpenidResponse, OpenidErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[OpenidResponse]] = OperationPlan(
     operation_id='openid',
     method='POST',
     path='/openid',
@@ -151,12 +127,11 @@ OPERATION_4: Final[OperationPlan[OpenidResponse, OpenidErrorData]] = OperationPl
             ),
         ),
         (),
-        OpenidHTTPError,
     ),
     security=security.OPERATION_4,
 )
 
-OPERATION_5: Final[OperationPlan[CookieResponse, CookieErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[CookieResponse]] = OperationPlan(
     operation_id='cookie',
     method='POST',
     path='/cookie',
@@ -171,7 +146,6 @@ OPERATION_5: Final[OperationPlan[CookieResponse, CookieErrorData]] = OperationPl
             ),
         ),
         (),
-        CookieHTTPError,
     ),
     idempotency=IdempotencyPlan(
         header_name='session',
@@ -182,7 +156,7 @@ OPERATION_5: Final[OperationPlan[CookieResponse, CookieErrorData]] = OperationPl
     security=security.OPERATION_5,
 )
 
-OPERATION_6: Final[OperationPlan[QueryResponse, QueryErrorData]] = OperationPlan(
+OPERATION_6: Final[OperationPlan[QueryResponse]] = OperationPlan(
     operation_id='query',
     method='POST',
     path='/query',
@@ -197,7 +171,6 @@ OPERATION_6: Final[OperationPlan[QueryResponse, QueryErrorData]] = OperationPlan
             ),
         ),
         (),
-        QueryHTTPError,
     ),
     idempotency=IdempotencyPlan(
         header_name='token',
@@ -208,7 +181,7 @@ OPERATION_6: Final[OperationPlan[QueryResponse, QueryErrorData]] = OperationPlan
     security=security.OPERATION_6,
 )
 
-OPERATION_7: Final[OperationPlan[IgnoredResponse, IgnoredErrorData]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[IgnoredResponse]] = OperationPlan(
     operation_id='ignored',
     method='POST',
     path='/ignored',
@@ -223,7 +196,6 @@ OPERATION_7: Final[OperationPlan[IgnoredResponse, IgnoredErrorData]] = Operation
             ),
         ),
         (),
-        IgnoredHTTPError,
     ),
     idempotency=IdempotencyPlan(
         header_name='Authorization',
@@ -233,7 +205,7 @@ OPERATION_7: Final[OperationPlan[IgnoredResponse, IgnoredErrorData]] = Operation
     ),
 )
 
-OPERATION_8: Final[OperationPlan[DirectionResponse, DirectionErrorData]] = OperationPlan(
+OPERATION_8: Final[OperationPlan[DirectionResponse]] = OperationPlan(
     operation_id='direction',
     method='POST',
     path='/direction',
@@ -248,7 +220,6 @@ OPERATION_8: Final[OperationPlan[DirectionResponse, DirectionErrorData]] = Opera
             ),
         ),
         (),
-        DirectionHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -271,7 +242,7 @@ OPERATION_8: Final[OperationPlan[DirectionResponse, DirectionErrorData]] = Opera
     should_retry_header='X-Retry-Control',
 )
 
-OPERATION_9: Final[OperationPlan[UnusedResponse, UnusedErrorData]] = OperationPlan(
+OPERATION_9: Final[OperationPlan[UnusedResponse]] = OperationPlan(
     operation_id='unused',
     method='POST',
     path='/unused',
@@ -286,7 +257,6 @@ OPERATION_9: Final[OperationPlan[UnusedResponse, UnusedErrorData]] = OperationPl
             ),
         ),
         (),
-        UnusedHTTPError,
     ),
     idempotency=IdempotencyPlan(
         header_name='X-Auth-Key',
