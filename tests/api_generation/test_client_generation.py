@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_generated_modules_output, assert_output
 from tests.data.python.client_generation import (
     client_config_report,
@@ -24,7 +25,11 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
 )
 def test_client_input(case: str, tmp_path: Path) -> None:
     """Refuse cyclic input before publication while accepting shared aliases and recording their JSON digest."""
-    assert_output(client_input_report(case, tmp_path), EXPECTED / f"{case}.txt")
+    report = client_input_report(case, tmp_path)
+    expected = f"{case}.txt"
+    if case == "input-cycle-reference":
+        expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
+    assert_output(report, EXPECTED / expected)
 
 
 @pytest.mark.parametrize(
@@ -286,7 +291,6 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
         "retry-values",
         "retry-invalid",
         "retry-conflicting-controls",
-        "retry-missing-field",
         "retry-unknown-field",
         "toml-retry-values",
         "toml-retry-safety",
@@ -294,12 +298,10 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
         "toml-retry-unknown",
         "toml-retry-idempotency-unknown",
         "toml-retry-idempotency-type",
-        "toml-retry-retention",
-        "toml-retry-retention-infinite",
-        "toml-retry-retention-missing",
         "toml-retry-header-missing",
-        "toml-retry-replay-missing",
-        "toml-retry-scope-missing",
+        "toml-retry-removed-retention",
+        "toml-retry-removed-replay",
+        "toml-retry-removed-scope",
         "compression-values",
         "compression-invalid",
         "toml-compression-values",

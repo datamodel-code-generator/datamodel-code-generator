@@ -2980,15 +2980,14 @@ cannot change it. Each of the three sources is a function that takes no argument
 
 | Source | Default | Read for |
 |---|---|---|
-| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, idempotency key retention, token expiry, hook event durations, and protocol helper sessions, poll intervals, and stream deadlines |
-| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt, an idempotency key's `first_used_at` at call entry, and an access token's `expires_at`; a polling, stream, or upload helper's `resume` check of its state's `expires_at`; and a cache fetch's request, response, and age times |
+| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, token expiry, hook event durations, and protocol helper sessions, poll intervals, and stream deadlines |
+| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt and an access token's `expires_at`; a polling, stream, or upload helper's `resume` check of its state's `expires_at`; and a cache fetch's request, response, and age times |
 | `random` | A secure uniform draw | The fraction in `[0, 1)` of a full-jitter backoff, drawn only when a retry needs one |
 
 A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
 and flows keep their own time through `OAuthProviderOptions(clock=...)`, since one provider can serve several clients.
 A client and the providers it uses must agree on wall time, because an access token's `expires_at` passes between them
-as a UTC datetime. A key from `IdempotencyKey.new()` takes its first use from the system clock; pass `first_used_at`
-yourself for a client with another clock. A helper's `resume` checks a token's expiry by its client's wall clock.
+as a UTC datetime. A helper's `resume` checks a token's expiry by its client's wall clock.
 
 A deadline remembers its clock. `Deadline.after(seconds, clock=clock)` creates it on that clock, the system clock by
 default, and `remaining()` reads that clock, so an adapter, limiter, or provider that receives it measures it
@@ -3214,9 +3213,6 @@ generate_target(
                 runtime=RuntimeOperationMetadata(
                     idempotency=IdempotencyMetadata(
                         header_name="Idempotency-Key",
-                        replay_safe_with_key=True,
-                        retention_seconds=86400,
-                        scope="orders-v1",
                     ),
                     retry_after_ms_header="X-Retry-In-Ms",
                     should_retry_header="X-Retry-Permitted",
@@ -3241,13 +3237,9 @@ should_retry_header = "X-Retry-Permitted"
 
 [operations.runtime.idempotency]
 header_name = "Idempotency-Key"
-replay_safe_with_key = true
-retention_seconds = 86400
-scope = "orders-v1"
 ```
 
-All four idempotency fields are required. Retention must be positive and finite; booleans are not numbers. Scope is a
-nonsecret opaque identifier containing non-whitespace text. The key header must be an HTTP token and cannot share
+Only `header_name` is required for idempotency. The key header must be an HTTP token and cannot share
 an outgoing position with an effective parameter or authentication header. The two response control headers must
 have distinct names. Header comparisons ignore ASCII case; outgoing and incoming positions are independent.
 Unknown TOML keys receive `E_CONFIG_UNKNOWN`; malformed values receive `E_CONFIG_VALUE`, and ownership conflicts
@@ -3255,37 +3247,32 @@ receive `E_CONFIG_CONFLICT`. The generated README lists only the finalized selec
 
 ### Supply and retain an idempotency key
 
-`IdempotencyMetadata` describes the API's guarantee. The generated package's `IdempotencyKey` supplies a call's key:
-`IdempotencyKey("saved-value", first_used_at=aware_datetime)` or `IdempotencyKey.new()`. The latter creates a UUID4 and
-records the current UTC time. The value is omitted from its representation. A known timestamp must be timezone-aware.
-A value without a known prior-use time may be sent but cannot justify an unsafe retry; an expired key also cannot.
+`IdempotencyMetadata(header_name=...)` declares the API's idempotency key header. Supply a caller key with
+`IdempotencyKey("saved-value")`, or create a UUID4 value with `IdempotencyKey.new()`. The value is omitted from its
+representation.
 
-With `idempotency_key=UNSET`, the client creates one key only for an operation with an idempotency declaration.
-`idempotency_key=None` disables automatic creation. A caller key on a client/view is conditional on the operation's
-declaration; an explicit non-None call value on an undeclared operation or `request_raw` fails before sending. The
-same call retains one key, origin, and scope throughout retries; expiry never causes automatic key replacement.
-A `replay_safe_with_key=False` declaration allows the header without promising that it makes an unsafe resend safe.
-The contract does not guarantee exactly-once business execution.
+With `idempotency_key=UNSET`, the client creates one key per logical call for an operation with a declared header.
+`idempotency_key=None` disables automatic creation and clears an inherited key. An effective caller key on an
+undeclared operation or `request_raw` fails before sending, including keys inherited from a client or view.
+The same key is sent unchanged on every eligible retry. A declaration without an active key does not authorize
+unsafe retries. The contract does not guarantee exactly-once business execution.
 
 Keys must be nonempty, UTF-8-encodable strings. ASCII control characters are rejected except for interior tabs;
 leading or trailing ASCII spaces and tabs are also rejected. Interior spaces, tabs, and valid Unicode are preserved
 without trimming or normalization. Invalid keys raise `ConfigurationError` when constructed, before any send.
 
 ```python
-from datetime import datetime
-
 from pets import Client
 from pets.options import IdempotencyKey, RequestOptions
 
 
-def keyed_view(client: Client, value: str, first_used_at: datetime) -> Client:
-    key = IdempotencyKey(value, first_used_at=first_used_at)
+def keyed_view(client: Client, value: str) -> Client:
+    key = IdempotencyKey(value)
     return client.with_options(RequestOptions(idempotency_key=key))
 ```
 
-Use the returned view in a `with` block and call an operation with the matching declaration. Supply the persisted
-first-use time, not the time of the newest retry. An attached key whose retention has expired stops replay even for
-a normally safe method.
+Use the returned view in a `with` block and call an operation with the matching declaration. The client reuses
+the supplied value across eligible retries.
 
 ## Request compression
 
