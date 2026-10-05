@@ -1310,7 +1310,8 @@
     ],
     "model": {
       "read_only_write_only_model_type": "request-response"
-    }
+    },
+    "package_snapshots": []
   },
   "variants-modular": {
     "input": "server-variants.yaml",
@@ -1366,7 +1367,8 @@
     "modular": true,
     "model": {
       "module_split_mode": "single"
-    }
+    },
+    "package_snapshots": []
   },
   "variants-reuse": {
     "input": "server-variants.yaml",
@@ -1422,7 +1424,8 @@
     "model": {
       "reuse_model": true,
       "collapse_root_models": true
-    }
+    },
+    "package_snapshots": []
   },
   "forms": {
     "input": "server-forms.yaml",
