@@ -7,7 +7,8 @@
 
 `--generate-server fastapi` generates the models of one OpenAPI document with the usual model options and, in
 the same run, a FastAPI server package for its operations: routers, a service Protocol for each router group,
-codecs for the values FastAPI cannot validate exactly, authentication, and the served OpenAPI document. Every
+adapters for the parameter styles and media types FastAPI cannot read, authentication, and the served OpenAPI
+document. Every
 generated file is regenerated on each run. You write the business logic in your own modules, implementing the
 service Protocols, and type checkers, Python, and the package at startup check that every operation has a
 matching method.
@@ -83,9 +84,10 @@ prints the lines of a requirements file instead, for pip or `uv pip`.
 
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
-one service for each group, under the group's name, and checks every method when the application starts; any
+one service for each group, under the group's name, passes its other keyword arguments, such as `lifespan` or
+`middleware`, to `FastAPI`, and checks every method when the application starts; any
 object with the right methods works, and type checkers check it where you pass it. The generated
-`server/README.md` lists the operations of each service and shows how to connect an authorizer and your own
+`server/README.md` lists the operations of each service and shows how to connect an `authorize` callback and your own
 `FastAPI` application.
 
 ## Requirements
@@ -159,7 +161,6 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 | `parameter_names` | inferred | `[[parameter_names]]` rename method arguments |
 | `hooks` | none | `[[hooks]]` tables with `module` or `file`, and `callable` (default `transform`) |
 | `templates` | none | Directory of template overrides and extra files |
-| `update_groups` | none | Regenerate only these router groups |
 | `package_mode` | `"embedded"` | `"standalone"` writes a distribution with `pyproject.toml` under `output` |
 | `package_version`, `distribution_name`, `model_dependency` | none | Distribution metadata of standalone mode |
 | `formatters`, `formatter_settings`, `custom_formatters`, `custom_formatter_kwargs` | builtin | Formatting of the generated package |
@@ -186,16 +187,16 @@ callable = "rename"
 
 | Path | Owner | Contents |
 | --- | --- | --- |
-| `__init__.py`, `application.py` | generator | `create_app`, `build_router`, `install_openapi`, and the public types |
+| `__init__.py`, `application.py` | generator | `create_app`, `build_router`, and the public types |
 | `services.py` | generator | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | generator | Route registrations |
-| `responses.py`, `errors.py`, `auth_types.py`, `model_codecs.py` | generator | Results, errors, authentication, and codec types |
-| `_generated/`, `_runtime/` | generator | Plans, bindings, and the runtime the package imports |
+| `errors.py`, `security.py` | generator | Errors, and one FastAPI security dependency for each scheme |
+| `_generated/`, `_runtime/` | generator | Plans and the runtime the package imports |
 | `README.md`, `py.typed` | generator | Documentation and typing marker |
 | `.dcg-target-manifest.json`, `.dcg-state/` | generator | What the last generation wrote, to regenerate and check safely |
 
 The generator owns every file of the package and rewrites them on every generation, as it does the models,
-restoring any you edited or deleted. Keep the service implementations, the authorizer, and the application in your
+restoring any you edited or deleted. Keep the service implementations, the `authorize` callback, and the application in your
 own modules; a file the generator never wrote at a path it needs stops the run (`E_OUTPUT_CONFLICT`). In standalone
 mode the package lives under `output/src/<package>` next to `pyproject.toml` and `README.md`, the `pyproject.toml`
 declares the runtime dependencies, and generation prints the `uv add --editable` command that adds the distribution
@@ -220,10 +221,60 @@ Only `include_timestamp = true` puts a time into the server files, and then ever
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
 uses it, or the default `datamodel-codegen.lock` exists.
 
-`update_groups` regenerates only the named router groups, and refuses when anything else changed.
 `model_mode = "verify"` lets several targets share models generated once: each target compares the models with
 the existing files instead of writing them, and reports `E_MODEL_MISMATCH` when they differ. Generate those
 models with `--disable-timestamp` too.
+
+## Models and adapters
+
+The generated models are the runtime contract. Routes declare the model types directly: a JSON body is
+`Annotated[Model, Body()]`, a URL-encoded form of a `BaseModel` is a FastAPI form model, a primary JSON response is
+`response_model=Model`, and path, query, header, and cookie parameters are `Annotated` FastAPI parameters of the
+parameter's model type. A parameter's root model or type alias is unwrapped to its type when that type alone
+validates the same, so the method receives the value; the default is the one the model declares. How strictly a
+value follows the OpenAPI document is decided by the model generation options, not by the server.
+
+FastAPI cannot read some inputs, so a generated adapter reads them and validates the result with the model's
+`TypeAdapter`: deepObject, label, matrix, spaceDelimited, and pipeDelimited parameters, parameters with `content`,
+form-style cookies, header and path arrays, objects, enums and literals of non-string values, repeated path
+placeholders, request bodies with several media types, text and binary bodies, multipart forms, and forms of the
+`pydantic_v2.dataclass` backend. A multipart form body reaches the method as its model, with uploads read to
+`bytes`.
+
+A service method returns the value of its primary response, which FastAPI validates and serializes with the
+route's `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`); an
+`HTTPResult(status_code, body, headers)` for another declared status or extra headers, whose body the package
+validates and serializes with the declared response's model and default media type; or a Starlette `Response`,
+sent as it is, for anything else, such as another media type or repeated headers. A `pydantic_v2.dataclass`
+cannot tell an omitted field from one set to `None`, so its responses send optional fields as `null`.
+
+## Security
+
+`security.py` declares one FastAPI dependency for each security scheme the selected operations use: `APIKeyHeader`,
+`APIKeyQuery`, or `APIKeyCookie` for an API key, `HTTPBasic`, `HTTPBearer`, or `HTTPDigest` for an HTTP scheme,
+`OAuth2` with the declared flows, and `OpenIdConnect`, each with `auto_error=False`. A scheme no FastAPI class reads,
+such as `mutualTLS`, is a function that returns `None`; replace it, or any other scheme, with
+`app.dependency_overrides[security.<scheme>]`. The credentials are what the dependencies return: a string for an API
+key and for the `Authorization` header OAuth2 and OpenID Connect read, `HTTPBasicCredentials`, or
+`HTTPAuthorizationCredentials`.
+
+`create_app` and `build_router` of a package with secured operations take an
+`authorize(requirement_sets, credentials)` callback, which may be a coroutine function. Each secured operation calls
+it once with its security requirement sets whose every scheme presented a credential, in declaration order, and the
+credentials by scheme name; the handler receives the principal it returns, and it rejects a request by raising
+`HTTPException`. A request that presents no complete requirement set answers `401`, unless the operation also
+accepts no credentials, in which case the handler receives `None`. FastAPI's document lists each scheme of an
+operation as a separate alternative, since FastAPI cannot document a requirement that combines several schemes.
+
+## Served OpenAPI document
+
+The application serves FastAPI's own document, built from the routes and the models they declare, so routes
+added later and other routers appear in it as usual. Each generated route adds what FastAPI cannot derive from it,
+taken from the source document at generation time: `responses=` documents every declared response, through its
+model when the body is JSON, and `openapi_extra` documents the parameters, request bodies, and callbacks that
+adapters read, with schema references resolved in place (a schema that refers to itself documents the inner
+reference as `{}`). Path placeholders that are not Python identifiers, or that repeat, appear under the route's
+own placeholder names.
 
 ## Templates and hooks
 

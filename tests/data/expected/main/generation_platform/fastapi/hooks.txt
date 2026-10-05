@@ -9,60 +9,26 @@ render pydantic_v2.BaseModel
   write server/routers/pets_routes.py
   write server/_generated/__init__.py
   write server/_generated/contract.py
-  write server/_generated/model_bindings.py
-  write server/_generated/openapi.py
-  write server/model_codecs.py
-  write server/responses.py
   write server/errors.py
-  write server/auth_types.py
+  write server/security.py
   write server/services.py
   write server/README.md
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/model_codecs/__init__.py (copied runtime)
-  write server/_runtime/model_codecs/bindings.py (copied runtime)
-  write server/_runtime/model_codecs/codec.py (copied runtime)
-  write server/_runtime/model_codecs/context.py (copied runtime)
   write server/_runtime/model_codecs/errors.py (copied runtime)
   write server/_runtime/model_codecs/media.py (copied runtime)
-  write server/_runtime/model_codecs/outbound.py (copied runtime)
   write server/_runtime/model_codecs/parameters.py (copied runtime)
-  write server/_runtime/model_codecs/patterns.py (copied runtime)
-  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
-  write server/_runtime/model_codecs/schema.py (copied runtime)
   write server/_runtime/model_codecs/unset.py (copied runtime)
-  write server/_runtime/model_codecs/values.py (copied runtime)
   write server/_runtime/model_codecs/wire.py (copied runtime)
   write server/_runtime/server/__init__.py (copied runtime)
   write server/_runtime/server/application.py (copied runtime)
-  write server/_runtime/server/codecs.py (copied runtime)
   write server/_runtime/server/errors.py (copied runtime)
-  write server/_runtime/server/openapi.py (copied runtime)
   write server/_runtime/server/requests.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  handle_put__notes: PUT /notes -> /notes [untagged] status 204 primary 204 None body typed handler async
-    body /paths/~1notes/put/requestBody: codec_adapter unsupported_wire_shape
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1notes/put/responses/204
-  handle_post__uploads: POST /uploads -> /uploads [tag:files] status 204 primary 204 None body typed handler async
-    body /paths/~1uploads/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1uploads/post/responses/204
-  handle_add_pet: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler async
-    body /paths/~1pets/post/requestBody: fastapi_native native_supported
-    primary_response /paths/~1pets/post/responses/201: fastapi_native native_supported
-  handle_get_pet: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler async
-    parameter /paths/~1pets~1{petId}/get/parameters/0: fastapi_native native_supported
-    parameter /paths/~1pets~1{petId}/get/parameters/1: fastapi_native native_supported
-    parameter /paths/~1pets~1{petId}/get/parameters/2: fastapi_native native_supported
-    parameter /paths/~1pets~1{petId}/get/parameters/3: codec_adapter opaque_native_semantics at /paths/~1pets~1{petId}/get/parameters/3/schema
-    parameter /paths/~1pets~1{petId}/get/parameters/4: codec_adapter unsupported_wire_shape
-    primary_response /paths/~1pets~1{petId}/get/responses/200: codec_adapter unsupported_wire_shape at /paths/~1pets~1{petId}/get/responses/200
-  group untagged -> untagged_routes (1)
-  group tag:files -> files_routes (1)
-  group tag:pets -> pets_routes (2)
   S_OPERATION_EXCLUDED hook /paths/~1raw/post: POST /raw is removed by a hook
   context
     | {
@@ -102,8 +68,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "request",
     |             "value": "Request",
     |             "imports": [
@@ -118,8 +82,6 @@ render pydantic_v2.BaseModel
     |           "source_pointer": null,
     |           "is_request": true,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": null,
     |           "projection": null,
     |           "native_declaration": null
@@ -133,8 +95,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "principal",
     |             "value": "PrincipalT | None",
     |             "imports": [
@@ -149,8 +109,6 @@ render pydantic_v2.BaseModel
     |           "source_pointer": null,
     |           "is_request": false,
     |           "is_principal": true,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": null,
     |           "projection": null,
     |           "native_declaration": null
@@ -164,8 +122,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldNotesPutRequest | models.FieldNotesPutRequest1 | Unset",
     |             "imports": [
@@ -186,8 +142,6 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1notes/put/requestBody",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": null,
     |           "projection": {
     |             "use_ids": [
@@ -243,8 +197,8 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "body",
-    |             "transport": "codec_adapter",
-    |             "reason": "unsupported_wire_shape",
+    |             "transport": "adapter",
+    |             "reason": "media_selection",
     |             "source": null
     |           },
     |           "native_declaration": null
@@ -258,8 +212,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "media_type",
     |             "value": "str | None",
     |             "imports": []
@@ -267,8 +219,6 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1notes/put/requestBody",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": null,
     |           "projection": null,
     |           "native_declaration": null
@@ -281,9 +231,7 @@ render pydantic_v2.BaseModel
     |             "media_type": "text/plain",
     |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/text~1plain/schema",
     |             "type": {
-    |               "binding_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/text~1plain/schema|ModelNode(symbol='models:FieldNotesPutRequest')",
-    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/text~1plain/schema",
-    |               "kind": "root",
+    |               "kind": "surface",
     |               "value": "models.FieldNotesPutRequest",
     |               "imports": [
     |                 {
@@ -300,9 +248,7 @@ render pydantic_v2.BaseModel
     |             "media_type": "application/json",
     |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/application~1json/schema",
     |             "type": {
-    |               "binding_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/application~1json/schema|ModelNode(symbol='models:FieldNotesPutRequest1')",
-    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/application~1json/schema",
-    |               "kind": "model",
+    |               "kind": "surface",
     |               "value": "models.FieldNotesPutRequest1",
     |               "imports": [
     |                 {
@@ -371,8 +317,8 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "codec_adapter",
-    |           "reason": "unsupported_wire_shape",
+    |           "transport": "adapter",
+    |           "reason": "media_selection",
     |           "source": null
     |         },
     |         "source_pointer": "/paths/~1notes/put/requestBody"
@@ -392,43 +338,17 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 204,
     |       "primary_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
     |         "value": "None",
     |         "imports": []
     |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
-    |         "kind": "result",
-    |         "value": "HandlePutNotesResponsePayload",
-    |         "imports": [
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandlePutNotesResponsePayload",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
-    |       },
-    |       "response_payload_alias": "HandlePutNotesResponsePayload",
-    |       "response_codecs_name": "HandlePutNotesResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "None | HTTPResult[HandlePutNotesResponsePayload] | Response",
+    |         "value": "None | HTTPResult[None] | Response",
     |         "imports": [
     |           {
     |             "module": "server._runtime.server.responses",
     |             "name": "HTTPResult",
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandlePutNotesResponsePayload",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -506,15 +426,15 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "codec_adapter",
-    |           "reason": "unsupported_wire_shape",
+    |           "transport": "adapter",
+    |           "reason": "media_selection",
     |           "source": null
     |         },
     |         {
     |           "use_ids": [],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
-    |           "reason": "unsupported_wire_shape",
+    |           "transport": "adapter",
+    |           "reason": "response_empty",
     |           "source": {
     |             "uri": "../hooks.yaml",
     |             "pointer": "/paths/~1notes/put/responses/204"
@@ -560,8 +480,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "request",
     |             "value": "Request",
     |             "imports": [
@@ -576,99 +494,25 @@ render pydantic_v2.BaseModel
     |           "source_pointer": null,
     |           "is_request": true,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": null,
     |           "projection": null,
     |           "native_declaration": null
     |         },
     |         {
-    |           "python_name": "file",
-    |           "wire_name": "file",
-    |           "location": "file",
+    |           "python_name": "body",
+    |           "wire_name": null,
+    |           "location": "body",
     |           "required": true,
     |           "default_present": false,
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
-    |             "kind": "upload",
-    |             "value": "UploadFile",
-    |             "imports": [
-    |               {
-    |                 "module": "fastapi",
-    |                 "name": "UploadFile",
-    |                 "alias": null,
-    |                 "type_checking": false
-    |               }
-    |             ]
-    |           },
-    |           "source_pointer": "/paths/~1uploads/post/requestBody",
-    |           "is_request": false,
-    |           "is_principal": false,
-    |           "is_file": true,
-    |           "parameter_codec_id": null,
-    |           "bound_type": null,
-    |           "projection": {
-    |             "use_ids": [
-    |               {
-    |                 "owner": {
-    |                   "kind": "operation",
-    |                   "source": {
-    |                     "document": "/inputs/root",
-    |                     "pointer": "/paths/~1uploads/post"
-    |                   }
-    |                 },
-    |                 "role": "request_body",
-    |                 "use_site": {
-    |                   "document": "/inputs/root",
-    |                   "pointer": "/paths/~1uploads/post/requestBody"
-    |                 },
-    |                 "schema": {
-    |                   "document": "/inputs/root",
-    |                   "pointer": "/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema"
-    |                 },
-    |                 "declaration": null,
-    |                 "direction": "request",
-    |                 "projection": "value",
-    |                 "location": null,
-    |                 "name": null,
-    |                 "status": null,
-    |                 "media": "multipart/form-data"
-    |               }
-    |             ],
-    |             "site": "body",
-    |             "transport": "fastapi_native",
-    |             "reason": "native_supported",
-    |             "source": null
-    |           },
-    |           "native_declaration": {
-    |             "api": "File",
-    |             "alias": "file",
-    |             "required": true,
-    |             "default_kind": "required",
-    |             "kwargs": {},
-    |             "media_type": null
-    |           }
-    |         },
-    |         {
-    |           "python_name": "note",
-    |           "wire_name": "note",
-    |           "location": "form",
-    |           "required": false,
-    |           "default_present": false,
-    |           "default_value": null,
-    |           "nullable": false,
-    |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
-    |             "value": "str | Unset",
+    |             "value": "models.FieldUploadsPostRequest",
     |             "imports": [
     |               {
-    |                 "module": "server._runtime.model_codecs.unset",
-    |                 "name": "Unset",
+    |                 "module": "models",
+    |                 "name": null,
     |                 "alias": null,
     |                 "type_checking": false
     |               }
@@ -677,9 +521,18 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1uploads/post/requestBody",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
-    |           "bound_type": null,
+    |           "bound_type": {
+    |             "kind": "surface",
+    |             "value": "models.FieldUploadsPostRequest",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
     |           "projection": {
     |             "use_ids": [
     |               {
@@ -709,18 +562,11 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "body",
-    |             "transport": "fastapi_native",
-    |             "reason": "native_supported",
+    |             "transport": "adapter",
+    |             "reason": "media_form",
     |             "source": null
     |           },
-    |           "native_declaration": {
-    |             "api": "Form",
-    |             "alias": "note",
-    |             "required": false,
-    |             "default_kind": "literal",
-    |             "kwargs": {},
-    |             "media_type": null
-    |           }
+    |           "native_declaration": null
     |         }
     |       ],
     |       "request": {
@@ -728,10 +574,8 @@ render pydantic_v2.BaseModel
     |         "media": [
     |           {
     |             "media_type": "multipart/form-data",
-    |             "schema_id": null,
+    |             "schema_id": "https://dcg.invalid/inputs/documents/0#/uploads/post/requestBody/content/multipart~1form-data/schema",
     |             "type": {
-    |               "binding_id": null,
-    |               "schema_id": null,
     |               "kind": "surface",
     |               "value": "models.FieldUploadsPostRequest",
     |               "imports": [
@@ -776,8 +620,8 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "fastapi_native",
-    |           "reason": "native_supported",
+    |           "transport": "adapter",
+    |           "reason": "media_form",
     |           "source": null
     |         },
     |         "source_pointer": "/paths/~1uploads/post/requestBody"
@@ -797,43 +641,17 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 204,
     |       "primary_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
     |         "value": "None",
     |         "imports": []
     |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
-    |         "kind": "result",
-    |         "value": "HandlePostUploadsResponsePayload",
-    |         "imports": [
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandlePostUploadsResponsePayload",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
-    |       },
-    |       "response_payload_alias": "HandlePostUploadsResponsePayload",
-    |       "response_codecs_name": "HandlePostUploadsResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "None | HTTPResult[HandlePostUploadsResponsePayload] | Response",
+    |         "value": "None | HTTPResult[None] | Response",
     |         "imports": [
     |           {
     |             "module": "server._runtime.server.responses",
     |             "name": "HTTPResult",
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandlePostUploadsResponsePayload",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -878,15 +696,15 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "fastapi_native",
-    |           "reason": "native_supported",
+    |           "transport": "adapter",
+    |           "reason": "media_form",
     |           "source": null
     |         },
     |         {
     |           "use_ids": [],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
-    |           "reason": "unsupported_wire_shape",
+    |           "transport": "adapter",
+    |           "reason": "response_empty",
     |           "source": {
     |             "uri": "../hooks.yaml",
     |             "pointer": "/paths/~1uploads/post/responses/204"
@@ -932,8 +750,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "request",
     |             "value": "Request",
     |             "imports": [
@@ -948,8 +764,6 @@ render pydantic_v2.BaseModel
     |           "source_pointer": null,
     |           "is_request": true,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": null,
     |           "projection": null,
     |           "native_declaration": null
@@ -963,8 +777,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "principal",
     |             "value": "PrincipalT",
     |             "imports": [
@@ -979,8 +791,6 @@ render pydantic_v2.BaseModel
     |           "source_pointer": null,
     |           "is_request": false,
     |           "is_principal": true,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": null,
     |           "projection": null,
     |           "native_declaration": null
@@ -994,8 +804,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.Pet",
     |             "imports": [
@@ -1010,11 +818,7 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1pets/post/requestBody",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.Pet",
     |             "imports": [
@@ -1067,10 +871,8 @@ render pydantic_v2.BaseModel
     |         "media": [
     |           {
     |             "media_type": "application/json",
-    |             "schema_id": null,
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets/post/requestBody/content/application~1json/schema",
     |             "type": {
-    |               "binding_id": null,
-    |               "schema_id": null,
     |               "kind": "surface",
     |               "value": "models.Pet",
     |               "imports": [
@@ -1130,9 +932,7 @@ render pydantic_v2.BaseModel
     |               "media_type": "application/json",
     |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets/post/responses/201/content/application~1json/schema",
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets/post/responses/201/content/application~1json/schema",
-    |                 "kind": "model",
+    |                 "kind": "surface",
     |                 "value": "models.Pet",
     |                 "imports": [
     |                   {
@@ -1156,68 +956,30 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 201,
     |       "primary_return_type": {
-    |         "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
-    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets/post/responses/201/content/application~1json/schema",
-    |         "kind": "model",
-    |         "value": "models.Pet | ModelValue[models.Pet]",
+    |         "kind": "result",
+    |         "value": "models.Pet",
     |         "imports": [
     |           {
     |             "module": "models",
     |             "name": null,
     |             "alias": null,
     |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
-    |             "alias": null,
-    |             "type_checking": false
     |           }
     |         ]
     |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
-    |         "kind": "result",
-    |         "value": "HandleAddPetResponsePayload",
-    |         "imports": [
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandleAddPetResponsePayload",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
-    |       },
-    |       "response_payload_alias": "HandleAddPetResponsePayload",
-    |       "response_codecs_name": "HandleAddPetResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "models.Pet | ModelValue[models.Pet] | HTTPResult[HandleAddPetResponsePayload] | Response",
+    |         "value": "models.Pet | HTTPResult[models.Pet] | Response",
     |         "imports": [
     |           {
     |             "module": "models",
     |             "name": null,
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
     |             "alias": null,
     |             "type_checking": false
     |           },
     |           {
     |             "module": "server._runtime.server.responses",
     |             "name": "HTTPResult",
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server.responses",
-    |             "name": "HandleAddPetResponsePayload",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -1346,8 +1108,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "request",
     |             "value": "Request",
     |             "imports": [
@@ -1362,8 +1122,6 @@ render pydantic_v2.BaseModel
     |           "source_pointer": null,
     |           "is_request": true,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": null,
     |           "projection": null,
     |           "native_declaration": null
@@ -1377,8 +1135,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "principal",
     |             "value": "PrincipalT",
     |             "imports": [
@@ -1393,8 +1149,6 @@ render pydantic_v2.BaseModel
     |           "source_pointer": null,
     |           "is_request": false,
     |           "is_principal": true,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": null,
     |           "projection": null,
     |           "native_declaration": null
@@ -1408,8 +1162,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "int",
     |             "imports": []
@@ -1417,11 +1169,7 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/0",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldPetsPetIdGetPathPetIdParameter",
     |             "imports": [
@@ -1474,9 +1222,7 @@ render pydantic_v2.BaseModel
     |             "alias": "petId",
     |             "required": true,
     |             "default_kind": "required",
-    |             "kwargs": {
-    |               "ge": 1
-    |             },
+    |             "kwargs": {},
     |             "media_type": null
     |           }
     |         },
@@ -1489,8 +1235,6 @@ render pydantic_v2.BaseModel
     |           "default_value": 10,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "int",
     |             "imports": []
@@ -1498,11 +1242,7 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/1",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldPetsPetIdGetQueryLimitParameter",
     |             "imports": [
@@ -1568,8 +1308,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "str | Unset",
     |             "imports": [
@@ -1584,11 +1322,7 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/2",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "surface",
     |             "value": "models.FieldPetsPetIdGetHeaderXTraceParameter",
     |             "imports": [
@@ -1640,7 +1374,7 @@ render pydantic_v2.BaseModel
     |             "api": "Header",
     |             "alias": "X-Trace",
     |             "required": false,
-    |             "default_kind": "literal",
+    |             "default_kind": "factory",
     |             "kwargs": {},
     |             "media_type": null
     |           }
@@ -1654,17 +1388,9 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": true,
     |           "type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema|ModelNode(symbol='models:FieldPetsPetIdGetQueryAfterParameter')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema",
-    |             "kind": "root",
-    |             "value": "models.FieldPetsPetIdGetQueryAfterParameter | Unset",
+    |             "kind": "surface",
+    |             "value": "str | None | Unset",
     |             "imports": [
-    |               {
-    |                 "module": "models",
-    |                 "name": null,
-    |                 "alias": null,
-    |                 "type_checking": false
-    |               },
     |               {
     |                 "module": "server._runtime.model_codecs.unset",
     |                 "name": "Unset",
@@ -1676,12 +1402,8 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/3",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema|ModelNode(symbol='models:FieldPetsPetIdGetQueryAfterParameter')",
     |           "bound_type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema|ModelNode(symbol='models:FieldPetsPetIdGetQueryAfterParameter')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema",
-    |             "kind": "root",
+    |             "kind": "surface",
     |             "value": "models.FieldPetsPetIdGetQueryAfterParameter",
     |             "imports": [
     |               {
@@ -1724,14 +1446,18 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "parameter",
-    |             "transport": "codec_adapter",
-    |             "reason": "opaque_native_semantics",
-    |             "source": {
-    |               "uri": "../hooks.yaml",
-    |               "pointer": "/paths/~1pets~1{petId}/get/parameters/3/schema"
-    |             }
+    |             "transport": "fastapi_native",
+    |             "reason": "native_supported",
+    |             "source": null
     |           },
-    |           "native_declaration": null
+    |           "native_declaration": {
+    |             "api": "Query",
+    |             "alias": "after",
+    |             "required": false,
+    |             "default_kind": "factory",
+    |             "kwargs": {},
+    |             "media_type": null
+    |           }
     |         },
     |         {
     |           "python_name": "session",
@@ -1742,17 +1468,9 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/schema|ModelNode(symbol='models:FieldPetsPetIdGetCookieSessionParameter')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/schema",
-    |             "kind": "root",
-    |             "value": "models.FieldPetsPetIdGetCookieSessionParameter | Unset",
+    |             "kind": "surface",
+    |             "value": "str | Unset",
     |             "imports": [
-    |               {
-    |                 "module": "models",
-    |                 "name": null,
-    |                 "alias": null,
-    |                 "type_checking": false
-    |               },
     |               {
     |                 "module": "server._runtime.model_codecs.unset",
     |                 "name": "Unset",
@@ -1764,12 +1482,8 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/4",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/schema|ModelNode(symbol='models:FieldPetsPetIdGetCookieSessionParameter')",
     |           "bound_type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/schema|ModelNode(symbol='models:FieldPetsPetIdGetCookieSessionParameter')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/schema",
-    |             "kind": "root",
+    |             "kind": "surface",
     |             "value": "models.FieldPetsPetIdGetCookieSessionParameter",
     |             "imports": [
     |               {
@@ -1812,8 +1526,8 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "parameter",
-    |             "transport": "codec_adapter",
-    |             "reason": "unsupported_wire_shape",
+    |             "transport": "adapter",
+    |             "reason": "parameter_style",
     |             "source": null
     |           },
     |           "native_declaration": null
@@ -1829,9 +1543,7 @@ render pydantic_v2.BaseModel
     |               "media_type": "application/json",
     |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
-    |                 "kind": "model",
+    |                 "kind": "surface",
     |                 "value": "models.Pet",
     |                 "imports": [
     |                   {
@@ -1850,9 +1562,7 @@ render pydantic_v2.BaseModel
     |               "name": "X-Rate",
     |               "required": true,
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/headers/X-Rate/schema|ModelNode(symbol='models:FieldPetsPetIdGetResponse200XRateHeader')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/headers/X-Rate/schema",
-    |                 "kind": "root",
+    |                 "kind": "surface",
     |                 "value": "models.FieldPetsPetIdGetResponse200XRateHeader",
     |                 "imports": [
     |                   {
@@ -1881,43 +1591,30 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 200,
     |       "primary_return_type": {
-    |         "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
-    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
-    |         "kind": "model",
-    |         "value": "",
-    |         "imports": []
-    |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "HandleGetPetResponsePayload",
+    |         "value": "models.Pet",
     |         "imports": [
     |           {
-    |             "module": "server.responses",
-    |             "name": "HandleGetPetResponsePayload",
+    |             "module": "models",
+    |             "name": null,
     |             "alias": null,
     |             "type_checking": false
     |           }
     |         ]
     |       },
-    |       "response_payload_alias": "HandleGetPetResponsePayload",
-    |       "response_codecs_name": "HandleGetPetResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "HTTPResult[HandleGetPetResponsePayload] | Response",
+    |         "value": "models.Pet | HTTPResult[models.Pet] | Response",
     |         "imports": [
     |           {
-    |             "module": "server._runtime.server.responses",
-    |             "name": "HTTPResult",
+    |             "module": "models",
+    |             "name": null,
     |             "alias": null,
     |             "type_checking": false
     |           },
     |           {
-    |             "module": "server.responses",
-    |             "name": "HandleGetPetResponsePayload",
+    |             "module": "server._runtime.server.responses",
+    |             "name": "HTTPResult",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -2080,12 +1777,9 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "parameter",
-    |           "transport": "codec_adapter",
-    |           "reason": "opaque_native_semantics",
-    |           "source": {
-    |             "uri": "../hooks.yaml",
-    |             "pointer": "/paths/~1pets~1{petId}/get/parameters/3/schema"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         },
     |         {
     |           "use_ids": [
@@ -2119,8 +1813,8 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "parameter",
-    |           "transport": "codec_adapter",
-    |           "reason": "unsupported_wire_shape",
+    |           "transport": "adapter",
+    |           "reason": "parameter_style",
     |           "source": null
     |         },
     |         {
@@ -2152,12 +1846,9 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
-    |           "reason": "unsupported_wire_shape",
-    |           "source": {
-    |             "uri": "../hooks.yaml",
-    |             "pointer": "/paths/~1pets~1{petId}/get/responses/200"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         }
     |       ],
     |       "path_slots": [],
@@ -2332,21 +2023,18 @@ render pydantic_v2.BaseModel
     | | `PetsRoutesService` | `handle_add_pet` | POST | `/pets` | `/paths/~1pets/post` |
     | | `PetsRoutesService` | `handle_get_pet` | GET | `/pets/{petId}` | `/paths/~1pets~1{petId}/get` |
     |
-    | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
     |
     | ## Implementing the services
     |
     | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
-    | A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+    | A method takes the operation's arguments as keywords and returns the value to send, an `HTTPResult` with another declared status, headers, or both, or a `Response` sent as it is.
     | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
     | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
-    | The Protocols of groups with secured operations take the type of the principal your authorizer returns.
+    | The Protocols of groups with secured operations take the type of the principal your `authorize` callback returns.
     |
     | ```python
-    | from typing import Never
-    |
-    | from server import create_app
-    | from server.auth_types import AuthContext
+    | from server import Credentials, RequirementSets, create_app
     | from server.services import UntaggedRoutesService, FilesRoutesService, PetsRoutesService
     |
     |
@@ -2362,55 +2050,50 @@ render pydantic_v2.BaseModel
     |     """Implement `handle_add_pet` and `handle_get_pet`."""
     |
     |
-    | def authorize(context: AuthContext[Never]) -> Principal:
+    | def authorize(requirement_sets: RequirementSets, credentials: Credentials) -> Principal:
     |     ...
     |
     |
-    | app = create_app(untagged_routes=UntaggedRoutes(), files_routes=FilesRoutes(), pets_routes=PetsRoutes(), authorizer=authorize)
+    | app = create_app(untagged_routes=UntaggedRoutes(), files_routes=FilesRoutes(), pets_routes=PetsRoutes(), authorize=authorize)
     | ```
     |
     | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
-    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router and install the package's OpenAPI document:
+    | `create_app` passes its other keyword arguments, such as `lifespan`, `middleware`, or `dependencies`, to `FastAPI`, over the title, version, and other metadata of the source document.
+    | To keep your own `FastAPI` application, include the router:
     |
     | ```python
     | from fastapi import FastAPI
     |
-    | from server import build_router, install_openapi
+    | from server import build_router
     |
     | app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
-    | app.include_router(build_router(untagged_routes=UntaggedRoutes(), files_routes=FilesRoutes(), pets_routes=PetsRoutes(), authorizer=authorize))
-    | install_openapi(app)
-    | app.openapi()  # Check the document once every router is included.
+    | app.include_router(build_router(untagged_routes=UntaggedRoutes(), files_routes=FilesRoutes(), pets_routes=PetsRoutes(), authorize=authorize))
     | ```
     |
     | ## Authentication
     |
     | The secured operations use these security schemes:
     |
-    | - `bearer`: a bearer token
+    | - `bearer`: a bearer token, as `HTTPAuthorizationCredentials`
     | - `api_key`: an API key in the `X-API-Key` header
     |
-    | Each secured operation receives the principal the authorizer returns.
-    | The authorizer reads the credentials of each security alternative from `AuthContext` and rejects a request by raising `HTTPException`, such as `403`.
-    | A request that presents no complete alternative answers `401`, and missing authentication settings never fall back to anonymous access.
-    | `credential_extractors` replace the builtin credential of a scheme, or read a scheme that has none.
-    | An extractor may return any payload, such as a `BasicSecret` it decodes as UTF-8 or a `CustomSecret` of its own type, so the authorizer checks each credential's `kind` instead of assuming its scheme's builtin credential.
-    | `SecretT` is `Never` while no extractor returns a `CustomSecret`, and otherwise the union of their value types.
-    | Bearer credentials, including OAuth2 and OpenID Connect tokens, reach the authorizer as they are: the package never contacts a token endpoint, and the authorizer checks tokens and scopes.
+    | `security.py` declares one FastAPI dependency for each scheme; replace one with `app.dependency_overrides`, for example to read a scheme no FastAPI class reads.
+    | Each secured operation calls `authorize` once with its requirement sets whose every scheme presented a credential, in declaration order, and the credentials by scheme name, and receives the principal it returns.
+    | `authorize` checks the credentials, tokens, and scopes, and rejects a request by raising `HTTPException`, such as `403`; it may be a coroutine function.
+    | A request that presents no complete requirement set answers `401`, unless the operation also accepts no credentials, in which case it receives `None`.
+    | The package never contacts a token endpoint.
     |
     | ## Served OpenAPI document
     |
-    | `create_app` and `install_openapi(app)` make the application serve the source document's operations, schemas, and metadata, composed with its other routes when it first serves or checks the document.
-    | Pass `operation_keys` when the application includes only some of the operations.
-    | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
-    | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
+    | The application serves FastAPI's own document, built from the routes and the models they declare.
+    | Each route adds what FastAPI cannot derive from it, taken from the source document when the package is generated: the declared responses, and the parameters, request bodies, and callbacks that adapters read, with their schemas' references resolved in place.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
-    | Native form bodies follow FastAPI's form extraction, which treats an empty field as missing and applies its default; set the operation's `body_modes` entry to `request` when the exact submitted values matter.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     |
     | ## Regenerating
     |

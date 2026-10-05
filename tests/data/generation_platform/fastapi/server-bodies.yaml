@@ -40,6 +40,8 @@ paths:
             schema: {type: object, additionalProperties: false, properties: {a: {type: integer}}}
           application/json:
             schema: {type: object, additionalProperties: false, properties: {c: {type: boolean}}}
+          application/x-www-form-urlencoded:
+            schema: {type: object, properties: {tags: {type: array, items: {type: string}}}}
       responses:
         "204": {description: Done.}
   /documents:

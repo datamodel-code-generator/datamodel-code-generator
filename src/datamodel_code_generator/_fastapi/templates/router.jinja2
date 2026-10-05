@@ -7,7 +7,8 @@
 def {{ route.adder }}(router: {{ api_router }}, wiring: {{ wiring }}) -> None:
     {{ route.handler }} = wiring.{{ route.handlers }}[{{ route.name }}]
 {%- if route.principal %}
-    {{ route.principal }} = wiring.authenticators[{{ route.key }}]
+
+    {{ route.principal }}
 {%- endif %}
 
     {{ route.signature }}
@@ -25,7 +26,6 @@ TEMPLATED_ROUTES: {{ final }} = {{ templated }}
     """Check the service and settings, then register {{ group }} on a new router, literal paths first."""
     return {{ build }}(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
-        {{ schemes }},
         services={{ services }},
 {%- for name in settings %}
         {{ name }}={{ name }},

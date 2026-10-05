@@ -16,7 +16,6 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._target_contract import OperationContract
 
-MARKER: Final = "x-dcg-operation"
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _SLOT_PREFIX: Final = "dcg_p"
 BUILDER_NAMES: Final = frozenset({
@@ -27,14 +26,47 @@ BUILDER_NAMES: Final = frozenset({
     "app",
     "build_router",
     "create_app",
-    "install_openapi",
-    "operation_keys",
-    "authorizer",
-    "credential_extractors",
+    "authorize",
     "dependencies",
     "operation_dependencies",
     "prefix",
-    "fastapi_options",
+    "fastapi_kwargs",
+    "callbacks",
+    "contact",
+    "debug",
+    "default_response_class",
+    "deprecated",
+    "description",
+    "docs_url",
+    "exception_handlers",
+    "generate_unique_id_function",
+    "include_in_schema",
+    "license_info",
+    "lifespan",
+    "middleware",
+    "on_shutdown",
+    "on_startup",
+    "openapi_external_docs",
+    "openapi_prefix",
+    "openapi_tags",
+    "openapi_url",
+    "redirect_slashes",
+    "redoc_url",
+    "responses",
+    "root_path",
+    "root_path_in_servers",
+    "routes",
+    "separate_input_output_schemas",
+    "servers",
+    "strict_content_type",
+    "summary",
+    "swagger_ui_init_oauth",
+    "swagger_ui_oauth2_redirect_url",
+    "swagger_ui_parameters",
+    "terms_of_service",
+    "title",
+    "version",
+    "webhooks",
 })
 
 

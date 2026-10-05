@@ -216,7 +216,8 @@
       "openapi_scopes": [
         "schemas"
       ]
-    }
+    },
+    "package_snapshots": []
   },
   "methods": {
     "input": "methods.yaml",

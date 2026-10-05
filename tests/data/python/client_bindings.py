@@ -85,9 +85,17 @@ def _document(source: Path, root: Path, case: dict[str, Any]) -> Path:
     return path
 
 
-def _options(values: dict[str, Any]) -> dict[str, Any]:
+def binding_model_options(values: dict[str, Any], root: Path) -> dict[str, Any]:
+    """Prepare model options with fixture templates copied under the test root."""
     if "extra_template_data" in values:
-        return {**values, "extra_template_data": defaultdict(dict, values["extra_template_data"])}
+        values = {**values, "extra_template_data": defaultdict(dict, values["extra_template_data"])}
+    if "custom_template_dir" in values:
+        values = {
+            **values,
+            "custom_template_dir": shutil.copytree(
+                values["custom_template_dir"], root / "templates", dirs_exist_ok=True
+            ),
+        }
     return values
 
 
@@ -161,12 +169,15 @@ def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[.
     for count, (backend, (variant, options)) in enumerate(
         product(case.get("backends", ["pydantic_v2.BaseModel"]), case.get("variants", {"default": {}}).items())
     ):
-        model = _options({
-            **MODEL,
-            **case.get("model", {}),
-            **case.get("backend_model", {}).get(backend, {}),
-            **options,
-        })
+        model = binding_model_options(
+            {
+                **MODEL,
+                **case.get("model", {}),
+                **case.get("backend_model", {}).get(backend, {}),
+                **options,
+            },
+            root,
+        )
 
         def render(
             name: str,

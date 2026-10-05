@@ -162,26 +162,6 @@
         "url": "/pets/one"
       }
     ],
-    "codecs": [
-      {
-        "facade": "GetPetResponseCodecs",
-        "status_code": 200
-      },
-      {
-        "facade": "GetPetResponseCodecs",
-        "status_code": 404,
-        "media_type": "application/json"
-      },
-      {
-        "facade": "GetPetResponseCodecs",
-        "status_code": 500
-      },
-      {
-        "facade": "GetPetResponseCodecs",
-        "status_code": 200,
-        "name": "part"
-      }
-    ],
     "package_snapshots": [
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass"
@@ -256,6 +236,14 @@
       {
         "method": "GET",
         "url": "/ratios?ratios=inf"
+      },
+      {
+        "method": "GET",
+        "url": "/ratios?ratios=1&limits=3&limits=4"
+      },
+      {
+        "method": "GET",
+        "url": "/ratios?ratios=1&limits=0"
       },
       {
         "method": "GET",
@@ -348,8 +336,17 @@
       {
         "method": "GET",
         "url": "/items/1?kind=c"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?tier=2"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?levels=1&levels=2"
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "bodies": {
     "input": "server-bodies.yaml",
@@ -492,6 +489,26 @@
         "content": "{\"a\": 1}"
       },
       {
+        "method": "POST",
+        "url": "/variants",
+        "content": "tags=a&tags=b",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "PUT",
+        "url": "/documents"
+      },
+      {
+        "method": "PUT",
+        "url": "/documents",
+        "content": "x",
+        "headers": {
+          "Content-Type": "text"
+        }
+      },
+      {
         "method": "PUT",
         "url": "/documents",
         "json": {
@@ -525,7 +542,7 @@
       {
         "method": "PUT",
         "url": "/documents",
-        "content": "ÿ",
+        "content": "\u00ff",
         "headers": {
           "Content-Type": "text/plain; charset=utf-8"
         }
@@ -654,7 +671,8 @@
           "any": "thing"
         }
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "results": {
     "input": "server-results.yaml",
@@ -663,38 +681,6 @@
       {
         "method": "GET",
         "url": "/results?case=bare"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=model-value"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=csv"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=binary"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=image"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=html"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=bad-media"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=csv-bytes"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=binary-text"
       },
       {
         "method": "GET",
@@ -708,30 +694,6 @@
       },
       {
         "method": "GET",
-        "url": "/results?case=negative-rate"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=bad-name"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=crlf"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=owned"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=header-list"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=header-item"
-      },
-      {
-        "method": "GET",
         "url": "/results?case=created",
         "show_headers": [
           "x-rate",
@@ -739,10 +701,6 @@
           "x-other",
           "location"
         ]
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=created-without-location"
       },
       {
         "method": "GET",
@@ -758,7 +716,7 @@
       },
       {
         "method": "GET",
-        "url": "/results?case=range-object"
+        "url": "/results?case=invalid-body"
       },
       {
         "method": "GET",
@@ -766,19 +724,11 @@
       },
       {
         "method": "GET",
-        "url": "/results?case=client-error-bytes"
+        "url": "/results?case=client-error-number"
       },
       {
         "method": "GET",
         "url": "/results?case=problem"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=status-bool"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=status-low"
       },
       {
         "method": "GET",
@@ -791,10 +741,6 @@
       {
         "method": "GET",
         "url": "/results?case=response-html"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=response-header"
       },
       {
         "method": "HEAD",
@@ -846,65 +792,18 @@
       },
       {
         "method": "GET",
-        "url": "/results?case=response-created",
-        "show_headers": [
-          "location"
-        ]
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=response-created-without-location"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=response-negative-rate"
-      },
-      {
-        "method": "GET",
-        "url": "/results?case=response-no-content-body"
-      },
-      {
-        "method": "GET",
         "url": "/latin?case=latin"
       },
       {
         "method": "GET",
         "url": "/latin?case=euro"
+      },
+      {
+        "method": "GET",
+        "url": "/blob?case=blob"
       }
     ],
-    "codecs": [
-      {
-        "facade": "GetResultResponseCodecs",
-        "status_code": 200,
-        "media_type": "text/csv"
-      },
-      {
-        "facade": "GetResultResponseCodecs",
-        "status_code": 404
-      },
-      {
-        "facade": "GetResultResponseCodecs",
-        "status_code": 503
-      },
-      {
-        "facade": "GetResultResponseCodecs",
-        "status_code": 200,
-        "media_type": "text/html"
-      },
-      {
-        "facade": "GetResultResponseCodecs",
-        "status_code": 200,
-        "media_type": "not a media type"
-      },
-      {
-        "facade": "GetResultResponseCodecs",
-        "status_code": "200"
-      },
-      {
-        "facade": "GetNothingResponseCodecs",
-        "status_code": 200
-      }
-    ]
+    "package_snapshots": []
   },
   "security": {
     "input": "server-security.yaml",
@@ -1092,7 +991,7 @@
             "method": "GET",
             "url": "/custom",
             "headers": {
-              "X-Digest": "d1"
+              "Authorization": "Digest d1"
             }
           },
           {
@@ -1100,20 +999,6 @@
             "url": "/custom",
             "headers": {
               "X-Client-Cert": "CN=client"
-            }
-          },
-          {
-            "method": "GET",
-            "url": "/custom",
-            "headers": {
-              "X-Digest": "wrong-type"
-            }
-          },
-          {
-            "method": "GET",
-            "url": "/custom",
-            "headers": {
-              "X-Digest": "wrong-scheme"
             }
           },
           {
@@ -1172,7 +1057,8 @@
           }
         ]
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "customized": {
     "input": "services.yaml",
@@ -1197,7 +1083,8 @@
         "method": "GET",
         "url": "/health"
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "variants": {
     "input": "server-variants.yaml",
@@ -1249,7 +1136,8 @@
         "method": "GET",
         "url": "/owners"
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "variants-request-response": {
     "input": "server-variants.yaml",
@@ -1304,7 +1192,8 @@
     ],
     "model": {
       "read_only_write_only_model_type": "request-response"
-    }
+    },
+    "package_snapshots": []
   },
   "variants-modular": {
     "input": "server-variants.yaml",
@@ -1360,7 +1249,8 @@
     "modular": true,
     "model": {
       "module_split_mode": "single"
-    }
+    },
+    "package_snapshots": []
   },
   "variants-reuse": {
     "input": "server-variants.yaml",
@@ -1416,7 +1306,8 @@
     "model": {
       "reuse_model": true,
       "collapse_root_models": true
-    }
+    },
+    "package_snapshots": []
   },
   "forms": {
     "input": "server-forms.yaml",
@@ -1505,6 +1396,14 @@
         "url": "/forms",
         "json": {
           "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "data": {
+          "a": "1",
+          "b": "two"
         }
       },
       {
@@ -1660,7 +1559,8 @@
           ]
         ]
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "responses": {
     "input": "server-responses.yaml",
@@ -1680,10 +1580,6 @@
           {
             "method": "GET",
             "url": "/greetings?mode=result"
-          },
-          {
-            "method": "GET",
-            "url": "/greetings?mode=value"
           },
           {
             "method": "GET",
@@ -1708,14 +1604,6 @@
           {
             "method": "GET",
             "url": "/documents/2"
-          },
-          {
-            "method": "GET",
-            "url": "/documents/3"
-          },
-          {
-            "method": "GET",
-            "url": "/documents/4"
           },
           {
             "openapi": [
@@ -1743,10 +1631,6 @@
           {
             "method": "GET",
             "url": "/greetings?mode=result"
-          },
-          {
-            "method": "GET",
-            "url": "/greetings?mode=value"
           },
           {
             "method": "GET",
@@ -1793,10 +1677,6 @@
           },
           {
             "method": "GET",
-            "url": "/greetings?mode=value"
-          },
-          {
-            "method": "GET",
             "url": "/greetings?mode=other"
           },
           {
@@ -1827,6 +1707,38 @@
           }
         ]
       }
-    ]
+    ],
+    "package_snapshots": []
+  },
+  "unbound": {
+    "input": "unbound.yaml",
+    "services": "unbound",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values/7"
+      },
+      {
+        "method": "GET",
+        "url": "/values/42?at=2026-10-02T12%3A34%3A56Z&tags=alpha&tags=two%20words"
+      },
+      {
+        "method": "GET",
+        "url": "/values/invalid"
+      },
+      {
+        "method": "GET",
+        "url": "/values/0"
+      },
+      {
+        "method": "GET",
+        "url": "/values/7?at=invalid"
+      }
+    ],
+    "package_snapshots": []
   }
 }

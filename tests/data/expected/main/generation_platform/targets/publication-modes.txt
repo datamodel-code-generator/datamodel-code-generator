@@ -11,18 +11,13 @@ generate
   written target server/routers/untagged.py (target)
   written target server/_generated/__init__.py (target)
   written target server/_generated/contract.py (target)
-  written target server/_generated/model_bindings.py (target)
-  written target server/_generated/openapi.py (target)
-  written target server/model_codecs.py (target)
-  written target server/responses.py (target)
   written target server/errors.py (target)
-  written target server/auth_types.py (target)
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  23 runtime modules ['written']
+  13 runtime modules ['written']
 mode models.py: 0640
 mode server/__init__.py: 0640
 mode server/.dcg-target-manifest.json: 0640
@@ -33,9 +28,6 @@ generate
   written target server/application.py (target)
   written target server/routers/untagged.py (target)
   written target server/_generated/contract.py (target)
-  written target server/_generated/model_bindings.py (target)
-  written target server/_generated/openapi.py (target)
-  written target server/responses.py (target)
   written target server/services.py (target)
   written target server/README.md (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
@@ -43,11 +35,10 @@ generate
   unchanged target server/__init__.py (target)
   unchanged target server/routers/__init__.py (target)
   unchanged target server/_generated/__init__.py (target)
-  unchanged target server/model_codecs.py (target)
   unchanged target server/errors.py (target)
-  unchanged target server/auth_types.py (target)
   unchanged target server/py.typed (target)
-  23 runtime modules ['unchanged']
+  11 runtime modules ['unchanged']
   deleted target server/routers/pets.py (target)
   deleted target server/routers/store.py (target)
+  2 runtime modules ['deleted']
 mode models.py: 0604

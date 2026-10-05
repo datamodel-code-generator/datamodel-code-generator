@@ -1096,6 +1096,3 @@ accepts only bodies encoded once. A redirect that drops the body also drops Cont
 
 Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
 followed URLs stay uncompressed. Token requests are never compressed.
-
-Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Entries save
-no coding; at drain, the client setting applies to declared queued operations with bodies.

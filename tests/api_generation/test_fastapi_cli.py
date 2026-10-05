@@ -552,19 +552,18 @@ def test_fastapi_cli_config_errors(
 
 
 def test_fastapi_cli_config_values(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Read every setting of a flat target file, then update one router group of the earlier generation."""
+    """Read every setting of a flat target file."""
     monkeypatch.chdir(tmp_path)
     shutil.copytree(SOURCE / "templates" / "roles", tmp_path / "templates")
     (tmp_path / "hooks").mkdir()
     shutil.copy2(SOURCE / "hooks" / "tagged.py", tmp_path / "hooks" / "tagged.py")
-    for config in ("configured.toml", "configured-update.toml"):
-        run_main_and_assert(
-            input_path=Path("pets.yaml"),
-            output_path=Path("models.py"),
-            input_file_type="openapi",
-            extra_args=_server(),
-            copy_files=_inputs(tmp_path, config),
-        )
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(),
+        copy_files=_inputs(tmp_path, "configured.toml"),
+    )
     manifest = json.loads((tmp_path / "server" / ".dcg-target-manifest.json").read_text(encoding="utf-8"))
     assert_output(
         json.dumps(manifest["inputs"]["target_config"], indent=2, sort_keys=True) + "\n",

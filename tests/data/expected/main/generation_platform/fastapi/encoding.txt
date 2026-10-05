@@ -7,34 +7,19 @@ render pydantic_v2.BaseModel
   write server/src/server/routers/untagged.py
   write server/src/server/_generated/__init__.py
   write server/src/server/_generated/contract.py
-  write server/src/server/_generated/model_bindings.py
-  write server/src/server/_generated/openapi.py
-  write server/src/server/model_codecs.py
-  write server/src/server/responses.py
   write server/src/server/errors.py
-  write server/src/server/auth_types.py
   write server/src/server/services.py
   write server/README.md
   write server/src/server/_runtime/__init__.py (copied runtime)
   write server/src/server/_runtime/model_codecs/__init__.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/bindings.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/codec.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/context.py (copied runtime)
   write server/src/server/_runtime/model_codecs/errors.py (copied runtime)
   write server/src/server/_runtime/model_codecs/media.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/outbound.py (copied runtime)
   write server/src/server/_runtime/model_codecs/parameters.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/patterns.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/schema.py (copied runtime)
   write server/src/server/_runtime/model_codecs/unset.py (copied runtime)
-  write server/src/server/_runtime/model_codecs/values.py (copied runtime)
   write server/src/server/_runtime/model_codecs/wire.py (copied runtime)
   write server/src/server/_runtime/server/__init__.py (copied runtime)
   write server/src/server/_runtime/server/application.py (copied runtime)
-  write server/src/server/_runtime/server/codecs.py (copied runtime)
   write server/src/server/_runtime/server/errors.py (copied runtime)
-  write server/src/server/_runtime/server/openapi.py (copied runtime)
   write server/src/server/_runtime/server/requests.py (copied runtime)
   write server/src/server/_runtime/server/responses.py (copied runtime)
   write server/src/server/_runtime/server/security.py (copied runtime)
@@ -42,43 +27,6 @@ render pydantic_v2.BaseModel
   write server/pyproject.toml
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  search: GET /search -> /search [untagged] status 204 primary 204 None body typed handler sync
-    parameter /paths/~1search/get/parameters/0: codec_adapter unsupported_wire_shape
-    parameter /paths/~1search/get/parameters/1: codec_adapter source_assertion_not_projected at /paths/~1search/get/parameters/1/schema/pattern
-    parameter /paths/~1search/get/parameters/2: codec_adapter unsupported_wire_shape
-    parameter /paths/~1search/get/parameters/3: codec_adapter unsupported_wire_shape
-    parameter /paths/~1search/get/parameters/4: codec_adapter unsupported_wire_shape
-    parameter /paths/~1search/get/parameters/5: codec_adapter unsupported_wire_shape
-    parameter -: codec_adapter unsupported_wire_shape
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1search/get/responses/204
-  get_ratios: GET /ratios -> /ratios [untagged] status 204 primary 204 None body typed handler sync
-    parameter /paths/~1ratios/get/parameters/0: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1ratios/get/responses/204
-  repeat: GET /repeat/{id}/again/{id} -> /repeat/{dcg_p0}/again/{dcg_p1} [untagged] status 204 primary 204 None body typed handler sync
-    slot dcg_p0 = id #0
-    slot dcg_p1 = id #1
-    parameter /paths/~1repeat~1{id}~1again~1{id}/get/parameters/0: codec_adapter unsupported_wire_shape
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1repeat~1{id}~1again~1{id}/get/responses/204
-  get_note: GET /notes/{note.id} -> /notes/{dcg_p0} [untagged] status 204 primary 204 None body typed handler sync
-    slot dcg_p0 = note.id #0
-    parameter /paths/~1notes~1{note.id}/get/parameters/0: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1notes~1{note.id}/get/responses/204
-  get_file: GET /files/{file.name} -> /files/{dcg_p0} [untagged] status 204 primary 204 None body typed handler sync
-    slot dcg_p0 = file.name #0
-    parameter /paths/~1files~1{file.name}/get/parameters/0: codec_adapter source_assertion_not_projected at /paths/~1files~1{file.name}/get/parameters/0/schema/pattern
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1files~1{file.name}/get/responses/204
-  get_menu: GET /menü/{item} -> /menü/{item} [untagged] status 204 primary 204 None body typed handler sync
-    parameter /paths/~1menü~1{item}/get/parameters/0: codec_adapter source_assertion_not_projected at /paths/~1menü~1{item}/get/parameters/0/schema/pattern
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1menü~1{item}/get/responses/204
-  get_item: GET /items/{level} -> /items/{level} [untagged] status 204 primary 204 None body typed handler sync
-    parameter /paths/~1items~1{level}/get/parameters/0: codec_adapter source_assertion_not_projected at /paths/~1items~1{level}/get/parameters/0/schema
-    parameter /paths/~1items~1{level}/get/parameters/1: codec_adapter source_assertion_not_projected at /paths/~1items~1{level}/get/parameters/1/schema
-    parameter /paths/~1items~1{level}/get/parameters/2: codec_adapter source_assertion_not_projected at /paths/~1items~1{level}/get/parameters/2/schema
-    parameter /paths/~1items~1{level}/get/parameters/3: codec_adapter source_assertion_not_projected at /paths/~1items~1{level}/get/parameters/3/schema
-    parameter /paths/~1items~1{level}/get/parameters/4: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1items~1{level}/get/responses/204
-  group untagged -> untagged (7)
   file server/README.md
     | # Server parameters
     |
@@ -102,12 +50,12 @@ render pydantic_v2.BaseModel
     | | `UntaggedService` | `get_menu` | GET | `/menü/{item}` | `/paths/~1menü~1{item}/get` |
     | | `UntaggedService` | `get_item` | GET | `/items/{level}` | `/paths/~1items~1{level}/get` |
     |
-    | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
     |
     | ## Implementing the services
     |
     | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
-    | A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+    | A method takes the operation's arguments as keywords and returns the value to send, an `HTTPResult` with another declared status, headers, or both, or a `Response` sent as it is.
     | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
     | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
     |
@@ -124,31 +72,29 @@ render pydantic_v2.BaseModel
     | ```
     |
     | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
-    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router and install the package's OpenAPI document:
+    | `create_app` passes its other keyword arguments, such as `lifespan`, `middleware`, or `dependencies`, to `FastAPI`, over the title, version, and other metadata of the source document.
+    | To keep your own `FastAPI` application, include the router:
     |
     | ```python
     | from fastapi import FastAPI
     |
-    | from server import build_router, install_openapi
+    | from server import build_router
     |
     | app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
     | app.include_router(build_router(untagged=Untagged()))
-    | install_openapi(app)
-    | app.openapi()  # Check the document once every router is included.
     | ```
     |
     | ## Served OpenAPI document
     |
-    | `create_app` and `install_openapi(app)` make the application serve the source document's operations, schemas, and metadata, composed with its other routes when it first serves or checks the document.
-    | Pass `operation_keys` when the application includes only some of the operations.
-    | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
-    | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
+    | The application serves FastAPI's own document, built from the routes and the models they declare.
+    | Each route adds what FastAPI cannot derive from it, taken from the source document when the package is generated: the declared responses, and the parameters, request bodies, and callbacks that adapters read, with their schemas' references resolved in place.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     |
     | ## Regenerating
     |
@@ -167,7 +113,7 @@ render pydantic_v2.BaseModel
     | version = "1.0.0"
     | requires-python = ">=3.11"
     | readme = "README.md"
-    | dependencies = ["fastapi>=0.141.1", "starlette>=1.0.0", "pydantic>=2.13.5", "jsonschema[format-nongpl]>=4.26", "referencing>=0.37", "typing-extensions>=4.16", "google-re2>=1.1.20251105", "menu-models>=1.0"]
+    | dependencies = ["fastapi>=0.141.1", "pydantic>=2.13.5", "menu-models>=1.0"]
     |
     | [tool.hatch.build.targets.wheel]
     | only-include = ["src/server"]
