@@ -35,11 +35,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  post_json: POST /json -> /json [tag:json] status 204 primary 204 None body typed handler sync
-  post_text: POST /text -> /text [tag:raw] status 204 primary 204 None body request handler sync
-  group tag:json -> json (1)
-  group tag:raw -> raw (1)
   S_OPERATION_EXCLUDED selection /paths/~1json~1optional/post: POST /json/optional is matched by no include rule: Two request modes.
   S_OPERATION_EXCLUDED selection /paths/~1json~1nullable/post: POST /json/nullable is matched by no include rule: Two request modes.
   S_OPERATION_EXCLUDED selection /paths/~1json~1envelope/post: POST /json/envelope is matched by no include rule: Two request modes.

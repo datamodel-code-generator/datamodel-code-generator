@@ -38,14 +38,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout single
-  list_pets: GET /pets -> /pets [all] status 200 primary 200 application/json body typed handler sync
-  create_pet: POST /pets -> /pets [all] status 201 primary 201 application/json body typed handler sync
-  list_my_pets: GET /pets/mine -> /pets/mine [all] status 200 primary 200 application/json body typed handler sync
-  get_pet: GET /pets/{petId} -> /pets/{petId} [all] status 200 primary 200 application/json body typed handler sync
-  delete_pet: DELETE /pets/{petId} -> /pets/{petId} [all] status 204 primary 204 None body typed handler sync
-  get_inventory: GET /store/inventory -> /store/inventory [all] status 200 primary 200 application/json body typed handler sync
-  group all -> service (6)
   file server/README.md
     | # Pets
     |

@@ -39,13 +39,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  subscribe: POST /subscriptions -> /subscriptions [untagged] status 201 primary 201 None body typed handler sync
-  list_events: GET /events -> /events [untagged] status 200 primary 200 application/json body typed handler sync
-  get_secure: GET /secure -> /secure [untagged] status 200 primary 200 application/json body typed handler sync
-  ping: GET /ping -> /ping [untagged] status 200 primary - body typed handler sync
-  echo: GET /echo -> /echo [untagged] status 200 primary 200 application/json body typed handler sync
-  group untagged -> untagged (5)
   W_DOCUMENTATION_ANNOTATION target /paths/~1events/get/responses/200/headers/X-Map: The served document leaves out example, which has no JSON form
   W_DOCUMENTATION_ANNOTATION target /paths/~1events/get: The served document leaves out servers, which has no JSON form
   context

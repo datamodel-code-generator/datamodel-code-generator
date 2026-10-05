@@ -37,16 +37,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  get__users_me: GET /users/me -> /users/me [tag:Users] status 204 primary 204 None body typed handler sync
-  get_user_by_id: GET /users/{id} -> /users/{id} [tag:Users] status 204 primary 204 None body typed handler sync
-  class_: PUT /users/{id} -> /users/{id} [tag:Users] status 204 primary 204 None body typed handler sync
-  get_file: GET /files/{file.name}/{dcg_p0} -> /files/{dcg_p1}/{dcg_p0} [tag:2024 files] status 204 primary 204 None body typed handler sync
-    slot dcg_p1 = file.name #0
-  health_check: GET /health -> /health [untagged] status 204 primary 204 None body typed handler sync
-  group tag:Users -> users (3)
-  group tag:2024 files -> router_2024_files (1)
-  group untagged -> misc (1)
   file server/README.md
     | # Names
     |

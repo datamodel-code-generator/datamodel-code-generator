@@ -107,7 +107,7 @@ render
       "size": "<masked>"
     },
     {
-      "group": "tag:store",
+      "group": null,
       "kind": "router",
       "path": "routers/store.py",
       "sha256": "<sha256>",
@@ -254,8 +254,7 @@ render
         "parameter_names": {},
         "primary_responses": {},
         "router_names": {},
-        "templates": null,
-        "update_groups": null
+        "templates": null
       },
       "runtime_defaults": {}
     }

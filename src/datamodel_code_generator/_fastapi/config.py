@@ -24,7 +24,6 @@ from datamodel_code_generator._target_config import (
     _path,  # pyright: ignore[reportPrivateUsage]
     _records,  # pyright: ignore[reportPrivateUsage]
     _string,  # pyright: ignore[reportPrivateUsage]
-    _strings,  # pyright: ignore[reportPrivateUsage]
     _table,  # pyright: ignore[reportPrivateUsage]
 )
 
@@ -68,7 +67,6 @@ class FastAPIConfig(TargetConfig):
     parameter_names: Mapping[OperationSelector, Mapping[str, str]] = field(default_factory=lambda: MappingProxyType({}))
     hooks: tuple[HookReference | FastAPIHook, ...] = ()
     templates: Path | None = None
-    update_groups: tuple[str, ...] | None = None
 
     toml_converters: ClassVar[Mapping[str, Converter]]
 
@@ -100,8 +98,6 @@ class FastAPIConfig(TargetConfig):
         yield from _selector_problems(self.parameter_names, "parameter_names", _parameter_names)
         if not _router_names_valid(self.router_names):
             yield _diagnostic("E_CONFIG_VALUE", "router_names", "router_names must map group keys to identifiers")
-        if self.update_groups is not None and not _texts(self.update_groups):
-            yield _diagnostic("E_CONFIG_VALUE", "update_groups", "update_groups must be a tuple of group keys")
         if self.templates is not None and not _is_path(self.templates):
             yield _diagnostic("E_CONFIG_VALUE", "templates", "templates must be the path of a template directory")
         if not _is_tuple(self.hooks):
@@ -139,10 +135,6 @@ def _router_names_valid(value: object) -> bool:
 
 def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
     return isinstance(value, tuple)
-
-
-def _texts(value: object) -> bool:
-    return _is_tuple(value) and all(isinstance(item, str) for item in value)
 
 
 def _reference(value: object) -> bool:
@@ -267,5 +259,4 @@ FastAPIConfig.toml_converters = MappingProxyType({
     "parameter_names": _parameter_name_entries,
     "hooks": _records(_hook),
     "templates": _path,
-    "update_groups": _strings,
 })

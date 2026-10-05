@@ -49,7 +49,7 @@ render
       "size": "<masked>"
     },
     {
-      "group": "untagged",
+      "group": null,
       "kind": "router",
       "path": "routers/untagged.py",
       "sha256": "<sha256>",
@@ -196,8 +196,7 @@ render
         "parameter_names": {},
         "primary_responses": {},
         "router_names": {},
-        "templates": null,
-        "update_groups": null
+        "templates": null
       },
       "runtime_defaults": {}
     }

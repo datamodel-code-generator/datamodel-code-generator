@@ -38,10 +38,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  search_items: QUERY /search -> /search [untagged] status 200 primary 200 application/json body typed handler sync
-  link_items: LINK /search -> /search [untagged] status 204 primary 204 None body typed handler sync
-  group untagged -> untagged (2)
   file server/README.md
     | # Methods
     |

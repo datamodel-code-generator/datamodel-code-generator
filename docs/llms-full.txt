@@ -11223,7 +11223,6 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 | `parameter_names` | inferred | `[[parameter_names]]` rename method arguments |
 | `hooks` | none | `[[hooks]]` tables with `module` or `file`, and `callable` (default `transform`) |
 | `templates` | none | Directory of template overrides and extra files |
-| `update_groups` | none | Regenerate only these router groups |
 | `package_mode` | `"embedded"` | `"standalone"` writes a distribution with `pyproject.toml` under `output` |
 | `package_version`, `distribution_name`, `model_dependency` | none | Distribution metadata of standalone mode |
 | `formatters`, `formatter_settings`, `custom_formatters`, `custom_formatter_kwargs` | builtin | Formatting of the generated package |
@@ -11284,7 +11283,6 @@ Only `include_timestamp = true` puts a time into the server files, and then ever
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
 uses it, or the default `datamodel-codegen.lock` exists.
 
-`update_groups` regenerates only the named router groups, and refuses when anything else changed.
 `model_mode = "verify"` lets several targets share models generated once: each target compares the models with
 the existing files instead of writing them, and reports `E_MODEL_MISMATCH` when they differ. Generate those
 models with `--disable-timestamp` too.

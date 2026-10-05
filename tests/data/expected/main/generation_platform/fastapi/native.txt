@@ -34,31 +34,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  post_discriminated: POST /discriminated -> /discriminated [untagged] status 204 primary 204 None body typed handler sync
-  post_ranges: POST /ranges -> /ranges [untagged] status 204 primary 204 None body typed handler sync
-  post_wide: POST /wide -> /wide [untagged] status 204 primary 204 None body typed handler sync
-  post_described: POST /described -> /described [untagged] status 204 primary 204 None body typed handler sync
-  post_patterned: POST /patterned -> /patterned [untagged] status 204 primary 204 None body typed handler sync
-  post_bounded: POST /bounded -> /bounded [untagged] status 204 primary 204 None body typed handler sync
-  post_painted: POST /painted -> /painted [untagged] status 204 primary 204 None body typed handler sync
-  post_holder: POST /holder -> /holder [untagged] status 204 primary 204 None body typed handler sync
-  post_wrapper: POST /wrapper -> /wrapper [untagged] status 204 primary 204 None body typed handler sync
-  post_extended: POST /extended -> /extended [untagged] status 204 primary 204 None body typed handler sync
-  post_defaulted: POST /defaulted -> /defaulted [untagged] status 204 primary 204 None body typed handler sync
-  post_listed: POST /listed -> /listed [untagged] status 204 primary 204 None body typed handler sync
-  post_mapped: POST /mapped -> /mapped [untagged] status 204 primary 204 None body typed handler sync
-  post_opaque: POST /opaque -> /opaque [untagged] status 204 primary 204 None body typed handler sync
-  post_anything: POST /anything -> /anything [untagged] status 204 primary 204 None body typed handler sync
-  post_constant: POST /constant -> /constant [untagged] status 204 primary 204 None body typed handler sync
-  post_stamped: POST /stamped -> /stamped [untagged] status 204 primary 204 None body typed handler sync
-  post_closed: POST /closed -> /closed [untagged] status 204 primary 204 None body typed handler sync
-  post_twice: POST /twice -> /twice [untagged] status 204 primary 204 None body typed handler sync
-  post_node: POST /node -> /node [untagged] status 204 primary 204 None body typed handler sync
-  post_extra: POST /extra -> /extra [untagged] status 204 primary 204 None body typed handler sync
-  post_nested: POST /nested -> /nested [untagged] status 204 primary 204 None body typed handler sync
-  post_box: POST /box -> /box [untagged] status 204 primary 204 None body typed handler sync
-  group untagged -> untagged (23)
   file server/README.md
     | # Native checks
     |
@@ -188,31 +163,6 @@ render pydantic_v2.dataclass
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  post_discriminated: POST /discriminated -> /discriminated [untagged] status 204 primary 204 None body typed handler sync
-  post_ranges: POST /ranges -> /ranges [untagged] status 204 primary 204 None body typed handler sync
-  post_wide: POST /wide -> /wide [untagged] status 204 primary 204 None body typed handler sync
-  post_described: POST /described -> /described [untagged] status 204 primary 204 None body typed handler sync
-  post_patterned: POST /patterned -> /patterned [untagged] status 204 primary 204 None body typed handler sync
-  post_bounded: POST /bounded -> /bounded [untagged] status 204 primary 204 None body typed handler sync
-  post_painted: POST /painted -> /painted [untagged] status 204 primary 204 None body typed handler sync
-  post_holder: POST /holder -> /holder [untagged] status 204 primary 204 None body typed handler sync
-  post_wrapper: POST /wrapper -> /wrapper [untagged] status 204 primary 204 None body typed handler sync
-  post_extended: POST /extended -> /extended [untagged] status 204 primary 204 None body typed handler sync
-  post_defaulted: POST /defaulted -> /defaulted [untagged] status 204 primary 204 None body typed handler sync
-  post_listed: POST /listed -> /listed [untagged] status 204 primary 204 None body typed handler sync
-  post_mapped: POST /mapped -> /mapped [untagged] status 204 primary 204 None body typed handler sync
-  post_opaque: POST /opaque -> /opaque [untagged] status 204 primary 204 None body typed handler sync
-  post_anything: POST /anything -> /anything [untagged] status 204 primary 204 None body typed handler sync
-  post_constant: POST /constant -> /constant [untagged] status 204 primary 204 None body typed handler sync
-  post_stamped: POST /stamped -> /stamped [untagged] status 204 primary 204 None body typed handler sync
-  post_closed: POST /closed -> /closed [untagged] status 204 primary 204 None body typed handler sync
-  post_twice: POST /twice -> /twice [untagged] status 204 primary 204 None body typed handler sync
-  post_node: POST /node -> /node [untagged] status 204 primary 204 None body typed handler sync
-  post_extra: POST /extra -> /extra [untagged] status 204 primary 204 None body typed handler sync
-  post_nested: POST /nested -> /nested [untagged] status 204 primary 204 None body typed handler sync
-  post_box: POST /box -> /box [untagged] status 204 primary 204 None body typed handler sync
-  group untagged -> untagged (23)
   file server/README.md
     | # Native checks
     |

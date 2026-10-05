@@ -40,15 +40,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  get_part: GET /items/{item-id}/parts/{part} -> /items/{dcg_p0}/parts/{part} [tag:items] status 200 primary 200 application/json body typed handler sync
-    slot dcg_p0 = item-id #0
-  list_adapters: GET /adapters -> /adapters [tag:adapters] status 204 primary 204 None body typed handler sync
-  get_repeated: GET /repeat/{id}/again/{id} -> /repeat/{dcg_p0}/again/{dcg_p1} [tag:adapters] status 204 primary 204 None body typed handler sync
-    slot dcg_p0 = id #0
-    slot dcg_p1 = id #1
-  group tag:items -> items (1)
-  group tag:adapters -> adapters (2)
   file server/README.md
     | # Parameters
     |

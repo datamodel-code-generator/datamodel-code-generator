@@ -69,8 +69,6 @@ def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
                 converted[key] = tuple(_hook(item, root) for item in value)
             case "templates" if isinstance(value, str):
                 converted[key] = _copied(value, root)
-            case "update_groups" if isinstance(value, list):
-                converted[key] = tuple(value)
             case _:
                 converted[key] = value
     return FastAPIConfig(**converted)
@@ -121,26 +119,6 @@ def _diagnostic(item: Diagnostic) -> str:
     return f"  {item.code} {location}: {item.message}"
 
 
-def _decisions(project: GeneratedProject) -> list[str]:
-    manifest = next(artifact for artifact in project.artifacts if artifact.path.name == MANIFEST)
-    data = json.loads(manifest.content or b"{}")["target_data"]["fastapi"]
-    lines = [f"  layout {data['layout']}"]
-    for operation in data["operations"]:
-        primary = "-" if (chosen := operation["primary_response"]) is None else _primary(chosen)
-        lines.append(
-            f"  {operation['python_name']}: {operation['method'].upper()} {operation['path']}"
-            f" -> {operation['route_path']} [{operation['group_key']}] status {operation['registration_status']}"
-            f" primary {primary} body {operation['body_mode']} handler {operation['handler_mode']}"
-        )
-        lines.extend(
-            f"    slot {slot['slot']} = {slot['wire_name']} #{slot['occurrence']}" for slot in operation["path_slots"]
-        )
-    lines.extend(
-        f"  group {group['key']} -> {group['file_stem']} ({len(group['operations'])})" for group in data["groups"]
-    )
-    return lines
-
-
 def _projection(value: object) -> object:
     match value:
         case Mapping():
@@ -151,10 +129,6 @@ def _projection(value: object) -> object:
             return {item.name: _projection(getattr(value, item.name)) for item in fields(value)}
         case _:
             return value
-
-
-def _primary(chosen: dict[str, Any]) -> str:
-    return f"{chosen['status_code']} {chosen['media_type']}"
 
 
 def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) -> list[str]:
@@ -204,68 +178,11 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
                 shown = _SIZE.sub('"size":"<size>"', _DIGEST.sub('"<sha256>"', content.decode()))
                 files.extend(f"    | {text}" if text else "    |" for text in shown.splitlines())
         lines.append(line)
-    lines.extend(_decisions(project))
     lines.extend(_diagnostic(item) for item in project.diagnostics)
     for context in fastapi_hooks.RECORDED:
         lines.append("  context")
         lines.extend(f"    | {line}" for line in json.dumps(_projection(context), indent=2).splitlines())
     return [*lines, *files]
-
-
-def _generate(overrides: dict[str, Any], root: Path) -> list[str]:
-    model = GenerateConfig(
-        output=root / "models.py",
-        input_file_type="openapi",
-        target_python_version="3.11",
-        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-        output_model_type=DataModelType.PydanticV2BaseModel,
-        disable_timestamp=True,
-        formatters=[Formatter.BUILTIN],
-    )
-    try:
-        report = generate_fastapi(
-            root / overrides.get("input", "api.yaml"),
-            model_config=model,
-            config=fastapi_config(overrides.get("config", {}), root),
-        )
-    except APIGenerationError as error:
-        return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
-    changes = [
-        f"  {action} {record.path.relative_to(root).as_posix()}"
-        for action, records in (("written", report.written_files), ("deleted", report.deleted_files))
-        for record in records
-        if "_runtime" not in record.path.parts
-    ]
-    return [*changes, *(_diagnostic(item) for item in report.diagnostics)]
-
-
-def fastapi_scenario_report(case_name: str, root: Path) -> str:
-    """Replay one regeneration scenario of spec changes and manifest edits, reporting each generation's writes."""
-    root = root.resolve()
-    lines = [f"# {case_name}"]
-    for step in json.loads((SOURCE / "scenarios.json").read_text(encoding="utf-8"))[case_name]:
-        ((action, value),) = step.items()
-        match action, value:
-            case "spec", [str() as name, str() as fixture]:
-                shutil.copy2(SOURCE / fixture, root / name)
-                lines.append(f"spec {name} <- {fixture}")
-            case "generate", dict() as overrides:
-                lines.append(f"generate {json.dumps(overrides, sort_keys=True)}")
-                lines.extend(_generate(overrides, root))
-            case "patch", [str() as name, str() as pointer, replacement]:
-                data = json.loads((root / name).read_text(encoding="utf-8"))
-                *parents, last = pointer.removeprefix("/").split("/")
-                container = data
-                for token in parents:
-                    container = container[int(token)] if isinstance(container, list) else container[token]
-                container[last] = replacement
-                (root / name).write_text(
-                    json.dumps(data, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8"
-                )
-                lines.append(f"patch {name} {pointer}")
-            case _:
-                raise ValueError(step)
-    return "\n".join(lines) + "\n"
 
 
 def fastapi_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:

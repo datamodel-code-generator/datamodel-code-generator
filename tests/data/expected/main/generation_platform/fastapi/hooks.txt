@@ -41,14 +41,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  handle_put__notes: PUT /notes -> /notes [untagged] status 204 primary 204 None body typed handler async
-  handle_post__uploads: POST /uploads -> /uploads [tag:files] status 204 primary 204 None body typed handler async
-  handle_add_pet: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler async
-  handle_get_pet: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler async
-  group untagged -> untagged_routes (1)
-  group tag:files -> files_routes (1)
-  group tag:pets -> pets_routes (2)
   S_OPERATION_EXCLUDED hook /paths/~1raw/post: POST /raw is removed by a hook
   context
     | {

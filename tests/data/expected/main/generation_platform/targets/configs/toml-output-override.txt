@@ -60,8 +60,7 @@
       "parameter_names": {},
       "primary_responses": {},
       "router_names": {},
-      "templates": null,
-      "update_groups": null
+      "templates": null
     },
     "runtime_defaults": {}
   }

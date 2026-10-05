@@ -36,19 +36,6 @@ render pydantic_v2.BaseModel
   write server/pyproject.toml
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  search: GET /search -> /search [untagged] status 204 primary 204 None body typed handler sync
-  get_ratios: GET /ratios -> /ratios [untagged] status 204 primary 204 None body typed handler sync
-  repeat: GET /repeat/{id}/again/{id} -> /repeat/{dcg_p0}/again/{dcg_p1} [untagged] status 204 primary 204 None body typed handler sync
-    slot dcg_p0 = id #0
-    slot dcg_p1 = id #1
-  get_note: GET /notes/{note.id} -> /notes/{dcg_p0} [untagged] status 204 primary 204 None body typed handler sync
-    slot dcg_p0 = note.id #0
-  get_file: GET /files/{file.name} -> /files/{dcg_p0} [untagged] status 204 primary 204 None body typed handler sync
-    slot dcg_p0 = file.name #0
-  get_menu: GET /menü/{item} -> /menü/{item} [untagged] status 204 primary 204 None body typed handler sync
-  get_item: GET /items/{level} -> /items/{level} [untagged] status 204 primary 204 None body typed handler sync
-  group untagged -> untagged (7)
   file server/README.md
     | # Server parameters
     |

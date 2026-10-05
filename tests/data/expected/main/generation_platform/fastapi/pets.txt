@@ -40,15 +40,6 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  list_pets: GET /pets -> /pets [tag:pets] status 200 primary 200 application/json body typed handler sync
-  create_pet: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler sync
-  list_my_pets: GET /pets/mine -> /pets/mine [tag:pets] status 200 primary 200 application/json body typed handler sync
-  get_pet: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
-  delete_pet: DELETE /pets/{petId} -> /pets/{petId} [tag:pets] status 204 primary 204 None body typed handler sync
-  get_inventory: GET /store/inventory -> /store/inventory [tag:store] status 200 primary 200 application/json body typed handler sync
-  group tag:pets -> pets (5)
-  group tag:store -> store (1)
   file server/README.md
     | # Pets
     |
@@ -171,15 +162,6 @@ render pydantic_v2.dataclass
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  list_pets: GET /pets -> /pets [tag:pets] status 200 primary 200 application/json body typed handler sync
-  create_pet: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler sync
-  list_my_pets: GET /pets/mine -> /pets/mine [tag:pets] status 200 primary 200 application/json body typed handler sync
-  get_pet: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
-  delete_pet: DELETE /pets/{petId} -> /pets/{petId} [tag:pets] status 204 primary 204 None body typed handler sync
-  get_inventory: GET /store/inventory -> /store/inventory [tag:store] status 200 primary 200 application/json body typed handler sync
-  group tag:pets -> pets (5)
-  group tag:store -> store (1)
   file server/README.md
     | # Pets
     |
