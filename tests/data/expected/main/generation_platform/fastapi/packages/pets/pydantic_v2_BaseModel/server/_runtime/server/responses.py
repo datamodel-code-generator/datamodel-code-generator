@@ -93,7 +93,7 @@ def _content(declared: Declared, media_type: str, body: object) -> bytes:
         payload = _json(jsonable_encoder(body, by_alias=True, exclude_unset=True)) if json_media else body
     else:
         try:
-            value = adapter.validate_python(jsonable_encoder(body, by_alias=True, exclude_unset=True))
+            value = adapter.validate_python(body)
         except ValidationError as error:
             raise ResponseValidationError(error.errors(include_url=False)) from error
         if json_media:

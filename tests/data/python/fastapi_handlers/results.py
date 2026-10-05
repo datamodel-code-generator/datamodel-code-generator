@@ -25,7 +25,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         "invalid-body": lambda: result(201, {"id": "x"}, {"Location": "/things/x"}),
         "client-error": lambda: result(404, "missing"),
         "client-error-number": lambda: result(404, 1),
-        "blob": lambda: b"\x00\x01",
+        "blob": lambda: b"\x00\xff",
         "problem": lambda: result(500, models.Problem(title="Broken")),
         "missing-body": lambda: result(200),
         "response": lambda: Response(content=b'{"id":3}', status_code=200, media_type="application/json"),
