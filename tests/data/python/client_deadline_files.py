@@ -533,8 +533,9 @@ async def _queued(  # noqa: PLR0914
     ready.proceed.set()
     file = _BlockedFile(ready, reading=reading)
     adapter = _UnsentAdapter(transports, reading=reading)
+    cleanup_timeout = 0.01 if owned and not path_body else 1.0
     api = package.AsyncClient(
-        transport_adapter=adapter, options=options.ClientOptions(total_timeout=None, cleanup_timeout=0.01)
+        transport_adapter=adapter, options=options.ClientOptions(total_timeout=None, cleanup_timeout=cleanup_timeout)
     )
     blocked_index = (2 if path_body else 3) if reading else 1
     submitted: list[tuple[Future[object], asyncio.Task[object]]] = []

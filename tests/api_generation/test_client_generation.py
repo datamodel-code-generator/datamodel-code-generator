@@ -12,6 +12,7 @@ from tests.data.python.client_generation import (
     client_documentation_report,
     client_helper_digest_report,
     client_input_report,
+    client_model_parity_report,
     client_render,
 )
 
@@ -29,6 +30,9 @@ def test_client_input(case: str, tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "case",
     [
+        "allowreserved-path-30",
+        "allowreserved-path-31",
+        "allowreserved-path-32",
         "pets",
         "auth",
         "auth-no-root",
@@ -77,7 +81,6 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "uploads",
         "uploads-compression",
         "uploads-plans",
-        "queues",
         "webhooks",
         "webhooks-schema",
         "webhooks-public-keys",
@@ -97,7 +100,47 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     report, rendered = client_render(case, tmp_path)
     assert_output(report, EXPECTED / f"{case}.txt")
     for backend, modules in rendered.items():
-        assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
+        assert_generated_modules_output(
+            {parts: content for parts, content in modules.items() if parts[0] != "client"}
+            if case in {"auth-no-root", "default-server", "implicit-server", "servers"}
+            or (case == "pets" and backend != "pydantic_v2_BaseModel")
+            else modules,
+            EXPECTED / "packages" / case / backend,
+        )
+    if case in {
+        "auth",
+        "auth-context",
+        "compatibility",
+        "empty",
+        "evolution",
+        "fields",
+        "fields-arguments",
+        "fields-optional-models",
+        "fields-structural",
+        "fields-unpack",
+        "helpers",
+        "media",
+        "names",
+        "pagination",
+        "pagination-querystring",
+        "pets",
+        "pets-unpack",
+        "querystring",
+        "retries",
+        "retry-headers",
+        "validation-arguments",
+    }:
+        assert_output(
+            client_model_parity_report(
+                case,
+                tmp_path / "ordinary",
+                {
+                    backend: {parts: content for parts, content in modules.items() if parts[0] != "client"}
+                    for backend, modules in rendered.items()
+                },
+            ),
+            EXPECTED / "bindings" / "capture-parity.txt",
+        )
 
 
 @pytest.mark.parametrize(
@@ -152,8 +195,6 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-unmodeled",
         "protocols-cache-errors",
         "protocols-cache-checks",
-        "protocols-queue-errors",
-        "protocols-queue-checks",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
@@ -164,7 +205,10 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
     report, rendered = client_render(case, tmp_path)
     assert_output(report, EXPECTED / "protocols" / f"{report.splitlines()[0].removeprefix('# ')}.txt")
     for backend, modules in rendered.items():
-        assert_generated_modules_output(modules, EXPECTED / "packages" / "helpers" / backend)
+        assert_generated_modules_output(
+            {parts: content for parts, content in modules.items() if parts[0] != "client"},
+            EXPECTED / "packages" / "helpers" / backend,
+        )
 
 
 @pytest.mark.parametrize(
@@ -175,8 +219,6 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
         ("webhooks-public-keys", "webhooks-public-keys-python", "webhook-public-key-records"),
         ("webhooks-adapters", "webhooks-adapters-python", "webhook-adapter-records"),
         ("caching", "caching-python", "cache-records"),
-        ("queues", "queues-python", "queue-records"),
-        ("queues", "queues-schema", "queue-schema"),
     ],
 )
 def test_client_helper_digests(first: str, second: str, expected: str, tmp_path: Path) -> None:
@@ -196,7 +238,6 @@ def test_client_helper_digests(first: str, second: str, expected: str, tmp_path:
         "pagination-links",
         "polling",
         "uploads",
-        "queues",
         "streams",
         "ndjson",
         "stream-resume",

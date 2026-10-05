@@ -87,7 +87,12 @@
         }
       ],
       "signature_style": "unpack"
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "media": {
     "input": "media.yaml",
@@ -107,7 +112,12 @@
           }
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "multipart-split": {
     "input": "multipart-split.yaml",
@@ -163,7 +173,12 @@
           "namespace": "store"
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "name-errors": {
     "input": "name-errors.yaml"
@@ -341,7 +356,12 @@
     }
   },
   "querystring": {
-    "input": "querystring.yaml"
+    "input": "querystring.yaml",
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "paths": {
     "input": "paths.yaml"
@@ -865,7 +885,12 @@
           }
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "retry-headers": {
     "input": "retry-headers.json",
@@ -930,7 +955,12 @@
           }
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "retry-header-conflicts": {
     "input": "retry-headers.json",
@@ -3068,7 +3098,12 @@
     ],
     "config": {
       "protocols": "protocols/pagination.yaml"
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "protocols-pagination-checks": {
     "input": "pagination-checks.yaml",
@@ -3127,7 +3162,12 @@
     ],
     "config": {
       "protocols": "protocols/pagination-querystring.yaml"
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "pagination-targets": {
     "input": "pagination-targets.yaml",
@@ -4081,202 +4121,6 @@
     },
     "modules": false
   },
-  "queues": {
-    "input": "queues.yaml",
-    "references": [
-      "protocols/queues.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/queues.yaml",
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            },
-            "accepted_content_encodings": [
-              "gzip"
-            ]
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ],
-      "selection": {
-        "exclude_tags": [
-          "filtered"
-        ],
-        "reason": "Filtered listings are not queued"
-      }
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ],
-    "modules": [
-      [
-        "client",
-        "protocols",
-        "_plans.py"
-      ],
-      [
-        "client",
-        "protocols",
-        "_helpers.py"
-      ],
-      [
-        "client",
-        "protocols",
-        "_async_helpers.py"
-      ]
-    ]
-  },
-  "protocols-queue-checks": {
-    "input": "queues.yaml",
-    "references": [
-      "protocols/queue-checks.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/queue-checks.yaml",
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1orders~1{orderId}~1receipt/put",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ]
-    },
-    "modules": false
-  },
-  "protocols-queue-errors": {
-    "input": "queues.yaml",
-    "references": [
-      "protocols/queue-errors.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/queue-errors.yaml"
-    },
-    "modules": false
-  },
-  "queues-python": {
-    "input": "queues.yaml",
-    "config": {
-      "protocols": {
-        "python": "queues"
-      },
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ],
-      "selection": {
-        "exclude_tags": [
-          "filtered"
-        ],
-        "reason": "Filtered listings are not queued"
-      }
-    },
-    "modules": false
-  },
-  "queues-schema": {
-    "input": "queues-schema.yaml",
-    "references": [
-      "protocols/queues.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/queues.yaml",
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ],
-      "selection": {
-        "exclude_tags": [
-          "filtered"
-        ],
-        "reason": "Filtered listings are not queued"
-      }
-    },
-    "modules": false
-  },
   "compression": {
     "input": "compression.yaml",
     "references": [
@@ -4397,95 +4241,6 @@
       ]
     ]
   },
-  "queues-restoration": {
-    "input": "queues.yaml",
-    "references": [
-      "protocols/queues.yaml"
-    ],
-    "model": {
-      "base_class_map": {
-        "NewOrder": "tests.data.python.queue_recovery_model.RestoredOrder"
-      }
-    },
-    "config": {
-      "protocols": "protocols/queues.yaml",
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ],
-      "selection": {
-        "exclude_tags": [
-          "filtered"
-        ],
-        "reason": "Filtered listings are not queued"
-      }
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ]
-  },
-  "queues-scope": {
-    "input": "queues.yaml",
-    "references": [
-      "protocols/queues.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/queues.yaml",
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v2"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ],
-      "selection": {
-        "exclude_tags": [
-          "filtered"
-        ],
-        "reason": "Filtered listings are not queued"
-      }
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ]
-  },
   "uploads-oauth": {
     "input": "uploads-oauth.yaml",
     "references": [
@@ -4497,46 +4252,6 @@
     "backends": [
       "pydantic_v2.BaseModel"
     ]
-  },
-  "queue-credentials": {
-    "input": "queue-credentials.json",
-    "references": [
-      "protocols/queue-credentials.json"
-    ],
-    "config": {
-      "protocols": "protocols/queue-credentials.json",
-      "operations": [
-        {
-          "ref": "/paths/~1matrix/get",
-          "runtime": {
-            "request_id_header": "X-Catalog-Key"
-          }
-        },
-        {
-          "ref": "/paths/~1safe/get",
-          "runtime": {
-            "request_id_header": "X-Request-ID"
-          }
-        }
-      ]
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ],
-    "modules": false
-  },
-  "queue-order": {
-    "input": "queue-order.json",
-    "references": [
-      "protocols/queue-order.json"
-    ],
-    "config": {
-      "protocols": "protocols/queue-order.json"
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ],
-    "modules": false
   },
   "input-cycle-dict": {
     "input": "input-cycle-dict.yaml",
@@ -4591,5 +4306,35 @@
       "msgspec.Struct"
     ],
     "model_only": true
+  },
+  "allowreserved-path-30": {
+    "input": "allowreserved-path-30.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "allowreserved-path-31": {
+    "input": "allowreserved-path-31.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "allowreserved-path-32": {
+    "input": "allowreserved-path-32.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
   }
 }
