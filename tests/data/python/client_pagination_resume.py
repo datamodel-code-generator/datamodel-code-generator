@@ -533,13 +533,13 @@ def _signer_credentials(harness: Harness, api: Any, lines: list[str], mode: str)
     )
     api = api.with_options(harness.options.RequestOptions(auth=auth.AuthConfig({}, signers=(signer,))))
     for label, arguments in (
-        ("header", {"x_trace": harness.argument("users", "ListUsers", "header", "X-Trace", "secret-header")}),
-        ("query", {"limit": harness.argument("users", "ListUsers", "query", "limit", 3)}),
+        ("header", {"x_trace": harness.argument("listUsers", "header", "X-Trace", "secret-header")}),
+        ("query", {"limit": harness.argument("listUsers", "query", "limit", 3)}),
     ):
         state = unsigned.protocols.users.all.iterate(**arguments).checkpoint()
         record(lines, f"{mode} signer {label} checkpoint", api.protocols.users.all.iterate(**arguments).checkpoint)
         record(lines, f"{mode} signer {label} resume", lambda state=state: api.protocols.users.all.resume(state))
-    query = harness.argument("queries", "Query", "querystring", "filter", {"term": "secret-query"})
+    query = harness.argument("query", "querystring", "filter", {"term": "secret-query"})
     state = unsigned.protocols.queries.all.iterate(filter=query).checkpoint()
     record(lines, f"{mode} signer querystring checkpoint", api.protocols.queries.all.iterate(filter=query).checkpoint)
     record(lines, f"{mode} signer querystring resume", lambda: api.protocols.queries.all.resume(state))
