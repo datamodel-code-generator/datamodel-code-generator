@@ -291,7 +291,8 @@
       "openapi_scopes": [
         "schemas"
       ]
-    }
+    },
+    "package_snapshots": []
   },
   "adapters": {
     "input": "pets.yaml",
