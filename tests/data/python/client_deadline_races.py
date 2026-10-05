@@ -26,9 +26,7 @@ class _Clock:
 def _snapshot(error: BaseException) -> tuple[object, ...]:
     return (
         type(error).__name__,
-        getattr(error, "resource_attempt_count", None),
-        getattr(error, "network_send_count", None),
-        getattr(error, "network_send_budget_used", None),
+        getattr(error, "attempt_count", None),
         getattr(error, "phase", None),
         getattr(error, "source", None),
         type(getattr(error, "cause", None)).__name__,
@@ -326,7 +324,7 @@ async def _capped_timeout(
     clock = _Clock()
 
     async def timed_out() -> None:
-        raise errors.TransportError(
+        raise errors.APIConnectionError(
             delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read", cause=httpx2.ReadTimeout("capped read")
         )
 

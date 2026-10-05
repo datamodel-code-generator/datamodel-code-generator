@@ -901,20 +901,6 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
     )
     for label, value in (("zero chunk bytes", {"chunk_bytes": 0}), ("negative probes", {"max_uncertain_probes": -1})):
         record(lines, f"upload options with {label}", lambda value=value: harness.uploads(**value))
-    lines.append("a session's send limit")
-    exchange.respond(server, server)
-    handle = helper.start(
-        harness.source(), tus_resumable=harness.tus, session_options=harness.session(max_network_sends=2)
-    )
-    step(lines, "advance", handle.advance)
-    step(lines, "advance", handle.advance)
-    record(
-        lines,
-        "start without a send slot",
-        lambda: helper.start(
-            harness.source(), tus_resumable=harness.tus, session_options=harness.session(max_network_sends=0)
-        ),
-    )
     lines.append("defaults from the client")
     defaults = options.ProtocolClientOptions(
         defaults={"files.upload": harness.protocols.ProtocolDefaults(options=harness.uploads(chunk_bytes=2))}
@@ -1014,12 +1000,6 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
         exchange.respond(server, server.lost(5), server)
         partial = await finish.start(content, tus_resumable=harness.tus)
         await astep(lines, "advance with a forbidden partial commit", partial.advance)
-        exchange.respond(server, server)
-        async with await helper.start(
-            content, tus_resumable=harness.tus, session_options=harness.session(max_network_sends=2)
-        ) as limited:
-            await astep(lines, "advance", limited.advance)
-            await astep(lines, "advance past the send limit", limited.advance)
         exchange.respond(server)
         changing = io.BytesIO(_CONTENT)
         changed = await helper.start(changing, tus_resumable=harness.tus)
@@ -1254,7 +1234,7 @@ def uploads_oauth(package: ModuleType, lines: list[str]) -> None:
         token.release.set()
         try:
             work.result(timeout=30)
-        except harness.errors.ClientClosedError as error:
+        except harness.errors.ConfigurationError as error:
             lines.append(f"sync original failure: {type(error).__name__} cause={error.cause}")
     state = handle.checkpoint()
     lines.append(f"  handle {handle!r} token={len(token.methods)} resource={resource.methods}")
@@ -1316,7 +1296,7 @@ async def _async_completion_oauth(harness: _Uploads, lines: list[str]) -> None:
     token.release.set()
     try:
         await asyncio.wait_for(work, timeout=30)
-    except harness.errors.ClientClosedError as error:
+    except harness.errors.ConfigurationError as error:
         lines.append(f"async original failure: {type(error).__name__} cause={error.cause}")
     state = handle.checkpoint()
     lines.append(f"  handle {handle!r} token={len(token.methods)} resource={resource.methods}")

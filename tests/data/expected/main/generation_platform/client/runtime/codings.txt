@@ -19,22 +19,22 @@
   coding members = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding layers ! ProtocolSizeError: ProtocolSizeError(operation_id='getPet', call_id='<call>', kind='content_layers', limit=2, observed=3) [operation_id='getPet', kind='content_layers', unit='items', limit=2] protocol_size_error
+  coding layers ! ProtocolSizeError: ProtocolSizeError(operation_id='getPet', call_id='<call>', kind='content_layers', limit=2, observed=3) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='content_layers', unit='items', limit=2, observed=3] protocol_size_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding unknown ! UnsupportedContentCodingError: UnsupportedContentCodingError(operation_id='getPet', call_id='<call>') [operation_id='getPet', coding='br'] unsupported_content_coding_error
+  coding unknown ! UnsupportedContentCodingError: UnsupportedContentCodingError(operation_id='getPet', call_id='<call>') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, coding='br'] unsupported_content_coding_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding truncated ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed'] protocol_data_error
+  coding truncated ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding corrupt ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', cause=error('Error -3 while decompressing data: incorrect data check')] protocol_data_error
+  coding corrupt ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=error('Error -3 while decompressing data: incorrect data check')] protocol_data_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding deflate trailing ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed'] protocol_data_error
+  coding deflate trailing ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding gzip trailing ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', cause=error('Error -3 while decompressing data: incorrect header check')] protocol_data_error
+  coding gzip trailing ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=error('Error -3 while decompressing data: incorrect header check')] protocol_data_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   coding bomb = 'DecompressionLimitError layer=0 ratio=100.0 over=True'
@@ -50,17 +50,17 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  coding error ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False] internal_server_error
+  coding error ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  coding error truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=b'{"code": 7, "message": "boom"}', body_bytes=b'{"code": 7, "message": "boom"}', truncated=True, cause=ProtocolDataError()] internal_server_error
+  coding error truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{"code": 7, "message": "boom"}', body_bytes=b'{"code": 7, "message": "boom"}', truncated=True, cause=ProtocolDataError()] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  coding redirect ! APIStatusError: APIStatusError(status_code=302, operation_id='listPets', call_id='<call>', reason='unexpected_status') [operation_id='listPets', status_code=302, body=b'', body_bytes=b'', truncated=True, cause=UnsupportedContentCodingError()] unexpected_status
+  coding redirect ! APIStatusError: APIStatusError(status_code=302, operation_id='listPets', call_id='<call>', reason='unexpected_status') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=302, body=b'', body_bytes=b'', truncated=True, cause=UnsupportedContentCodingError()] unexpected_status
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   coding bodyless = None
@@ -72,4 +72,4 @@
   async coding identity = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async coding truncated ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed'] protocol_data_error
+  async coding truncated ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error

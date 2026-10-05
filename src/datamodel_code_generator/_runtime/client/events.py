@@ -1,7 +1,7 @@
 """The events one call's hooks observe, and how a failing hook ends the call.
 
 Every event reaches every hook in order. A hook failure stops the call's further network actions: it raises as a
-`HookExecutionError`, unless the call already failed, when it joins that failure's secondary errors.
+SDKError with the reason `hook_failed`, unless the call already failed, when it joins that failure's secondary errors.
 """
 
 from __future__ import annotations
@@ -14,13 +14,15 @@ from urllib.parse import urlsplit
 
 from ..model_codecs.unset import UNSET, Unset
 from .errors import (
+    APIConnectionError,
     CleanupError,
     ConfigurationError,
     DeliveryState,
-    HookExecutionError,
     RequestCancelledError,
-    TransportError,
+    SDKError,
     add_secondary,
+    is_hook_failure,
+    is_transport,
 )
 from .hooks import CallEvent
 
@@ -53,7 +55,7 @@ def _interrupted(primary: BaseException | None, interruption: BaseException) -> 
 
 
 class CallEvents:
-    """The hooks of one call and the facts its events share: its identifiers, path template, origin, and counters."""
+    """The hooks of one call and the facts its events share: its identifiers, path template, origin, and attempts."""
 
     __slots__ = (
         "attempt",
@@ -115,7 +117,7 @@ class CallEvents:
         duration: float | None = None,
         outcome: CallOutcome | None = None,
         options: Mapping[str, JSONScalar] | None = None,
-        failure: TransportError | None = None,
+        failure: APIConnectionError | None = None,
         retry_reason: RetryReason | None = None,
     ) -> CallEvent:
         """Return one event of this call with the facts it shares and the ones given."""
@@ -135,16 +137,7 @@ class CallEvents:
             duration=duration,
             request_id=None if info is None else info.request_id,
             outcome=outcome,
-            attempts=self.call.resource_attempt_count,
-            sends=self.call.network_send_count,
-            resource_attempt_count=self.call.resource_attempt_count,
-            redirect_count=self.call.redirect_count,
-            auth_exchange_count=self.call.auth_exchange_count,
-            network_send_count=self.call.network_send_count,
-            network_send_budget_used=self.call.network_send_budget_used,
-            auth_exchange_budget_used=self.call.auth_exchange_budget_used,
-            auth_refresh_ids=self.call.auth_refresh_ids,
-            auth_refresh_pending=self.call.auth_refresh_pending,
+            attempt_count=self.call.attempt_count,
             options=options,
             context=self.context,
         )
@@ -152,12 +145,12 @@ class CallEvents:
     def emit(self, event: CallEvent) -> None:
         """Pass an event to every hook, then raise the failure of those that raised."""
         if failures := self.notify(event):
-            raise self.failed(event.name, failures)
+            raise self.failed(failures)
 
     async def aemit(self, event: CallEvent) -> None:
         """Pass an event to every hook, awaiting the asynchronous ones, then raise the failure of those that raised."""
         if failures := await self.anotify(event):
-            raise self.failed(event.name, failures)
+            raise self.failed(failures)
 
     def notify(
         self, event: CallEvent, *, terminal: bool = False, error: BaseException | None = None
@@ -212,14 +205,16 @@ class CallEvents:
                         add_secondary(interrupted, failure)
                     raise interrupted
                 if failures:
-                    raise self.failed(event.name, failures)
+                    raise self.failed(failures)
 
             try:
                 await self.call.cleanup(notify, wrap_errors=False)
-            except HookExecutionError:
-                return failures
             except CleanupError as cleanup_error:
                 return [*failures, cleanup_error]
+            except SDKError as hook_error:
+                if not is_hook_failure(hook_error):
+                    raise
+                return failures
         else:
             try:
                 await self.call.bounded(lambda: self._anotified(event, failures, terminal=False))
@@ -250,16 +245,13 @@ class CallEvents:
                 self.call.check()
         return interruption
 
-    def failed(
-        self, name: EventName, failures: list[Exception], completed: Response[object] | Unset = UNSET
-    ) -> HookExecutionError[object]:
+    def failed(self, failures: list[Exception], completed: Response[object] | Unset = UNSET) -> SDKError:
         """Return the error of the hooks that failed on an event, keeping a success the call completed."""
         return self.call.snapshot_error(
-            HookExecutionError(
-                event_name=name,
-                sent=self.sent,
+            SDKError(
+                reason="hook_failed",
                 delivery_state=self.delivery,
-                completed_result=completed,
+                completed_result=None if isinstance(completed, Unset) else completed,
                 operation_id=self.operation_id,
                 call_id=self.call_id,
                 info=self.info,
@@ -279,7 +271,6 @@ class CallEvents:
                 "max_stream_bytes": settings.max_stream_bytes,
                 "cleanup_timeout": settings.cleanup_timeout,
                 "total_timeout": settings.total_timeout,
-                "max_network_sends": self.call.send_limit,
                 "stream_idle_timeout": settings.stream_idle_timeout,
                 "stream_total_timeout": settings.stream_total_timeout,
             }),
@@ -317,7 +308,7 @@ class CallEvents:
         """Close one prepared candidate after its response and permit have been released."""
         events: list[CallEvent] = []
         status = None if self.info is None else self.info.status_code
-        if isinstance(error, TransportError):
+        if is_transport(error):
             events.append(self.event("transport_failure", sent=self.attempt_sent, failure=error))
         if self.attempt is not None:
             events.append(
@@ -378,23 +369,23 @@ class CallEvents:
         primary, failed = self._notified_end(pending, error)
         if primary is not None and primary is not error:
             if failed is not None:
-                for failure in failed[1]:
+                for failure in failed:
                     add_secondary(primary, failure)
             raise primary
         if failed is not None:
             self.call.retry_blocked = True
             if error is None:
-                raise self.failed(*failed, completed)
-            for failure in failed[1]:
+                raise self.failed(failed, completed)
+            for failure in failed:
                 add_secondary(error, failure)
         if handed_off:
             self.handed = self.monotonic()
 
     def _notified_end(
         self, pending: list[CallEvent], error: BaseException | None
-    ) -> tuple[BaseException | None, tuple[EventName, list[Exception]] | None]:
+    ) -> tuple[BaseException | None, list[Exception] | None]:
         """Deliver every terminal event while retaining the first native interruption and all ordinary failures."""
-        failed: tuple[EventName, list[Exception]] | None = None
+        failed: list[Exception] | None = None
         primary = error
         for pending_event in pending:
             event = pending_event
@@ -406,9 +397,9 @@ class CallEvents:
                 primary = _interrupted(primary, interrupted)
             if failures:
                 if failed is None:
-                    failed = (event.name, failures)
+                    failed = failures
                 else:
-                    failed[1].extend(failures)
+                    failed.extend(failures)
         return primary, failed
 
     async def afinish(
@@ -445,7 +436,7 @@ class CallEvents:
 
         async def notify() -> None:
             primary = error
-            failed: tuple[EventName, list[Exception]] | None = None
+            failed: list[Exception] | None = None
             for pending in events:
                 event = pending
                 if pending.name == "call_end":
@@ -457,16 +448,16 @@ class CallEvents:
                 if failures:
                     self.call.retry_blocked = True
                     if failed is None:
-                        failed = (event.name, failures)
+                        failed = failures
                     else:
-                        failed[1].extend(failures)
+                        failed.extend(failures)
             if primary is not None and failed is not None:
-                for failure in failed[1]:
+                for failure in failed:
                     add_secondary(primary, failure)
             if primary is not error and primary is not None:
                 raise primary
             if error is None and failed is not None:
-                raise self.failed(*failed, completed)
+                raise self.failed(failed, completed)
 
         await self.call.cleanup(notify, error=error, wrap_errors=False)
 
@@ -520,8 +511,7 @@ class CallEvents:
     def _stream_failed(self, error: BaseException | None, failures: list[Exception]) -> None:
         """Raise the failure of the hooks that failed on a stream's end, or keep it beside the stream's own failure."""
         if error is None:
-            name: EventName = "stream_end"
-            raise self.failed(name, failures)
+            raise self.failed(failures)
         for failure in failures:
             add_secondary(error, failure)
 
@@ -532,7 +522,7 @@ def auth_ended(events: CallEvents, started: float, error: BaseException | None =
     if error is None:
         events.emit(event)
     elif failures := events.notify(event, terminal=True, error=error):
-        add_secondary(error, events.failed(event.name, failures))
+        add_secondary(error, events.failed(failures))
 
 
 async def aauth_ended(events: CallEvents, started: float, error: BaseException | None = None) -> None:
@@ -541,7 +531,7 @@ async def aauth_ended(events: CallEvents, started: float, error: BaseException |
     if error is None:
         await events.aemit(event)
     elif failures := await events.anotify(event, terminal=True, error=error):
-        add_secondary(error, events.failed(event.name, failures))
+        add_secondary(error, events.failed(failures))
 
 
 def call_events(
@@ -552,7 +542,7 @@ def call_events(
         return None
     if not asynchronous and settings.async_hooks:
         raise ConfigurationError(
-            field_path=("hooks",), condition="async_hook", operation_id=call.operation_id, call_id=call.call_id
+            field_path=("hooks",), reason="async_hook", operation_id=call.operation_id, call_id=call.call_id
         )
     return CallEvents(hooks, settings, call=call, path=path)
 

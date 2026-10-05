@@ -35,16 +35,17 @@ from pets.bodies import (
 )
 from pets.model_codecs import JSONValue, WireValue
 from pets.errors import (
+    APIConnectionError,
     APIStatusError,
-    BudgetExceededError,
-    DeadlineExceededError,
+    APITimeoutError,
+    AuthError,
+    AuthReason,
+    ConfigurationError,
+    DecodeError,
     DeliveryState,
-    HookExecutionError,
-    LimiterExecutionError,
     NotFoundError,
-    PhaseTimeoutError,
-    RedirectPolicyError,
     RequestCancelledError,
+    RetryStopReason,
     SDKError,
 )
 from pets.hooks import AsyncLimiter, AsyncPermit, CallEvent, Limiter, LimiterContext, Permit
@@ -298,9 +299,9 @@ def hooks(client: Client, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
     Client(options=options)
     try:
         client.pets.get_pet(pet_id=pet, options=RequestOptions(hooks=(), context={"retry": 2}))
-    except HookExecutionError as error:
-        assert_type(error.require_result().info.status_code, int)
-        assert_type(error.has_completed_result, bool)
+    except SDKError as error:
+        assert_type(error.completed_result, Response[object] | None)
+        assert_type(error.reason, str | None)
 
 
 def timing_options(client: Client, context: AttemptIOContext) -> None:
@@ -322,7 +323,6 @@ def timing_options(client: Client, context: AttemptIOContext) -> None:
         total_timeout=None,
         deadline=deadline,
         cancel_token=token,
-        max_network_sends=1,
         stream_idle_timeout=60,
         stream_total_timeout=None,
         cleanup_timeout=5,
@@ -334,11 +334,10 @@ def timing_options(client: Client, context: AttemptIOContext) -> None:
     assert_type(configured.deadline, Deadline | Unset | None)
     assert_type(configured.cancel_token, CancelToken | Unset | None)
     assert_type(configured.limiter, Limiter | AsyncLimiter | Unset | None)
-    assert_type(configured.max_network_sends, int | Unset | None)
     assert_type(configured.stream_idle_timeout, float | Unset | None)
     assert_type(configured.stream_total_timeout, float | Unset | None)
     Client(options=configured)
-    assert_type(client.with_options(RequestOptions(timeout=None, total_timeout=0, max_network_sends=None)), Client)
+    assert_type(client.with_options(RequestOptions(timeout=None, total_timeout=0)), Client)
     client.with_options(RequestOptions(deadline=None, cancel_token=None, limiter=None))
     token.cancel()
 
@@ -375,7 +374,7 @@ def cancel_before_send(client: Client, url: str) -> int:
     try:
         client.request_raw("GET", url, options=RequestOptions(cancel_token=token))
     except RequestCancelledError as error:
-        return error.network_send_count
+        return error.attempt_count
     raise RuntimeError("The cancelled call unexpectedly completed")
 
 
@@ -440,50 +439,32 @@ async def async_limiter_contract(limiter: AsyncLimiter, context: LimiterContext)
     AsyncClient(options=ClientOptions(limiter=limiter))
 
 
-def error_counters(error: SDKError, event: CallEvent, info: ResponseInfo) -> None:
-    assert_type(error.resource_attempt_count, int)
-    assert_type(error.redirect_count, int)
-    assert_type(error.auth_exchange_count, int)
-    assert_type(error.network_send_count, int)
-    assert_type(error.network_send_budget_used, int)
-    assert_type(error.auth_exchange_budget_used, int)
-    assert_type(error.auth_refresh_ids, tuple[str, ...])
-    assert_type(error.auth_refresh_pending, int)
-    assert_type(error.wire_send_count, int | None)
-    assert_type(event.resource_attempt_count, int)
-    assert_type(event.network_send_count, int)
-    assert_type(event.network_send_budget_used, int)
-    assert_type(event.auth_refresh_ids, tuple[str, ...])
-    assert_type(info.resource_attempt_count, int)
-    assert_type(info.network_send_count, int)
-    assert_type(info.network_send_budget_used, int)
-    assert_type(info.wire_send_count, int | None)
-    phase = PhaseTimeoutError(effective_timeout=1, phase="connect", delivery_state=DeliveryState.NOT_SENT)
-    assert_type(phase.effective_timeout, float)
-    deadline = DeadlineExceededError(deadline_at=0, elapsed=1, delivery_state=DeliveryState.NOT_SENT)
-    assert_type(deadline.deadline_at, float)
-    assert_type(deadline.elapsed, float)
+def error_measurements(error: SDKError, event: CallEvent, info: ResponseInfo) -> None:
+    assert_type(error.attempt_count, int)
+    assert_type(error.elapsed, float)
+    assert_type(error.request_id, str | None)
+    assert_type(error.delivery_state, DeliveryState)
+    assert_type(event.attempt_count, int)
+    assert_type(info.attempt_count, int)
+    assert_type(info.elapsed, float)
+    phase = APITimeoutError(effective_timeout=1, phase="connect", delivery_state=DeliveryState.NOT_SENT)
+    assert_type(phase.effective_timeout, float | None)
+    deadline = APITimeoutError(reason="deadline_exceeded", deadline_at=0, delivery_state=DeliveryState.NOT_SENT)
+    assert_type(deadline.deadline_at, float | None)
+    connection: APIConnectionError = deadline
+    assert_type(connection.retry_stop_reason, RetryStopReason | None)
     cancelled = RequestCancelledError(source="cancel_token", delivery_state=DeliveryState.NOT_SENT)
     assert_type(cancelled.source, Literal["cancel_token", "parent_cancel_token"])
-    budget = BudgetExceededError(budget_kind="network", limit=0, used=0)
-    assert_type(budget.limit, int)
-    assert_type(budget.used, int)
-    limiter = LimiterExecutionError(action="release")
-    assert_type(limiter.action, Literal["acquire", "release"])
-    PhaseTimeoutError(
-        effective_timeout=0.5,
-        phase="read",
-        delivery_state=DeliveryState.RESPONSE_STARTED,
-        resource_attempt_count=1,
-        network_send_count=1,
-        network_send_budget_used=1,
-        auth_refresh_ids=(),
-        wire_send_count=None,
-    )
-    redirect = RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info, body_available=False)
-    assert_type(redirect.body_available, Literal[False])
+    auth = AuthError(reason="oauth_error", status_code=400, oauth_error="invalid_grant")
+    assert_type(auth.reason, AuthReason)
+    assert_type(auth.status_code, int | None)
+    decoded = DecodeError(reason="unencodable", direction="request", location=("body", 0))
+    assert_type(decoded.location, tuple[str | int, ...])
+    redirect = ConfigurationError(field_path=("redirects",), reason="redirect_refused", info=info)
     assert_type(redirect.delivery_state, DeliveryState)
     assert_type(redirect.info, ResponseInfo | None)
+    status = NotFoundError(info=info, body=b"", body_bytes=b"")
+    assert_type(status.retry_stop_reason, RetryStopReason | None)
 
 
 def retry_options(client: Client) -> None:

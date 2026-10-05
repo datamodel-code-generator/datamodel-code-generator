@@ -21,20 +21,15 @@ if TYPE_CHECKING:
     from tests.data.python.client_runtime import Exchange
 
 _FIELDS: Final = (
+    "reason",
     "delivery_state",
     "phase",
     "status_code",
     "oauth_error",
-    "condition",
-    "timeout_kind",
-    "callback",
+    "effective_timeout",
     "field_path",
     "loop_mismatch",
-    "budget_kind",
-    "limit",
-    "used",
     "source",
-    "event_name",
 )
 
 

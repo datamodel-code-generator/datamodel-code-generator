@@ -10,7 +10,7 @@
   adapter traced = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
-  adapter transport error ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] transport_error
+  adapter transport error ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] api_connection_error
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   adapter bug ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=ValueError('adapter bug')] adapter_execution_error
@@ -41,7 +41,7 @@
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed
-  adapter close bug ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', cause=RuntimeError('close failed')] cleanup_error
+  adapter close bug ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('close failed')] cleanup_error
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed
@@ -67,15 +67,15 @@
   borrowed adapter left open
   adapter closed
   adapter closed
-  owned adapter close bug ! CleanupError: CleanupError(pending_calls=0, pending_leases=0) [cause=RuntimeError('adapter close failed')] cleanup_error
-  adapter and http_client ! ConfigurationError: ConfigurationError(field_path='transport_adapter', condition='conflicts_with_http_client') [field_path=('transport_adapter',), condition='conflicts_with_http_client'] configuration_error
-  adapter owned by ownership ! ConfigurationError: ConfigurationError(field_path='http_client_ownership', condition='conflicts_with_transport_adapter') [field_path=('http_client_ownership',), condition='conflicts_with_transport_adapter'] configuration_error
-  adapter type ! ConfigurationError: ConfigurationError(field_path='transport_adapter', condition='invalid_type') [field_path=('transport_adapter',), condition='invalid_type'] configuration_error
-  async adapter to sync client ! ConfigurationError: ConfigurationError(field_path='transport_adapter', condition='invalid_type') [field_path=('transport_adapter',), condition='invalid_type'] configuration_error
+  owned adapter close bug ! CleanupError: CleanupError(pending_calls=0, pending_leases=0) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('adapter close failed')] cleanup_error
+  adapter and http_client ! ConfigurationError: ConfigurationError(reason='conflicts_with_http_client', field_path='transport_adapter') [field_path=('transport_adapter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_http_client
+  adapter owned by ownership ! ConfigurationError: ConfigurationError(reason='conflicts_with_transport_adapter', field_path='http_client_ownership') [field_path=('http_client_ownership',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_transport_adapter
+  adapter type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='transport_adapter') [field_path=('transport_adapter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  async adapter to sync client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='transport_adapter') [field_path=('transport_adapter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   adapter capabilities ! AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error
-  sync adapter to async client ! ConfigurationError: ConfigurationError(field_path='transport_adapter', condition='invalid_type') [field_path=('transport_adapter',), condition='invalid_type'] configuration_error
-  async ownership ! ConfigurationError: ConfigurationError(field_path='http_client_ownership', condition='invalid_value') [field_path=('http_client_ownership',), condition='invalid_value'] configuration_error
-  async http_client ! ConfigurationError: ConfigurationError(field_path='http_client', condition='invalid_type') [field_path=('http_client',), condition='invalid_type'] configuration_error
+  sync adapter to async client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='transport_adapter') [field_path=('transport_adapter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  async ownership ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='http_client_ownership') [field_path=('http_client_ownership',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed
@@ -87,7 +87,7 @@
   async adapter traced = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
-  async adapter transport error ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] transport_error
+  async adapter transport error ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] api_connection_error
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   async adapter bug ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=ValueError('adapter bug')] adapter_execution_error
@@ -118,7 +118,7 @@
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed
-  async adapter close bug ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', cause=RuntimeError('close failed')] cleanup_error
+  async adapter close bug ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('close failed')] cleanup_error
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed
@@ -135,7 +135,7 @@
   < closed
   async adapter stop while reading propagated
   adapter closed
-  async owned adapter close bug ! CleanupError: CleanupError(pending_calls=0, pending_leases=0) [cause=RuntimeError('adapter close failed')] cleanup_error
+  async owned adapter close bug ! CleanupError: CleanupError(pending_calls=0, pending_leases=0) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('adapter close failed')] cleanup_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: café] b''
   unicode header = 200

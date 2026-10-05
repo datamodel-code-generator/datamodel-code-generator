@@ -206,16 +206,6 @@ def _limits(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
             getattr(error, "resume_state", None), pagination_options=protocols.PaginationOptions(max_pages=3)
         ),
     )
-    exchange.respond(user_page("1", next_cursor="a"))
-    sends = helper.iterate(session_options=options.SessionOptions(max_network_sends=1))
-    error = _failure(lambda: list(sends))
-    lines.append(f"  send limit ! {describe(error)} {_resume_state(error)}")
-    exchange.respond(user_page("2", next_cursor="b"))
-    budget = helper.resume(
-        getattr(error, "resume_state", None), session_options=options.SessionOptions(max_network_sends=1)
-    )
-    drained(lines, "new session budget", budget)
-    lines.append(f"    progress {progress(budget)}")
     exchange.respond(user_page("1", next_cursor="a"), user_page("2", next_cursor="a"))
     cycling = helper.iterate()
     error = _failure(lambda: list(cycling))

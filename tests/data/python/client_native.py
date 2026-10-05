@@ -32,15 +32,13 @@ def _details(value: object) -> str:
         return (
             f"{type(value).__name__} delivery={getattr(value, 'delivery_state', None)} "
             f"phase={getattr(value, 'phase', None)} stop={getattr(value, 'retry_stop_reason', None)} "
-            f"attempts={getattr(value, 'resource_attempt_count', None)} sends={getattr(value, 'network_send_count', None)} "
-            f"wire={getattr(value, 'wire_send_count', None)} status={None if info is None else info.status_code} "
-            f"body={getattr(value, 'body_available', None)} cause={type(getattr(value, 'cause', None)).__name__}"
+            f"attempts={getattr(value, 'attempt_count', None)} reason={getattr(value, 'reason', None)} "
+            f"status={None if info is None else info.status_code} cause={type(getattr(value, 'cause', None)).__name__}"
         )
     info = getattr(value, "info", None)
     return (
         f"{type(value).__name__} status={None if info is None else info.status_code} "
-        f"attempts={None if info is None else info.resource_attempt_count} "
-        f"sends={None if info is None else info.network_send_count} wire={None if info is None else info.wire_send_count}"
+        f"attempts={None if info is None else info.attempt_count}"
     )
 
 
@@ -300,22 +298,16 @@ def _refusal(package: ModuleType, options: ModuleType, lines: list[str], *, asyn
     mode = "async" if asynchronous else "sync"
     errors = importlib.import_module(f"{package.__name__}.errors")
     error_details: Callable[[Exception], str] = lambda error: (
-        "TransportError delivery=DeliveryState.NOT_SENT phase=connect "
-        "retry_outcome=permitted wire=0 status=None body=None cause=ConnectError"
+        "APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect "
+        "retry_outcome=permitted status=None cause=ConnectError"
         if (
-            type(error) is errors.TransportError
+            type(error) is errors.APIConnectionError
             and getattr(error, "delivery_state", None) is errors.DeliveryState.NOT_SENT
             and getattr(error, "phase", None) == "connect"
-            and getattr(error, "wire_send_count", None) == 0
             and getattr(error, "info", None) is None
-            and getattr(error, "body_available", None) is None
             and type(getattr(error, "cause", None)) is httpx2.ConnectError
-            and (
-                getattr(error, "retry_stop_reason", None),
-                getattr(error, "resource_attempt_count", None),
-                getattr(error, "network_send_count", None),
-            )
-            in (("transport_not_retryable", 1, 1), ("max_retries_exhausted", 3, 3))
+            and (getattr(error, "retry_stop_reason", None), getattr(error, "attempt_count", None))
+            in (("transport_not_retryable", 1), ("max_retries_exhausted", 3))
         )
         else _details(error)
     )
@@ -652,14 +644,14 @@ def _custom_failures(package: ModuleType, options: ModuleType, lines: list[str],
     transports = importlib.import_module(f"{package.__name__}.transports")
     mode = "async" if asynchronous else "sync"
     cases: list[tuple[str, Callable[[], BaseException]]] = [
-        ("read", lambda: errors.TransportError(phase="read", delivery_state=errors.DeliveryState.MAYBE_SENT)),
-        ("write", lambda: errors.TransportError(phase="write", delivery_state=errors.DeliveryState.MAYBE_SENT)),
-        ("pool", lambda: errors.TransportError(phase="pool", delivery_state=errors.DeliveryState.MAYBE_SENT)),
-        ("unknown", lambda: errors.TransportError(delivery_state=errors.DeliveryState.MAYBE_SENT)),
-        ("claimed-unsent", lambda: errors.TransportError(phase="read", delivery_state=errors.DeliveryState.NOT_SENT)),
+        ("read", lambda: errors.APIConnectionError(phase="read", delivery_state=errors.DeliveryState.MAYBE_SENT)),
+        ("write", lambda: errors.APIConnectionError(phase="write", delivery_state=errors.DeliveryState.MAYBE_SENT)),
+        ("pool", lambda: errors.APIConnectionError(phase="pool", delivery_state=errors.DeliveryState.MAYBE_SENT)),
+        ("unknown", lambda: errors.APIConnectionError(delivery_state=errors.DeliveryState.MAYBE_SENT)),
+        ("claimed-unsent", lambda: errors.APIConnectionError(phase="read", delivery_state=errors.DeliveryState.NOT_SENT)),
         (
             "connect-transient",
-            lambda: errors.TransportError(
+            lambda: errors.APIConnectionError(
                 phase="connect",
                 delivery_state=errors.DeliveryState.NOT_SENT,
                 cause=OSError(errno.ECONNREFUSED, "controlled"),
@@ -667,11 +659,11 @@ def _custom_failures(package: ModuleType, options: ModuleType, lines: list[str],
         ),
         (
             "connect-unknown",
-            lambda: errors.TransportError(phase="connect", delivery_state=errors.DeliveryState.NOT_SENT),
+            lambda: errors.APIConnectionError(phase="connect", delivery_state=errors.DeliveryState.NOT_SENT),
         ),
         (
             "connect-permanent",
-            lambda: errors.TransportError(
+            lambda: errors.APIConnectionError(
                 phase="connect",
                 delivery_state=errors.DeliveryState.NOT_SENT,
                 cause=socket.gaierror(socket.EAI_NONAME, "controlled"),
@@ -684,7 +676,7 @@ def _custom_failures(package: ModuleType, options: ModuleType, lines: list[str],
     for phase in ("connect", "read", "write", "pool"):
         cases.append((
             f"{phase}-timeout",
-            lambda phase=phase: errors.PhaseTimeoutError(
+            lambda phase=phase: errors.APITimeoutError(
                 phase=phase, effective_timeout=0.1, delivery_state=errors.DeliveryState.MAYBE_SENT
             ),
         ))
@@ -708,7 +700,7 @@ def _custom_failures(package: ModuleType, options: ModuleType, lines: list[str],
     for deadline in (False, True):
         adapter = (_AsyncCustomFailure if asynchronous else _CustomFailure)(
             transports,
-            lambda: errors.PhaseTimeoutError(
+            lambda: errors.APITimeoutError(
                 phase="pool", effective_timeout=1, delivery_state=errors.DeliveryState.NOT_SENT
             ),
         )

@@ -17,7 +17,6 @@ from tests.data.python.client_runtime import (
     describe,
     injected,
     json_response,
-    raw_response,
     record,
     run,
 )
@@ -129,7 +128,7 @@ def pagination_sessions(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
         _options(harness, api, lines)
-        _sends(harness, api, exchange, lines)
+        _status_errors(harness, api, exchange, lines)
         _deadlines(harness, api, exchange, lines)
         _failures(harness, api, exchange, lines)
         _concurrency(harness, api, exchange, lines)
@@ -159,35 +158,10 @@ def _options(harness: Harness, api: Any, lines: list[str]) -> None:
         record(lines, "page with a fixed key from client options", keyed.protocols.users.all.page)
 
 
-def _sends(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Admit a page only while its session has a send slot, and stop a retry or a redirect without one."""
-    options = harness.options
+def _status_errors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Raise a page's final error status after its retries and fail the pager with it."""
+    del harness
     helper = api.protocols.users.all
-
-    def sends(limit: int | None, **settings: Any) -> Any:
-        return helper.iterate(session_options=options.SessionOptions(max_network_sends=limit), **settings)
-
-    pager = sends(0)
-    drained(lines, "no send slot", pager)
-    lines.append(f"    progress {progress(pager)} {_session(_failure(lambda: next(pager)))}")
-    exchange.respond(users("1", cursor="a"))
-    pager = sends(1)
-    drained(lines, "one send slot", pager)
-    lines.append(f"    progress {progress(pager)}")
-    exchange.respond(json_response(503, {"message": "busy"}))
-    error = _failure(lambda: next(sends(1)))
-    lines.append(f"  retry without a send slot ! {describe(error)} stop={getattr(error, 'retry_stop_reason', None)}")
-    redirects = options.RequestOptions(redirects=options.RedirectOptions(enabled=True))
-    exchange.respond(raw_response(302, b"", Location="https://api.example.com/users?moved=1"))
-    error = _failure(lambda: next(sends(1, options=redirects)))
-    lines.append(
-        f"  redirect without a send slot ! {describe(error)} cause={type(getattr(error, 'cause', None)).__name__} "
-        f"counters={getattr(error, 'network_send_count', None)}/{getattr(error, 'network_send_budget_used', None)} "
-        f"{_session(error)}"
-    )
-    exchange.respond(users("1", cursor="a"), users("2"))
-    drained(lines, "no send limit", sends(None))
-    drained(lines, "call without a send slot", helper.iterate(options=options.RequestOptions(max_network_sends=0)))
     exchange.respond(
         json_response(500, {"message": "down"}),
         json_response(500, {"message": "down"}),
@@ -195,8 +169,8 @@ def _sends(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     )
     pager = helper.iterate()
     error = _failure(lambda: next(pager))
-    lines.append(f"  typed error after retries ! {describe(error)} body={getattr(error, 'body', None)!r}")
-    record(lines, "after the typed error", lambda: next(pager))
+    lines.append(f"  status error after retries ! {describe(error)} body={getattr(error, 'body', None)!r}")
+    record(lines, "after the status error", lambda: next(pager))
 
 
 def _deadlines(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -275,7 +249,6 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
     for label, pagination, session in (
         ("default traversal", None, None),
         ("explicit page budget", protocols.PaginationOptions(max_pages=values["explicit_pages"]), None),
-        ("explicit send budget", None, options.SessionOptions(max_network_sends=values["explicit_sends"])),
     ):
         quiet = Exchange([])
         with quiet.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
@@ -330,7 +303,7 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
             lines.append(f"    progress {progress(pager)}")
             pager.close()
     defaults = protocols.ProtocolDefaults(
-        options=protocols.PaginationOptions(max_items=1), session=options.SessionOptions(max_network_sends=2)
+        options=protocols.PaginationOptions(max_items=1), session=options.SessionOptions(total_timeout=60)
     )
     for label, entries in (
         ("unknown helper", {"users.everyone": defaults}),
@@ -367,17 +340,6 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
         )
         exchange.respond(users("1", "2"))
         drained(lines, "call item limit", helper.iterate(pagination_options=protocols.PaginationOptions(max_items=3)))
-        unlimited = protocols.PaginationOptions(max_items=None)
-        exchange.respond(users("1", cursor="a"), users("2", cursor="b"))
-        drained(lines, "default send limit", helper.iterate(pagination_options=unlimited).iter_pages())
-        exchange.respond(users("1", cursor="a"), users("2", cursor="b"), users("3"))
-        drained(
-            lines,
-            "call send limit",
-            helper.iterate(
-                pagination_options=unlimited, session_options=options.SessionOptions(max_network_sends=None)
-            ).iter_pages(),
-        )
         exchange.respond(users("1", "2"))
         drained(lines, "helper without defaults", api.protocols.users.by_header.iterate())
         exchange.respond(users("1", "2"))
@@ -449,7 +411,6 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: 
     for label, pagination, session in (
         ("default traversal", None, None),
         ("explicit page budget", protocols.PaginationOptions(max_pages=values["explicit_pages"]), None),
-        ("explicit send budget", None, options.SessionOptions(max_network_sends=values["explicit_sends"])),
     ):
         quiet = Exchange([])
         async with (
@@ -518,19 +479,6 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: 
         exchange.respond(users("1", cursor="a"), users("2"))
         await adrained(lines, "async hooked items", helper.iterate())
         lines.append(f"  async sessions {len(events.sessions())} named={None not in limiter.sessions}")
-        redirects = options.RequestOptions(redirects=options.RedirectOptions(enabled=True))
-        exchange.respond(raw_response(302, b"", Location="https://api.example.com/users?moved=1"))
-        await adrained(
-            lines,
-            "async redirect without a send slot",
-            helper.iterate(session_options=options.SessionOptions(max_network_sends=1), options=redirects),
-        )
-        exchange.respond(raw_response(302, b"", Location="https://api.example.com/users?moved=1"))
-        await arecord(
-            lines,
-            "async page redirected without a send slot",
-            lambda: helper.page(session_options=options.SessionOptions(max_network_sends=1), options=redirects),
-        )
         exchange.respond(json_response(200, {"data": [{"id": "1"}]}))
         await adrained(lines, "async failed page", api.protocols.loose.all.iterate())
         pager = helper.iterate()
@@ -553,7 +501,7 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: 
         await adrained(lines, "async after the cancellation", cancelled)
 
 
-_AUTH_ROWS: Final = (("pages share one token", None, (users("1", cursor="a"), users("2"))),)
+_AUTH_ROWS: Final = (("pages share one token", (users("1", cursor="a"), users("2"))),)
 
 
 def _auth_line(pager: Any, adapter: Adapter) -> str:
@@ -567,7 +515,7 @@ def pagination_auth(package: ModuleType, lines: list[str]) -> None:
         importlib.import_module(f"{package.__name__}.{name}") for name in ("auth", "transports", "responses")
     )
     exchange = Exchange(lines)
-    for label, sends, pages in _AUTH_ROWS:
+    for label, pages in _AUTH_ROWS:
         tokens = (Response(responses, 200, _issued("token-1")), Response(responses, 200, _issued("token-2")))
         adapter = Adapter(transports, *tokens)
         provider = auth.ClientCredentialsProvider(
@@ -579,9 +527,7 @@ def pagination_auth(package: ModuleType, lines: list[str]) -> None:
         settings = harness.client_options(auth=auth.AuthConfig({"oauth": provider}))
         with provider, exchange.client() as native, package.Client(http_client=native, options=settings) as api:
             exchange.respond(*pages)
-            pager = api.protocols.secure.users.iterate(
-                session_options=harness.options.SessionOptions(max_network_sends=sends)
-            )
+            pager = api.protocols.secure.users.iterate(session_options=harness.options.SessionOptions())
             drained(lines, label, pager)
             lines.append(_auth_line(pager, adapter))
     run(lambda: _async_auth(harness, auth, transports, responses, lines))
@@ -591,7 +537,7 @@ async def _async_auth(
     harness: Harness, auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
 ) -> None:
     exchange = Exchange(lines)
-    for label, sends, pages in _AUTH_ROWS:
+    for label, pages in _AUTH_ROWS:
         tokens = (AsyncResponse(responses, 200, _issued("token-1")), AsyncResponse(responses, 200, _issued("token-2")))
         adapter = AsyncAdapter(transports, *tokens)
         provider = auth.AsyncClientCredentialsProvider(
@@ -606,9 +552,7 @@ async def _async_auth(
             harness.package.AsyncClient(http_client=native, options=settings) as api,
         ):
             exchange.respond(*pages)
-            pager = api.protocols.secure.users.iterate(
-                session_options=harness.options.SessionOptions(max_network_sends=sends)
-            )
+            pager = api.protocols.secure.users.iterate(session_options=harness.options.SessionOptions())
             await adrained(lines, f"async {label}", pager)
             lines.append(_auth_line(pager, adapter))
         await provider.aclose()

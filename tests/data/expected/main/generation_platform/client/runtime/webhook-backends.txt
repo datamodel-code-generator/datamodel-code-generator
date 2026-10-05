@@ -2,24 +2,24 @@
   standard.message = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   callbacks.delivered = Delivery Delivery(id='d-1') delivery_id=None timestamp=None matched_key_id='active'
   shapes.drawn = Shape Shape(root=Circle(radius=1.5)) delivery_id=None timestamp=None matched_key_id='active'
-  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value'] protocol_data_error
+  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
 # webhooks pydantic_v2.dataclass
   standard.message = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   callbacks.delivered = Delivery Delivery(id='d-1') delivery_id=None timestamp=None matched_key_id='active'
   shapes.drawn = Circle Circle(radius=1.5) delivery_id=None timestamp=None matched_key_id='active'
-  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value'] protocol_data_error
+  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
 # webhooks dataclasses.dataclass
   standard.message = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   callbacks.delivered = Delivery Delivery(id='d-1') delivery_id=None timestamp=None matched_key_id='active'
   shapes.drawn = Circle Circle(radius=1.5) delivery_id=None timestamp=None matched_key_id='active'
-  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value'] protocol_data_error
+  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
 # webhooks typing.TypedDict
   standard.message = dict {'test': 2432232314} delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   callbacks.delivered = dict {'id': 'd-1'} delivery_id=None timestamp=None matched_key_id='active'
   shapes.drawn = dict {'radius': 1.5} delivery_id=None timestamp=None matched_key_id='active'
-  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value'] protocol_data_error
+  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
 # webhooks msgspec.Struct
   standard.message = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   callbacks.delivered = Delivery Delivery(id='d-1') delivery_id=None timestamp=None matched_key_id='active'
   shapes.drawn = Circle Circle(radius=1.5) delivery_id=None timestamp=None matched_key_id='active'
-  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value'] protocol_data_error
+  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error

@@ -23,61 +23,61 @@
   empty URL ['1']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing URL without its end [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/maybe_next')] protocol_data_error
+  missing URL without its end [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/maybe_next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  integer URL [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/loose_next')] protocol_data_error
+  integer URL [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/loose_next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  object URL [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/loose_next')] protocol_data_error
+  object URL [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/loose_next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  fragment [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  fragment [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  user information [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  user information [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  empty user information [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  empty user information [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  ftp scheme [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  ftp scheme [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  mailto scheme [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  mailto scheme [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  space [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next')] protocol_data_error
+  space [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  non-ASCII [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next')] protocol_data_error
+  non-ASCII [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  bad escape [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next')] protocol_data_error
+  bad escape [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  bad port [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  bad port [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  bracket outside a host [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next')] protocol_data_error
+  bracket outside a host [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  IPv6 host [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  IPv6 host [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  other host [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  other host [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  plain HTTP [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  plain HTTP [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  other port [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  other port [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  oversized [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='cursor', limit=8192, observed=8235) [operation_id='listUsers', kind='cursor', unit='bytes', limit=8192] protocol_size_error
+  oversized [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='cursor', limit=8192, observed=8235) [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='cursor', unit='bytes', limit=8192, observed=8235] protocol_size_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resolved URL over the cursor size [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='cursor', limit=40, observed=50) [operation_id='listUsers', kind='cursor', unit='bytes', limit=40] protocol_size_error
+  resolved URL over the cursor size [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='cursor', limit=40, observed=50) [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='cursor', unit='bytes', limit=40, observed=50] protocol_size_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/
@@ -88,7 +88,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  relative path growing past 8 KiB ['0', '1', '2', '3'] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='cursor', limit=8192, observed=10032) [operation_id='listUsers', kind='cursor', unit='bytes', limit=8192] protocol_size_error
+  relative path growing past 8 KiB ['0', '1', '2', '3'] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='cursor', limit=8192, observed=10032) [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='cursor', unit='bytes', limit=8192, observed=10032] protocol_size_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?page=2
@@ -158,31 +158,31 @@
   empty field ['1']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  two next links [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='inconsistent') [operation_id='listUsers', condition='inconsistent', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  two next links [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='inconsistent') [operation_id='listUsers', condition='inconsistent', location=HeaderSelector(name='link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  two next fields [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='inconsistent') [operation_id='listUsers', condition='inconsistent', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  two next fields [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='inconsistent') [operation_id='listUsers', condition='inconsistent', location=HeaderSelector(name='link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  unbracketed target [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  unbracketed target [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  unterminated quote [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  unterminated quote [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing comma [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  missing comma [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  parameter without name [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  parameter without name [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  space in target [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  space in target [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  fragment in target [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  fragment in target [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=HeaderSelector(name='link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  other origin [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  other origin [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=HeaderSelector(name='link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?page=2
@@ -190,7 +190,7 @@
   extension relation ['1', '2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  Link fields over the cursor size [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='headers', limit=48, observed=50) [operation_id='listUsers', kind='headers', unit='bytes', limit=48] protocol_size_error
+  Link fields over the cursor size [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='headers', limit=48, observed=50) [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='headers', unit='bytes', limit=48, observed=50] protocol_size_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: mine] b''
   > GET https://api.example.com/v1/users?page=2
@@ -216,26 +216,26 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=b
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  repeated URL ['1', '2', '3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=2, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next')] pagination_cycle_error
+  repeated URL ['1', '2', '3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=2, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] pagination_cycle_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  repeated URL spelled absolutely ['1', '2'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next')] pagination_cycle_error
+  repeated URL spelled absolutely ['1', '2'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] pagination_cycle_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  own URL ['1'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next')] pagination_cycle_error
+  own URL ['1'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] pagination_cycle_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  empty reference ['1'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next')] pagination_cycle_error
+  empty reference ['1'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] pagination_cycle_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  first followed page = [1] continuation=Continuation(kind='next_url') status=200 sends=1
+  first followed page = [1] continuation=Continuation(kind='next_url') status=200 attempts=1
   > GET https://api.example.com/v1/users?cursor=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  next followed page = [2] continuation=None status=200 sends=1
+  next followed page = [2] continuation=None status=200 attempts=1
   after the last followed page = None
-  next followed page at another server ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Next', occurrence='single')] protocol_data_error
+  next followed page at another server ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Next', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, authorization: Basic c2VjcmV0] b''
   > GET https://other.example.com/v1/users?cursor=2
@@ -244,7 +244,7 @@
     [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/users?cursor=4
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, authorization: Basic c2VjcmV0] b''
-  allowed origin and back ['1', '2', '3'] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  allowed origin and back ['1', '2', '3'] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: k, authorization: Basic c2VjcmV0] b''
   > GET https://other.example.com/v1/users?cursor=2
@@ -259,7 +259,7 @@
   same origin bearer ['1', '2']
   > GET https://api.example.com/v1/secure/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
-  bearer the auth keeps from another origin ['1'] ! AuthConfigurationError: AuthConfigurationError(operation_id='listSecureUsers', call_id='<call>', condition='origin_denied') [operation_id='listSecureUsers', field_path=('auth', 'allowed_origins'), condition='origin_denied'] auth_configuration_error
+  bearer the auth keeps from another origin ['1'] ! ConfigurationError: ConfigurationError(operation_id='listSecureUsers', call_id='<call>', reason='origin_denied', field_path='auth.allowed_origins') [operation_id='listSecureUsers', field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] origin_denied
   > GET https://api.example.com/v1/secure/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   > GET https://other.example.com/secure/users?page=2
@@ -303,13 +303,13 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async repeated link ['1', '2'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=HeaderSelector(name='link', occurrence='all')] pagination_cycle_error
+  async repeated link ['1', '2'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=HeaderSelector(name='link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] pagination_cycle_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async first linked page = [1] continuation=Continuation(kind='link') status=200 sends=1
+  async first linked page = [1] continuation=Continuation(kind='link') status=200 attempts=1
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async next linked page = [2] continuation=None status=200 sends=1
+  async next linked page = [2] continuation=None status=200 attempts=1
   async after the last linked page = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, authorization: Basic c2VjcmV0] b''
@@ -319,7 +319,7 @@
     [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   > GET https://api.example.com/v1/users?cursor=4
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, authorization: Basic c2VjcmV0] b''
-  async allowed origin and back ['1', '2', '3'] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  async allowed origin and back ['1', '2', '3'] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: k, authorization: Basic c2VjcmV0] b''
   > GET https://other.example.com/v1/users?cursor=2
@@ -334,7 +334,7 @@
   async same origin bearer ['1', '2']
   > GET https://api.example.com/v1/secure/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
-  async bearer the auth keeps from another origin ['1'] ! AuthConfigurationError: AuthConfigurationError(operation_id='listSecureUsers', call_id='<call>', condition='origin_denied') [operation_id='listSecureUsers', field_path=('auth', 'allowed_origins'), condition='origin_denied'] auth_configuration_error
+  async bearer the auth keeps from another origin ['1'] ! ConfigurationError: ConfigurationError(operation_id='listSecureUsers', call_id='<call>', reason='origin_denied', field_path='auth.allowed_origins') [operation_id='listSecureUsers', field_path=('auth', 'allowed_origins'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] origin_denied
   > GET https://api.example.com/v1/secure/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   > GET https://other.example.com/secure/users?page=2

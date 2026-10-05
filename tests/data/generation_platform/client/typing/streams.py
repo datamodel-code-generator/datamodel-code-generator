@@ -25,7 +25,7 @@ def events(client: Client, query: FeedQuery) -> None:
     stream = client.protocols.events.messages.open(
         stream_options=StreamOptions(idle_timeout=5, max_event_bytes=1024),
         options=RequestOptions(),
-        session_options=SessionOptions(max_network_sends=2),
+        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(stream, EventStream[Message])
     events: Iterator[StreamEvent[Message]] = stream

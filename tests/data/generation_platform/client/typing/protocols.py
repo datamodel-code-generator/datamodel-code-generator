@@ -71,7 +71,7 @@ def records(snapshot: PollSnapshot[Pet], selector: Selector, target: RequestTarg
     assert_type(continuation.kind, Literal["cursor", "offset", "page", "next_url", "link"])
     origin = Origin(scheme="https", host="api.example.com", port=443)
     assert_type(origin.port, int)
-    key: ProgressKey = "network_send_budget_used"
+    key: ProgressKey = "pages"
     progress: ProtocolProgress = {key: 1, "pages": 2}
     assert_type(progress[key], int)
 
@@ -94,7 +94,7 @@ def options(origin: Origin) -> ClientOptions:
     assert_type(stream.max_reconnect_wait, float | Unset | None)
     security = ProtocolSecurityContext(credential_partition="tenant", allowed_origins=(origin,))
     assert_type(security.allowed_origins, tuple[Origin, ...])
-    defaults = ProtocolDefaults(session=SessionOptions(max_network_sends=3), options=pagination)
+    defaults = ProtocolDefaults(session=SessionOptions(total_timeout=30), options=pagination)
     assert_type(
         defaults.options,
         PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | Unset,
@@ -131,7 +131,7 @@ def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:
     assert_type(limit.progress, Mapping[ProgressKey, int])
     assert_type(limit.resume_state, ResumeState | None)
     exhausted = StreamResumeExhaustedError(kind="reconnects", limit=5, progress={"reconnects": 5})
-    assert_type(exhausted.kind, Literal["network_sends", "pages", "items", "polls", "reconnects", "parts"])
+    assert_type(exhausted.kind, Literal["pages", "items", "polls", "reconnects", "parts"])
     cycle = PaginationCycleError(page_index=2, first_seen_page_index=0, location=BodySelector(pointer="/next"))
     assert_type(cycle.location, Selector | RequestTarget | None)
     wait = PollWaitLimitError(kind="wait", required_wait=120, limit=60)

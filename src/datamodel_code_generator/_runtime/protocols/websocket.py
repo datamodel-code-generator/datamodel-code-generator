@@ -20,17 +20,17 @@ from typing_extensions import Self, TypeVar
 from ..client.errors import (
     AdapterContractError,
     AdapterExecutionError,
-    ClientClosedError,
+    APITimeoutError,
     ConfigurationError,
-    DeadlineExceededError,
+    DecodeError,
     DeliveryState,
-    PhaseTimeoutError,
-    ProtocolConfigurationError,
     ProtocolError,
     RequestCancelledError,
-    RequestEncodingError,
     SDKError,
-    TransportError,
+    is_client_closed,
+    is_deadline,
+    is_phase_timeout,
+    is_transport,
 )
 from ..client.options import RequestOptions
 from ..client.raw import afinished, finished
@@ -54,7 +54,6 @@ from .errors import (
     DeliveryUnknownError,
     HandshakeResponse,
     ProtocolStateError,
-    SessionLimitError,
     StreamDecodeError,
     WebSocketClosedError,
     WebSocketHandshakeError,
@@ -162,14 +161,13 @@ class ChannelPlan(Generic[SendT, RecvT]):
 class _Limits:
     """The effective WebSocket limits, session limits, call options, and transport settings of one connect.
 
-    A WebSocket session has no total timeout and sixteen sends, for its handshakes and token requests.
+    A WebSocket session has no total timeout.
     """
 
     socket: ResolvedWSOptions
     transport: ResolvedWebSocketTransportOptions
     total_timeout: float | None = None
     deadline: Deadline | None = None
-    max_network_sends: int | None = 16
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -185,7 +183,6 @@ _SOCKET: Final = ResolvedWSOptions(
     close_timeout=5.0,
     compression=None,
 )
-_SENDS: Final = 16
 
 
 def _first(layers: tuple[object, ...], name: str, default: V) -> V:
@@ -214,10 +211,8 @@ def _socket(layers: tuple[object, ...], idle: float | None) -> ResolvedWSOptions
 
 def _invalid(
     plan: ChannelPlan[SendT, RecvT], path: tuple[str, ...], condition: Literal["invalid_value"]
-) -> ProtocolConfigurationError:
-    return ProtocolConfigurationError(
-        field_path=path, condition=condition, helper_id=plan.helper_id, operation=plan.operation
-    )
+) -> ConfigurationError:
+    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id, operation=plan.operation)
 
 
 def _limits(
@@ -252,48 +247,30 @@ def _limits(
         transport=resolved_transport(UNSET if protocols is None else protocols.websocket_transport),
         total_timeout=_first(sessions, "total_timeout", None),
         deadline=_first(sessions, "deadline", None),
-        max_network_sends=_first(sessions, "max_network_sends", _SENDS),
         options=request,
         clock=core.clock,
     )
 
 
-def _progress(session: OperationSession, sent: int = 0, received: int = 0) -> ProtocolProgress:
+def _progress(sent: int = 0, received: int = 0) -> ProtocolProgress:
     return MappingProxyType({
-        "network_send_count": session.network_send_count,
-        "network_send_budget_used": session.network_send_budget_used,
         "messages_sent": sent,
         "messages_received": received,
     })
 
 
-def _session(plan: ChannelPlan[SendT, RecvT], limits: _Limits) -> OperationSession:
-    """Start the socket's session, refusing to open it when the session has no send slot."""
+def _session(limits: _Limits) -> OperationSession:
+    """Start the socket's session."""
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only a connect loads the call runtime.
 
-    session = OperationSession(
-        total_timeout=limits.total_timeout,
-        deadline=limits.deadline,
-        max_network_sends=limits.max_network_sends,
-        clock=limits.clock,
-    )
-    if (limit := session.send_limit) is not None and limit <= 0:
-        raise SessionLimitError(
-            kind="network_sends",
-            limit=limit,
-            progress=_progress(session),
-            helper_id=plan.helper_id,
-            operation=plan.operation,
-            parent_session_id=session.session_id,
-        )
-    return session
+    return OperationSession(total_timeout=limits.total_timeout, deadline=limits.deadline, clock=limits.clock)
 
 
 def _checked_headers(headers: HeadersView) -> None:
     """Refuse a header the WebSocket handshake itself writes, before anything is sent."""
     for name in dict(headers.items()):
         if name.lower() in _MANAGED:
-            raise ConfigurationError(field_path=("headers", name), condition="managed")
+            raise ConfigurationError(field_path=("headers", name), reason="managed")
 
 
 def _encoded(plan: ChannelPlan[SendT, RecvT], value: object) -> bytes:
@@ -437,18 +414,14 @@ class _AsyncUpgraded(_AsyncResponse):
 class _Handshakes(Generic[OpenedT]):
     """What the synchronous and asyncio handshake adapters share: the plan, the limits, and the checks of a 101."""
 
-    __slots__ = ("_plan", "_socket", "_transport", "opened")
+    __slots__ = ("_plan", "_socket", "_transport", "capabilities", "opened")
 
     def __init__(self, plan: ChannelPlan[SendT, RecvT], limits: _Limits) -> None:
         self._plan: ChannelPlan[object, object] = cast("ChannelPlan[object, object]", plan)
         self._socket = limits.socket
         self._transport = limits.transport
+        self.capabilities: TransportCapabilities = _CAPABILITIES
         self.opened: OpenedT | None = None
-
-    @property
-    def capabilities(self) -> TransportCapabilities:
-        """Return that the adapter retries nothing and reports how far each handshake got."""
-        return _CAPABILITIES
 
     def _request(
         self, request: PreparedRequest[BodyAttempt | AsyncBodyAttempt], context: AttemptIOContext
@@ -615,7 +588,7 @@ class _Sockets(Generic[SendT, RecvT]):
     @property
     def progress(self) -> ProtocolProgress:
         """Return the session's sends and the messages sent and received so far."""
-        return _progress(self._session, self._sent, self._received)
+        return _progress(self._sent, self._received)
 
     def _stamped(self, error: ErrorT) -> ErrorT:
         """Give a failure of the session the helper's context, the handshake call's identity, and its counters."""
@@ -701,7 +674,9 @@ class _Sockets(Generic[SendT, RecvT]):
         try:
             data = _encoded(plan, value)
         except (*_DATA_ERRORS, ValueError, TypeError) as error:
-            raise self._stamped(RequestEncodingError(location=("message",), cause=error)) from None
+            raise self._stamped(
+                DecodeError(reason="unencodable", direction="request", location=("message",), cause=error)
+            ) from None
         return data, plan.send_frame == "text"
 
     def _message(self, frame: WSFrame) -> Message[RecvT]:
@@ -753,7 +728,7 @@ class _Sockets(Generic[SendT, RecvT]):
         """Return the code a failure closes the connection with, or None to drop the connection."""
         if isinstance(error, StreamDecodeError):
             return _PROTOCOL_ERROR
-        if isinstance(error, ClientClosedError) or (isinstance(error, PhaseTimeoutError) and error.phase == "read"):
+        if is_client_closed(error) or (is_phase_timeout(error) and error.phase == "read"):
             return _GOING_AWAY
         return None
 
@@ -765,7 +740,8 @@ class _Sockets(Generic[SendT, RecvT]):
             return halt
         assert timeout is not None
         return self._stamped(
-            PhaseTimeoutError(
+            APITimeoutError(
+                reason="phase_timeout",
                 effective_timeout=timeout,
                 phase=phase,
                 delivery_state=delivery,
@@ -791,7 +767,7 @@ class _Sockets(Generic[SendT, RecvT]):
         Only a connection's proof that nothing was sent keeps its failure, and a native interruption stays itself; a
         stop at the send's own cap is the cause of the unknown delivery.
         """
-        if isinstance(error, TransportError) and error.delivery_state is DeliveryState.NOT_SENT:
+        if is_transport(error) and error.delivery_state is DeliveryState.NOT_SENT:
             return self._stamped(error)
         if not isinstance(error, Exception):
             return error
@@ -809,20 +785,18 @@ class _Sockets(Generic[SendT, RecvT]):
     def _capped(self, error: BaseException, cap: Deadline | None) -> bool:
         """Return whether a stop is the expiry of an operation's own cap rather than of the session's deadline."""
         deadline = self._call.deadline
-        return (
-            isinstance(error, DeadlineExceededError) and cap is not None and (deadline is None or cap.at < deadline.at)
-        )
+        return is_deadline(error) and cap is not None and (deadline is None or cap.at < deadline.at)
 
     def _checked_close(self, code: object, reason: object) -> None:
         """Refuse a close code a client may not send, or a reason that is not at most 123 bytes of strict UTF-8."""
         if type(code) is not int or (code not in {_NORMAL, _GOING_AWAY} and code not in _APPLICATION_CODES):
-            raise self._stamped(ProtocolConfigurationError(field_path=("code",), condition="invalid_value"))
+            raise self._stamped(ConfigurationError(field_path=("code",), reason="invalid_value"))
         if (encoded := _utf8(reason)) is None or len(encoded) > MAX_CLOSE_REASON:
-            raise self._stamped(ProtocolConfigurationError(field_path=("reason",), condition="invalid_value"))
+            raise self._stamped(ConfigurationError(field_path=("reason",), reason="invalid_value"))
 
     def _checked_ping(self, payload: object) -> None:
         if not isinstance(payload, bytes) or len(payload) > _MAX_PING:
-            raise self._stamped(ProtocolConfigurationError(field_path=("payload",), condition="invalid_value"))
+            raise self._stamped(ConfigurationError(field_path=("payload",), reason="invalid_value"))
 
 
 def _utf8(value: object) -> bytes | None:
@@ -942,9 +916,13 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
             raise self._unsent() from None
         except WebSocketClosedError as closed:
             raise self._ended(closed) from None
-        except (ProtocolStateError, DeadlineExceededError, ClientClosedError, RequestCancelledError):
-            raise
-        except BaseException as error:  # noqa: BLE001
+        except BaseException as error:
+            if (
+                isinstance(error, (ProtocolStateError, RequestCancelledError))
+                or is_deadline(error)
+                or is_client_closed(error)
+            ):
+                raise
             raise self._failed(self._undelivered(error)) from None
         finally:
             self._queue.release()
@@ -1254,7 +1232,7 @@ def connect_socket(  # noqa: PLR0913
 ) -> WebSocketSession[SendT, RecvT]:
     """Open a helper's WebSocket in a session of its own, returning once its handshake got a valid 101."""
     limits = _limits(core, plan, ws_options, options, session_options)
-    session = _session(plan, limits)
+    session = _session(limits)
     injected = _connector(core)
     connector = cast("WebSocketConnector", core.owned_connector(plan.connectors[0]) if injected is None else injected)
     adapter = _Handshake(plan, limits, connector)
@@ -1282,7 +1260,7 @@ async def aconnect_socket(  # noqa: PLR0913
 ) -> AsyncWebSocketSession[SendT, RecvT]:
     """Open a helper's WebSocket with asyncio, returning once its handshake got a valid 101."""
     limits = _limits(core, plan, ws_options, options, session_options)
-    session = _session(plan, limits)
+    session = _session(limits)
     injected = _connector(core)
     connector = cast(
         "AsyncWebSocketConnector", core.owned_connector(plan.connectors[1]) if injected is None else injected

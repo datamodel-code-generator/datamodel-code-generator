@@ -10,7 +10,7 @@ import asyncio
 import threading
 from typing import TYPE_CHECKING
 
-from .errors import BodyNotReplayableError, add_secondary
+from .errors import add_secondary, body_failure
 from .tasks import LEFT_WORK, TaskInterruptionError, task_failure
 
 if TYPE_CHECKING:
@@ -58,7 +58,7 @@ class DiskWorker:
         """Keep the worker available until an admitted use finishes its cleanup."""
         with self.lock:
             if self.closed:
-                raise BodyNotReplayableError(source_kind="file", condition="consumed")
+                raise body_failure(reason="body_not_replayable")
             self.uses += 1
 
     def release(self) -> None:
@@ -118,7 +118,7 @@ class DiskWorker:
         """Return the thread pool, starting it on first use, and refuse work other than cleanup once closed."""
         with self.lock:
             if self.closed and not cleanup:
-                raise BodyNotReplayableError(source_kind="file", condition="consumed")
+                raise body_failure(reason="body_not_replayable")
             if (pool := self.pool) is None:
                 from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415 - Only disk work starts one.
 

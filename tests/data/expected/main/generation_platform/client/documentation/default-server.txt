@@ -93,8 +93,8 @@ Import `Client` and `AsyncClient` from `client` and the records below from
 `RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
 `UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
 sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
-`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`,
-`deadline=None`, and `max_network_sends=None` clear their own limits. `cleanup_timeout` remains positive and finite.
+`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None` and
+`deadline=None` clear their own limits. `cleanup_timeout` remains positive and finite.
 
 | Setting | Effective default |
 |---|---|
@@ -106,14 +106,13 @@ sets and tuples replace the inherited collection. `retry=None` and `redirects=No
 | respect Retry-After / retry pool timeout | True / False |
 | redirects / maximum redirects / 303 conversion | False / 5 / False |
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
-| network send slots | 1 + max_retries + (max_redirects when redirects are enabled) |
 | stream idle / stream total / cleanup | 60 seconds / None / 5 seconds |
 | maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
-Zero retries permits only the initial resource attempt. A zero send budget refuses all sends. Reservations are not
-refunded. `Deadline.after(seconds)` shares an absolute monotonic expiry across calls; the earlier of that expiry and
-the relative total timeout wins. `CancelToken` is thread-safe and remains cancelled once signalled. Sync callbacks,
-DNS, I/O, and cleanup are cooperative and may return after a deadline. Async SDK waits enforce their budgets.
+Zero retries permits only the initial resource attempt. `Deadline.after(seconds)` shares an absolute monotonic expiry
+across calls; the earlier of that expiry and the relative total timeout wins. `CancelToken` is thread-safe and remains
+cancelled once signalled. Sync callbacks, DNS, I/O, and cleanup are cooperative and may return after a deadline. Async
+SDK waits enforce their budgets.
 Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
 `ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
 `OAuthProviderOptions(clock=...)` does so for a provider, and `Deadline.after(seconds, clock=...)` creates a deadline
@@ -123,8 +122,7 @@ on that clock. Waits still pass in real time, so a test clock skips one by advan
 
 GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PATCH require an explicit idempotent
 declaration or a valid key contract. Proven unsent failures from the SDK-owned native transport may permit an
-otherwise unsafe retry; `retry_safety="never"` forbids every resend. All candidates still need replayable input and
-available budgets.
+otherwise unsafe retry; `retry_safety="never"` forbids every resend. All candidates still need replayable input.
 Pool timeouts need explicit `retry_on_pool_timeout=True`. TLS/configuration/permanent DNS errors, callback failures,
 decoding failures, cancellation, and logical deadlines are not retry candidates. Phase timeouts can be candidates.
 
@@ -133,9 +131,9 @@ is a minimum and is never shortened to fit the retry-after cap or remaining dead
 explicitly ignores server hints. Vendor millisecond/boolean controls require the names declared for the operation;
 an options value cannot invent that declaration, and explicit None disables an inherited vendor control.
 
-Typed errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
-including retry exhaustion, rather than converting statuses to typed HTTP errors. Transport, budget, cancellation,
-and redirect-policy failures still raise. Stream acquisition can retry; body reads never retry after handle handoff.
+Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
+including retry exhaustion, rather than raising status errors. Transport, cancellation, and redirect-policy failures
+still raise. Stream acquisition can retry; body reads never retry after handle handoff.
 After handoff, stream idle/total limits replace the completed acquisition deadline; an explicitly configured read
 phase cap still applies. Close an abandoned stream to release its response and limiter permit.
 
@@ -164,10 +162,10 @@ resources remain caller-owned; close explicitly created async file adapters to r
 
 `RedirectOptions(enabled=True)` enables SDK-controlled hops. 301/302 permit only GET/HEAD. 303 changes to GET for
 GET/HEAD or explicit `allow_303_to_get=True`, dropping body and content/framing headers including Content-Encoding.
-307/308 preserve method/body and require safety and replayability. Every hop consumes a send slot and the logical
-deadline. The origin allowlist and HTTPS downgrade permission are separate; credentials and cookies from the
-original request are stripped on an origin change. Invalid/multiple Location, loops, limits, and rejected hops raise
-`RedirectPolicyError` with `body_available=False` and delivery/response metadata when available.
+307/308 preserve method/body and require safety and replayability. Every hop consumes the logical deadline. The
+origin allowlist and HTTPS downgrade permission are separate; credentials and cookies from the original request are
+stripped on an origin change. Invalid/multiple Location, loops, limits, and rejected hops raise `ConfigurationError`
+with the reason `redirect_refused`, no redirect body, and delivery/response metadata when available.
 
 `TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
@@ -224,17 +222,17 @@ signatures for its current origin. Generic patches cannot change managed credent
 Static providers cannot refresh. Custom refresh providers explicitly implement get/invalidate/refresh (all async in
 the async Protocol). At most one eligible 401 recovery invalidates the exact used token version and refreshes; a
 Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration is required. Retry safety, replay,
-retry counts, send slots, and the original deadline still apply. Zero retries prevents recovery resends, while first
+retry counts and the original deadline still apply. Zero retries prevents recovery resends, while first
 acquisition remains allowed. These callbacks start no builtin token exchange.
 
-Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
-They receive final per-hop method/URL/raw query/headers and optional SHA-256 digest after credential and body framing,
-before attempt hooks and sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop.
-`SigningExecutionError` preserves callback failures without transport retry. No effective auth means no provider,
+Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names. They receive
+final per-hop method/URL/raw query/headers and optional SHA-256 digest after credential and body framing, before attempt
+hooks and sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the
+reason `signing_failed` preserves callback failures without transport retry. No effective auth means no provider,
 signer, environment read, or body hashing. Optional hashing costs O(payload bytes), uses chunked reads, and restores
 seekable offsets. `BodyFactory(..., sha256=32_byte_digest)` and the async counterpart declare a whole payload digest
-without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is
-never implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
+without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is never
+implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
 
 Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
@@ -248,13 +246,16 @@ which concurrent callers wait for; a refresh token provider hands each refreshed
 the SDK persists nothing. Basic charset overrides, resource audience metadata, and generated OAuth factories are not
 available yet. Providers are explicit.
 
-## Counters and cleanup
+## Errors and cleanup
 
-`ResponseInfo`, terminal events, and SDK errors expose logical resource attempts, redirect count, adapter invocations,
-and reserved send slots. `wire_send_count` on ResponseInfo/errors is known only when trusted adapter evidence proves
-wire sends; a borrowed transport can hide internal sends. Error counters exist even without a response.
-`PhaseTimeoutError` identifies the phase cap; `DeadlineExceededError` identifies the logical/stream budget.
-`BudgetExceededError` reports its kind, limit, and used slots. Safe error representations omit key/body/header values.
+Every exception derives from `SDKError`, which keeps a stable `reason`, the call's `attempt_count`, `elapsed`, and
+`request_id`, and how far the request got. `APIConnectionError` is an I/O failure and `APITimeoutError` a phase cap
+(`effective_timeout`) or the logical/stream deadline (`deadline_at`). A final status the operation does not declare as
+a success raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with
+`status_code`, `headers`, `request_id`, and `body` decoded with the operation's declared error schema, else the
+bounded raw bytes. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
+declaration, and `ConfigurationError` a refused setting or call. Safe error representations omit key/body/header
+values.
 
 A limiter permit is acquired before opening a body and released when its response is released. Cleanup has its own
 bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where

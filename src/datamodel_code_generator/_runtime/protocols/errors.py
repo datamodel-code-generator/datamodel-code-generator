@@ -15,12 +15,12 @@ from typing_extensions import TypeIs, TypeVar
 from ..client.errors import (
     MAX_STATUS,
     MIN_STATUS,
+    APIConnectionError,
+    ConfigurationError,
     DeliveryState,
-    ProtocolConfigurationError,
     ProtocolError,
     ProtocolStoreError,
     RetryStopReason,
-    TransportError,
     error_choice,
     error_count,
     error_string,
@@ -74,7 +74,7 @@ E_co = TypeVar("E_co", covariant=True, default=object)
 P_co = TypeVar("P_co", covariant=True, default=object)
 
 _DataCondition: TypeAlias = Literal["missing", "null", "type", "value", "malformed", "inconsistent"]
-_SessionLimitKind: TypeAlias = Literal["network_sends", "pages", "items", "polls", "reconnects", "parts"]
+_SessionLimitKind: TypeAlias = Literal["pages", "items", "polls", "reconnects", "parts"]
 
 HandshakeCondition: TypeAlias = Literal[
     "invalid_message", "invalid_header", "upgrade", "negotiation", "security", "size"
@@ -188,15 +188,6 @@ class ProtocolDataError(ProtocolError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep which rule the received data broke and the selector or target it concerns."""
         error_choice(condition, _DATA_CONDITIONS, "condition")
@@ -210,15 +201,6 @@ class ProtocolDataError(ProtocolError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.condition = condition
         self.location = location
@@ -243,15 +225,6 @@ class ProtocolStateError(ProtocolError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the SDK-defined state and method names."""
         error_string(state, "state")
@@ -265,15 +238,6 @@ class ProtocolStateError(ProtocolError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.state = state
         self.action = action
@@ -302,15 +266,6 @@ class SessionLimitError(ProtocolError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the exhausted cap, a read-only copy of the progress, and any exportable resume state."""
         error_choice(kind, _SESSION_LIMIT_KINDS, "kind")
@@ -326,15 +281,6 @@ class SessionLimitError(ProtocolError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.kind = kind
         self.limit = limit
@@ -346,12 +292,12 @@ class SessionLimitError(ProtocolError):
 
 
 class StreamResumeExhaustedError(SessionLimitError):
-    """Automatic stream reconnection that exhausted its reconnect or send budget; it never ends as a normal EOF."""
+    """Automatic stream reconnection that exhausted its reconnect budget; it never ends as a normal EOF."""
 
     def __init__(  # noqa: PLR0913
         self,
         *,
-        kind: Literal["reconnects", "network_sends"],
+        kind: Literal["reconnects"],
         limit: int,
         progress: ProtocolProgress,
         resume_state: ResumeState | None = None,
@@ -363,18 +309,9 @@ class StreamResumeExhaustedError(SessionLimitError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the exhausted reconnection budget with the stream's progress and resume state."""
-        error_choice(kind, ("reconnects", "network_sends"), "kind")
+        error_choice(kind, ("reconnects",), "kind")
         super().__init__(
             kind=kind,
             limit=limit,
@@ -388,15 +325,6 @@ class StreamResumeExhaustedError(SessionLimitError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
 
 
@@ -418,15 +346,6 @@ class PaginationCycleError(ProtocolDataError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the repeating page and the page that first returned the continuation."""
         error_count(page_index, "page_index")
@@ -443,15 +362,6 @@ class PaginationCycleError(ProtocolDataError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.page_index = page_index
         self.first_seen_page_index = first_seen_page_index
@@ -481,15 +391,6 @@ class PollingStateError(ProtocolDataError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep whether the state had another type or an undeclared value."""
         error_choice(condition, ("type", "value"), "condition")
@@ -504,15 +405,6 @@ class PollingStateError(ProtocolDataError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
 
 
@@ -536,15 +428,6 @@ class PollWaitLimitError(ProtocolError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the required wait, the limit it exceeds, and any exportable resume state."""
         error_choice(kind, ("wait", "deadline"), "kind")
@@ -560,15 +443,6 @@ class PollWaitLimitError(ProtocolError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.kind = kind
         self.required_wait = required
@@ -594,15 +468,6 @@ class OperationFailedError(ProtocolError, Generic[P_co]):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the terminal poll snapshot for explicit inspection."""
         _snapshot(snapshot)
@@ -615,15 +480,6 @@ class OperationFailedError(ProtocolError, Generic[P_co]):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self._snapshot = snapshot
 
@@ -648,15 +504,6 @@ class OperationCancelledError(ProtocolError, Generic[P_co]):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the terminal poll snapshot for explicit inspection."""
         _snapshot(snapshot)
@@ -669,15 +516,6 @@ class OperationCancelledError(ProtocolError, Generic[P_co]):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self._snapshot = snapshot
 
@@ -706,15 +544,6 @@ class StreamDecodeError(ProtocolDataError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the sequence, at most 64 KiB of raw bytes, and decode cause without its traceback."""
         error_count(sequence, "sequence")
@@ -731,15 +560,6 @@ class StreamDecodeError(ProtocolDataError):
             info=info,
             cause=None if cause is None else cause.with_traceback(None),
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.sequence = sequence
         self.raw_prefix = raw_prefix
@@ -768,15 +588,6 @@ class StreamInterruptedError(ProtocolError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep how the stream stopped, the last sequence delivered, and any exportable resume state."""
         error_choice(condition, ("eof", "transport"), "condition")
@@ -791,15 +602,6 @@ class StreamInterruptedError(ProtocolError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.condition = condition
         self.sequence = sequence
@@ -826,15 +628,6 @@ class IncompleteFrameError(StreamInterruptedError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep how many bytes of the incomplete frame were buffered."""
         error_count(buffered_bytes, "buffered_bytes")
@@ -850,15 +643,6 @@ class IncompleteFrameError(StreamInterruptedError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.buffered_bytes = buffered_bytes
 
@@ -883,15 +667,6 @@ class StreamRemoteError(ProtocolError, Generic[E_co]):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the event type, the typed error value, and its sequence."""
         error_string(event_type, "event_type", optional=True)
@@ -905,15 +680,6 @@ class StreamRemoteError(ProtocolError, Generic[E_co]):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.event_type = event_type
         self._data = data
@@ -947,15 +713,6 @@ class CacheProtocolError(ProtocolDataError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the response's context; the condition is fixed."""
         super().__init__(
@@ -969,19 +726,10 @@ class CacheProtocolError(ProtocolDataError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
 
 
-class CacheValidatorConflictError(ProtocolConfigurationError):
+class CacheValidatorConflictError(ConfigurationError):
     """A validator header the caller gave that differs from the stored entry's; the value itself is never kept."""
 
     def __init__(  # noqa: PLR0913
@@ -1003,7 +751,7 @@ class CacheValidatorConflictError(ProtocolConfigurationError):
         error_choice(header_name, _VALIDATOR_HEADERS, "header_name")
         super().__init__(
             field_path=(header_name,),
-            condition="binding_mismatch",
+            reason="binding_mismatch",
             helper_id=helper_id,
             operation=operation,
             source_uri=source_uri,
@@ -1032,15 +780,6 @@ class ConcurrentReceiveError(ProtocolStateError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Fix the state and the action."""
         super().__init__(
@@ -1054,15 +793,6 @@ class ConcurrentReceiveError(ProtocolStateError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
 
 
@@ -1072,6 +802,8 @@ class WebSocketClosedError(ProtocolError):
     A normal closure ends a session's iteration; receive raises this class either way. The reason never appears in
     messages.
     """
+
+    _reason_code = "web_socket_closed_error"
 
     def __init__(  # noqa: PLR0913
         self,
@@ -1087,15 +819,6 @@ class WebSocketClosedError(ProtocolError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the close code, at most 123 UTF-8 bytes of reason, and whether the closure was normal."""
         if code is not None:
@@ -1114,25 +837,17 @@ class WebSocketClosedError(ProtocolError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.code = code
-        self.reason = reason
+        self.reason: str = reason
         self.clean = clean
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("code", self.code), ("clean", self.clean))
+        kept = tuple(item for item in super()._details() if item[0] != "reason")
+        return (*kept, ("code", self.code), ("clean", self.clean))
 
 
-class WebSocketHandshakeError(TransportError):
+class WebSocketHandshakeError(APIConnectionError):
     """A WebSocket handshake whose response broke the protocol, its negotiation, or a security limit; never retried."""
 
     def __init__(  # noqa: PLR0913
@@ -1149,15 +864,6 @@ class WebSocketHandshakeError(TransportError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep what the handshake broke; its phase is always connect."""
         error_choice(condition, _HANDSHAKE_CONDITIONS, "condition")
@@ -1172,15 +878,6 @@ class WebSocketHandshakeError(TransportError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.condition: HandshakeCondition = condition
         self.helper_id = helper_id
@@ -1190,7 +887,7 @@ class WebSocketHandshakeError(TransportError):
         return (*super()._details(), ("condition", self.condition))
 
 
-class WebSocketProxyError(TransportError):
+class WebSocketProxyError(APIConnectionError):
     """A proxy that refused or broke the tunnel to a WebSocket server; nothing reached the server and it is not retried.
 
     Neither the proxy's credentials nor its response body are kept.
@@ -1209,15 +906,6 @@ class WebSocketProxyError(TransportError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the proxy's status; the phase is always connect and nothing was sent."""
         if proxy_status_code is not None:
@@ -1233,15 +921,6 @@ class WebSocketProxyError(TransportError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.proxy_status_code = proxy_status_code
         self.helper_id = helper_id
@@ -1273,15 +952,6 @@ class HandshakeResponse(ProtocolError):  # noqa: N818 - The protocol contract na
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the status, the headers, and the body prefix."""
         _status(status_code, "status_code")
@@ -1297,15 +967,6 @@ class HandshakeResponse(ProtocolError):  # noqa: N818 - The protocol contract na
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.status_code = status_code
         self.headers = headers
@@ -1333,15 +994,6 @@ class DeliveryUnknownError(ProtocolError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep how far the message may have got, any exportable resume state, and its declared message ID."""
         if delivery_state not in _UNKNOWN_DELIVERIES:
@@ -1352,23 +1004,14 @@ class DeliveryUnknownError(ProtocolError):
         super().__init__(
             helper_id=helper_id,
             operation=operation,
+            delivery_state=delivery_state,
             operation_id=operation_id,
             call_id=call_id,
             parent_session_id=parent_session_id,
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
-        self.delivery_state = delivery_state
         self.resume_state = resume_state
         self.message_id = message_id
 
@@ -1397,15 +1040,6 @@ class UploadDeliveryUnknownError(DeliveryUnknownError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the phase whose outcome is unknown and the progress the server confirmed before it."""
         error_choice(phase, ("append", "part", "complete"), "phase")
@@ -1421,15 +1055,6 @@ class UploadDeliveryUnknownError(DeliveryUnknownError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.phase = phase
         self.progress = progress
@@ -1458,15 +1083,6 @@ class UploadSourceChangedError(ProtocolDataError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the upload's size and the size the source has now."""
         error_count(expected_size, "expected_size")
@@ -1482,15 +1098,6 @@ class UploadSourceChangedError(ProtocolDataError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.expected_size = expected_size
         self.actual_size = actual_size
@@ -1519,15 +1126,6 @@ class UploadOffsetError(ProtocolDataError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the confirmed, expected, and remote offsets and the size of the content."""
         for name, value in (
@@ -1549,15 +1147,6 @@ class UploadOffsetError(ProtocolDataError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.confirmed_offset = confirmed_offset
         self.expected_offset = expected_offset
@@ -1590,15 +1179,6 @@ class UploadExpiredError(ResumeStateError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep the server's UTC expiry."""
         _aware(expires_at)
@@ -1612,20 +1192,11 @@ class UploadExpiredError(ResumeStateError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.expires_at = expires_at
 
 
-class NonResumableSourceError(ProtocolConfigurationError):
+class NonResumableSourceError(ConfigurationError):
     """An upload source that cannot be read again, such as a one-shot stream or a reader that cannot seek."""
 
     def __init__(  # noqa: PLR0913
@@ -1645,7 +1216,7 @@ class NonResumableSourceError(ProtocolConfigurationError):
         error_choice(source_kind, ("iterable", "iterator", "stream", "reader"), "source_kind")
         super().__init__(
             field_path=("source",),
-            condition="wrong_capability",
+            reason="wrong_capability",
             helper_id=helper_id,
             operation=operation,
             operation_id=operation_id,

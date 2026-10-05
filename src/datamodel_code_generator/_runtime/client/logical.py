@@ -1,4 +1,4 @@
-"""One call's identity, admission counters, time limits, and the release of its asynchronous work."""
+"""One call's identity, attempt count, time limits, and the release of its asynchronous work."""
 
 from __future__ import annotations
 
@@ -9,20 +9,19 @@ from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias, TypeVar
 from uuid import uuid4
 
 from .errors import (
-    BudgetExceededError,
+    APIConnectionError,
+    APITimeoutError,
     CleanupError,
-    ClientClosedError,
-    DeadlineExceededError,
+    ConfigurationError,
     DeliveryState,
-    PhaseTimeoutError,
     RequestCancelledError,
     SDKError,
-    TransportError,
     add_secondary,
-    set_error_counters,
+    is_client_closed,
+    is_deadline,
+    is_phase_timeout,
 )
 from .lifecycle import cleanup_secondary
-from .options import network_send_limit
 from .tasks import LEFT_WORK, TaskInterruptionError, task_failure, task_result
 from .timing import TOKEN_INTERVAL, absolute_deadline, on_clock, real_end, wait_left
 from .transports import AttemptIOContext, ResolvedTimeoutOptions, set_io_timing
@@ -46,7 +45,7 @@ StopReason: TypeAlias = Literal["token", "closing", "deadline", "idle"]
 class _Scope(Protocol):
     lock: LockType
 
-    def closing(self) -> ClientClosedError | None: ...
+    def closing(self) -> ConfigurationError | None: ...
 
     def closing_signals(self) -> tuple[asyncio.Future[None], ...]: ...
 
@@ -193,42 +192,35 @@ class _Guard:
 
 
 class OperationSession:
-    """The state one protocol helper session shares with its child calls: its identity, deadline, and send slots.
+    """The state one protocol helper session shares with its child calls: its identity, deadline, and sends.
 
     The session ends at the earlier of its total timeout, counted from its start, and its absolute deadline; every
-    child call also reserves each send here, and none is admitted once the session has no slot left.
+    child call also counts each send here.
     """
 
-    __slots__ = ("deadline", "network_send_budget_used", "network_send_count", "send_limit", "session_id", "started")
+    __slots__ = ("deadline", "sends", "session_id", "started")
 
     def __init__(
         self,
         *,
         total_timeout: float | None,
         deadline: Deadline | None,
-        max_network_sends: int | None,
         clock: Clock,
     ) -> None:
-        """Start the session now on its client's clock, with its effective deadline and send limit."""
+        """Start the session now on its client's clock, with its effective deadline."""
         self.started = clock.monotonic()
         self.session_id = str(uuid4())
         deadline = None if deadline is None else on_clock(deadline, clock)
         if total_timeout is not None and (deadline is None or self.started + total_timeout < deadline.at):
             deadline = absolute_deadline(self.started + total_timeout, clock=clock)
         self.deadline = deadline
-        self.send_limit = max_network_sends
-        self.network_send_budget_used = 0
-        self.network_send_count = 0
-
-    def room(self) -> bool:
-        """Return whether the session can still admit a send."""
-        return (limit := self.send_limit) is None or self.network_send_budget_used < limit
+        self.sends = 0
 
 
 class LogicalCallContext:
     """Keep all state belonging to a call, through stream handoff and the release of its owned work.
 
-    A child call of a helper session also reserves its sends in that session's budget.
+    A child call of a helper session also counts its sends in that session.
     """
 
     session: OperationSession | None = None
@@ -241,27 +233,20 @@ class LogicalCallContext:
         "_phase",
         "_scope",
         "_task",
-        "auth_exchange_budget_used",
-        "auth_exchange_count",
-        "auth_refresh_ids",
-        "auth_refresh_pending",
+        "attempt_count",
         "call_id",
         "deadline",
         "delivery_state",
         "finished",
         "monotonic",
-        "network_send_budget_used",
-        "network_send_count",
         "operation_id",
         "phase_caps",
-        "redirect_count",
-        "resource_attempt_count",
+        "redirects_followed",
         "retry_blocked",
-        "send_limit",
+        "sends",
         "settings",
         "started",
         "streaming",
-        "wire_send_count",
     )
 
     def __init__(self, settings: Settings, scope: _Scope, operation_id: str | None = None) -> None:
@@ -282,17 +267,10 @@ class LogicalCallContext:
             if deadline is None or total_at < deadline.at:
                 deadline = absolute_deadline(total_at, clock=clock)
         self.deadline: Deadline | None = deadline
-        self.resource_attempt_count = 0
-        self.redirect_count = 0
-        self.auth_exchange_count = 0
-        self.network_send_count = 0
-        self.network_send_budget_used = 0
-        self.send_limit = network_send_limit(settings)
+        self.attempt_count = 0
+        self.redirects_followed = 0
+        self.sends = 0
         self.retry_blocked = False
-        self.auth_exchange_budget_used = 0
-        self.auth_refresh_ids: tuple[str, ...] = ()
-        self.auth_refresh_pending = 0
-        self.wire_send_count: int | None = None
         self.delivery_state = DeliveryState.NOT_SENT
         self.finished = False
         self.streaming = False
@@ -318,31 +296,22 @@ class LogicalCallContext:
         return self._scope.closing_signals()
 
     def snapshot_error(self, error: ErrorT) -> ErrorT:
-        """Attach this call's identity, its session's, and a readonly counter snapshot to an error to publish."""
+        """Attach this call's identity, its session's, its attempts, and its elapsed time to an error to publish."""
         error.operation_id = self.operation_id
         error.call_id = self.call_id
         error.parent_session_id = self.parent_session_id
-        set_error_counters(
-            error,
-            resource_attempt_count=self.resource_attempt_count,
-            redirect_count=self.redirect_count,
-            auth_exchange_count=self.auth_exchange_count,
-            network_send_count=self.network_send_count,
-            network_send_budget_used=self.network_send_budget_used,
-            auth_exchange_budget_used=self.auth_exchange_budget_used,
-            auth_refresh_ids=self.auth_refresh_ids,
-            auth_refresh_pending=self.auth_refresh_pending,
-            wire_send_count=self.wire_send_count,
-        )
+        if error.info is None:
+            error.attempt_count = self.attempt_count
+            error.elapsed = max(0.0, self.monotonic() - self.started)
         return error
 
     def _deadline_error(
         self, at: float, phase: DeadlinePhase, delivery: DeliveryState, cause: BaseException | None = None
-    ) -> DeadlineExceededError:
+    ) -> APITimeoutError:
         return self.snapshot_error(
-            DeadlineExceededError(
+            APITimeoutError(
+                reason="deadline_exceeded",
                 deadline_at=at,
-                elapsed=self.monotonic() - self.started,
                 delivery_state=delivery,
                 phase=phase,
                 cause=cause,
@@ -372,12 +341,12 @@ class LogicalCallContext:
                 RequestCancelledError(source="cancel_token", delivery_state=delivery, cause=cause)
             )
         if (error := self._scope.closing()) is not None:
-            if isinstance(cause, ClientClosedError):
+            if is_client_closed(cause):
                 raise self.snapshot_error(cause)
             error.cause = cause
             raise self.snapshot_error(error)
         if (deadline := self.deadline) is not None and self.monotonic() >= deadline.at:
-            if isinstance(cause, DeadlineExceededError):
+            if is_deadline(cause):
                 raise self.snapshot_error(cause)
             raise self._deadline_error(deadline.at, phase, delivery, cause)
 
@@ -402,35 +371,17 @@ class LogicalCallContext:
         return self.snapshot_error(error) if isinstance(error, SDKError) else error
 
     def admit_send(self, *, redirect: bool = False) -> None:
-        """Atomically consume one nonrefundable send slot, and its session's, immediately before the adapter call."""
+        """Count one send, and its session's, immediately before the adapter call."""
         with self._scope.lock:
             self.check("send")
-            limit = self.send_limit
-            if limit is not None and self.network_send_budget_used >= limit:
-                raise self.snapshot_error(
-                    BudgetExceededError(budget_kind="network", limit=limit, used=self.network_send_budget_used)
-                )
             if (session := self.session) is not None:
-                self._reserve(session)
-            self.network_send_budget_used += 1
+                session.sends += 1
             if redirect:
-                self.redirect_count += 1
+                self.redirects_followed += 1
             else:
-                self.resource_attempt_count += 1
-            self.network_send_count += 1
+                self.attempt_count += 1
+            self.sends += 1
             self.delivery_state = DeliveryState.MAYBE_SENT
-
-    def _reserve(self, session: OperationSession) -> None:
-        """Consume a send slot of the call's session, refusing the send once none is left; the lock is held."""
-        if (limit := session.send_limit) is not None and (used := session.network_send_budget_used) >= limit:
-            raise self.snapshot_error(BudgetExceededError(budget_kind="parent_network", limit=limit, used=used))
-        session.network_send_budget_used += 1
-        session.network_send_count += 1
-
-    def observe_send(self, trace: AttemptTrace) -> None:
-        """Count resource header evidence once after the adapter invocation, before publishing its outcome."""
-        if self.wire_send_count is not None and trace.headers_started:
-            self.wire_send_count += 1
 
     def sleep_until(self, not_before: float) -> None:
         """Wait until a retry target, or as long in real time, waking for client close and checking a token if any.
@@ -481,7 +432,9 @@ class LogicalCallContext:
         self._io_context = context
         return context
 
-    def timeout_failure(self, error: BaseException, phase: IOPhase, delivery_state: DeliveryState) -> SDKError:
+    def timeout_failure(
+        self, error: BaseException, phase: IOPhase | DeadlinePhase, delivery_state: DeliveryState
+    ) -> SDKError:
         """Classify a native timeout from the cap's recorded source, with ties always belonging to the deadline."""
         index = {"connect": 0, "read": 1, "write": 2, "pool": 3}.get(phase)
         if index is not None and self.phase_caps:
@@ -491,14 +444,15 @@ class LogicalCallContext:
                     cap.deadline_at,
                     "stream" if self.streaming else "send",
                     delivery_state,
-                    error.cause if isinstance(error, PhaseTimeoutError) and error.cause is not None else error,
+                    error.cause if is_phase_timeout(error) and error.cause is not None else error,
                 )
-            if isinstance(error, PhaseTimeoutError):
+            if is_phase_timeout(error):
                 error.retry_stop_reason = "transport_not_retryable" if self.streaming else None
                 return self.snapshot_error(error)
             if cap.effective is not None and phase != "unknown":
                 return self.snapshot_error(
-                    PhaseTimeoutError(
+                    APITimeoutError(
+                        reason="phase_timeout",
                         effective_timeout=cap.effective,
                         phase=phase,
                         delivery_state=delivery_state,
@@ -506,10 +460,12 @@ class LogicalCallContext:
                         cause=error,
                     )
                 )
-        if isinstance(error, PhaseTimeoutError):
+        if is_phase_timeout(error):
             error.retry_stop_reason = "transport_not_retryable" if self.streaming else None
             return self.snapshot_error(error)
-        return self.snapshot_error(TransportError(delivery_state=delivery_state, phase=phase, cause=error))
+        return self.snapshot_error(
+            APIConnectionError(reason="transport", delivery_state=delivery_state, phase=phase, cause=error)
+        )
 
     def handoff(self) -> None:
         """Start stream lifetime limits and replace the completed acquisition's caps before the first body read.
@@ -534,7 +490,7 @@ class LogicalCallContext:
         """Return a context for one more waiter on this handed-over call, ending at a deadline of its own.
 
         A handed-over WebSocket waits to send and to receive at once, and the guard of each waiter's lane cancels only
-        that waiter's task. The lane keeps the call's identity, settings, session, and counters.
+        that waiter's task. The lane keeps the call's identity, settings, session, and attempts.
         """
         lane = _Lane(self.settings, self._scope, self.operation_id)
         lane.call_id = self.call_id
@@ -542,14 +498,9 @@ class LogicalCallContext:
         lane.deadline = deadline
         lane.streaming = True
         lane.delivery_state = self.delivery_state
-        lane.resource_attempt_count = self.resource_attempt_count
-        lane.redirect_count = self.redirect_count
-        lane.auth_exchange_count = self.auth_exchange_count
-        lane.network_send_count = self.network_send_count
-        lane.network_send_budget_used = self.network_send_budget_used
-        lane.auth_exchange_budget_used = self.auth_exchange_budget_used
-        lane.auth_refresh_ids = self.auth_refresh_ids
-        lane.wire_send_count = self.wire_send_count
+        lane.attempt_count = self.attempt_count
+        lane.redirects_followed = self.redirects_followed
+        lane.sends = self.sends
         return lane
 
     def _native(self, error: BaseException | None) -> BaseException:
@@ -612,7 +563,8 @@ class LogicalCallContext:
         delivery = self.delivery_state if delivery_state is None else delivery_state
         if guard.reason == "idle" and (idle_timeout := guard.idle_timeout) is not None:
             return self.snapshot_error(
-                PhaseTimeoutError(
+                APITimeoutError(
+                    reason="phase_timeout",
                     effective_timeout=idle_timeout,
                     phase="read",
                     delivery_state=delivery,
@@ -620,7 +572,7 @@ class LogicalCallContext:
                     cause=failure,
                 )
             )
-        if isinstance(failure, DeadlineExceededError):
+        if is_deadline(failure):
             return self.snapshot_error(failure)
         at = self.monotonic() if self.deadline is None else self.deadline.at
         return self._deadline_error(at, self._phase, delivery, failure)

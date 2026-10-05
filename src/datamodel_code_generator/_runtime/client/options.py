@@ -23,7 +23,7 @@ from ..model_codecs.unset import UNSET, Unset
 from ..model_codecs.wire import JSONScalar  # noqa: TC001 - Public annotations support get_type_hints().
 from ..protocols import names as protocol_names
 from .auth import AuthConfig, checked_type
-from .errors import AuthConfigurationError, ConfigurationError, is_sequence
+from .errors import ConfigurationError, is_sequence
 from .hooks import AsyncHook, AsyncLimiter, Hook, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
 from .timing import (
     SYSTEM_CLOCK,
@@ -91,7 +91,7 @@ def _positive_seconds(value: object, path: tuple[str, ...]) -> None:
             return
         case _:
             pass
-    raise ConfigurationError(field_path=path, condition="out_of_range")
+    raise ConfigurationError(field_path=path, reason="out_of_range")
 
 
 def _header_patch(value: object) -> HeaderPatch:
@@ -100,11 +100,11 @@ def _header_patch(value: object) -> HeaderPatch:
     for name, text in patch:
         match name.lower(), text:
             case _ if not _NAME.fullmatch(name) or (text is not None and not _VALUE.fullmatch(text)):
-                raise ConfigurationError(field_path=("headers", name), condition="invalid_value")
+                raise ConfigurationError(field_path=("headers", name), reason="invalid_value")
             case key, _ if key in _RESERVED:
-                raise ConfigurationError(field_path=("headers", name), condition="reserved")
+                raise ConfigurationError(field_path=("headers", name), reason="reserved")
             case "accept-encoding", str() if not _accepted(text):
-                raise ConfigurationError(field_path=("headers", name), condition="unsupported_coding")
+                raise ConfigurationError(field_path=("headers", name), reason="unsupported_coding")
             case _:
                 pass
     _settled(patch, "headers", str.lower)
@@ -115,14 +115,14 @@ def _query_patch(value: object) -> QueryPatch:
     """Return a copy of a query patch, refusing an empty name and a name both set and removed."""
     patch = _patch(value, "query")
     if not all(name for name, _ in patch):
-        raise ConfigurationError(field_path=("query",), condition="invalid_value")
+        raise ConfigurationError(field_path=("query",), reason="invalid_value")
     _settled(patch, "query", str)
     return patch
 
 
 def _patch(value: object, field: str) -> tuple[tuple[str, str | None], ...]:
     if not is_sequence(value):
-        raise ConfigurationError(field_path=(field,), condition="invalid_type")
+        raise ConfigurationError(field_path=(field,), reason="invalid_type")
     return tuple(_pair(item, field) for item in value)
 
 
@@ -133,13 +133,13 @@ def _pair(item: object, field: str) -> tuple[str, str | None]:
                 return name, text
             case _:
                 pass
-    raise ConfigurationError(field_path=(field,), condition="invalid_type")
+    raise ConfigurationError(field_path=(field,), reason="invalid_type")
 
 
 def _hooks(value: object) -> tuple[Hook | AsyncHook, ...]:
     """Return a copy of a tuple of hooks, refusing anything that has no on_event method."""
     if not is_sequence(value) or len(hooks := tuple(hook for hook in value if _is_hook(hook))) != len(value):
-        raise ConfigurationError(field_path=("hooks",), condition="invalid_type")
+        raise ConfigurationError(field_path=("hooks",), reason="invalid_type")
     return hooks
 
 
@@ -158,10 +158,10 @@ def context(value: object) -> Mapping[str, JSONScalar]:
     Its names are strings and its values JSON scalars.
     """
     if not _is_context(value):
-        raise ConfigurationError(field_path=("context",), condition="invalid_type")
+        raise ConfigurationError(field_path=("context",), reason="invalid_type")
     copied: Mapping[str, JSONScalar] = MappingProxyType(dict(value))
     if len(encode_json(copied)) > MAX_CONTEXT_BYTES:
-        raise ConfigurationError(field_path=("context",), condition="out_of_range")
+        raise ConfigurationError(field_path=("context",), reason="out_of_range")
     return copied
 
 
@@ -189,7 +189,7 @@ def _settled(patch: tuple[tuple[str, str | None], ...], field: str, fold: Callab
     """Refuse a patch that both sets and removes one name."""
     removed = {fold(name) for name, text in patch if text is None}
     if any(fold(name) in removed for name, text in patch if text is not None):
-        raise ConfigurationError(field_path=(field,), condition="set_and_removed")
+        raise ConfigurationError(field_path=(field,), reason="set_and_removed")
 
 
 def _accepted(value: str) -> bool:
@@ -207,7 +207,7 @@ def _accepted(value: str) -> bool:
 
 def _auth_type(value: object) -> None:
     if not isinstance(value, (AuthConfig, Unset, type(None))):
-        raise AuthConfigurationError(field_path=("auth",), condition="invalid_type")
+        raise ConfigurationError(field_path=("auth",), reason="invalid_type")
 
 
 def is_base_url(value: str) -> bool:
@@ -225,9 +225,9 @@ def checked_base_url(value: str, path: tuple[str, ...]) -> str:
     try:
         valid = is_base_url(value)
     except ValueError as error:
-        raise ConfigurationError(field_path=path, condition="invalid_url", cause=error) from None
+        raise ConfigurationError(field_path=path, reason="invalid_url", cause=error) from None
     if not valid:
-        raise ConfigurationError(field_path=path, condition="invalid_url")
+        raise ConfigurationError(field_path=path, reason="invalid_url")
     return value
 
 
@@ -243,7 +243,7 @@ class ServerSelection:
         checked_count(self.index, ("server", "index"))
         variables = dict(self.variables)
         if not all(type(name) is str and type(value) is str for name, value in variables.items()):
-            raise ConfigurationError(field_path=("server", "variables"), condition="invalid_value")
+            raise ConfigurationError(field_path=("server", "variables"), reason="invalid_value")
         object.__setattr__(self, "variables", MappingProxyType(variables))
 
 
@@ -268,7 +268,7 @@ class TimeoutOptions:
 
 def _choice(value: object, choices: frozenset[str], path: tuple[str, ...]) -> None:
     if type(value) is not str or value not in choices:
-        raise ConfigurationError(field_path=path, condition="invalid_value")
+        raise ConfigurationError(field_path=path, reason="invalid_value")
 
 
 def _is_set(value: object) -> TypeIs[AbstractSet[object]]:
@@ -278,7 +278,7 @@ def _is_set(value: object) -> TypeIs[AbstractSet[object]]:
 def _statuses(value: object) -> frozenset[int]:
     path = ("retry", "statuses")
     if not _is_set(value):
-        raise ConfigurationError(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
     checked: set[int] = set()
     for item in value:
         if (
@@ -286,7 +286,7 @@ def _statuses(value: object) -> frozenset[int]:
             or not _RETRY_STATUS_MIN <= item <= _RETRY_STATUS_MAX
             or item in _RETRY_STATUS_EXCLUDED
         ):
-            raise ConfigurationError(field_path=path, condition="out_of_range")
+            raise ConfigurationError(field_path=path, reason="out_of_range")
         checked.add(item)
     return frozenset(checked)
 
@@ -295,12 +295,12 @@ def _retry_header(value: object, name: str) -> None:
     if value is None or isinstance(value, Unset):
         return
     if not isinstance(value, str) or not _NAME.fullmatch(value):
-        raise ConfigurationError(field_path=("retry", name), condition="invalid_value")
+        raise ConfigurationError(field_path=("retry", name), reason="invalid_value")
 
 
 def _ordered_delays(initial: float | Unset, maximum: float | Unset, operation_id: str | None = None) -> None:
     if not isinstance(initial, Unset) and not isinstance(maximum, Unset) and maximum < initial:
-        raise ConfigurationError(field_path=("retry", "max_delay"), condition="out_of_range", operation_id=operation_id)
+        raise ConfigurationError(field_path=("retry", "max_delay"), reason="out_of_range", operation_id=operation_id)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -348,15 +348,15 @@ class RetryOptions:
 def _origin(value: object) -> str:
     path = ("redirects", "allowed_origins")
     if not isinstance(value, str):
-        raise ConfigurationError(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
     if not _ORIGIN.fullmatch(value):
-        raise ConfigurationError(field_path=path, condition="invalid_url")
+        raise ConfigurationError(field_path=path, reason="invalid_url")
     return checked_base_url(value, path)
 
 
 def _origins(value: object) -> tuple[str, ...]:
     if not is_sequence(value):
-        raise ConfigurationError(field_path=("redirects", "allowed_origins"), condition="invalid_type")
+        raise ConfigurationError(field_path=("redirects", "allowed_origins"), reason="invalid_type")
     return tuple(_origin(item) for item in value)
 
 
@@ -396,7 +396,7 @@ def _key_value(value: object) -> None:
         ):
             return
         case _:
-            raise ConfigurationError(field_path=("idempotency_key",), condition="invalid_value")
+            raise ConfigurationError(field_path=("idempotency_key",), reason="invalid_value")
 
 
 def _key_time(value: object) -> None:
@@ -404,13 +404,13 @@ def _key_time(value: object) -> None:
         return
     path = ("idempotency_key", "first_used_at")
     if not isinstance(value, datetime):
-        raise ConfigurationError(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
     try:
         aware = value.utcoffset() is not None
     except (TypeError, ValueError, OverflowError) as error:
-        raise ConfigurationError(field_path=path, condition="invalid_value", cause=error) from None
+        raise ConfigurationError(field_path=path, reason="invalid_value", cause=error) from None
     if not aware:
-        raise ConfigurationError(field_path=path, condition="invalid_value")
+        raise ConfigurationError(field_path=path, reason="invalid_value")
 
 
 @dataclass(frozen=True, slots=True)
@@ -456,7 +456,7 @@ class TransportOptions:
             checked_instance(self.verify, (bool,), ("transport", "verify"))
         checked_instance(self.ssl_context, (SSLContext, type(None)), ("transport", "ssl_context"))
         if self.ssl_context is not None and not isinstance(self.verify, Unset):
-            raise ConfigurationError(field_path=("transport", "verify"), condition="conflicts_with_ssl_context")
+            raise ConfigurationError(field_path=("transport", "verify"), reason="conflicts_with_ssl_context")
         checked_instance(self.proxy, (str, type(None)), ("transport", "proxy"))
         for name, enabled in (("trust_env", self.trust_env), ("http2", self.http2)):
             checked_instance(enabled, (bool,), ("transport", name))
@@ -589,9 +589,9 @@ def _compression(value: object) -> str | None:
     if value is None:
         return None
     if not isinstance(value, str):
-        raise ConfigurationError(field_path=("compression",), condition="invalid_type")
+        raise ConfigurationError(field_path=("compression",), reason="invalid_type")
     if not _CODING.fullmatch(token := value.lower()) or token not in _ENCODERS:
-        raise ConfigurationError(field_path=("compression",), condition="invalid_value")
+        raise ConfigurationError(field_path=("compression",), reason="invalid_value")
     return token
 
 
@@ -612,7 +612,6 @@ class _Options:
     deadline: Deadline | Unset | None = UNSET
     cancel_token: CancelToken | Unset | None = UNSET
     limiter: Limiter | AsyncLimiter | Unset | None = field(default=UNSET, repr=False)
-    max_network_sends: int | Unset | None = UNSET
     stream_idle_timeout: float | Unset | None = UNSET
     stream_total_timeout: float | Unset | None = UNSET
     retry: RetryOptions | Unset = UNSET
@@ -625,12 +624,10 @@ class _Options:
         checked_instance(self.deadline, (Deadline, Unset, type(None)), ("deadline",))
         checked_instance(self.cancel_token, (CancelToken, Unset, type(None)), ("cancel_token",))
         if self.limiter is not None and not isinstance(self.limiter, Unset) and not _is_limiter(self.limiter):
-            raise ConfigurationError(field_path=("limiter",), condition="invalid_type")
+            raise ConfigurationError(field_path=("limiter",), reason="invalid_type")
         for name in ("total_timeout", "stream_idle_timeout", "stream_total_timeout"):
             if (value := getattr(self, name)) is not None and not isinstance(value, Unset):
                 object.__setattr__(self, name, seconds(value, (name,)))  # noqa: PLC2801 - Normalize frozen options.
-        if self.max_network_sends is not None and not isinstance(self.max_network_sends, Unset):
-            checked_count(self.max_network_sends, ("max_network_sends",))
 
     def __post_init__(self) -> None:
         self._check_timing()
@@ -647,11 +644,11 @@ class _Options:
         if self.query != ():
             object.__setattr__(self, "query", _query_patch(self.query))
         if not isinstance(self.server, Unset) and not isinstance(self.base_url, Unset):
-            raise ConfigurationError(field_path=("base_url",), condition="conflicts_with_server")
+            raise ConfigurationError(field_path=("base_url",), reason="conflicts_with_server")
         checked_instance(self.server, (ServerSelection, Unset), ("server",))
         if not isinstance(self.base_url, Unset):
             if type(self.base_url) is not str:
-                raise ConfigurationError(field_path=("base_url",), condition="invalid_type")
+                raise ConfigurationError(field_path=("base_url",), reason="invalid_type")
             checked_base_url(self.base_url, ("base_url",))
         if self.max_response_bytes is not None and not isinstance(self.max_response_bytes, Unset):
             checked_count(self.max_response_bytes, ("max_response_bytes",))
@@ -718,7 +715,6 @@ class Settings:
     deadline: Deadline | None = None
     cancel_token: CancelToken | None = None
     limiter: Limiter | AsyncLimiter | None = field(default=None, repr=False)
-    max_network_sends: int | Unset | None = UNSET
     stream_idle_timeout: float | None = 60.0
     stream_total_timeout: float | None = None
     retry: ResolvedRetryOptions = DEFAULT_RETRY
@@ -729,19 +725,12 @@ class Settings:
     compression: str | None = "gzip"
 
 
-def network_send_limit(settings: Settings) -> int | None:
-    """Derive only an omitted send cap, after all retry and redirect fields have been merged."""
-    if not isinstance(settings.max_network_sends, Unset):
-        return settings.max_network_sends
-    return 1 + settings.retry.max_retries + (settings.redirects.max_redirects if settings.redirects.enabled else 0)
-
-
 _PHASE_DEFAULTS: Final = {"connect": 5.0, "read": 15.0, "write": 15.0, "pool": 5.0}
 
 
 def _oauth_seconds(value: object, path: tuple[str, ...]) -> float:
     if (number := finite_number(value)) is None or number <= 0:
-        raise AuthConfigurationError(field_path=path, condition="invalid_value")
+        raise ConfigurationError(field_path=path, reason="invalid_value")
     return number
 
 

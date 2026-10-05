@@ -2,7 +2,7 @@
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   idle first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
-  idle while waiting for bytes ! PhaseTimeoutError: PhaseTimeoutError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] phase_timeout_error
+  idle while waiting for bytes ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] phase_timeout
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   paused first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -28,20 +28,20 @@
   > GET https://api.example.com/events accept=text/event-stream
   session deadline after handoff
   < closed
-    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   buffered first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-  buffered event after the session deadline ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+  buffered event after the session deadline ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   before the client closes 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-  client close with an open stream ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [] cleanup_error
-  after the client closed ! ClientClosedError: ClientClosedError(operation_id='streamEvents', call_id='<call>', state='CLOSING', owner='client') [operation_id='streamEvents'] client_closed_error
+  client close with an open stream ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
+  after the client closed ! ConfigurationError: ConfigurationError(operation_id='streamEvents', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='streamEvents', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
   > GET https://api.example.com/events accept=text/event-stream
   async idle first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-  async idle while waiting for bytes ! PhaseTimeoutError: PhaseTimeoutError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
+  async idle while waiting for bytes ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
   > GET https://api.example.com/events accept=text/event-stream
   async paused first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   async after a pause longer than the idle limit
@@ -51,63 +51,63 @@
   > GET https://api.example.com/events accept=text/event-stream
   async session deadline
   < closed
-    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   async session deadline before the stream total
   < closed
-    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   async stream total before the session deadline
   < closed
-    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   async buffered first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-  async buffered event after the session deadline ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+  async buffered event after the session deadline ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   async cancelled first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
   async step cancelled
-  async after the cancellation ! ProtocolStateError: ProtocolStateError(state='failed', action='anext') [] protocol_state_error
+  async after the cancellation ! ProtocolStateError: ProtocolStateError(state='failed', action='anext') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   > GET https://api.example.com/events accept=text/event-stream
   async before the client closes 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
-  async client close with an open stream ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [] cleanup_error
+  async client close with an open stream ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
   < closed
-  async after the client closed ! ClientClosedError: ClientClosedError(operation_id='streamEvents', call_id='<call>', state='CLOSING', owner='client') [operation_id='streamEvents'] client_closed_error
+  async after the client closed ! ConfigurationError: ConfigurationError(operation_id='streamEvents', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='streamEvents', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
   async outcome of closing returned None
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  async idle the client sets ! PhaseTimeoutError: PhaseTimeoutError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
+  async idle the client sets ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  async no idle limit before the session deadline ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+  async no idle limit before the session deadline ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   session total on the client clock
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   session deadline from another clock
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   stream total on the client clock
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   async session total on the client clock
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   async session deadline from another clock
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
   > GET https://api.example.com/events accept=text/event-stream
   async stream total on the client clock
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded

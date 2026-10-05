@@ -167,7 +167,7 @@ def _adapter_calls(
     adapter.replies.extend((
         _ok(lines, responses, response),
         _traced(lines, responses, response),
-        _raising(errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")),
+        _raising(errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")),
         _raising(ValueError("adapter bug")),
         lambda request, context: response(lines, "200", json, ()),
         lambda request, context: response(lines, 99, json, ()),
@@ -368,9 +368,9 @@ def _closing(package: ModuleType, lines: list[str], label: str, cleanup: float, 
     while True:
         try:
             api.pets.get_pet(pet_id=_pet(package), options="refused only once closing")
-        except errors.ClientClosedError:
-            break
-        except errors.ConfigurationError:
+        except errors.ConfigurationError as error:
+            if error.reason == "client_closed":
+                break
             if time.monotonic() > deadline:
                 msg = "The client never started closing"
                 raise TimeoutError(msg) from None
@@ -408,7 +408,7 @@ def lifecycle(package: ModuleType, lines: list[str]) -> None:
         record(lines, f"options {label}", lambda value=value: options.ClientOptions(cleanup_timeout=value))
     _closing(package, lines, "closing stops the call", 5.0, None)
     _closing(package, lines, "closing outlasts the cleanup time", 0.05, None)
-    _closing(package, lines, "closing interrupts the read", 5.0, errors.TransportError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="read"))
+    _closing(package, lines, "closing interrupts the read", 5.0, errors.APIConnectionError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="read"))
     run(lambda: _async_lifecycle(package, lines))
     _backends(package, lines)
 

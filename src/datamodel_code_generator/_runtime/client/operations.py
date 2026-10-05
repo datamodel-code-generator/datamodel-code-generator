@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from functools import partial
-from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, Protocol, TypeAlias
 
 from typing_extensions import TypeIs, TypeVar
 
@@ -30,17 +30,7 @@ from ..model_codecs.media import (
 from ..model_codecs.parameters import path_text, query_pairs
 from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire
-from .errors import (
-    APIStatusError,
-    BodyProtocolError,
-    ConfigurationError,
-    DecodeError,
-    RequestEncodingError,
-    ResponseDecodeError,
-    ResponseValidationError,
-    UnexpectedMediaTypeError,
-    status_error,
-)
+from .errors import APIStatusError, ConfigurationError, DecodeError, response_failure, status_error
 from .media import charset, encode_text, essence, most_specific, normalized, with_charset
 from .multipart import (
     DecodedPart,
@@ -342,11 +332,9 @@ class RequestBody:
         """
         if isinstance(value, Unset):
             if media_type is not None:
-                raise ConfigurationError(
-                    field_path=("media_type",), condition="without_body", operation_id=operation_id
-                )
+                raise ConfigurationError(field_path=("media_type",), reason="without_body", operation_id=operation_id)
             if self.required:
-                raise RequestEncodingError(location=("body",), operation_id=operation_id)
+                raise _unencodable(("body",), operation_id)
             return None
         selected, sent = (
             (value.media, value.sent) if isinstance(value, FieldBody) else self.selected(operation_id, media_type)
@@ -358,10 +346,10 @@ class RequestBody:
                     media_type=f"{sent}; boundary={boundary}", content=selected.multipart(value, boundary)
                 )
             content = selected.encode(value, sent)
-        except RequestEncodingError as error:
-            raise RequestEncodingError(location=error.location, operation_id=operation_id, cause=error.cause) from None
+        except DecodeError as error:
+            raise _unencodable(error.location, operation_id, error.cause) from None
         except (*DATA_ERRORS, ValueError, TypeError) as error:
-            raise RequestEncodingError(location=("body",), operation_id=operation_id, cause=error) from None
+            raise _unencodable(("body",), operation_id, error) from None
         return EncodedBody(media_type=sent, content=content)
 
     def selected(self, operation_id: str | None, media_type: str | None) -> tuple[BodyMedia, str]:
@@ -371,7 +359,7 @@ class RequestBody:
         a media range such as image/*.
         """
         if media_type is not None and "*" in essence(media_type):
-            raise ConfigurationError(field_path=("media_type",), condition="undeclared", operation_id=operation_id)
+            raise ConfigurationError(field_path=("media_type",), reason="undeclared", operation_id=operation_id)
         found = self.select(operation_id, media_type)
         concrete = None if media_type is None else normalized(media_type)
         return found, found.media_type if concrete is None else _sent(concrete, found.media_type)
@@ -383,11 +371,11 @@ class RequestBody:
         then */*.
         """
         if media_type is None and self.default is None:
-            raise ConfigurationError(field_path=("media_type",), condition="missing", operation_id=operation_id)
+            raise ConfigurationError(field_path=("media_type",), reason="missing", operation_id=operation_id)
         wanted = self.default if media_type is None else normalized(media_type)
         declared = None if wanted is None else most_specific(wanted, (media.media_type for media in self.media))
         if (found := next((media for media in self.media if media.media_type == declared), None)) is None:
-            raise ConfigurationError(field_path=("media_type",), condition="undeclared", operation_id=operation_id)
+            raise ConfigurationError(field_path=("media_type",), reason="undeclared", operation_id=operation_id)
         return found
 
 
@@ -440,28 +428,35 @@ class Branch(Generic[T_co]):
         return paged(body, info)
 
 
+def _unencodable(
+    location: tuple[str | int, ...], operation_id: str | None, cause: BaseException | None = None
+) -> DecodeError:
+    """Return the failure of an argument its declared wire form cannot carry; the location never holds the value."""
+    return DecodeError(
+        reason="unencodable", direction="request", location=location, operation_id=operation_id, cause=cause
+    )
+
+
 class _InvalidBodyError(Exception):
     """A body that failed to decode, published as the error of its kind of failure."""
+
+    reason: ClassVar[str] = "invalid_syntax"
 
     def __init__(self, cause: BaseException) -> None:
         super().__init__()
         self.cause = cause
 
-    def failure(self, info: ResponseInfo, body: bytes) -> ResponseDecodeError:
-        """Return the syntax failure of a body that does not parse."""
-        return DecodeError(info=info, body_bytes=body, call_id=info.call_id, cause=self.cause)
+    def failure(self, info: ResponseInfo, body: bytes) -> DecodeError:
+        """Return the failure of a body that does not parse, is rejected by its model, or breaks its framing."""
+        return response_failure(info, self.reason, body, self.cause)
 
 
 class _BodyValueError(_InvalidBodyError):
-    def failure(self, info: ResponseInfo, body: bytes) -> ResponseDecodeError:
-        return ResponseValidationError(info=info, body_bytes=body, call_id=info.call_id, cause=self.cause)
+    reason = "invalid_value"
 
 
 class _BodyFramingError(_InvalidBodyError):
-    def failure(self, info: ResponseInfo, body: bytes) -> ResponseDecodeError:
-        return BodyProtocolError(
-            info=info, condition="invalid_framing", body_bytes=body, call_id=info.call_id, cause=self.cause
-        )
+    reason = "invalid_framing"
 
 
 def _json(body: bytes, _: ResponseInfo) -> WireValue:
@@ -742,7 +737,7 @@ class ResponseDecoder(Generic[T_co]):
         )
         if wanted is None or "*" in essence(wanted) or all(branch.media_type is None for branch in success):
             raise ConfigurationError(
-                field_path=("response_media_type",), condition="undeclared", operation_id=operation_id
+                field_path=("response_media_type",), reason="undeclared", operation_id=operation_id
             )
         decoder = self._narrowed[wanted] = ResponseDecoder(
             success,
@@ -761,12 +756,7 @@ class ResponseDecoder(Generic[T_co]):
     def streamed(self, info: ResponseInfo) -> None:
         """Refuse a success whose body is not streamed in a declared media type: an undeclared status or media type."""
         if self._branch(info, b"").media_type is None:
-            raise UnexpectedMediaTypeError(
-                info=info,
-                actual_media_type=info.content_type,
-                expected_media_types=() if self._permitted is None else (self._permitted,),
-                call_id=info.call_id,
-            )
+            raise response_failure(info, "unexpected_media_type", media_type=info.content_type)
 
     def decode(
         self,
@@ -829,13 +819,7 @@ class ResponseDecoder(Generic[T_co]):
             and branch.media_type is not None
             and (most_specific(info.content_type or "", (permitted,)) is None)
         ):
-            raise UnexpectedMediaTypeError(
-                info=info,
-                actual_media_type=info.content_type,
-                expected_media_types=(permitted,),
-                body_bytes=body,
-                call_id=info.call_id,
-            )
+            raise response_failure(info, "unexpected_media_type", body, media_type=info.content_type)
         return branch
 
     @staticmethod
@@ -857,11 +841,16 @@ class ResponseDecoder(Generic[T_co]):
                 data = branch.decode(body, info)
             except _InvalidBodyError as error:
                 problem = error.cause
-            except (BodyProtocolError, UnexpectedMediaTypeError) as error:
+            except DecodeError as error:
+                if error.reason not in _SELECTION_FAILURES:
+                    raise
                 problem = error
         return status_error(info.status_code)(
             info=info, body=data, body_bytes=body, truncated=truncated, call_id=info.call_id, cause=problem
         )
+
+
+_SELECTION_FAILURES: Final = frozenset({"forbidden_body", "missing_body", "unexpected_media_type"})
 
 
 def _unexpected(
@@ -883,18 +872,12 @@ def _select(info: ResponseInfo, body: bytes, declared: Sequence[Branch[T]], *, b
     """Return the branch of a response among its status's declarations: its empty branch, or its media type's."""
     if bodyless or (declared and all(branch.media_type is None for branch in declared)):
         if body:
-            raise BodyProtocolError(info=info, condition="forbidden_body", body_bytes=body, call_id=info.call_id)
+            raise response_failure(info, "forbidden_body", body)
         if (empty := next((branch for branch in declared if branch.media_type is None), None)) is None:
-            raise BodyProtocolError(info=info, condition="missing_body", call_id=info.call_id)
+            raise response_failure(info, "missing_body")
         return empty
     if info.content_type is None or (found := _matching(info.content_type, declared)) is None:
-        raise UnexpectedMediaTypeError(
-            info=info,
-            actual_media_type=info.content_type,
-            expected_media_types=tuple(branch.media_type for branch in declared if branch.media_type is not None),
-            body_bytes=body,
-            call_id=info.call_id,
-        )
+        raise response_failure(info, "unexpected_media_type", body, media_type=info.content_type)
     return found
 
 

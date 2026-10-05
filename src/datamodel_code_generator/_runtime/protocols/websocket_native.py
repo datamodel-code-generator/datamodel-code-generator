@@ -40,13 +40,7 @@ from websockets.sync.client import ClientConnection
 from websockets.sync.client import connect as _connect
 from websockets.uri import parse_uri
 
-from ..client.errors import (
-    DeliveryState,
-    PhaseTimeoutError,
-    ProtocolConfigurationError,
-    ProtocolSizeError,
-    TransportError,
-)
+from ..client.errors import APIConnectionError, APITimeoutError, ConfigurationError, DeliveryState, ProtocolSizeError
 from ..client.responses import HeadersView
 from ..client.timing import TOKEN_INTERVAL, real_end, wait_left
 from ..client.transports import attempt_trace
@@ -219,11 +213,11 @@ def _failure(error: Exception, evidence: _Evidence, timeout: float | None) -> Ex
     delivery = evidence.delivery
     if delivery is DeliveryState.NOT_SENT:
         attempt_trace(evidence.context).proven_not_sent = True
-    failure: Exception = TransportError(delivery_state=delivery, phase="connect", cause=error)
+    failure: Exception = APIConnectionError(delivery_state=delivery, phase="connect", cause=error)
     match error:
         case TimeoutError() if timeout is not None:
-            failure = PhaseTimeoutError(
-                effective_timeout=timeout, phase="connect", delivery_state=delivery, cause=error
+            failure = APITimeoutError(
+                reason="phase_timeout", effective_timeout=timeout, phase="connect", delivery_state=delivery, cause=error
             )
         case InvalidProxyStatus():
             failure = WebSocketProxyError(proxy_status_code=error.response.status_code, cause=error)
@@ -296,7 +290,7 @@ def _proxy(url: str, transport: ResolvedWebSocketTransportOptions) -> str | None
     if transport.proxy is not None or not transport.trust_env:
         return transport.proxy
     if (proxy := get_proxy(parse_uri(url))) is not None and not valid_proxy(proxy):
-        raise ProtocolConfigurationError(field_path=("websocket_transport", "trust_env"), condition="invalid_value")
+        raise ConfigurationError(field_path=("websocket_transport", "trust_env"), reason="invalid_value")
     return proxy
 
 
@@ -394,7 +388,7 @@ class AsyncNativeConnector(_Connector):
 def _undelivered(error: ConnectionClosed, closed: Exception) -> Exception:
     """Return a send's closed connection, retaining uncertainty when an I/O failure may have written it."""
     if isinstance(error.__cause__, OSError):
-        return TransportError(delivery_state=DeliveryState.MAYBE_SENT, phase="write", cause=error)
+        return APIConnectionError(delivery_state=DeliveryState.MAYBE_SENT, phase="write", cause=error)
     return closed
 
 

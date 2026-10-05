@@ -1,10 +1,10 @@
 # uploads-oauth pydantic_v2.BaseModel
-sync original failure: ClientClosedError cause=None
+sync original failure: ConfigurationError cause=None
   handle UploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=0) token=1 resource=['POST /files']
   resumed size=0 token=1 resource=['POST /files', 'GET /files/u1/status', 'POST /files/u1/complete']
   cancelled after decoded completion: retained=0 resource=['POST /files', 'GET /files/u1/status', 'POST /files/u1/complete', 'POST /files', 'POST /files/u2/complete']
   responses closed=True
-async original failure: ClientClosedError cause=None
+async original failure: ConfigurationError cause=None
   handle AsyncUploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=0) token=1 resource=['POST /files']
   resumed size=0 token=2 resource=['POST /files', 'GET /files/u1/status', 'POST /files/u1/complete']
   cancelled after decoded completion: retained=0 resource=['POST /files', 'GET /files/u1/status', 'POST /files/u1/complete', 'POST /files', 'POST /files/u2/complete']
@@ -12,10 +12,10 @@ async original failure: ClientClosedError cause=None
 file source change remains terminal
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  first advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', expected_size=10, actual_size=3) [condition='inconsistent'] upload_source_changed_error [expected_size=10, actual_size=3]
+  first advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', expected_size=10, actual_size=3) [condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_source_changed_error [expected_size=10, actual_size=3]
   checkpoint confirmed=0 phase=uploading
-  advance after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='advance') [] protocol_state_error
-  run after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
+  advance after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='advance') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  run after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   checkpoint unchanged after close: True
   borrowed source left open: True
   later resource sends=0
@@ -24,10 +24,10 @@ file source change remains terminal
 async file source change remains terminal
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  first advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', expected_size=10, actual_size=3) [condition='inconsistent'] upload_source_changed_error [expected_size=10, actual_size=3]
+  first advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', expected_size=10, actual_size=3) [condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_source_changed_error [expected_size=10, actual_size=3]
   checkpoint confirmed=0 phase=uploading
-  advance after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='advance') [] protocol_state_error
-  run after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
+  advance after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='advance') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  run after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   checkpoint unchanged after close: True
   borrowed source left open: True
   later resource sends=0

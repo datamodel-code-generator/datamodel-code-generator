@@ -499,7 +499,7 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
             try:
                 await response.stream_to(directory / "limited.bin")
             except Exception as error:  # noqa: BLE001
-                limited = f"{type(error).__name__} {error.representation} {error.limit}"
+                limited = f"{type(error).__name__} {error.reason} {error.limit}"
         lines.append(f"  async download gzip past its decoded limit {limited} {_files(directory)}")
         exchange.respond(raw_response(200))
         async with streaming.request_raw("GET", _URL) as response:

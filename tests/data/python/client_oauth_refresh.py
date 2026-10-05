@@ -387,10 +387,10 @@ def _faults(
     auth: ModuleType, transports: ModuleType, responses: ModuleType, errors: ModuleType, lines: list[str]
 ) -> None:
     """Keep the token set of a refresh that failed, so the next call sends the same refresh token again."""
-    read = errors.PhaseTimeoutError(
+    read = errors.APITimeoutError(
         effective_timeout=15.0, delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read"
     )
-    unsent = errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
+    unsent = errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("s"))
 
     def provider(adapter: Adapter, *, client_secret: object = secret, **arguments: Any) -> Any:

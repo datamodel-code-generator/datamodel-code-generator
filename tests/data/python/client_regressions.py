@@ -112,7 +112,7 @@ def json_decode_errors(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(raw_response(200, body, "application/json"))
             try:
                 api.status.get_status()
-            except errors.ResponseDecodeError as error:
+            except errors.DecodeError as error:
                 lines.append(f"  {label}: {_failure(error)}")
         for label, body in _bodies():
             if label in {"syntax", "large syntax"}:
@@ -134,7 +134,7 @@ async def _async_json_decode_errors(package: ModuleType, exchange: Exchange, lin
             exchange.respond(raw_response(200, body, "application/json"))
             try:
                 await api.status.get_status()
-            except errors.ResponseDecodeError as error:
+            except errors.DecodeError as error:
                 lines.append(f"  async {label}: {_failure(error)}")
         for label, body in _bodies():
             if label in {"syntax", "large syntax"}:

@@ -20,9 +20,9 @@
   received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalse 3 = None
   requests 1
-  sync readSimpleScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -94,9 +94,9 @@
   received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalseFalse 3 = None
   requests 1
-  sync readSimpleScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalseFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -168,9 +168,9 @@
   received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalseAbsent 3 = None
   requests 1
-  sync readSimpleScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalseAbsent 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseAbsent 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-absent/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -482,7 +482,7 @@
   received url https://api.example.com/label-scalar-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalse 3 = None
   requests 1
-  sync readLabelScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -559,7 +559,7 @@
   received url https://api.example.com/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalseFalse 3 = None
   requests 1
-  sync readLabelScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -636,7 +636,7 @@
   received url https://api.example.com/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalseAbsent 3 = None
   requests 1
-  sync readLabelScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-absent/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -773,7 +773,7 @@
   received url https://api.example.com/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrue 3 = None
   requests 1
-  sync readLabelArrayTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrue 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-false/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -795,7 +795,7 @@
   received url https://api.example.com/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrueFalse 3 = None
   requests 1
-  sync readLabelArrayTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-absent/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -817,7 +817,7 @@
   received url https://api.example.com/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrueAbsent 3 = None
   requests 1
-  sync readLabelArrayTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-false/.left-key,a%3Ab%40c%21,right,x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -899,7 +899,7 @@
   received url https://api.example.com/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrue 3 = None
   requests 1
-  sync readLabelObjectTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrue 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-false/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -921,7 +921,7 @@
   received url https://api.example.com/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrueFalse 3 = None
   requests 1
-  sync readLabelObjectTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-absent/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -943,7 +943,7 @@
   received url https://api.example.com/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrueAbsent 3 = None
   requests 1
-  sync readLabelObjectTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/matrix-scalar-false/;wire-name=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -1595,9 +1595,9 @@
   received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalse 3 = None
   requests 1
-  async readSimpleScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -1669,9 +1669,9 @@
   received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalseFalse 3 = None
   requests 1
-  async readSimpleScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalseFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -1743,9 +1743,9 @@
   received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalseAbsent 3 = None
   requests 1
-  async readSimpleScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalseAbsent 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseAbsent 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-absent/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -2057,7 +2057,7 @@
   received url https://api.example.com/label-scalar-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalse 3 = None
   requests 1
-  async readLabelScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -2134,7 +2134,7 @@
   received url https://api.example.com/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalseFalse 3 = None
   requests 1
-  async readLabelScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -2211,7 +2211,7 @@
   received url https://api.example.com/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalseAbsent 3 = None
   requests 1
-  async readLabelScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-absent/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -2348,7 +2348,7 @@
   received url https://api.example.com/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrue 3 = None
   requests 1
-  async readLabelArrayTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrue 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-false/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -2370,7 +2370,7 @@
   received url https://api.example.com/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrueFalse 3 = None
   requests 1
-  async readLabelArrayTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-absent/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -2392,7 +2392,7 @@
   received url https://api.example.com/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrueAbsent 3 = None
   requests 1
-  async readLabelArrayTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-false/.left-key,a%3Ab%40c%21,right,x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -2474,7 +2474,7 @@
   received url https://api.example.com/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrue 3 = None
   requests 1
-  async readLabelObjectTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrue 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-false/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -2496,7 +2496,7 @@
   received url https://api.example.com/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrueFalse 3 = None
   requests 1
-  async readLabelObjectTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-absent/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -2518,7 +2518,7 @@
   received url https://api.example.com/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrueAbsent 3 = None
   requests 1
-  async readLabelObjectTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/matrix-scalar-false/;wire-name=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -3172,9 +3172,9 @@
   received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalse 3 = None
   requests 1
-  sync readSimpleScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -3246,9 +3246,9 @@
   received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalseFalse 3 = None
   requests 1
-  sync readSimpleScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalseFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -3320,9 +3320,9 @@
   received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalseAbsent 3 = None
   requests 1
-  sync readSimpleScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalseAbsent 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseAbsent 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-absent/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -3634,7 +3634,7 @@
   received url https://api.example.com/label-scalar-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalse 3 = None
   requests 1
-  sync readLabelScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -3711,7 +3711,7 @@
   received url https://api.example.com/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalseFalse 3 = None
   requests 1
-  sync readLabelScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -3788,7 +3788,7 @@
   received url https://api.example.com/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalseAbsent 3 = None
   requests 1
-  sync readLabelScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-absent/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -3925,7 +3925,7 @@
   received url https://api.example.com/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrue 3 = None
   requests 1
-  sync readLabelArrayTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrue 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-false/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -3947,7 +3947,7 @@
   received url https://api.example.com/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrueFalse 3 = None
   requests 1
-  sync readLabelArrayTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-absent/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -3969,7 +3969,7 @@
   received url https://api.example.com/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrueAbsent 3 = None
   requests 1
-  sync readLabelArrayTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-false/.right,x%3By%3Dz,left-key,a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -4051,7 +4051,7 @@
   received url https://api.example.com/label-object-true/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-object-true/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelObjectTrue 3 = None
   requests 1
-  sync readLabelObjectTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrue 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-false/.right=x%3By%3Dz.left-key=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -4073,7 +4073,7 @@
   received url https://api.example.com/label-object-true-false/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-object-true-false/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelObjectTrueFalse 3 = None
   requests 1
-  sync readLabelObjectTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-absent/.right=x%3By%3Dz.left-key=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -4095,7 +4095,7 @@
   received url https://api.example.com/label-object-true-absent/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-object-true-absent/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelObjectTrueAbsent 3 = None
   requests 1
-  sync readLabelObjectTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/matrix-scalar-false/;wire-name=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -4747,9 +4747,9 @@
   received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalse 3 = None
   requests 1
-  async readSimpleScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -4821,9 +4821,9 @@
   received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalseFalse 3 = None
   requests 1
-  async readSimpleScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalseFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -4895,9 +4895,9 @@
   received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalseAbsent 3 = None
   requests 1
-  async readSimpleScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalseAbsent 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseAbsent 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-absent/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -5209,7 +5209,7 @@
   received url https://api.example.com/label-scalar-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalse 3 = None
   requests 1
-  async readLabelScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -5286,7 +5286,7 @@
   received url https://api.example.com/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalseFalse 3 = None
   requests 1
-  async readLabelScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -5363,7 +5363,7 @@
   received url https://api.example.com/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalseAbsent 3 = None
   requests 1
-  async readLabelScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-absent/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -5500,7 +5500,7 @@
   received url https://api.example.com/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrue 3 = None
   requests 1
-  async readLabelArrayTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrue 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-false/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -5522,7 +5522,7 @@
   received url https://api.example.com/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrueFalse 3 = None
   requests 1
-  async readLabelArrayTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-absent/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -5544,7 +5544,7 @@
   received url https://api.example.com/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrueAbsent 3 = None
   requests 1
-  async readLabelArrayTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-false/.right,x%3By%3Dz,left-key,a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -5626,7 +5626,7 @@
   received url https://api.example.com/label-object-true/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-object-true/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F' status 204
   async readLabelObjectTrue 3 = None
   requests 1
-  async readLabelObjectTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrue 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-false/.right=x%3By%3Dz.left-key=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -5648,7 +5648,7 @@
   received url https://api.example.com/label-object-true-false/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-object-true-false/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F' status 204
   async readLabelObjectTrueFalse 3 = None
   requests 1
-  async readLabelObjectTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-absent/.right=x%3By%3Dz.left-key=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -5670,7 +5670,7 @@
   received url https://api.example.com/label-object-true-absent/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-object-true-absent/.right=x%3By%3Dz.left-key=na%C3%AFve%25ZZ%25252F' status 204
   async readLabelObjectTrueAbsent 3 = None
   requests 1
-  async readLabelObjectTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/matrix-scalar-false/;wire-name=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -6324,9 +6324,9 @@
   received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalse 3 = None
   requests 1
-  sync readSimpleScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -6398,9 +6398,9 @@
   received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalseFalse 3 = None
   requests 1
-  sync readSimpleScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalseFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -6472,9 +6472,9 @@
   received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalseAbsent 3 = None
   requests 1
-  sync readSimpleScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalseAbsent 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseAbsent 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-absent/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -6786,7 +6786,7 @@
   received url https://api.example.com/label-scalar-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalse 3 = None
   requests 1
-  sync readLabelScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -6863,7 +6863,7 @@
   received url https://api.example.com/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalseFalse 3 = None
   requests 1
-  sync readLabelScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -6940,7 +6940,7 @@
   received url https://api.example.com/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalseAbsent 3 = None
   requests 1
-  sync readLabelScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-absent/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -7077,7 +7077,7 @@
   received url https://api.example.com/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrue 3 = None
   requests 1
-  sync readLabelArrayTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrue 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-false/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -7099,7 +7099,7 @@
   received url https://api.example.com/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrueFalse 3 = None
   requests 1
-  sync readLabelArrayTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-absent/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -7121,7 +7121,7 @@
   received url https://api.example.com/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrueAbsent 3 = None
   requests 1
-  sync readLabelArrayTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-false/.left-key,a%3Ab%40c%21,right,x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -7203,7 +7203,7 @@
   received url https://api.example.com/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrue 3 = None
   requests 1
-  sync readLabelObjectTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrue 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-false/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -7225,7 +7225,7 @@
   received url https://api.example.com/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrueFalse 3 = None
   requests 1
-  sync readLabelObjectTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-absent/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -7247,7 +7247,7 @@
   received url https://api.example.com/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrueAbsent 3 = None
   requests 1
-  sync readLabelObjectTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/matrix-scalar-false/;wire-name=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -7899,9 +7899,9 @@
   received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalse 3 = None
   requests 1
-  async readSimpleScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -7973,9 +7973,9 @@
   received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalseFalse 3 = None
   requests 1
-  async readSimpleScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalseFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -8047,9 +8047,9 @@
   received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalseAbsent 3 = None
   requests 1
-  async readSimpleScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalseAbsent 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseAbsent 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-absent/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -8361,7 +8361,7 @@
   received url https://api.example.com/label-scalar-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalse 3 = None
   requests 1
-  async readLabelScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -8438,7 +8438,7 @@
   received url https://api.example.com/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalseFalse 3 = None
   requests 1
-  async readLabelScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -8515,7 +8515,7 @@
   received url https://api.example.com/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalseAbsent 3 = None
   requests 1
-  async readLabelScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-absent/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -8652,7 +8652,7 @@
   received url https://api.example.com/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrue 3 = None
   requests 1
-  async readLabelArrayTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrue 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-false/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -8674,7 +8674,7 @@
   received url https://api.example.com/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrueFalse 3 = None
   requests 1
-  async readLabelArrayTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-absent/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -8696,7 +8696,7 @@
   received url https://api.example.com/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrueAbsent 3 = None
   requests 1
-  async readLabelArrayTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-false/.left-key,a%3Ab%40c%21,right,x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -8778,7 +8778,7 @@
   received url https://api.example.com/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrue 3 = None
   requests 1
-  async readLabelObjectTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrue 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-false/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -8800,7 +8800,7 @@
   received url https://api.example.com/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrueFalse 3 = None
   requests 1
-  async readLabelObjectTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-absent/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -8822,7 +8822,7 @@
   received url https://api.example.com/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrueAbsent 3 = None
   requests 1
-  async readLabelObjectTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/matrix-scalar-false/;wire-name=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -9476,9 +9476,9 @@
   received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalse 3 = None
   requests 1
-  sync readSimpleScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -9550,9 +9550,9 @@
   received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalseFalse 3 = None
   requests 1
-  sync readSimpleScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalseFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -9624,9 +9624,9 @@
   received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalseAbsent 3 = None
   requests 1
-  sync readSimpleScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalseAbsent 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseAbsent 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-absent/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -9938,7 +9938,7 @@
   received url https://api.example.com/label-scalar-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalse 3 = None
   requests 1
-  sync readLabelScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -10015,7 +10015,7 @@
   received url https://api.example.com/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalseFalse 3 = None
   requests 1
-  sync readLabelScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -10092,7 +10092,7 @@
   received url https://api.example.com/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalseAbsent 3 = None
   requests 1
-  sync readLabelScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-absent/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -10229,7 +10229,7 @@
   received url https://api.example.com/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrue 3 = None
   requests 1
-  sync readLabelArrayTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrue 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-false/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -10251,7 +10251,7 @@
   received url https://api.example.com/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrueFalse 3 = None
   requests 1
-  sync readLabelArrayTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-absent/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -10273,7 +10273,7 @@
   received url https://api.example.com/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrueAbsent 3 = None
   requests 1
-  sync readLabelArrayTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-false/.left-key,a%3Ab%40c%21,right,x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -10355,7 +10355,7 @@
   received url https://api.example.com/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrue 3 = None
   requests 1
-  sync readLabelObjectTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrue 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-false/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -10377,7 +10377,7 @@
   received url https://api.example.com/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrueFalse 3 = None
   requests 1
-  sync readLabelObjectTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-absent/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -10399,7 +10399,7 @@
   received url https://api.example.com/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrueAbsent 3 = None
   requests 1
-  sync readLabelObjectTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/matrix-scalar-false/;wire-name=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11051,9 +11051,9 @@
   received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalse 3 = None
   requests 1
-  async readSimpleScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11125,9 +11125,9 @@
   received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalseFalse 3 = None
   requests 1
-  async readSimpleScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalseFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11199,9 +11199,9 @@
   received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalseAbsent 3 = None
   requests 1
-  async readSimpleScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalseAbsent 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseAbsent 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-absent/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11513,7 +11513,7 @@
   received url https://api.example.com/label-scalar-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalse 3 = None
   requests 1
-  async readLabelScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11590,7 +11590,7 @@
   received url https://api.example.com/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalseFalse 3 = None
   requests 1
-  async readLabelScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11667,7 +11667,7 @@
   received url https://api.example.com/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalseAbsent 3 = None
   requests 1
-  async readLabelScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-absent/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11804,7 +11804,7 @@
   received url https://api.example.com/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrue 3 = None
   requests 1
-  async readLabelArrayTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrue 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-false/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11826,7 +11826,7 @@
   received url https://api.example.com/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrueFalse 3 = None
   requests 1
-  async readLabelArrayTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-absent/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11848,7 +11848,7 @@
   received url https://api.example.com/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrueAbsent 3 = None
   requests 1
-  async readLabelArrayTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-false/.left-key,a%3Ab%40c%21,right,x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11930,7 +11930,7 @@
   received url https://api.example.com/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrue 3 = None
   requests 1
-  async readLabelObjectTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrue 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-false/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11952,7 +11952,7 @@
   received url https://api.example.com/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrueFalse 3 = None
   requests 1
-  async readLabelObjectTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-absent/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -11974,7 +11974,7 @@
   received url https://api.example.com/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrueAbsent 3 = None
   requests 1
-  async readLabelObjectTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/matrix-scalar-false/;wire-name=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -12628,9 +12628,9 @@
   received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalse 3 = None
   requests 1
-  sync readSimpleScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -12702,9 +12702,9 @@
   received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalseFalse 3 = None
   requests 1
-  sync readSimpleScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalseFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -12776,9 +12776,9 @@
   received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
   sync readSimpleScalarFalseAbsent 3 = None
   requests 1
-  sync readSimpleScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  sync readSimpleScalarFalseAbsent 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readSimpleScalarFalseAbsent 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-absent/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -13090,7 +13090,7 @@
   received url https://api.example.com/label-scalar-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalse 3 = None
   requests 1
-  sync readLabelScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -13167,7 +13167,7 @@
   received url https://api.example.com/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalseFalse 3 = None
   requests 1
-  sync readLabelScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -13244,7 +13244,7 @@
   received url https://api.example.com/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F' status 204
   sync readLabelScalarFalseAbsent 3 = None
   requests 1
-  sync readLabelScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  sync readLabelScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-absent/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -13381,7 +13381,7 @@
   received url https://api.example.com/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrue 3 = None
   requests 1
-  sync readLabelArrayTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrue 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-false/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -13403,7 +13403,7 @@
   received url https://api.example.com/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrueFalse 3 = None
   requests 1
-  sync readLabelArrayTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-absent/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -13425,7 +13425,7 @@
   received url https://api.example.com/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   sync readLabelArrayTrueAbsent 3 = None
   requests 1
-  sync readLabelArrayTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelArrayTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-false/.left-key,a%3Ab%40c%21,right,x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -13507,7 +13507,7 @@
   received url https://api.example.com/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrue 3 = None
   requests 1
-  sync readLabelObjectTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrue 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-false/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -13529,7 +13529,7 @@
   received url https://api.example.com/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrueFalse 3 = None
   requests 1
-  sync readLabelObjectTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-absent/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -13551,7 +13551,7 @@
   received url https://api.example.com/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   sync readLabelObjectTrueAbsent 3 = None
   requests 1
-  sync readLabelObjectTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  sync readLabelObjectTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/matrix-scalar-false/;wire-name=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -14203,9 +14203,9 @@
   received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalse 3 = None
   requests 1
-  async readSimpleScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -14277,9 +14277,9 @@
   received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalseFalse 3 = None
   requests 1
-  async readSimpleScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalseFalse 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseFalse 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-false/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -14351,9 +14351,9 @@
   received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
   async readSimpleScalarFalseAbsent 3 = None
   requests 1
-  async readSimpleScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
-  async readSimpleScalarFalseAbsent 5 ! RequestEncodingError: RequestEncodingError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readSimpleScalarFalseAbsent 5 ! DecodeError: DecodeError(operation_id='readSimpleScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readSimpleScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/simple-scalar-false-absent/%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -14665,7 +14665,7 @@
   received url https://api.example.com/label-scalar-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalse 3 = None
   requests 1
-  async readLabelScalarFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -14742,7 +14742,7 @@
   received url https://api.example.com/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-false/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalseFalse 3 = None
   requests 1
-  async readLabelScalarFalseFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalseFalse 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-false/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -14819,7 +14819,7 @@
   received url https://api.example.com/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F host api.example.com target b'/label-scalar-false-absent/.na%C3%AFve%25ZZ%25252F' status 204
   async readLabelScalarFalseAbsent 3 = None
   requests 1
-  async readLabelScalarFalseAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async readLabelScalarFalseAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelScalarFalseAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelScalarFalseAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   requests 0
   > GET https://api.example.com/label-scalar-false-absent/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -14956,7 +14956,7 @@
   received url https://api.example.com/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrue 3 = None
   requests 1
-  async readLabelArrayTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrue 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-false/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -14978,7 +14978,7 @@
   received url https://api.example.com/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-false/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrueFalse 3 = None
   requests 1
-  async readLabelArrayTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-array-true-absent/.a%3Ab%40c%21.x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -15000,7 +15000,7 @@
   received url https://api.example.com/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz host api.example.com target b'/label-array-true-absent/.na%C3%AFve%25ZZ%25252F.x%3By%3Dz' status 204
   async readLabelArrayTrueAbsent 3 = None
   requests 1
-  async readLabelArrayTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelArrayTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelArrayTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelArrayTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-false/.left-key,a%3Ab%40c%21,right,x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -15082,7 +15082,7 @@
   received url https://api.example.com/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrue 3 = None
   requests 1
-  async readLabelObjectTrue 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrue', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrue 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrue', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrue', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-false/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -15104,7 +15104,7 @@
   received url https://api.example.com/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-false/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrueFalse 3 = None
   requests 1
-  async readLabelObjectTrueFalse 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueFalse', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrueFalse 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueFalse', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueFalse', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/label-object-true-absent/.left-key=a%3Ab%40c%21.right=x%3By%3Dz
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -15126,7 +15126,7 @@
   received url https://api.example.com/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz host api.example.com target b'/label-object-true-absent/.left-key=na%C3%AFve%25ZZ%25252F.right=x%3By%3Dz' status 204
   async readLabelObjectTrueAbsent 3 = None
   requests 1
-  async readLabelObjectTrueAbsent 4 ! RequestEncodingError: RequestEncodingError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  async readLabelObjectTrueAbsent 4 ! DecodeError: DecodeError(operation_id='readLabelObjectTrueAbsent', call_id='<call>', reason='unencodable', location='path.wire-name') [operation_id='readLabelObjectTrueAbsent', location=('path', 'wire-name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
   requests 0
   > GET https://api.example.com/matrix-scalar-false/;wire-name=a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''

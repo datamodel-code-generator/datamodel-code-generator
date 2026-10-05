@@ -66,7 +66,7 @@ class HeadersView:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ResponseInfo:
-    """Describe one completed call: final status and headers, its identifiers, and its counters."""
+    """Describe one completed call: final status and headers, its identifiers, and its measurements."""
 
     status_code: int
     headers: HeadersView
@@ -74,15 +74,7 @@ class ResponseInfo:
     elapsed: float
     content_type: str | None
     request_id: str | None = None
-    resource_attempt_count: int = 1
-    redirect_count: int = 0
-    auth_exchange_count: int = 0
-    network_send_count: int = 1
-    network_send_budget_used: int = 1
-    auth_exchange_budget_used: int = 0
-    auth_refresh_ids: tuple[str, ...] = ()
-    auth_refresh_pending: int = 0
-    wire_send_count: int | None = None
+    attempt_count: int = 1
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

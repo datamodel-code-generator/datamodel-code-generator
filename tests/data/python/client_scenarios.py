@@ -163,7 +163,7 @@ def _errors(package: ModuleType, lines: list[str]) -> None:
     error = errors.SDKError()
     lines.append(
         f"  error bare {error} {error.reason_code} "
-        f"{errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT)}"
+        f"{errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT)}"
     )
 
 
@@ -397,7 +397,7 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
     (options,) = _modules(package, "options")
     http = exchange.async_client()
     trace, pet = _trace(package), _pet(package, "getPet")
-    (types,) = _modules(package, "types.pets")
+    types, errors = _modules(package, "types.pets", "errors")
     text = request_body(package, "createPet", "text/plain", "dog")
     async with package.AsyncClient(
         http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))

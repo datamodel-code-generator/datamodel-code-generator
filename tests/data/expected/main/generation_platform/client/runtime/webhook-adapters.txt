@@ -12,29 +12,29 @@
   printf '1614265330.{"type": "invoice.paid", "id": "in_1", "amount": 1200}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   printf '1614265330.{"type": "customer.created", "id": "cus_1", "email": "a@example.com"}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   printf '1614265330.{"type": "invoice.updated", "id": "in_1", "amount": 1500}' | openssl dgst -sha256 -hmac whsec_retired_secret, then printf '1614265330.{"type": "invoice.updated", "id": "in_1", "amount": 1500}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
-  printf '1614265330.{"type": "invoice.voided", "id": "in_2", "amount": 1}' | openssl dgst -sha256 -hmac whsec_adapter_secret = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type')] protocol_data_error
+  printf '1614265330.{"type": "invoice.voided", "id": "in_2", "amount": 1}' | openssl dgst -sha256 -hmac whsec_adapter_secret = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   Standard Webhooks specification example, also in Svix's 'Verifying Webhooks Manually' documentation = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   printf '{"test": 5}' | openssl dgst -sha256 -hmac "It's a Secret to Everybody" = Message Message(test=5) delivery_id=None timestamp=None matched_key_id='active'
-  GitHub 'Validating webhook deliveries', the test values for verifying an implementation, not JSON = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  GitHub 'Validating webhook deliveries', the test values for verifying an implementation, not JSON = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   printf '{"type": "invoice.paid", "id": "in_1", "amount": 1200}' | openssl dgst -sha256 -hmac mapped-secret = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=None matched_key_id='mapped'
   printf '{"type": "customer.created", "id": "cus_1", "email": "a@example.com"}' | openssl dgst -sha256 -hmac mapped-secret = Customer Customer(type='customer.created', id='cus_1', email='a@example.com') delivery_id=None timestamp=None matched_key_id='mapped'
-  printf '{"type": "invoice.voided", "id": "in_2", "amount": 1}' | openssl dgst -sha256 -hmac mapped-secret = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type')] protocol_data_error
-  one changed body byte = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
-  changed timestamp = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
-  no signature header = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
-  empty key set = WebhookVerificationError: WebhookVerificationError(condition='missing_key') [condition='missing_key'] webhook_verification_error
+  printf '{"type": "invoice.voided", "id": "in_2", "amount": 1}' | openssl dgst -sha256 -hmac mapped-secret = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  one changed body byte = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  changed timestamp = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  no signature header = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  empty key set = WebhookVerificationError: WebhookVerificationError(condition='missing_key') [condition='missing_key', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
   rotation tries the retired key first = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2025'
   rotation with the active key only = Invoice Invoice(type='invoice.updated', id='in_1', amount=1500) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
-  retired key only = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
-  Standard Webhooks changed delivery id = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  retired key only = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  Standard Webhooks changed delivery id = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
   300 seconds past = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
-  past bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
+  past bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
   30 seconds future = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
-  future bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
-  zero past tolerance exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
+  future bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  zero past tolerance exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
   offset clock = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   verifier timestamp with an offset = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
-  control: a kept contract decodes the body = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error warnings []
+  control: a kept contract decodes the body = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error warnings []
   mapping result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
   None result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
   missing timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
@@ -50,7 +50,7 @@
   coroutine result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
   undeclared timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
   undeclared delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
-  control: no facts declared or returned = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error warnings []
+  control: no facts declared or returned = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error warnings []
   result subclass changing between reads = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
   result spoofing its class = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
   str subclass delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
@@ -82,33 +82,33 @@
   limits async=ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=2, past_tolerance=300.0, future_tolerance=30.0)
   opaque keys = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
   opaque key reads=[] keys passed are given=True
-  body over limit = ProtocolSizeError: ProtocolSizeError(kind='body', limit=53, observed=54) [kind='body', unit='bytes', limit=53] protocol_size_error
+  body over limit = ProtocolSizeError: ProtocolSizeError(kind='body', limit=53, observed=54) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='body', unit='bytes', limit=53, observed=54] protocol_size_error
     verifier calls in both modes=0
-  headers over limit = ProtocolSizeError: ProtocolSizeError(kind='headers', limit=123, observed=124) [kind='headers', unit='bytes', limit=123] protocol_size_error
+  headers over limit = ProtocolSizeError: ProtocolSizeError(kind='headers', limit=123, observed=124) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='headers', unit='bytes', limit=123, observed=124] protocol_size_error
     verifier calls in both modes=0
-  nine keys = ProtocolSizeError: ProtocolSizeError(kind='keys', limit=8, observed=9) [kind='keys', unit='items', limit=8] protocol_size_error
+  nine keys = ProtocolSizeError: ProtocolSizeError(kind='keys', limit=8, observed=9) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='keys', unit='items', limit=8, observed=9] protocol_size_error
     verifier calls in both modes=0
   nine keys allowed = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='key-0'
     verifier calls in both modes=2
-  two signatures over the adapter's limit = ProtocolSizeError: ProtocolSizeError(kind='signatures', limit=1, observed=2) [kind='signatures', unit='items', limit=1] protocol_size_error
+  two signatures over the adapter's limit = ProtocolSizeError: ProtocolSizeError(kind='signatures', limit=1, observed=2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='signatures', unit='items', limit=1, observed=2] protocol_size_error
     verifier calls in both modes=2
-  text body = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raw_body',), condition='invalid_value'] protocol_configuration_error
+  text body = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
     verifier calls in both modes=0
-  header mapping = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] protocol_configuration_error
+  header mapping = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
     verifier calls in both modes=0
-  key tuple = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('keys',), condition='invalid_value'] protocol_configuration_error
+  key tuple = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='keys') [field_path=('keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
     verifier calls in both modes=0
-  naive now = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('now',), condition='invalid_value'] protocol_configuration_error
+  naive now = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='now') [field_path=('now',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
     verifier calls in both modes=0
-  options mapping = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
+  options mapping = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
     verifier calls in both modes=0
-  text body and no verifier = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raw_body',), condition='invalid_value'] protocol_configuration_error
+  text body and no verifier = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
     verifier calls in both modes=0
-  no verify ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('verifier',), condition='wrong_capability'] protocol_configuration_error
-  verify not callable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('verifier',), condition='wrong_capability'] protocol_configuration_error
-  marker event ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type')] protocol_data_error context=None
-  marker JSON ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error context=None
+  no verify ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
+  verify not callable ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
+  marker event ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error context=None
+  marker JSON ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error context=None
   marker result ! AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None
-  marker window ! WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error context=None
-  marker unsigned ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/meta/type')] protocol_data_error context=None
+  marker window ! WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error context=None
+  marker unsigned ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/meta/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error context=None
   markers shown=[]

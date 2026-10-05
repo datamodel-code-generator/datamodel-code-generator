@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final, Literal
 
-from .errors import DeliveryState, RedirectPolicyError
+from .errors import redirect_refused
 from .retry import body_replay_safe
 from .urls import URLValidationError
 from .urls import redirect_target as resolve_target
@@ -29,7 +29,7 @@ class RedirectState:
     current_origin: Origin = field(repr=False)
     initial_origin: Origin = field(repr=False)
     allowed_origins: frozenset[Origin] = field(repr=False)
-    redirect_count: int
+    redirects_followed: int
     visited: frozenset[tuple[str, str]] = field(repr=False)
     retry_safety: Literal["method_default", "idempotent", "never"]
     idempotency: IdempotencyPlan | None
@@ -50,7 +50,7 @@ class RedirectTarget:
 
 def _method(status: int, state: RedirectState, redirects: ResolvedRedirectOptions, now: float) -> str:
     if state.retry_safety == "never" or (state.key_expires_at is not None and now >= state.key_expires_at):
-        raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED)
+        raise redirect_refused()
     if status == _SEE_OTHER:
         if state.method in _READ_METHODS or redirects.allow_303_to_get:
             return "GET"
@@ -60,7 +60,7 @@ def _method(status: int, state: RedirectState, redirects: ResolvedRedirectOption
                 return state.method
         elif body_replay_safe(state.method, state.retry_safety, state.idempotency, state.key_expires_at, now=now):
             return state.method
-    raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED)
+    raise redirect_refused()
 
 
 def redirect_target(
@@ -73,19 +73,19 @@ def redirect_target(
 ) -> RedirectTarget:
     """Return a permitted hop, or preserve a terminal redirect-policy failure."""
     locations = headers.get_all("Location")
-    if len(locations) != 1 or state.redirect_count >= redirects.max_redirects:
-        raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED)
+    if len(locations) != 1 or state.redirects_followed >= redirects.max_redirects:
+        raise redirect_refused()
     try:
         target = resolve_target(state.url, locations[0])
     except URLValidationError as cause:
-        raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, cause=cause) from cause
+        raise redirect_refused(cause=cause) from cause
     if target.origin != state.initial_origin and target.origin not in state.allowed_origins:
-        raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED)
+        raise redirect_refused()
     if state.current_origin[0] == "https" and target.origin[0] == "http" and not redirects.allow_https_downgrade:
-        raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED)
+        raise redirect_refused()
     method = _method(status, state, redirects, now)
     if (method, target.url) in state.visited:
-        raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED)
+        raise redirect_refused()
     return RedirectTarget(
         method, target.url, target.origin, status == _SEE_OTHER, target.origin != state.current_origin
     )

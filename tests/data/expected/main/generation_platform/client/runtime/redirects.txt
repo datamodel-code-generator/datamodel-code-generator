@@ -1,190 +1,187 @@
 # retries pydantic_v2.BaseModel
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  disabled = ('APIStatusError', None, None, 301, 1, 0, 1, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 301, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 301, 'https://api.example.com', 1, 1, None), ('call_end', 0, 301, 'https://api.example.com', 1, 1, 'error')]
+  disabled = ('APIStatusError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'unexpected_status', 301, 1, 'NoneType')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 301, 'https://api.example.com', 1, None), ('attempt_end', 0, 301, 'https://api.example.com', 1, None), ('call_end', 0, 301, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  301 GET = (FieldSafeGetResponse(root='server payload'), 200, 1, 1, 2, 2)
-    unused=0 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 301, 'https://api.example.com', 1, 1, None), ('redirect', 0, 301, 'https://api.example.com', 1, 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, 2, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, 2, None), ('call_end', 0, 200, 'https://api.example.com', 1, 2, 'success')]
+  301 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
+    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 301, 'https://api.example.com', 1, None), ('redirect', 0, 301, 'https://api.example.com', 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  302 GET = (FieldSafeGetResponse(root='server payload'), 200, 1, 1, 2, 2)
-    unused=0 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, 2, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, 2, None), ('call_end', 0, 200, 'https://api.example.com', 1, 2, 'success')]
+  302 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
+    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  303 GET = (FieldSafeGetResponse(root='server payload'), 200, 1, 1, 2, 2)
-    unused=0 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 303, 'https://api.example.com', 1, 1, None), ('redirect', 0, 303, 'https://api.example.com', 1, 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, 2, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, 2, None), ('call_end', 0, 200, 'https://api.example.com', 1, 2, 'success')]
+  303 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
+    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 303, 'https://api.example.com', 1, None), ('redirect', 0, 303, 'https://api.example.com', 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  307 GET = (FieldSafeGetResponse(root='server payload'), 200, 1, 1, 2, 2)
-    unused=0 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 307, 'https://api.example.com', 1, 1, None), ('redirect', 0, 307, 'https://api.example.com', 1, 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, 2, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, 2, None), ('call_end', 0, 200, 'https://api.example.com', 1, 2, 'success')]
+  307 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
+    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 307, 'https://api.example.com', 1, None), ('redirect', 0, 307, 'https://api.example.com', 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  308 GET = (FieldSafeGetResponse(root='server payload'), 200, 1, 1, 2, 2)
-    unused=0 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 308, 'https://api.example.com', 1, 1, None), ('redirect', 0, 308, 'https://api.example.com', 1, 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, 2, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, 2, None), ('call_end', 0, 200, 'https://api.example.com', 1, 2, 'success')]
+  308 GET = (FieldSafeGetResponse(root='server payload'), 200, 1)
+    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 308, 'https://api.example.com', 1, None), ('redirect', 0, 308, 'https://api.example.com', 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  explicit default port = (FieldSafeGetResponse(root='server payload'), 200, 1, 1, 2, 2)
-    unused=0 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, 2, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, 2, None), ('call_end', 0, 200, 'https://api.example.com', 1, 2, 'success')]
+  explicit default port = (FieldSafeGetResponse(root='server payload'), 200, 1)
+    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://other.example.com:9443/done
     [host: other.example.com:9443, accept-encoding: gzip, deflate, accept: text/plain] b''
-  custom port = (FieldSafeGetResponse(root='server payload'), 200, 1, 1, 2, 2)
-    unused=0 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, 1, None), ('response_headers', 0, 200, 'https://other.example.com:9443', 1, 2, None), ('attempt_end', 0, 200, 'https://other.example.com:9443', 1, 2, None), ('call_end', 0, 200, 'https://other.example.com:9443', 1, 2, 'success')]
+  custom port = (FieldSafeGetResponse(root='server payload'), 200, 1)
+    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, None), ('response_headers', 0, 200, 'https://other.example.com:9443', 1, None), ('attempt_end', 0, 200, 'https://other.example.com:9443', 1, None), ('call_end', 0, 200, 'https://other.example.com:9443', 1, 'success')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://xn--tst-qla.example.com/done
     [host: xn--tst-qla.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  IDNA origin = (FieldSafeGetResponse(root='server payload'), 200, 1, 1, 2, 2)
-    unused=0 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, 1, None), ('response_headers', 0, 200, 'https://xn--tst-qla.example.com', 1, 2, None), ('attempt_end', 0, 200, 'https://xn--tst-qla.example.com', 1, 2, None), ('call_end', 0, 200, 'https://xn--tst-qla.example.com', 1, 2, 'success')]
+  IDNA origin = (FieldSafeGetResponse(root='server payload'), 200, 1)
+    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, None), ('response_headers', 0, 200, 'https://xn--tst-qla.example.com', 1, None), ('attempt_end', 0, 200, 'https://xn--tst-qla.example.com', 1, None), ('call_end', 0, 200, 'https://xn--tst-qla.example.com', 1, 'success')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  unsupported305 = ('APIStatusError', None, None, 305, 1, 0, 1, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 305, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 305, 'https://api.example.com', 1, 1, None), ('call_end', 0, 305, 'https://api.example.com', 1, 1, 'error')]
+  unsupported305 = ('APIStatusError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'unexpected_status', 305, 1, 'NoneType')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 305, 'https://api.example.com', 1, None), ('attempt_end', 0, 305, 'https://api.example.com', 1, None), ('call_end', 0, 305, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  missing Location = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 1, 'error')]
+  missing Location = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  multiple Location = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 1, 'error')]
+  multiple Location = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/next%2Fpart?q=a%2Fb
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  relative encoded = (FieldSafeGetResponse(root='server payload'), 200, 1, 1, 2, 2)
-    unused=0 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, 2, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, 2, None), ('call_end', 0, 200, 'https://api.example.com', 1, 2, 'success')]
+  relative encoded = (FieldSafeGetResponse(root='server payload'), 200, 1)
+    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, None), ('response_headers', 0, 200, 'https://api.example.com', 1, None), ('attempt_end', 0, 200, 'https://api.example.com', 1, None), ('call_end', 0, 200, 'https://api.example.com', 1, 'success')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  fragment loop = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 1, 'error')]
+  fragment loop = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  zero limit = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 1, 'error')]
+  zero limit = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  unlisted origin = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 1, 'error')]
+  unlisted origin = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://other.example.com/done
     [host: other.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  listed origin = (FieldSafeGetResponse(root='server payload'), 200, 1, 1, 2, 2)
-    unused=0 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, 1, None), ('response_headers', 0, 200, 'https://other.example.com', 1, 2, None), ('attempt_end', 0, 200, 'https://other.example.com', 1, 2, None), ('call_end', 0, 200, 'https://other.example.com', 1, 2, 'success')]
+  listed origin = (FieldSafeGetResponse(root='server payload'), 200, 1)
+    unused=0 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('redirect', 0, 302, 'https://api.example.com', 1, None), ('response_headers', 0, 200, 'https://other.example.com', 1, None), ('attempt_end', 0, 200, 'https://other.example.com', 1, None), ('call_end', 0, 200, 'https://other.example.com', 1, 'success')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  userinfo rejected = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'InvalidURL')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 1, 'error')]
+  userinfo rejected = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'InvalidURL')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  scheme rejected = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'InvalidURL')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 1, 'error')]
+  scheme rejected = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'InvalidURL')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  zero port rejected = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'InvalidURL')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 1, 'error')]
+  zero port rejected = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'InvalidURL')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  overflow port rejected = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'InvalidURL')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 1, 'error')]
+  overflow port rejected = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'InvalidURL')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  downgrade rejected = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
-    unused=1 events=[('call_start', None, None, None, 0, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 1, 'error')]
+  downgrade rejected = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
+    unused=1 events=[('call_start', None, None, None, 0, None), ('attempt_start', 0, None, 'https://api.example.com', 0, None), ('response_headers', 0, 302, 'https://api.example.com', 1, None), ('attempt_end', 0, 302, 'https://api.example.com', 1, None), ('call_end', 0, 302, 'https://api.example.com', 1, 'error')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/next
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  cumulative limit = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 1, 2, 2, 'NoneType')
-  > GET https://api.example.com/safe
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  hop budget = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
+  cumulative limit = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
-  301 POST forbidden = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 301, 1, 0, 1, 1, 'NoneType')
+  301 POST forbidden = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 301, 1, 'NoneType')
     unused=1
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
-  302 POST forbidden = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
+  302 POST forbidden = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
     unused=1
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
-  303 POST opt-in required = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 303, 1, 0, 1, 1, 'NoneType')
+  303 POST opt-in required = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 303, 1, 'NoneType')
     unused=1
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  303 POST allowed = (FieldUnsafePostResponse(root='server payload'), 200, 1, 1, 2, 2)
+  303 POST allowed = (FieldUnsafePostResponse(root='server payload'), 200, 1)
     unused=0
   > POST https://api.example.com/never
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
-  303 never forbidden = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 303, 1, 0, 1, 1, 'NoneType')
+  303 never forbidden = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 303, 1, 'NoneType')
     unused=1
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
-  307 unsafe forbidden = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 307, 1, 0, 1, 1, 'NoneType')
+  307 unsafe forbidden = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 307, 1, 'NoneType')
     unused=1
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
   > POST https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
-  307 declared idempotent = (FieldIdempotentPostResponse(root='server payload'), 200, 1, 1, 2, 2)
+  307 declared idempotent = (FieldIdempotentPostResponse(root='server payload'), 200, 1)
     unused=0
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
   > POST https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
-  308 declared idempotent = (FieldIdempotentPostResponse(root='server payload'), 200, 1, 1, 2, 2)
+  308 declared idempotent = (FieldIdempotentPostResponse(root='server payload'), 200, 1)
     unused=0
   > POST https://api.example.com/keyed
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: same-key, content-length: 7] b'payload'
   > POST https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: same-key, content-length: 7] b'payload'
-  308 retained key = (FieldKeyedPostResponse(root='server payload'), 200, 1, 1, 2, 2)
+  308 retained key = (FieldKeyedPostResponse(root='server payload'), 200, 1)
     unused=0
   > POST https://api.example.com/keyed
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: unknown-age, content-length: 7] b'payload'
-  308 unknown key age = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 308, 1, 0, 1, 1, 'NoneType')
+  308 unknown key age = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 308, 1, 'NoneType')
     unused=1
   > POST https://api.example.com/keyed
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: expired-key, content-length: 7] b'payload'
-  303 expired key = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 303, 1, 0, 1, 1, 'NoneType')
+  303 expired key = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 303, 1, 'NoneType')
     unused=1
   > HEAD https://api.example.com/start
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  HEAD303 becomes GET = (b'server payload', 200, 1, 1, 2, 2)
+  HEAD303 becomes GET = (b'server payload', 200, 1)
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-encoding: identity, content-language: en, content-type: application/octet-stream, transfer-encoding: chunked] b'onetwo'
-  301 one-shot body = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 301, 1, 0, 1, 1, 'NoneType')
+  301 one-shot body = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 301, 1, 'NoneType')
     unused=1
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-encoding: identity, content-language: en, content-type: application/octet-stream, transfer-encoding: chunked] b'onetwo'
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  303 one-shot body = (FieldIdempotentPostResponse(root='server payload'), 200, 1, 1, 2, 2)
+  303 one-shot body = (FieldIdempotentPostResponse(root='server payload'), 200, 1)
     unused=0
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-encoding: identity, content-language: en, content-type: application/octet-stream, transfer-encoding: chunked] b'onetwo'
-  307 one-shot body = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 307, 1, 0, 1, 1, 'NoneType')
+  307 one-shot body = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 307, 1, 'NoneType')
     unused=1
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, transfer-encoding: chunked] b'onetwo'
@@ -192,14 +189,14 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  one-shot POST303 GET302 chain = (FieldUnsafePostResponse(root='server payload'), 200, 1, 2, 3, 3)
+  one-shot POST303 GET302 chain = (FieldUnsafePostResponse(root='server payload'), 200, 1)
     unused=0
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  canonical typed loop seed = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
+  canonical typed loop seed = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  canonical raw lowercase method loop seed = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
+  canonical raw lowercase method loop seed = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
     unused=0
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-encoding: identity, content-language: en, content-type: application/octet-stream, content-length: 8] b'original'
@@ -209,7 +206,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-encoding: identity, content-language: en, content-type: application/octet-stream, content-length: 8] b'original'
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  303 retry restores original POST = (FieldIdempotentPostResponse(root='server payload'), 200, 2, 2, 4, 4)
+  303 retry restores original POST = (FieldIdempotentPostResponse(root='server payload'), 200, 2)
     unused=0
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-encoding: identity, content-language: en, content-type: application/octet-stream, content-length: 8] b'original'
@@ -217,7 +214,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-encoding: identity, content-language: en, content-type: application/octet-stream, content-length: 8] b'original'
-  redirect limit survives retry = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 303, 2, 1, 3, 3, 'NoneType')
+  redirect limit survives retry = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 303, 2, 'NoneType')
     unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, authorization: original-secret, proxy-authorization: proxy-secret, cookie: private=1] b''
@@ -225,7 +222,7 @@
     [host: other.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/back
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  origin chain returns to initial = (FieldSafeGetResponse(root='server payload'), 200, 1, 2, 3, 3)
+  origin chain returns to initial = (FieldSafeGetResponse(root='server payload'), 200, 1)
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, authorization: original-secret, proxy-authorization: proxy-secret, cookie: private=1] b''
   > GET https://api.example.com/next
@@ -234,19 +231,19 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, authorization: original-secret, proxy-authorization: proxy-secret, cookie: private=1] b''
   > GET https://api.example.com/next
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, authorization: original-secret, proxy-authorization: proxy-secret, cookie: private=1] b''
-  retry resets URL and loop set = (FieldSafeGetResponse(root='server payload'), 200, 2, 2, 4, 4)
-  downgrade flag still requires allowed origin = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
+  retry resets URL and loop set = (FieldSafeGetResponse(root='server payload'), 200, 2)
+  downgrade flag still requires allowed origin = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
     secure=[(b'GET', b'/safe', b'')] plain=[]
-  allowed HTTP still requires downgrade flag = ('RedirectPolicyError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, False, 302, 1, 0, 1, 1, 'NoneType')
+  allowed HTTP still requires downgrade flag = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 302, 1, 'NoneType')
     secure=[(b'GET', b'/safe', b'')] plain=[]
-  allowed HTTP and downgrade = (FieldSafeGetResponse(root='ready'), 200, 1, 1, 2, 2)
+  allowed HTTP and downgrade = (FieldSafeGetResponse(root='ready'), 200, 1)
     secure=[(b'GET', b'/safe', b'')] plain=[(b'GET', b'/done', b'')]
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   async307 = Response(FieldSafeGetResponse(root='server payload'), 200, 'text/plain', None, [('content-type', 'text/plain'), ('content-length', '14')])
-    counts=(1, 1, 2)
+    counts=(1, None)
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, transfer-encoding: chunked] b'onetwo'
   > GET https://api.example.com/middle
@@ -254,4 +251,4 @@
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   async one-shot POST303 GET302 chain = Response(FieldUnsafePostResponse(root='server payload'), 200, 'text/plain', None, [('content-type', 'text/plain'), ('content-length', '14')])
-    counts=(1, 2, 3) unused=0
+    counts=(1, None) unused=0

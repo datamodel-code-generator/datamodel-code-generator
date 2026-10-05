@@ -9,7 +9,7 @@ from typing_extensions import TypeVar
 
 from ..model_codecs.parameters import ParameterFragment, RawParameter, decode_parameter
 from ..model_codecs.unset import UNSET, Unset
-from .errors import ResponseHeaderDecodeError
+from .errors import response_failure
 from .operations import DATA_ERRORS, status_key
 
 if TYPE_CHECKING:
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from ..model_codecs.context import CodecContext
     from ..model_codecs.parameters import ParameterPlan
     from ..model_codecs.wire import WireValue
+    from .errors import DecodeError
     from .operations import InboundModelCodec
     from .responses import ResponseInfo
 
@@ -26,9 +27,16 @@ T_co = TypeVar("T_co", covariant=True)
 M_co = TypeVar("M_co", covariant=True)
 
 
+def _header_failure(info: ResponseInfo, operation_id: str | None, cause: BaseException | None = None) -> DecodeError:
+    """Return the failure of a declared response header that is missing, repeated, or invalid; no body is involved."""
+    error = response_failure(info, "invalid_header", cause=cause)
+    error.operation_id = operation_id
+    return error
+
+
 def required_header(info: ResponseInfo, operation_id: str | None) -> NoReturn:
     """Refuse a response that lacks a header its status declares required."""
-    raise ResponseHeaderDecodeError(info=info, operation_id=operation_id, call_id=info.call_id)
+    raise _header_failure(info, operation_id)
 
 
 def optional_header(_info: ResponseInfo, _operation_id: str | None) -> Unset:
@@ -86,10 +94,10 @@ class ResponseHeaders(Generic[T_co, M_co]):
         self._headers = {name.lower(): dict(branches) for name, branches in headers}
 
     def decode(self, info: ResponseInfo, name: str) -> T_co | M_co:
-        """Return a header's value or what its absence yields, or raise ResponseHeaderDecodeError."""
+        """Return a header's value or what its absence yields, or raise the response's DecodeError."""
         key = status_key(info.status_code, self._keys)
         if (branch := self._headers.get(name.lower(), {}).get(key or "")) is None:
-            raise ResponseHeaderDecodeError(info=info, operation_id=self._operation_id, call_id=info.call_id)
+            raise _header_failure(info, self._operation_id)
         fragments = tuple(
             ParameterFragment(header.encode("latin-1"), value.encode()) for header, value in info.headers.items()
         )
@@ -99,6 +107,4 @@ class ResponseHeaders(Generic[T_co, M_co]):
                 return branch.missing(info, self._operation_id)
             return branch.decode(wire)
         except DATA_ERRORS as error:
-            raise ResponseHeaderDecodeError(
-                info=info, operation_id=self._operation_id, call_id=info.call_id, cause=error
-            ) from None
+            raise _header_failure(info, self._operation_id, error) from None

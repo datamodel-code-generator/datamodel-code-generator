@@ -6,10 +6,10 @@
   users ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1,2] continuation=Continuation(kind='cursor') status=200 sends=1
+  page = [1,2] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  next page = [3] continuation=None status=200 sends=1
+  next page = [3] continuation=None status=200 attempts=1
   > GET https://api.example.com/nested
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/nested?cursor=n
@@ -32,10 +32,10 @@
   loose ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='invalid_value') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] invalid_value
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
@@ -54,10 +54,10 @@
   users ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1,2] continuation=Continuation(kind='cursor') status=200 sends=1
+  page = [1,2] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  next page = [3] continuation=None status=200 sends=1
+  next page = [3] continuation=None status=200 attempts=1
   > GET https://api.example.com/nested
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/nested?cursor=n
@@ -80,10 +80,10 @@
   loose ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='invalid_value') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] invalid_value
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
@@ -102,10 +102,10 @@
   users ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1,2] continuation=Continuation(kind='cursor') status=200 sends=1
+  page = [1,2] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  next page = [3] continuation=None status=200 sends=1
+  next page = [3] continuation=None status=200 attempts=1
   > GET https://api.example.com/nested
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/nested?cursor=n
@@ -128,10 +128,10 @@
   loose ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='invalid_value') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] invalid_value
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
@@ -150,10 +150,10 @@
   users ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1,2] continuation=Continuation(kind='cursor') status=200 sends=1
+  page = [1,2] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  next page = [3] continuation=None status=200 sends=1
+  next page = [3] continuation=None status=200 attempts=1
   > GET https://api.example.com/nested
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/nested?cursor=n
@@ -176,10 +176,10 @@
   loose ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='invalid_value') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] invalid_value
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
@@ -198,10 +198,10 @@
   users ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1,2] continuation=Continuation(kind='cursor') status=200 sends=1
+  page = [1,2] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://api.example.com/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  next page = [3] continuation=None status=200 sends=1
+  next page = [3] continuation=None status=200 attempts=1
   > GET https://api.example.com/nested
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/nested?cursor=n
@@ -224,10 +224,10 @@
   loose ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /data')] response_validation_error
+  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='invalid_value') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /data')] invalid_value
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /data')] response_validation_error
+  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /data')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a

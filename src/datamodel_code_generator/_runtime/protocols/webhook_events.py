@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeGuard
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import (
-    ProtocolConfigurationError,
+    ConfigurationError,
     ProtocolSizeError,
     WebhookVerificationError,
     is_sequence,
@@ -189,9 +189,9 @@ class Facts:
 
 def configuration_error(
     field_path: tuple[str, ...], condition: Literal["invalid_value", "wrong_capability"], helper_id: str
-) -> ProtocolConfigurationError:
+) -> ConfigurationError:
     """Return the error of a wrong argument, by its field path."""
-    return ProtocolConfigurationError(field_path=field_path, condition=condition, helper_id=helper_id)
+    return ConfigurationError(field_path=field_path, reason=condition, helper_id=helper_id)
 
 
 def reject(

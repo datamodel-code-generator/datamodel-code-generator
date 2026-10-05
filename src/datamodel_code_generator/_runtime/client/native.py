@@ -12,14 +12,14 @@ from typing_extensions import TypeIs, TypeVar
 from .errors import (
     AdapterContractError,
     AdapterExecutionError,
+    APIConnectionError,
     CleanupError,
     ConfigurationError,
     DeliveryState,
     IOPhase,
-    PhaseTimeoutError,
-    RedirectPolicyError,
     SDKError,
-    TransportError,
+    is_phase_timeout,
+    redirect_refused,
 )
 from .evidence import cause_graph, connect_failure, transient_connect
 from .responses import HeadersView
@@ -105,12 +105,12 @@ def _native_phase(error: httpx2.HTTPError) -> IOPhase:
     return "unknown"
 
 
-def transport_retry_reason(error: TransportError, trace: AttemptTrace) -> RetryReason | None:
+def transport_retry_reason(error: APIConnectionError, trace: AttemptTrace) -> RetryReason | None:
     """Recognize classified I/O from native and explicit adapters without granting operation safety."""
     cause = error.cause
     if isinstance(cause, _EXCLUDED):
         return None
-    if isinstance(error, PhaseTimeoutError):
+    if is_phase_timeout(error):
         return _TIMEOUT_REASONS.get(error.phase)
     if isinstance(cause, httpx2.ConnectError):
         return "connect_error" if transient_connect(cause_graph(cause), trace.connect_failure) else None
@@ -143,7 +143,7 @@ def _processing_error(error: httpx2.RemoteProtocolError | httpx2.InvalidURL, tra
     graph = cause_graph(error)
     if graph is not None:
         if any(isinstance(node, httpcore2.RemoteProtocolError) for node in graph.nodes):
-            return TransportError(delivery_state=_delivery(trace), phase="read", cause=error)
+            return APIConnectionError(delivery_state=_delivery(trace), phase="read", cause=error)
         head = trace.head
         if (
             head is not None
@@ -151,7 +151,7 @@ def _processing_error(error: httpx2.RemoteProtocolError | httpx2.InvalidURL, tra
             and "location" in head.headers
             and not any(isinstance(node, _CORE) for node in graph.nodes)
         ):
-            return RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, cause=error)
+            return redirect_refused(cause=error)
     return AdapterExecutionError(delivery_state=_delivery(trace), cause=error)
 
 
@@ -170,7 +170,7 @@ def transport_error(
     if isinstance(error, httpx2.CloseError):
         return CleanupError(cause=error)
     if isinstance(error, httpx2.ProxyError):
-        return TransportError(delivery_state=_delivery(trace), cause=error)
+        return APIConnectionError(delivery_state=_delivery(trace), cause=error)
     phase: IOPhase
     if isinstance(error, httpx2.ConnectError):
         phase = "connect"
@@ -183,7 +183,7 @@ def transport_error(
     )
     if phase == "unknown":
         return AdapterExecutionError(delivery_state=_delivery(trace), cause=error)
-    return TransportError(delivery_state=_delivery(trace), phase=phase, cause=error)
+    return APIConnectionError(delivery_state=_delivery(trace), phase=phase, cause=error)
 
 
 def _timeouts(context: AttemptIOContext) -> dict[str, float | None]:
@@ -461,7 +461,7 @@ def native_client(transport: ResolvedTransportOptions) -> httpx2.Client:
             ),
         )
     except ImportError as error:
-        raise ConfigurationError(field_path=("transport", "http2"), condition="unavailable", cause=error) from None
+        raise ConfigurationError(field_path=("transport", "http2"), reason="unavailable", cause=error) from None
 
 
 def native_async_client(transport: ResolvedTransportOptions) -> httpx2.AsyncClient:
@@ -479,24 +479,19 @@ def native_async_client(transport: ResolvedTransportOptions) -> httpx2.AsyncClie
             ),
         )
     except ImportError as error:
-        raise ConfigurationError(field_path=("transport", "http2"), condition="unavailable", cause=error) from None
+        raise ConfigurationError(field_path=("transport", "http2"), reason="unavailable", cause=error) from None
 
 
 class Httpx2Transport:
     """Send through one native client, preserving whether the SDK constructed its default transport."""
 
-    __slots__ = ("_capabilities", "_client", "_trusted_default")
+    __slots__ = ("_client", "_trusted_default", "capabilities")
 
     def __init__(self, client: httpx2.Client, *, trusted_default: bool = False, http2: bool = False) -> None:
         """Wrap a client; ownership transfer alone never establishes internal retry or delivery guarantees."""
         self._client = client
         self._trusted_default = trusted_default
-        self._capabilities = (_NATIVE_H2 if http2 else _NATIVE) if trusted_default else _BORROWED
-
-    @property
-    def capabilities(self) -> TransportCapabilities:
-        """Return only the guarantees established by native construction provenance."""
-        return self._capabilities
+        self.capabilities: TransportCapabilities = (_NATIVE_H2 if http2 else _NATIVE) if trusted_default else _BORROWED
 
     def send(self, request: PreparedRequest[BodyAttempt], context: AttemptIOContext) -> Httpx2Response:
         """Send one invocation and return an unread, conforming resource response."""
@@ -522,18 +517,13 @@ class Httpx2Transport:
 class AsyncHttpx2Transport:
     """Send through one native async client with the same evidence contracts as synchronous sends."""
 
-    __slots__ = ("_capabilities", "_client", "_trusted_default")
+    __slots__ = ("_client", "_trusted_default", "capabilities")
 
     def __init__(self, client: httpx2.AsyncClient, *, trusted_default: bool = False, http2: bool = False) -> None:
         """Wrap a client, keeping injected native clients' internal retry limits unknown."""
         self._client = client
         self._trusted_default = trusted_default
-        self._capabilities = (_NATIVE_H2 if http2 else _NATIVE) if trusted_default else _BORROWED
-
-    @property
-    def capabilities(self) -> TransportCapabilities:
-        """Return only the guarantees established by native construction provenance."""
-        return self._capabilities
+        self.capabilities: TransportCapabilities = (_NATIVE_H2 if http2 else _NATIVE) if trusted_default else _BORROWED
 
     async def send(self, request: PreparedRequest[AsyncBodyAttempt], context: AttemptIOContext) -> AsyncHttpx2Response:
         """Send one invocation and return an unread, conforming resource response."""

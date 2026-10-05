@@ -17,7 +17,7 @@ from uuid import uuid4
 from typing_extensions import TypeVar
 
 from ..client.client import stored_value
-from ..client.errors import ProtocolConfigurationError, add_secondary
+from ..client.errors import ConfigurationError, add_secondary
 from ..client.media import normalized
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
@@ -131,6 +131,7 @@ class _Received(Generic[T]):
     headers: HeadersView
     source: CacheSource
     received: HeadersView
+    redirected: bool
 
 
 def _option(layers: tuple[object, ...], name: str, default: V) -> V:
@@ -337,10 +338,6 @@ class _Fetch(Generic[T]):
             elapsed=0.0,
             content_type=content,
             request_id=request_id,
-            resource_attempt_count=0,
-            network_send_count=0,
-            network_send_budget_used=0,
-            wire_send_count=0,
         )
 
     def conditional(self, entry: CacheEntry | None) -> PreparedRequest[EncodedAttempt]:
@@ -358,26 +355,26 @@ class _Fetch(Generic[T]):
         )
 
     @staticmethod
-    def modified(response: Response[T], body: bytes) -> tuple[Response[T], _Received[T]]:
+    def modified(response: Response[T], body: bytes, redirected: bool) -> tuple[Response[T], _Received[T]]:  # noqa: FBT001
         """Keep a decoded network response with its body and the headers an entry of it stores."""
         received = response.info.headers
         return response, _Received(
-            response, body, HeadersView(_without(received, _UNSTORED, len(body))), "network", received
+            response, body, HeadersView(_without(received, _UNSTORED, len(body))), "network", received, redirected
         )
 
-    def not_modified(self, info: ResponseInfo) -> tuple[Response[T], _Received[T]]:
+    def not_modified(self, info: ResponseInfo, redirected: bool) -> tuple[Response[T], _Received[T]]:  # noqa: FBT001
         """Decode the looked-up representation a 304 validates, with its headers merged, or refuse the 304.
 
         A 304 needs a usable entry, the request URL itself rather than a redirect's, and no validator other than the
         entry's; a strong and a weak ETag of the same opaque tag match.
         """
         entry, plan = self.usable, self.plan
-        if entry is None or info.redirect_count or not _validates(entry.headers, info.headers):
+        if entry is None or redirected or not _validates(entry.headers, info.headers):
             raise CacheProtocolError(helper_id=plan.helper_id, operation=plan.operation, info=info)
         headers = _merged(entry.headers, info.headers, len(entry.body))
         merged = self.info(entry.status_code, headers, info)
         response = Response(data=stored_value(plan.call, merged, entry.body, self.settings), info=merged)
-        return response, _Received(response, entry.body, headers, "revalidated", info.headers)
+        return response, _Received(response, entry.body, headers, "revalidated", info.headers, redirected)
 
     def stored(self, received: _Received[T]) -> dict[str, Any] | None:
         """Return the fields of the entry a response becomes including its plain Vary values, or None to store nothing.
@@ -433,7 +430,7 @@ class _Fetch(Generic[T]):
         usable = self.usable
         return (
             received.response.info.status_code in self.plan.statuses
-            and not received.response.info.redirect_count
+            and not received.redirected
             and len(received.body) <= self.max_entry_bytes
             and "set-cookie" not in received.headers
             and (received.source == "network" or usable is None or vary == _vary(usable.headers))
@@ -472,13 +469,11 @@ def _configuration(
     plan: CachePlan[T],
     path: tuple[str, ...],
     condition: Literal["invalid_value", "binding_mismatch", "security_partition", "missing_adapter"],
-) -> ProtocolConfigurationError:
-    return ProtocolConfigurationError(
-        field_path=path, condition=condition, helper_id=plan.helper_id, operation=plan.operation
-    )
+) -> ConfigurationError:
+    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id, operation=plan.operation)
 
 
-def _invalid(plan: CachePlan[T], path: tuple[str, ...]) -> ProtocolConfigurationError:
+def _invalid(plan: CachePlan[T], path: tuple[str, ...]) -> ConfigurationError:
     return _configuration(plan, path, "invalid_value")
 
 

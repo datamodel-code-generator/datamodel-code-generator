@@ -4,44 +4,44 @@
   stream acquisition released = b'ready'
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream read cap default TransportError secondary []
+  stream read cap default APIConnectionError secondary []
   stream observed read cap [60.0]
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream read cap disabled TransportError secondary []
+  stream read cap disabled APIConnectionError secondary []
   stream observed read cap [None]
   > GET https://example.com/idle
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream idle PhaseTimeoutError
+  stream idle APITimeoutError
   > GET https://example.com/read
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream read PhaseTimeoutError
+  stream read APITimeoutError
   > GET https://example.com/total
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream total DeadlineExceededError
+  stream total APITimeoutError
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 200 ! DeadlineExceededError: DeadlineExceededError(call_id='<call>', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send', cause=TransportError()] deadline_exceeded_error
+  buffered acquisition 200 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send', cause=APIConnectionError()] deadline_exceeded
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 503 ! DeadlineExceededError: DeadlineExceededError(call_id='<call>', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send', cause=TransportError()] deadline_exceeded_error
+  buffered acquisition 503 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send', cause=APIConnectionError()] deadline_exceeded
   > GET https://example.com/saved
     [host: example.com, accept-encoding: gzip, deflate] b''
   > GET https://example.com/cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream cancel read ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  stream cancel read ! RequestCancelledError: RequestCancelledError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
   stream cancel released 1
   > GET https://example.com/cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream cancel iter_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  stream cancel iter_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
   stream cancel released 1
   > GET https://example.com/cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream cancel iter_raw_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  stream cancel iter_raw_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
   stream cancel released 1
   > GET https://example.com/cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream cancel raise_for_status ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  stream cancel raise_for_status ! RequestCancelledError: RequestCancelledError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
   stream cancel released 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
@@ -49,7 +49,7 @@
   stream permit release count 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream permit failure primary=True ResponseTooLargeError secondary ['LimiterExecutionError']
+  stream permit failure primary=True DecodeError secondary ['SDKError']
   stream permit release count 1
   buffered survives cancel and close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
   > GET https://example.com/interruption [Accept-Encoding: gzip, deflate] None None None
@@ -72,24 +72,24 @@
   async stream acquisition released = b'ready'
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream read cap default TransportError secondary []
+  async stream read cap default APIConnectionError secondary []
   async stream observed read cap [60.0]
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream read cap disabled TransportError secondary []
+  async stream read cap disabled APIConnectionError secondary []
   async stream observed read cap [None]
   > GET https://example.com/idle
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream idle PhaseTimeoutError
+  async stream idle APITimeoutError
   > GET https://example.com/read
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream read PhaseTimeoutError
+  async stream read APITimeoutError
   > GET https://example.com/total
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream total DeadlineExceededError
+  async stream total APITimeoutError
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async buffered acquisition ! DeadlineExceededError: DeadlineExceededError(call_id='<call>', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send'] deadline_exceeded_error
+  async buffered acquisition ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send'] deadline_exceeded
   > GET https://example.com/cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream waiting token RequestCancelledError
@@ -100,19 +100,19 @@
     [host: example.com, accept-encoding: gzip, deflate] b''
   > GET https://example.com/cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream cancel read ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  async stream cancel read ! RequestCancelledError: RequestCancelledError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
   async stream cancel released 1
   > GET https://example.com/cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream cancel iter_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  async stream cancel iter_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
   async stream cancel released 1
   > GET https://example.com/cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream cancel iter_raw_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  async stream cancel iter_raw_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
   async stream cancel released 1
   > GET https://example.com/cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream cancel raise_for_status ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  async stream cancel raise_for_status ! RequestCancelledError: RequestCancelledError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
   async stream cancel released 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
@@ -120,7 +120,7 @@
   async stream permit release count 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream permit failure primary=True ResponseTooLargeError secondary ['LimiterExecutionError']
+  async stream permit failure primary=True DecodeError secondary ['SDKError']
   async stream permit release count 1
   async buffered survives cancel and close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
   > GET https://example.com/interruption [Accept-Encoding: gzip, deflate] None None None

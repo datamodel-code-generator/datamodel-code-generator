@@ -15,19 +15,6 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 
-_COUNTERS = (
-    "resource_attempt_count",
-    "redirect_count",
-    "auth_exchange_count",
-    "network_send_count",
-    "network_send_budget_used",
-    "auth_exchange_budget_used",
-    "auth_refresh_ids",
-    "auth_refresh_pending",
-    "wire_send_count",
-)
-
-
 def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
     for label, value in (
         ("bool", True),
@@ -56,9 +43,6 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
         ("deadline", 0),
         ("cancel_token", object()),
         ("limiter", object()),
-        ("max_network_sends", True),
-        ("max_network_sends", -1),
-        ("max_network_sends", 0.5),
         ("clock", object()),
     ):
         record(lines, f"option {field} type", lambda field=field, value=value: options.ClientOptions(**{field: value}))
@@ -94,7 +78,6 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
         deadline=None,
         cancel_token=None,
         limiter=None,
-        max_network_sends=None,
         stream_idle_timeout=None,
         stream_total_timeout=None,
     )
@@ -102,12 +85,11 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
         total_timeout=0,
         stream_idle_timeout=1,
         stream_total_timeout=2.5,
-        max_network_sends=0,
         deadline=future,
         cancel_token=token,
     )
     lines.append(
-        f"  seconds {values.total_timeout}/{values.stream_idle_timeout}/{values.stream_total_timeout} count={values.max_network_sends}"
+        f"  seconds {values.total_timeout}/{values.stream_idle_timeout}/{values.stream_total_timeout}"
     )
     context = hooks.LimiterContext(
         operation_id=None,
@@ -127,65 +109,40 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
 
 def _errors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None:
     state = errors.DeliveryState.NOT_SENT
-    counters = dict(zip(_COUNTERS, (1, 2, 3, 4, 5, 6, ("refresh",), 7, 8)))
     headers = responses.HeadersView((("Authorization", "private-secret"),))
-    info = responses.ResponseInfo(status_code=200, headers=headers, call_id="safe-call", elapsed=0, content_type=None)
+    info = responses.ResponseInfo(
+        status_code=200, headers=headers, call_id="safe-call", elapsed=0.5, content_type=None, attempt_count=3
+    )
     for error in (
-        errors.SDKError(**counters),
-        errors.PhaseTimeoutError(effective_timeout=1, phase="connect", delivery_state=state, **counters),
-        errors.DeadlineExceededError(deadline_at=-1, elapsed=2, phase="encode", delivery_state=state, **counters),
-        errors.RequestCancelledError(source="cancel_token", delivery_state=state, **counters),
-        errors.RequestCancelledError(source="parent_cancel_token", delivery_state=state, **counters),
-        errors.BudgetExceededError(budget_kind="network", limit=0, used=0, **counters),
-        errors.BudgetExceededError(budget_kind="parent_network", limit=1, used=1, **counters),
-        errors.LimiterExecutionError(action="acquire", **counters),
-        errors.LimiterExecutionError(action="release", **counters),
+        errors.SDKError(attempt_count=1, elapsed=2),
+        errors.APITimeoutError(reason="phase_timeout", effective_timeout=1, phase="connect", delivery_state=state),
+        errors.APITimeoutError(reason="deadline_exceeded", deadline_at=-1, phase="encode", delivery_state=state),
+        errors.RequestCancelledError(source="cancel_token", delivery_state=state, attempt_count=1),
+        errors.RequestCancelledError(source="parent_cancel_token", delivery_state=state),
     ):
+        lines.append(
+            f"  error {error} code={error.reason_code} attempts={error.attempt_count} elapsed={error.elapsed}"
+            f" request={error.request_id}"
+        )
         error.info = info
         error.cause = RuntimeError("private-secret")
         error.secondary_errors = (RuntimeError("private-secret"),)
-        lines.append(
-            f"  error {error} code={error.reason_code} counters={tuple(getattr(error, name) for name in _COUNTERS)} safe={'private-secret' not in repr(error) + str(error)}"
-        )
-        for name in _COUNTERS:
-            lines.append(
-                f"  readonly {type(error).__name__}.{name} {outcome(lambda error=error, name=name: setattr(error, name, 0))}"
-            )
-    phase = errors.PhaseTimeoutError(effective_timeout=0, phase="pool", delivery_state=state)
-    deadline = errors.DeadlineExceededError(deadline_at=-1, elapsed=0, delivery_state=state)
+        lines.append(f"  with response {error} safe={'private-secret' not in repr(error) + str(error)}")
+    answered = errors.SDKError(info=info, attempt_count=9, elapsed=9)
+    lines.append(f"  response measurements attempts={answered.attempt_count} elapsed={answered.elapsed}")
+    phase = errors.APITimeoutError(effective_timeout=0, phase="pool", delivery_state=state)
+    deadline = errors.APITimeoutError(deadline_at=-1, delivery_state=state)
     lines.append(
-        f"  hierarchy phase={isinstance(phase, errors.TransportError)} deadline={isinstance(deadline, errors.TransportError)} effective={phase.effective_timeout} absolute={deadline.deadline_at} elapsed={deadline.elapsed}"
+        f"  hierarchy phase={isinstance(phase, errors.APIConnectionError)} deadline={isinstance(deadline, errors.APIConnectionError)} effective={phase.effective_timeout} absolute={deadline.deadline_at}"
     )
-    lines.append(f"  default counters={tuple(getattr(deadline, name) for name in _COUNTERS)}")
     for phase_name in ("read", "write"):
-        value = errors.PhaseTimeoutError(effective_timeout=2.5, phase=phase_name, delivery_state=state)
+        value = errors.APITimeoutError(effective_timeout=2.5, phase=phase_name, delivery_state=state)
         lines.append(f"  phase {value.phase} cap={value.effective_timeout}")
-    identifiers = ["first"]
-    error = errors.SDKError(auth_refresh_ids=identifiers)
-    identifiers.append("second")
-    lines.append(f"  copied refresh ids {error.auth_refresh_ids}")
     for label, constructor, values in (
-        (
-            "phase unknown",
-            errors.PhaseTimeoutError,
-            {"phase": "unknown", "effective_timeout": 1, "delivery_state": state},
-        ),
-        ("phase type", errors.PhaseTimeoutError, {"phase": 1, "effective_timeout": 1, "delivery_state": state}),
-        (
-            "deadline phase",
-            errors.DeadlineExceededError,
-            {"deadline_at": 1, "elapsed": 0, "delivery_state": state, "phase": "connect"},
-        ),
         ("cancel source", errors.RequestCancelledError, {"source": "task", "delivery_state": state}),
         ("delivery", errors.RequestCancelledError, {"source": "cancel_token", "delivery_state": "NOT_SENT"}),
-        ("budget kind", errors.BudgetExceededError, {"budget_kind": "auth", "limit": 1, "used": 0}),
-        ("budget count", errors.BudgetExceededError, {"budget_kind": "network", "limit": -1, "used": 0}),
-        ("budget bool", errors.BudgetExceededError, {"budget_kind": "network", "limit": 1, "used": True}),
-        ("limiter action", errors.LimiterExecutionError, {"action": "wait"}),
-        ("counter type", errors.SDKError, {"network_send_count": 1.5}),
-        ("counter ids type", errors.SDKError, {"auth_refresh_ids": "refresh"}),
-        ("counter ids item", errors.SDKError, {"auth_refresh_ids": (1,)}),
-        ("wire count", errors.SDKError, {"wire_send_count": -1}),
+        ("attempt count", errors.SDKError, {"attempt_count": -1}),
+        ("attempt bool", errors.SDKError, {"attempt_count": True}),
     ):
         record(lines, f"invalid error {label}", lambda constructor=constructor, values=values: constructor(**values))
     for label, value in (
@@ -199,14 +156,11 @@ def _errors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None
         record(
             lines,
             f"invalid effective timeout {label}",
-            lambda value=value: errors.PhaseTimeoutError(effective_timeout=value, phase="read", delivery_state=state),
+            lambda value=value: errors.APITimeoutError(effective_timeout=value, phase="read", delivery_state=state),
         )
+    record(lines, "invalid deadline", lambda: errors.APITimeoutError(deadline_at=float("nan")))
     for label, value in (("negative", -1), ("infinity", float("inf"))):
-        record(
-            lines,
-            f"invalid elapsed {label}",
-            lambda value=value: errors.DeadlineExceededError(deadline_at=1, elapsed=value, delivery_state=state),
-        )
+        record(lines, f"invalid elapsed {label}", lambda value=value: errors.SDKError(elapsed=value))
 
 
 def _hints(
@@ -223,11 +177,9 @@ def _hints(
         transports.AttemptIOContext,
         transports.ResolvedTimeoutOptions,
         errors.SDKError,
-        errors.PhaseTimeoutError,
-        errors.DeadlineExceededError,
+        errors.APIConnectionError,
+        errors.APITimeoutError,
         errors.RequestCancelledError,
-        errors.BudgetExceededError,
-        errors.LimiterExecutionError,
     ):
         lines.append(f"  hints {owner.__name__} {tuple(get_type_hints(owner.__init__))}")
     for method in (
@@ -267,7 +219,7 @@ def _live_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> N
         client = options.ClientOptions(timeout=options.TimeoutOptions(connect=3, read=5), total_timeout=None)
         with package.Client(http_client=native, options=client) as api:
             view = api.with_options(
-                options.RequestOptions(timeout=options.TimeoutOptions(write=7), max_network_sends=None)
+                options.RequestOptions(timeout=options.TimeoutOptions(write=7))
             )
             exchange.respond(raw_response(200, b"layered"))
             call = options.RequestOptions(timeout=options.TimeoutOptions(pool=2))
@@ -303,7 +255,7 @@ def _adapter_failure(
             lines.append(
                 f"  attempt context deadline={absolute.at == deadline.at} remaining={0 < absolute.remaining() <= 3600} token={getattr(context, 'cancel_token') is token} phase={getattr(context, 'phase')} slotted={not hasattr(context, '__dict__')}"
             )
-            raise errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
+            raise errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
 
         def close(self) -> None:
             pass
@@ -348,7 +300,7 @@ def _clocks(
         def send(self, request: object, context: object) -> object:
             del request
             seen.append(getattr(context, "deadline"))
-            raise errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
+            raise errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
 
         def close(self) -> None:
             pass

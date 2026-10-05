@@ -567,16 +567,16 @@ def _faults(
 ) -> None:
     """Classify transport and secret failures by what they sent, leaving nothing behind for later calls."""
     granted = json.dumps(_ISSUED).encode()
-    connect = errors.PhaseTimeoutError(
+    connect = errors.APITimeoutError(
         effective_timeout=5.0, delivery_state=errors.DeliveryState.NOT_SENT, phase="connect"
     )
-    read = errors.PhaseTimeoutError(
+    read = errors.APITimeoutError(
         effective_timeout=15.0, delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read"
     )
-    unsent = errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
-    read_failure = errors.TransportError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="read")
-    unknown_phase = errors.TransportError(delivery_state=errors.DeliveryState.MAYBE_SENT)
-    unknown_timeout = errors.TransportError(
+    unsent = errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
+    read_failure = errors.APIConnectionError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="read")
+    unknown_phase = errors.APIConnectionError(delivery_state=errors.DeliveryState.MAYBE_SENT)
+    unknown_timeout = errors.APIConnectionError(
         delivery_state=errors.DeliveryState.MAYBE_SENT, cause=httpx2.ReadTimeout("unclassified")
     )
     headers = responses.HeadersView((("content-type", "application/json"),))
@@ -616,7 +616,7 @@ def _faults(
             "secret auth failure",
             provider(
                 client_secret=_Once(
-                    auth.ApiKeyCredential("s"), failure=errors.AuthConfigurationError(condition="missing_value")
+                    auth.ApiKeyCredential("s"), failure=errors.ConfigurationError(reason="missing_value")
                 )
             ),
         ),
@@ -712,7 +712,7 @@ async def _async_faults(
 ) -> None:
     """Classify asyncio token requests by their answers, failures, and the session deadline."""
     granted = json.dumps(_ISSUED).encode()
-    read_timeout = errors.PhaseTimeoutError(
+    read_timeout = errors.APITimeoutError(
         effective_timeout=15.0, delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read"
     )
     for label, replies, provider, total in (

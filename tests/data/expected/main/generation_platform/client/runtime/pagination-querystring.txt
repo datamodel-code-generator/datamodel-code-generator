@@ -1,33 +1,33 @@
 # pagination-querystring pydantic_v2.BaseModel
   > GET https://search.example.com/search?term=a+b
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  querystring cursor = [x] continuation=Continuation(kind='cursor') status=200 sends=1
+  querystring cursor = [x] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://search.example.com/search?term=a+b&page=200
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  querystring cursor next page = [y] continuation=Continuation(kind='cursor') status=200 sends=1
+  querystring cursor next page = [y] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://search.example.com/search
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  querystring cursor without criteria = [x] continuation=Continuation(kind='cursor') status=200 sends=1
+  querystring cursor without criteria = [x] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://search.example.com/search?page=200
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  querystring cursor without criteria next page = [y] continuation=Continuation(kind='cursor') status=200 sends=1
+  querystring cursor without criteria next page = [y] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://search.example.com/search?term=a+b
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  querystring binding = [x] continuation=Continuation(kind='cursor') status=200 sends=1
+  querystring binding = [x] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://search.example.com/search?term=all&page=200
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  querystring binding next page = [y] continuation=Continuation(kind='cursor') status=200 sends=1
+  querystring binding next page = [y] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://search.example.com/lookup
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  json querystring null binding = [x] continuation=Continuation(kind='cursor') status=200 sends=1
+  json querystring null binding = [x] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://search.example.com/lookup?%7B%22term%22%3Anull%2C%22page%22%3A200%7D
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  json querystring null binding next page = [y] continuation=Continuation(kind='cursor') status=200 sends=1
+  json querystring null binding next page = [y] continuation=Continuation(kind='cursor') status=200 attempts=1
   > GET https://search.example.com/search?term=a+b
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://search.example.com/search?term=a+b&page=200
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  querystring status pages ['x', 'y'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=StatusSelector()] pagination_cycle_error
+  querystring status pages ['x', 'y'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=StatusSelector(), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] pagination_cycle_error
   > GET https://search.example.com/search?term=a+b
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://search.example.com/search?term=b%26c

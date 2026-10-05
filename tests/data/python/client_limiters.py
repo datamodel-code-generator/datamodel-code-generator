@@ -73,13 +73,7 @@ class _Event(Protocol):
     def call_id(self) -> str: ...
 
     @property
-    def resource_attempt_count(self) -> int: ...
-
-    @property
-    def network_send_count(self) -> int: ...
-
-    @property
-    def network_send_budget_used(self) -> int: ...
+    def attempt_count(self) -> int: ...
 
 
 class _Usage:
@@ -206,7 +200,7 @@ class _Events:
         self.names.append(f"{event.name}:{self.usage.active}")
         self.ids.add(event.call_id)
         if event.name == "call_end":
-            self.ends.append((event.resource_attempt_count, event.network_send_count, event.network_send_budget_used))
+            self.ends.append(event.attempt_count)
         if event.name == self.failing:
             msg = f"Hook failed on {event.name}"
             raise RuntimeError(msg)
@@ -551,7 +545,6 @@ def _sync_admission(package: ModuleType, lines: list[str]) -> None:
         for label, value in (
             ("zero timeout", options.RequestOptions(total_timeout=0)),
             ("pre-cancelled", options.RequestOptions(cancel_token=token)),
-            ("zero budget", options.RequestOptions(max_network_sends=0)),
         ):
             limiter = _SemaphoreLimiter()
             factory = _Factory(limiter.usage)
@@ -845,7 +838,6 @@ async def _async_admission(package: ModuleType, lines: list[str]) -> None:
         for label, value in (
             ("async zero timeout", options.RequestOptions(total_timeout=0)),
             ("async pre-cancelled", options.RequestOptions(cancel_token=token)),
-            ("async zero budget", options.RequestOptions(max_network_sends=0)),
         ):
             limiter = _AsyncSemaphoreLimiter()
             factory = _Factory(limiter.usage)

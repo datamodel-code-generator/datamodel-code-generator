@@ -7,7 +7,7 @@
     4  id=None retry=None data=Record{'text': 'spaced'} raw='  {"text": "spaced"}  '
   < closed
     end
-    response 200 progress {'reconnects': 0, 'network_send_count': 1, 'network_send_budget_used': 1}
+    response 200 progress {'reconnects': 0}
   > GET https://api.example.com/records accept=application/x-ndjson
   in one chunk
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
@@ -20,39 +20,39 @@
   blank line
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='streamRecords', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
     raw prefix b'' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   whitespace line
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
     raw prefix b' \t' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   invalid UTF-8
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
     raw prefix b'{"text": "\xff"}' cause NoneType context NoneType
   > GET https://api.example.com/records accept=application/x-ndjson
   byte order mark
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
     raw prefix b'\xef\xbb\xbf{"text": "a"}' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   CR without LF
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
     raw prefix b'{"text": "a"}\r{"text": "b"}' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   record refused by its type
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=2, truncated=False) [operation_id='streamRecords', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.string_type) at /text')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=2, truncated=False) [operation_id='streamRecords', condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=NativeValidationError('The native type rejected the value (native.string_type) at /text')] stream_decode_error
     raw prefix b'{"text": 5}' cause NativeValidationError context NativeValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   final line without a line end
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamRecords', call_id='<call>', condition='eof', sequence=1, buffered_bytes=13) [operation_id='streamRecords', condition='eof'] incomplete_frame_error
+    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamRecords', call_id='<call>', condition='eof', sequence=1, buffered_bytes=13) [operation_id='streamRecords', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
   > GET https://api.example.com/records accept=application/x-ndjson
   end after a line end
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
@@ -77,12 +77,12 @@
   > GET https://api.example.com/records accept=application/x-ndjson
   invalid final line
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
     raw prefix b'{"text"' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   final line not UTF-8
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
     raw prefix b'\xff' cause NoneType context NoneType
   > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
   sentinel
@@ -102,11 +102,11 @@
   EOF before the sentinel
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='search', call_id='<call>', condition='eof', sequence=1) [operation_id='search', condition='eof'] stream_interrupted_error
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='search', call_id='<call>', condition='eof', sequence=1) [operation_id='search', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] stream_interrupted_error
   > GET https://api.example.com/records accept=application/x-ndjson
   sentinel without a required line end
   < closed
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamRecords', call_id='<call>', condition='eof', sequence=0, buffered_bytes=6) [operation_id='streamRecords', condition='eof'] incomplete_frame_error
+    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamRecords', call_id='<call>', condition='eof', sequence=0, buffered_bytes=6) [operation_id='streamRecords', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
   > GET https://api.example.com/records accept=application/x-ndjson
   body discriminator
     1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
@@ -118,29 +118,29 @@
   before the error 1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
   < closed
   error record None {'type': 'failed', 'message': 'nope'} 2
-  after the error ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [] protocol_state_error
+  after the error ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   > GET https://api.example.com/records accept=application/x-ndjson
   missing discriminator
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='missing', sequence=1, truncated=False) [operation_id='streamRecords', condition='missing', location=BodySelector(pointer='/type'), truncated=False] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='missing', sequence=1, truncated=False) [operation_id='streamRecords', condition='missing', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
   > GET https://api.example.com/records accept=application/x-ndjson
   mapped record failing its type
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamRecords', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.string_type) at /id')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamRecords', condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=NativeValidationError('The native type rejected the value (native.string_type) at /id')] stream_decode_error
   > GET https://api.example.com/records accept=application/x-ndjson
   line over the limit in one chunk
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=18) [operation_id='streamRecords', kind='line', unit='bytes', limit=16] protocol_size_error
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=18) [operation_id='streamRecords', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=16, observed=18] protocol_size_error
   > GET https://api.example.com/records accept=application/x-ndjson
   line a later chunk extends over the limit
   < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=20) [operation_id='streamRecords', kind='line', unit='bytes', limit=16] protocol_size_error
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=20) [operation_id='streamRecords', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=16, observed=20] protocol_size_error
   > GET https://api.example.com/records accept=application/x-ndjson
   unended line after a line end over the limit
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=21) [operation_id='streamRecords', kind='line', unit='bytes', limit=16] protocol_size_error
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=21) [operation_id='streamRecords', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=16, observed=21] protocol_size_error
   > GET https://api.example.com/records accept=application/x-ndjson
   line at the limit
     1  id=None retry=None data=Record{'text': 'abcd'} raw='{"text": "abcd"}'
@@ -155,15 +155,15 @@
   > GET https://api.example.com/records accept=application/x-ndjson
   CR inside a line counted
   < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=30) [operation_id='streamRecords', kind='line', unit='bytes', limit=16] protocol_size_error
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=30) [operation_id='streamRecords', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=16, observed=30] protocol_size_error
   > GET https://api.example.com/records accept=application/x-ndjson
   record over a record limit under the line limit
   < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='event', limit=16, observed=17) [operation_id='streamRecords', kind='event', unit='bytes', limit=16] protocol_size_error
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='event', limit=16, observed=17) [operation_id='streamRecords', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='event', unit='bytes', limit=16, observed=17] protocol_size_error
   > GET https://api.example.com/records accept=application/x-ndjson
   first 1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-  after close ! ProtocolStateError: ProtocolStateError(state='closed', action='next') [] protocol_state_error
+  after close ! ProtocolStateError: ProtocolStateError(state='closed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
   data [{'text': 'a'}, {'text': 'a'}]
@@ -171,13 +171,13 @@
   broken connection
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamRecords', call_id='<call>', condition='transport', sequence=1) [operation_id='streamRecords', condition='transport', cause=TransportError()] stream_interrupted_error
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamRecords', call_id='<call>', condition='transport', sequence=1) [operation_id='streamRecords', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
-  declared error status ! NotFoundError: NotFoundError(status_code=404, operation_id='streamRecords', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='streamRecords', status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail": "missing"}', truncated=False] not_found_error
+  declared error status ! NotFoundError: NotFoundError(status_code=404, operation_id='streamRecords', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='streamRecords', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail": "missing"}', truncated=False] not_found_error
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
-  event stream media type ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='streamRecords', call_id='<call>') [operation_id='streamRecords', body_bytes=b'', truncated=False, actual_media_type='text/event-stream', expected_media_types=('application/x-ndjson',)] unexpected_media_type_error
+  event stream media type ! DecodeError: DecodeError(status_code=200, operation_id='streamRecords', call_id='<call>', reason='unexpected_media_type') [operation_id='streamRecords', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, media_type='text/event-stream'] unexpected_media_type
   > GET https://api.example.com/records accept=application/x-ndjson
   media type with parameters
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
@@ -193,7 +193,7 @@
   hooked undecodable record
   < closed
     hook stream_end outcome=error
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamRecords', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /text')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamRecords', condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /text')] stream_decode_error
   > GET https://api.example.com/records accept=application/x-ndjson
   hooked early close after 1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
@@ -215,7 +215,7 @@
   > GET https://api.example.com/records accept=application/x-ndjson
   async invalid UTF-8
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
   > GET https://api.example.com/records accept=application/x-ndjson
   async body discriminator
     1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
@@ -227,16 +227,16 @@
   async error record
     1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
   < closed
-    ! StreamRemoteError: StreamRemoteError(operation_id='streamRecords', call_id='<call>', sequence=2) [operation_id='streamRecords'] stream_remote_error
+    ! StreamRemoteError: StreamRemoteError(operation_id='streamRecords', call_id='<call>', sequence=2) [operation_id='streamRecords', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] stream_remote_error
   > GET https://api.example.com/records accept=application/x-ndjson
   async broken connection
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamRecords', call_id='<call>', condition='transport', sequence=1) [operation_id='streamRecords', condition='transport', cause=TransportError()] stream_interrupted_error
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamRecords', call_id='<call>', condition='transport', sequence=1) [operation_id='streamRecords', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
   > GET https://api.example.com/records accept=application/x-ndjson
   < closed
   async data [{'text': 'a'}, {'text': 'a'}]
   > GET https://api.example.com/records accept=application/x-ndjson
   async first 1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-  async after close ! ProtocolStateError: ProtocolStateError(state='closed', action='anext') [] protocol_state_error
+  async after close ! ProtocolStateError: ProtocolStateError(state='closed', action='anext') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error

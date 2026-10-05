@@ -42,8 +42,6 @@ ProgressKey: TypeAlias = Literal[
     "reconnects",
     "parts",
     "confirmed_bytes",
-    "network_send_count",
-    "network_send_budget_used",
     "messages_sent",
     "messages_received",
 ]

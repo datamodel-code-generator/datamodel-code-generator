@@ -583,7 +583,7 @@ def _security(protocols: ModuleType, lines: list[str]) -> None:
 
 def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleType, lines: list[str]) -> None:
     """Accept protocol settings only on client options, freezing helper defaults without copying their values."""
-    session = options.SessionOptions(max_network_sends=3)
+    session = options.SessionOptions(total_timeout=3)
     pagination = protocols.PaginationOptions(max_items=0)
     defaults = protocols.ProtocolDefaults(session=session, options=pagination)
     lines.append(
@@ -665,7 +665,7 @@ def _calls(package: ModuleType, options: ModuleType, client_options: Any, lines:
     with exchange.client() as native, package.Client(http_client=native, options=client_options) as api:
         exchange.respond(json_response(200, [{"id": 1, "name": "cat"}], **{"X-Rate": "1"}))
         record(lines, "configured client list", lambda: api.pets.list_pets(x_trace=trace))
-        with api.with_options(options.RequestOptions(max_network_sends=2)) as view:
+        with api.with_options(options.RequestOptions(total_timeout=2)) as view:
             exchange.respond(json_response(200, [], **{"X-Rate": "1"}))
             record(lines, "configured view list", lambda: view.pets.list_pets(x_trace=trace))
     with (

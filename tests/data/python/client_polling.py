@@ -248,8 +248,6 @@ def _creates(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
         step(lines, label, lambda: helper.start(body=body))
     lines.append("options")
     for label, settings in (
-        ("no session send slot", {"session_options": harness.session(max_network_sends=0)}),
-        ("no call send slot", {"options": harness.request(max_network_sends=0)}),
         ("poll options of another type", {"poll_options": harness.session()}),
         ("fixed idempotency key", {"options": harness.request(idempotency_key=harness.options.IdempotencyKey.new())}),
         ("patched written header", {"options": harness.request(headers=[("x-trace", "mine")])}),
@@ -374,14 +372,6 @@ def _limits(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) ->
     step(lines, "first poll", handle.status)
     step(lines, "poll past the limit", handle.status)
     step(lines, "wait past the limit", handle.wait)
-    exchange.respond(job("queued", 202), job("queued"))
-    handle = helper.start(body=body, session_options=harness.session(max_network_sends=2))
-    step(lines, "poll", handle.status)
-    step(lines, "poll without a send slot", handle.status)
-    exchange.respond(job("queued", 202), job("done"))
-    handle = helper.start(body=body, session_options=harness.session(max_network_sends=2))
-    step(lines, "success", handle.status)
-    step(lines, "fetch without a send slot", handle.wait)
 
 
 def _failures(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -498,10 +488,6 @@ async def _async_polling(harness: Polling, lines: list[str]) -> None:
         async with await api.protocols.jobs.inline.start(body=body) as immediate:
             await astep(lines, "immediate wait", immediate.wait)
         await astep(lines, "wait after the block", immediate.wait)
-        unbudgeted = harness.session(max_network_sends=0)
-        await arecord(
-            lines, "start without a session send slot", lambda: helper.start(body=body, session_options=unbudgeted)
-        )
         lines.append("async concurrent steps")
         exchange.respond(job("queued", 202))
         handle = await helper.start(body=body, poll_options=harness.polls(interval=30))

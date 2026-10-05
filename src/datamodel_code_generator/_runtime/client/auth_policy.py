@@ -22,15 +22,7 @@ from .auth import (
     SignerCapabilities,
 )
 from .auth_challenges import invalid_token
-from .errors import (
-    AuthConfigurationError,
-    AuthProviderExecutionError,
-    AuthRefreshError,
-    DeliveryState,
-    SigningConfigurationError,
-    SigningExecutionError,
-    TokenExpiredError,
-)
+from .errors import AuthError, ConfigurationError, DeliveryState
 from .responses import HeadersView
 from .security import SecurityRequirement, SecurityScheme, UnavailableSecurityScheme
 from .transports import PreparedRequest
@@ -214,34 +206,32 @@ def validate_auth_mode(config: AuthConfig, *, asynchronous: bool) -> None:
         else:
             valid = async_provider(provider) if asynchronous else sync_provider(provider)
         if not valid:
-            raise AuthConfigurationError(field_path=("auth", "credentials"), condition="invalid_mode")
+            raise ConfigurationError(field_path=("auth", "credentials"), reason="invalid_mode")
         if any(getattr(provider, name, None) is not None for name in ("invalidate", "refresh")):
             valid = _async_refreshable(provider) if asynchronous else _sync_refreshable(provider)
             if not valid:
-                raise AuthConfigurationError(field_path=("auth", "credentials"), condition="invalid_refresh_capability")
+                raise ConfigurationError(field_path=("auth", "credentials"), reason="invalid_refresh_capability")
     for signer in config.signers:
         if not (_async_signer(signer) if asynchronous else _sync_signer(signer)):
-            raise SigningConfigurationError(field_path=("auth", "signers"), condition="invalid_mode")
+            raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_mode")
 
 
-def _origins(
-    values: tuple[str, ...], error: type[AuthConfigurationError | SigningConfigurationError]
-) -> frozenset[Origin]:
+def _origins(values: tuple[str, ...]) -> frozenset[Origin]:
     try:
         if not all(_ORIGIN.fullmatch(value) for value in values):
-            raise error(field_path=("auth", "allowed_origins"), condition="invalid_origin")
+            raise ConfigurationError(field_path=("auth", "allowed_origins"), reason="invalid_origin")
         return frozenset(canonical_origin(value) for value in values)
     except URLValidationError as cause:
-        raise error(field_path=("auth", "allowed_origins"), condition="invalid_origin", cause=cause) from None
+        raise ConfigurationError(field_path=("auth", "allowed_origins"), reason="invalid_origin", cause=cause) from None
 
 
 def _scheme(name: str, catalogue: tuple[SecuritySchemeEntry, ...]) -> SecurityScheme:
     for scheme in catalogue:
         if scheme.name == name:
             if isinstance(scheme, UnavailableSecurityScheme):
-                raise AuthConfigurationError(field_path=("auth", "credentials", name), condition="unavailable_scheme")
+                raise ConfigurationError(field_path=("auth", "credentials", name), reason="unavailable_scheme")
             return scheme
-    raise AuthConfigurationError(field_path=("auth", "credentials", name), condition="unknown_scheme")
+    raise ConfigurationError(field_path=("auth", "credentials", name), reason="unknown_scheme")
 
 
 def _requirements(
@@ -254,16 +244,16 @@ def _requirements(
     selected: tuple[SecurityRequirement, ...] | None = ()
     if not isinstance(config.selection, Unset) and len(alternatives) > 1:
         if config.selection >= len(alternatives):
-            raise AuthConfigurationError(field_path=("auth", "selection"), condition="out_of_range")
+            raise ConfigurationError(field_path=("auth", "selection"), reason="out_of_range")
         selected = alternatives[config.selection]
         if not all(item.scheme.name in config.credentials for item in selected):
-            raise AuthConfigurationError(field_path=("auth", "credentials"), condition="missing_credentials")
+            raise ConfigurationError(field_path=("auth", "credentials"), reason="missing_credentials")
     elif alternatives:
         selected = next(
             (group for group in alternatives if all(item.scheme.name in config.credentials for item in group)), None
         )
         if selected is None:
-            raise AuthConfigurationError(field_path=("auth", "credentials"), condition="missing_credentials")
+            raise ConfigurationError(field_path=("auth", "credentials"), reason="missing_credentials")
     if selected:
         return selected
     if not config.send_on_anonymous:
@@ -272,9 +262,9 @@ def _requirements(
         SecurityRequirement(scheme=_scheme(name, schemes), required_scopes=()) for name in config.anonymous_schemes
     )
     if not all(item.scheme.name in config.credentials for item in selected):
-        raise AuthConfigurationError(field_path=("auth", "anonymous_schemes"), condition="missing_credentials")
+        raise ConfigurationError(field_path=("auth", "anonymous_schemes"), reason="missing_credentials")
     if not selected and not config.signers:
-        raise AuthConfigurationError(field_path=("auth", "send_on_anonymous"), condition="empty_selection")
+        raise ConfigurationError(field_path=("auth", "send_on_anonymous"), reason="empty_selection")
     return selected
 
 
@@ -282,19 +272,17 @@ def _signer_capabilities(signer: RequestSigner | AsyncRequestSigner) -> SignerCa
     try:
         value = signer.capabilities
     except Exception as cause:  # noqa: BLE001 - A missing or failing capability record is a signer defect.
-        raise SigningConfigurationError(
-            field_path=("auth", "signers"), condition="invalid_capabilities", cause=cause
-        ) from None
+        raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_capabilities", cause=cause) from None
     return _capabilities(value)
 
 
 def _capabilities(value: object) -> SignerCapabilities:
     if not isinstance(value, SignerCapabilities):
-        raise SigningConfigurationError(field_path=("auth", "signers"), condition="invalid_capabilities")
+        raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_capabilities")
     if any(_NAME.fullmatch(name) is None for name in value.managed_headers) or any(
         not name for name in value.managed_query
     ):
-        raise SigningConfigurationError(field_path=("auth", "signers"), condition="invalid_name")
+        raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_name")
     return value
 
 
@@ -309,19 +297,19 @@ def _managed(
         names = {"header": headers, "query": query, "cookie": cookies}[scheme.location]
         name = scheme.wire_name.lower() if scheme.location == "header" else scheme.wire_name
         if name in names or (scheme.location == "header" and name in _RESERVED):
-            raise AuthConfigurationError(field_path=("auth", "credentials"), condition="name_collision")
+            raise ConfigurationError(field_path=("auth", "credentials"), reason="name_collision")
         names.add(name)
     if cookies and "cookie" in headers:
-        raise AuthConfigurationError(field_path=("auth", "credentials"), condition="name_collision")
+        raise ConfigurationError(field_path=("auth", "credentials"), reason="name_collision")
     for signer in capabilities:
         for name in signer.managed_headers:
             key = name.lower()
             if key in headers or key in _RESERVED or (cookies and key == "cookie"):
-                raise SigningConfigurationError(field_path=("auth", "signers"), condition="name_collision")
+                raise ConfigurationError(field_path=("auth", "signers"), reason="name_collision")
             headers.add(key)
         for name in signer.managed_query:
             if name in query:
-                raise SigningConfigurationError(field_path=("auth", "signers"), condition="name_collision")
+                raise ConfigurationError(field_path=("auth", "signers"), reason="name_collision")
             query.add(name)
     return frozenset(headers), frozenset(query), frozenset(cookies)
 
@@ -332,7 +320,7 @@ def bind_auth(
     """Select and snapshot synchronous authentication without invoking callbacks."""
     if (requirements := _requirements(config, security, catalogue)) is None:
         return None
-    origins = _origins(config.allowed_origins, AuthConfigurationError)
+    origins = _origins(config.allowed_origins)
     signers: list[BoundSigner] = []
     for index, signer in enumerate(config.signers):
         assert _sync_signer(signer)
@@ -341,7 +329,7 @@ def bind_auth(
             BoundSigner(
                 signer=signer,
                 capabilities=capabilities,
-                allowed_origins=_origins(capabilities.allowed_origins, SigningConfigurationError),
+                allowed_origins=_origins(capabilities.allowed_origins),
                 index=index,
             )
         )
@@ -375,7 +363,7 @@ def bind_async_auth(
     """Select and snapshot asynchronous authentication without invoking callbacks."""
     if (requirements := _requirements(config, security, catalogue)) is None:
         return None
-    origins = _origins(config.allowed_origins, AuthConfigurationError)
+    origins = _origins(config.allowed_origins)
     signers: list[AsyncBoundSigner] = []
     for index, signer in enumerate(config.signers):
         assert _async_signer(signer)
@@ -384,7 +372,7 @@ def bind_async_auth(
             AsyncBoundSigner(
                 signer=signer,
                 capabilities=capabilities,
-                allowed_origins=_origins(capabilities.allowed_origins, SigningConfigurationError),
+                allowed_origins=_origins(capabilities.allowed_origins),
                 index=index,
             )
         )
@@ -418,11 +406,11 @@ def authorize_hop(
     """Require independent credential and signer authority for the actual destination."""
     allowed = origin in bound.allowed_origins if bound.allowed_origins else not raw and origin == server_origin
     if not allowed:
-        raise AuthConfigurationError(field_path=("auth", "allowed_origins"), condition="origin_denied")
+        raise ConfigurationError(field_path=("auth", "allowed_origins"), reason="origin_denied")
     for signer in bound.signers:
         allowed = origin in signer.allowed_origins if signer.allowed_origins else not raw and origin == server_origin
         if not allowed:
-            raise SigningConfigurationError(field_path=("auth", "signers"), condition="origin_denied")
+            raise ConfigurationError(field_path=("auth", "signers"), reason="origin_denied")
 
 
 def validate_patches(bound: BoundAuth | AsyncBoundAuth, headers: HeaderPatch, query: QueryPatch) -> None:
@@ -437,7 +425,7 @@ def validate_patches(bound: BoundAuth | AsyncBoundAuth, headers: HeaderPatch, qu
             for part in value.split(";")
         )
     ):
-        raise AuthConfigurationError(field_path=("auth",), condition="managed_field")
+        raise ConfigurationError(field_path=("auth",), reason="managed_field")
 
 
 def validate_ownership(
@@ -453,7 +441,7 @@ def validate_ownership(
         or any(name in bound.managed_query for name in query)
         or any(name in bound.managed_cookies for name in cookies)
     ):
-        raise AuthConfigurationError(field_path=("auth",), condition="name_collision")
+        raise ConfigurationError(field_path=("auth",), reason="name_collision")
 
 
 def _expiry(token: AccessToken, delivery: DeliveryState, clock: Clock) -> float | None:
@@ -462,11 +450,11 @@ def _expiry(token: AccessToken, delivery: DeliveryState, clock: Clock) -> float 
     try:
         timestamp = None if expires.utcoffset() is None else expires.timestamp()
     except (TypeError, ValueError) as cause:
-        raise TokenExpiredError(condition="invalid_expiry", delivery_state=delivery, cause=cause) from None
+        raise AuthError(reason="invalid_expiry", delivery_state=delivery, cause=cause) from None
     if timestamp is None:
-        raise TokenExpiredError(condition="invalid_expiry", delivery_state=delivery)
+        raise AuthError(reason="invalid_expiry", delivery_state=delivery)
     if (remaining := timestamp - clock.time()) <= 0:
-        raise TokenExpiredError(condition="expired", expires_at=expires, delivery_state=delivery)
+        raise AuthError(reason="token_expired", expires_at=expires, delivery_state=delivery)
     return clock.monotonic() + remaining
 
 
@@ -480,11 +468,11 @@ def _material(
     if isinstance(value, BearerCredential) and scheme.kind == "bearer":
         token = value.token
         if token.token_type.lower() != "bearer":
-            raise AuthConfigurationError(field_path=("auth", "token_type"), condition="unsupported_token_type")
+            raise ConfigurationError(field_path=("auth", "token_type"), reason="unsupported_token_type")
         return AcquiredCredential(value, _expiry(token, delivery, clock))
     if inspect.iscoroutine(value):
         value.close()
-    raise AuthConfigurationError(field_path=("auth", "credentials", scheme.name), condition="invalid_material")
+    raise ConfigurationError(field_path=("auth", "credentials", scheme.name), reason="invalid_material")
 
 
 class _Wrapped:
@@ -506,23 +494,19 @@ class _Wrapped:
         return False
 
 
-def _provider_failure(
-    callback: Literal["get", "invalidate", "refresh"], delivery: DeliveryState, cause: Exception
-) -> AuthProviderExecutionError:
-    return AuthProviderExecutionError(callback=callback, delivery_state=delivery, cause=cause)
+def _provider_failure(delivery: DeliveryState, cause: Exception) -> AuthError:
+    return AuthError(reason="provider_failed", delivery_state=delivery, cause=cause)
 
 
-def _provider_calls(
-    callback: Literal["get", "refresh"], kept: tuple[type[Exception], ...]
-) -> dict[DeliveryState, _Wrapped]:
+def _provider_calls(kept: tuple[type[Exception], ...]) -> dict[DeliveryState, _Wrapped]:
     """Prepare one callback wrapper per delivery state the call may have reached, so no call allocates one."""
-    return {state: _Wrapped(kept, partial(_provider_failure, callback, state)) for state in DeliveryState}
+    return {state: _Wrapped(kept, partial(_provider_failure, state)) for state in DeliveryState}
 
 
-_PROVIDER_KEPT: Final = (AuthConfigurationError, AuthRefreshError)
-_GET: Final = _provider_calls("get", _PROVIDER_KEPT)
-_INVALIDATE: Final = _Wrapped(_PROVIDER_KEPT, partial(_provider_failure, "invalidate", DeliveryState.RESPONSE_STARTED))
-_REFRESH: Final = _provider_calls("refresh", _PROVIDER_KEPT)
+_PROVIDER_KEPT: Final = (ConfigurationError, AuthError)
+_GET: Final = _provider_calls(_PROVIDER_KEPT)
+_INVALIDATE: Final = _Wrapped(_PROVIDER_KEPT, partial(_provider_failure, DeliveryState.RESPONSE_STARTED))
+_REFRESH: Final = _provider_calls(_PROVIDER_KEPT)
 
 
 def get_credential(binding: BoundCredential, context: CredentialContext, delivery: DeliveryState) -> object:
@@ -598,13 +582,11 @@ def _wire_value(material: CredentialMaterial) -> str:
     if isinstance(material, BearerCredential):
         return f"Bearer {material.token.value}"
     if ":" in material.username or _CONTROL.search(material.username + material.password) is not None:
-        raise AuthConfigurationError(field_path=("auth", "credentials"), condition="invalid_basic")
+        raise ConfigurationError(field_path=("auth", "credentials"), reason="invalid_basic")
     try:
         encoded = f"{material.username}:{material.password}".encode()
     except UnicodeEncodeError as cause:
-        raise AuthConfigurationError(
-            field_path=("auth", "credentials"), condition="invalid_basic", cause=cause
-        ) from None
+        raise ConfigurationError(field_path=("auth", "credentials"), reason="invalid_basic", cause=cause) from None
     return "Basic " + base64.b64encode(encoded).decode("ascii")
 
 
@@ -647,24 +629,18 @@ def place_credentials(
         text = _wire_value(value.material)
         if scheme.location == "header":
             if _NAME.fullmatch(scheme.wire_name) is None or _HEADER_VALUE.fullmatch(text) is None:
-                raise AuthConfigurationError(
-                    field_path=("auth", "credentials", scheme.name), condition="invalid_header"
-                )
+                raise ConfigurationError(field_path=("auth", "credentials", scheme.name), reason="invalid_header")
             headers.append((scheme.wire_name, text))
         elif scheme.location == "cookie":
             if _NAME.fullmatch(scheme.wire_name) is None or _COOKIE_VALUE.fullmatch(text) is None:
-                raise AuthConfigurationError(
-                    field_path=("auth", "credentials", scheme.name), condition="invalid_cookie"
-                )
+                raise ConfigurationError(field_path=("auth", "credentials", scheme.name), reason="invalid_cookie")
             cookies.append((scheme.wire_name, text))
         else:
             query.append((scheme.wire_name, text))
     try:
         url = _query_url(request.url, tuple(query))
     except UnicodeEncodeError as cause:
-        raise AuthConfigurationError(
-            field_path=("auth", "credentials"), condition="invalid_query", cause=cause
-        ) from None
+        raise ConfigurationError(field_path=("auth", "credentials"), reason="invalid_query", cause=cause) from None
     return PreparedRequest(
         method=request.method, url=url, headers=HeadersView(_cookie_fields(headers, cookies)), body=request.body
     )
@@ -675,26 +651,25 @@ def _signature(value: object) -> SignatureFields:
         return value
     if inspect.iscoroutine(value):
         value.close()
-    raise SigningConfigurationError(field_path=("auth", "signers"), condition="invalid_result")
+    raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_result")
 
 
-def _signing(signer_index: int) -> _Wrapped:
-    return _Wrapped(
-        (SigningConfigurationError, SigningExecutionError),
-        lambda cause: SigningExecutionError(signer_index=signer_index, cause=cause),
-    )
+_SIGNING: Final = _Wrapped(
+    (ConfigurationError, AuthError),
+    lambda cause: AuthError(reason="signing_failed", delivery_state=DeliveryState.NOT_SENT, cause=cause),
+)
 
 
-def sign_request(signer: RequestSigner, request: SigningInput, *, signer_index: int) -> SignatureFields:
+def sign_request(signer: RequestSigner, request: SigningInput) -> SignatureFields:
     """Run a synchronous signer without converting native interruptions."""
-    with _signing(signer_index):
+    with _SIGNING:
         value = signer.sign(request)
     return _signature(value)
 
 
-async def asign_request(signer: AsyncRequestSigner, request: SigningInput, *, signer_index: int) -> SignatureFields:
+async def asign_request(signer: AsyncRequestSigner, request: SigningInput) -> SignatureFields:
     """Run an asynchronous signer in the existing bounded operation task."""
-    with _signing(signer_index):
+    with _SIGNING:
         value = await signer.sign(request)
     return _signature(value)
 
@@ -706,17 +681,15 @@ def apply_signature(
     names = frozenset(name.lower() for name in capabilities.managed_headers)
     for name, value in fields.headers:
         if _NAME.fullmatch(name) is None or _HEADER_VALUE.fullmatch(value) is None:
-            raise SigningConfigurationError(field_path=("auth", "signers"), condition="invalid_header")
+            raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_header")
         if name.lower() not in names:
-            raise SigningConfigurationError(field_path=("auth", "signers"), condition="undeclared_header")
+            raise ConfigurationError(field_path=("auth", "signers"), reason="undeclared_header")
     if any(name not in capabilities.managed_query for name, _ in fields.query):
-        raise SigningConfigurationError(field_path=("auth", "signers"), condition="undeclared_query")
+        raise ConfigurationError(field_path=("auth", "signers"), reason="undeclared_query")
     try:
         url = _query_url(request.url, fields.query)
     except UnicodeEncodeError as cause:
-        raise SigningConfigurationError(
-            field_path=("auth", "signers"), condition="invalid_query", cause=cause
-        ) from None
+        raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_query", cause=cause) from None
     return PreparedRequest(
         method=request.method,
         url=url,

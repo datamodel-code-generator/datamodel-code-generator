@@ -1,11 +1,11 @@
 # pets pydantic_v2.BaseModel
-  missing permit ! LimiterExecutionError: LimiterExecutionError(operation_id='getPet', call_id='<call>', action='acquire') [operation_id='getPet', cause=TypeError('Expected a synchronous Permit')] limiter_execution_error
+  missing permit ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=TypeError('Expected a synchronous Permit')] limiter_failed
     entered=1 wrong_mode_released=0 queued=1
-  async permit from sync limiter ! LimiterExecutionError: LimiterExecutionError(operation_id='getPet', call_id='<call>', action='acquire') [operation_id='getPet', cause=TypeError('Expected a synchronous Permit')] limiter_execution_error
+  async permit from sync limiter ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=TypeError('Expected a synchronous Permit')] limiter_failed
     entered=1 wrong_mode_released=0 queued=1
-  raw preparation before limiter ! RequestEncodingError: RequestEncodingError(operation_id='getPet', call_id='<call>', location='path.petId') [operation_id='getPet', location=('path', 'petId'), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
-  stopped call with failing hooks: DeadlineExceededError secondary ['RuntimeError', 'RuntimeError']
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=['call_start:0', 'call_end:0']/['call_start:0', 'call_end:0'] counters=[(0, 0, 0)] queued=1
+  raw preparation before limiter ! DecodeError: DecodeError(operation_id='getPet', call_id='<call>', reason='unencodable', location='path.petId') [operation_id='getPet', location=('path', 'petId'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ModelProjectionError('The value at / does not have its bound shape')] unencodable
+  stopped call with failing hooks: APITimeoutError secondary ['RuntimeError', 'RuntimeError']
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=['call_start:0', 'call_end:0']/['call_start:0', 'call_end:0'] counters=[0] queued=1
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed
@@ -20,15 +20,15 @@
     sent=1 content=b'\x89PNG' factory=[1]/[1] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > PUT https://api.example.com/v1/pets/1/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'\x89PNG'
-  body and permit close failure: CleanupError secondary ['LimiterExecutionError']
+  body and permit close failure: CleanupError secondary ['SDKError']
     factory=[1]/[1] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  async missing permit ! LimiterExecutionError: LimiterExecutionError(operation_id='getPet', call_id='<call>', action='acquire') [operation_id='getPet', cause=TypeError('Expected an asynchronous Permit')] limiter_execution_error
+  async missing permit ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=TypeError('Expected an asynchronous Permit')] limiter_failed
     entered=1 wrong_mode_released=0 queued=1
-  sync permit from async limiter ! LimiterExecutionError: LimiterExecutionError(operation_id='getPet', call_id='<call>', action='acquire') [operation_id='getPet', cause=TypeError('Expected an asynchronous Permit')] limiter_execution_error
+  sync permit from async limiter ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=TypeError('Expected an asynchronous Permit')] limiter_failed
     entered=1 wrong_mode_released=0 queued=1
-  async raw preparation before limiter ! RequestEncodingError: RequestEncodingError(operation_id='getPet', call_id='<call>', location='path.petId') [operation_id='getPet', location=('path', 'petId'), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
-  async stopped call with failing hooks: DeadlineExceededError secondary ['RuntimeError', 'RuntimeError']
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=['call_start:0', 'call_end:0']/['call_start:0', 'call_end:0'] counters=[(0, 0, 0)] queued=1
+  async raw preparation before limiter ! DecodeError: DecodeError(operation_id='getPet', call_id='<call>', reason='unencodable', location='path.petId') [operation_id='getPet', location=('path', 'petId'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ModelProjectionError('The value at / does not have its bound shape')] unencodable
+  async stopped call with failing hooks: APITimeoutError secondary ['RuntimeError', 'RuntimeError']
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=['call_start:0', 'call_end:0']/['call_start:0', 'call_end:0'] counters=[0] queued=1
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed
@@ -43,16 +43,16 @@
     sent=1 content=b'\x89PNG' factory=[1]/[1] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > PUT https://api.example.com/v1/pets/1/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'\x89PNG'
-  async body and permit close failure: CleanupError secondary ['LimiterExecutionError']
+  async body and permit close failure: CleanupError secondary ['SDKError']
     factory=[1]/[1] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   typed-send native cancellation before adapter failure=CancelledError stopped=True
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 response_closed=0 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 counters=[(1, 1, 1)]
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 response_closed=0 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 counters=[1]
   raw-send native cancellation before adapter failure=CancelledError stopped=True
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 response_closed=0 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 counters=[(1, 1, 1)]
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 response_closed=0 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 counters=[1]
   typed-read native cancellation before adapter failure=CancelledError stopped=True
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 response_closed=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 counters=[(1, 1, 1)]
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 response_closed=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 counters=[1]
   raw-read native cancellation before adapter failure=CancelledError stopped=True
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 response_closed=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 counters=[(1, 1, 1)]
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 response_closed=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 counters=[1]
   stream-read native cancellation before adapter failure=CancelledError stopped=True
     closed interrupted stream reread=CancelledError
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 response_closed=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 counters=[(1, 1, 1)]
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 response_closed=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 counters=[1]
