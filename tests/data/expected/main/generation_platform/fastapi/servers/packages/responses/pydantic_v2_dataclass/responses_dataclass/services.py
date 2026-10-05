@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Literal, Protocol
+from typing import Protocol
 
 import responses_dataclass_models
 from fastapi.responses import Response
@@ -25,7 +25,7 @@ class UntaggedService(Protocol):
     def get_greeting(
         self,
         *,
-        mode: Literal['bare', 'result', 'value'] | Unset,
+        mode: responses_dataclass_models.FieldGreetingsGetQueryModeParameter | Unset,
     ) -> (
         responses_dataclass_models.FieldGreetingsGetResponse
         | ModelValue[responses_dataclass_models.FieldGreetingsGetResponse]

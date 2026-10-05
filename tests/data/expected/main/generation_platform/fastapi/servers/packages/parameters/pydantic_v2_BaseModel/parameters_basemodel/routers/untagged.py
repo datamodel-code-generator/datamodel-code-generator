@@ -2,11 +2,12 @@
 """Endpoints of the untagged operations; regenerate them instead of editing."""
 
 from collections.abc import Sequence
-from typing import Annotated, Final, Literal
+from typing import Annotated, Final
 
+import parameters_basemodel_models
 from fastapi import APIRouter, Depends, Path, Query
 from fastapi.responses import Response
-from pydantic import Field
+from pydantic import Field, StringConstraints
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -21,12 +22,15 @@ def _add_search(router: APIRouter, wiring: Wiring) -> None:
 
     def search(
         *,
+        code: Annotated[str, StringConstraints(pattern=r'^[A-Z]+$'), Query(
+            alias='code',
+        )] = 'AB',
         parameters: Annotated[contract.Search.Parameters, Depends(contract.Search.PARAMETERS)],
     ) -> Response:
         return respond(
             search_handler(
                 session=parameters.session,
-                code=parameters.code,
+                code=code,
                 filter=parameters.filter,
                 ids=parameters.ids,
                 x_ids=parameters.x_ids,
@@ -61,11 +65,19 @@ def _add_get_ratios(router: APIRouter, wiring: Wiring) -> None:
 
     def get_ratios(
         *,
-        ratios: Annotated[list[Annotated[float, Field(allow_inf_nan=False)]], Query(
-            alias='ratios',
-        )],
+        ratios: Annotated[list[float], Query(alias='ratios')],
+        limits: Annotated[list[Annotated[int, Field(ge=1)]], Query(
+            alias='limits',
+            title='Limits',
+            description='Limits.',
+            deprecated=True,
+            examples=[[1]],
+        )] = [1, 2],
     ) -> Response:
-        return respond(get_ratios_handler(ratios=ratios), contract.GetRatios.RESPONSES)
+        return respond(
+            get_ratios_handler(ratios=ratios, limits=limits),
+            contract.GetRatios.RESPONSES,
+        )
 
     router.add_api_route(
         '/ratios',
@@ -147,10 +159,12 @@ def _add_get_file(router: APIRouter, wiring: Wiring) -> None:
 
     def get_file(
         *,
-        parameters: Annotated[contract.GetFile.Parameters, Depends(contract.GetFile.PARAMETERS)],
+        file_name: Annotated[str, StringConstraints(pattern=r'^[a-z]+\.txt$'), Path(
+            alias='dcg_p0',
+        )],
     ) -> Response:
         return respond(
-            get_file_handler(file_name=parameters.file_name),
+            get_file_handler(file_name=file_name),
             contract.GetFile.RESPONSES,
         )
 
@@ -179,12 +193,11 @@ def _add_get_menu(router: APIRouter, wiring: Wiring) -> None:
 
     def get_menu(
         *,
-        parameters: Annotated[contract.GetMenu.Parameters, Depends(contract.GetMenu.PARAMETERS)],
+        item: Annotated[str, StringConstraints(pattern=r'^[a-z]+$'), Path(
+            alias='item',
+        )],
     ) -> Response:
-        return respond(
-            get_menu_handler(item=parameters.item),
-            contract.GetMenu.RESPONSES,
-        )
+        return respond(get_menu_handler(item=item), contract.GetMenu.RESPONSES)
 
     router.add_api_route(
         '/menü/{item}',
@@ -211,7 +224,10 @@ def _add_get_item(router: APIRouter, wiring: Wiring) -> None:
 
     def get_item(
         *,
-        kind: Annotated[Literal['a', 'b'], Query(alias='kind', default_factory=absent)],
+        kind: Annotated[parameters_basemodel_models.FieldItemsLevelGetQueryKindParameter, Query(
+            alias='kind',
+            default_factory=absent,
+        )],
         parameters: Annotated[contract.GetItem.Parameters, Depends(contract.GetItem.PARAMETERS)],
     ) -> Response:
         return respond(
@@ -221,6 +237,8 @@ def _add_get_item(router: APIRouter, wiring: Wiring) -> None:
                 ratio=parameters.ratio,
                 x_flag=parameters.x_flag,
                 kind=present(kind),
+                tier=parameters.tier,
+                levels=parameters.levels,
             ),
             contract.GetItem.RESPONSES,
         )

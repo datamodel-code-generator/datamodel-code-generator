@@ -5,13 +5,12 @@ from collections.abc import Sequence
 from typing import Annotated, Final
 
 import bodies_basemodel_models
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Body, Depends, Form, Request
 from fastapi.responses import Response
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.model_codecs.unset import Unset
-from .._runtime.model_codecs.values import DecodedValue
 from .._runtime.server.application import Dependency, Wiring, build
 from .._runtime.server.requests import absent, present
 from .._runtime.server.responses import respond
@@ -23,9 +22,15 @@ def _add_post_item(router: APIRouter, wiring: Wiring) -> None:
 
     def post_item(
         *,
-        body: Annotated[bodies_basemodel_models.Item | Unset, Depends(contract.PostItem.BODY)],
+        body: Annotated[bodies_basemodel_models.Item, Body(
+            media_type='application/json',
+            default_factory=absent,
+        )],
     ) -> Response:
-        return respond(post_item_handler(body=body), contract.PostItem.RESPONSES)
+        return respond(
+            post_item_handler(body=present(body)),
+            contract.PostItem.RESPONSES,
+        )
 
     router.add_api_route(
         '/items',
@@ -52,7 +57,9 @@ def _add_post_account(router: APIRouter, wiring: Wiring) -> None:
 
     def post_account(
         *,
-        body: Annotated[DecodedValue[bodies_basemodel_models.Account], Depends(contract.PostAccount.BODY)],
+        body: Annotated[bodies_basemodel_models.Account, Body(
+            media_type='application/json',
+        )],
     ) -> Response:
         return respond(post_account_handler(body=body), contract.PostAccount.RESPONSES)
 
@@ -113,7 +120,7 @@ def _add_post_variant(router: APIRouter, wiring: Wiring) -> None:
 
     def post_variant(
         *,
-        body: Annotated[tuple[str | None, bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | Unset], Depends(contract.PostVariant.BODY.receive)],
+        body: Annotated[tuple[str | None, bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | bodies_basemodel_models.FieldVariantsPostRequest2 | Unset], Depends(contract.PostVariant.BODY.receive)],
     ) -> Response:
         return respond(
             post_variant_handler(body=body[1], media_type=body[0]),
@@ -267,11 +274,12 @@ def _add_post_native_form(router: APIRouter, wiring: Wiring) -> None:
 
     def post_native_form(
         *,
-        name: Annotated[str, Form(alias='name')],
-        count: Annotated[int, Form(alias='count')] = 1,
+        body: Annotated[bodies_basemodel_models.FieldNativeFormsPostRequest, Form(
+            media_type='application/x-www-form-urlencoded',
+        )],
     ) -> Response:
         return respond(
-            post_native_form_handler(name=name, count=count),
+            post_native_form_handler(body=body),
             contract.PostNativeForm.RESPONSES,
         )
 
@@ -300,13 +308,9 @@ def _add_upload(router: APIRouter, wiring: Wiring) -> None:
 
     def upload(
         *,
-        file: Annotated[UploadFile, File(alias='file')],
-        note: Annotated[str, Form(alias='note', default_factory=absent)],
+        body: Annotated[bodies_basemodel_models.FieldUploadsPostRequest, Depends(contract.Upload.BODY)],
     ) -> Response:
-        return respond(
-            upload_handler(file=file, note=present(note)),
-            contract.Upload.RESPONSES,
-        )
+        return respond(upload_handler(body=body), contract.Upload.RESPONSES)
 
     router.add_api_route(
         '/uploads',
@@ -333,9 +337,15 @@ def _add_post_check(router: APIRouter, wiring: Wiring) -> None:
 
     def post_check(
         *,
-        body: Annotated[bodies_basemodel_models.Check | Unset, Depends(contract.PostCheck.BODY)],
+        body: Annotated[bodies_basemodel_models.Check, Body(
+            media_type='application/json',
+            default_factory=absent,
+        )],
     ) -> Response:
-        return respond(post_check_handler(body=body), contract.PostCheck.RESPONSES)
+        return respond(
+            post_check_handler(body=present(body)),
+            contract.PostCheck.RESPONSES,
+        )
 
     router.add_api_route(
         '/checks',

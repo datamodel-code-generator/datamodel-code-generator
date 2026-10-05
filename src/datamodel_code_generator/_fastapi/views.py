@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from itertools import starmap
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, Literal
 
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.context import (
@@ -202,7 +202,6 @@ class ContextBuilder:
 
     def argument(self, spec: OperationSpec, argument: Argument) -> ArgumentView:
         """Return the view of one keyword the handler receives."""
-        parameter = argument.parameter
         body = spec.body
         use = _argument_use(argument, body)
         native = argument.native
@@ -225,10 +224,6 @@ class ContextBuilder:
             source_pointer=_source_pointer(spec, argument),
             is_request=argument.kind == "request",
             is_principal=argument.kind == "principal",
-            is_file=native is not None and native.api == "File",
-            parameter_codec_id=self.binding_id(parameter.use)
-            if parameter is not None and native is None and parameter.use is not None
-            else None,
             bound_type=None if use is None else self.bound(use),
             projection=self.argument_projection(argument, body),
             native_declaration=None if native is None else _native(native),
@@ -320,11 +315,6 @@ class ContextBuilder:
         absolute = f"{self.package}.{module.lstrip('.')}" if module.startswith(".") else module
         return ImportSpec(module=absolute, name=name, alias=None if alias == (name or module) else alias)
 
-    def binding_id(self, use: TypeUseBinding) -> str | None:
-        """Return the codec binding of a type use, when the server binds one."""
-        binding = self.renderer.use_bindings.get(use.id)
-        return None if binding is None else binding.binding_id
-
     def schema_id(self, use: TypeUseBinding) -> str | None:
         """Return the schema identity of a type use's codec binding, when the server binds one."""
         binding = self.renderer.use_bindings.get(use.id)
@@ -390,27 +380,33 @@ def _kind(argument: Argument) -> RenderKind:
             return "principal"
         case "media_type":
             return "media_type"
-        case "native" if argument.native is not None and argument.native.api == "File":
-            return "upload"
         case _:
             pass
     return "surface"
 
 
 def _default(argument: Argument) -> WireValue | Unset:
-    if (native := argument.native) is not None:
-        return UNSET if isinstance(native.default, Default) else checked_wire(native.default)
-    if (parameter := argument.parameter) is not None:
-        return parameter.default
-    return UNSET
+    holder = argument.native or argument.parameter
+    if holder is None or isinstance(default := holder.default, Default):
+        return UNSET
+    return checked_wire(
+        default.value
+        if isinstance(default, LiteralScalar)
+        else tuple(item.value for item in default.items if isinstance(item, LiteralScalar))
+    )
 
 
 def _native(native: NativeField) -> NativeDeclarationView:
+    kind: Literal["required", "literal", "factory"] = "literal"
+    if native.default is Default.REQUIRED:
+        kind = "required"
+    elif native.default is Default.ABSENT:
+        kind = "factory"
     return NativeDeclarationView(
         api=native.api,
         alias=native.alias,
         required=native.default is Default.REQUIRED,
-        default_kind="required" if native.default is Default.REQUIRED else "literal",
+        default_kind=kind,
         kwargs=MappingProxyType({key: checked_wire(value) for key, value in native.keywords}),
     )
 

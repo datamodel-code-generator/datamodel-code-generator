@@ -60,24 +60,10 @@ render pydantic_v2.BaseModel
   write server/.dcg-target-manifest.json
   layout routers
   get_pet: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
-    parameter /paths/~1pets~1{petId}/get/parameters/0: fastapi_native native_supported
-    parameter /paths/~1pets~1{petId}/get/parameters/1: fastapi_native native_supported
-    parameter /paths/~1pets~1{petId}/get/parameters/2: fastapi_native native_supported
-    parameter /paths/~1pets~1{petId}/get/parameters/3: codec_adapter opaque_native_semantics at /paths/~1pets~1{petId}/get/parameters/3/schema
-    parameter /paths/~1pets~1{petId}/get/parameters/4: codec_adapter unsupported_wire_shape
-    primary_response /paths/~1pets~1{petId}/get/responses/200: codec_adapter unsupported_wire_shape at /paths/~1pets~1{petId}/get/responses/200
   add_pet: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler sync
-    body /paths/~1pets/post/requestBody: fastapi_native native_supported
-    primary_response /paths/~1pets/post/responses/201: fastapi_native native_supported
   post__uploads: POST /uploads -> /uploads [tag:files] status 204 primary 204 None body typed handler sync
-    body /paths/~1uploads/post/requestBody: fastapi_native native_supported
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1uploads/post/responses/204
   put__notes: PUT /notes -> /notes [untagged] status 204 primary 204 None body typed handler sync
-    body /paths/~1notes/put/requestBody: codec_adapter unsupported_wire_shape
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1notes/put/responses/204
   post__raw: POST /raw -> /raw [untagged] status 204 primary 204 None body request handler sync
-    body /paths/~1raw/post/requestBody: raw_request explicit_raw
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1raw/post/responses/204
   group tag:pets -> pets (2)
   group tag:files -> files (1)
   group untagged -> untagged (2)
@@ -115,8 +101,7 @@ render pydantic_v2.BaseModel
     | operation: "/paths/~1uploads/post"
     | arguments:
     |   - "request"
-    |   - "file"
-    |   - "note"
+    |   - "body"
   file server/docs/put__notes.yml
     | operation: "/paths/~1notes/put"
     | arguments:

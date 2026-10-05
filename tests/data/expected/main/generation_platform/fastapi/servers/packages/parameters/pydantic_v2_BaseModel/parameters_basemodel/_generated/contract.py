@@ -3,22 +3,21 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Annotated, Final, Literal, TypeAlias, TypedDict
 
 import parameters_basemodel_models
+from pydantic import StringConstraints, TypeAdapter
 from typing_extensions import Never
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.model_codecs.unset import Unset
-from .._runtime.model_codecs.values import DecodedValue
-from .._runtime.model_codecs.wire import freeze_wire
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument, RawPath
 from .._runtime.server.responses import OperationResponses, ResponsePlan
-from . import model_bindings
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1search/get',
@@ -59,11 +58,10 @@ class Search:
     class Parameters:
         """The adapter parameters of search."""
 
-        session: parameters_basemodel_models.FieldSearchGetCookieSessionParameter
-        code: parameters_basemodel_models.FieldSearchGetQueryCodeParameter
-        filter: DecodedValue[parameters_basemodel_models.Filter] | Unset
-        ids: parameters_basemodel_models.FieldSearchGetQueryIdsParameter | Unset
-        x_ids: parameters_basemodel_models.FieldSearchGetHeaderXIdsParameter | Unset
+        session: str
+        filter: parameters_basemodel_models.Filter | Unset
+        ids: list[int] | Unset
+        x_ids: list[int]
         blob: parameters_basemodel_models.Blob | Unset
         note: str | Unset
 
@@ -78,19 +76,7 @@ class Search:
                     explode=True,
                     required=True,
                 ),
-                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-            ),
-            ParameterArgument(
-                name='code',
-                plan=ParameterPlan(
-                    location='query',
-                    name='code',
-                    style='form',
-                    explode=True,
-                    reserved_names=('blob', 'filter', 'ids', 'note'),
-                ),
-                codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
-                default=freeze_wire('AB'),
+                adapter=TypeAdapter(Annotated[str, StringConstraints(min_length=2)]),
             ),
             ParameterArgument(
                 name='filter',
@@ -103,8 +89,7 @@ class Search:
                     fields=(FieldPlan('id', 'integer'), FieldPlan('name', 'string')),
                     reserved_names=('blob', 'code', 'ids', 'note'),
                 ),
-                codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
-                envelope=True,
+                adapter=TypeAdapter(parameters_basemodel_models.Filter),
             ),
             ParameterArgument(
                 name='ids',
@@ -116,7 +101,7 @@ class Search:
                     kind='integer',
                     reserved_names=('blob', 'code', 'filter', 'note'),
                 ),
-                codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
+                adapter=TypeAdapter(list[int]),
             ),
             ParameterArgument(
                 name='x_ids',
@@ -127,7 +112,8 @@ class Search:
                     shape='array',
                     kind='integer',
                 ),
-                codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
+                adapter=TypeAdapter(list[int]),
+                default=[3],
             ),
             ParameterArgument(
                 name='blob',
@@ -136,7 +122,7 @@ class Search:
                     name='blob',
                     content_media_type='application/json',
                 ),
-                codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
+                adapter=TypeAdapter(parameters_basemodel_models.Blob),
             ),
             ParameterArgument(
                 name='note',
@@ -148,7 +134,6 @@ class Search:
             ),
         ),
         record=Parameters,
-        names=frozenset({'a', 'id', 'name'}),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
@@ -163,7 +148,7 @@ class GetRatios:
         name='get_ratios',
         key='/paths/~1ratios/get',
         service='untagged',
-        keywords=('ratios',),
+        keywords=('ratios', 'limits'),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
@@ -184,7 +169,7 @@ class Repeat:
     class Parameters:
         """The adapter parameters of repeat."""
 
-        id: parameters_basemodel_models.FieldRepeatIdAgainIdGetPathIdParameter
+        id: int
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -197,7 +182,7 @@ class Repeat:
                     required=True,
                     kind='integer',
                 ),
-                codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
+                adapter=TypeAdapter(int),
             ),
         ),
         record=Parameters,
@@ -233,28 +218,6 @@ class GetFile:
         service='untagged',
         keywords=('file_name',),
     )
-    @dataclass(frozen=True, slots=True, kw_only=True)
-    class Parameters:
-        """The adapter parameters of get_file."""
-
-        file_name: parameters_basemodel_models.FieldFilesFileNameGetPathFileNameParameter
-
-    PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='file_name',
-                plan=ParameterPlan(
-                    location='path',
-                    name='file.name',
-                    style='simple',
-                    required=True,
-                ),
-                codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
-            ),
-        ),
-        record=Parameters,
-        path=RawPath(template='/files/{file.name}', names=frozenset({'file.name'})),
-    )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
         primary=(204, None),
@@ -270,28 +233,6 @@ class GetMenu:
         service='untagged',
         keywords=('item',),
     )
-    @dataclass(frozen=True, slots=True, kw_only=True)
-    class Parameters:
-        """The adapter parameters of get_menu."""
-
-        item: parameters_basemodel_models.FieldMenüItemGetPathItemParameter
-
-    PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='item',
-                plan=ParameterPlan(
-                    location='path',
-                    name='item',
-                    style='simple',
-                    required=True,
-                ),
-                codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
-            ),
-        ),
-        record=Parameters,
-        path=RawPath(template='/menü/{item}', names=frozenset({'item'})),
-    )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
         primary=(204, None),
@@ -305,7 +246,7 @@ class GetItem:
         name='get_item',
         key='/paths/~1items~1{level}/get',
         service='untagged',
-        keywords=('level', 'mode', 'ratio', 'x_flag', 'kind'),
+        keywords=('level', 'mode', 'ratio', 'x_flag', 'kind', 'tier', 'levels'),
     )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
@@ -314,7 +255,9 @@ class GetItem:
         level: parameters_basemodel_models.FieldItemsLevelGetPathLevelParameter
         mode: parameters_basemodel_models.FieldItemsLevelGetQueryModeParameter | Unset
         ratio: parameters_basemodel_models.FieldItemsLevelGetQueryRatioParameter | Unset
-        x_flag: parameters_basemodel_models.FieldItemsLevelGetHeaderXFlagParameter | Unset
+        x_flag: typing.Literal[True] | Unset
+        tier: parameters_basemodel_models.FieldItemsLevelGetQueryTierParameter1 | None | Unset
+        levels: list[parameters_basemodel_models.FieldItemsLevelGetQueryLevelsParameterEnum] | Unset
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -327,7 +270,7 @@ class GetItem:
                     required=True,
                     kind='integer',
                 ),
-                codec=(model_bindings.codec_9, model_bindings.CONTEXT_9),
+                adapter=TypeAdapter(parameters_basemodel_models.FieldItemsLevelGetPathLevelParameter),
             ),
             ParameterArgument(
                 name='mode',
@@ -337,9 +280,9 @@ class GetItem:
                     style='form',
                     explode=True,
                     kind='integer',
-                    reserved_names=('kind', 'ratio'),
+                    reserved_names=('kind', 'levels', 'ratio', 'tier'),
                 ),
-                codec=(model_bindings.codec_10, model_bindings.CONTEXT_10),
+                adapter=TypeAdapter(parameters_basemodel_models.FieldItemsLevelGetQueryModeParameter),
             ),
             ParameterArgument(
                 name='ratio',
@@ -349,9 +292,9 @@ class GetItem:
                     style='form',
                     explode=True,
                     kind='number',
-                    reserved_names=('kind', 'mode'),
+                    reserved_names=('kind', 'levels', 'mode', 'tier'),
                 ),
-                codec=(model_bindings.codec_11, model_bindings.CONTEXT_11),
+                adapter=TypeAdapter(parameters_basemodel_models.FieldItemsLevelGetQueryRatioParameter),
             ),
             ParameterArgument(
                 name='x_flag',
@@ -361,7 +304,32 @@ class GetItem:
                     style='simple',
                     kind='boolean',
                 ),
-                codec=(model_bindings.codec_12, model_bindings.CONTEXT_12),
+                adapter=TypeAdapter(typing.Literal[True]),
+            ),
+            ParameterArgument(
+                name='tier',
+                plan=ParameterPlan(
+                    location='query',
+                    name='tier',
+                    style='form',
+                    explode=True,
+                    kind='integer',
+                    reserved_names=('kind', 'levels', 'mode', 'ratio'),
+                ),
+                adapter=TypeAdapter(parameters_basemodel_models.FieldItemsLevelGetQueryTierParameter1 | None),
+            ),
+            ParameterArgument(
+                name='levels',
+                plan=ParameterPlan(
+                    location='query',
+                    name='levels',
+                    style='form',
+                    explode=True,
+                    shape='array',
+                    kind='integer',
+                    reserved_names=('kind', 'mode', 'ratio', 'tier'),
+                ),
+                adapter=TypeAdapter(list[parameters_basemodel_models.FieldItemsLevelGetQueryLevelsParameterEnum]),
             ),
         ),
         record=Parameters,

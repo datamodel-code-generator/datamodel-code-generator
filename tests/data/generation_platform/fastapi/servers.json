@@ -259,6 +259,14 @@
       },
       {
         "method": "GET",
+        "url": "/ratios?ratios=1&limits=3&limits=4"
+      },
+      {
+        "method": "GET",
+        "url": "/ratios?ratios=1&limits=0"
+      },
+      {
+        "method": "GET",
         "url": "/repeat/1/again/1"
       },
       {
@@ -348,6 +356,14 @@
       {
         "method": "GET",
         "url": "/items/1?kind=c"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?tier=2"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?levels=1&levels=2"
       }
     ]
   },
@@ -490,6 +506,26 @@
           "Content-Type": "application/json; profile=v1"
         },
         "content": "{\"a\": 1}"
+      },
+      {
+        "method": "POST",
+        "url": "/variants",
+        "content": "tags=a&tags=b",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "PUT",
+        "url": "/documents"
+      },
+      {
+        "method": "PUT",
+        "url": "/documents",
+        "content": "x",
+        "headers": {
+          "Content-Type": "text"
+        }
       },
       {
         "method": "PUT",
@@ -1505,6 +1541,14 @@
         "url": "/forms",
         "json": {
           "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "data": {
+          "a": "1",
+          "b": "two"
         }
       },
       {

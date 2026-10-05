@@ -7,10 +7,10 @@ from abc import abstractmethod
 from typing import Protocol
 
 import bodies_basemodel_models
-from fastapi import Request, UploadFile
+from fastapi import Request
 from fastapi.responses import Response
 
-from .model_codecs import DecodedValue, Unset
+from .model_codecs import Unset
 from .responses import (
     HTTPResult,
     PostAccountResponsePayload,
@@ -42,7 +42,7 @@ class UntaggedService(Protocol):
     def post_account(
         self,
         *,
-        body: DecodedValue[bodies_basemodel_models.Account],
+        body: bodies_basemodel_models.Account,
     ) -> None | HTTPResult[PostAccountResponsePayload] | Response: ...
 
     @abstractmethod
@@ -57,7 +57,7 @@ class UntaggedService(Protocol):
     def post_variant(
         self,
         *,
-        body: bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | Unset,
+        body: bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | bodies_basemodel_models.FieldVariantsPostRequest2 | Unset,
         media_type: str | None,
     ) -> None | HTTPResult[PostVariantResponsePayload] | Response: ...
 
@@ -95,16 +95,14 @@ class UntaggedService(Protocol):
     def post_native_form(
         self,
         *,
-        name: str,
-        count: int,
+        body: bodies_basemodel_models.FieldNativeFormsPostRequest,
     ) -> None | HTTPResult[PostNativeFormResponsePayload] | Response: ...
 
     @abstractmethod
     def upload(
         self,
         *,
-        file: UploadFile,
-        note: str | Unset,
+        body: bodies_basemodel_models.FieldUploadsPostRequest,
     ) -> None | HTTPResult[UploadResponsePayload] | Response: ...
 
     @abstractmethod

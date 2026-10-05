@@ -11070,7 +11070,8 @@ Source: https://datamodel-code-generator.koxudaxi.dev/fastapi-server/
 
 `--generate-server fastapi` generates the models of one OpenAPI document with the usual model options and, in
 the same run, a FastAPI server package for its operations: routers, a service Protocol for each router group,
-codecs for the values FastAPI cannot validate exactly, authentication, and the served OpenAPI document. Every
+adapters for the parameter styles and media types FastAPI cannot read, authentication, and the served OpenAPI
+document. Every
 generated file is regenerated on each run. You write the business logic in your own modules, implementing the
 service Protocols, and type checkers, Python, and the package at startup check that every operation has a
 matching method.
@@ -11287,6 +11288,22 @@ uses it, or the default `datamodel-codegen.lock` exists.
 `model_mode = "verify"` lets several targets share models generated once: each target compares the models with
 the existing files instead of writing them, and reports `E_MODEL_MISMATCH` when they differ. Generate those
 models with `--disable-timestamp` too.
+
+## Models and adapters
+
+The generated models are the runtime contract. Routes declare the model types directly: a JSON body is
+`Annotated[Model, Body()]`, a URL-encoded form of a `BaseModel` is a FastAPI form model, a primary JSON response is
+`response_model=Model`, and path, query, header, and cookie parameters are `Annotated` FastAPI parameters of the
+parameter's model type. A parameter's root model or type alias is unwrapped to its type when that type alone
+validates the same, so the method receives the value; the default is the one the model declares. How strictly a
+value follows the OpenAPI document is decided by the model generation options, not by the server.
+
+FastAPI cannot read some inputs, so a generated adapter reads them and validates the result with the model's
+`TypeAdapter`: deepObject, label, matrix, spaceDelimited, and pipeDelimited parameters, parameters with `content`,
+form-style cookies, header and path arrays, objects, enums and literals of non-string values, repeated path
+placeholders, request bodies with several media types, text and binary bodies, multipart forms, and forms of the
+`pydantic_v2.dataclass` backend. A multipart form body reaches the method as its model, with uploads read to
+`bytes`.
 
 ## Templates and hooks
 

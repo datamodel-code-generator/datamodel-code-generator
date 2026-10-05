@@ -19,6 +19,16 @@ paths:
               tags: {style: form, explode: true}
       responses:
         "204": {description: Done.}
+  /notes:
+    post:
+      operationId: postNotes
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {type: object, additionalProperties: {type: string}}
+      responses:
+        "204": {description: Done.}
   /uploads:
     post:
       operationId: upload

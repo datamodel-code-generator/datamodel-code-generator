@@ -3,13 +3,13 @@
 
 from __future__ import annotations
 
+import uuid
 from abc import abstractmethod
-from typing import Literal, Protocol
-from uuid import UUID
+from typing import Protocol
 
 import pets_dataclass_models
+import pydantic
 from fastapi.responses import Response
-from pydantic import AwareDatetime
 
 from .model_codecs import ModelValue, Unset
 from .responses import (
@@ -30,12 +30,12 @@ class PetsService(Protocol):
     def list_pets(
         self,
         *,
-        limit: int,
+        limit: int | Unset,
         tags: list[str] | Unset,
-        kind: Literal['cat', 'dog'] | Unset,
-        x_request_id: UUID | Unset,
-        since: AwareDatetime | Unset,
-        session: pets_dataclass_models.FieldPetsGetCookieSessionParameter | Unset,
+        kind: pets_dataclass_models.FieldPetsGetQueryKindParameter | Unset,
+        x_request_id: uuid.UUID | Unset,
+        since: pydantic.AwareDatetime | Unset,
+        session: str | Unset,
     ) -> (
         pets_dataclass_models.FieldPetsGetResponse
         | ModelValue[pets_dataclass_models.FieldPetsGetResponse]

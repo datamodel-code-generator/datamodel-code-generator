@@ -7,8 +7,8 @@ from abc import abstractmethod
 from typing import Protocol
 
 import models
+import pydantic
 from fastapi.responses import Response
-from pydantic import AwareDatetime
 
 from .model_codecs import ModelValue, Unset
 from .responses import GetValueResponsePayload, HTTPResult
@@ -22,7 +22,7 @@ class UntaggedService(Protocol):
         self,
         *,
         id: int,
-        at: AwareDatetime | Unset,
+        at: pydantic.AwareDatetime | Unset,
         tags: list[str] | Unset,
         x_label: models.FieldValuesIdGetHeaderXLabelParameter | Unset,
     ) -> (

@@ -43,16 +43,10 @@ render pydantic_v2.BaseModel
   write server/.dcg-target-manifest.json
   layout routers
   subscribe: POST /subscriptions -> /subscriptions [untagged] status 201 primary 201 None body typed handler sync
-    body /paths/~1subscriptions/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Subscription/properties/callbackUrl
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1subscriptions/post/responses/201
   list_events: GET /events -> /events [untagged] status 200 primary 200 application/json body typed handler sync
-    primary_response /paths/~1events/get/responses/200: codec_adapter native_nullable_mismatch at /components/schemas/Event/properties/kind
   get_secure: GET /secure -> /secure [untagged] status 200 primary 200 application/json body typed handler sync
-    parameter /paths/~1secure/get/parameters/0: codec_adapter unsupported_wire_shape
-    primary_response /paths/~1secure/get/responses/200: codec_adapter native_shape_mismatch at /components/schemas/Animal
   ping: GET /ping -> /ping [untagged] status 200 primary - body typed handler sync
   echo: GET /echo -> /echo [untagged] status 200 primary 200 application/json body typed handler sync
-    primary_response /paths/~1echo/get/responses/200: codec_adapter native_nullable_mismatch at /components/schemas/Event/properties/kind
   group untagged -> untagged (5)
   W_DOCUMENTATION_ANNOTATION target /paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}/post/callbacks/onReceipt/{$request.body#~1receiptUrl}/post: The served document leaves out callback security that names no declared scheme
   W_DOCUMENTATION_ANNOTATION target /paths/~1subscriptions/post/callbacks/onStatus/{$request.query.hook}/put: The served document leaves out callback security that names no declared scheme
@@ -100,9 +94,9 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Subscription|ModelNode(symbol='models:Subscription')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
-    |             "kind": "model",
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
     |             "value": "models.Subscription",
     |             "imports": [
     |               {
@@ -116,12 +110,10 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1subscriptions/post/requestBody",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Subscription|ModelNode(symbol='models:Subscription')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
-    |             "kind": "model",
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
     |             "value": "models.Subscription",
     |             "imports": [
     |               {
@@ -161,12 +153,9 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "body",
-    |             "transport": "codec_adapter",
-    |             "reason": "opaque_native_semantics",
-    |             "source": {
-    |               "uri": "../callbacks.yaml",
-    |               "pointer": "/components/schemas/Subscription/properties/callbackUrl"
-    |             }
+    |             "transport": "fastapi_native",
+    |             "reason": "native_supported",
+    |             "source": null
     |           },
     |           "native_declaration": null
     |         }
@@ -176,11 +165,11 @@ render pydantic_v2.BaseModel
     |         "media": [
     |           {
     |             "media_type": "application/json",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
+    |             "schema_id": null,
     |             "type": {
-    |               "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Subscription|ModelNode(symbol='models:Subscription')",
-    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
-    |               "kind": "model",
+    |               "binding_id": null,
+    |               "schema_id": null,
+    |               "kind": "surface",
     |               "value": "models.Subscription",
     |               "imports": [
     |                 {
@@ -224,12 +213,9 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "codec_adapter",
-    |           "reason": "opaque_native_semantics",
-    |           "source": {
-    |             "uri": "../callbacks.yaml",
-    |             "pointer": "/components/schemas/Subscription/properties/callbackUrl"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         },
     |         "source_pointer": "/paths/~1subscriptions/post/requestBody"
     |       },
@@ -344,18 +330,15 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "codec_adapter",
-    |           "reason": "opaque_native_semantics",
-    |           "source": {
-    |             "uri": "../callbacks.yaml",
-    |             "pointer": "/components/schemas/Subscription/properties/callbackUrl"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         },
     |         {
     |           "use_ids": [],
     |           "site": "primary_response",
     |           "transport": "codec_adapter",
-    |           "reason": "unsupported_wire_shape",
+    |           "reason": "response_empty",
     |           "source": {
     |             "uri": "../callbacks.yaml",
     |             "pointer": "/paths/~1subscriptions/post/responses/201"
@@ -581,12 +564,9 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
-    |           "reason": "native_nullable_mismatch",
-    |           "source": {
-    |             "uri": "../callbacks.yaml",
-    |             "pointer": "/components/schemas/Event/properties/kind"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         }
     |       ],
     |       "path_slots": [],
@@ -639,8 +619,6 @@ render pydantic_v2.BaseModel
     |           "source_pointer": null,
     |           "is_request": false,
     |           "is_principal": true,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": null,
     |           "projection": null,
     |           "native_declaration": null
@@ -654,17 +632,11 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema|ModelNode(symbol='models:FieldSecureGetCookieTokenParameter')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema",
-    |             "kind": "root",
-    |             "value": "models.FieldSecureGetCookieTokenParameter | Unset",
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
+    |             "value": "str | Unset",
     |             "imports": [
-    |               {
-    |                 "module": "models",
-    |                 "name": null,
-    |                 "alias": null,
-    |                 "type_checking": false
-    |               },
     |               {
     |                 "module": "server._runtime.model_codecs.unset",
     |                 "name": "Unset",
@@ -676,12 +648,10 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1secure/get/parameters/0",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema|ModelNode(symbol='models:FieldSecureGetCookieTokenParameter')",
     |           "bound_type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema|ModelNode(symbol='models:FieldSecureGetCookieTokenParameter')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema",
-    |             "kind": "root",
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
     |             "value": "models.FieldSecureGetCookieTokenParameter",
     |             "imports": [
     |               {
@@ -725,7 +695,7 @@ render pydantic_v2.BaseModel
     |             ],
     |             "site": "parameter",
     |             "transport": "codec_adapter",
-    |             "reason": "unsupported_wire_shape",
+    |             "reason": "parameter_style",
     |             "source": null
     |           },
     |           "native_declaration": null
@@ -962,7 +932,7 @@ render pydantic_v2.BaseModel
     |           ],
     |           "site": "parameter",
     |           "transport": "codec_adapter",
-    |           "reason": "unsupported_wire_shape",
+    |           "reason": "parameter_style",
     |           "source": null
     |         },
     |         {
@@ -994,12 +964,9 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
-    |           "reason": "native_shape_mismatch",
-    |           "source": {
-    |             "uri": "../callbacks.yaml",
-    |             "pointer": "/components/schemas/Animal"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         }
     |       ],
     |       "path_slots": [],
@@ -1272,12 +1239,9 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
-    |           "reason": "native_nullable_mismatch",
-    |           "source": {
-    |             "uri": "../callbacks.yaml",
-    |             "pointer": "/components/schemas/Event/properties/kind"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         }
     |       ],
     |       "path_slots": [],
@@ -1642,11 +1606,12 @@ render pydantic_v2.BaseModel
     | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
     | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     |
     | ## Regenerating
     |

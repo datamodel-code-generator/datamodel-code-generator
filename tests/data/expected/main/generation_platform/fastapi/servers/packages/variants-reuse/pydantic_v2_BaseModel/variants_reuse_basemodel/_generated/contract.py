@@ -9,7 +9,6 @@ from typing import Final, Literal, TypeAlias, TypedDict
 from typing_extensions import Never
 
 from .._runtime.server.application import Dependency, OperationPlan
-from .._runtime.server.requests import BodyAdapter, BodyMedia
 from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
 from . import model_bindings
 
@@ -40,16 +39,6 @@ class CreatePet:
         service='untagged',
         keywords=('body',),
     )
-    BODY: Final = BodyAdapter(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-            ),
-        ),
-        names=frozenset({'email', 'id', 'name', 'owner', 'secret'}),
-    )
     RESPONSES: Final = OperationResponses(
         responses=(
             ResponsePlan(
@@ -58,7 +47,7 @@ class CreatePet:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                        codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
                     ),
                 ),
             ),
@@ -84,7 +73,7 @@ class GetPet:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
                     ),
                 ),
             ),
@@ -109,7 +98,7 @@ class ListOwners:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
+                        codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
                     ),
                 ),
             ),

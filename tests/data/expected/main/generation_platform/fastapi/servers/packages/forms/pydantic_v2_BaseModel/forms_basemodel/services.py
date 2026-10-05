@@ -6,13 +6,13 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Protocol
 
-from fastapi import UploadFile
+import forms_basemodel_models
 from fastapi.responses import Response
 
-from .model_codecs import Unset
 from .responses import (
     HTTPResult,
     PostFormResponsePayload,
+    PostNotesResponsePayload,
     UploadManyResponsePayload,
     UploadResponsePayload,
 )
@@ -25,23 +25,26 @@ class UntaggedService(Protocol):
     def post_form(
         self,
         *,
-        name: str,
-        count: int,
-        tags: list[str] | Unset,
+        body: forms_basemodel_models.FieldFormsPostRequest,
     ) -> None | HTTPResult[PostFormResponsePayload] | Response: ...
+
+    @abstractmethod
+    def post_notes(
+        self,
+        *,
+        body: forms_basemodel_models.FieldNotesPostRequest,
+    ) -> None | HTTPResult[PostNotesResponsePayload] | Response: ...
 
     @abstractmethod
     def upload(
         self,
         *,
-        file: UploadFile,
-        note: str | Unset,
+        body: forms_basemodel_models.FieldUploadsPostRequest,
     ) -> None | HTTPResult[UploadResponsePayload] | Response: ...
 
     @abstractmethod
     def upload_many(
         self,
         *,
-        files: list[UploadFile],
-        label: str | Unset,
+        body: forms_basemodel_models.FieldBatchesPostRequest,
     ) -> None | HTTPResult[UploadManyResponsePayload] | Response: ...
