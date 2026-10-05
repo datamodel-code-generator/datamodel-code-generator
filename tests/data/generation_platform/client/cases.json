@@ -633,6 +633,9 @@
       [
         "client",
         "_operations.py"
+      ],
+      [
+        "models.py"
       ]
     ],
     "config": {
