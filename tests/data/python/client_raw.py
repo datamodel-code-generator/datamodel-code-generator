@@ -109,7 +109,10 @@ def _streamed(status: int, chunks: tuple[bytes, ...], media: str = _JSON, **opti
 
 
 def _gzip(status: int, content: bytes, size: int, media: str = _JSON) -> Callable[[httpx2.Request], httpx2.Response]:
-    coded = gzip.compress(content, mtime=0)
+    with io.BytesIO() as buffer:
+        with gzip.GzipFile(fileobj=buffer, mode="wb", mtime=0) as compressed:
+            compressed.write(content)
+        coded = buffer.getvalue()
     chunks = tuple(coded[start : start + size] for start in range(0, len(coded), size))
     return _streamed(status, chunks, media, headers={"content-encoding": "gzip"})
 

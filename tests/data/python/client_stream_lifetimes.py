@@ -11,6 +11,7 @@ import os
 import tempfile
 import threading
 from collections import defaultdict
+from contextlib import AsyncExitStack
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO, Final
@@ -353,14 +354,18 @@ class _Sink(io.RawIOBase):
         raise OSError(errno.EIO, os.strerror(errno.EIO))
 
 
-def _async_cases(package: ModuleType, api: Any, exchange: Exchange) -> dict[str, Callable[[], Awaitable[str]]]:
+def _async_cases(
+    package: ModuleType, api: Any, exchange: Exchange, iterators: AsyncExitStack
+) -> dict[str, Callable[[], Awaitable[str]]]:
     options = _modules(package)[0]
     pet, streaming = _pet(package), api.with_streaming_response
 
     async def first_chunk() -> str:
         exchange.respond(_body())
         async with streaming.request_raw("GET", _URL) as response:
-            return f"read {bool(await anext(response.iter_bytes()))}"
+            chunks = response.iter_bytes()
+            iterators.push_async_callback(chunks.aclose)
+            return f"read {bool(await anext(chunks))}"
 
     async def typed_decode() -> str:
         exchange.respond(json_response(200, {"id": "x", "name": 1}))
@@ -415,19 +420,20 @@ async def _async(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(requests)
     http = exchange.async_client(1)
     results: dict[str, list[str]] = defaultdict(list)
-    async with package.AsyncClient(http_client=http) as api:
-        cases = list(_async_cases(package, api, exchange).items())
-        for index in range(_ROUNDS):
-            name, case = cases[index % len(cases)]
-            results[name].append(await case())
+    async with AsyncExitStack() as iterators:
+        async with package.AsyncClient(http_client=http) as api:
+            cases = list(_async_cases(package, api, exchange, iterators).items())
+            for index in range(_ROUNDS):
+                name, case = cases[index % len(cases)]
+                results[name].append(await case())
+            exchange.respond(raw_response(200, b"pong", "text/plain"))
+            lines.append(f"  async borrowed after rounds {await (await api.request_raw('GET', _URL)).read()!r}")
+        _report(lines, "async borrowed", results)
         exchange.respond(raw_response(200, b"pong", "text/plain"))
-        lines.append(f"  async borrowed after rounds {await (await api.request_raw('GET', _URL)).read()!r}")
-    _report(lines, "async borrowed", results)
-    exchange.respond(raw_response(200, b"pong", "text/plain"))
-    lines.append(
-        f"  async borrowed kept open {not http.is_closed} {(await http.get(_URL)).content!r} sent {_sent(requests)}"
-    )
-    await http.aclose()
+        lines.append(
+            f"  async borrowed kept open {not http.is_closed} {(await http.get(_URL)).content!r} sent {_sent(requests)}"
+        )
+        await http.aclose()
     await _async_owned(package, lines)
     with tempfile.TemporaryDirectory() as directory:
         await _downloads(package, lines, Path(directory))
@@ -438,12 +444,15 @@ async def _async(package: ModuleType, lines: list[str]) -> None:
 async def _async_owned(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange([])
     http = exchange.async_client(1, kind=_AsyncOwned)
-    async with package.AsyncClient(http_client=http, http_client_ownership="owned") as api:
-        exchange.respond(_body())
-        async with api.with_streaming_response.request_raw("GET", _URL) as response:
-            await anext(response.iter_bytes())
-    await api.aclose()
-    lines.append(f"  async owned closed {http.is_closed} {http.closes}")
+    async with AsyncExitStack() as iterators:
+        async with package.AsyncClient(http_client=http, http_client_ownership="owned") as api:
+            exchange.respond(_body())
+            async with api.with_streaming_response.request_raw("GET", _URL) as response:
+                chunks = response.iter_bytes()
+                iterators.push_async_callback(chunks.aclose)
+                await anext(chunks)
+        await api.aclose()
+        lines.append(f"  async owned closed {http.is_closed} {http.closes}")
 
 
 def _workers() -> list[threading.Thread]:

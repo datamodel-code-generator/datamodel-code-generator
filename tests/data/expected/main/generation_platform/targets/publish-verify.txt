@@ -10,19 +10,14 @@ generate
   written target server/routers/untagged.py (target)
   written target server/_generated/__init__.py (target)
   written target server/_generated/contract.py (target)
-  written target server/_generated/model_bindings.py (target)
-  written target server/_generated/openapi.py (target)
-  written target server/model_codecs.py (target)
-  written target server/responses.py (target)
   written target server/errors.py (target)
-  written target server/auth_types.py (target)
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
   written model_metadata meta/models.json
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  23 runtime modules ['written']
+  13 runtime modules ['written']
 generate
   target=fastapi schema_version=1
   written model_inventory server/.dcg-state/model-artifacts.json (target)
@@ -36,16 +31,11 @@ generate
   unchanged target server/routers/untagged.py (target)
   unchanged target server/_generated/__init__.py (target)
   unchanged target server/_generated/contract.py (target)
-  unchanged target server/_generated/model_bindings.py (target)
-  unchanged target server/_generated/openapi.py (target)
-  unchanged target server/model_codecs.py (target)
-  unchanged target server/responses.py (target)
   unchanged target server/errors.py (target)
-  unchanged target server/auth_types.py (target)
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
-  23 runtime modules ['unchanged']
+  13 runtime modules ['unchanged']
 tree
   meta/models.json
   models.py
@@ -55,17 +45,12 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
-  server/_generated/model_bindings.py
-  server/_generated/openapi.py
   server/application.py
-  server/auth_types.py
   server/errors.py
-  server/model_codecs.py
   server/py.typed
-  server/responses.py
   server/routers/__init__.py
   server/routers/pets.py
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  23 runtime modules ['present']
+  13 runtime modules ['present']

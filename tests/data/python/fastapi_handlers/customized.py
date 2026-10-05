@@ -21,7 +21,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
 
         async def handle_move_pet(self, *, pet_id: int) -> object:
             calls.append(f"handle_move_pet(pet_id={pet_id!r})")
-            return server.HTTPResult(status_code=201, headers=(("Location", f"/pets/{pet_id}"),))
+            return server.HTTPResult(201, headers={"Location": f"/pets/{pet_id}"})
 
     class Untagged(server.services.UntaggedService):
         async def handle_get_health(self) -> None:

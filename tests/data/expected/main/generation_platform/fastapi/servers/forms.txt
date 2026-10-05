@@ -1,113 +1,119 @@
 # forms
 serve pydantic_v2.BaseModel
-service UntaggedService: post_form, upload, upload_many
+service UntaggedService: post_form, post_notes, upload, upload_many
 service UntaggedService without its methods: TypeError
 > POST /forms
-  post_form(name='a', count=1, tags=absent)
+  post_form(FieldFormsPostRequest(name='a', count=1, tags=None))
 < 204 - b''
 > POST /forms
-  post_form(name='a', count=2, tags=['x', 'y'])
+  post_form(FieldFormsPostRequest(name='a', count=2, tags=['x', 'y']))
 < 204 - b''
 > POST /forms
-  post_form(name='a b c', count=3, tags=absent)
+  post_form(FieldFormsPostRequest(name='a b c', count=3, tags=None))
 < 204 - b''
 > POST /forms
-  post_form(name='b', count=1, tags=['x', 'x'])
+  post_form(FieldFormsPostRequest(name='b', count=1, tags=['x', 'x']))
 < 204 - b''
 > POST /forms
-< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "count"]}]
 > POST /forms
-  post_form(name='a', count=1, tags=absent)
-< 204 - b''
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "count"]}]
 > POST /forms
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "count"]}]
 > POST /forms
 < 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
 > POST /forms
-  post_form(name='%ZZ', count=1, tags=absent)
+  post_form(FieldFormsPostRequest(name='%ZZ', count=1, tags=None))
 < 204 - b''
 > POST /forms
 < 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
-> POST /uploads
-  upload(file='a.txt':text/plain:b'file body', note='n')
+> POST /notes
+  post_notes(FieldNotesPostRequest(a='1', b='two'))
 < 204 - b''
 > POST /uploads
-  upload(file='a.bin':application/octet-stream:b'data', note=absent)
+  upload(FieldUploadsPostRequest(file=b'file body', note='n'))
 < 204 - b''
 > POST /uploads
-  upload(file='b.txt':text/plain:b'second', note=absent)
+  upload(FieldUploadsPostRequest(file=b'data', note=None))
 < 204 - b''
 > POST /uploads
-< 422 application/json [{"type": "value_error", "loc": ["body", "file"]}]
+  upload(FieldUploadsPostRequest(file=b'second', note=None))
+< 204 - b''
 > POST /uploads
-< 422 application/json [{"type": "string_type", "loc": ["body", "note"]}]
+  upload(FieldUploadsPostRequest(file=b'no name', note=None))
+< 204 - b''
+> POST /uploads
+  upload(FieldUploadsPostRequest(file=b'body', note='note body'))
+< 204 - b''
 > POST /uploads
 < 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
 > POST /uploads
-< 422 application/json [{"type": "value_error", "loc": ["body", "file"]}]
+< 415 application/json {"detail":"Unsupported media type"}
 > POST /uploads
 < 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
 > POST /batches
-  upload_many(files=['a.txt':text/plain:b'one', 'b.txt':text/plain:b'two'], label='l')
+  upload_many(FieldBatchesPostRequest(files=[b'one', b'two'], label='l'))
 < 204 - b''
 > POST /batches
-  upload_many(files=['a.txt':text/plain:b'one'], label=absent)
+  upload_many(FieldBatchesPostRequest(files=[b'one'], label=None))
 < 204 - b''
 > POST /batches
 < 422 application/json [{"type": "missing", "loc": ["body", "files"]}]
 serve pydantic_v2.dataclass
-service UntaggedService: post_form, upload, upload_many
+service UntaggedService: post_form, post_notes, upload, upload_many
 service UntaggedService without its methods: TypeError
 > POST /forms
-  post_form(name='a', count=1, tags=absent)
+  post_form(FieldFormsPostRequest(name='a', count=1, tags=None))
 < 204 - b''
 > POST /forms
-  post_form(name='a', count=2, tags=['x', 'y'])
+  post_form(FieldFormsPostRequest(name='a', count=2, tags=['x', 'y']))
 < 204 - b''
 > POST /forms
-  post_form(name='a b c', count=3, tags=absent)
+  post_form(FieldFormsPostRequest(name='a b c', count=3, tags=None))
 < 204 - b''
 > POST /forms
-  post_form(name='b', count=1, tags=['x', 'x'])
-< 204 - b''
+< 422 application/json [{"type": "media_invalid", "loc": ["body"]}]
 > POST /forms
-< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "count"]}]
 > POST /forms
-  post_form(name='a', count=1, tags=absent)
-< 204 - b''
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "count"]}]
 > POST /forms
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "count"]}]
 > POST /forms
 < 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
 > POST /forms
-  post_form(name='%ZZ', count=1, tags=absent)
-< 204 - b''
+< 400 application/json {"detail":"Invalid request"}
 > POST /forms
-< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
-> POST /uploads
-  upload(file='a.txt':text/plain:b'file body', note='n')
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /notes
+  post_notes({'a': '1', 'b': 'two'})
 < 204 - b''
 > POST /uploads
-  upload(file='a.bin':application/octet-stream:b'data', note=absent)
+  upload(FieldUploadsPostRequest(file=b'file body', note='n'))
 < 204 - b''
 > POST /uploads
-  upload(file='b.txt':text/plain:b'second', note=absent)
+  upload(FieldUploadsPostRequest(file=b'data', note=None))
 < 204 - b''
 > POST /uploads
-< 422 application/json [{"type": "value_error", "loc": ["body", "file"]}]
+  upload(FieldUploadsPostRequest(file=b'second', note=None))
+< 204 - b''
 > POST /uploads
-< 422 application/json [{"type": "string_type", "loc": ["body", "note"]}]
+  upload(FieldUploadsPostRequest(file=b'no name', note=None))
+< 204 - b''
+> POST /uploads
+  upload(FieldUploadsPostRequest(file=b'body', note='note body'))
+< 204 - b''
 > POST /uploads
 < 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
 > POST /uploads
-< 422 application/json [{"type": "value_error", "loc": ["body", "file"]}]
+< 415 application/json {"detail":"Unsupported media type"}
 > POST /uploads
 < 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
 > POST /batches
-  upload_many(files=['a.txt':text/plain:b'one', 'b.txt':text/plain:b'two'], label='l')
+  upload_many(FieldBatchesPostRequest(files=[b'one', b'two'], label='l'))
 < 204 - b''
 > POST /batches
-  upload_many(files=['a.txt':text/plain:b'one'], label=absent)
+  upload_many(FieldBatchesPostRequest(files=[b'one'], label=None))
 < 204 - b''
 > POST /batches
 < 422 application/json [{"type": "missing", "loc": ["body", "files"]}]

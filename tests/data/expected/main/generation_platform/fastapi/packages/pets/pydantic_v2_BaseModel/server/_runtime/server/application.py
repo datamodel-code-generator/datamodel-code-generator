@@ -7,29 +7,19 @@ import inspect
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import TypeAlias, TypedDict, TypeVar
+from typing import TypeAlias
 
 from fastapi import APIRouter
 from fastapi.params import Depends
-from fastapi.routing import APIRoute  # noqa: TC002 - get_type_hints resolves FastAPIOptions at runtime.
-from starlette.middleware import Middleware
-from starlette.responses import Response
-from starlette.routing import BaseRoute
 from typing_extensions import TypeIs
 
-from ..model_codecs.wire import JSONValue, checked_wire, thaw_wire
-from .security import Authenticator, SchemePlan, SecurityPlan, asynchronous, authenticators, coroutine_function
+from .security import awaited, checked_authorize, coroutine_function
 
 Dependency: TypeAlias = Depends
-ValueT = TypeVar("ValueT")
 
 
 class HandlerConfigurationError(TypeError):
     """Reject services, dependencies, or a prefix that a generated router cannot register."""
-
-
-class OpenAPIConfigurationError(TypeError):
-    """Reject fastapi_options that the generated application cannot pass to FastAPI."""
 
 
 def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
@@ -38,51 +28,6 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
 
 def _is_sequence(value: object) -> TypeIs[Sequence[object]]:
     return isinstance(value, Sequence) and not isinstance(value, (str, bytes))
-
-
-def _is_response_class(value: object) -> TypeIs[type[Response]]:
-    return isinstance(value, type) and issubclass(value, Response)
-
-
-def _is_callable(value: object) -> TypeIs[Callable[..., object]]:
-    return callable(value)
-
-
-class FastAPIOptions(TypedDict, total=False):
-    """The FastAPI settings create_app accepts; omitted keys keep the source info or FastAPI's own defaults."""
-
-    debug: bool
-    title: str
-    version: str
-    summary: str | None
-    description: str
-    openapi_url: str | None
-    docs_url: str | None
-    redoc_url: str | None
-    swagger_ui_oauth2_redirect_url: str | None
-    openapi_tags: list[dict[str, JSONValue]] | None
-    servers: list[dict[str, JSONValue]] | None
-    swagger_ui_init_oauth: dict[str, JSONValue] | None
-    swagger_ui_parameters: dict[str, JSONValue] | None
-    terms_of_service: str | None
-    contact: dict[str, JSONValue] | None
-    license_info: dict[str, JSONValue] | None
-    openapi_external_docs: dict[str, JSONValue] | None
-    responses: dict[int | str, dict[str, JSONValue]] | None
-    dependencies: Sequence[Dependency] | None
-    middleware: Sequence[Middleware] | None
-    routes: list[BaseRoute] | None
-    callbacks: list[BaseRoute] | None
-    webhooks: APIRouter | None
-    default_response_class: type[Response]
-    redirect_slashes: bool
-    root_path_in_servers: bool
-    root_path: str
-    deprecated: bool | None
-    include_in_schema: bool
-    separate_input_output_schemas: bool
-    strict_content_type: bool
-    generate_unique_id_function: Callable[[APIRoute], str]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -94,16 +39,16 @@ class OperationPlan:
     service: str
     keywords: tuple[str, ...] = ()
     asynchronous: bool = False
-    security: SecurityPlan | None = None
+    secured: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Wiring:
-    """What route adders connect: the checked handlers, authentication dependencies, and operation dependencies."""
+    """What route adders connect: the checked handlers, the authorize callback, and operation dependencies."""
 
     handlers: Mapping[str, Callable[..., object]]
     async_handlers: Mapping[str, Callable[..., Awaitable[object]]]
-    authenticators: Mapping[str, Authenticator]
+    authorize: Callable[..., object]
     dependencies: Mapping[str, tuple[Dependency, ...]]
 
 
@@ -112,33 +57,32 @@ Route: TypeAlias = tuple[OperationPlan, Callable[[APIRouter, Wiring], None]]
 
 def build(  # noqa: PLR0913
     routes: tuple[Route, ...],
-    schemes: tuple[SchemePlan, ...],
     *,
     services: Mapping[str, object],
-    authorizer: object = None,
-    credential_extractors: object = None,
+    authorize: object = None,
     dependencies: object,
     operation_dependencies: object,
     prefix: object,
 ) -> APIRouter:
     """Check the services and settings of the routes' operations, then register the routes in order."""
     operations = tuple(operation for operation, _ in routes)
-    secured = tuple(
-        (operation.key, security) for operation in operations if (security := operation.security) is not None
-    )
     checked = checked_services(services, operations)
     wiring = Wiring(
         handlers=checked,
         async_handlers=MappingProxyType({
-            name: handler for name, value in checked.items() if (handler := asynchronous(value)) is not None
+            name: handler for name, value in checked.items() if (handler := awaited(value)) is not None
         }),
-        authenticators=authenticators(schemes, secured, authorizer, credential_extractors),
+        authorize=checked_authorize(authorize) if any(operation.secured for operation in operations) else _unused,
         dependencies=checked_operation_dependencies(operation_dependencies, operations),
     )
     router = APIRouter(prefix=checked_prefix(prefix), dependencies=_dependencies(dependencies, "dependencies"))
     for _, add in routes:
         add(router, wiring)
     return router
+
+
+def _unused(*_: object) -> None:
+    """Stand in for the authorize callback of a router without secured operations."""
 
 
 def checked_services(
@@ -205,122 +149,3 @@ def checked_prefix(prefix: object) -> str:
         return prefix
     msg = "prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }"
     raise HandlerConfigurationError(msg)
-
-
-def application_options(options: object, info: FastAPIOptions) -> FastAPIOptions:  # noqa: PLR0912
-    """Return the FastAPI settings: the source info, overridden by fastapi_options, each value checked and copied."""
-    if options is not None and not _is_mapping(options):
-        msg = "fastapi_options must map FastAPI setting names to values"
-        raise OpenAPIConfigurationError(msg)
-    given = () if options is None else tuple((str(key), value) for key, value in options.items())
-    checked: FastAPIOptions = {}
-    for key, value in (*info.items(), *given):
-        match key:
-            case (
-                "debug"
-                | "redirect_slashes"
-                | "root_path_in_servers"
-                | "include_in_schema"
-                | "separate_input_output_schemas"
-                | "strict_content_type"
-            ):
-                checked[key] = _instance(key, value, bool)
-            case "title" | "version" | "description" | "root_path":
-                checked[key] = _instance(key, value, str)
-            case (
-                "summary"
-                | "openapi_url"
-                | "docs_url"
-                | "redoc_url"
-                | "swagger_ui_oauth2_redirect_url"
-                | "terms_of_service"
-            ):
-                checked[key] = None if value is None else _instance(key, value, str)
-            case "deprecated":
-                checked[key] = None if value is None else _instance(key, value, bool)
-            case (
-                "swagger_ui_init_oauth" | "swagger_ui_parameters" | "contact" | "license_info" | "openapi_external_docs"
-            ):
-                checked[key] = None if value is None else _object(key, value)
-            case "openapi_tags" | "servers":
-                checked[key] = None if value is None else _objects(key, value)
-            case "responses":
-                checked[key] = None if value is None else _responses(key, value)
-            case "dependencies":
-                checked[key] = None if value is None else _instances(key, value, Depends)
-            case "middleware":
-                checked[key] = None if value is None else _instances(key, value, Middleware)
-            case "routes" | "callbacks":
-                checked[key] = None if value is None else list(_instances(key, value, BaseRoute))
-            case "webhooks":
-                checked[key] = None if value is None else _instance(key, value, APIRouter)
-            case "default_response_class" if _is_response_class(value):
-                checked[key] = value
-            case "generate_unique_id_function" if _is_callable(value):
-                checked[key] = _unique_ids(value)
-            case "default_response_class" | "generate_unique_id_function":
-                raise _invalid(key)
-            case _:
-                msg = f"fastapi_options has no setting called {key!r}"
-                raise OpenAPIConfigurationError(msg)
-    return checked
-
-
-def _invalid(key: str) -> OpenAPIConfigurationError:
-    return OpenAPIConfigurationError(f"fastapi_options[{key!r}] has a value of the wrong type")
-
-
-def _instance(key: str, value: object, kind: type[ValueT]) -> ValueT:
-    if isinstance(value, kind):
-        return value
-    raise _invalid(key)
-
-
-def _instances(key: str, value: object, kind: type[ValueT]) -> tuple[ValueT, ...]:
-    if _is_sequence(value) and len(found := tuple(item for item in value if isinstance(item, kind))) == len(value):
-        return found
-    raise _invalid(key)
-
-
-def _json(key: str, value: object) -> JSONValue:
-    try:
-        return thaw_wire(checked_wire(value))
-    except (TypeError, ValueError) as error:
-        raise _invalid(key) from error
-
-
-def _object(key: str, value: object) -> dict[str, JSONValue]:
-    if isinstance(copied := _json(key, value), dict):
-        return copied
-    raise _invalid(key)
-
-
-def _objects(key: str, value: object) -> list[dict[str, JSONValue]]:
-    if isinstance(copied := _json(key, value), list) and len(
-        found := [item for item in copied if isinstance(item, dict)]
-    ) == len(copied):
-        return found
-    raise _invalid(key)
-
-
-def _responses(key: str, value: object) -> dict[int | str, dict[str, JSONValue]]:
-    if not _is_mapping(value):
-        raise _invalid(key)
-    responses: dict[int | str, dict[str, JSONValue]] = {}
-    for code, item in value.items():
-        match code:
-            case int() | str() if not isinstance(code, bool):
-                responses[code] = _object(key, item)
-            case _:
-                raise _invalid(key)
-    return responses
-
-
-def _unique_ids(function: Callable[..., object]) -> Callable[[APIRoute], str]:
-    def generate(route: APIRoute) -> str:
-        if isinstance(identifier := function(route), str):
-            return identifier
-        msg = "fastapi_options['generate_unique_id_function'] returned something other than a string"
-        raise OpenAPIConfigurationError(msg)
-
-    return generate

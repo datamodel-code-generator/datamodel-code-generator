@@ -7,13 +7,10 @@ app standard
   get_greeting(mode=absent)
 < 200 application/json "hello"
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode='value')
-< 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -28,28 +25,19 @@ app standard
 > GET /documents/2
   get_document(id=2)
 < 200 text/plain; charset=utf-8 raw
-> GET /documents/3
-  get_document(id=3)
-< 200 application/json; profile=v1 {"message":"v1"}
-> GET /documents/4
-  get_document(id=4)
-< 200 application/json; charset=utf-8 {"id":4,"name":"Mimi"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"anyOf": [{"$ref": "#/components/schemas/FieldGreetingsGetResponse"}, {"type": "string"}]}}}
+< {"application/json": {"schema": {"$ref": "#/components/schemas/FieldGreetingsGetResponse"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__7294ae050d69"}}}
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
 app plain
 > GET /greetings
   get_greeting(mode=absent)
 < 200 text/plain; charset=utf-8 hello
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode='value')
-< 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -59,21 +47,18 @@ app plain
   get_pet(id=2)
 < 404 application/json {"message":"Missing"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+< {"text/plain": {"schema": {"type": "string"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__7294ae050d69"}}}
+< {"text/plain": {"schema": {"$ref": "#/components/schemas/Error"}}}
 app included
 > GET /greetings
   get_greeting(mode=absent)
 < 200 text/plain; charset=utf-8 hello
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode='value')
-< 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -83,9 +68,9 @@ app included
   get_pet(id=2)
 < 404 application/json {"message":"Missing"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+< {"text/plain": {"schema": {"type": "string"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__7294ae050d69"}}}
+< {"text/plain": {"schema": {"$ref": "#/components/schemas/Error"}}}
 serve pydantic_v2.dataclass
 service UntaggedService: get_document, get_greeting, get_pet
 service UntaggedService without its methods: TypeError
@@ -94,13 +79,10 @@ app standard
   get_greeting(mode=absent)
 < 200 application/json "hello"
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode='value')
-< 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -115,28 +97,19 @@ app standard
 > GET /documents/2
   get_document(id=2)
 < 200 text/plain; charset=utf-8 raw
-> GET /documents/3
-  get_document(id=3)
-< 200 application/json; profile=v1 {"message":"v1"}
-> GET /documents/4
-  get_document(id=4)
-< 200 application/json; charset=utf-8 {"id":4,"name":"Mimi"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"anyOf": [{"$ref": "#/components/schemas/FieldGreetingsGetResponse"}, {"type": "string"}]}}}
+< {"application/json": {"schema": {"$ref": "#/components/schemas/FieldGreetingsGetResponse"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__95258823efb6"}}}
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
 app plain
 > GET /greetings
   get_greeting(mode=absent)
 < 200 text/plain; charset=utf-8 hello
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode='value')
-< 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -146,21 +119,18 @@ app plain
   get_pet(id=2)
 < 404 application/json {"message":"Missing"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+< {"text/plain": {"schema": {"type": "string"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__95258823efb6"}}}
+< {"text/plain": {"schema": {"$ref": "#/components/schemas/Error"}}}
 app included
 > GET /greetings
   get_greeting(mode=absent)
 < 200 text/plain; charset=utf-8 hello
 > GET /greetings?mode=result
-  get_greeting(mode='result')
+  get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
-> GET /greetings?mode=value
-  get_greeting(mode='value')
-< 200 application/json "wire"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -170,6 +140,6 @@ app included
   get_pet(id=2)
 < 404 application/json {"message":"Missing"}
 > openapi /greetings get 200
-< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+< {"text/plain": {"schema": {"type": "string"}}}
 > openapi /pets/{id} get 404
-< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__95258823efb6"}}}
+< {"text/plain": {"schema": {"$ref": "#/components/schemas/Error"}}}

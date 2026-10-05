@@ -1,42 +1,35 @@
-"""Services of the forms server: urlencoded fields, uploaded files, and lists of files, recorded as received."""
+"""Services of the forms server: URL-encoded fields, uploaded files, and lists of files, recorded as received."""
 
 from __future__ import annotations
 
+from dataclasses import asdict, is_dataclass
 from typing import TYPE_CHECKING
-
-from starlette.datastructures import UploadFile
 
 if TYPE_CHECKING:
     from types import ModuleType
 
 
-def _describe(value: object) -> str:
-    match value:
-        case UploadFile():
-            return f"{value.filename!r}:{value.content_type}:{value.file.read()!r}"
-        case list():
-            return f"[{', '.join(_describe(item) for item in value)}]"
-        case None:
-            return "absent"
-        case _ if type(value).__name__ == "Unset":
-            return "absent"
-    return repr(value)
+def _describe(body: object) -> str:
+    if isinstance(body, dict):
+        return repr(body)
+    fields = asdict(body) if is_dataclass(body) and not isinstance(body, type) else body.model_dump()
+    return f"{type(body).__name__}({', '.join(f'{key}={value!r}' for key, value in fields.items())})"
 
 
 def services(server: ModuleType, _models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
-    """Return a service that records the fields and files each operation receives."""
-
-    def record(operation: str, /, **values: object) -> None:
-        calls.append(f"{operation}({', '.join(f'{key}={_describe(value)}' for key, value in values.items())})")
+    """Return a service that records the form model each operation receives."""
 
     class Untagged(server.services.UntaggedService):
-        def post_form(self, *, name: object, count: object, tags: object) -> None:
-            record("post_form", name=name, count=count, tags=tags)
+        def post_form(self, *, body: object) -> None:
+            calls.append(f"post_form({_describe(body)})")
 
-        def upload(self, *, file: object, note: object) -> None:
-            record("upload", file=file, note=note)
+        def post_notes(self, *, body: object) -> None:
+            calls.append(f"post_notes({_describe(body)})")
 
-        def upload_many(self, *, files: object, label: object) -> None:
-            record("upload_many", files=files, label=label)
+        def upload(self, *, body: object) -> None:
+            calls.append(f"upload({_describe(body)})")
+
+        def upload_many(self, *, body: object) -> None:
+            calls.append(f"upload_many({_describe(body)})")
 
     return {"default": {"untagged": Untagged()}}

@@ -9,7 +9,7 @@ paths:
         - {name: code, in: query, schema: {type: string, pattern: "^[A-Z]+$", default: AB}}
         - {name: filter, in: query, style: deepObject, explode: true, schema: {$ref: "#/components/schemas/Filter"}}
         - {name: ids, in: query, explode: false, schema: {type: array, items: {type: integer}}}
-        - {name: X-Ids, in: header, schema: {type: array, items: {type: integer}}}
+        - {name: X-Ids, in: header, schema: {type: array, items: {type: integer}, default: [3]}}
         - {name: blob, in: query, content: {application/json: {schema: {$ref: "#/components/schemas/Blob"}}}}
         - {name: note, in: query, content: {text/plain: {}}}
       responses:
@@ -19,6 +19,11 @@ paths:
       operationId: getRatios
       parameters:
         - {name: ratios, in: query, required: true, schema: {type: array, items: {type: number}}}
+        - name: limits
+          in: query
+          description: Limits.
+          deprecated: true
+          schema: {type: array, title: Limits, examples: [[1]], items: {type: integer, minimum: 1}, default: [1, 2]}
       responses:
         "204": {description: Done.}
   /repeat/{id}/again/{id}:
@@ -58,6 +63,8 @@ paths:
         - {name: ratio, in: query, schema: {type: number, enum: [0.5, 1.5]}}
         - {name: X-Flag, in: header, schema: {type: boolean, const: true}}
         - {name: kind, in: query, schema: {type: string, enum: [a, b]}}
+        - {name: tier, in: query, schema: {anyOf: [{type: integer, enum: [1, 2]}, {type: "null"}]}}
+        - {name: levels, in: query, schema: {type: array, items: {type: integer, enum: [1, 2]}}}
       responses:
         "204": {description: Done.}
 components:

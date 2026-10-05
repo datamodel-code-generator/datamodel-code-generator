@@ -81,6 +81,17 @@ paths:
           content:
             application/json:
               schema: {type: object}
+  /blob:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getBlob
+      responses:
+        "200":
+          description: Raw bytes.
+          content:
+            application/octet-stream:
+              schema: {type: string, format: binary}
   /empty:
     parameters:
       - {name: case, in: query, required: true, schema: {type: string}}
