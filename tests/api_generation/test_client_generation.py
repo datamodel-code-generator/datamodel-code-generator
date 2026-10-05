@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_generated_modules_output, assert_output
 from tests.data.python.client_generation import (
     client_config_report,
@@ -26,10 +27,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
     """Refuse cyclic input before publication while accepting shared aliases and recording their JSON digest."""
     report = client_input_report(case, tmp_path)
     expected = f"{case}.txt"
-    if case == "input-cycle-reference" and (
-        "model-only pydantic_v2.BaseModel\n  InvalidFileFormatError: cyclic YAML input rejected\n" in report
-    ):
-        expected = "input-cycle-reference-ryaml.txt"
+    if case == "input-cycle-reference":
+        expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
     assert_output(report, EXPECTED / expected)
 
 
