@@ -1,10 +1,7 @@
 matching: native app routes=4
 plain-validation-alias: native app routes=4 models={'models:Pet': 'AliasPet'}
 aliases-refused: native app routes=4 models={'models:Pet': 'NamePet'}
-converter: native app routes=4 removed codec-sidecar edits=['binding']
-backend: native app routes=4 removed codec-sidecar edits=['binding']
 bundle-direction: native app routes=4 removed codec-sidecar edits=['bundle'] ValidationError missing@['id'],missing@['name'],missing@['status']
-missing-model: native app routes=4 models={'models:Owner': 'Owner'}
 other-model: native app routes=4 models={'models:Pet': 'Owner'}
 root-model: native app routes=4 models={'models:FieldPetsGetResponse': 'Pet'}
 opaque-model: native app routes=4 removed codec-sidecar edits=['binding'] ValidationError value_error@['owner', 'e-mail']

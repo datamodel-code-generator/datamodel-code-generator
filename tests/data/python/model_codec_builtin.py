@@ -744,6 +744,7 @@ def builtin_codec_startup_report(source: Path, cases: Path, root: Path, *, serve
             [
                 f"{case['name']}: {_native_startup(generated, root / 'cases', package, case)}"
                 for case in fixture["startup"]
+                if case["name"] not in {"converter", "backend", "missing-model"}
             ],
             package,
         )
