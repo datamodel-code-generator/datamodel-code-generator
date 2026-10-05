@@ -9,14 +9,6 @@ from models import Address as _dcg_type_0
 
 from ...errors import HTTPStatusError
 
-ReadFileResponse: TypeAlias = bytes | None
-ReadFileErrorData: TypeAlias = None
-
-
-class ReadFileHTTPError(HTTPStatusError[ReadFileErrorData]):
-    """An error response of read_file, with its decoded payload when one is declared."""
-
-
 StoreFileResponse: TypeAlias = _dcg_type_0 | bytes | None
 StoreFileErrorData: TypeAlias = None
 

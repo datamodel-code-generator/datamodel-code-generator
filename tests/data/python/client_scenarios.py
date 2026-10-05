@@ -312,6 +312,7 @@ def _upload(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
     record(lines, "upload empty", lambda: api.pets.photos.upload(pet_id=pet))
     record(lines, "upload text", lambda: api.pets.photos.upload(pet_id=pet, body="text"))
     record(lines, "upload media", lambda: api.pets.photos.upload(pet_id=pet, media_type="application/octet-stream"))
+    _range_responses(api.pets.photos, exchange, lines, "upload", {"pet_id": pet})
 
 
 def _servers(package: ModuleType, api_options: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -391,6 +392,7 @@ def pets(package: ModuleType, lines: list[str]) -> None:
     _errors(package, lines)
     _lifecycle(package, lines)
     run(lambda: _async_pets(package, exchange, lines))
+    run(lambda: _async_range_responses(package, lines, "pets"))
 
 
 async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
@@ -476,8 +478,14 @@ def media(package: ModuleType, lines: list[str]) -> None:
         record(lines, "search of an extra named as another member", lambda: api.forms.submit_search(body=clash))
         _documents(package, api, exchange, lines, documents)
         _files(package, api, exchange, lines)
-        _range_responses(api, exchange, lines)
-    run(lambda: _async_range_responses(package, lines))
+        _range_responses(api.files, exchange, lines, "store_file", {"body": b"image", "media_type": "image/jpeg"})
+        exchange.respond(raw_response(204))
+        record(
+            lines,
+            "range bodyless",
+            lambda: api.files.store_file(body=b"image", media_type="image/jpeg", response_media_type="image/jpeg"),
+        )
+    run(lambda: _async_range_responses(package, lines, "media"))
 
 
 def _files(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -507,72 +515,62 @@ def _files(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
     record(lines, "replace file without a body", api.files.replace_file)
 
 
-def _range_responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Select concrete image types through range-only and mixed response declarations in every view."""
-    for name, arguments in (
-        ("read_file", {}),
-        ("store_file", {"body": b"image", "media_type": "image/jpeg"}),
-    ):
-        for view in (api.files, api.files.with_response):
-            exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
-            record(
-                lines,
-                f"range {name} {type(view).__name__}",
-                lambda view=view, name=name, arguments=arguments: getattr(view, name)(
-                    **arguments, response_media_type="image/jpeg"
-                ),
-            )
+def _range_responses(resource: Any, exchange: Exchange, lines: list[str], name: str, arguments: dict[str, Any]) -> None:
+    """Select a concrete image through a range declaration in every synchronous view."""
+    for view in (resource, resource.with_response):
         exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
         record(
             lines,
-            f"range {name} raw",
-            lambda name=name, arguments=arguments: getattr(api.files.with_raw_response, name)(
-                **arguments, response_media_type="image/jpeg"
-            ).read(),
+            f"range {name} {type(view).__name__}",
+            lambda view=view: getattr(view, name)(**arguments, response_media_type="image/jpeg"),
         )
-        exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
-        with getattr(api.files.with_streaming_response, name)(
-            **arguments, response_media_type="image/jpeg"
-        ) as response:
-            record(lines, f"range {name} streaming", response.read)
-    record(lines, "response wildcard rejected", lambda: api.files.read_file(response_media_type="image/*"))
-    exchange.respond(raw_response(204))
-    record(lines, "range bodyless", lambda: api.files.read_file(response_media_type="image/jpeg"))
+    exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+    record(
+        lines,
+        f"range {name} raw",
+        lambda: getattr(resource.with_raw_response, name)(**arguments, response_media_type="image/jpeg").read(),
+    )
+    exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+    with getattr(resource.with_streaming_response, name)(**arguments, response_media_type="image/jpeg") as response:
+        record(lines, f"range {name} streaming", response.read)
+    record(
+        lines,
+        f"response wildcard rejected {name}",
+        lambda: getattr(resource, name)(**arguments, response_media_type="image/*"),
+    )
 
 
-async def _async_range_responses(package: ModuleType, lines: list[str]) -> None:
-    """Select concrete image responses through each asyncio view using the real HTTPS exchange."""
+async def _async_range_responses(package: ModuleType, lines: list[str], case: str) -> None:
+    """Select concrete image responses through each asyncio view using the existing HTTPS recipes."""
     exchange = Exchange(lines)
     async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
-        for name, arguments in (
-            ("read_file", {}),
-            ("store_file", {"body": b"image", "media_type": "image/jpeg"}),
-        ):
-            for view in (api.files, api.files.with_response):
-                exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
-                await arecord(
-                    lines,
-                    f"async range {name} {type(view).__name__}",
-                    lambda view=view, name=name, arguments=arguments: getattr(view, name)(
-                        **arguments, response_media_type="image/jpeg"
-                    ),
-                )
-
-            async def raw(name: str = name, arguments: dict[str, Any] = arguments) -> bytes:
-                response = await getattr(api.files.with_raw_response, name)(
-                    **arguments, response_media_type="image/jpeg"
-                )
-                return await response.read()
-
+        if case == "pets":
+            resource, name, arguments = api.pets.photos, "upload", {"pet_id": _pet(package, "uploadPhoto")}
+        else:
+            resource, name, arguments = api.files, "store_file", {"body": b"image", "media_type": "image/jpeg"}
+        for view in (resource, resource.with_response):
             exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
-            await arecord(lines, f"async range {name} raw", raw)
-            exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
-            async with getattr(api.files.with_streaming_response, name)(
-                **arguments, response_media_type="image/jpeg"
-            ) as response:
-                await arecord(lines, f"async range {name} streaming", response.read)
+            await arecord(
+                lines,
+                f"async range {name} {type(view).__name__}",
+                lambda view=view: getattr(view, name)(**arguments, response_media_type="image/jpeg"),
+            )
+
+        async def raw() -> bytes:
+            response = await getattr(resource.with_raw_response, name)(**arguments, response_media_type="image/jpeg")
+            return await response.read()
+
+        exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+        await arecord(lines, f"async range {name} raw", raw)
+        exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+        async with getattr(resource.with_streaming_response, name)(
+            **arguments, response_media_type="image/jpeg"
+        ) as response:
+            await arecord(lines, f"async range {name} streaming", response.read)
         await arecord(
-            lines, "async response wildcard rejected", lambda: api.files.read_file(response_media_type="image/*")
+            lines,
+            f"async response wildcard rejected {name}",
+            lambda: getattr(resource, name)(**arguments, response_media_type="image/*"),
         )
 
 

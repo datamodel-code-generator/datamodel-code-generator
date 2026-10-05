@@ -48,9 +48,6 @@ from .types.documents import (
     StoreNoteResponse,
 )
 from .types.files import (
-    ReadFileErrorData,
-    ReadFileHTTPError,
-    ReadFileResponse,
     ReplaceFileErrorData,
     ReplaceFileHTTPError,
     ReplaceFileResponse,
@@ -503,19 +500,7 @@ OPERATION_12: Final[OperationPlan[SubmitLabelsResponse, SubmitLabelsErrorData]] 
     ),
 )
 
-OPERATION_13: Final[OperationPlan[ReadFileResponse, ReadFileErrorData]] = OperationPlan(
-    operation_id='readFile',
-    method='GET',
-    path='/files',
-    servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (binary_branch('200', 'image/*'), empty_branch('204')),
-        (),
-        ReadFileHTTPError,
-    ),
-)
-
-OPERATION_14: Final[OperationPlan[StoreFileResponse, StoreFileErrorData]] = OperationPlan(
+OPERATION_13: Final[OperationPlan[StoreFileResponse, StoreFileErrorData]] = OperationPlan(
     operation_id='storeFile',
     method='POST',
     path='/files',
@@ -555,7 +540,7 @@ OPERATION_14: Final[OperationPlan[StoreFileResponse, StoreFileErrorData]] = Oper
     ),
 )
 
-OPERATION_15: Final[OperationPlan[ReplaceFileResponse, ReplaceFileErrorData]] = OperationPlan(
+OPERATION_14: Final[OperationPlan[ReplaceFileResponse, ReplaceFileErrorData]] = OperationPlan(
     operation_id='replaceFile',
     method='PUT',
     path='/files',
@@ -564,7 +549,7 @@ OPERATION_15: Final[OperationPlan[ReplaceFileResponse, ReplaceFileErrorData]] = 
     body=RequestBody(media=(BodyMedia(media_type='*/*', kind='binary'),)),
 )
 
-OPERATION_16: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] = OperationPlan(
+OPERATION_15: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] = OperationPlan(
     operation_id='submitSearch',
     method='POST',
     path='/searches',
@@ -637,7 +622,7 @@ OPERATION_16: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] 
     ),
 )
 
-OPERATION_17: Final[OperationPlan[SubmitCoverResponse, SubmitCoverErrorData]] = OperationPlan(
+OPERATION_16: Final[OperationPlan[SubmitCoverResponse, SubmitCoverErrorData]] = OperationPlan(
     operation_id='submitCover',
     method='POST',
     path='/covers',
@@ -690,7 +675,7 @@ OPERATION_17: Final[OperationPlan[SubmitCoverResponse, SubmitCoverErrorData]] = 
     ),
 )
 
-OPERATION_18: Final[OperationPlan[SubmitCardResponse, SubmitCardErrorData]] = OperationPlan(
+OPERATION_17: Final[OperationPlan[SubmitCardResponse, SubmitCardErrorData]] = OperationPlan(
     operation_id='submitCard',
     method='POST',
     path='/cards',
@@ -714,7 +699,7 @@ OPERATION_18: Final[OperationPlan[SubmitCardResponse, SubmitCardErrorData]] = Op
     ),
 )
 
-OPERATION_19: Final[OperationPlan[SubmitStickersResponse, SubmitStickersErrorData]] = OperationPlan(
+OPERATION_18: Final[OperationPlan[SubmitStickersResponse, SubmitStickersErrorData]] = OperationPlan(
     operation_id='submitStickers',
     method='POST',
     path='/stickers',
@@ -788,7 +773,7 @@ OPERATION_19: Final[OperationPlan[SubmitStickersResponse, SubmitStickersErrorDat
     ),
 )
 
-OPERATION_20: Final[OperationPlan[SubmitAlbumResponse, SubmitAlbumErrorData]] = OperationPlan(
+OPERATION_19: Final[OperationPlan[SubmitAlbumResponse, SubmitAlbumErrorData]] = OperationPlan(
     operation_id='submitAlbum',
     method='POST',
     path='/albums',
@@ -839,7 +824,7 @@ OPERATION_20: Final[OperationPlan[SubmitAlbumResponse, SubmitAlbumErrorData]] = 
     ),
 )
 
-OPERATION_21: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]] = OperationPlan(
+OPERATION_20: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]] = OperationPlan(
     operation_id='storeDocument',
     method='POST',
     path='/documents',
@@ -875,7 +860,7 @@ OPERATION_21: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]
     ),
 )
 
-OPERATION_22: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] = OperationPlan(
+OPERATION_21: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] = OperationPlan(
     operation_id='readDocument',
     method='GET',
     path='/documents/{id}',
@@ -919,7 +904,7 @@ OPERATION_22: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] 
     ),
 )
 
-OPERATION_23: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = OperationPlan(
+OPERATION_22: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = OperationPlan(
     operation_id='storeNote',
     method='POST',
     path='/notes',
@@ -934,7 +919,7 @@ OPERATION_23: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = Oper
     ),
 )
 
-OPERATION_24: Final[OperationPlan[ReplaceNoteResponse, ReplaceNoteErrorData]] = OperationPlan(
+OPERATION_23: Final[OperationPlan[ReplaceNoteResponse, ReplaceNoteErrorData]] = OperationPlan(
     operation_id='replaceNote',
     method='PUT',
     path='/notes',

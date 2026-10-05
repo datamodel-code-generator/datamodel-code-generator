@@ -16,7 +16,7 @@ from ...bodies import AsyncBinaryBody
 from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
-from ...types.files import ReadFileResponse, ReplaceFileResponse, StoreFileResponse
+from ...types.files import ReplaceFileResponse, StoreFileResponse
 
 
 class AsyncFilesResource:
@@ -40,20 +40,6 @@ class AsyncFilesResource:
     def with_streaming_response(self) -> AsyncFilesWithStreamingResponse:
         """The same operations, returning blocks that send each call on entry and stream its response."""
         return AsyncFilesWithStreamingResponse(self._core)
-
-    async def read_file(
-        self,
-        *,
-        response_media_type: str | None = None,
-        options: RequestOptions | None = None,
-    ) -> ReadFileResponse:
-        """Call GET /files."""
-        return (await self._core.execute(
-            _operations.OPERATION_13,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
 
     @overload
     async def store_file(
@@ -173,7 +159,7 @@ class AsyncFilesResource:
     ) -> StoreFileResponse:
         """Call POST /files."""
         return (await self._core.execute(
-            _operations.OPERATION_14,
+            _operations.OPERATION_13,
             (),
             body=body,
             media_type=media_type,
@@ -206,7 +192,7 @@ class AsyncFilesResource:
     ) -> ReplaceFileResponse:
         """Call PUT /files."""
         return (await self._core.execute(
-            _operations.OPERATION_15,
+            _operations.OPERATION_14,
             (),
             body=body,
             media_type=media_type,
@@ -220,20 +206,6 @@ class AsyncFilesWithResponse:
     def __init__(self, core: AsyncClientCore) -> None:
         """Keep the client core the operations send through."""
         self._core = core
-
-    async def read_file(
-        self,
-        *,
-        response_media_type: str | None = None,
-        options: RequestOptions | None = None,
-    ) -> Response[ReadFileResponse]:
-        """Call GET /files."""
-        return await self._core.execute(
-            _operations.OPERATION_13,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )
 
     @overload
     async def store_file(
@@ -353,7 +325,7 @@ class AsyncFilesWithResponse:
     ) -> Response[StoreFileResponse]:
         """Call POST /files."""
         return await self._core.execute(
-            _operations.OPERATION_14,
+            _operations.OPERATION_13,
             (),
             body=body,
             media_type=media_type,
@@ -386,7 +358,7 @@ class AsyncFilesWithResponse:
     ) -> Response[ReplaceFileResponse]:
         """Call PUT /files."""
         return await self._core.execute(
-            _operations.OPERATION_15,
+            _operations.OPERATION_14,
             (),
             body=body,
             media_type=media_type,
@@ -401,20 +373,6 @@ class AsyncFilesWithRawResponse:
         """Keep the client core the operations send through."""
         self._core = core
 
-    async def read_file(
-        self,
-        *,
-        response_media_type: str | None = None,
-        options: RequestOptions | None = None,
-    ) -> AsyncRawResponse:
-        """Call GET /files."""
-        return await self._core.execute_raw(
-            _operations.OPERATION_13,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )
-
     @overload
     async def store_file(
         self,
@@ -452,7 +410,7 @@ class AsyncFilesWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /files."""
         return await self._core.execute_raw(
-            _operations.OPERATION_14,
+            _operations.OPERATION_13,
             (),
             body=body,
             media_type=media_type,
@@ -485,7 +443,7 @@ class AsyncFilesWithRawResponse:
     ) -> AsyncRawResponse:
         """Call PUT /files."""
         return await self._core.execute_raw(
-            _operations.OPERATION_15,
+            _operations.OPERATION_14,
             (),
             body=body,
             media_type=media_type,
@@ -500,20 +458,6 @@ class AsyncFilesWithStreamingResponse:
         """Keep the client core the operations send through."""
         self._core = core
 
-    def read_file(
-        self,
-        *,
-        response_media_type: str | None = None,
-        options: RequestOptions | None = None,
-    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /files."""
-        return self._core.stream(
-            _operations.OPERATION_13,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )
-
     @overload
     def store_file(
         self,
@@ -551,7 +495,7 @@ class AsyncFilesWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /files."""
         return self._core.stream(
-            _operations.OPERATION_14,
+            _operations.OPERATION_13,
             (),
             body=body,
             media_type=media_type,
@@ -584,7 +528,7 @@ class AsyncFilesWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call PUT /files."""
         return self._core.stream(
-            _operations.OPERATION_15,
+            _operations.OPERATION_14,
             (),
             body=body,
             media_type=media_type,

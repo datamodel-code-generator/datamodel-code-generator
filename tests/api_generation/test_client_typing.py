@@ -296,17 +296,14 @@ def test_client_typing_compression(tmp_path: Path) -> None:
     )
 
 
-def test_client_typing_media_ranges(tmp_path: Path) -> None:
+@pytest.mark.parametrize("case", ["media", "pets"])
+def test_client_typing_media_ranges(case: str, tmp_path: Path) -> None:
     """Keep exact response overloads narrow while accepting concrete types within success ranges."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
+    sample = "media_ranges" if case == "media" else "media_ranges_only"
+    target = "pets/resources/files" if case == "media" else "pets/resources/pets/photos"
     assert_output(
-        client_typing_report(
-            tmp_path,
-            DataModelType.PydanticV2BaseModel,
-            "media",
-            ("media_ranges",),
-            package_targets=("pets/resources/files",),
-        ),
-        EXPECTED / "pydantic_v2-BaseModel-media-ranges.txt",
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, case, (sample,), package_targets=(target,)),
+        EXPECTED / f"pydantic_v2-BaseModel-{case}-ranges.txt",
     )

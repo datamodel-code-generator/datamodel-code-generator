@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope
 from datamodel_code_generator._api_generation import generate_target
@@ -12,6 +12,9 @@ from datamodel_code_generator._client.target import ClientTarget
 from datamodel_code_generator.format import Formatter
 from tests.data.python.client_generation import SOURCE, client_config, copy_references
 from tests.data.python.strict_typing import checked, marked_lines, negative
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 SAMPLES = SOURCE / "typing"
 
