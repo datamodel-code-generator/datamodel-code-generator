@@ -29,7 +29,7 @@ from datamodel_code_generator._fastapi.context import (
     RouterView,
     SourceView,
 )
-from datamodel_code_generator._fastapi.openapi import documentation
+from datamodel_code_generator._fastapi.documentation import documentation
 from datamodel_code_generator._fastapi.plan import Default
 from datamodel_code_generator._fastapi.render import Module
 from datamodel_code_generator._fastapi.routes import tags

@@ -6,13 +6,12 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import TargetBinding, TargetRender
-from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
+from datamodel_code_generator._fastapi.documentation import Documentation
 from datamodel_code_generator._fastapi.fingerprints import Fingerprints
 from datamodel_code_generator._fastapi.hooks import Extensions, HookRunner, extended
-from datamodel_code_generator._fastapi.openapi import DocsBuilder, references
 from datamodel_code_generator._fastapi.partial import check_partial
 from datamodel_code_generator._fastapi.plan import PlanError, Planner, Revision
 from datamodel_code_generator._fastapi.render import ServerRenderer
@@ -20,7 +19,6 @@ from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, Templ
 from datamodel_code_generator._fastapi.views import ContextBuilder
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
-from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
 from datamodel_code_generator._target_contract import GeneratedSymbolType
 from datamodel_code_generator._target_render import PATTERNS, model_dependencies, patterned
 from datamodel_code_generator.enums import DataModelType
@@ -33,12 +31,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._fastapi.context import FastAPIContext
-    from datamodel_code_generator._fastapi.openapi import ServedDocs
     from datamodel_code_generator._fastapi.plan import OperationSpec, ServerPlan
     from datamodel_code_generator._fastapi.templates import ExtraFile
     from datamodel_code_generator._openapi_codec_plan import CodecPlan, PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
+    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_contract import ModelArtifact, TypeUseId
 
 DEPENDENCIES: Final = (
@@ -83,7 +80,7 @@ class FastAPITarget:
             excluded = _excluded(plan, request)
         elif templates is not None:
             context = stage.context(Revision(), Extensions())
-        docs = _docs(plan, config, request, stage.wire)
+        docs = _docs(plan, request, stage.wire)
         renderer = ServerRenderer(
             config=config,
             package=request.layout.package,
@@ -105,7 +102,6 @@ class FastAPITarget:
             renderer=renderer,
             files=files,
             wire=stage.wire,
-            docs=docs,
         ).data()
         if config.update_groups is not None:
             check_partial(plan, config, request, target_data)
@@ -114,7 +110,7 @@ class FastAPITarget:
             target_data=target_data,
             dependencies=_dependencies(plan, stage.wire, request.models),
             bindings=_bindings(codecs, _BACKENDS[request.model_config.output_model_type]),
-            diagnostics=docs.diagnostics,
+            diagnostics=tuple(docs.problems),
             persistent_diagnostics=excluded,
             update_groups=None if config.update_groups is None else frozenset(config.update_groups),
         )
@@ -175,12 +171,15 @@ class _Stage:
         return extended(view[1], extensions)
 
 
-def _docs(plan: ServerPlan, config: FastAPIConfig, request: TargetRequest, wire: WirePlan) -> ServedDocs:
-    """Return the served-document fragments, planning the schemas of callbacks, which no codec reads, apart."""
+def _docs(plan: ServerPlan, request: TargetRequest, wire: WirePlan) -> Documentation:
+    """Return the documentation builder, planning the schemas of callbacks, which no route reads, apart."""
     index = CallbackIndex(request.batch)
-    nodes = {spec.key: index.nodes(spec.contract, spec.key) for spec in plan.operations}
     callbacks = list(
-        {node.operation.id: node.operation for spec in plan.operations for node in flattened(nodes[spec.key])}.values()
+        {
+            node.operation.id: node.operation
+            for spec in plan.operations
+            for node in flattened(index.nodes(spec.contract, spec.key))
+        }.values()
     )
     wires: tuple[WirePlan, ...] = (wire,)
     if callbacks:
@@ -194,7 +193,7 @@ def _docs(plan: ServerPlan, config: FastAPIConfig, request: TargetRequest, wire:
                 documents=request.documents.pointers,
             ),
         )
-    return DocsBuilder(plan, request, package=config.package, wires=wires, callbacks=nodes).build()
+    return Documentation(plan, request, wires)
 
 
 def _excluded(plan: ServerPlan, request: TargetRequest) -> tuple[Diagnostic, ...]:
@@ -255,10 +254,6 @@ def _dependencies(plan: ServerPlan, wire: WirePlan, models: tuple[ModelArtifact,
     )
 
 
-def _json_info(info: tuple[tuple[str, WireValue], ...]) -> JSONValue:
-    return {option: thaw_wire(checked_wire(value)) for option, value in info}
-
-
 def _bindings(codecs: CodecPlan, backend: str) -> tuple[TargetBinding, ...]:
     return tuple(
         TargetBinding(
@@ -284,7 +279,6 @@ class _TargetData:
         renderer: ServerRenderer,
         files: tuple[RenderedFile, ...],
         wire: WirePlan,
-        docs: ServedDocs,
     ) -> None:
         """Index the rendered files, the codec bindings, and the model artifacts the records point to."""
         self.plan = plan
@@ -292,11 +286,6 @@ class _TargetData:
         self.request = request
         self.renderer = renderer
         self.wire = wire
-        self.docs = docs
-        self.fragments = {operation.key: operation for operation in docs.operations}
-        self.components = {component.name: component.schema for component in docs.components}
-        self.component_references = {name: references(schema)[0] for name, schema in self.components.items()}
-        self.schemes = {scheme.name: scheme.scheme for scheme in docs.schemes}
         self.files = {file.path: index for index, file in enumerate(files)}
         self.rendered = files
         self.bindings = {use: index for index, (use, _) in enumerate(codecs.bindings)}
@@ -335,49 +324,8 @@ class _TargetData:
                 for group in self.plan.groups
             ],
             "shared_files": self.pointers(file.path for file in self.rendered if file.path not in specific),
-            "served_openapi": self.served(),
-            "callbacks": self.callbacks(),
             "runtime_revision": "/generator/runtime_revision",
         }
-
-    def served(self) -> JSONValue:
-        """Return the served-document record: its version, plan module, bundle digest, and components."""
-        docs = self.docs
-        return {
-            "version": docs.version,
-            "files": self.pointers((self.request.layout.package / "_generated" / "openapi.py",)),
-            "document_sha256": sha256(canonical_bytes(docs.document(_json_info(self.plan.info)))),
-            "components": [
-                {
-                    "name": component.name,
-                    "schema_id": component.schema_id,
-                    "direction": component.direction,
-                    "sha256": sha256(canonical_bytes(component.schema)),
-                }
-                for component in docs.components
-            ],
-            "security_schemes": [
-                {
-                    "name": scheme.name,
-                    "scheme_name": scheme.scheme_name,
-                    "sha256": sha256(canonical_bytes(scheme.scheme)),
-                }
-                for scheme in docs.schemes
-            ],
-        }
-
-    def callbacks(self) -> list[JSONValue]:
-        """Return the callback operations of the selected operations, each with its parent and declaration."""
-        uris = self.request.documents.uris
-        return [
-            {
-                "key": callback.key,
-                "parent_key": callback.parent_key,
-                "source_uri": uris[(declaration := callback.operation.declaration.location).document],
-                "pointer": declaration.pointer,
-            }
-            for callback in self.docs.callbacks
-        ]
 
     def operation(self, spec: OperationSpec) -> JSONValue:
         """Return the manifest record of one operation."""
@@ -421,28 +369,11 @@ class _TargetData:
             "plan_sha256": self.fingerprints.plan(spec, documents, projections),
             "signature_sha256": self.renderer.signature_digest(spec),
             "codec_sha256": self.fingerprints.codec(uses, self.use_bindings, self.type_uses, self.wire),
-            "docs_sha256": self.docs_digest(spec.key),
             "path_slots": [
                 {"wire_name": slot.wire_name, "slot": slot.slot, "occurrence": slot.occurrence}
                 for slot in spec.route.slots
             ],
         }
-
-    def docs_digest(self, key: str) -> str:
-        """Hash an operation's fragment with every schema component and security scheme its documentation uses."""
-        fragment = self.fragments[key].fragment
-        pending, schemes = references(fragment)
-        found: set[str] = set()
-        while pending:
-            found.add(name := pending.pop())
-            pending |= self.component_references.get(name, set()) - found
-        return sha256(
-            canonical_bytes({
-                "fragment": fragment,
-                "schemas": {name: self.components[name] for name in sorted(found & self.components.keys())},
-                "securitySchemes": {name: self.schemes[name] for name in sorted(schemes & self.schemes.keys())},
-            })
-        )
 
     def model_artifacts(self, uses: tuple[TypeUseId, ...]) -> list[int]:
         """Return the model artifacts of an operation's bound types and codec model graphs, in artifact order."""

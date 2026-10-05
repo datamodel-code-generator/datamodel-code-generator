@@ -93,7 +93,20 @@
             "style": "deepObject",
             "explode": true,
             "schema": {
-              "$ref": "#/components/schemas/Filter__d23a9d5e22c7"
+              "type": "object",
+              "required": [
+                "id",
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "readOnly": true
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
             }
           },
           {
@@ -132,7 +145,16 @@
             "name": "point",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/Point__9651a980b0e2"
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "x"
+              ],
+              "properties": {
+                "x": {
+                  "type": "integer"
+                }
+              }
             }
           }
         ],
@@ -145,46 +167,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/HTTPValidationError"
-                    },
-                    {
-                      "$ref": "#/components/schemas/dcg_validation_error__91340604ca9a"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__91340604ca9a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__91340604ca9a"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
           }
-        },
-        "security": []
+        }
       }
     },
-    "/items/{item-id}/parts/{part}": {
+    "/items/{dcg_p0}/parts/{part}": {
       "get": {
         "tags": [
           "items"
@@ -193,7 +184,7 @@
         "operationId": "getPart",
         "parameters": [
           {
-            "name": "item-id",
+            "name": "dcg_p0",
             "in": "path",
             "required": true,
             "schema": {
@@ -346,14 +337,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetResponse"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetResponse"
                 }
               }
             }
@@ -363,46 +347,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/HTTPValidationError"
-                    },
-                    {
-                      "$ref": "#/components/schemas/dcg_validation_error__91340604ca9a"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__91340604ca9a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__91340604ca9a"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
           }
-        },
-        "security": []
+        }
       }
     },
-    "/repeat/{id}/again/{id}": {
+    "/repeat/{dcg_p0}/again/{dcg_p1}": {
       "get": {
         "tags": [
           "adapters"
@@ -412,52 +365,26 @@
         "responses": {
           "204": {
             "description": "Nothing."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__91340604ca9a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__91340604ca9a"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__91340604ca9a"
-                }
-              }
-            }
           }
         },
         "parameters": [
           {
-            "name": "id",
+            "name": "dcg_p0",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "dcg_p1",
             "in": "path",
             "required": true,
             "schema": {
               "type": "integer"
             }
           }
-        ],
-        "security": []
+        ]
       }
     }
   },
@@ -533,85 +460,6 @@
           "type"
         ],
         "title": "ValidationError"
-      },
-      "dcg_http_error__91340604ca9a": {
-        "type": "object",
-        "properties": {
-          "detail": {}
-        },
-        "required": [
-          "detail"
-        ]
-      },
-      "dcg_validation_error__91340604ca9a": {
-        "type": "object",
-        "properties": {
-          "detail": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "loc": {
-                  "type": "array",
-                  "items": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "integer"
-                      }
-                    ]
-                  }
-                },
-                "msg": {
-                  "type": "string"
-                },
-                "type": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "loc",
-                "msg",
-                "type"
-              ]
-            }
-          }
-        },
-        "required": [
-          "detail"
-        ]
-      },
-      "dcg_server_error__91340604ca9a": {
-        "type": "string"
-      },
-      "Filter__d23a9d5e22c7": {
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer",
-            "readOnly": true
-          },
-          "name": {
-            "type": "string"
-          }
-        }
-      },
-      "Point__9651a980b0e2": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "x"
-        ],
-        "properties": {
-          "x": {
-            "type": "integer"
-          }
-        }
       }
     }
   }

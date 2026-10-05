@@ -6,7 +6,7 @@ from typing import Final
 
 from fastapi import APIRouter, FastAPI
 
-from ._generated import contract, openapi
+from ._generated import contract
 from ._generated.contract import OperationDependencies, OperationKey, SchemeKey
 from ._runtime.server.application import (
     Dependency,
@@ -14,7 +14,6 @@ from ._runtime.server.application import (
     application_options,
     build,
 )
-from ._runtime.server.openapi import install
 from ._runtime.server.security import PrincipalT, SecretT
 from .auth_types import (
     AsyncAuthorizer,
@@ -71,19 +70,6 @@ def build_router(
     )
 
 
-def install_openapi(
-    app: FastAPI,
-    *,
-    operation_keys: tuple[OperationKey, ...] | None = None,
-) -> None:
-    """Add this package's OpenAPI fragments to an application that includes its routes.
-
-    operation_keys names the operations it includes, all of them by default. The
-    application composes its document when it first serves or checks it.
-    """
-    install(app, openapi.PLAN, operation_keys)
-
-
 def create_app(
     *,
     pets: PetsService[PrincipalT],
@@ -96,10 +82,7 @@ def create_app(
     prefix: str = "",
     fastapi_options: FastAPIOptions | None = None,
 ) -> FastAPI:
-    """Create the application with every operation, then check its OpenAPI document.
-
-    The check keeps no document, so the one the application serves also covers routes added afterwards.
-    """
+    """Create the application with every operation."""
     app = FastAPI(**application_options(fastapi_options, INFO))
     app.include_router(
         build_router(
@@ -113,9 +96,6 @@ def create_app(
             prefix=prefix,
         )
     )
-    install_openapi(app)
-    app.openapi()
-    app.openapi_schema = None
     return app
 
 
@@ -132,5 +112,4 @@ __all__ = [
     'SchemeKey',
     'build_router',
     'create_app',
-    'install_openapi',
 ]

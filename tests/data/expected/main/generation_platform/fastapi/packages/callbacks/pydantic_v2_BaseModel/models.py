@@ -9,6 +9,10 @@ from typing import Literal
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel
 
 
+class Tree(BaseModel):
+    children: list[Tree] | None = None
+
+
 class Subscription(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -76,3 +80,6 @@ class Status(BaseModel):
 
 class FieldSecureGetResponse(RootModel[Event | Status]):
     root: Event | Status
+
+
+Tree.model_rebuild()

@@ -1,8 +1,8 @@
-21 marked lines
+20 marked lines
 mypy secured and applications.py: clean
 pyright secured and applications.py: clean
 ty secured and applications.py: clean
-mypy applications_negative.py: 21/21 marked lines with one error, 0 elsewhere, 0 in other files
+mypy applications_negative.py: 20/20 marked lines with one error, 0 elsewhere, 0 in other files
   31 override
   36 override
   41 override
@@ -23,8 +23,7 @@ mypy applications_negative.py: 21/21 marked lines with one error, 0 elsewhere, 0
   81 call-arg
   82 call-arg
   83 misc
-  84 arg-type
-pyright applications_negative.py: 21/21 marked lines with one error, 0 elsewhere, 0 in other files
+pyright applications_negative.py: 20/20 marked lines with one error, 0 elsewhere, 0 in other files
   31 reportIncompatibleMethodOverride
   36 reportIncompatibleMethodOverride
   41 reportIncompatibleMethodOverride
@@ -45,8 +44,7 @@ pyright applications_negative.py: 21/21 marked lines with one error, 0 elsewhere
   81 reportCallIssue
   82 reportCallIssue
   83 reportArgumentType
-  84 reportArgumentType
-ty applications_negative.py: 21/21 marked lines with one error, 0 elsewhere, 0 in other files
+ty applications_negative.py: 20/20 marked lines with one error, 0 elsewhere, 0 in other files
   31 invalid-method-override
   36 invalid-method-override
   41 invalid-method-override
@@ -67,4 +65,3 @@ ty applications_negative.py: 21/21 marked lines with one error, 0 elsewhere, 0 i
   81 missing-argument
   82 missing-argument
   83 invalid-argument-type
-  84 invalid-argument-type

@@ -1,6 +1,6 @@
 # document-methods
 {
-  "openapi": "3.2.1",
+  "openapi": "3.1.0",
   "info": {
     "title": "Methods",
     "version": "1.0"
@@ -18,17 +18,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/FieldSearchQueryResponse"
-                    },
-                    {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  ]
+                  "$ref": "#/components/schemas/FieldSearchQueryResponse"
                 }
               }
             },
@@ -49,40 +39,16 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__8e88f7efb5d7"
-                }
-              }
-            }
           }
-        },
-        "security": []
+        }
       },
-      "additionalOperations": {
-        "LINK": {
-          "summary": "Link Items",
-          "operationId": "linkItems",
-          "responses": {
-            "204": {
-              "description": "Done."
-            },
-            "500": {
-              "description": "Internal Server Error",
-              "content": {
-                "text/plain": {
-                  "schema": {
-                    "$ref": "#/components/schemas/dcg_server_error__8e88f7efb5d7"
-                  }
-                }
-              }
-            }
-          },
-          "security": []
+      "link": {
+        "summary": "Link Items",
+        "operationId": "linkItems",
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
         }
       }
     }
@@ -161,9 +127,6 @@
           "type"
         ],
         "title": "ValidationError"
-      },
-      "dcg_server_error__8e88f7efb5d7": {
-        "type": "string"
       }
     }
   }

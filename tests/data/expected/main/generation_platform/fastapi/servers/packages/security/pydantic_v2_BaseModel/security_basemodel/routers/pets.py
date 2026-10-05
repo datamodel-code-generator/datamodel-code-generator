@@ -40,13 +40,6 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         operation_id='listPets',
         tags=['pets'],
         response_description='Names.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'security_basemodel',
-                'operation': '/paths/~1pets/get',
-            },
-        },
         dependencies=wiring.dependencies.get('/paths/~1pets/get'),
     )
 

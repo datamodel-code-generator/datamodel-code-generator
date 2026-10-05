@@ -67,12 +67,11 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         operation_id='listPets',
         tags=['pets'],
         response_description='The pets.',
+        responses={'default': {'model': models.Error, 'description': 'An error.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'server',
-                'operation': '/paths/~1pets/get',
-            },
+            'parameters': [
+                {'name': 'session', 'in': 'cookie', 'schema': {'type': 'string'}},
+            ],
         },
         dependencies=wiring.dependencies.get('/paths/~1pets/get'),
     )
@@ -98,13 +97,6 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='createPet',
         tags=['pets'],
         response_description='Created.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'server',
-                'operation': '/paths/~1pets/post',
-            },
-        },
         dependencies=wiring.dependencies.get('/paths/~1pets/post'),
     )
 
@@ -126,13 +118,6 @@ def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
         operation_id='listMyPets',
         tags=['pets'],
         response_description="The caller's pets.",
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'server',
-                'operation': '/paths/~1pets~1mine/get',
-            },
-        },
         dependencies=wiring.dependencies.get('/paths/~1pets~1mine/get'),
     )
 
@@ -154,13 +139,7 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='getPet',
         tags=['pets'],
         response_description='The pet.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'server',
-                'operation': '/paths/~1pets~1{petId}/get',
-            },
-        },
+        responses={'404': {'model': models.Error, 'description': 'Missing.'}},
         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/get'),
     )
 
@@ -184,13 +163,7 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='deletePet',
         tags=['pets'],
         response_description='Deleted.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'server',
-                'operation': '/paths/~1pets~1{petId}/delete',
-            },
-        },
+        responses={'204': {'description': 'Deleted.'}},
         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/delete'),
     )
 

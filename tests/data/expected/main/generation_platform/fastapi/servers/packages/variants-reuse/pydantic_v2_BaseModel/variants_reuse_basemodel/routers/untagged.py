@@ -36,13 +36,6 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='createPet',
         response_description='Created.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'variants_reuse_basemodel',
-                'operation': '/paths/~1pets/post',
-            },
-        },
         dependencies=wiring.dependencies.get('/paths/~1pets/post'),
     )
 
@@ -63,13 +56,6 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='getPet',
         response_description='The pet.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'variants_reuse_basemodel',
-                'operation': '/paths/~1pets~1{id}/get',
-            },
-        },
         dependencies=wiring.dependencies.get('/paths/~1pets~1{id}/get'),
     )
 
@@ -90,13 +76,6 @@ def _add_list_owners(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='listOwners',
         response_description='The owners.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'variants_reuse_basemodel',
-                'operation': '/paths/~1owners/get',
-            },
-        },
         dependencies=wiring.dependencies.get('/paths/~1owners/get'),
     )
 

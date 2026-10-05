@@ -41,13 +41,7 @@ def _add_post_item(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postItem',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1items/post',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1items/post'),
     )
 
@@ -72,13 +66,7 @@ def _add_post_account(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postAccount',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1accounts/post',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1accounts/post'),
     )
 
@@ -104,11 +92,25 @@ def _add_post_profile(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postProfile',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1profiles/post',
+            'requestBody': {
+                'content': {
+                    'application/json; profile=a': {
+                        'schema': {
+                            'type': 'object',
+                            'additionalProperties': False,
+                            'properties': {'a': {'type': 'integer'}},
+                        },
+                    },
+                    'application/json; profile=b': {
+                        'schema': {
+                            'type': 'object',
+                            'additionalProperties': False,
+                            'properties': {'b': {'type': 'string'}},
+                        },
+                    },
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1profiles/post'),
@@ -136,11 +138,33 @@ def _add_post_variant(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postVariant',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1variants/post',
+            'requestBody': {
+                'content': {
+                    'application/json; profile=v1': {
+                        'schema': {
+                            'type': 'object',
+                            'additionalProperties': False,
+                            'properties': {'a': {'type': 'integer'}},
+                        },
+                    },
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'additionalProperties': False,
+                            'properties': {'c': {'type': 'boolean'}},
+                        },
+                    },
+                    'application/x-www-form-urlencoded': {
+                        'schema': {
+                            'type': 'object',
+                            'properties': {
+                                'tags': {'type': 'array', 'items': {'type': 'string'}},
+                            },
+                        },
+                    },
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1variants/post'),
@@ -168,11 +192,29 @@ def _add_put_document(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='putDocument',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1documents/put',
+            'requestBody': {
+                'required': True,
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object',
+                            'additionalProperties': False,
+                            'required': ['name'],
+                            'properties': {'name': {'type': 'string'}},
+                        },
+                    },
+                    'application/vnd.item+json': {
+                        'schema': {
+                            'type': 'object',
+                            'additionalProperties': False,
+                            'required': ['name'],
+                            'properties': {'name': {'type': 'string'}},
+                        },
+                    },
+                    'text/*': {'schema': {'type': 'string', 'maxLength': 5}},
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1documents/put'),
@@ -200,11 +242,14 @@ def _add_put_archive(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='putArchive',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1archives/put',
+            'requestBody': {
+                'required': True,
+                'content': {
+                    '*/*': {},
+                    'text/*': {'schema': {'type': 'string', 'maxLength': 5}},
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1archives/put'),
@@ -229,11 +274,11 @@ def _add_put_blob(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='putBlob',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1blobs/put',
+            'requestBody': {
+                'required': True,
+                'content': {'application/octet-stream': {}},
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1blobs/put'),
@@ -258,11 +303,22 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postForm',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1forms/post',
+            'requestBody': {
+                'content': {
+                    'application/x-www-form-urlencoded': {
+                        'schema': {
+                            'type': 'object',
+                            'properties': {
+                                'name': {'type': 'string'},
+                                'tags': {'type': 'array', 'items': {'type': 'string'}},
+                                'count': {'type': 'integer'},
+                            },
+                            'additionalProperties': {'type': 'integer'},
+                        },
+                    },
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1forms/post'),
@@ -292,13 +348,7 @@ def _add_post_native_form(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postNativeForm',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1native-forms/post',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1native-forms/post'),
     )
 
@@ -321,11 +371,22 @@ def _add_upload(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='upload',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1uploads/post',
+            'requestBody': {
+                'required': True,
+                'content': {
+                    'multipart/form-data': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['file'],
+                            'properties': {
+                                'file': {'type': 'string', 'format': 'binary'},
+                                'note': {'type': 'string'},
+                            },
+                        },
+                    },
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1uploads/post'),
@@ -356,13 +417,7 @@ def _add_post_check(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postCheck',
         response_description='Done.',
-        openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1checks/post',
-            },
-        },
+        responses={'204': {'description': 'Done.'}},
         dependencies=wiring.dependencies.get('/paths/~1checks/post'),
     )
 
@@ -385,11 +440,12 @@ def _add_post_raw(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postRaw',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'bodies_basemodel',
-                'operation': '/paths/~1raw/post',
+            'requestBody': {
+                'required': True,
+                'description': 'The server passes this body to its handler as the request, without validating it.',
+                'content': {'application/json': {'schema': {'type': 'object'}}},
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1raw/post'),

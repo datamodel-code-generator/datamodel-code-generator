@@ -11250,7 +11250,7 @@ callable = "rename"
 
 | Path | Owner | Contents |
 | --- | --- | --- |
-| `__init__.py`, `application.py` | generator | `create_app`, `build_router`, `install_openapi`, and the public types |
+| `__init__.py`, `application.py` | generator | `create_app`, `build_router`, and the public types |
 | `services.py` | generator | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | generator | Route registrations |
 | `responses.py`, `errors.py`, `auth_types.py`, `model_codecs.py` | generator | Results, errors, authentication, and codec types |
@@ -11304,6 +11304,16 @@ form-style cookies, header and path arrays, objects, enums and literals of non-s
 placeholders, request bodies with several media types, text and binary bodies, multipart forms, and forms of the
 `pydantic_v2.dataclass` backend. A multipart form body reaches the method as its model, with uploads read to
 `bytes`.
+
+## Served OpenAPI document
+
+The application serves FastAPI's own document, built from the routes and the models they declare, so routes
+added later and other routers appear in it as usual. Each generated route adds what FastAPI cannot derive from it,
+taken from the source document at generation time: `responses=` documents every declared response, through its
+model when the body is JSON, and `openapi_extra` documents the parameters, request bodies, and callbacks that
+adapters read, with schema references resolved in place (a schema that refers to itself documents the inner
+reference as `{}`). Path placeholders that are not Python identifiers, or that repeat, appear under the route's
+own placeholder names.
 
 ## Templates and hooks
 
@@ -43067,7 +43077,7 @@ The parser focuses on model generation from XSD documents, not full XML instance
 
 The FastAPI server target is experimental; its entry points, settings, context, generated package, and served OpenAPI document may change.
 
-generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves the source document's metadata through install_openapi. They need Python 3.11 or later, both to run and as model_config.target_python_version.
+generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves FastAPI's own OpenAPI document with the source document's metadata. They need Python 3.11 or later, both to run and as model_config.target_python_version.
 
 ---
 

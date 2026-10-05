@@ -36,19 +36,8 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
           }
-        },
-        "security": []
+        }
       }
     },
     "/json/optional": {
@@ -80,19 +69,8 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
           }
-        },
-        "security": []
+        }
       }
     },
     "/json/nullable": {
@@ -125,19 +103,8 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
           }
-        },
-        "security": []
+        }
       }
     },
     "/json/envelope": {
@@ -170,19 +137,8 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
           }
-        },
-        "security": []
+        }
       }
     },
     "/json/many": {
@@ -192,73 +148,42 @@
         ],
         "summary": "Post Many",
         "operationId": "postMany",
-        "responses": {
-          "204": {
-            "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Item__4d00166669b6"
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "type": "object",
+                "required": [
+                  "name"
+                ]
               }
             },
             "application/vnd.item+json": {
               "schema": {
-                "$ref": "#/components/schemas/Item__4d00166669b6"
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "type": "object",
+                "required": [
+                  "name"
+                ]
               }
             }
-          }
+          },
+          "required": true
         },
-        "security": []
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
       }
     },
     "/text": {
@@ -268,59 +193,7 @@
         ],
         "summary": "Post Text",
         "operationId": "postText",
-        "responses": {
-          "204": {
-            "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
-          "required": true,
           "content": {
             "text/plain": {
               "schema": {
@@ -328,9 +201,14 @@
                 "maxLength": 10
               }
             }
-          }
+          },
+          "required": true
         },
-        "security": []
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
       }
     },
     "/binary": {
@@ -340,63 +218,16 @@
         ],
         "summary": "Put Binary",
         "operationId": "putBinary",
-        "responses": {
-          "204": {
-            "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
           "content": {
             "application/octet-stream": {}
           }
         },
-        "security": []
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
       }
     },
     "/raw": {
@@ -406,23 +237,7 @@
         ],
         "summary": "Post Raw",
         "operationId": "postRaw",
-        "responses": {
-          "204": {
-            "description": "Done."
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
-          "required": true,
           "description": "The server passes this body to its handler as the request, without validating it.",
           "content": {
             "application/json": {
@@ -430,9 +245,14 @@
                 "type": "object"
               }
             }
-          }
+          },
+          "required": true
         },
-        "security": []
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
       }
     },
     "/form": {
@@ -465,19 +285,8 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
           }
-        },
-        "security": []
+        }
       }
     },
     "/form/optional": {
@@ -487,81 +296,34 @@
         ],
         "summary": "Post Optional Form",
         "operationId": "postOptionalForm",
-        "responses": {
-          "204": {
-            "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "type": "object",
                 "properties": {
                   "name": {
                     "type": "string"
                   },
                   "flags": {
-                    "type": "array",
                     "items": {
                       "type": "boolean"
-                    }
+                    },
+                    "type": "array"
                   },
                   "ratio": {
                     "type": "number"
                   }
-                }
+                },
+                "type": "object"
               }
             }
           }
         },
-        "security": []
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
       }
     },
     "/form/either": {
@@ -594,19 +356,8 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
           }
-        },
-        "security": []
+        }
       }
     },
     "/form/nested": {
@@ -616,81 +367,34 @@
         ],
         "summary": "Post Nested Form",
         "operationId": "postNestedForm",
-        "responses": {
-          "204": {
-            "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
-          "required": true,
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "type": "object",
                 "properties": {
                   "point": {
-                    "type": "object",
                     "properties": {
                       "x": {
                         "type": "number"
                       }
-                    }
+                    },
+                    "type": "object"
                   }
                 },
                 "additionalProperties": {
                   "type": "integer"
-                }
+                },
+                "type": "object"
               }
             }
-          }
+          },
+          "required": true
         },
-        "security": []
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
       }
     },
     "/form/closed": {
@@ -723,19 +427,8 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
           }
-        },
-        "security": []
+        }
       }
     },
     "/form/choice": {
@@ -768,19 +461,8 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
           }
-        },
-        "security": []
+        }
       }
     },
     "/upload": {
@@ -790,87 +472,40 @@
         ],
         "summary": "Upload",
         "operationId": "upload",
-        "responses": {
-          "204": {
-            "description": "Done."
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported media type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
-          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "file"
-                ],
                 "properties": {
                   "file": {
                     "type": "string",
                     "format": "binary"
                   },
                   "extra": {
-                    "type": "array",
                     "items": {
                       "type": "string",
                       "format": "binary"
-                    }
+                    },
+                    "type": "array"
                   },
                   "note": {
                     "type": "string"
                   }
-                }
+                },
+                "type": "object",
+                "required": [
+                  "file"
+                ]
               }
             }
-          }
+          },
+          "required": true
         },
-        "security": []
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
       }
     }
   },
@@ -1081,69 +716,6 @@
           "type"
         ],
         "title": "ValidationError"
-      },
-      "dcg_server_error__b739da53c87a": {
-        "type": "string"
-      },
-      "Item__4d00166669b6": {
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          }
-        }
-      },
-      "dcg_http_error__b739da53c87a": {
-        "type": "object",
-        "properties": {
-          "detail": {}
-        },
-        "required": [
-          "detail"
-        ]
-      },
-      "dcg_validation_error__b739da53c87a": {
-        "type": "object",
-        "properties": {
-          "detail": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "loc": {
-                  "type": "array",
-                  "items": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "integer"
-                      }
-                    ]
-                  }
-                },
-                "msg": {
-                  "type": "string"
-                },
-                "type": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "loc",
-                "msg",
-                "type"
-              ]
-            }
-          }
-        },
-        "required": [
-          "detail"
-        ]
       }
     }
   }

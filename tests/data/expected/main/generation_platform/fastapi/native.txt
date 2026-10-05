@@ -8,7 +8,6 @@ render pydantic_v2.BaseModel
   write server/_generated/__init__.py
   write server/_generated/contract.py
   write server/_generated/model_bindings.py
-  write server/_generated/openapi.py
   write server/model_codecs.py
   write server/responses.py
   write server/errors.py
@@ -30,7 +29,6 @@ render pydantic_v2.BaseModel
   write server/_runtime/server/application.py (copied runtime)
   write server/_runtime/server/codecs.py (copied runtime)
   write server/_runtime/server/errors.py (copied runtime)
-  write server/_runtime/server/openapi.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
@@ -100,7 +98,7 @@ render pydantic_v2.BaseModel
     | | `UntaggedService` | `post_nested` | POST | `/nested` | `/paths/~1nested/post` |
     | | `UntaggedService` | `post_box` | POST | `/box` | `/paths/~1box/post` |
     |
-    | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
     |
     | ## Implementing the services
     |
@@ -122,25 +120,21 @@ render pydantic_v2.BaseModel
     | ```
     |
     | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
-    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router and install the package's OpenAPI document:
+    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router:
     |
     | ```python
     | from fastapi import FastAPI
     |
-    | from server import build_router, install_openapi
+    | from server import build_router
     |
     | app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
     | app.include_router(build_router(untagged=Untagged()))
-    | install_openapi(app)
-    | app.openapi()  # Check the document once every router is included.
     | ```
     |
     | ## Served OpenAPI document
     |
-    | `create_app` and `install_openapi(app)` make the application serve the source document's operations, schemas, and metadata, composed with its other routes when it first serves or checks the document.
-    | Pass `operation_keys` when the application includes only some of the operations.
-    | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
-    | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
+    | The application serves FastAPI's own document, built from the routes and the models they declare.
+    | Each route adds what FastAPI cannot derive from it, taken from the source document when the package is generated: the declared responses, and the parameters, request bodies, and callbacks that adapters read, with their schemas' references resolved in place.
     |
     | ## Validation
     |
@@ -168,7 +162,6 @@ render pydantic_v2.dataclass
   write server/_generated/__init__.py
   write server/_generated/contract.py
   write server/_generated/model_bindings.py
-  write server/_generated/openapi.py
   write server/model_codecs.py
   write server/responses.py
   write server/errors.py
@@ -190,7 +183,6 @@ render pydantic_v2.dataclass
   write server/_runtime/server/application.py (copied runtime)
   write server/_runtime/server/codecs.py (copied runtime)
   write server/_runtime/server/errors.py (copied runtime)
-  write server/_runtime/server/openapi.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
@@ -260,7 +252,7 @@ render pydantic_v2.dataclass
     | | `UntaggedService` | `post_nested` | POST | `/nested` | `/paths/~1nested/post` |
     | | `UntaggedService` | `post_box` | POST | `/box` | `/paths/~1box/post` |
     |
-    | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
     |
     | ## Implementing the services
     |
@@ -282,25 +274,21 @@ render pydantic_v2.dataclass
     | ```
     |
     | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
-    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router and install the package's OpenAPI document:
+    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router:
     |
     | ```python
     | from fastapi import FastAPI
     |
-    | from server import build_router, install_openapi
+    | from server import build_router
     |
     | app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
     | app.include_router(build_router(untagged=Untagged()))
-    | install_openapi(app)
-    | app.openapi()  # Check the document once every router is included.
     | ```
     |
     | ## Served OpenAPI document
     |
-    | `create_app` and `install_openapi(app)` make the application serve the source document's operations, schemas, and metadata, composed with its other routes when it first serves or checks the document.
-    | Pass `operation_keys` when the application includes only some of the operations.
-    | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
-    | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
+    | The application serves FastAPI's own document, built from the routes and the models they declare.
+    | Each route adds what FastAPI cannot derive from it, taken from the source document when the package is generated: the declared responses, and the parameters, request bodies, and callbacks that adapters read, with their schemas' references resolved in place.
     |
     | ## Validation
     |

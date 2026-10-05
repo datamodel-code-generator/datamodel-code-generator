@@ -14,7 +14,6 @@ from .application import (
     SchemeKey,
     build_router,
     create_app,
-    install_openapi,
 )
 from .errors import (
     AuthConfigurationError,
@@ -42,5 +41,4 @@ __all__ = [
     "Unset",
     "build_router",
     "create_app",
-    "install_openapi",
 ]

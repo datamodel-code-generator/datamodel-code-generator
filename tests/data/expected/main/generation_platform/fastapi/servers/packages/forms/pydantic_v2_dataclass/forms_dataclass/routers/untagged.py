@@ -33,11 +33,24 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postForm',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'forms_dataclass',
-                'operation': '/paths/~1forms/post',
+            'requestBody': {
+                'required': True,
+                'content': {
+                    'application/x-www-form-urlencoded': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['name'],
+                            'properties': {
+                                'name': {'type': 'string'},
+                                'count': {'type': 'integer', 'default': 1},
+                                'tags': {'type': 'array', 'items': {'type': 'string'}},
+                            },
+                        },
+                        'encoding': {'tags': {'style': 'form', 'explode': True}},
+                    },
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1forms/post'),
@@ -62,11 +75,18 @@ def _add_post_notes(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='postNotes',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'forms_dataclass',
-                'operation': '/paths/~1notes/post',
+            'requestBody': {
+                'required': True,
+                'content': {
+                    'application/x-www-form-urlencoded': {
+                        'schema': {
+                            'type': 'object',
+                            'additionalProperties': {'type': 'string'},
+                        },
+                    },
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1notes/post'),
@@ -91,11 +111,22 @@ def _add_upload(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='upload',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'forms_dataclass',
-                'operation': '/paths/~1uploads/post',
+            'requestBody': {
+                'required': True,
+                'content': {
+                    'multipart/form-data': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['file'],
+                            'properties': {
+                                'file': {'type': 'string', 'format': 'binary'},
+                                'note': {'type': 'string'},
+                            },
+                        },
+                    },
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1uploads/post'),
@@ -120,11 +151,25 @@ def _add_upload_many(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='uploadMany',
         response_description='Done.',
+        responses={'204': {'description': 'Done.'}},
         openapi_extra={
-            'x-dcg-operation': {
-                'version': 1,
-                'package': 'forms_dataclass',
-                'operation': '/paths/~1batches/post',
+            'requestBody': {
+                'required': True,
+                'content': {
+                    'multipart/form-data': {
+                        'schema': {
+                            'type': 'object',
+                            'required': ['files'],
+                            'properties': {
+                                'files': {
+                                    'type': 'array',
+                                    'items': {'type': 'string', 'format': 'binary'},
+                                },
+                                'label': {'type': 'string'},
+                            },
+                        },
+                    },
+                },
             },
         },
         dependencies=wiring.dependencies.get('/paths/~1batches/post'),
