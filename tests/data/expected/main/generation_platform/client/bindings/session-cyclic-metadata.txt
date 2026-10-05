@@ -1,3 +1,4 @@
 # session-cyclic-metadata
 render pydantic_v2.BaseModel default
-  diagnostic BindingCaptureError: Binding capture freeze failed
+  diagnostic APIGenerationError
+  diagnostic E_INPUT_CYCLE input /paths/~1items/get/externalDocs/extra: The input document contains a cyclic mapping or sequence

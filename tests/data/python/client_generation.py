@@ -433,3 +433,38 @@ def client_config_report(case_name: str, root: Path) -> str:
     except TypeError as error:
         return f"TypeError: {error}\n"
     return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
+
+
+def client_metadata_cycle_diagnostic_report(backend: str, root: Path) -> str:
+    """Render and publish the retained metadata YAML graph through the in-memory target entry points."""
+    import yaml
+
+    source = SOURCE.parent / "binding" / "session-cyclic-metadata.yaml"
+    lines = [f"# cyclic metadata {backend}"]
+    for name, entry in (("render", render_target), ("generate", generate_target)):
+        attempt = root / name
+        attempt.mkdir(parents=True)
+        document = yaml.safe_load(source.read_text(encoding="utf-8"))
+        lines.append(name)
+        try:
+            entry(
+                document,
+                model_config=model_config(attempt / "models.py", backend, {}),
+                config=client_config({}, attempt),
+                generator=ClientTarget(),
+            )
+        except APIGenerationError as error:
+            lines.extend((
+                type(error).__name__,
+                json.dumps(
+                    [{field.name: getattr(item, field.name) for field in fields(item)} for item in error.diagnostics],
+                    indent=2,
+                    sort_keys=True,
+                ),
+            ))
+        else:
+            lines.append("generation succeeded")
+        lines.append(
+            f"files {sorted(path.relative_to(attempt).as_posix() for path in attempt.rglob('*') if path.is_file())}"
+        )
+    return "\n".join(lines) + "\n"

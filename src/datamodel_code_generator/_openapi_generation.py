@@ -101,7 +101,9 @@ class TargetGenerationSession:
                 model_package=self._model_package,
                 root_selector_document=self._root_selector_document,
             )
-        except MetadataCycleError:
+        except MetadataCycleError as error:
+            if error.document in target._api_roots:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+                error.document = self._root_selector_document
             raise
         except Exception as cause:
             msg = "Binding capture freeze failed"
