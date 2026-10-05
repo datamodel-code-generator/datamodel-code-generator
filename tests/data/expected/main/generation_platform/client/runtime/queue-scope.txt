@@ -1,5 +1,0 @@
-# queues pydantic_v2.BaseModel
-# queues-scope pydantic_v2.BaseModel
-scope mismatch: QueueBindingError
-sends: 0
-key retained: True
