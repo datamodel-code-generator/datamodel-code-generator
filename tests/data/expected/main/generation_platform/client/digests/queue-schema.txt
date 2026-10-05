@@ -1,3 +1,0 @@
-# queues and queues-schema
-  orders.outbox same False
-  account.offline same True

@@ -1,0 +1,6084 @@
+{
+  "generations": [
+    {
+      "case": "conflict",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.openapi.json",
+      "baseline_output_sha256": "91258ec03e58fe1f8a136c5d9f1ec78408d379d8618480aa5301504908ce2185",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.openapi.json",
+      "baseline_output_sha256": "8cde60a0ac281a7ea9ab35a3608d8a9ec2829eee41d4a6d512af9eecd78bd30f",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "dataclasses.dataclass",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.openapi.json",
+      "baseline_output_sha256": "d5202ab2cdd9cf819b07197ecf57ac7dc8d0c893817af13fe577e4782756e052",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "typing.TypedDict",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "conflict.openapi.json",
+      "baseline_output_sha256": "90f602620106ce05372a57cdce99daec6fb2423a55091a2520a7d8fdf25401d6",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "c909fcaeec1a049e703869c46f639aa6a2876a0f9c69ef61dc042fa47ff72f1e"
+    },
+    {
+      "case": "conflict",
+      "backend": "msgspec.Struct",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "preserve exact existing layout Error before output",
+      "staged_input_basename": "conflict.openapi.json",
+      "baseline_output_sha256": null,
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [],
+      "baseline_import_success": null,
+      "baseline_generation": {
+        "success": false,
+        "exit": 2
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.openapi.json",
+      "baseline_output_sha256": "91258ec03e58fe1f8a136c5d9f1ec78408d379d8618480aa5301504908ce2185",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.openapi.json",
+      "baseline_output_sha256": "8cde60a0ac281a7ea9ab35a3608d8a9ec2829eee41d4a6d512af9eecd78bd30f",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.openapi.json",
+      "baseline_output_sha256": "d5202ab2cdd9cf819b07197ecf57ac7dc8d0c893817af13fe577e4782756e052",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "conflict.openapi.json",
+      "baseline_output_sha256": "90f602620106ce05372a57cdce99daec6fb2423a55091a2520a7d8fdf25401d6",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "c909fcaeec1a049e703869c46f639aa6a2876a0f9c69ef61dc042fa47ff72f1e"
+    },
+    {
+      "case": "conflict",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve exact existing layout Error before output",
+      "staged_input_basename": "conflict.openapi.json",
+      "baseline_output_sha256": null,
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [],
+      "baseline_import_success": null,
+      "baseline_generation": {
+        "success": false,
+        "error": {
+          "type": "Error",
+          "message": "msgspec.Struct model 'C' has incompatible layouts from generated bases 'A' and 'B'."
+        }
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.jsonschema.json",
+      "baseline_output_sha256": "9c639139b4d491d935f77026937e7e93705ada653d8f13dfa44f8337695f5767",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "Model",
+          "bases": [
+            "RootModel[E]"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.jsonschema.json",
+      "baseline_output_sha256": "a5435c96f63b04ab87b58f4b32ebae8d403fd3b94a583b20b7088dd0fa2d3d95",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "dataclasses.dataclass",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.jsonschema.json",
+      "baseline_output_sha256": "464bcf5a908d6ff163829e75a35b77513da4ed2cf588eaf07f721c906080c845",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "typing.TypedDict",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "conflict.jsonschema.json",
+      "baseline_output_sha256": "75dbc808131c0030aa9ed36c040db06a4e9214becc98841af28aed2a7882259d",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "16aae69ee81324b61a86874e9fc6f2861dd00162f7670367ff463909cb63d157"
+    },
+    {
+      "case": "conflict",
+      "backend": "msgspec.Struct",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve exact existing layout Error before output",
+      "staged_input_basename": "conflict.jsonschema.json",
+      "baseline_output_sha256": null,
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [],
+      "baseline_import_success": null,
+      "baseline_generation": {
+        "success": false,
+        "exit": 2
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.jsonschema.json",
+      "baseline_output_sha256": "9c639139b4d491d935f77026937e7e93705ada653d8f13dfa44f8337695f5767",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "Model",
+          "bases": [
+            "RootModel[E]"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.jsonschema.json",
+      "baseline_output_sha256": "a5435c96f63b04ab87b58f4b32ebae8d403fd3b94a583b20b7088dd0fa2d3d95",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict.jsonschema.json",
+      "baseline_output_sha256": "464bcf5a908d6ff163829e75a35b77513da4ed2cf588eaf07f721c906080c845",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "conflict",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "conflict.jsonschema.json",
+      "baseline_output_sha256": "75dbc808131c0030aa9ed36c040db06a4e9214becc98841af28aed2a7882259d",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "16aae69ee81324b61a86874e9fc6f2861dd00162f7670367ff463909cb63d157"
+    },
+    {
+      "case": "conflict",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve exact existing layout Error before output",
+      "staged_input_basename": "conflict.jsonschema.json",
+      "baseline_output_sha256": null,
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [],
+      "baseline_import_success": null,
+      "baseline_generation": {
+        "success": false,
+        "error": {
+          "type": "Error",
+          "message": "msgspec.Struct model 'C' has incompatible layouts from generated bases 'A' and 'B'."
+        }
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.openapi.json",
+      "baseline_output_sha256": "e9ce7e6c2ee6486b3a4b1f1ef72b4d095ac7b94a8abc81515a3979a5b1b520bb",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.openapi.json",
+      "baseline_output_sha256": "3c1f63f67dc205f21fe71be203f661408f4e6f619419451b33b7ab036a65739e",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "dataclasses.dataclass",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.openapi.json",
+      "baseline_output_sha256": "51cf191636fbaa666e56580264205f175ed6c7c5be96ab1592b2ccc199e48856",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "typing.TypedDict",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.openapi.json",
+      "baseline_output_sha256": "9b8c478975a100fa6d408e78e57b821e33a8a012c8630e1dd891ff65a9da32a4",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "msgspec.Struct",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.openapi.json",
+      "baseline_output_sha256": "2174b897d55c304c315d7cdf6d7125e8a0cbeb30f0559c625a74d4274a5596c2",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.openapi.json",
+      "baseline_output_sha256": "e9ce7e6c2ee6486b3a4b1f1ef72b4d095ac7b94a8abc81515a3979a5b1b520bb",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.openapi.json",
+      "baseline_output_sha256": "3c1f63f67dc205f21fe71be203f661408f4e6f619419451b33b7ab036a65739e",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.openapi.json",
+      "baseline_output_sha256": "51cf191636fbaa666e56580264205f175ed6c7c5be96ab1592b2ccc199e48856",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.openapi.json",
+      "baseline_output_sha256": "9b8c478975a100fa6d408e78e57b821e33a8a012c8630e1dd891ff65a9da32a4",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.openapi.json",
+      "baseline_output_sha256": "2174b897d55c304c315d7cdf6d7125e8a0cbeb30f0559c625a74d4274a5596c2",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.jsonschema.json",
+      "baseline_output_sha256": "2352c455f52744e862daa0288dc4d5825ede80d35c919b8d96446793750e3fe1",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "Model",
+          "bases": [
+            "RootModel['A']"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.jsonschema.json",
+      "baseline_output_sha256": "b0280fd0219af3a7f337d74bf29e8f27fbfeb31a691eedb8e57c80fd9dc82898",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "dataclasses.dataclass",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.jsonschema.json",
+      "baseline_output_sha256": "9e10a12298d8e76acd9e3f0c5960d9a3cc377ae5e4a210f018c31be8c3e39a55",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "typing.TypedDict",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.jsonschema.json",
+      "baseline_output_sha256": "eeb638946baa9374648e1cafa6c9b4138386ea89fb18f7a7998402a5757073a2",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "msgspec.Struct",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.jsonschema.json",
+      "baseline_output_sha256": "825bcec1a9f57e02adf1bfc27b07e68f35777779f271c1a72aa31adf2f666ebb",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.jsonschema.json",
+      "baseline_output_sha256": "2352c455f52744e862daa0288dc4d5825ede80d35c919b8d96446793750e3fe1",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "Model",
+          "bases": [
+            "RootModel['A']"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.jsonschema.json",
+      "baseline_output_sha256": "b0280fd0219af3a7f337d74bf29e8f27fbfeb31a691eedb8e57c80fd9dc82898",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.jsonschema.json",
+      "baseline_output_sha256": "9e10a12298d8e76acd9e3f0c5960d9a3cc377ae5e4a210f018c31be8c3e39a55",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.jsonschema.json",
+      "baseline_output_sha256": "eeb638946baa9374648e1cafa6c9b4138386ea89fb18f7a7998402a5757073a2",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle.jsonschema.json",
+      "baseline_output_sha256": "825bcec1a9f57e02adf1bfc27b07e68f35777779f271c1a72aa31adf2f666ebb",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "conflict_always",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict_always.openapi.json",
+      "baseline_output_sha256": "885693eb3e18646fbfcb4dfaf0b0fbf7583e87cb7059695ab268aff11b1f7548",
+      "fixture": "conflict_always.openapi.json",
+      "target": "E",
+      "options": {
+        "allof_class_hierarchy": "always"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "conflict_always",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict_always.openapi.json",
+      "baseline_output_sha256": "ebfa67df0fe75892a97d17c46db02ad0acc175334ae15c60db408bda6f4b3180",
+      "fixture": "conflict_always.openapi.json",
+      "target": "E",
+      "options": {
+        "allof_class_hierarchy": "always"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "conflict_always",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "conflict_always.openapi.json",
+      "baseline_output_sha256": "3c82b6daf5aa2a21a305789f5226ea7ef065488dc7d34fcc234ac7d333a064b2",
+      "fixture": "conflict_always.openapi.json",
+      "target": "E",
+      "options": {
+        "allof_class_hierarchy": "always"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "conflict_always",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "conflict_always.openapi.json",
+      "baseline_output_sha256": "e6527da59f822623e7d2978fbfba22e793f9ebd678f1aa0e7b0854c7754b1a91",
+      "fixture": "conflict_always.openapi.json",
+      "target": "E",
+      "options": {
+        "allof_class_hierarchy": "always"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "360243982342d83ba5e42839773b0e1bb9233ed17907406e3388656ce39758c6"
+    },
+    {
+      "case": "conflict_always",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve exact existing layout Error before output",
+      "staged_input_basename": "conflict_always.openapi.json",
+      "baseline_output_sha256": null,
+      "fixture": "conflict_always.openapi.json",
+      "target": "E",
+      "options": {
+        "allof_class_hierarchy": "always"
+      },
+      "baseline_declarations": [],
+      "baseline_import_success": null,
+      "baseline_generation": {
+        "success": false,
+        "error": {
+          "type": "Error",
+          "message": "msgspec.Struct model 'C' has incompatible layouts from generated bases 'A' and 'B'."
+        }
+      }
+    },
+    {
+      "case": "cycle_always",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle_always.openapi.json",
+      "baseline_output_sha256": "a2aa6196a0f40ba5da7faad50449bd76ad8049a856f09084b2469fd81184c7d3",
+      "fixture": "cycle_always.openapi.json",
+      "target": "A",
+      "options": {
+        "allof_class_hierarchy": "always"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle_always",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle_always.openapi.json",
+      "baseline_output_sha256": "d2e52b8c83dd3002a7eebe26b439e7be33db22c8e5327d74906103fb2d0fb8b9",
+      "fixture": "cycle_always.openapi.json",
+      "target": "A",
+      "options": {
+        "allof_class_hierarchy": "always"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle_always",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle_always.openapi.json",
+      "baseline_output_sha256": "e46c8dbdf3e988fcb7b1d3b53f816ace20b2aac23d1e3a48b4e7ba0475ec7c2e",
+      "fixture": "cycle_always.openapi.json",
+      "target": "A",
+      "options": {
+        "allof_class_hierarchy": "always"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle_always",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle_always.openapi.json",
+      "baseline_output_sha256": "47f2217a8f6feb7b91d8ed707712c3f4b31a6a521e1420a26ab0716312a2b0f5",
+      "fixture": "cycle_always.openapi.json",
+      "target": "A",
+      "options": {
+        "allof_class_hierarchy": "always"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "cycle_always",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "new generation Error before output",
+      "staged_input_basename": "cycle_always.openapi.json",
+      "baseline_output_sha256": "60480b17870adc53f891f22bb836a483337a8442d5d13989ce4eb07f343eef72",
+      "fixture": "cycle_always.openapi.json",
+      "target": "A",
+      "options": {
+        "allof_class_hierarchy": "always"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      }
+    },
+    {
+      "case": "functional_conflict",
+      "backend": "typing.TypedDict",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "functional_conflict.openapi.json",
+      "baseline_output_sha256": "a7af6fdfb39426ba2b1c3b5dc9f89651e32e4b895deef5117c49d87d23e4f620",
+      "fixture": "functional_conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "3e1813c8a2a14c8bb294006d7c2a16d053ec56fe2b31402c78ad7d4a519e26de"
+    },
+    {
+      "case": "functional_conflict",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "functional_conflict.openapi.json",
+      "baseline_output_sha256": "a7af6fdfb39426ba2b1c3b5dc9f89651e32e4b895deef5117c49d87d23e4f620",
+      "fixture": "functional_conflict.openapi.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "3e1813c8a2a14c8bb294006d7c2a16d053ec56fe2b31402c78ad7d4a519e26de"
+    },
+    {
+      "case": "functional_conflict",
+      "backend": "typing.TypedDict",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "functional_conflict.jsonschema.json",
+      "baseline_output_sha256": "a4088da8fbfa9ab2bd8ddc47e8d72942c5d7903d45a805a727ea2fcfefd5ccfe",
+      "fixture": "functional_conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "7950978fcfc5946979d56b6f27eb66a0d7387397677d634d78d694a1a8c6d874"
+    },
+    {
+      "case": "functional_conflict",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "functional_conflict.jsonschema.json",
+      "baseline_output_sha256": "a4088da8fbfa9ab2bd8ddc47e8d72942c5d7903d45a805a727ea2fcfefd5ccfe",
+      "fixture": "functional_conflict.jsonschema.json",
+      "target": "E",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "7950978fcfc5946979d56b6f27eb66a0d7387397677d634d78d694a1a8c6d874"
+    },
+    {
+      "case": "functional_cycle",
+      "backend": "typing.TypedDict",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "functional_cycle.openapi.json",
+      "baseline_output_sha256": "5a40074b14b7e1f1e995239cee4bbd24662593fdf82364a15a7df87154d9aa3c",
+      "fixture": "functional_cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "5a58cac79c8424ec5ac6920aeb02575141a4a07fd5924bb7edcca7ddbedfc802"
+    },
+    {
+      "case": "functional_cycle",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "functional_cycle.openapi.json",
+      "baseline_output_sha256": "5a40074b14b7e1f1e995239cee4bbd24662593fdf82364a15a7df87154d9aa3c",
+      "fixture": "functional_cycle.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "5a58cac79c8424ec5ac6920aeb02575141a4a07fd5924bb7edcca7ddbedfc802"
+    },
+    {
+      "case": "functional_cycle",
+      "backend": "typing.TypedDict",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "functional_cycle.jsonschema.json",
+      "baseline_output_sha256": "37fd3151ae8cf8d0fefe1ddcb958156c87eb8b98f90e2c199dc1b8eb4f82631a",
+      "fixture": "functional_cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "64eb8acaae0133d3f91356a1f8ed1bd7920d998b0ca20187d077a5582d014e57"
+    },
+    {
+      "case": "functional_cycle",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "functional_cycle.jsonschema.json",
+      "baseline_output_sha256": "37fd3151ae8cf8d0fefe1ddcb958156c87eb8b98f90e2c199dc1b8eb4f82631a",
+      "fixture": "functional_cycle.jsonschema.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "64eb8acaae0133d3f91356a1f8ed1bd7920d998b0ca20187d077a5582d014e57"
+    },
+    {
+      "case": "descendant_repair",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "descendant_repair.openapi.json",
+      "baseline_output_sha256": "1e1cfd3785d78bcd62d9966f5adccc2d3d8c557a0c65a5c989870d21b478ee1e",
+      "fixture": "descendant_repair.openapi.json",
+      "target": "C",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "B",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "c2ae8b57b61832d72af55f1169cc4ad99eec1943ba11ea83b99fecaf6fc2ef8b"
+    },
+    {
+      "case": "descendant_repair",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "descendant_repair.openapi.json",
+      "baseline_output_sha256": "060481e706ee6c0e9a167228a63911da51ae725715afceb943cd7cf019454d3d",
+      "fixture": "descendant_repair.openapi.json",
+      "target": "C",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "B",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "3ee88a215486fd5f02e88dee2470a4fdd631ad9c60d9628f4acdd663b919b28b"
+    },
+    {
+      "case": "descendant_repair",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "descendant_repair.openapi.json",
+      "baseline_output_sha256": "74376b6a28863cf94ab938680bb1397ada4f389925d75640a1a30f72d7c12320",
+      "fixture": "descendant_repair.openapi.json",
+      "target": "C",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "B",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "dbe606780e8a08b358f5ef9c9606940053e8bc5735449cb2e775484e05f59d0f"
+    },
+    {
+      "case": "descendant_repair",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "descendant_repair.openapi.json",
+      "baseline_output_sha256": "b38d7b5d2377a2a381f350ae5d64b6de5b3a8f58f1c8b44602ffaba3f118fa62",
+      "fixture": "descendant_repair.openapi.json",
+      "target": "C",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "B",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "7e91afb4ae6f0b231998523fc4f08f8e57054072d4884b5e890416d69664f4b5"
+    },
+    {
+      "case": "descendant_repair",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "descendant_repair.openapi.json",
+      "baseline_output_sha256": "71505229f6bc2ee79c588f1f0862eacd734f543b57908aa8b478edf0bfc2dbf9",
+      "fixture": "descendant_repair.openapi.json",
+      "target": "C",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "B",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "5d32f269ce3792ac243a3a4727e558bf3c865a24945acde9198b28c0d87af6f4"
+    },
+    {
+      "case": "shared_ancestor",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "shared_ancestor.openapi.json",
+      "baseline_output_sha256": "bb1dc87a2df40ad6ab2fc3a5978d53b39fc8540be6d0134f9e7acf38c74a0e28",
+      "fixture": "shared_ancestor.openapi.json",
+      "target": "D",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "C",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "79ee9fb30bce10511d6ff5b38364e25a24f50e69dab0bb6ab6410a1866d5c8c0"
+    },
+    {
+      "case": "shared_ancestor",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "shared_ancestor.openapi.json",
+      "baseline_output_sha256": "f0be1a14f8bfd252211b05109b580b8092286ae8b6d5ffcebf5f34c0acbeeead",
+      "fixture": "shared_ancestor.openapi.json",
+      "target": "D",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "C",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "e9c1e8e2a6d9ef4d20a2bc16dc6e1dc9db46df9d5f60f62e3105d106ae666ae9"
+    },
+    {
+      "case": "shared_ancestor",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "shared_ancestor.openapi.json",
+      "baseline_output_sha256": "43f5dbf62cb9df565744933d86e212ffb7d69bf2d873133f8a969cbecb8f8ee1",
+      "fixture": "shared_ancestor.openapi.json",
+      "target": "D",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "C",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "41bc37f32f9ec10bd55ae4311c89d3c86c6055be1f6b2657868cedc71022cb94"
+    },
+    {
+      "case": "shared_ancestor",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "shared_ancestor.openapi.json",
+      "baseline_output_sha256": "2e8a5320f3d73907b45a9a0cffe2ec6436c1b09ceb1be94770be909300754930",
+      "fixture": "shared_ancestor.openapi.json",
+      "target": "D",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "B",
+            "C",
+            "A"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "8d0ff9ee679acd7911fc90be71c4e54628a289361c0e27c778a9fa2127c7ce33"
+    },
+    {
+      "case": "shared_ancestor",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve exact existing layout Error before output",
+      "staged_input_basename": "shared_ancestor.openapi.json",
+      "baseline_output_sha256": null,
+      "fixture": "shared_ancestor.openapi.json",
+      "target": "D",
+      "options": {},
+      "baseline_declarations": [],
+      "baseline_import_success": null,
+      "baseline_generation": {
+        "success": false,
+        "error": {
+          "type": "Error",
+          "message": "msgspec.Struct model 'D' has incompatible layouts from generated bases 'B' and 'C'."
+        }
+      }
+    },
+    {
+      "case": "single_inheritance",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "single_inheritance.openapi.json",
+      "baseline_output_sha256": "c07e8e5c9ea9a5dbe49f79b6a9286f9510af51451277b2d93f7cc7a491c46246",
+      "fixture": "single_inheritance.openapi.json",
+      "target": "D",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "C"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "ec31c91e89e766710d837d8a3a9766e27cce06b2f99e5e30e136e83976d51b42"
+    },
+    {
+      "case": "single_inheritance",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "single_inheritance.openapi.json",
+      "baseline_output_sha256": "67bece2fac844e4ab0d23638c6b6d25ef3ea2f8d6a130b9a7980a321e7eb8868",
+      "fixture": "single_inheritance.openapi.json",
+      "target": "D",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "C"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "3370a9dc24fcfe64ef304b039f46343bd32c074fc91e739aefc39f7b07bb2c88"
+    },
+    {
+      "case": "single_inheritance",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "single_inheritance.openapi.json",
+      "baseline_output_sha256": "d1732251e1ae6e1bf7aef052e41d2316b4ff82e52a54117813f377347ccb3839",
+      "fixture": "single_inheritance.openapi.json",
+      "target": "D",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "C"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "fd2a463a188117f267718934d67862fbd81c0ce079756a7ec34cff7762283113"
+    },
+    {
+      "case": "single_inheritance",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "single_inheritance.openapi.json",
+      "baseline_output_sha256": "0cf120451c71cad2b53808dca359bdb03eb24d85e8becee00a6ba6559bc25340",
+      "fixture": "single_inheritance.openapi.json",
+      "target": "D",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "C"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "5b169a86565385f5a8c1be8489dd2c05e29392d2e91347a47dbea2788d9a638f"
+    },
+    {
+      "case": "single_inheritance",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "single_inheritance.openapi.json",
+      "baseline_output_sha256": "a82c14eed366650b36049fa837fe4684e6317e723a8e4f9fe0b528c194148fb9",
+      "fixture": "single_inheritance.openapi.json",
+      "target": "D",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "C"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "7916ebacd8eab1d5f26dae620a8239c34ead2cda94a571c31a522e362dc51a75"
+    },
+    {
+      "case": "field_recursion",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "field_recursion.openapi.json",
+      "baseline_output_sha256": "e48b9186752ce1dc4cc7f7a60531826efee8be4652d3c44a6f6f0ae75e644b99",
+      "fixture": "field_recursion.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "BaseModel"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "7d71100fb1261aa0ca74ec53762b09f551ac4156de9c8d0bdbf994df7a459dc8"
+    },
+    {
+      "case": "field_recursion",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "field_recursion.openapi.json",
+      "baseline_output_sha256": "b3f0211ba20458ff0f32af8bc0438cdaf770a0911ec003420be7249ba596e3ca",
+      "fixture": "field_recursion.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "fbcea4dcb541a4d0fa4f3a0b9b28ca1d4ab5f8de0af89e2562caf643a3190cf3"
+    },
+    {
+      "case": "field_recursion",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "field_recursion.openapi.json",
+      "baseline_output_sha256": "6651750ab8b0332302943bb7c3c4a37ee869f28cbe414715e0939711800e2e62",
+      "fixture": "field_recursion.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": []
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "ce32edcf52a941121fd874cef3b42f30f0f717688c5dece68952a8d4ec8ce65f"
+    },
+    {
+      "case": "field_recursion",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "field_recursion.openapi.json",
+      "baseline_output_sha256": "53e0149d5d3585e3dbd6ee7e26bb7a3dbcc0e9c995b2577331f6315ff08024fd",
+      "fixture": "field_recursion.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "TypedDict"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "b8901f68088ca468f20cbc597b06a922c5a7c40b27b8b474a59674ca2ce13590"
+    },
+    {
+      "case": "field_recursion",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "field_recursion.openapi.json",
+      "baseline_output_sha256": "7791d9245660cae8fde4b730e59584be69b235ebeb6467020b2769166d285218",
+      "fixture": "field_recursion.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "119aa06e746a9c5b759e312d3b5602b6ac8134508ac9ca0e0b44a0ec6fc6a796"
+    },
+    {
+      "case": "reuse",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "reuse.openapi.json",
+      "baseline_output_sha256": "1b2090a3471c1cdef99bbbaa3a43e282b8574a2a084e245baa2fecab8c8af700",
+      "fixture": "reuse.openapi.json",
+      "target": "Holder",
+      "options": {
+        "reuse_model": true
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "Holder",
+          "bases": [
+            "BaseModel"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "f7e3535c21eb11cef10d633ab96b19f6e3a4e4fdc2ab10ede2c18181b68ac2e0"
+    },
+    {
+      "case": "reuse",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "reuse.openapi.json",
+      "baseline_output_sha256": "a15212077f55066124ce65fb6cedec759e914bfe570cec4f1ad151fae271d238",
+      "fixture": "reuse.openapi.json",
+      "target": "Holder",
+      "options": {
+        "reuse_model": true
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "Holder",
+          "bases": []
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "85a66bc5a7883d8bca65c2a1575c99d450b24e8146ba4aa503d4559d63d14dde"
+    },
+    {
+      "case": "reuse",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "reuse.openapi.json",
+      "baseline_output_sha256": "6baf6b4abfc36e921b93c7bad4aca499b68b85f9a08a24d389c232153bceb05b",
+      "fixture": "reuse.openapi.json",
+      "target": "Holder",
+      "options": {
+        "reuse_model": true
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "Holder",
+          "bases": []
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "ba012128fa0e5d9591f6048837f1beb2f28fff30d6717a1af903a6e1b1bf2d2b"
+    },
+    {
+      "case": "reuse",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "reuse.openapi.json",
+      "baseline_output_sha256": "3133847bebb718b5c32d6e34895260240974b710ad59ac9562d9ec10722574a9",
+      "fixture": "reuse.openapi.json",
+      "target": "Holder",
+      "options": {
+        "reuse_model": true
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "Holder",
+          "bases": [
+            "TypedDict"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "b5cc2d7fe1e8e725b01a2cbf75c2a94e78c6dda2d317d99dc53ac8bec2b71e8d"
+    },
+    {
+      "case": "reuse",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "reuse.openapi.json",
+      "baseline_output_sha256": "386b0a1fac9b6ebc8bab12b36330f682aa22523fbee5514ab9372c0969c3ef89",
+      "fixture": "reuse.openapi.json",
+      "target": "Holder",
+      "options": {
+        "reuse_model": true
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "A"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "Holder",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "419a1e6b30c18eb3ae89f10b94cff1601ae9f6921ce42745b1a3b5df0a2246a5"
+    },
+    {
+      "case": "collapse",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "collapse.openapi.json",
+      "baseline_output_sha256": "a9f83afd2da4feee367e66f65398477bef47300ca25570f31f2096c73135198e",
+      "fixture": "collapse.openapi.json",
+      "target": "Holder",
+      "options": {
+        "collapse_root_models": true
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "Holder",
+          "bases": [
+            "BaseModel"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "1bf146460ec8a92ec31b33ecda8798b77831443719ceb29ce8085a715309403f"
+    },
+    {
+      "case": "collapse",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "collapse.openapi.json",
+      "baseline_output_sha256": "cdfa10b34f3e2ffdebbf228b60e3a4341b3673fc2f94786669b7793288c77f29",
+      "fixture": "collapse.openapi.json",
+      "target": "Holder",
+      "options": {
+        "collapse_root_models": true
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "Holder",
+          "bases": []
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "794db8e8c4c201ac3f8e6a6e541b850680cd07a10a1f23e3ec17e912fb799fc1"
+    },
+    {
+      "case": "collapse",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "collapse.openapi.json",
+      "baseline_output_sha256": "b5648a4a2fa19fbaa87158ffd67692f81ebf56f3cd7fedfe010a9013a8e33183",
+      "fixture": "collapse.openapi.json",
+      "target": "Holder",
+      "options": {
+        "collapse_root_models": true
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "Holder",
+          "bases": []
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "cdd5a6ab31d05339f0bd19dfb77f87e94ae5b0ab899107074c19b628a7b7411c"
+    },
+    {
+      "case": "collapse",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "collapse.openapi.json",
+      "baseline_output_sha256": "760d4368ed331ecbc83f366feef0ff7ae4e79e912edcb2265013a3948ee75e77",
+      "fixture": "collapse.openapi.json",
+      "target": "Holder",
+      "options": {
+        "collapse_root_models": true
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "Holder",
+          "bases": [
+            "TypedDict"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "6fd85660dea1ef021a32fb98957b44b97d96f8b5b797b41c11844177fe547df6"
+    },
+    {
+      "case": "collapse",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "collapse.openapi.json",
+      "baseline_output_sha256": "54ca8f78692c44502bf2f708f4b6ab9f8a738dc7d4d288fc6c1f7002db780ca1",
+      "fixture": "collapse.openapi.json",
+      "target": "Holder",
+      "options": {
+        "collapse_root_models": true
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "Holder",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "04a390a8a3d3a208a1c3e21e2f00acffa7bd30e634baf6bc8b6adcc620feff5d"
+    },
+    {
+      "case": "ordinary",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "ordinary.openapi.json",
+      "baseline_output_sha256": "aaec284f0bde18817ed54bb658c629ab29126fafa6128eb389844737d38c8cbd",
+      "fixture": "ordinary.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "0535612df00903855f067ef5e2cc305ef9271d762d1cb1965ac15b41d07f56c8"
+    },
+    {
+      "case": "ordinary",
+      "backend": "pydantic_v2.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "ordinary.openapi.json",
+      "baseline_output_sha256": "ce327bab83bd3e82bd7f9a6efa59ac6b15a4060845f390784ed456cf6d67d944",
+      "fixture": "ordinary.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "5f77f6c9155079b6f39cddc82c5d073392e895ae277728db086f0d1ede4d0f97"
+    },
+    {
+      "case": "ordinary",
+      "backend": "dataclasses.dataclass",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "ordinary.openapi.json",
+      "baseline_output_sha256": "fd333c486b016fc0b34fb7ba7368c02965b150e355ad7ab383182feae3e03f6a",
+      "fixture": "ordinary.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": []
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "530d6a27500dc4169fd57086a45e71299aff2c4d95cd7839c3d51079bad5203c"
+    },
+    {
+      "case": "ordinary",
+      "backend": "typing.TypedDict",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "ordinary.openapi.json",
+      "baseline_output_sha256": "9ca3f3eb681dd3e33c430a866002dfb851472ba6f1c50bd6d50b6e25037666e8",
+      "fixture": "ordinary.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "TypedDict"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "2ad248ec7e09f099a6a2177a3ecc43b09659e88dd289f1ad29439e683b430cb5"
+    },
+    {
+      "case": "ordinary",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "ordinary.openapi.json",
+      "baseline_output_sha256": "06cbb1f8c6d67c29d911df2cab0cd0c97cfa4f8789d3358c822a6f1e94782a8c",
+      "fixture": "ordinary.openapi.json",
+      "target": "A",
+      "options": {},
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "3bb2a4bceb59b53927285369c5e7068017220fb54e85f53baacf4ffe8b840c55"
+    },
+    {
+      "case": "trusted_template_conflict",
+      "backend": "msgspec.Struct",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "trusted_template_conflict.openapi.json",
+      "baseline_output_sha256": "07021489f5aa948df7d660f33cd4e248bea16b167c5402b218cd718beb9c75e0",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "26dca15b5bb735557954735ec6b8526355e7da9b2a55f4271c58a5cc8ee87e94"
+    },
+    {
+      "case": "trusted_template_conflict",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "trusted_template_conflict.openapi.json",
+      "baseline_output_sha256": "07021489f5aa948df7d660f33cd4e248bea16b167c5402b218cd718beb9c75e0",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "26dca15b5bb735557954735ec6b8526355e7da9b2a55f4271c58a5cc8ee87e94"
+    },
+    {
+      "case": "trusted_template_conflict",
+      "backend": "msgspec.Struct",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "trusted_template_conflict.jsonschema.json",
+      "baseline_output_sha256": "b4e9186c5c61581d5cd4886886a5fc4737c64425749ef32680fca06d1b6af46c",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "b4a572d2f456b75670b82f18584cc818472a96790f27cb7c3c931c54fef49e61"
+    },
+    {
+      "case": "trusted_template_conflict",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "trusted_template_conflict.jsonschema.json",
+      "baseline_output_sha256": "b4e9186c5c61581d5cd4886886a5fc4737c64425749ef32680fca06d1b6af46c",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "b4a572d2f456b75670b82f18584cc818472a96790f27cb7c3c931c54fef49e61"
+    },
+    {
+      "case": "trusted_template_cycle",
+      "backend": "msgspec.Struct",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "preserve opaque import failure; no new check",
+      "staged_input_basename": "trusted_template_cycle.openapi.json",
+      "baseline_output_sha256": "132aa22c65ad99b2fa79b1b78feeccf322bd7e9bf4aeb3a56b927f5ad7facc88",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "bebb81a2fac1aed45ca399c1f1c316e8e1f91b070126b03d92bed5309c1affdb"
+    },
+    {
+      "case": "trusted_template_cycle",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve opaque import failure; no new check",
+      "staged_input_basename": "trusted_template_cycle.openapi.json",
+      "baseline_output_sha256": "132aa22c65ad99b2fa79b1b78feeccf322bd7e9bf4aeb3a56b927f5ad7facc88",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "bebb81a2fac1aed45ca399c1f1c316e8e1f91b070126b03d92bed5309c1affdb"
+    },
+    {
+      "case": "trusted_template_cycle",
+      "backend": "msgspec.Struct",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve opaque import failure; no new check",
+      "staged_input_basename": "trusted_template_cycle.jsonschema.json",
+      "baseline_output_sha256": "c29b44c69a51b312a1b5093bd5d6030b4298de2baed77de1366bba016c562168",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "00bfe1aaf052d5f393c59d7b80001f227fee78d3293acf269c6a49334b7eda93"
+    },
+    {
+      "case": "trusted_template_cycle",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve opaque import failure; no new check",
+      "staged_input_basename": "trusted_template_cycle.jsonschema.json",
+      "baseline_output_sha256": "c29b44c69a51b312a1b5093bd5d6030b4298de2baed77de1366bba016c562168",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates"
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": false,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "00bfe1aaf052d5f393c59d7b80001f227fee78d3293acf269c6a49334b7eda93"
+    },
+    {
+      "case": "formatter_repair",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "formatter_repair.openapi.json",
+      "baseline_output_sha256": "12efbcb4b782e96eca4f8d375efee3735f2192c5357195f23189b4e7e8f95024",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {
+        "custom_formatters": [
+          "tests.data.python.custom_formatters.replace_text"
+        ],
+        "custom_formatters_kwargs": {
+          "old": "class D(B, A):",
+          "new": "class D(A, B):"
+        }
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "b0188bee8c1a36c5492448b0d5432c38e9e2d4b64f7ed1eec04e2e57a7ca93fe"
+    },
+    {
+      "case": "formatter_repair",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "formatter_repair.openapi.json",
+      "baseline_output_sha256": "12efbcb4b782e96eca4f8d375efee3735f2192c5357195f23189b4e7e8f95024",
+      "fixture": "conflict.openapi.json",
+      "target": "E",
+      "options": {
+        "custom_formatters": [
+          "tests.data.python.custom_formatters.replace_text"
+        ],
+        "custom_formatters_kwargs": {
+          "old": "class D(B, A):",
+          "new": "class D(A, B):"
+        }
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "b0188bee8c1a36c5492448b0d5432c38e9e2d4b64f7ed1eec04e2e57a7ca93fe"
+    },
+    {
+      "case": "formatter_repair",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "formatter_repair.jsonschema.json",
+      "baseline_output_sha256": "ac77ed14dce70ccf6105e65cad72f913b247d36df43961a8e495e102c27ba8eb",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {
+        "custom_formatters": [
+          "tests.data.python.custom_formatters.replace_text"
+        ],
+        "custom_formatters_kwargs": {
+          "old": "class D(B, A):",
+          "new": "class D(A, B):"
+        }
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "Model",
+          "bases": [
+            "RootModel[E]"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "6c6af9362243069cf7e3b1ba0936a802776876f4272ca330e521dac67d4695e0"
+    },
+    {
+      "case": "formatter_repair",
+      "backend": "pydantic_v2.BaseModel",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "formatter_repair.jsonschema.json",
+      "baseline_output_sha256": "ac77ed14dce70ccf6105e65cad72f913b247d36df43961a8e495e102c27ba8eb",
+      "fixture": "conflict.jsonschema.json",
+      "target": "E",
+      "options": {
+        "custom_formatters": [
+          "tests.data.python.custom_formatters.replace_text"
+        ],
+        "custom_formatters_kwargs": {
+          "old": "class D(B, A):",
+          "new": "class D(A, B):"
+        }
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "BaseModel"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "C",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "D",
+          "bases": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "E",
+          "bases": [
+            "C",
+            "D"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "Model",
+          "bases": [
+            "RootModel[E]"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "6c6af9362243069cf7e3b1ba0936a802776876f4272ca330e521dac67d4695e0"
+    },
+    {
+      "case": "trusted_template_cycle_import_repair",
+      "backend": "msgspec.Struct",
+      "entry": "cli",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "trusted_template_cycle_import_repair.openapi.json",
+      "baseline_output_sha256": "611db3029d255608e10edabd63c951f7c405e5636d5ac3b4f058144d72c59d8a",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates",
+        "custom_formatters": [
+          "tests.data.python.custom_formatters.replace_text"
+        ],
+        "custom_formatters_kwargs": {
+          "old": "from __future__ import annotations",
+          "new": "from __future__ import annotations\nfrom msgspec import Struct"
+        }
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "f5dba4079b35be5a76bc3178eade4028633cac01c43daac46d5d5db4604ee144"
+    },
+    {
+      "case": "trusted_template_cycle_import_repair",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "openapi",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "trusted_template_cycle_import_repair.openapi.json",
+      "baseline_output_sha256": "611db3029d255608e10edabd63c951f7c405e5636d5ac3b4f058144d72c59d8a",
+      "fixture": "cycle.openapi.json",
+      "target": "A",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates",
+        "custom_formatters": [
+          "tests.data.python.custom_formatters.replace_text"
+        ],
+        "custom_formatters_kwargs": {
+          "old": "from __future__ import annotations",
+          "new": "from __future__ import annotations\nfrom msgspec import Struct"
+        }
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "f5dba4079b35be5a76bc3178eade4028633cac01c43daac46d5d5db4604ee144"
+    },
+    {
+      "case": "trusted_template_cycle_import_repair",
+      "backend": "msgspec.Struct",
+      "entry": "cli",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "trusted_template_cycle_import_repair.jsonschema.json",
+      "baseline_output_sha256": "a4c9a66eca59fe4ac22ae2b472b212b8e39f9abe3bc964966ed390b41fed9f06",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates",
+        "custom_formatters": [
+          "tests.data.python.custom_formatters.replace_text"
+        ],
+        "custom_formatters_kwargs": {
+          "old": "from __future__ import annotations",
+          "new": "from __future__ import annotations\nfrom msgspec import Struct"
+        }
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "exit": 0
+      },
+      "baseline_output_sha256_crlf": "7446ff9b2c7a9fa9acca4885ec04f650b147fec3fe29b56288eb6cd2f79e4897"
+    },
+    {
+      "case": "trusted_template_cycle_import_repair",
+      "backend": "msgspec.Struct",
+      "entry": "api",
+      "input": "jsonschema",
+      "candidate_expectation": "preserve existing result and successful bytes/native semantics",
+      "staged_input_basename": "trusted_template_cycle_import_repair.jsonschema.json",
+      "baseline_output_sha256": "a4c9a66eca59fe4ac22ae2b472b212b8e39f9abe3bc964966ed390b41fed9f06",
+      "fixture": "cycle.jsonschema.json",
+      "target": "A",
+      "options": {
+        "custom_template_dir": "tests/data/msgspec_inheritance/templates",
+        "custom_formatters": [
+          "tests.data.python.custom_formatters.replace_text"
+        ],
+        "custom_formatters_kwargs": {
+          "old": "from __future__ import annotations",
+          "new": "from __future__ import annotations\nfrom msgspec import Struct"
+        }
+      },
+      "baseline_declarations": [
+        {
+          "kind": "class",
+          "name": "A",
+          "bases": [
+            "Struct"
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "B",
+          "bases": [
+            "Struct"
+          ]
+        }
+      ],
+      "baseline_import_success": true,
+      "baseline_generation": {
+        "success": true,
+        "return": "None"
+      },
+      "baseline_output_sha256_crlf": "7446ff9b2c7a9fa9acca4885ec04f650b147fec3fe29b56288eb6cd2f79e4897"
+    }
+  ],
+  "native": [
+    {
+      "generation": 8,
+      "case": "conflict",
+      "backend": "typing.TypedDict",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d",
+        "e": "e"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "b": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "c": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "d": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "e": "ForwardRef('NotRequired[str]', module='allof_models')"
+        },
+        "resolved_type_hints": {
+          "a": "<class 'str'>",
+          "b": "<class 'str'>",
+          "c": "<class 'str'>",
+          "d": "<class 'str'>",
+          "e": "<class 'str'>"
+        },
+        "bases": [
+          "builtins.dict"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d",
+        "e": "e"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ]
+    },
+    {
+      "generation": 51,
+      "case": "functional_conflict",
+      "backend": "typing.TypedDict",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d",
+        "e-key": "e"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "typing.NotRequired[str]",
+          "b": "typing.NotRequired[str]",
+          "c": "typing.NotRequired[str]",
+          "d": "typing.NotRequired[str]",
+          "e-key": "typing.NotRequired[str]"
+        },
+        "resolved_type_hints": {
+          "a": "<class 'str'>",
+          "b": "<class 'str'>",
+          "c": "<class 'str'>",
+          "d": "<class 'str'>",
+          "e-key": "<class 'str'>"
+        },
+        "bases": [
+          "builtins.dict"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e-key"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d",
+        "e-key": "e"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e-key"
+      ]
+    },
+    {
+      "generation": 55,
+      "case": "functional_cycle",
+      "backend": "typing.TypedDict",
+      "payload": {
+        "a-key": "a",
+        "b-key": "b"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "b-key": "typing.NotRequired[NoneType]",
+          "a-key": "typing.NotRequired[NoneType]"
+        },
+        "resolved_type_hints": {
+          "b-key": "<class 'NoneType'>",
+          "a-key": "<class 'NoneType'>"
+        },
+        "bases": [
+          "builtins.dict"
+        ],
+        "fields": [
+          "b-key",
+          "a-key"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a-key": "a",
+        "b-key": "b"
+      },
+      "baseline_serialized_order": [
+        "a-key",
+        "b-key"
+      ]
+    },
+    {
+      "generation": 58,
+      "case": "descendant_repair",
+      "backend": "pydantic_v2.BaseModel",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "c": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "b": "str | None",
+          "c": "str | None"
+        },
+        "bases": [
+          "allof_models.B",
+          "allof_models.A"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    {
+      "generation": 59,
+      "case": "descendant_repair",
+      "backend": "pydantic_v2.dataclass",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "c": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "b": "str | None",
+          "c": "str | None"
+        },
+        "bases": [
+          "allof_models.B",
+          "allof_models.A"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    {
+      "generation": 60,
+      "case": "descendant_repair",
+      "backend": "dataclasses.dataclass",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "c": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "b": "str | None",
+          "c": "str | None"
+        },
+        "bases": [
+          "allof_models.B",
+          "allof_models.A"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    {
+      "generation": 61,
+      "case": "descendant_repair",
+      "backend": "typing.TypedDict",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "b": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "c": "ForwardRef('NotRequired[str]', module='allof_models')"
+        },
+        "resolved_type_hints": {
+          "a": "<class 'str'>",
+          "b": "<class 'str'>",
+          "c": "<class 'str'>"
+        },
+        "bases": [
+          "builtins.dict"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    {
+      "generation": 62,
+      "case": "descendant_repair",
+      "backend": "msgspec.Struct",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "c": "str | UnsetType"
+        },
+        "resolved_type_hints": {
+          "a": "str | msgspec.UnsetType",
+          "b": "str | msgspec.UnsetType",
+          "c": "str | msgspec.UnsetType"
+        },
+        "bases": [
+          "allof_models.B",
+          "allof_models.A"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    {
+      "generation": 63,
+      "case": "shared_ancestor",
+      "backend": "pydantic_v2.BaseModel",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "d": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "c": "str | None",
+          "b": "str | None",
+          "d": "str | None"
+        },
+        "bases": [
+          "allof_models.B",
+          "allof_models.C",
+          "allof_models.A"
+        ],
+        "fields": [
+          "a",
+          "c",
+          "b",
+          "d"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "c": "c",
+        "b": "b",
+        "d": "d"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "c",
+        "b",
+        "d"
+      ]
+    },
+    {
+      "generation": 64,
+      "case": "shared_ancestor",
+      "backend": "pydantic_v2.dataclass",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "d": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "c": "str | None",
+          "b": "str | None",
+          "d": "str | None"
+        },
+        "bases": [
+          "allof_models.B",
+          "allof_models.C",
+          "allof_models.A"
+        ],
+        "fields": [
+          "a",
+          "c",
+          "b",
+          "d"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "c": "c",
+        "b": "b",
+        "d": "d"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "c",
+        "b",
+        "d"
+      ]
+    },
+    {
+      "generation": 65,
+      "case": "shared_ancestor",
+      "backend": "dataclasses.dataclass",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "d": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "c": "str | None",
+          "b": "str | None",
+          "d": "str | None"
+        },
+        "bases": [
+          "allof_models.B",
+          "allof_models.C",
+          "allof_models.A"
+        ],
+        "fields": [
+          "a",
+          "c",
+          "b",
+          "d"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "c": "c",
+        "b": "b",
+        "d": "d"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "c",
+        "b",
+        "d"
+      ]
+    },
+    {
+      "generation": 66,
+      "case": "shared_ancestor",
+      "backend": "typing.TypedDict",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "b": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "c": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "d": "ForwardRef('NotRequired[str]', module='allof_models')"
+        },
+        "resolved_type_hints": {
+          "a": "<class 'str'>",
+          "b": "<class 'str'>",
+          "c": "<class 'str'>",
+          "d": "<class 'str'>"
+        },
+        "bases": [
+          "builtins.dict"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ]
+    },
+    {
+      "generation": 68,
+      "case": "single_inheritance",
+      "backend": "pydantic_v2.BaseModel",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "d": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "b": "str | None",
+          "c": "str | None",
+          "d": "str | None"
+        },
+        "bases": [
+          "allof_models.C"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ]
+    },
+    {
+      "generation": 69,
+      "case": "single_inheritance",
+      "backend": "pydantic_v2.dataclass",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "d": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "b": "str | None",
+          "c": "str | None",
+          "d": "str | None"
+        },
+        "bases": [
+          "allof_models.C"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ]
+    },
+    {
+      "generation": 70,
+      "case": "single_inheritance",
+      "backend": "dataclasses.dataclass",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "d": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "b": "str | None",
+          "c": "str | None",
+          "d": "str | None"
+        },
+        "bases": [
+          "allof_models.C"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ]
+    },
+    {
+      "generation": 71,
+      "case": "single_inheritance",
+      "backend": "typing.TypedDict",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "b": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "c": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "d": "ForwardRef('NotRequired[str]', module='allof_models')"
+        },
+        "resolved_type_hints": {
+          "a": "<class 'str'>",
+          "b": "<class 'str'>",
+          "c": "<class 'str'>",
+          "d": "<class 'str'>"
+        },
+        "bases": [
+          "builtins.dict"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ]
+    },
+    {
+      "generation": 72,
+      "case": "single_inheritance",
+      "backend": "msgspec.Struct",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "d": "str | UnsetType"
+        },
+        "resolved_type_hints": {
+          "a": "str | msgspec.UnsetType",
+          "b": "str | msgspec.UnsetType",
+          "c": "str | msgspec.UnsetType",
+          "d": "str | msgspec.UnsetType"
+        },
+        "bases": [
+          "allof_models.C"
+        ],
+        "fields": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d"
+      },
+      "baseline_serialized_order": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ]
+    },
+    {
+      "generation": 73,
+      "case": "field_recursion",
+      "backend": "pydantic_v2.BaseModel",
+      "payload": {
+        "a": "a",
+        "child": {
+          "b": "b",
+          "parent": null
+        }
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "str | None",
+          "child": "B | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "child": "allof_models.B | None"
+        },
+        "bases": [
+          "pydantic.main.BaseModel"
+        ],
+        "fields": [
+          "a",
+          "child"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "child": {
+          "b": "b",
+          "parent": null
+        }
+      },
+      "baseline_serialized_order": [
+        "a",
+        "child"
+      ]
+    },
+    {
+      "generation": 74,
+      "case": "field_recursion",
+      "backend": "pydantic_v2.dataclass",
+      "payload": {
+        "a": "a",
+        "child": {
+          "b": "b",
+          "parent": null
+        }
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "str | None",
+          "child": "B | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "child": "allof_models.B | None"
+        },
+        "bases": [
+          "builtins.object"
+        ],
+        "fields": [
+          "a",
+          "child"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "child": {
+          "b": "b",
+          "parent": null
+        }
+      },
+      "baseline_serialized_order": [
+        "a",
+        "child"
+      ]
+    },
+    {
+      "generation": 75,
+      "case": "field_recursion",
+      "backend": "dataclasses.dataclass",
+      "payload": {
+        "a": "a",
+        "child": {
+          "b": "b",
+          "parent": null
+        }
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "str | None",
+          "child": "B | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None",
+          "child": "allof_models.B | None"
+        },
+        "bases": [
+          "builtins.object"
+        ],
+        "fields": [
+          "a",
+          "child"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "child": {
+          "b": "b",
+          "parent": null
+        }
+      },
+      "baseline_serialized_order": [
+        "a",
+        "child"
+      ]
+    },
+    {
+      "generation": 76,
+      "case": "field_recursion",
+      "backend": "typing.TypedDict",
+      "payload": {
+        "a": "a",
+        "child": {
+          "b": "b",
+          "parent": null
+        }
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "ForwardRef('NotRequired[str]', module='allof_models')",
+          "child": "ForwardRef('NotRequired[B]', module='allof_models')"
+        },
+        "resolved_type_hints": {
+          "a": "<class 'str'>",
+          "child": "<class 'allof_models.B'>"
+        },
+        "bases": [
+          "builtins.dict"
+        ],
+        "fields": [
+          "a",
+          "child"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "child": {
+          "b": "b",
+          "parent": null
+        }
+      },
+      "baseline_serialized_order": [
+        "a",
+        "child"
+      ]
+    },
+    {
+      "generation": 77,
+      "case": "field_recursion",
+      "backend": "msgspec.Struct",
+      "payload": {
+        "a": "a",
+        "child": {
+          "b": "b",
+          "parent": null
+        }
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "str | UnsetType",
+          "child": "B | UnsetType"
+        },
+        "resolved_type_hints": {
+          "a": "str | msgspec.UnsetType",
+          "child": "allof_models.B | msgspec.UnsetType"
+        },
+        "bases": [
+          "msgspec.Struct"
+        ],
+        "fields": [
+          "a",
+          "child"
+        ]
+      },
+      "baseline_success": false,
+      "baseline_error": {
+        "type": "ValidationError",
+        "message": "Expected `object`, got `null` - at `$.child.parent`"
+      }
+    },
+    {
+      "generation": 78,
+      "case": "reuse",
+      "backend": "pydantic_v2.BaseModel",
+      "payload": {
+        "left": {
+          "a": "left"
+        },
+        "right": {
+          "a": "right"
+        }
+      },
+      "baseline_facts": {
+        "annotations": {
+          "left": "A | None",
+          "right": "B | None"
+        },
+        "resolved_type_hints": {
+          "left": "allof_models.A | None",
+          "right": "allof_models.B | None"
+        },
+        "bases": [
+          "pydantic.main.BaseModel"
+        ],
+        "fields": [
+          "left",
+          "right"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "left": {
+          "a": "left"
+        },
+        "right": {
+          "a": "right"
+        }
+      },
+      "baseline_serialized_order": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "generation": 79,
+      "case": "reuse",
+      "backend": "pydantic_v2.dataclass",
+      "payload": {
+        "left": {
+          "a": "left"
+        },
+        "right": {
+          "a": "right"
+        }
+      },
+      "baseline_facts": {
+        "annotations": {
+          "left": "A | None",
+          "right": "B | None"
+        },
+        "resolved_type_hints": {
+          "left": "allof_models.A | None",
+          "right": "allof_models.B | None"
+        },
+        "bases": [
+          "builtins.object"
+        ],
+        "fields": [
+          "left",
+          "right"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "left": {
+          "a": "left"
+        },
+        "right": {
+          "a": "right"
+        }
+      },
+      "baseline_serialized_order": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "generation": 80,
+      "case": "reuse",
+      "backend": "dataclasses.dataclass",
+      "payload": {
+        "left": {
+          "a": "left"
+        },
+        "right": {
+          "a": "right"
+        }
+      },
+      "baseline_facts": {
+        "annotations": {
+          "left": "A | None",
+          "right": "B | None"
+        },
+        "resolved_type_hints": {
+          "left": "allof_models.A | None",
+          "right": "allof_models.B | None"
+        },
+        "bases": [
+          "builtins.object"
+        ],
+        "fields": [
+          "left",
+          "right"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "left": {
+          "a": "left"
+        },
+        "right": {
+          "a": "right"
+        }
+      },
+      "baseline_serialized_order": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "generation": 81,
+      "case": "reuse",
+      "backend": "typing.TypedDict",
+      "payload": {
+        "left": {
+          "a": "left"
+        },
+        "right": {
+          "a": "right"
+        }
+      },
+      "baseline_facts": {
+        "annotations": {
+          "left": "ForwardRef('NotRequired[A]', module='allof_models')",
+          "right": "ForwardRef('NotRequired[B]', module='allof_models')"
+        },
+        "resolved_type_hints": {
+          "left": "<class 'allof_models.A'>",
+          "right": "<class 'allof_models.B'>"
+        },
+        "bases": [
+          "builtins.dict"
+        ],
+        "fields": [
+          "left",
+          "right"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "left": {
+          "a": "left"
+        },
+        "right": {
+          "a": "right"
+        }
+      },
+      "baseline_serialized_order": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "generation": 82,
+      "case": "reuse",
+      "backend": "msgspec.Struct",
+      "payload": {
+        "left": {
+          "a": "left"
+        },
+        "right": {
+          "a": "right"
+        }
+      },
+      "baseline_facts": {
+        "annotations": {
+          "left": "A | UnsetType",
+          "right": "B | UnsetType"
+        },
+        "resolved_type_hints": {
+          "left": "allof_models.A | msgspec.UnsetType",
+          "right": "allof_models.B | msgspec.UnsetType"
+        },
+        "bases": [
+          "msgspec.Struct"
+        ],
+        "fields": [
+          "left",
+          "right"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "left": {
+          "a": "left"
+        },
+        "right": {
+          "a": "right"
+        }
+      },
+      "baseline_serialized_order": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "generation": 83,
+      "case": "collapse",
+      "backend": "pydantic_v2.BaseModel",
+      "payload": {
+        "value": "literal"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "value": "str | None"
+        },
+        "resolved_type_hints": {
+          "value": "str | None"
+        },
+        "bases": [
+          "pydantic.main.BaseModel"
+        ],
+        "fields": [
+          "value"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "value": "literal"
+      },
+      "baseline_serialized_order": [
+        "value"
+      ]
+    },
+    {
+      "generation": 84,
+      "case": "collapse",
+      "backend": "pydantic_v2.dataclass",
+      "payload": {
+        "value": "literal"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "value": "str | None"
+        },
+        "resolved_type_hints": {
+          "value": "str | None"
+        },
+        "bases": [
+          "builtins.object"
+        ],
+        "fields": [
+          "value"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "value": "literal"
+      },
+      "baseline_serialized_order": [
+        "value"
+      ]
+    },
+    {
+      "generation": 85,
+      "case": "collapse",
+      "backend": "dataclasses.dataclass",
+      "payload": {
+        "value": "literal"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "value": "str | None"
+        },
+        "resolved_type_hints": {
+          "value": "str | None"
+        },
+        "bases": [
+          "builtins.object"
+        ],
+        "fields": [
+          "value"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "value": "literal"
+      },
+      "baseline_serialized_order": [
+        "value"
+      ]
+    },
+    {
+      "generation": 86,
+      "case": "collapse",
+      "backend": "typing.TypedDict",
+      "payload": {
+        "value": "literal"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "value": "ForwardRef('NotRequired[str]', module='allof_models')"
+        },
+        "resolved_type_hints": {
+          "value": "<class 'str'>"
+        },
+        "bases": [
+          "builtins.dict"
+        ],
+        "fields": [
+          "value"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "value": "literal"
+      },
+      "baseline_serialized_order": [
+        "value"
+      ]
+    },
+    {
+      "generation": 87,
+      "case": "collapse",
+      "backend": "msgspec.Struct",
+      "payload": {
+        "value": "literal"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "value": "str | UnsetType"
+        },
+        "resolved_type_hints": {
+          "value": "str | msgspec.UnsetType"
+        },
+        "bases": [
+          "msgspec.Struct"
+        ],
+        "fields": [
+          "value"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "value": "literal"
+      },
+      "baseline_serialized_order": [
+        "value"
+      ]
+    },
+    {
+      "generation": 88,
+      "case": "ordinary",
+      "backend": "pydantic_v2.BaseModel",
+      "payload": {
+        "a": "a"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None"
+        },
+        "bases": [
+          "pydantic.main.BaseModel"
+        ],
+        "fields": [
+          "a"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a"
+      },
+      "baseline_serialized_order": [
+        "a"
+      ]
+    },
+    {
+      "generation": 89,
+      "case": "ordinary",
+      "backend": "pydantic_v2.dataclass",
+      "payload": {
+        "a": "a"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None"
+        },
+        "bases": [
+          "builtins.object"
+        ],
+        "fields": [
+          "a"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a"
+      },
+      "baseline_serialized_order": [
+        "a"
+      ]
+    },
+    {
+      "generation": 90,
+      "case": "ordinary",
+      "backend": "dataclasses.dataclass",
+      "payload": {
+        "a": "a"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "str | None"
+        },
+        "resolved_type_hints": {
+          "a": "str | None"
+        },
+        "bases": [
+          "builtins.object"
+        ],
+        "fields": [
+          "a"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a"
+      },
+      "baseline_serialized_order": [
+        "a"
+      ]
+    },
+    {
+      "generation": 91,
+      "case": "ordinary",
+      "backend": "typing.TypedDict",
+      "payload": {
+        "a": "a"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "ForwardRef('NotRequired[str]', module='allof_models')"
+        },
+        "resolved_type_hints": {
+          "a": "<class 'str'>"
+        },
+        "bases": [
+          "builtins.dict"
+        ],
+        "fields": [
+          "a"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a"
+      },
+      "baseline_serialized_order": [
+        "a"
+      ]
+    },
+    {
+      "generation": 92,
+      "case": "ordinary",
+      "backend": "msgspec.Struct",
+      "payload": {
+        "a": "a"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "str | UnsetType"
+        },
+        "resolved_type_hints": {
+          "a": "str | msgspec.UnsetType"
+        },
+        "bases": [
+          "msgspec.Struct"
+        ],
+        "fields": [
+          "a"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a"
+      },
+      "baseline_serialized_order": [
+        "a"
+      ]
+    },
+    {
+      "generation": 94,
+      "case": "trusted_template_conflict",
+      "backend": "msgspec.Struct",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d",
+        "e": "e"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "e": "str | UnsetType"
+        },
+        "resolved_type_hints": {
+          "e": "str | msgspec.UnsetType"
+        },
+        "bases": [
+          "msgspec.Struct"
+        ],
+        "fields": [
+          "e"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "e": "e"
+      },
+      "baseline_serialized_order": [
+        "e"
+      ]
+    },
+    {
+      "generation": 102,
+      "case": "formatter_repair",
+      "backend": "pydantic_v2.BaseModel",
+      "payload": {
+        "a": "a",
+        "b": "b",
+        "c": "c",
+        "d": "d",
+        "e": "e"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "e": "str | None"
+        },
+        "resolved_type_hints": {
+          "b": "str | None",
+          "a": "str | None",
+          "d": "str | None",
+          "c": "str | None",
+          "e": "str | None"
+        },
+        "bases": [
+          "allof_models.C",
+          "allof_models.D"
+        ],
+        "fields": [
+          "b",
+          "a",
+          "d",
+          "c",
+          "e"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "b": "b",
+        "a": "a",
+        "d": "d",
+        "c": "c",
+        "e": "e"
+      },
+      "baseline_serialized_order": [
+        "b",
+        "a",
+        "d",
+        "c",
+        "e"
+      ]
+    },
+    {
+      "generation": 106,
+      "case": "trusted_template_cycle_import_repair",
+      "backend": "msgspec.Struct",
+      "payload": {
+        "a": "a",
+        "b": "b"
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "UnsetType"
+        },
+        "resolved_type_hints": {
+          "a": "<class 'msgspec.UnsetType'>"
+        },
+        "bases": [
+          "msgspec.Struct"
+        ],
+        "fields": [
+          "a"
+        ]
+      },
+      "baseline_success": false,
+      "baseline_error": {
+        "type": "ValidationError",
+        "message": "Expected `msgspec.UnsetType`, got `str` - at `$.a`"
+      }
+    },
+    {
+      "generation": 77,
+      "case": "field_recursion",
+      "backend": "msgspec.Struct",
+      "payload": {
+        "a": "a",
+        "child": {
+          "b": "b"
+        }
+      },
+      "baseline_facts": {
+        "annotations": {
+          "a": "str | UnsetType",
+          "child": "B | UnsetType"
+        },
+        "resolved_type_hints": {
+          "a": "str | msgspec.UnsetType",
+          "child": "allof_models.B | msgspec.UnsetType"
+        },
+        "bases": [
+          "msgspec.Struct"
+        ],
+        "fields": [
+          "a",
+          "child"
+        ]
+      },
+      "baseline_success": true,
+      "baseline_serialized": {
+        "a": "a",
+        "child": {
+          "b": "b"
+        }
+      },
+      "baseline_serialized_order": [
+        "a",
+        "child"
+      ]
+    }
+  ]
+}

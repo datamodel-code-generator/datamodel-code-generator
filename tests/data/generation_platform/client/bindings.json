@@ -5144,5 +5144,21 @@
   "target-unsupported": {
     "source": "generation_platform/binding/target-unsupported.yaml",
     "verbatim": true
+  },
+  "trusted-template-cycle": {
+    "source": "allof_model_inheritance/fixtures/cycle.openapi.json",
+    "backends": [
+      "msgspec.Struct"
+    ],
+    "model": {
+      "custom_template_dir": "tests/data/msgspec_inheritance/templates",
+      "custom_formatters": [
+        "tests.data.python.custom_formatters.replace_text"
+      ],
+      "custom_formatters_kwargs": {
+        "old": "from __future__ import annotations",
+        "new": "from __future__ import annotations\nfrom msgspec import Struct"
+      }
+    }
   }
 }

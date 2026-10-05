@@ -349,7 +349,8 @@
         "method": "GET",
         "url": "/items/1?kind=c"
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "bodies": {
     "input": "server-bodies.yaml",
@@ -525,7 +526,7 @@
       {
         "method": "PUT",
         "url": "/documents",
-        "content": "ÿ",
+        "content": "\u00ff",
         "headers": {
           "Content-Type": "text/plain; charset=utf-8"
         }
@@ -654,7 +655,8 @@
           "any": "thing"
         }
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "results": {
     "input": "server-results.yaml",
@@ -904,7 +906,8 @@
         "facade": "GetNothingResponseCodecs",
         "status_code": 200
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "security": {
     "input": "server-security.yaml",
@@ -1172,7 +1175,8 @@
           }
         ]
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "customized": {
     "input": "services.yaml",
@@ -1197,7 +1201,8 @@
         "method": "GET",
         "url": "/health"
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "variants": {
     "input": "server-variants.yaml",
@@ -1249,7 +1254,8 @@
         "method": "GET",
         "url": "/owners"
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "variants-request-response": {
     "input": "server-variants.yaml",
@@ -1304,7 +1310,8 @@
     ],
     "model": {
       "read_only_write_only_model_type": "request-response"
-    }
+    },
+    "package_snapshots": []
   },
   "variants-modular": {
     "input": "server-variants.yaml",
@@ -1360,7 +1367,8 @@
     "modular": true,
     "model": {
       "module_split_mode": "single"
-    }
+    },
+    "package_snapshots": []
   },
   "variants-reuse": {
     "input": "server-variants.yaml",
@@ -1416,7 +1424,8 @@
     "model": {
       "reuse_model": true,
       "collapse_root_models": true
-    }
+    },
+    "package_snapshots": []
   },
   "forms": {
     "input": "server-forms.yaml",
@@ -1660,7 +1669,8 @@
           ]
         ]
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "responses": {
     "input": "server-responses.yaml",
@@ -1827,7 +1837,8 @@
           }
         ]
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "adapters": {
     "input": "server-parameter-adapters.yaml",
@@ -2167,6 +2178,38 @@
         "method": "GET",
         "url": "/search?a=y"
       }
-    ]
+    ],
+    "package_snapshots": []
+  },
+  "unbound": {
+    "input": "unbound.yaml",
+    "services": "unbound",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values/7"
+      },
+      {
+        "method": "GET",
+        "url": "/values/42?at=2026-10-02T12%3A34%3A56Z&tags=alpha&tags=two%20words"
+      },
+      {
+        "method": "GET",
+        "url": "/values/invalid"
+      },
+      {
+        "method": "GET",
+        "url": "/values/0"
+      },
+      {
+        "method": "GET",
+        "url": "/values/7?at=invalid"
+      }
+    ],
+    "package_snapshots": []
   }
 }
