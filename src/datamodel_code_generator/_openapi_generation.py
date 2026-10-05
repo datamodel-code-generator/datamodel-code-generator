@@ -105,9 +105,6 @@ class TargetGenerationSession:
             if error.document in target._api_roots:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
                 error.document = self._root_selector_document
             raise
-        except Exception as cause:
-            msg = "Binding capture freeze failed"
-            raise BindingCaptureError(msg) from cause
         finally:
             target.release_records()
         return target.attempt
