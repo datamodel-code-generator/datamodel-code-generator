@@ -147,7 +147,7 @@ class DocumentTable:
     __slots__ = ("_lookup", "pointers", "root_uri", "uris")
 
     def __init__(self, batch: GeneratedTypeContractBatch, source: RootInput, root: Path) -> None:
-        """Order the non-root documents by their persistent URI, without reading their contents."""
+        """Order the non-root documents by their persistent URI, one pointer per identity, without reading them."""
         first, *others = batch.documents
         self.root_uri = persistent_uri(source.identity, root, "input")
         located = [(document_identity(document.uri, source.base), document) for document in others]
@@ -160,7 +160,7 @@ class DocumentTable:
         self._lookup: dict[str, str] = {source.identity: ROOT_POINTER, first.uri: ROOT_POINTER}
         seen: dict[str, str] = {}
         for uri, identity, name, document in entries:
-            pointer = seen.setdefault(uri, f"/inputs/documents/{len(seen)}")
+            pointer = seen.setdefault(identity, f"/inputs/documents/{len(seen)}")
             self.pointers[document] = self._lookup[identity] = self._lookup[name] = pointer
             self.uris[document] = uri
 
