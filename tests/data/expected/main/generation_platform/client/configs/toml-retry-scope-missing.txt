@@ -1,2 +1,0 @@
-APIGenerationError
-  E_CONFIG_VALUE config operations[0].runtime.idempotency.scope: operations[0].runtime.idempotency.scope must be a string

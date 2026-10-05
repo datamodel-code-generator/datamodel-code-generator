@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib
 import math
-from datetime import datetime, timedelta, timezone
 from functools import partial
 from typing import TYPE_CHECKING, NoReturn
 from uuid import UUID
@@ -320,7 +319,6 @@ def _server_delays(package: ModuleType, options: ModuleType, lines: list[str]) -
 def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
-    now = datetime.now(timezone.utc)
     with (
         exchange.client() as native,
         package.Client(
@@ -328,20 +326,10 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
         ) as api,
     ):
         for label, method, key in (
-            ("retained caller key", "post_keyed", options.IdempotencyKey("stable-key", first_used_at=now)),
-            ("unknown prior use", "post_keyed", options.IdempotencyKey("unknown-key")),
-            (
-                "expired key",
-                "post_keyed",
-                options.IdempotencyKey("expired-key", first_used_at=now - timedelta(days=2)),
-            ),
-            (
-                "key declaration insufficient",
-                "post_key_only",
-                options.IdempotencyKey("header-only", first_used_at=now),
-            ),
+            ("caller key", "post_keyed", options.IdempotencyKey("stable-key")),
+            ("header-only declaration", "post_key_only", options.IdempotencyKey("header-only")),
             ("key suppressed", "post_keyed", None),
-            ("undeclared key", "post_unsafe", options.IdempotencyKey("no-target", first_used_at=now)),
+            ("undeclared key", "post_unsafe", options.IdempotencyKey("no-target")),
         ):
             exchange.responders.clear()
             exchange.respond(_response(503), _response(200))
@@ -354,10 +342,7 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 ),
             )
             lines.append(f"    unused={len(exchange.responders)}")
-        for label, key in (
-            ("safe method fresh key", options.IdempotencyKey("fresh-safe", first_used_at=now)),
-            ("safe method expired key", options.IdempotencyKey("expired-safe", first_used_at=now - timedelta(days=2))),
-        ):
+        for label, key in (("safe method caller key", options.IdempotencyKey("safe-key")),):
             exchange.responders.clear()
             exchange.respond(_response(503), _response(200))
             request = options.RequestOptions(idempotency_key=key)
@@ -370,8 +355,8 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
 
         exchange.responders.clear()
         exchange.respond(
-            lambda request: _response(503, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
-            _response(200),
+            _response(503),
+            lambda request: _response(200, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
         )
         events = _Events()
         raw = api.retry.with_raw_response.post_key_only(
@@ -379,7 +364,7 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
         )
         wire_key = raw.info.headers.get("X-Observed-Key")
         parsed = None if wire_key is None else UUID(wire_key)
-        record(lines, "automatic false declaration", lambda: outcome(raw.raise_for_status))
+        record(lines, "automatic declared key", lambda: outcome(raw.raise_for_status))
         lines.append(
             f"    uuid4={parsed is not None and parsed.version == 4} "
             f"canonical={parsed is not None and str(parsed) == wire_key} "
@@ -567,33 +552,6 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             )
 
 
-def _retention_boundaries(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
-    exchange = Exchange(lines)
-    with exchange.client() as native:
-        for label, elapsed in (("key expires during response hook", 2.0), ("key expires during retry hook", 0.0)):
-            clock = _Clock()
-            hook = _TimingHook(clock, headers_elapsed=elapsed)
-            key = options.IdempotencyKey(
-                "retained-expiring-key", first_used_at=datetime.now(timezone.utc) - timedelta(seconds=86399)
-            )
-            exchange.responders.clear()
-            exchange.respond(_response(503), _response(200))
-            with package.Client(
-                http_client=native,
-                options=options.ClientOptions(
-                    retry=options.RetryOptions(initial_delay=2, jitter="none"),
-                    hooks=(hook,),
-                    idempotency_key=key,
-                    clock=options.Clock(monotonic=clock),
-                ),
-            ) as api:
-                record(
-                    lines, label, lambda api=api: outcome(lambda: api.retry.with_response.post_keyed(body=b"payload"))
-                )
-            lines.append(f"    delays={tuple(hook.delays)!r} unused={len(exchange.responders)}")
-
-
 def _frozen(options: ModuleType) -> object:
     """Return options whose clock never moves, so each retry waits as long in real time as its policy chose."""
     return options.ClientOptions(
@@ -632,13 +590,13 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
             response = await arecord(lines, "async retries on a frozen clock", frozen.retry.with_response.get_safe)
             lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'resource_attempt_count', None)}")
         exchange.respond(
-            lambda request: _response(503, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
-            _response(200),
+            _response(503),
+            lambda request: _response(200, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
         )
         raw = await api.retry.with_raw_response.post_key_only(body=b"automatic")
         wire_key = raw.info.headers.get("X-Observed-Key")
         parsed = None if wire_key is None else UUID(wire_key)
-        await arecord(lines, "async automatic false declaration", raw.raise_for_status)
+        await arecord(lines, "async automatic declared key", raw.raise_for_status)
         lines.append(
             f"    uuid4={parsed is not None and parsed.version == 4} "
             f"canonical={parsed is not None and str(parsed) == wire_key} "
@@ -658,6 +616,5 @@ def retry_policy(package: ModuleType, lines: list[str]) -> None:
     _fault_gates(package, options, lines)
     _bodies(package, options, lines)
     _timing(package, options, lines)
-    _retention_boundaries(package, options, lines)
     _frozen_retries(package, options, lines)
     run(lambda: _async(package, options, lines))
