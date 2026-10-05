@@ -123,6 +123,9 @@
         "pets",
         "photos",
         "_sync.py"
+      ],
+      [
+        "models.py"
       ]
     ],
     "config": {
@@ -688,6 +691,9 @@
       [
         "client",
         "_operations.py"
+      ],
+      [
+        "models.py"
       ]
     ],
     "config": {
