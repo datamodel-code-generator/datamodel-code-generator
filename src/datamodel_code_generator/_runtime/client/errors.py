@@ -78,7 +78,7 @@ class DeliveryState(Enum):
 
 
 class _CallMetadata(TypedDict, total=False):
-    delivery_state: DeliveryState
+    delivery_state: DeliveryState | None
     operation_id: str | None
     call_id: str | None
     parent_session_id: str | None
@@ -108,7 +108,7 @@ class SDKError(Exception):
         self,
         *,
         reason: str | None = None,
-        delivery_state: DeliveryState = DeliveryState.NOT_SENT,
+        delivery_state: DeliveryState | None = None,
         operation_id: str | None = None,
         call_id: str | None = None,
         parent_session_id: str | None = None,
@@ -119,10 +119,20 @@ class SDKError(Exception):
         elapsed: float = 0.0,
         completed_result: Response[object] | None = None,
     ) -> None:
-        """Keep the call identifiers, the response metadata when one arrived, and the original cause."""
+        """Keep the call identifiers, the response metadata when one arrived, and the original cause.
+
+        Without a delivery state, an error with a response is RESPONSE_STARTED and one without is NOT_SENT until the
+        call that publishes it gives its own.
+        """
         super().__init__()
         self.reason = reason
-        self.delivery_state = _error_delivery(delivery_state)
+        self.delivery_state = (
+            _error_delivery(delivery_state)
+            if delivery_state is not None
+            else DeliveryState.NOT_SENT
+            if info is None
+            else DeliveryState.RESPONSE_STARTED
+        )
         self.operation_id = operation_id
         self.call_id = call_id
         self.parent_session_id = parent_session_id
@@ -292,7 +302,8 @@ class APIConnectionError(SDKError):
         retry_stop_reason: RetryStopReason | None = None,
         **metadata: Unpack[ErrorMetadata],
     ) -> None:
-        """Keep the delivery evidence and the phase that failed."""
+        """Keep the delivery evidence and the phase that failed; without evidence the request may have been sent."""
+        metadata.setdefault("delivery_state", DeliveryState.MAYBE_SENT)
         super().__init__(reason=reason, **metadata)
         self.phase: IOPhase | DeadlinePhase = phase
         self.retry_stop_reason: RetryStopReason | None = retry_stop_reason
@@ -319,6 +330,9 @@ class APITimeoutError(APIConnectionError):
         **metadata: Unpack[ErrorMetadata],
     ) -> None:
         """Keep the expired phase cap or deadline beside the delivery evidence."""
+        if reason == "deadline_exceeded" and deadline_at is None:
+            msg = "A deadline_exceeded timeout needs its deadline_at"
+            raise ValueError(msg)
         super().__init__(phase=phase, reason=reason, retry_stop_reason=retry_stop_reason, **metadata)
         self.effective_timeout = None if effective_timeout is None else error_time(effective_timeout, "timeout")
         self.deadline_at = None if deadline_at is None else error_time(deadline_at, "deadline_at", nonnegative=False)
@@ -357,9 +371,20 @@ def is_redirect_refused(error: object) -> TypeGuard[ConfigurationError]:
     return isinstance(error, ConfigurationError) and error.reason == "redirect_refused"
 
 
+_CALL_STATES: Final = frozenset({"client_closed", "redirect_refused", "response_consumed"})
+
+
+def is_auth_classified(error: object) -> bool:
+    """Return whether a credential or signing callback's failure is already classified.
+
+    It is when the callback raised an auth failure, or a refused setting rather than the state of a call it made.
+    """
+    return isinstance(error, AuthError) or (isinstance(error, ConfigurationError) and error.reason not in _CALL_STATES)
+
+
 def is_hook_failure(error: object) -> TypeGuard[SDKError]:
     """Return whether an error is a hook's failure, which stops the call."""
-    return isinstance(error, SDKError) and error.reason == "hook_failed"
+    return type(error) is SDKError and error.reason == "hook_failed"
 
 
 def redirect_refused(**metadata: Unpack[ErrorMetadata]) -> ConfigurationError:

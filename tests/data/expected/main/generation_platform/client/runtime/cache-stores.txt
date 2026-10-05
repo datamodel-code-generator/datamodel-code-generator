@@ -70,7 +70,7 @@
     set status=200 vary=('accept-language',) values=1 bytes=21 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
   call entry limit = network 3:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
     get key=32
-  call entry limit hit = fresh_cache 3:cat status=200 network=None attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  call entry limit hit = fresh_cache 3:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
   pagination options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='cache_options') [field_path=('cache_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   text options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   closed client ! ConfigurationError: ConfigurationError(operation_id='getUser', call_id='<call>', reason='client_closed', field_path='client.closed') [operation_id='getUser', field_path=('client', 'closed'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
@@ -143,7 +143,7 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('gone')] cache_store_error"]
+  refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('gone')] cache_store_error"]
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -153,7 +153,7 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  refused 304 with a deletion result ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error"]
+  refused 304 with a deletion result ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error"]
   cancelled before lookup ! RequestCancelledError: RequestCancelledError(operation_id='getUser', call_id='<call>', delivery_state='NOT_SENT') [operation_id='getUser', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
     get key=32
   lookup failure ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('disk')] cache_store_error
@@ -241,13 +241,13 @@
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
   after a hook failure = network 23:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
     get key=32
-  hit without events = fresh_cache 23:cat status=200 network=None attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
+  hit without events = fresh_cache 23:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
   no partition ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='protocols.security') [field_path=('protocols', 'security'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] security_partition
   no credentials ! ConfigurationError: ConfigurationError(reason='missing_credentials', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
   > GET https://api.example.com/secure/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   tenant a stored = network 1:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
-  tenant a shared = fresh_cache 1:cat status=200 network=None attempts=1 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  tenant a shared = fresh_cache 1:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
   > GET https://api.example.com/secure/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   tenant b isolated = network 1:other status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '23'), ('content-type', 'application/json')]
@@ -255,7 +255,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   anonymous helper = network 1:anonymous status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '27'), ('content-type', 'application/json')]
   anonymous helper with a credential ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
-  anonymous helper same tenant = fresh_cache 1:anonymous status=200 network=None attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
+  anonymous helper same tenant = fresh_cache 1:anonymous status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
   > GET https://api.example.com/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   anonymous helper other tenant = network 1:b status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '19'), ('content-type', 'application/json')]
@@ -270,15 +270,15 @@
   alice again = network 2:alice again status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-length', '29'), ('content-type', 'application/json')]
   view with other auth ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='options.auth') [field_path=('options', 'auth'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] security_partition
   call with other auth ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='options.auth') [field_path=('options', 'auth'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] security_partition
-  anonymous view = fresh_cache 1:anonymous status=200 network=None attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
+  anonymous view = fresh_cache 1:anonymous status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
   > GET https://api.example.com/secure/users/4
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
   on behalf of u = network 4:u status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
   > GET https://api.example.com/secure/users/4
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   service after u = network 4:service status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '25'), ('content-type', 'application/json')]
-  on behalf of u again = fresh_cache 4:u status=200 network=None attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
-  service again = fresh_cache 4:service status=200 network=None attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '25')]
+  on behalf of u again = fresh_cache 4:u status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
+  service again = fresh_cache 4:service status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '25')]
   > GET https://api.example.com/secure/users/5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   service first = network 5:service status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '25'), ('content-type', 'application/json')]
@@ -292,7 +292,7 @@
   > GET https://api.example.com/carts/current
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: cart=bob] b''
   bob cart = network 44:bob status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
-  alice cart again = fresh_cache 44:alice status=200 network=None attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '24')]
+  alice cart again = fresh_cache 44:alice status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '24')]
   > GET https://api.example.com/secure/users/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer alice, x-signature: signed] b''
   vary on a signed header = network 3:first status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'X-Signature'), ('content-length', '23'), ('content-type', 'application/json')]
@@ -363,7 +363,7 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  async refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('gone')] cache_store_error"]
+  async refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('gone')] cache_store_error"]
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -373,7 +373,7 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  async refused 304 with a deletion result ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error"]
+  async refused 304 with a deletion result ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error"]
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -400,6 +400,6 @@
   > GET https://api.example.com/secure/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
   async on behalf of u = network 1:u status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
-  async on behalf of u again = fresh_cache 1:u status=200 network=None attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
+  async on behalf of u again = fresh_cache 1:u status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
     get key=32
   async granted ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('down')] cache_store_error

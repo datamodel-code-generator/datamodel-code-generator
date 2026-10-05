@@ -33,25 +33,25 @@
   total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'9007199254740993.0' = [1] continuation=Continuation(kind='page') status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
@@ -111,25 +111,25 @@
   async total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'9007199254740993.0' = [1] continuation=Continuation(kind='page') status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
@@ -190,25 +190,25 @@
   total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'9007199254740993.0' = [1] continuation=Continuation(kind='page') status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
@@ -268,25 +268,25 @@
   async total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'9007199254740993.0' = [1] continuation=Continuation(kind='page') status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
@@ -347,25 +347,25 @@
   total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'9007199254740993.0' = [1] continuation=Continuation(kind='page') status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
@@ -425,25 +425,25 @@
   async total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'9007199254740993.0' = [1] continuation=Continuation(kind='page') status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
@@ -504,25 +504,25 @@
   total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'9007199254740993.0' = [1] continuation=Continuation(kind='page') status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1
@@ -582,25 +582,25 @@
   async total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'9007199254740993.0' = [1] continuation=Continuation(kind='page') status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 attempts=1

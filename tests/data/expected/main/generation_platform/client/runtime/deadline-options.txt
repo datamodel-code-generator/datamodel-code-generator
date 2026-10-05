@@ -89,6 +89,7 @@
   invalid error delivery ! ValueError: delivery_state must be a DeliveryState []
   invalid error attempt count ! ValueError: attempt_count must be a nonnegative integer []
   invalid error attempt bool ! ValueError: attempt_count must be a nonnegative integer []
+  invalid error deadline without its expiry ! ValueError: A deadline_exceeded timeout needs its deadline_at []
   invalid effective timeout bool ! ValueError: timeout must be a finite number in its permitted range []
   invalid effective timeout negative ! ValueError: timeout must be a finite number in its permitted range []
   invalid effective timeout nan ! ValueError: timeout must be a finite number in its permitted range []

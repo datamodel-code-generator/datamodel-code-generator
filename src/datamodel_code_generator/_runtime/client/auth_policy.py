@@ -22,7 +22,7 @@ from .auth import (
     SignerCapabilities,
 )
 from .auth_challenges import invalid_token
-from .errors import AuthError, ConfigurationError, DeliveryState
+from .errors import AuthError, ConfigurationError, DeliveryState, is_auth_classified
 from .responses import HeadersView
 from .security import SecurityRequirement, SecurityScheme, UnavailableSecurityScheme
 from .transports import PreparedRequest
@@ -480,8 +480,7 @@ class _Wrapped:
 
     __slots__ = ("_kept", "_wrap")
 
-    def __init__(self, kept: tuple[type[Exception], ...], wrap: Callable[[Exception], Exception]) -> None:
-        self._kept = kept
+    def __init__(self, wrap: Callable[[Exception], Exception]) -> None:
         self._wrap = wrap
 
     def __enter__(self) -> None:
@@ -489,7 +488,7 @@ class _Wrapped:
 
     def __exit__(self, kind: object, error: BaseException | None, traceback: object) -> Literal[False]:
         """Wrap an unclassified exception, leaving interruptions and classified failures unchanged."""
-        if isinstance(error, Exception) and not isinstance(error, self._kept):
+        if isinstance(error, Exception) and not is_auth_classified(error):
             raise self._wrap(error) from None
         return False
 
@@ -498,15 +497,19 @@ def _provider_failure(delivery: DeliveryState, cause: Exception) -> AuthError:
     return AuthError(reason="provider_failed", delivery_state=delivery, cause=cause)
 
 
-def _provider_calls(kept: tuple[type[Exception], ...]) -> dict[DeliveryState, _Wrapped]:
+def _signing_failure(delivery: DeliveryState, cause: Exception) -> AuthError:
+    return AuthError(reason="signing_failed", delivery_state=delivery, cause=cause)
+
+
+def _calls(failure: Callable[[DeliveryState, Exception], AuthError]) -> dict[DeliveryState, _Wrapped]:
     """Prepare one callback wrapper per delivery state the call may have reached, so no call allocates one."""
-    return {state: _Wrapped(kept, partial(_provider_failure, state)) for state in DeliveryState}
+    return {state: _Wrapped(partial(failure, state)) for state in DeliveryState}
 
 
-_PROVIDER_KEPT: Final = (ConfigurationError, AuthError)
-_GET: Final = _provider_calls(_PROVIDER_KEPT)
-_INVALIDATE: Final = _Wrapped(_PROVIDER_KEPT, partial(_provider_failure, DeliveryState.RESPONSE_STARTED))
-_REFRESH: Final = _provider_calls(_PROVIDER_KEPT)
+_GET: Final = _calls(_provider_failure)
+_INVALIDATE: Final = _Wrapped(partial(_provider_failure, DeliveryState.RESPONSE_STARTED))
+_REFRESH: Final = _calls(_provider_failure)
+_SIGNING: Final = _calls(_signing_failure)
 
 
 def get_credential(binding: BoundCredential, context: CredentialContext, delivery: DeliveryState) -> object:
@@ -654,22 +657,16 @@ def _signature(value: object) -> SignatureFields:
     raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_result")
 
 
-_SIGNING: Final = _Wrapped(
-    (ConfigurationError, AuthError),
-    lambda cause: AuthError(reason="signing_failed", delivery_state=DeliveryState.NOT_SENT, cause=cause),
-)
-
-
-def sign_request(signer: RequestSigner, request: SigningInput) -> SignatureFields:
+def sign_request(signer: RequestSigner, request: SigningInput, delivery: DeliveryState) -> SignatureFields:
     """Run a synchronous signer without converting native interruptions."""
-    with _SIGNING:
+    with _SIGNING[delivery]:
         value = signer.sign(request)
     return _signature(value)
 
 
-async def asign_request(signer: AsyncRequestSigner, request: SigningInput) -> SignatureFields:
+async def asign_request(signer: AsyncRequestSigner, request: SigningInput, delivery: DeliveryState) -> SignatureFields:
     """Run an asynchronous signer in the existing bounded operation task."""
-    with _SIGNING:
+    with _SIGNING[delivery]:
         value = await signer.sign(request)
     return _signature(value)
 

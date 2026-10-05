@@ -56,26 +56,26 @@ unknown and missing states
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  unknown state ! PollingStateError: PollingStateError(operation_id='getJob', call_id='<call>', condition='value') [operation_id='getJob', condition='value', location=BodySelector(pointer='/status'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] polling_state_error session=True
+  unknown state ! PollingStateError: PollingStateError(operation_id='getJob', call_id='<call>', condition='value') [operation_id='getJob', condition='value', location=BodySelector(pointer='/status'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] polling_state_error session=True
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  state of another type ! PollingStateError: PollingStateError(operation_id='getJob', call_id='<call>', condition='type') [operation_id='getJob', condition='type', location=BodySelector(pointer='/status'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] polling_state_error session=True
+  state of another type ! PollingStateError: PollingStateError(operation_id='getJob', call_id='<call>', condition='type') [operation_id='getJob', condition='type', location=BodySelector(pointer='/status'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] polling_state_error session=True
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  missing state ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='missing') [operation_id='getJob', condition='missing', location=BodySelector(pointer='/status'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  missing state ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='missing') [operation_id='getJob', condition='missing', location=BodySelector(pointer='/status'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   status after them = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
 create responses
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  unaccepted success status ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=StatusSelector(), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  unaccepted success status ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=StatusSelector(), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  missing operation id ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='missing') [operation_id='createJob', condition='missing', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  missing operation id ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='missing') [operation_id='createJob', condition='missing', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  dot segment operation id ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  dot segment operation id ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   create error ! InternalServerError: InternalServerError(status_code=500, operation_id='createJob', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='createJob', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{"message":"down"}', body_bytes=b'{"message":"down"}', truncated=False] internal_server_error session=True
@@ -96,7 +96,7 @@ inline results
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j2?verbose=true
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  wait without a result ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='missing') [operation_id='getJob', condition='missing', location=BodySelector(pointer='/result'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  wait without a result ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='missing') [operation_id='getJob', condition='missing', location=BodySelector(pointer='/result'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
   > GET https://api.example.com/jobs/j2?verbose=true
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   wait again = Report(rows=8)
@@ -104,7 +104,7 @@ inline results
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j2?verbose=true
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  repeated state header ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='malformed') [operation_id='getJob', condition='malformed', location=HeaderSelector(name='X-State', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  repeated state header ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='malformed') [operation_id='getJob', condition='malformed', location=HeaderSelector(name='X-State', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
 immediate results
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -114,7 +114,7 @@ immediate results
   progress {'polls': 0}
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  immediate null result ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='null') [operation_id='createJob', condition='null', location=BodySelector(pointer='/result'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  immediate null result ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='null') [operation_id='createJob', condition='null', location=BodySelector(pointer='/result'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
 fetch with a body and poll with the previous status
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'

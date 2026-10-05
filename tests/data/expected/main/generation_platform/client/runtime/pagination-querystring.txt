@@ -27,7 +27,7 @@
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://search.example.com/search?term=a+b&page=200
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  querystring status pages ['x', 'y'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=StatusSelector(), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] pagination_cycle_error
+  querystring status pages ['x', 'y'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=StatusSelector(), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
   > GET https://search.example.com/search?term=a+b
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://search.example.com/search?term=b%26c

@@ -55,7 +55,7 @@
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SDKError()] cleanup_error
+  release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -83,15 +83,15 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  buffered raw release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SDKError()] cleanup_error
+  buffered raw release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://raw.example.com/items?private=1
     [host: raw.example.com, accept-encoding: gzip, deflate] b''
-  request_raw release failure ! CleanupError: CleanupError(call_id='<call>', pending_calls=0, pending_leases=0) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SDKError()] cleanup_error
+  request_raw release failure ! CleanupError: CleanupError(call_id='<call>', pending_calls=0, pending_leases=0) [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  stream close release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SDKError()] cleanup_error
+  stream close release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   factory failure after grant ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('Upload factory failed')] body_factory_failed
   failed factory [1]/[] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
@@ -199,7 +199,7 @@
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SDKError()] cleanup_error
+  async release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -227,15 +227,15 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async buffered raw release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SDKError()] cleanup_error
+  async buffered raw release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://raw.example.com/items?private=1
     [host: raw.example.com, accept-encoding: gzip, deflate] b''
-  async request_raw release failure ! CleanupError: CleanupError(call_id='<call>', pending_calls=0, pending_leases=0) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SDKError()] cleanup_error
+  async request_raw release failure ! CleanupError: CleanupError(call_id='<call>', pending_calls=0, pending_leases=0) [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async stream close release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SDKError()] cleanup_error
+  async stream close release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   async factory failure after grant ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('Upload factory failed')] body_factory_failed
   async failed factory [1]/[] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1

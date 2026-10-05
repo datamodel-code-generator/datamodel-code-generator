@@ -338,6 +338,7 @@ class _Fetch(Generic[T]):
             elapsed=0.0,
             content_type=content,
             request_id=request_id,
+            attempt_count=0,
         )
 
     def conditional(self, entry: CacheEntry | None) -> PreparedRequest[EncodedAttempt]:

@@ -11,6 +11,7 @@ from uuid import uuid4
 from .errors import (
     APIConnectionError,
     APITimeoutError,
+    AuthError,
     CleanupError,
     ConfigurationError,
     DeliveryState,
@@ -296,10 +297,16 @@ class LogicalCallContext:
         return self._scope.closing_signals()
 
     def snapshot_error(self, error: ErrorT) -> ErrorT:
-        """Attach this call's identity, its session's, its attempts, and its elapsed time to an error to publish."""
+        """Attach this call's identity, its session's, its attempts, and its elapsed time to an error to publish.
+
+        An error without its own delivery evidence, NOT_SENT, takes how far the call got; a transport failure keeps its
+        proof and an auth failure the evidence of its own exchange.
+        """
         error.operation_id = self.operation_id
         error.call_id = self.call_id
         error.parent_session_id = self.parent_session_id
+        if error.delivery_state is DeliveryState.NOT_SENT and not isinstance(error, (APIConnectionError, AuthError)):
+            error.delivery_state = self.delivery_state
         if error.info is None:
             error.attempt_count = self.attempt_count
             error.elapsed = max(0.0, self.monotonic() - self.started)
@@ -344,6 +351,7 @@ class LogicalCallContext:
             if is_client_closed(cause):
                 raise self.snapshot_error(cause)
             error.cause = cause
+            error.delivery_state = delivery
             raise self.snapshot_error(error)
         if (deadline := self.deadline) is not None and self.monotonic() >= deadline.at:
             if is_deadline(cause):

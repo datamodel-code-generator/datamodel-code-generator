@@ -31,6 +31,7 @@ from .errors import (
     IOPhase,
     OAuthErrorCode,
     UnsupportedAsyncBackendError,
+    is_auth_classified,
     is_phase_timeout,
     is_transport,
 )
@@ -228,7 +229,7 @@ def _secret_value(value: object) -> str:
 
 def _provider_failure(error: Exception) -> Exception:
     """Keep classified auth failures of the secret provider and wrap any other exception it raised."""
-    if isinstance(error, (ConfigurationError, AuthError)):
+    if is_auth_classified(error):
         return error
     return AuthError(reason="provider_failed", delivery_state=DeliveryState.NOT_SENT, cause=error)
 

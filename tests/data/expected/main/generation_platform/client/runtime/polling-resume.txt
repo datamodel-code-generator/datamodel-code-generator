@@ -183,7 +183,7 @@ remote cancellation
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  poll without a cancel value ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='missing') [operation_id='getJob', condition='missing', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  poll without a cancel value ! ProtocolDataError: ProtocolDataError(operation_id='getJob', call_id='<call>', condition='missing') [operation_id='getJob', condition='missing', location=BodySelector(pointer='/id'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
   progress {'polls': 1}
   > POST https://api.example.com/exports
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
@@ -222,22 +222,22 @@ server expiries
   polling past the expiry = Report(rows=4)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  missing expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='missing') [operation_id='createJob', condition='missing', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  missing expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='missing') [operation_id='createJob', condition='missing', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  null expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='null') [operation_id='createJob', condition='null', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  null expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='null') [operation_id='createJob', condition='null', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  numeric expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='type') [operation_id='createJob', condition='type', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  numeric expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='type') [operation_id='createJob', condition='type', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  unparsable expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  unparsable expiry ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  impossible date ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  impossible date ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  date past the last year ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error session=True
+  date past the last year ! ProtocolDataError: ProtocolDataError(operation_id='createJob', call_id='<call>', condition='value') [operation_id='createJob', condition='value', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error session=True
 checkpoints on the client clock
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'

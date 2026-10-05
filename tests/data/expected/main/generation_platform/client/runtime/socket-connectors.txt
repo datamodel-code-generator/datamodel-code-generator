@@ -24,7 +24,7 @@
     connection ping b'probe' deadline=False polled=False
     ping PingReceipt(latency=0.25)
     connection close 1002 '' timeout=5.0
-  feed message of another type ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='roomSocket', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
+  feed message of another type ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='roomSocket', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
     open wss://api.example.com/feed/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=() WebSocketOpenRequest(subprotocols=()) ResolvedWSOptions(open_timeout=5.0, idle_timeout=60.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, compression=None) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
     connection send text=True b'text' deadline=True
     connection close 1001 '' timeout=5.0
@@ -33,7 +33,7 @@
     connection send text=False b'array' deadline=True
     text 'café'
     connection close 1002 '' timeout=5.0
-  text that is not UTF-8 ! StreamDecodeError: StreamDecodeError(operation_id='secureSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='secureSocket', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
+  text that is not UTF-8 ! StreamDecodeError: StreamDecodeError(operation_id='secureSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='secureSocket', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, truncated=False] stream_decode_error
   terminal status ! InternalServerError: InternalServerError(status_code=503, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=b'', body_bytes=b'', truncated=False] internal_server_error
   broken evidence with a status ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse] adapter_contract_error
   refusal with 101 ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse] adapter_contract_error
@@ -80,28 +80,28 @@
     progress {'messages_sent': 0, 'messages_received': 0} WebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
     connection send text=True b'message' deadline=True
     connection close 1001 '' timeout=5.0
-  closed before sending ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1001, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] web_socket_closed_error
+  closed before sending ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1001, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
     progress {'messages_sent': 0, 'messages_received': 0} WebSocketSession(helper_id='feed.text', state='ended', subprotocol=None)
     connection abort
   transport failure while receiving ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] api_connection_error
     connection abort
   unclassified receive failure ! AdapterExecutionError: AdapterExecutionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('receive bug')] adapter_execution_error
     connection abort
-  message over the limit ! ProtocolSizeError: ProtocolSizeError(operation_id='feedSocket', call_id='<call>', kind='message', limit=8, observed=9) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='message', unit='bytes', limit=8, observed=9] protocol_size_error
+  message over the limit ! ProtocolSizeError: ProtocolSizeError(operation_id='feedSocket', call_id='<call>', kind='message', limit=8, observed=9) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, kind='message', unit='bytes', limit=8, observed=9] protocol_size_error
     connection ping b'' deadline=True polled=False
     connection close 1001 '' timeout=5.0
   ping timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=20.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
     connection ping b'' deadline=True polled=False
     connection close 1001 '' timeout=5.0
-  closed before the ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] web_socket_closed_error
+  closed before the ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
     connection ping b'' deadline=True polled=False
     connection abort
   transport failure while pinging ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] api_connection_error
     connection close 1000 '' timeout=5.0
     connection abort
-  failing close ! CleanupError: CleanupError(operation_id='feedSocket', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('close failed')] cleanup_error
+  failing close ! CleanupError: CleanupError(operation_id='feedSocket', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_error
     connection close 1001 '' timeout=5.0
-  server closed ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] web_socket_closed_error
+  server closed ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
     connection send text=True b'first' deadline=True
   send that waits too long ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='write', effective_timeout=0.05) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout
     connection send text=True b'third' deadline=True
@@ -158,19 +158,19 @@
   async transport failure before sending ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] api_connection_error
     connection send text=True b'message' deadline=True
     connection close 1001 '' timeout=5.0
-  async closed before sending ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1001, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] web_socket_closed_error
+  async closed before sending ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1001, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
     connection ping b'' deadline=True polled=False
     connection close 1001 '' timeout=5.0
   async ping timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=20.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
     connection ping b'' deadline=True polled=False
     connection close 1001 '' timeout=5.0
-  async closed before the ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] web_socket_closed_error
+  async closed before the ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
     connection ping b'' deadline=True polled=False
     connection abort
   async transport failure while pinging ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] api_connection_error
     connection close 1000 '' timeout=5.0
     connection abort
-  async failing close ! CleanupError: CleanupError(operation_id='feedSocket', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('close failed')] cleanup_error
+  async failing close ! CleanupError: CleanupError(operation_id='feedSocket', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_error
     connection send text=True b'first' deadline=True
   async send that waits too long ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='write', effective_timeout=0.05) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout
     connection abort
@@ -178,7 +178,7 @@
     connection close 1001 '' timeout=5.0
   async receive at the connection's deadline ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=60.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
     connection close 1001 '' timeout=5.0
-  async server closed ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] web_socket_closed_error
+  async server closed ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
     connection abort
   async headers of another type ! AdapterContractError: AdapterContractError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
     connection close 1000 '' timeout=5.0
@@ -192,4 +192,4 @@
     connection abort
   async send holding the turn past its cap ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=APITimeoutError()] delivery_unknown_error
   async send given the turn past its cap ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='write', effective_timeout=10.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout
-  async send after the stopped turn ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='send') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  async send after the stopped turn ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='send') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_state_error

@@ -193,7 +193,7 @@ a remote offset regressed
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-length: 4] b'4567'
   > HEAD https://api.example.com/files/u13
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=4, expected_offset=8, remote_offset=0, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_offset_error [confirmed_offset=4, expected_offset=8, remote_offset=0, size=10] resume_state=True
+  advance ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=4, expected_offset=8, remote_offset=0, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] upload_offset_error [confirmed_offset=4, expected_offset=8, remote_offset=0, size=10] resume_state=True
 a remote offset past the content
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -204,7 +204,7 @@ a remote offset past the content
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-length: 4] b'4567'
   > HEAD https://api.example.com/files/u14
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=4, expected_offset=8, remote_offset=11, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_offset_error [confirmed_offset=4, expected_offset=8, remote_offset=11, size=10] resume_state=True
+  advance ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=4, expected_offset=8, remote_offset=11, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] upload_offset_error [confirmed_offset=4, expected_offset=8, remote_offset=11, size=10] resume_state=True
 a remote offset past the chunk
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -215,7 +215,7 @@ a remote offset past the chunk
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-length: 4] b'4567'
   > HEAD https://api.example.com/files/u15
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=4, expected_offset=8, remote_offset=9, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_offset_error [confirmed_offset=4, expected_offset=8, remote_offset=9, size=10] resume_state=True
+  advance ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=4, expected_offset=8, remote_offset=9, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] upload_offset_error [confirmed_offset=4, expected_offset=8, remote_offset=9, size=10] resume_state=True
 a probe after an error answer that claims bytes never sent
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -224,7 +224,7 @@ a probe after an error answer that claims bytes never sent
   advance ! InternalServerError: InternalServerError(status_code=500, operation_id='appendFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='appendFile', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'', body_bytes=b'', truncated=False] internal_server_error
   > HEAD https://api.example.com/files/u16
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=0, expected_offset=0, remote_offset=10, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_offset_error [confirmed_offset=0, expected_offset=0, remote_offset=10, size=10] resume_state=True
+  advance ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=0, expected_offset=0, remote_offset=10, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] upload_offset_error [confirmed_offset=0, expected_offset=0, remote_offset=10, size=10] resume_state=True
 part of a chunk where partial commits are forbidden
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -232,7 +232,7 @@ part of a chunk where partial commits are forbidden
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
   > GET https://api.example.com/files/u17/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  advance ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=0, expected_offset=8, remote_offset=3, size=10) [condition='inconsistent', location=BodySelector(pointer='/offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_offset_error [confirmed_offset=0, expected_offset=8, remote_offset=3, size=10] resume_state=True
+  advance ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=0, expected_offset=8, remote_offset=3, size=10) [condition='inconsistent', location=BodySelector(pointer='/offset'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] upload_offset_error [confirmed_offset=0, expected_offset=8, remote_offset=3, size=10] resume_state=True
 probe responses without a usable offset
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -240,35 +240,35 @@ probe responses without a usable offset
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u18
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance with a missing offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', call_id='<call>', condition='missing') [operation_id='probeFile', condition='missing', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  advance with a missing offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', call_id='<call>', condition='missing') [operation_id='probeFile', condition='missing', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u19
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u19
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance with a not digits offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', call_id='<call>', condition='value') [operation_id='probeFile', condition='value', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  advance with a not digits offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', call_id='<call>', condition='value') [operation_id='probeFile', condition='value', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u20
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u20
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance with a too many digits offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', call_id='<call>', condition='value') [operation_id='probeFile', condition='value', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  advance with a too many digits offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', call_id='<call>', condition='value') [operation_id='probeFile', condition='value', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u21
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u21
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance with a repeated offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', call_id='<call>', condition='malformed') [operation_id='probeFile', condition='malformed', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  advance with a repeated offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', call_id='<call>', condition='malformed') [operation_id='probeFile', condition='malformed', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u22
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
   > GET https://api.example.com/files/u22/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  advance with a string offset ! ProtocolDataError: ProtocolDataError(operation_id='getFileStatus', call_id='<call>', condition='type') [operation_id='getFileStatus', condition='type', location=BodySelector(pointer='/offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  advance with a string offset ! ProtocolDataError: ProtocolDataError(operation_id='getFileStatus', call_id='<call>', condition='type') [operation_id='getFileStatus', condition='type', location=BodySelector(pointer='/offset'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u23
@@ -282,7 +282,7 @@ probe responses without a usable offset
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
   > GET https://api.example.com/files/u24/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  advance with a negative offset ! ProtocolDataError: ProtocolDataError(operation_id='getFileStatus', call_id='<call>', condition='value') [operation_id='getFileStatus', condition='value', location=BodySelector(pointer='/offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  advance with a negative offset ! ProtocolDataError: ProtocolDataError(operation_id='getFileStatus', call_id='<call>', condition='value') [operation_id='getFileStatus', condition='value', location=BodySelector(pointer='/offset'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
 a completion of unknown outcome
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -442,7 +442,7 @@ checkpoint a complete upload
 resume a checkpoint whose remote offset regressed
   > HEAD https://api.example.com/files/u36
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  resume ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=4, expected_offset=4, remote_offset=0, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_offset_error
+  resume ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=4, expected_offset=4, remote_offset=0, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] upload_offset_error
 refused checkpoints and sources
   resume with a shorter source ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', expected_size=10, actual_size=5) [condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_source_changed_error
   resume with a longer file ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', expected_size=10, actual_size=11) [condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_source_changed_error
@@ -482,10 +482,10 @@ server expiries
   import its export = ResumeState(version=1)
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  start with no date ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Upload-Expires', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  start with no date ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Upload-Expires', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  start with no day ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Upload-Expires', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  start with no day ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Upload-Expires', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   start with a leap second = UploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
@@ -494,13 +494,13 @@ server expiries
   start with a fraction = UploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  start with a null body expiry ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='null') [operation_id='createFile', condition='null', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  start with a null body expiry ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='null') [operation_id='createFile', condition='null', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  start with a number as body expiry ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='type') [operation_id='createFile', condition='type', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  start with a number as body expiry ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='type') [operation_id='createFile', condition='type', location=BodySelector(pointer='/expires'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  start with an empty expiry ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Upload-Expires', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  start with an empty expiry ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Upload-Expires', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
 the client's clock
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -650,14 +650,14 @@ async resume and refusals
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-length: 4] b'4567'
   > HEAD https://api.example.com/files/u56
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance to a regressed offset ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=4, expected_offset=8, remote_offset=0, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_offset_error [confirmed_offset=4, expected_offset=8, remote_offset=0, size=10] resume_state=True
+  advance to a regressed offset ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=4, expected_offset=8, remote_offset=0, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] upload_offset_error [confirmed_offset=4, expected_offset=8, remote_offset=0, size=10] resume_state=True
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u57
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
   > GET https://api.example.com/files/u57/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  advance with a forbidden partial commit ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=0, expected_offset=8, remote_offset=5, size=10) [condition='inconsistent', location=BodySelector(pointer='/offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_offset_error [confirmed_offset=0, expected_offset=8, remote_offset=5, size=10] resume_state=True
+  advance with a forbidden partial commit ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=0, expected_offset=8, remote_offset=5, size=10) [condition='inconsistent', location=BodySelector(pointer='/offset'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] upload_offset_error [confirmed_offset=0, expected_offset=8, remote_offset=5, size=10] resume_state=True
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   advance over shrunk content ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', expected_size=10, actual_size=1) [condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_source_changed_error [expected_size=10, actual_size=1]

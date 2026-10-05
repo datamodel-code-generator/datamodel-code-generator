@@ -31,10 +31,10 @@
   path cursor ['1', '2']
   > GET https://api.example.com/folders/f1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  path cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listFolder', call_id='<call>', condition='value') [operation_id='listFolder', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  path cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listFolder', call_id='<call>', condition='value') [operation_id='listFolder', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/folders/f1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  path cursor '..' [] ! ProtocolDataError: ProtocolDataError(operation_id='listFolder', call_id='<call>', condition='value') [operation_id='listFolder', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  path cursor '..' [] ! ProtocolDataError: ProtocolDataError(operation_id='listFolder', call_id='<call>', condition='value') [operation_id='listFolder', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users?tags=mine
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a&limit=5&code=200&tags=t1&tags=t2
@@ -44,10 +44,10 @@
   bound values ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing first header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='x-snapshot', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  missing first header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='x-snapshot', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing every header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='X-Tag', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  missing every header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='X-Tag', occurrence='all'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   missing values of the last page ['1']

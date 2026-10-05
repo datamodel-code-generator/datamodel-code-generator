@@ -1,10 +1,10 @@
 # pagination-paths pydantic_v2.BaseModel
   > GET https://api.example.com/reserved/r1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  reserved {'name': 'r1'} cursor '%2e' [] ! ProtocolDataError: ProtocolDataError(operation_id='listReserved', call_id='<call>', condition='value') [operation_id='listReserved', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  reserved {'name': 'r1'} cursor '%2e' [] ! ProtocolDataError: ProtocolDataError(operation_id='listReserved', call_id='<call>', condition='value') [operation_id='listReserved', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/reserved/r1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  reserved {'name': 'r1'} cursor '%2E.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listReserved', call_id='<call>', condition='value') [operation_id='listReserved', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  reserved {'name': 'r1'} cursor '%2E.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listReserved', call_id='<call>', condition='value') [operation_id='listReserved', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/reserved/r1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/reserved/%2e%2f
@@ -17,10 +17,10 @@
   reserved {'name': 'r1'} cursor 'a' ['1', '2']
   > GET https://api.example.com/labels/.l1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  labels {'name': 'l1'} cursor '' [] ! ProtocolDataError: ProtocolDataError(operation_id='listLabels', call_id='<call>', condition='value') [operation_id='listLabels', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  labels {'name': 'l1'} cursor '' [] ! ProtocolDataError: ProtocolDataError(operation_id='listLabels', call_id='<call>', condition='value') [operation_id='listLabels', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/labels/.l1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  labels {'name': 'l1'} cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listLabels', call_id='<call>', condition='value') [operation_id='listLabels', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  labels {'name': 'l1'} cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listLabels', call_id='<call>', condition='value') [operation_id='listLabels', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/labels/.l1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/labels/...
@@ -43,10 +43,10 @@
   files {'name': 'f1'} cursor '..' ['1', '2']
   > GET https://api.example.com/pairs/p1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  pairs {'owner': '', 'name': 'p1'} cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  pairs {'owner': '', 'name': 'p1'} cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/pairs/p1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  pairs {'owner': '', 'name': 'p1'} cursor '..' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  pairs {'owner': '', 'name': 'p1'} cursor '..' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/pairs/op1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/pairs/o.
@@ -54,7 +54,7 @@
   pairs {'owner': 'o', 'name': 'p1'} cursor '.' ['1', '2']
   > GET https://api.example.com/pairs/.p1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  pairs {'owner': '.', 'name': 'p1'} cursor '' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  pairs {'owner': '.', 'name': 'p1'} cursor '' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/pairs/.p1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/pairs/.a
@@ -62,7 +62,7 @@
   pairs {'owner': '.', 'name': 'p1'} cursor 'a' ['1', '2']
   > GET https://api.example.com/joined/pj1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  joined {'prefix': 'p', 'name': 'j1'} cursor '' [] ! ProtocolDataError: ProtocolDataError(operation_id='listJoined', call_id='<call>', condition='value') [operation_id='listJoined', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  joined {'prefix': 'p', 'name': 'j1'} cursor '' [] ! ProtocolDataError: ProtocolDataError(operation_id='listJoined', call_id='<call>', condition='value') [operation_id='listJoined', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/joined/pj1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/joined/..a
@@ -97,7 +97,7 @@
   literal label scope ['1', '2']
   > GET https://api.example.com/reserved/x
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async reserved cursor '%2e' [] ! ProtocolDataError: ProtocolDataError(operation_id='listReserved', call_id='<call>', condition='value') [operation_id='listReserved', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async reserved cursor '%2e' [] ! ProtocolDataError: ProtocolDataError(operation_id='listReserved', call_id='<call>', condition='value') [operation_id='listReserved', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/labels/.x
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/labels/...

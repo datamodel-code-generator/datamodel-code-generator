@@ -212,27 +212,27 @@ another reopen operation
   > GET https://api.example.com/events last-event-id=None
   < closed
     hook stream_end outcome=error
-  open without the stream ID ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Stream-Id', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  open without the stream ID ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Stream-Id', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/events last-event-id=None
   < closed
     hook stream_end outcome=error
-  open with two stream IDs ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='X-Stream-Id', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  open with two stream IDs ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='X-Stream-Id', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/events last-event-id=None
   < closed
     hook stream_end outcome=error
-  open with a dot segment stream ID ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Stream-Id', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  open with a dot segment stream ID ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Stream-Id', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/events last-event-id=None
   < closed
     hook stream_end outcome=error
-  open without the expiry ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Stream-Expires', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  open without the expiry ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Stream-Expires', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/events last-event-id=None
   < closed
     hook stream_end outcome=error
-  open with two expiries ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='X-Stream-Expires', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  open with two expiries ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='X-Stream-Expires', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/events last-event-id=None
   < closed
     hook stream_end outcome=error
-  open with an unreadable expiry ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Stream-Expires', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  open with an unreadable expiry ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Stream-Expires', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/events last-event-id=None
   reopen without the token
     1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
@@ -241,7 +241,7 @@ another reopen operation
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   < closed
     hook stream_end outcome=error
-    ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error resume_state=NoneType
+    ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error resume_state=NoneType
 bound path values
   > GET https://api.example.com/rooms/r0 last-event-id=None
   reopened with the shard
@@ -254,7 +254,7 @@ bound path values
   shard saved {"arguments": [["r"], ["0"], []], "body": [], "bound": ["2"], "cursor": "2", "expires_at": null}
   > GET https://api.example.com/rooms/.x last-event-id=None
   < closed
-  open with a shard making a dot segment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Shard', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  open with a shard making a dot segment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Shard', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
 NDJSON body cursors
   > GET https://api.example.com/records last-event-id=None
   1  id=None retry=None data=Record{'id': 'r1', 'text': 'a'} raw='{"id": "r1", "text": "a"}'
@@ -405,19 +405,19 @@ asyncio
   async stopped ! Stop
   > GET https://api.example.com/events last-event-id=None
   < closed
-  async open without the stream ID ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Stream-Id', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async open without the stream ID ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Stream-Id', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/events last-event-id=None
   async reopen without the token
     1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
   < closed
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   < closed
-    ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error resume_state=NoneType
+    ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error resume_state=NoneType
   > GET https://api.example.com/events last-event-id=None
   < closed
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   < closed
-  async resume without the token ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async resume without the token ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
 stepped client clock
   > GET https://api.example.com/events last-event-id=None
   1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'

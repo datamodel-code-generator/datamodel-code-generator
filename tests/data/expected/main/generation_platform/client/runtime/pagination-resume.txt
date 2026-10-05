@@ -94,10 +94,10 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  cycle ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] pagination_cycle_error resume_state=ResumeState
+  cycle ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error resume_state=ResumeState
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed cycle ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=2, first_seen_page_index=1) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] pagination_cycle_error
+  resumed cycle ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=2, first_seen_page_index=1) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   snapshot first = ['1']

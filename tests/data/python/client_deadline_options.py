@@ -143,6 +143,7 @@ def _errors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None
         ("delivery", errors.RequestCancelledError, {"source": "cancel_token", "delivery_state": "NOT_SENT"}),
         ("attempt count", errors.SDKError, {"attempt_count": -1}),
         ("attempt bool", errors.SDKError, {"attempt_count": True}),
+        ("deadline without its expiry", errors.APITimeoutError, {"reason": "deadline_exceeded"}),
     ):
         record(lines, f"invalid error {label}", lambda constructor=constructor, values=values: constructor(**values))
     for label, value in (

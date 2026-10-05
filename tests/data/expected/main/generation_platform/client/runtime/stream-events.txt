@@ -37,7 +37,7 @@
   before the client closes 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
   client close with an open stream ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
-  after the client closed ! ConfigurationError: ConfigurationError(operation_id='streamEvents', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='streamEvents', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
+  after the client closed ! ConfigurationError: ConfigurationError(operation_id='streamEvents', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='streamEvents', field_path=('client', 'closing'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] client_closed
   > GET https://api.example.com/events accept=text/event-stream
   async idle first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
@@ -73,7 +73,7 @@
   async before the client closes 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   async client close with an open stream ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
   < closed
-  async after the client closed ! ConfigurationError: ConfigurationError(operation_id='streamEvents', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='streamEvents', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
+  async after the client closed ! ConfigurationError: ConfigurationError(operation_id='streamEvents', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='streamEvents', field_path=('client', 'closing'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] client_closed
   async outcome of closing returned None
   > GET https://api.example.com/events accept=text/event-stream
   < closed

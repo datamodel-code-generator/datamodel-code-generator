@@ -85,7 +85,7 @@
   injected adapter invocations=1
   sync native fault DecodingError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=DecodingError'
   injected adapter invocations=1
-  sync native fault CloseError = 'CleanupError delivery=DeliveryState.NOT_SENT phase=None stop=None attempts=1 reason=None status=None cause=CloseError'
+  sync native fault CloseError = 'CleanupError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=CloseError'
   injected adapter invocations=1
   sync native fault SSEError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=SSEError'
   injected adapter invocations=1
@@ -321,7 +321,7 @@
   injected adapter invocations=1
   async native fault DecodingError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=DecodingError'
   injected adapter invocations=1
-  async native fault CloseError = 'CleanupError delivery=DeliveryState.NOT_SENT phase=None stop=None attempts=1 reason=None status=None cause=CloseError'
+  async native fault CloseError = 'CleanupError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=CloseError'
   injected adapter invocations=1
   async native fault SSEError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=SSEError'
   injected adapter invocations=1

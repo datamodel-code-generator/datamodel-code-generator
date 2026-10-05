@@ -95,7 +95,7 @@
   limiter sessions 3 ordinary=None
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  failed page ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='missing') [operation_id='listLoose', condition='missing', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error same session=True
+  failed page ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='missing') [operation_id='listLoose', condition='missing', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error same session=True
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   call end hook failure ! SDKError: SDKError(operation_id='listUsers', call_id='<call>', reason='hook_failed') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('hook failed on call_end')] hook_failed completed=1 session=True
@@ -123,7 +123,7 @@
   async sessions 1 named=True
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async failed page [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='missing') [operation_id='listLoose', condition='missing', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  async failed page [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='missing') [operation_id='listLoose', condition='missing', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   async item while fetching ! ProtocolStateError: ProtocolStateError(state='fetching', action='anext') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   async close while fetching ! ProtocolStateError: ProtocolStateError(state='fetching', action='aclose') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   > GET https://api.example.com/users

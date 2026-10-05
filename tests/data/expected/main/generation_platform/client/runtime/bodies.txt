@@ -15,10 +15,10 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'once'
   file that cannot seek = b'\x89PNG'
   file that cannot seek again ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-  unreadable file ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('disk failed')] body_factory_failed
+  unreadable file ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=OSError('disk failed')] body_factory_failed
   file without a position ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('tell failed')] body_factory_failed
-  file longer than its end ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_changed', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_changed
-  file shorter than its end ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_changed', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_changed
+  file longer than its end ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_changed', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, body_bytes=b'', truncated=False] body_changed
+  file shorter than its end ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_changed', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, body_bytes=b'', truncated=False] body_changed
   interrupted file propagated
   > PUT https://api.example.com/v1/pets/1/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 6] b'shared'
@@ -45,9 +45,9 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'x'
   chunks closed
   owned stream = b'\x89PNG'
-  stream of text ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=TypeError('A body chunk must be bytes')] body_factory_failed
-  failing stream ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('stream failed')] body_factory_failed
-  stream that is not iterable ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=TypeError("'int' object is not iterable")] body_factory_failed
+  stream of text ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TypeError('A body chunk must be bytes')] body_factory_failed
+  failing stream ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=RuntimeError('stream failed')] body_factory_failed
+  stream that is not iterable ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TypeError("'int' object is not iterable")] body_factory_failed
   chunks closed
   interrupted owned stream propagated
   factory declares 4 image/png b'f'
@@ -75,21 +75,21 @@
   attempt of another length that fails to close: DecodeError secondary ['RuntimeError']
   factory <call> 0 0 True
   attempt closed
-  attempt longer than declared ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_changed', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_changed
+  attempt longer than declared ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_changed', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, body_bytes=b'', truncated=False] body_changed
   factory <call> 0 0 True
   attempt closed
-  attempt shorter than declared ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_changed', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_changed
+  attempt shorter than declared ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_changed', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, body_bytes=b'', truncated=False] body_changed
   factory <call> 0 0 True
   > PUT https://api.example.com/v1/pets/1/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'ok'
   attempt closed
-  attempt failing to close ! CleanupError: CleanupError(operation_id='uploadPhoto', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SDKError()] cleanup_error
+  attempt failing to close ! CleanupError: CleanupError(operation_id='uploadPhoto', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=SDKError()] cleanup_error
   factory <call> 0 0 True
   attempt closed
   attempt failing to read and to close: SDKError secondary ['SDKError']
   factory <call> 0 0 True
   attempt closed
-  attempt that cannot iterate ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('cannot iterate')] body_factory_failed
+  attempt that cannot iterate ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=RuntimeError('cannot iterate')] body_factory_failed
   factory <call> 0 0 True
   > POST https://hooks.example.com/upload
     [host: hooks.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 3] b'raw'
@@ -125,9 +125,9 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'once'
   async file that cannot seek = b'\x89PNG'
   async file that cannot seek again ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
-  async unreadable file ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('disk failed')] body_factory_failed
+  async unreadable file ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=OSError('disk failed')] body_factory_failed
   async file without a position ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('tell failed')] body_factory_failed
-  async file longer than its end ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_changed', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_changed
+  async file longer than its end ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='body_changed', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, body_bytes=b'', truncated=False] body_changed
   async interrupted file propagated
   > PUT https://api.example.com/v1/pets/1/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'\x89PNG'
@@ -143,9 +143,9 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'x'
   async chunks closed
   async owned stream = b'\x89PNG'
-  async stream of text ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=TypeError('A body chunk must be bytes')] body_factory_failed
-  async failing stream ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('stream failed')] body_factory_failed
-  async stream that is not async iterable ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=TypeError("'int' object is not an async iterable")] body_factory_failed
+  async stream of text ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TypeError('A body chunk must be bytes')] body_factory_failed
+  async failing stream ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=RuntimeError('stream failed')] body_factory_failed
+  async stream that is not async iterable ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TypeError("'int' object is not an async iterable")] body_factory_failed
   async factory declares 4 image/png b'f'
   factory <call> 0 0 True
   > PUT https://api.example.com/v1/pets/1/photo
@@ -168,13 +168,13 @@
   > PUT https://api.example.com/v1/pets/1/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'ok'
   attempt closed
-  async attempt failing to close ! CleanupError: CleanupError(operation_id='uploadPhoto', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=SDKError()] cleanup_error
+  async attempt failing to close ! CleanupError: CleanupError(operation_id='uploadPhoto', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=SDKError()] cleanup_error
   factory <call> 0 0 True
   attempt closed
   async attempt failing to read and to close: SDKError secondary ['SDKError']
   factory <call> 0 0 True
   attempt closed
-  async attempt that cannot iterate ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('cannot iterate')] body_factory_failed
+  async attempt that cannot iterate ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=RuntimeError('cannot iterate')] body_factory_failed
   factory <call> 0 0 True
   > POST https://hooks.example.com/upload
     [host: hooks.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 3] b'raw'

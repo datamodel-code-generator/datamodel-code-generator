@@ -22,32 +22,32 @@
   options cleanup text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='cleanup_timeout') [field_path=('cleanup_timeout',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
   < closed
   closing stops the call
-  call ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
+  call ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] client_closed
   close = None
   probe ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='invalid_type', field_path='options') [operation_id='getPet', field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   closing stops the call close again = None
   < closed
   closing outlasts the cleanup time
-  call ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
+  call ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] client_closed
   close ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.05) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
   probe ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='invalid_type', field_path='options') [operation_id='getPet', field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   closing outlasts the cleanup time close again = None
   < closed
   closing interrupts the read
-  call ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] client_closed
+  call ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=APIConnectionError()] client_closed
   close = None
   probe ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='invalid_type', field_path='options') [operation_id='getPet', field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   closing interrupts the read close again = None
   < closed
   async closing stops the call
-  call ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
+  call ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] client_closed
   close = None
   probe ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='invalid_type', field_path='options') [operation_id='getPet', field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   refused ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
   async closing stops the call close again = None
   < closed
   async closing outlasts the cleanup time
-  call ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
+  call ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] client_closed
   close = None
   probe ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='invalid_type', field_path='options') [operation_id='getPet', field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   refused ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getPet', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed

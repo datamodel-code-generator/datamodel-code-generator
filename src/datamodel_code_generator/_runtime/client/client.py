@@ -3276,7 +3276,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
             )
-            fields = sign_request(signer.signer, signing)
+            fields = sign_request(signer.signer, signing, _delivery(call))
             call.check("auth")
             request = apply_signature(request, fields, signer.capabilities)
         return request
@@ -4264,7 +4264,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
             )
-            fields = await asign_request(signer.signer, signing)
+            fields = await asign_request(signer.signer, signing, _delivery(call))
             call.check("auth")
             request = apply_signature(request, fields, signer.capabilities)
         return request
