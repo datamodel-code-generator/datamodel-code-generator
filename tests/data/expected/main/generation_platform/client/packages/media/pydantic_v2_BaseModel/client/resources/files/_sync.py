@@ -16,7 +16,7 @@ from ...bodies import SyncBinaryBody
 from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
-from ...types.files import ReplaceFileResponse, StoreFileResponse
+from ...types.files import ReadFileResponse, ReplaceFileResponse, StoreFileResponse
 
 
 class FilesResource:
@@ -41,6 +41,20 @@ class FilesResource:
         """The same operations, returning blocks that send each call on entry and stream its response."""
         return FilesWithStreamingResponse(self._core)
 
+    def read_file(
+        self,
+        *,
+        response_media_type: str | None = None,
+        options: RequestOptions | None = None,
+    ) -> ReadFileResponse:
+        """Call GET /files."""
+        return self._core.execute(
+            _operations.OPERATION_13,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        ).data
+
     @overload
     def store_file(
         self,
@@ -72,6 +86,15 @@ class FilesResource:
     def store_file(
         self,
         *,
+        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        media_type: Literal['application/json'],
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> StoreFileResponse: ...
+    @overload
+    def store_file(
+        self,
+        *,
         body: SyncBinaryBody,
         media_type: str,
         response_media_type: None = None,
@@ -99,6 +122,15 @@ class FilesResource:
     def store_file(
         self,
         *,
+        body: SyncBinaryBody,
+        media_type: str,
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> StoreFileResponse: ...
+    @overload
+    def store_file(
+        self,
+        *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
         media_type: str,
         response_media_type: None = None,
@@ -122,17 +154,26 @@ class FilesResource:
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> bytes | None: ...
+    @overload
+    def store_file(
+        self,
+        *,
+        body: _dcg_type_1 | ModelValue[_dcg_type_1],
+        media_type: str,
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> StoreFileResponse: ...
     def store_file(
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
         media_type: str | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse:
         """Call POST /files."""
         return self._core.execute(
-            _operations.OPERATION_13,
+            _operations.OPERATION_14,
             (),
             body=body,
             media_type=media_type,
@@ -165,7 +206,7 @@ class FilesResource:
     ) -> ReplaceFileResponse:
         """Call PUT /files."""
         return self._core.execute(
-            _operations.OPERATION_14,
+            _operations.OPERATION_15,
             (),
             body=body,
             media_type=media_type,
@@ -180,6 +221,20 @@ class FilesWithResponse:
         """Keep the client core the operations send through."""
         self._core = core
 
+    def read_file(
+        self,
+        *,
+        response_media_type: str | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[ReadFileResponse]:
+        """Call GET /files."""
+        return self._core.execute(
+            _operations.OPERATION_13,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     @overload
     def store_file(
         self,
@@ -211,6 +266,15 @@ class FilesWithResponse:
     def store_file(
         self,
         *,
+        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        media_type: Literal['application/json'],
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> Response[StoreFileResponse]: ...
+    @overload
+    def store_file(
+        self,
+        *,
         body: SyncBinaryBody,
         media_type: str,
         response_media_type: None = None,
@@ -238,6 +302,15 @@ class FilesWithResponse:
     def store_file(
         self,
         *,
+        body: SyncBinaryBody,
+        media_type: str,
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> Response[StoreFileResponse]: ...
+    @overload
+    def store_file(
+        self,
+        *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
         media_type: str,
         response_media_type: None = None,
@@ -261,17 +334,26 @@ class FilesWithResponse:
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> Response[bytes | None]: ...
+    @overload
+    def store_file(
+        self,
+        *,
+        body: _dcg_type_1 | ModelValue[_dcg_type_1],
+        media_type: str,
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> Response[StoreFileResponse]: ...
     def store_file(
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
         media_type: str | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]:
         """Call POST /files."""
         return self._core.execute(
-            _operations.OPERATION_13,
+            _operations.OPERATION_14,
             (),
             body=body,
             media_type=media_type,
@@ -304,7 +386,7 @@ class FilesWithResponse:
     ) -> Response[ReplaceFileResponse]:
         """Call PUT /files."""
         return self._core.execute(
-            _operations.OPERATION_14,
+            _operations.OPERATION_15,
             (),
             body=body,
             media_type=media_type,
@@ -319,13 +401,27 @@ class FilesWithRawResponse:
         """Keep the client core the operations send through."""
         self._core = core
 
+    def read_file(
+        self,
+        *,
+        response_media_type: str | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call GET /files."""
+        return self._core.execute_raw(
+            _operations.OPERATION_13,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     @overload
     def store_file(
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
         media_type: Literal['application/json'],
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -334,7 +430,7 @@ class FilesWithRawResponse:
         *,
         body: SyncBinaryBody,
         media_type: str,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -343,7 +439,7 @@ class FilesWithRawResponse:
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
         media_type: str,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def store_file(
@@ -351,12 +447,12 @@ class FilesWithRawResponse:
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
         media_type: str | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /files."""
         return self._core.execute_raw(
-            _operations.OPERATION_13,
+            _operations.OPERATION_14,
             (),
             body=body,
             media_type=media_type,
@@ -389,7 +485,7 @@ class FilesWithRawResponse:
     ) -> RawResponse:
         """Call PUT /files."""
         return self._core.execute_raw(
-            _operations.OPERATION_14,
+            _operations.OPERATION_15,
             (),
             body=body,
             media_type=media_type,
@@ -404,13 +500,27 @@ class FilesWithStreamingResponse:
         """Keep the client core the operations send through."""
         self._core = core
 
+    def read_file(
+        self,
+        *,
+        response_media_type: str | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call GET /files."""
+        return self._core.stream(
+            _operations.OPERATION_13,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     @overload
     def store_file(
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
         media_type: Literal['application/json'],
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -419,7 +529,7 @@ class FilesWithStreamingResponse:
         *,
         body: SyncBinaryBody,
         media_type: str,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -428,7 +538,7 @@ class FilesWithStreamingResponse:
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
         media_type: str,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def store_file(
@@ -436,12 +546,12 @@ class FilesWithStreamingResponse:
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
         media_type: str | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /files."""
         return self._core.stream(
-            _operations.OPERATION_13,
+            _operations.OPERATION_14,
             (),
             body=body,
             media_type=media_type,
@@ -474,7 +584,7 @@ class FilesWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /files."""
         return self._core.stream(
-            _operations.OPERATION_14,
+            _operations.OPERATION_15,
             (),
             body=body,
             media_type=media_type,

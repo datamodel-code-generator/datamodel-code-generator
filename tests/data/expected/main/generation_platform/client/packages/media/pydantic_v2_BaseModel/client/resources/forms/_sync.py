@@ -329,7 +329,7 @@ class FormsResource:
     ) -> SubmitSearchResponse:
         """Call POST /searches."""
         return self._core.execute(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             body=body,
             media_type=media_type,
@@ -345,7 +345,7 @@ class FormsResource:
     ) -> SubmitCoverResponse:
         """Call POST /covers."""
         return self._core.execute(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -361,7 +361,7 @@ class FormsResource:
     ) -> SubmitCardResponse:
         """Call POST /cards."""
         return self._core.execute(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,
@@ -377,7 +377,7 @@ class FormsResource:
     ) -> SubmitStickersResponse:
         """Call POST /stickers."""
         return self._core.execute(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             body=body,
             media_type=media_type,
@@ -393,7 +393,7 @@ class FormsResource:
     ) -> SubmitAlbumResponse:
         """Call POST /albums."""
         return self._core.execute(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,
@@ -668,7 +668,7 @@ class FormsWithResponse:
     ) -> Response[SubmitSearchResponse]:
         """Call POST /searches."""
         return self._core.execute(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             body=body,
             media_type=media_type,
@@ -684,7 +684,7 @@ class FormsWithResponse:
     ) -> Response[SubmitCoverResponse]:
         """Call POST /covers."""
         return self._core.execute(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -700,7 +700,7 @@ class FormsWithResponse:
     ) -> Response[SubmitCardResponse]:
         """Call POST /cards."""
         return self._core.execute(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,
@@ -716,7 +716,7 @@ class FormsWithResponse:
     ) -> Response[SubmitStickersResponse]:
         """Call POST /stickers."""
         return self._core.execute(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             body=body,
             media_type=media_type,
@@ -732,7 +732,7 @@ class FormsWithResponse:
     ) -> Response[SubmitAlbumResponse]:
         """Call POST /albums."""
         return self._core.execute(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,
@@ -986,7 +986,7 @@ class FormsWithRawResponse:
     ) -> RawResponse:
         """Call POST /searches."""
         return self._core.execute_raw(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             body=body,
             media_type=media_type,
@@ -1002,7 +1002,7 @@ class FormsWithRawResponse:
     ) -> RawResponse:
         """Call POST /covers."""
         return self._core.execute_raw(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -1018,7 +1018,7 @@ class FormsWithRawResponse:
     ) -> RawResponse:
         """Call POST /cards."""
         return self._core.execute_raw(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,
@@ -1034,7 +1034,7 @@ class FormsWithRawResponse:
     ) -> RawResponse:
         """Call POST /stickers."""
         return self._core.execute_raw(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             body=body,
             media_type=media_type,
@@ -1050,7 +1050,7 @@ class FormsWithRawResponse:
     ) -> RawResponse:
         """Call POST /albums."""
         return self._core.execute_raw(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,
@@ -1304,7 +1304,7 @@ class FormsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /searches."""
         return self._core.stream(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             body=body,
             media_type=media_type,
@@ -1320,7 +1320,7 @@ class FormsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /covers."""
         return self._core.stream(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -1336,7 +1336,7 @@ class FormsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /cards."""
         return self._core.stream(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,
@@ -1352,7 +1352,7 @@ class FormsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /stickers."""
         return self._core.stream(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             body=body,
             media_type=media_type,
@@ -1368,7 +1368,7 @@ class FormsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /albums."""
         return self._core.stream(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,

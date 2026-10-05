@@ -109,6 +109,9 @@ class FieldLabelsPostRequest(TypedDict, extra_items=str):
     sheet: NotRequired[bytes]
 
 
+FieldFilesGetResponse: TypeAlias = bytes
+
+
 FieldFilesPostRequest: TypeAlias = bytes
 
 

@@ -156,6 +156,10 @@ class FieldLabelsPostRequest(BaseModel):
     sheet: bytes | None = None
 
 
+class FieldFilesGetResponse(RootModel[bytes]):
+    root: bytes
+
+
 class FieldFilesPostRequest(RootModel[bytes]):
     root: bytes
 

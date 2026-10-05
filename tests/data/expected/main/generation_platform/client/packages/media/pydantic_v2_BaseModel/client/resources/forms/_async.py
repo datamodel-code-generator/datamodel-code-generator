@@ -329,7 +329,7 @@ class AsyncFormsResource:
     ) -> SubmitSearchResponse:
         """Call POST /searches."""
         return (await self._core.execute(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             body=body,
             media_type=media_type,
@@ -345,7 +345,7 @@ class AsyncFormsResource:
     ) -> SubmitCoverResponse:
         """Call POST /covers."""
         return (await self._core.execute(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -361,7 +361,7 @@ class AsyncFormsResource:
     ) -> SubmitCardResponse:
         """Call POST /cards."""
         return (await self._core.execute(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,
@@ -377,7 +377,7 @@ class AsyncFormsResource:
     ) -> SubmitStickersResponse:
         """Call POST /stickers."""
         return (await self._core.execute(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             body=body,
             media_type=media_type,
@@ -393,7 +393,7 @@ class AsyncFormsResource:
     ) -> SubmitAlbumResponse:
         """Call POST /albums."""
         return (await self._core.execute(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,
@@ -668,7 +668,7 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitSearchResponse]:
         """Call POST /searches."""
         return await self._core.execute(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             body=body,
             media_type=media_type,
@@ -684,7 +684,7 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitCoverResponse]:
         """Call POST /covers."""
         return await self._core.execute(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -700,7 +700,7 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitCardResponse]:
         """Call POST /cards."""
         return await self._core.execute(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,
@@ -716,7 +716,7 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitStickersResponse]:
         """Call POST /stickers."""
         return await self._core.execute(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             body=body,
             media_type=media_type,
@@ -732,7 +732,7 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitAlbumResponse]:
         """Call POST /albums."""
         return await self._core.execute(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,
@@ -986,7 +986,7 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /searches."""
         return await self._core.execute_raw(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             body=body,
             media_type=media_type,
@@ -1002,7 +1002,7 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /covers."""
         return await self._core.execute_raw(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -1018,7 +1018,7 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /cards."""
         return await self._core.execute_raw(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,
@@ -1034,7 +1034,7 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /stickers."""
         return await self._core.execute_raw(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             body=body,
             media_type=media_type,
@@ -1050,7 +1050,7 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /albums."""
         return await self._core.execute_raw(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,
@@ -1304,7 +1304,7 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /searches."""
         return self._core.stream(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             body=body,
             media_type=media_type,
@@ -1320,7 +1320,7 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /covers."""
         return self._core.stream(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -1336,7 +1336,7 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /cards."""
         return self._core.stream(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,
@@ -1352,7 +1352,7 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /stickers."""
         return self._core.stream(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             body=body,
             media_type=media_type,
@@ -1368,7 +1368,7 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /albums."""
         return self._core.stream(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,

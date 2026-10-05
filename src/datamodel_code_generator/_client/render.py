@@ -1315,13 +1315,16 @@ class _Resources(_Typing):
         default = self.successes(spec, spec.response_media_type)
         if not declared and not ranged:
             return [((), default)], ((), default)
-        literal = module.name("typing", "Literal")
+        literal = module.name("typing", "Literal") if declared else ""
         groups: dict[tuple[_Key, ...], list[str]] = {}
         for media_type in declared:
             groups.setdefault(self.successes(spec, media_type), []).append(media_type)
         annotation = "str" if ranged else _literal(literal, declared)
         parameters = (_Argument("response_media_type", f"{annotation} | None", "none"),)
-        if set(groups) == {default} and (not ranged or self.successes(spec) == default):
+        outcomes = set(groups)
+        if ranged:
+            outcomes.add(self.successes(spec))
+        if outcomes == {default}:
             return [(parameters, default)], (parameters, default)
         variants: list[_Choice] = [((_Argument("response_media_type", "None", "none"),), default)]
         variants.extend(

@@ -262,6 +262,11 @@ def _resources() -> tuple[SchemaResource, ...]:
                         },
                     },
                     '/files': {
+                        'get': {
+                            'responses': {
+                                '200': {'content': {'image/*': {'schema': {'type': 'string', 'format': 'binary'}}}},
+                            },
+                        },
                         'post': {
                             'requestBody': {
                                 'content': {
@@ -601,6 +606,7 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/paths/~1documents~1{id}/get/parameters/0/content/application~1json/schema',
                 '/paths/~1documents~1{id}/get/responses/200/content/application~1vnd.api+json/schema',
                 '/paths/~1documents~1{id}/get/responses/200/headers/X-Draft/schema',
+                '/paths/~1files/get/responses/200/content/image~1*/schema',
                 '/paths/~1files/post/requestBody/content/application~1*/schema',
                 '/paths/~1files/post/requestBody/content/application~1json/schema',
                 '/paths/~1files/post/requestBody/content/image~1*/schema',

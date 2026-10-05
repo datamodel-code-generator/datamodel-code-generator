@@ -397,7 +397,7 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
     (options,) = _modules(package, "options")
     http = exchange.async_client()
     trace, pet = _trace(package), _pet(package, "getPet")
-    (types,) = _modules(package, "types.pets")
+    (_types,) = _modules(package, "types.pets")
     text = request_body(package, "createPet", "text/plain", "dog")
     async with package.AsyncClient(
         http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
@@ -439,7 +439,7 @@ def _async_invalid(package: ModuleType) -> Callable[[], Any]:
 
 def media(package: ModuleType, lines: list[str]) -> None:
     """Send forms, pairs, documents, and notes, and decode forms, texts, envelopes, and object headers."""
-    forms, documents = _modules(package, "types.forms", "types.documents")
+    _, documents = _modules(package, "types.forms", "types.documents")
     exchange = Exchange(lines)
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         form = request_body(package, "submitForm", None, {"name": "a b", "count": 2, "labels": ["x", "y"]})
@@ -456,21 +456,28 @@ def media(package: ModuleType, lines: list[str]) -> None:
         record(lines, "pairs", lambda: api.forms.submit_pairs(body=(("a", "1"), ("a", "2"), ("b", " "))))
         record(lines, "pairs invalid", api.forms.submit_pairs)
         record(lines, "pairs body", lambda: api.forms.submit_pairs(body=[("a", "1")]))
-        search = request_body(package, "submitSearch", None, {
-            "term": "a b",
-            "filter": {"name": "x y", "min": 2},
-            "tags": ["a", "b"],
-            "ids": [1, 2],
-            "meta": {"city": "Oslo"},
-            "path": "/a?b",
-            "extra": {"page": "2"},
-        })
+        search = request_body(
+            package,
+            "submitSearch",
+            None,
+            {
+                "term": "a b",
+                "filter": {"name": "x y", "min": 2},
+                "tags": ["a", "b"],
+                "ids": [1, 2],
+                "meta": {"city": "Oslo"},
+                "path": "/a?b",
+                "extra": {"page": "2"},
+            },
+        )
         exchange.respond(raw_response(204))
         record(lines, "search", lambda: api.forms.submit_search(body=search))
         clash = request_body(package, "submitSearch", None, {"term": "a", "extra": {"term": "b"}})
         record(lines, "search of an extra named as another member", lambda: api.forms.submit_search(body=clash))
         _documents(package, api, exchange, lines, documents)
         _files(package, api, exchange, lines)
+        _range_responses(api, exchange, lines)
+    run(lambda: _async_range_responses(package, lines))
 
 
 def _files(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -498,6 +505,75 @@ def _files(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
         )
     exchange.respond(raw_response(204))
     record(lines, "replace file without a body", api.files.replace_file)
+
+
+def _range_responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Select concrete image types through range-only and mixed response declarations in every view."""
+    for name, arguments in (
+        ("read_file", {}),
+        ("store_file", {"body": b"image", "media_type": "image/jpeg"}),
+    ):
+        for view in (api.files, api.files.with_response):
+            exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+            record(
+                lines,
+                f"range {name} {type(view).__name__}",
+                lambda view=view, name=name, arguments=arguments: getattr(view, name)(
+                    **arguments, response_media_type="image/jpeg"
+                ),
+            )
+        exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+        record(
+            lines,
+            f"range {name} raw",
+            lambda name=name, arguments=arguments: getattr(api.files.with_raw_response, name)(
+                **arguments, response_media_type="image/jpeg"
+            ).read(),
+        )
+        exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+        with getattr(api.files.with_streaming_response, name)(
+            **arguments, response_media_type="image/jpeg"
+        ) as response:
+            record(lines, f"range {name} streaming", response.read)
+    record(lines, "response wildcard rejected", lambda: api.files.read_file(response_media_type="image/*"))
+    exchange.respond(raw_response(204))
+    record(lines, "range bodyless", lambda: api.files.read_file(response_media_type="image/jpeg"))
+
+
+async def _async_range_responses(package: ModuleType, lines: list[str]) -> None:
+    """Select concrete image responses through each asyncio view using the real HTTPS exchange."""
+    exchange = Exchange(lines)
+    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+        for name, arguments in (
+            ("read_file", {}),
+            ("store_file", {"body": b"image", "media_type": "image/jpeg"}),
+        ):
+            for view in (api.files, api.files.with_response):
+                exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+                await arecord(
+                    lines,
+                    f"async range {name} {type(view).__name__}",
+                    lambda view=view, name=name, arguments=arguments: getattr(view, name)(
+                        **arguments, response_media_type="image/jpeg"
+                    ),
+                )
+
+            async def raw(name: str = name, arguments: dict[str, Any] = arguments) -> bytes:
+                response = await getattr(api.files.with_raw_response, name)(
+                    **arguments, response_media_type="image/jpeg"
+                )
+                return await response.read()
+
+            exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+            await arecord(lines, f"async range {name} raw", raw)
+            exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+            async with getattr(api.files.with_streaming_response, name)(
+                **arguments, response_media_type="image/jpeg"
+            ) as response:
+                await arecord(lines, f"async range {name} streaming", response.read)
+        await arecord(
+            lines, "async response wildcard rejected", lambda: api.files.read_file(response_media_type="image/*")
+        )
 
 
 def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[str], documents: ModuleType) -> None:
@@ -550,12 +626,18 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
 
 def querystring(package: ModuleType, lines: list[str]) -> None:
     """Send a whole query through one querystring parameter, which no query patch may add to."""
-    types, options = _modules(package, "types.default", "options")
+    _types, options = _modules(package, "types.default", "options")
     exchange = Exchange(lines)
-    criteria = argument(package, "search", "querystring", "criteria", {
-        "term": "a b",
-        "page": 2,
-    })
+    criteria = argument(
+        package,
+        "search",
+        "querystring",
+        "criteria",
+        {
+            "term": "a b",
+            "page": 2,
+        },
+    )
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         exchange.respond(json_response(200, ["a"]), json_response(200, []))
         record(lines, "search", lambda: api.default.search(criteria=criteria))
@@ -716,7 +798,9 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         record(lines, "coding error truncated", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding redirect", lambda: api.pets.list_pets(x_trace=trace))
         record(
-            lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DELETE /pets/{petId}"))
+            lines,
+            "coding bodyless",
+            lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DELETE /pets/{petId}")),
         )
     run(lambda: _async_codings(package, exchange, lines))
 

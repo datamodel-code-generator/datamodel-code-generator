@@ -46,6 +46,7 @@ class PetsPhotosResource:
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> UploadResponse:
         """Call PUT /pets/{petId}/photo."""
@@ -55,6 +56,7 @@ class PetsPhotosResource:
             body=body,
             media_type=media_type,
             options=options,
+            response_media_type=response_media_type,
         ).data
 
 
@@ -71,6 +73,7 @@ class PetsPhotosWithResponse:
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UploadResponse]:
         """Call PUT /pets/{petId}/photo."""
@@ -80,6 +83,7 @@ class PetsPhotosWithResponse:
             body=body,
             media_type=media_type,
             options=options,
+            response_media_type=response_media_type,
         )
 
 
@@ -96,6 +100,7 @@ class PetsPhotosWithRawResponse:
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call PUT /pets/{petId}/photo."""
@@ -105,6 +110,7 @@ class PetsPhotosWithRawResponse:
             body=body,
             media_type=media_type,
             options=options,
+            response_media_type=response_media_type,
         )
 
 
@@ -121,6 +127,7 @@ class PetsPhotosWithStreamingResponse:
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
         body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /pets/{petId}/photo."""
@@ -130,4 +137,5 @@ class PetsPhotosWithStreamingResponse:
             body=body,
             media_type=media_type,
             options=options,
+            response_media_type=response_media_type,
         )

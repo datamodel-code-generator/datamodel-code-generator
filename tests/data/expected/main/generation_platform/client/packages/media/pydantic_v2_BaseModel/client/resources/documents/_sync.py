@@ -136,7 +136,7 @@ class DocumentsResource:
     ) -> StoreDocumentResponse:
         """Call POST /documents."""
         return self._core.execute(
-            _operations.OPERATION_20,
+            _operations.OPERATION_21,
             (),
             body=body,
             media_type=media_type,
@@ -155,7 +155,7 @@ class DocumentsResource:
     ) -> ReadDocumentResponse:
         """Call GET /documents/{id}."""
         return self._core.execute(
-            _operations.OPERATION_21,
+            _operations.OPERATION_22,
             (id, filter, x_mode),
             options=options,
             response_media_type=response_media_type,
@@ -170,7 +170,7 @@ class DocumentsResource:
     ) -> StoreNoteResponse:
         """Call POST /notes."""
         return self._core.execute(
-            _operations.OPERATION_22,
+            _operations.OPERATION_23,
             (),
             body=body,
             media_type=media_type,
@@ -210,7 +210,7 @@ class DocumentsResource:
     ) -> ReplaceNoteResponse:
         """Call PUT /notes."""
         return self._core.execute(
-            _operations.OPERATION_23,
+            _operations.OPERATION_24,
             (),
             body=body,
             media_type=media_type,
@@ -316,7 +316,7 @@ class DocumentsWithResponse:
     ) -> Response[StoreDocumentResponse]:
         """Call POST /documents."""
         return self._core.execute(
-            _operations.OPERATION_20,
+            _operations.OPERATION_21,
             (),
             body=body,
             media_type=media_type,
@@ -335,7 +335,7 @@ class DocumentsWithResponse:
     ) -> Response[ReadDocumentResponse]:
         """Call GET /documents/{id}."""
         return self._core.execute(
-            _operations.OPERATION_21,
+            _operations.OPERATION_22,
             (id, filter, x_mode),
             options=options,
             response_media_type=response_media_type,
@@ -350,7 +350,7 @@ class DocumentsWithResponse:
     ) -> Response[StoreNoteResponse]:
         """Call POST /notes."""
         return self._core.execute(
-            _operations.OPERATION_22,
+            _operations.OPERATION_23,
             (),
             body=body,
             media_type=media_type,
@@ -390,7 +390,7 @@ class DocumentsWithResponse:
     ) -> Response[ReplaceNoteResponse]:
         """Call PUT /notes."""
         return self._core.execute(
-            _operations.OPERATION_23,
+            _operations.OPERATION_24,
             (),
             body=body,
             media_type=media_type,
@@ -442,7 +442,7 @@ class DocumentsWithRawResponse:
     ) -> RawResponse:
         """Call POST /documents."""
         return self._core.execute_raw(
-            _operations.OPERATION_20,
+            _operations.OPERATION_21,
             (),
             body=body,
             media_type=media_type,
@@ -461,7 +461,7 @@ class DocumentsWithRawResponse:
     ) -> RawResponse:
         """Call GET /documents/{id}."""
         return self._core.execute_raw(
-            _operations.OPERATION_21,
+            _operations.OPERATION_22,
             (id, filter, x_mode),
             options=options,
             response_media_type=response_media_type,
@@ -476,7 +476,7 @@ class DocumentsWithRawResponse:
     ) -> RawResponse:
         """Call POST /notes."""
         return self._core.execute_raw(
-            _operations.OPERATION_22,
+            _operations.OPERATION_23,
             (),
             body=body,
             media_type=media_type,
@@ -516,7 +516,7 @@ class DocumentsWithRawResponse:
     ) -> RawResponse:
         """Call PUT /notes."""
         return self._core.execute_raw(
-            _operations.OPERATION_23,
+            _operations.OPERATION_24,
             (),
             body=body,
             media_type=media_type,
@@ -568,7 +568,7 @@ class DocumentsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /documents."""
         return self._core.stream(
-            _operations.OPERATION_20,
+            _operations.OPERATION_21,
             (),
             body=body,
             media_type=media_type,
@@ -587,7 +587,7 @@ class DocumentsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /documents/{id}."""
         return self._core.stream(
-            _operations.OPERATION_21,
+            _operations.OPERATION_22,
             (id, filter, x_mode),
             options=options,
             response_media_type=response_media_type,
@@ -602,7 +602,7 @@ class DocumentsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /notes."""
         return self._core.stream(
-            _operations.OPERATION_22,
+            _operations.OPERATION_23,
             (),
             body=body,
             media_type=media_type,
@@ -642,7 +642,7 @@ class DocumentsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /notes."""
         return self._core.stream(
-            _operations.OPERATION_23,
+            _operations.OPERATION_24,
             (),
             body=body,
             media_type=media_type,

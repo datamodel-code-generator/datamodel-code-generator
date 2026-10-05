@@ -113,6 +113,7 @@ class Operation5Arguments(TypedDict):
     pet_id: _dcg_type_7 | ModelValue[_dcg_type_7]
     body: NotRequired[SyncBinaryBody | Unset]
     media_type: NotRequired[Literal['application/octet-stream'] | None]
+    response_media_type: NotRequired[str | None]
     options: NotRequired[RequestOptions | None]
 
 
@@ -122,6 +123,7 @@ class Operation5Arguments1(TypedDict):
     pet_id: _dcg_type_7 | ModelValue[_dcg_type_7]
     body: NotRequired[AsyncBinaryBody | Unset]
     media_type: NotRequired[Literal['application/octet-stream'] | None]
+    response_media_type: NotRequired[str | None]
     options: NotRequired[RequestOptions | None]
 
 
@@ -184,7 +186,7 @@ KEYWORDS_4: Final = Keywords('head_pet', ('pet_id', 'options'), ('pet_id',))
 
 KEYWORDS_5: Final = Keywords(
     'upload',
-    ('pet_id', 'body', 'media_type', 'options'),
+    ('pet_id', 'body', 'media_type', 'response_media_type', 'options'),
     ('pet_id',),
 )
 

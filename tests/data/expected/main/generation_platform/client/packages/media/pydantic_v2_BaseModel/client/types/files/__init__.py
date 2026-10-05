@@ -2,6 +2,9 @@
 """The types of the files operations."""
 
 from ._operations import (
+    ReadFileErrorData,
+    ReadFileHTTPError,
+    ReadFileResponse,
     ReplaceFileErrorData,
     ReplaceFileHTTPError,
     ReplaceFileResponse,
@@ -11,6 +14,9 @@ from ._operations import (
 )
 
 __all__ = [
+    'ReadFileErrorData',
+    'ReadFileHTTPError',
+    'ReadFileResponse',
     'ReplaceFileErrorData',
     'ReplaceFileHTTPError',
     'ReplaceFileResponse',
