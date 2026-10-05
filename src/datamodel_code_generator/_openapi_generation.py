@@ -90,7 +90,7 @@ class TargetGenerationSession:
 
     def freeze_attempt(self, parser: OpenAPIParser, results: str | dict[tuple[str, ...], Result]) -> AttemptId:
         """Bind an attempt before its parser is disposed, replacing the previous candidate on success."""
-        from datamodel_code_generator._target_binding import bind_operations  # noqa: PLC0415
+        from datamodel_code_generator._target_binding import MetadataCycleError, bind_operations  # noqa: PLC0415
 
         target: TargetApiOpenAPIParser = cast("TargetApiOpenAPIParser", parser)
         try:
@@ -101,6 +101,8 @@ class TargetGenerationSession:
                 model_package=self._model_package,
                 root_selector_document=self._root_selector_document,
             )
+        except MetadataCycleError:
+            raise
         except Exception as cause:
             msg = "Binding capture freeze failed"
             raise BindingCaptureError(msg) from cause
