@@ -6,6 +6,7 @@ import importlib
 import json
 from typing import TYPE_CHECKING, Any, Final
 
+from tests.data.python.client_auth_options import _AsyncSigner, _Signer
 from tests.data.python.client_pagination import (
     Harness,
     adrained,
@@ -97,6 +98,7 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
         _validated(harness, api, exchange, lines)
         _credentials(harness, api, lines)
         _starts(harness, api, exchange, lines)
+    _signed_resume(harness, lines)
     run(lambda: _async_resume(harness, lines))
 
 
@@ -521,6 +523,77 @@ def _credentials(harness: Harness, api: Any, lines: list[str]) -> None:
     )
 
 
+def _signer_credentials(harness: Harness, api: Any, lines: list[str], mode: str) -> None:
+    """Refuse signer-managed arguments at checkpoint and when importing an unsigned client's token."""
+    unsigned = api.with_options(harness.options.RequestOptions(auth=None))
+    auth = importlib.import_module(f"{harness.package.__name__}.auth")
+    signer_type = _AsyncSigner if mode == "async" else _Signer
+    signer = signer_type(
+        auth.SignerCapabilities((_SERVER.removesuffix("/v1"),), ("x-TrAcE",), ("limit", "term"), False),
+        auth.SignatureFields((), ()),
+    )
+    api = api.with_options(harness.options.RequestOptions(auth=auth.AuthConfig({}, signers=(signer,))))
+    for label, arguments in (
+        ("header", {"x_trace": harness.argument("users", "ListUsers", "header", "X-Trace", "secret-header")}),
+        ("query", {"limit": harness.argument("users", "ListUsers", "query", "limit", 3)}),
+    ):
+        state = unsigned.protocols.users.all.iterate(**arguments).checkpoint()
+        record(lines, f"{mode} signer {label} checkpoint", api.protocols.users.all.iterate(**arguments).checkpoint)
+        record(lines, f"{mode} signer {label} resume", lambda state=state: api.protocols.users.all.resume(state))
+    query = harness.argument("queries", "Query", "querystring", "filter", {"term": "secret-query"})
+    state = unsigned.protocols.queries.all.iterate(filter=query).checkpoint()
+    record(lines, f"{mode} signer querystring checkpoint", api.protocols.queries.all.iterate(filter=query).checkpoint)
+    record(lines, f"{mode} signer querystring resume", lambda: api.protocols.queries.all.resume(state))
+
+
+def _signed_resume(harness: Harness, lines: list[str]) -> None:
+    """Resume a safe token with freshly signed credentials through a real synchronous exchange."""
+    auth = importlib.import_module(f"{harness.package.__name__}.auth")
+    signer = _Signer(
+        auth.SignerCapabilities((_SERVER.removesuffix("/v1"),), ("X-Signature",), ("signature",), False),
+        auth.SignatureFields((("X-Signature", "signed-header"),), (("signature", "signed-query"),)),
+    )
+    exchange = Exchange(lines)
+    with (
+        exchange.client() as native,
+        harness.package.Client(
+            http_client=native,
+            options=harness.client_options(auth=auth.AuthConfig({}, signers=(signer,), send_on_anonymous=True)),
+        ) as api,
+    ):
+        _signer_credentials(harness, api, lines, "sync")
+        helper = api.protocols.users.all
+        state = helper.iterate().checkpoint()
+        _saved(lines, "sync signer safe token", state)
+        exchange.respond(user_page("signed"))
+        drained(lines, "sync signer resumed items", helper.resume(state))
+        lines.append(f"  sync signer calls {signer.calls}")
+
+
+async def _async_signed_resume(harness: Harness, lines: list[str]) -> None:
+    """Resume a safe token with freshly signed credentials through a real asyncio exchange."""
+    auth = importlib.import_module(f"{harness.package.__name__}.auth")
+    signer = _AsyncSigner(
+        auth.SignerCapabilities((_SERVER.removesuffix("/v1"),), ("X-Signature",), ("signature",), False),
+        auth.SignatureFields((("X-Signature", "signed-header"),), (("signature", "signed-query"),)),
+    )
+    exchange = Exchange(lines)
+    async with (
+        exchange.async_client() as native,
+        harness.package.AsyncClient(
+            http_client=native,
+            options=harness.client_options(auth=auth.AuthConfig({}, signers=(signer,), send_on_anonymous=True)),
+        ) as api,
+    ):
+        _signer_credentials(harness, api, lines, "async")
+        helper = api.protocols.users.all
+        state = helper.iterate().checkpoint()
+        _saved(lines, "async signer safe token", state)
+        exchange.respond(user_page("signed"))
+        await adrained(lines, "async signer resumed items", helper.resume(state))
+        lines.append(f"  async signer calls {signer.calls}")
+
+
 async def _async_resume(harness: Harness, lines: list[str]) -> None:
     """Checkpoint and resume asyncio pagers, in items and in pages, without awaiting either."""
     exchange = Exchange(lines)
@@ -546,3 +619,5 @@ async def _async_resume(harness: Harness, lines: list[str]) -> None:
         state = followed.checkpoint()
         _saved(lines, "async followed without the echoed key", state)
         await adrained(lines, "async resumed without the echoed key", follow.resume(state))
+
+    await _async_signed_resume(harness, lines)

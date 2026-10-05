@@ -36,7 +36,6 @@ from pets.protocols import (
     ProtocolProgress,
     ProtocolSecurityContext,
     QuerystringTarget,
-    QueueOptions,
     RequestTarget,
     ResumeState,
     Selector,
@@ -98,7 +97,7 @@ def options(origin: Origin) -> ClientOptions:
     defaults = ProtocolDefaults(session=SessionOptions(max_network_sends=3), options=pagination)
     assert_type(
         defaults.options,
-        PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | QueueOptions | Unset,
+        PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | Unset,
     )
     protocols = ProtocolClientOptions(security=security, defaults={"users.all": defaults, "jobs": ProtocolDefaults()})
     assert_type(protocols.security, ProtocolSecurityContext | Unset | None)
@@ -146,7 +145,7 @@ def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:
     except StreamRemoteError as caught_remote:
         remote_event(caught_remote)
     try:
-        raise ResumeStateError(condition="expired")
+        raise ResumeStateError(condition="expired")  # ruff: ignore[raise-within-try] - Exercise exception type narrowing.
     except ProtocolDataError as data_error:
         assert_type(data_error.location, Selector | RequestTarget | None)
     except ResumeStateError as resume_error:

@@ -10,7 +10,7 @@ from dataclasses import fields
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, TypeAlias
 
-from datamodel_code_generator import DataModelType, GenerateConfig, generate
+from datamodel_code_generator import DataModelType, Error, GenerateConfig, generate
 from datamodel_code_generator._api_generation import generate_target, render_target
 from datamodel_code_generator._api_types import (
     APIGenerationError,
@@ -18,6 +18,7 @@ from datamodel_code_generator._api_types import (
     GeneratedProject,
     OperationRef,
     OperationSelection,
+    attached_diagnostic,
 )
 from datamodel_code_generator._client.config import (
     BodyFieldName,
@@ -198,12 +199,18 @@ def copy_references(case: dict[str, Any], root: Path) -> None:
         shutil.copy2(SOURCE / reference, root / reference)
 
 
-def _render(
-    case: dict[str, Any], backend: str, root: Path, modules: Modules, *, documents: dict[str, str] | None = None
-) -> list[str]:
+def _prepare_input(case: dict[str, Any], root: Path) -> Path:
+    """Copy a case's unchanged source and reference documents into its generation root."""
     root.mkdir(parents=True, exist_ok=True)
     source = shutil.copy2(SOURCE / case["input"], root / case["input"])
     copy_references(case, root)
+    return source
+
+
+def _render(
+    case: dict[str, Any], backend: str, root: Path, modules: Modules, *, documents: dict[str, str] | None = None
+) -> list[str]:
+    source = _prepare_input(case, root)
     try:
         with _working_directory(case, root):
             if (toml := case.get("toml")) is not None:
@@ -220,6 +227,10 @@ def _render(
             )
     except APIGenerationError as error:
         return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
+    except Error as error:
+        if (diagnostic := attached_diagnostic(error)) is None:
+            raise
+        return ["  Error", _diagnostic(diagnostic)]
     lines: list[str] = []
     for artifact in project.artifacts:
         path, content = artifact.path.relative_to(root), artifact.content or b""
@@ -335,6 +346,23 @@ def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
         if modules and (kept := selected[backend] if isinstance(selected, dict) else selected):
             rendered[name] = modules if kept is True else {parts: modules[parts] for parts in map(tuple, kept)}
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
+
+
+def client_model_parity_report(case_name: str, root: Path, rendered: dict[str, Modules]) -> str:
+    """Report whether ordinary generation matches each backend's already-rendered model bytes."""
+    case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
+    matches: list[bool] = []
+    for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
+        attempt = root / (name := backend.replace(".", "_"))
+        attempt.mkdir(parents=True)
+        source = _prepare_input(case, attempt)
+        with _working_directory(case, attempt):
+            generate(source, config=model_config(attempt / "models.py", backend, case.get("model", {})))
+        ordinary = {path.relative_to(attempt).parts: path.read_bytes() for path in attempt.rglob("*.py")}
+        encoding = case.get("config", {}).get("encoding", "utf-8")
+        target = {parts: content.encode(encoding) for parts, content in rendered.get(name, {}).items()}
+        matches.append(bool(ordinary) and ordinary == target)
+    return f"{bool(matches) and all(matches)}\n"
 
 
 def client_input_report(case_name: str, root: Path) -> str:
