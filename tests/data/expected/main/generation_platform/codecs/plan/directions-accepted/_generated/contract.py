@@ -6,15 +6,13 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias, TypedDict
 
-from typing_extensions import Never
+import plan_directions_accepted_models
+from pydantic import TypeAdapter
 
 from .._runtime.server.application import Dependency, OperationPlan
-from .._runtime.server.requests import BodyAdapter, BodyMedia
-from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
-from . import model_bindings
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal['/paths/~1items/post']
-SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
@@ -22,7 +20,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = ()
 
 
 class PostItems:
@@ -34,30 +31,11 @@ class PostItems:
         service='untagged',
         keywords=('body',),
     )
-    BODY: Final = BodyAdapter(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-                envelope=True,
-            ),
-        ),
-        required=False,
-        names=frozenset({'id', 'key', 'label', 'name', 'pair', 'secret', 'tags', 'token'}),
-    )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(plan_directions_accepted_models.Item),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )

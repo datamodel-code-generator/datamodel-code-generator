@@ -1,5 +1,5 @@
 # oas30
 https://dcg.invalid/inputs/root#/components/schemas/Item {"id":1,"name":null,"tag":"a","other":"b","score":9.5,"choice":"a"} -> request valid | response valid
-https://dcg.invalid/inputs/root#/components/schemas/Item {"id":1,"name":null,"tag":"a","other":"b","score":9.5,"choice":null} -> request schema.enum@/choice | response schema.enum@/choice
-https://dcg.invalid/inputs/root#/components/schemas/Item {"id":0,"other":null,"score":10,"choice":"c"} -> request schema.exclusiveMinimum@/id,schema.type@/other,schema.exclusiveMaximum@/score,schema.enum@/choice | response schema.exclusiveMinimum@/id,schema.type@/other,schema.exclusiveMaximum@/score,schema.enum@/choice
-https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/0/schema 1 -> request schema.exclusiveMinimum@ | response schema.exclusiveMinimum@
+https://dcg.invalid/inputs/root#/components/schemas/Item {"id":1,"name":null,"tag":"a","other":"b","score":9.5,"choice":null} -> request valid | response valid
+https://dcg.invalid/inputs/root#/components/schemas/Item {"id":0,"other":null,"score":10,"choice":"c"} -> request NativeValidationError greater_than@/id,less_than@/score,enum@/choice | response NativeValidationError greater_than@/id,less_than@/score,enum@/choice
+https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/0/schema 1 -> request NativeValidationError greater_than@/ | response NativeValidationError greater_than@/

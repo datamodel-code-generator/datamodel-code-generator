@@ -8,22 +8,20 @@ from dataclasses import dataclass
 from typing import Final, Literal, TypeAlias, TypedDict
 
 import plan_oas32_models
-from typing_extensions import Never
+from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
-from .._runtime.server.responses import OperationResponses, ResponsePlan
-from . import model_bindings
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1search/get',
     '/paths/~1spread/get',
     '/paths/~1raw/post',
 ]
-SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
@@ -33,7 +31,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = ()
 
 
 class GetSearch:
@@ -50,7 +47,6 @@ class GetSearch:
         """The adapter parameters of get__search."""
 
         query: plan_oas32_models.FieldSearchGetQuerystringQueryParameter | Unset
-        theme: plan_oas32_models.FieldSearchGetCookieThemeParameter | Unset
         prefs: plan_oas32_models.FieldSearchGetCookiePrefsParameter | Unset
 
     PARAMETERS: Final = ParameterAdapter(
@@ -67,18 +63,7 @@ class GetSearch:
                         FieldPlan('n', 'integer'),
                     ),
                 ),
-                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-            ),
-            ParameterArgument(
-                name='theme',
-                plan=ParameterPlan(
-                    location='cookie',
-                    name='theme',
-                    style='cookie',
-                    explode=True,
-                    reserved_names=('a', 'prefs'),
-                ),
-                codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                adapter=TypeAdapter(plan_oas32_models.FieldSearchGetQuerystringQueryParameter),
             ),
             ParameterArgument(
                 name='prefs',
@@ -91,16 +76,12 @@ class GetSearch:
                     fields=(FieldPlan('a', 'string'),),
                     reserved_names=('theme',),
                 ),
-                codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                adapter=TypeAdapter(plan_oas32_models.FieldSearchGetCookiePrefsParameter),
             ),
         ),
         record=Parameters,
-        names=frozenset({'a', 'n', 'q', 'tags'}),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetSpread:
@@ -120,8 +101,8 @@ class GetSpread:
         window: plan_oas32_models.FieldSpreadGetQueryWindowParameter | Unset
         jar: plan_oas32_models.FieldSpreadGetCookieJarParameter | Unset
         crumbs: plan_oas32_models.FieldSpreadGetCookieCrumbsParameter | Unset
-        x_counts: plan_oas32_models.FieldSpreadGetHeaderXCountsParameter | Unset
-        x_tallies: plan_oas32_models.FieldSpreadGetHeaderXTalliesParameter | Unset
+        x_counts: dict[str, int] | Unset
+        x_tallies: dict[str, int] | Unset
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -136,7 +117,7 @@ class GetSpread:
                     additional=FieldPlan('', 'string'),
                     reserved_names=('limit', 'offset', 'window'),
                 ),
-                codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
+                adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetQueryExtraParameter),
             ),
             ParameterArgument(
                 name='window',
@@ -152,7 +133,7 @@ class GetSpread:
                     ),
                     reserved_names=('extra',),
                 ),
-                codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
+                adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetQueryWindowParameter),
             ),
             ParameterArgument(
                 name='jar',
@@ -165,7 +146,7 @@ class GetSpread:
                     additional=FieldPlan('', 'string'),
                     reserved_names=('crumbs', 'flavor'),
                 ),
-                codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
+                adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetCookieJarParameter),
             ),
             ParameterArgument(
                 name='crumbs',
@@ -178,7 +159,7 @@ class GetSpread:
                     fields=(FieldPlan('flavor', 'string'),),
                     reserved_names=('jar',),
                 ),
-                codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
+                adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetCookieCrumbsParameter),
             ),
             ParameterArgument(
                 name='x_counts',
@@ -191,7 +172,7 @@ class GetSpread:
                     additional=FieldPlan('', 'integer'),
                     reserved_names=('X-Tallies',),
                 ),
-                codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
+                adapter=TypeAdapter(dict[str, int]),
             ),
             ParameterArgument(
                 name='x_tallies',
@@ -204,16 +185,12 @@ class GetSpread:
                     additional=FieldPlan('', 'integer'),
                     reserved_names=('X-Counts',),
                 ),
-                codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
+                adapter=TypeAdapter(dict[str, int]),
             ),
         ),
         record=Parameters,
-        names=frozenset({'flavor', 'limit', 'offset'}),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class PostRaw:
@@ -230,7 +207,7 @@ class PostRaw:
         """The adapter parameters of post__raw."""
 
         querystring_body: plan_oas32_models.FieldRawPostQuerystringBodyParameter | Unset
-        note: plan_oas32_models.FieldRawPostHeaderNoteParameter | Unset
+        note: str | Unset
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -241,7 +218,7 @@ class PostRaw:
                     name='body',
                     content_media_type='application/json',
                 ),
-                codec=(model_bindings.codec_9, model_bindings.CONTEXT_9),
+                adapter=TypeAdapter(plan_oas32_models.FieldRawPostQuerystringBodyParameter),
             ),
             ParameterArgument(
                 name='note',
@@ -250,12 +227,9 @@ class PostRaw:
                     name='note',
                     content_media_type='text/plain',
                 ),
-                codec=(model_bindings.codec_10, model_bindings.CONTEXT_10),
+                adapter=TypeAdapter(str),
             ),
         ),
         record=Parameters,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
