@@ -366,6 +366,7 @@ def _generate_models(
 ) -> _Models:
     from datamodel_code_generator import _run_generation  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._openapi_generation import TargetGenerationSession  # noqa: PLC0415
+    from datamodel_code_generator._target_binding import MetadataCycleError  # noqa: PLC0415
     from datamodel_code_generator.enums import OpenAPIScope  # noqa: PLC0415
 
     source = _root_input(input_, cwd)
@@ -399,6 +400,23 @@ def _generate_models(
             artifacts = _staged_models(staged_output, output, prepared.encoding)
             metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
             product = session.take_product(artifacts, allow_empty_api=True)
+        except MetadataCycleError as error:
+            from datamodel_code_generator._api_manifest import persistent_uri  # noqa: PLC0415
+
+            raise APIGenerationError((
+                Diagnostic(
+                    code="E_INPUT_CYCLE",
+                    severity="error",
+                    stage="input",
+                    message=str(error),
+                    source_uri=persistent_uri(
+                        document_identity(error.document, source.base),
+                        (cwd / target.output.expanduser()).resolve(),
+                        "input",
+                    ),
+                    source_pointer=error.pointer,
+                ),
+            )) from error
         finally:
             session.close()
         return _Models(
