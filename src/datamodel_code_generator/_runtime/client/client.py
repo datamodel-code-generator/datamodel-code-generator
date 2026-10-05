@@ -1517,7 +1517,7 @@ class _Shared(Generic[AdapterT]):
         self.socket_connector: object = None
 
 
-class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call and helper kind.
+class _Core(Generic[AdapterT, HandleT]):
     __slots__ = ("_owned", "_scope", "_settings", "_shared", "_urls")
     _asynchronous: ClassVar[bool] = False
 
@@ -1591,7 +1591,6 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         if (protocols := self._shared.protocols) is None or isinstance(defaults := protocols.defaults, Unset):
             return None
         return defaults.get(name)
-
 
     def protocol_options(self) -> ProtocolClientOptions | None:
         """Return the client's protocol settings, or None."""
