@@ -548,7 +548,7 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 ```
 
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
-The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline/send budget.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
 `RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
 set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
@@ -969,7 +969,7 @@ or the values a due result fetch writes, and the server's expiry, never polls, r
 the call's options; a settled operation has nothing left to continue, and its `checkpoint()` raises
 `ProtocolStateError`. The helper's `resume` is never awaited and returns a handle in a session of its own that sends
 nothing until `status` or `wait`: a pending one polls again at once, and one whose fetch is due fetches the result;
-polls, the session's timeout, deadline, and sends start afresh. Before returning,
+polls, the session's timeout, and deadline start afresh. Before returning,
 it refuses another helper's state, an expired one, and one that does not fit the helper with `ResumeStateError`, and a
 saved dot segment for a path parameter with `ProtocolDataError`; a saved value the result fetch writes into its
 querystring or body is checked when the fetch request is built. `PollWaitLimitError` and a `SessionLimitError` of a

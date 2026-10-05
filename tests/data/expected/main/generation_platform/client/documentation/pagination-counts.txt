@@ -383,7 +383,7 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 ```
 
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
-The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline/send budget.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
 `RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
 set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
@@ -736,7 +736,7 @@ cycle history, the call's options, its session, or anything its auth adds; a cal
 or a parameter or querystring field at a security scheme's position cannot be checkpointed and raises
 `ConfigurationError`, and no helper writes a cursor or binding to such a position or to any cookie, since
 cookies commonly carry session state. Pages and items count on from the checkpoint against the resumed call's limits,
-while its sends and timeout start afresh. `resume` builds the saved arguments and body as their codecs build a
+while its timeout starts afresh. `resume` builds the saved arguments and body as their codecs build a
 caller's, takes literal bindings from the helper, and prepares the request it sends next without sending, with the
 resuming client's own auth. It raises `ResumeStateError` before sending for another helper's checkpoint and a malformed
 state, a value its codec refuses, a media type the operation does not declare, a saved value that cannot be encoded into

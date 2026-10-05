@@ -1875,7 +1875,7 @@ cycle history, the call's options, its session, or anything its auth adds; a cal
 or a parameter or querystring field at a security scheme's position cannot be checkpointed and raises
 `ConfigurationError`, and no helper writes a cursor or binding to such a position or to any cookie, since
 cookies commonly carry session state. Pages and items count on from the checkpoint against the resumed call's limits,
-while its sends and timeout start afresh. `resume` builds the saved arguments and body as their codecs build a
+while its timeout starts afresh. `resume` builds the saved arguments and body as their codecs build a
 caller's, takes literal bindings from the helper, and prepares the request it sends next without sending, with the
 resuming client's own auth. It raises `ResumeStateError` before sending for another helper's checkpoint and a malformed
 state, a value its codec refuses, a media type the operation does not declare, a saved value that cannot be encoded into
@@ -1940,8 +1940,8 @@ client's, a view's, or the call's, may patch a header or query parameter a reope
 With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
 transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
 `TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
-delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections or of the
-session's sends raises `StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
+delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections raises
+`StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
 longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
 idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
 reopen are delivered again.
@@ -3007,7 +3007,7 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 ```
 
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
-The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline/send budget.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
 `RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
 set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
@@ -3387,7 +3387,7 @@ or the values a due result fetch writes, and the server's expiry, never polls, r
 the call's options; a settled operation has nothing left to continue, and its `checkpoint()` raises
 `ProtocolStateError`. The helper's `resume` is never awaited and returns a handle in a session of its own that sends
 nothing until `status` or `wait`: a pending one polls again at once, and one whose fetch is due fetches the result;
-polls, the session's timeout, deadline, and sends start afresh. Before returning,
+polls, the session's timeout, and deadline start afresh. Before returning,
 it refuses another helper's state, an expired one, and one that does not fit the helper with `ResumeStateError`, and a
 saved dot segment for a path parameter with `ProtocolDataError`; a saved value the result fetch writes into its
 querystring or body is checked when the fetch request is built. `PollWaitLimitError` and a `SessionLimitError` of a

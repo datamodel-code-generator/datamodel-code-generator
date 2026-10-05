@@ -194,7 +194,7 @@ class _Events:
         self.failing = failing
         self.names: list[str] = []
         self.ids: set[str] = set()
-        self.ends: list[tuple[int, int, int]] = []
+        self.ends: list[int] = []
 
     def on_event(self, event: _Event) -> None:
         self.names.append(f"{event.name}:{self.usage.active}")

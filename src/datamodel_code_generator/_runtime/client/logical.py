@@ -46,7 +46,8 @@ StopReason: TypeAlias = Literal["token", "closing", "deadline", "idle"]
 class _Scope(Protocol):
     lock: LockType
 
-    def closing(self) -> ConfigurationError | None: ...
+    def closing(self) -> ConfigurationError | None:
+        """Return the error a call meets once its client or view is closing, else None."""
 
     def closing_signals(self) -> tuple[asyncio.Future[None], ...]: ...
 

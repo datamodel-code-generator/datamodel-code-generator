@@ -683,7 +683,7 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 ```
 
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
-The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline/send budget.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
 `RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
 set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
@@ -1159,8 +1159,8 @@ client's, a view's, or the call's, may patch a header or query parameter a reope
 With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
 transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
 `TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
-delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections or of the
-session's sends raises `StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
+delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections raises
+`StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
 longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
 idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
 reopen are delivered again.

@@ -1065,7 +1065,7 @@ with Client() as client:
 |---|---|
 | Whether the operation is pending or its result fetch is due | The create request, its body, and its idempotency key, since resume never sends it |
 | While pending, the values the next poll and a remote cancel write, read from the create response or the last pending poll, and those the create response gave the result fetch's `initial` bindings; while the fetch is due, the values it writes | Polls, results, their bodies, and model objects |
-| The server's expiry an `expires_at` helper read | The session, its deadline, its send counters, the call's `options`, and anything its auth adds |
+| The server's expiry an `expires_at` helper read | The session, its deadline, the call's `options`, and anything its auth adds |
 
 A resumed pending handle polls with the saved values, and one whose fetch is due fetches the result with them. Polls
 count afresh against the resumed call's

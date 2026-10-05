@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from functools import partial
-from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias
 
 from typing_extensions import TypeIs, TypeVar
 
@@ -440,7 +440,7 @@ def _unencodable(
 class _InvalidBodyError(Exception):
     """A body that failed to decode, published as the error of its kind of failure."""
 
-    reason: ClassVar[str] = "invalid_syntax"
+    reason = "invalid_syntax"
 
     def __init__(self, cause: BaseException) -> None:
         super().__init__()

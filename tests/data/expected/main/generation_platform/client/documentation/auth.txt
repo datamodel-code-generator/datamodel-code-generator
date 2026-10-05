@@ -125,7 +125,7 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 ```
 
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
-The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline/send budget.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
 `RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
 set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
