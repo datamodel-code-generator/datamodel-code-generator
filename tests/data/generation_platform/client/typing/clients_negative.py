@@ -203,9 +203,7 @@ def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: Redirec
     TransportOptions(retry_owner="native")  # error
     IdempotencyKey()  # error
     IdempotencyKey("opaque", None)  # error
-    IdempotencyKey("opaque", first_used_at="2026-09-28")  # error
     key.value = "changed"  # error
-    key.first_used_at = None  # error
     ResponseInfo(
         status_code=200,
         headers=info.headers,

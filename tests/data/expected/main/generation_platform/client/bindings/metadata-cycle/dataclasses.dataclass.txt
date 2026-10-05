@@ -1,0 +1,35 @@
+# cyclic metadata dataclasses.dataclass
+render
+APIGenerationError
+[
+  {
+    "artifact_path": null,
+    "code": "E_INPUT_CYCLE",
+    "message": "The input document contains a cyclic mapping or sequence",
+    "operation": null,
+    "option_path": null,
+    "severity": "error",
+    "source_pointer": "/paths/~1items/get/externalDocs/extra",
+    "source_uri": "urn:dcg:root",
+    "stage": "input",
+    "target_id": null
+  }
+]
+files []
+generate
+APIGenerationError
+[
+  {
+    "artifact_path": null,
+    "code": "E_INPUT_CYCLE",
+    "message": "The input document contains a cyclic mapping or sequence",
+    "operation": null,
+    "option_path": null,
+    "severity": "error",
+    "source_pointer": "/paths/~1items/get/externalDocs/extra",
+    "source_uri": "urn:dcg:root",
+    "stage": "input",
+    "target_id": null
+  }
+]
+files []
