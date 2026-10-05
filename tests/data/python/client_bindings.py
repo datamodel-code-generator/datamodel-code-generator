@@ -26,7 +26,7 @@ from unittest.mock import patch
 import yaml
 
 import datamodel_code_generator
-from tests.data.python.client_generation import render_client
+from tests.data.python.client_generation import client_cyclic_metadata_report, render_client
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -224,6 +224,8 @@ def _report(case_name: str, lines: list[str], unused: dict[str, list[dict[str, s
 def client_binding_report(case_name: str, root: Path) -> str:
     """Render one fixture for each backend and variant, then again with each formatter change of a render."""
     case = json.loads(CASES.read_text(encoding="utf-8"))[case_name]
+    if case_name == "session-cyclic-metadata":
+        return client_cyclic_metadata_report(_document(DATA / case["source"], root, case), root, MODEL)
     changes = _edits(case, "changes")
     lines: list[str] = []
     for key, render in _renders(case, root):

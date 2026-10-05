@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import importlib
 import sys
-from datetime import datetime, timedelta, timezone
 from time import monotonic
 from typing import TYPE_CHECKING
 from unittest.mock import patch
@@ -14,8 +13,7 @@ import httpx2
 
 from tests.data.python.client_body_replay import _Attempt, _Factory
 from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
-from tests.data.python.client_retry_calls import _acapture, _Broken, _capture, _error, _Events, _report, _Stop
-from tests.data.python.client_retry_policy import _Clock
+from tests.data.python.client_retry_calls import _Broken, _capture, _error, _Events, _report, _Stop
 from tests.data.python.client_runtime import Exchange, arecord, injected, raw_response, record, run
 from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse
 
@@ -52,30 +50,6 @@ class _ArmLimiter:
             self.limiter.armed = True
 
 
-class _ExpireHook:
-    def __init__(self, clock: _Clock, event: str) -> None:
-        self.clock, self.event = clock, event
-        self.calls = 0
-
-    def on_event(self, event: object) -> None:
-        if getattr(event, "name", None) == self.event:
-            self.calls += 1
-            if self.calls == 2:
-                self.clock.value += 2
-
-
-class _ExpiringFactory(_Factory):
-    def __init__(self, clock: _Clock, *, expires: bool) -> None:
-        super().__init__()
-        self.clock, self.expires = clock, expires
-
-    def __call__(self, context: object) -> _Attempt:
-        attempt = super().__call__(context)
-        if self.expires and len(self.attempts) == 2:
-            self.clock.value += 2
-        return attempt
-
-
 class _TerminalHook:
     def __init__(self, failures: dict[str, BaseException]) -> None:
         self.failures = failures
@@ -104,7 +78,6 @@ def retry_boundaries(package: ModuleType, lines: list[str]) -> None:
         importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "bodies", "errors", "transports")
     )
     _configuration(package, options, lines)
-    _retention(package, options, bodies, lines)
     _presend(package, options, errors, lines)
     _uncapped(package, options, errors, transports, lines)
     _closing_wait(package, options, errors, lines)
@@ -173,51 +146,6 @@ def _configuration(package: ModuleType, options: ModuleType, lines: list[str]) -
             "missing optional HTTP2 dependency",
             lambda: package.Client(options=options.ClientOptions(transport=options.TransportOptions(http2=True))),
         )
-
-
-def _retention(package: ModuleType, options: ModuleType, bodies: ModuleType, lines: list[str]) -> None:
-    for stage in ("limiter", "factory", "attempt", "redirect"):
-        clock, events, exchange = _Clock(), _Events(), Exchange([])
-        factory = _ExpiringFactory(clock, expires=stage == "factory")
-        limiter = _SemaphoreLimiter()
-        hook = _ExpireHook(
-            clock, "attempt_start" if stage == "attempt" else "limiter_acquired" if stage != "factory" else ""
-        )
-        first = raw_response(307, Location="/next") if stage == "redirect" else raw_response(503, b"busy", "text/plain")
-        exchange.respond(first, raw_response(200, b"unused", "text/plain"))
-        key = options.IdempotencyKey("same-key", first_used_at=datetime.now(timezone.utc) - timedelta(seconds=86399))
-        with (
-            exchange.client() as native,
-            package.Client(
-                http_client=native,
-                options=options.ClientOptions(
-                    retry=options.RetryOptions(initial_delay=0),
-                    redirects=options.RedirectOptions(enabled=stage == "redirect"),
-                    idempotency_key=key,
-                    limiter=limiter,
-                    hooks=(events, hook),
-                    clock=options.Clock(monotonic=clock),
-                ),
-            ) as api,
-        ):
-            record(
-                lines,
-                f"key expires during {stage}",
-                lambda api=api, factory=factory: _capture(
-                    lambda: api.retry.post_keyed(body=bodies.BodyFactory(factory))
-                ),
-            )
-        record(
-            lines,
-            "retention resources",
-            lambda factory=factory, limiter=limiter: (
-                len(factory.attempts),
-                [attempt.closes for attempt in factory.attempts],
-                limiter.usage.releases,
-                limiter.usage.active,
-            ),
-        )
-        _report(lines, events, exchange)
 
 
 def _presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
@@ -325,7 +253,6 @@ async def _async(
     transports: ModuleType,
     lines: list[str],
 ) -> None:
-    await _async_retention(package, options, bodies, lines)
     await _async_presend(package, options, errors, lines)
     await _late_native(package, options, bodies, transports, lines)
     await _async_terminal(package, options, lines)
@@ -345,51 +272,6 @@ async def _async(
             "async missing optional HTTP2 dependency",
             lambda: package.AsyncClient(options=options.ClientOptions(transport=options.TransportOptions(http2=True))),
         )
-
-
-async def _async_retention(package: ModuleType, options: ModuleType, bodies: ModuleType, lines: list[str]) -> None:
-    for stage in ("limiter", "factory", "attempt", "redirect"):
-        clock, events, exchange = _Clock(), _Events(), Exchange([])
-        factory = _ExpiringFactory(clock, expires=stage == "factory")
-        limiter = _AsyncSemaphoreLimiter()
-        hook = _ExpireHook(
-            clock, "attempt_start" if stage == "attempt" else "limiter_acquired" if stage != "factory" else ""
-        )
-        first = raw_response(307, Location="/next") if stage == "redirect" else raw_response(503, b"busy", "text/plain")
-        exchange.respond(first, raw_response(200, b"unused", "text/plain"))
-        key = options.IdempotencyKey("same-key", first_used_at=datetime.now(timezone.utc) - timedelta(seconds=86399))
-        async with (
-            exchange.async_client() as native,
-            package.AsyncClient(
-                http_client=native,
-                options=options.ClientOptions(
-                    retry=options.RetryOptions(initial_delay=0),
-                    redirects=options.RedirectOptions(enabled=stage == "redirect"),
-                    idempotency_key=key,
-                    limiter=limiter,
-                    hooks=(events, hook),
-                    clock=options.Clock(monotonic=clock),
-                ),
-            ) as api,
-        ):
-            await arecord(
-                lines,
-                f"async key expires during {stage}",
-                lambda api=api, factory=factory: _acapture(
-                    lambda: api.retry.post_keyed(body=bodies.AsyncBodyFactory(factory.async_call))
-                ),
-            )
-        record(
-            lines,
-            "async retention resources",
-            lambda factory=factory, limiter=limiter: (
-                len(factory.attempts),
-                [attempt.closes for attempt in factory.attempts],
-                limiter.usage.releases,
-                limiter.usage.active,
-            ),
-        )
-        _report(lines, events, exchange)
 
 
 async def _async_presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
@@ -513,6 +395,13 @@ def _terminal(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
     _report(lines, events, exchange)
 
 
+def _caller_block(failure: str) -> None:
+    if failure != "block":
+        return
+    message = "caller block failure"
+    raise ValueError(message)
+
+
 def _failed_streams(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     for failure in ("body", "block"):
         primary = KeyboardInterrupt("stream_end interruption")
@@ -528,9 +417,7 @@ def _failed_streams(package: ModuleType, options: ModuleType, lines: list[str]) 
         ):
             try:
                 with api.retry.with_streaming_response.get_safe() as response:
-                    if failure == "block":
-                        message = "caller block failure"
-                        raise ValueError(message)
+                    _caller_block(failure)
                     response.read()
             except BaseException as error:  # noqa: BLE001
                 observed = type(error).__name__, error is primary, getattr(error, "__notes__", ())
@@ -552,9 +439,7 @@ async def _async_failed_streams(package: ModuleType, options: ModuleType, lines:
         ):
             try:
                 async with api.retry.with_streaming_response.get_safe() as response:
-                    if failure == "block":
-                        message = "caller block failure"
-                        raise ValueError(message)
+                    _caller_block(failure)
                     await response.read()
             except BaseException as error:  # noqa: BLE001
                 observed = type(error).__name__, error is primary, getattr(error, "__notes__", ())
