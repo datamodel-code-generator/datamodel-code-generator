@@ -5,11 +5,3 @@ APIGenerationError
   E_CONFIG_VALUE config operations[3].runtime.retry_after_ms_header: retry_after_ms_header must be a header name
   E_CONFIG_VALUE config operations[4].runtime.should_retry_header: should_retry_header must be a header name
   E_CONFIG_VALUE config operations[5].runtime.idempotency.header_name: header_name must be a header name
-  E_CONFIG_VALUE config operations[6].runtime.idempotency.replay_safe_with_key: replay_safe_with_key must be a boolean
-  E_CONFIG_VALUE config operations[7].runtime.idempotency.retention_seconds: retention_seconds must be positive finite seconds
-  E_CONFIG_VALUE config operations[8].runtime.idempotency.retention_seconds: retention_seconds must be positive finite seconds
-  E_CONFIG_VALUE config operations[9].runtime.idempotency.retention_seconds: retention_seconds must be positive finite seconds
-  E_CONFIG_VALUE config operations[10].runtime.idempotency.retention_seconds: retention_seconds must be positive finite seconds
-  E_CONFIG_VALUE config operations[11].runtime.idempotency.retention_seconds: retention_seconds must be positive finite seconds
-  E_CONFIG_VALUE config operations[12].runtime.idempotency.scope: scope must be a string containing non-whitespace text
-  E_CONFIG_VALUE config operations[13].runtime.idempotency.scope: scope must be a string containing non-whitespace text
