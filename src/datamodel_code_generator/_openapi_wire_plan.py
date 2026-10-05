@@ -865,7 +865,6 @@ def _allow_reserved(version: str, location: ParameterLocation, declaration: Wire
     )
 
 
-
 def _planned(
     planner: _WirePlanner, operation: OperationId, declaration: WireDeclaration, names: list[tuple[object, str]]
 ) -> ParameterPlan | None:
