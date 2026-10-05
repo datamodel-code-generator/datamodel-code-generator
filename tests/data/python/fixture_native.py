@@ -146,7 +146,7 @@ class NativeFixture(ThreadingTCPServer):
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.context.minimum_version = ssl.TLSVersion.TLSv1_2
         self.context.set_alpn_protocols(["h2"] if http2 else ["http/1.1"])
-        authority.issue_cert("localhost", "origin.test", "::1").configure_cert(self.context)
+        authority.issue_cert("localhost", "127.0.0.1", "origin.test", "::1").configure_cert(self.context)
         self.verify = ssl.create_default_context()
         authority.configure_trust(self.verify)
         self.http2 = http2
@@ -165,7 +165,7 @@ class NativeFixture(ThreadingTCPServer):
         self.protocols: list[str | None] = []
         super().__init__(("127.0.0.1", 0), _Handler)
         self.port = self.socket.getsockname()[1]
-        self.url = f"https://localhost:{self.port}"
+        self.url = f"https://127.0.0.1:{self.port}"
         self.proxy_url = f"http://127.0.0.1:{self.port}"
         self.thread = threading.Thread(target=self.serve_forever, kwargs={"poll_interval": 0.005}, daemon=True)
         self.thread.start()

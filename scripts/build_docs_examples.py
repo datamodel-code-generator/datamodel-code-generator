@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
 ROOT = Path(__file__).parent.parent
+sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 DOCS = ROOT / "docs"
 TEST_DATA = ROOT / "tests" / "data"
 EXPECTED_MAIN = TEST_DATA / "expected" / "main"
@@ -23,7 +24,6 @@ EXPECTED_OPENAPI = EXPECTED_MAIN / "openapi"
 INPUT_MODEL_DATA = TEST_DATA / "python" / "input_model"
 EXPECTED_CLIENT = EXPECTED_MAIN / "generation_platform" / "client"
 CLIENT_DATA = TEST_DATA / "generation_platform" / "client"
-CLIENT_PACKAGES = EXPECTED_CLIENT / "packages"
 BINDING_LINES = ("plain", "async plain", "async list with")
 JSON_SCHEMA_DATA = TEST_DATA / "jsonschema"
 OPENAPI_DATA = TEST_DATA / "openapi"
@@ -115,13 +115,30 @@ def render_cli_example(*blocks: MarkdownCodeBlock) -> str:
     return f'\n??? example "Examples"\n\n{indent_markdown(body)}\n'
 
 
-def blocks(path: Path, *needles: str, limit: int | None = None, separator: str = "\n\n") -> str:
+def blocks(path: Path | str, *needles: str, limit: int | None = None, separator: str = "\n\n") -> str:
     """Return the separated blocks of a generated module that contain any of the needles, in file order.
 
     Methods of a class are separated by one blank line, and top-level definitions by two.
     """
-    found = [block for block in read_python_output(path).split(separator) if any(needle in block for needle in needles)]
+    content = read_python_output(path) if isinstance(path, Path) else path
+    found = [block for block in content.split(separator) if any(needle in block for needle in needles)]
     return separator.join(found[:limit])
+
+
+def client_blocks(case_name: str, module: str, *needles: str, limit: int | None = None, separator: str = "\n\n") -> str:
+    """Render a tested client's module and select its documentation blocks without package snapshots."""
+    from tests.data.python.client_generation import render_client  # ruff: ignore[import-outside-top-level]
+
+    case = json.loads(read_text(CLIENT_DATA / "cases.json"))[case_name]
+    _, modules = render_client(
+        CLIENT_DATA / case["input"],
+        CLIENT_DATA,
+        "pydantic_v2.BaseModel",
+        case.get("model", {}),
+        case.get("config", {}),
+    )
+    source = PYTHON_GENERATED_HEADER_PATTERN.sub("", modules[("client", *Path(module).parts)].rstrip(), count=1)
+    return blocks(source, *needles, limit=limit, separator=separator)
 
 
 def report_lines(path: Path, *prefixes: str) -> str:
@@ -381,8 +398,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES / "pagination" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                client_blocks(
+                    "pagination",
+                    "protocols/_helpers.py",
                     "    def page(",
                     limit=1,
                 ),
@@ -407,8 +425,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES / "polling" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                client_blocks(
+                    "polling",
+                    "protocols/_helpers.py",
                     "    def start(",
                     limit=1,
                 ),
@@ -419,8 +438,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES / "polling" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                client_blocks(
+                    "polling",
+                    "protocols/_helpers.py",
                     "class JobsTrackedHandle(",
                     separator="\n\n\n",
                 ),
@@ -448,8 +468,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES / "uploads" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                client_blocks(
+                    "uploads",
+                    "protocols/_helpers.py",
                     "    def start(",
                     "    def resume(",
                     limit=2,
@@ -469,48 +490,13 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.queues.helper",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "python",
-                blocks(
-                    CLIENT_PACKAGES / "queues" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
-                    "    def enqueue(",
-                    limit=1,
-                ),
-            ),
-        ),
-        DocsExample(
-            example_id="python-client.queues.drain",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "python",
-                blocks(
-                    CLIENT_PACKAGES / "queues" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
-                    "    def drain(",
-                    limit=1,
-                ),
-            ),
-        ),
-        DocsExample(
-            example_id="python-client.queues.diagnostics",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                "\n".join(
-                    line.strip()
-                    for line in read_text(EXPECTED_CLIENT / "protocols" / "protocols-queue-checks.txt").splitlines()
-                    if line.lstrip().startswith("E_")
-                ),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.streams.helper",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES / "streams" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                client_blocks(
+                    "streams",
+                    "protocols/_helpers.py",
                     "    def open(",
                     limit=1,
                 ),
@@ -540,13 +526,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES
-                    / "stream-resume"
-                    / "pydantic_v2_BaseModel"
-                    / "client"
-                    / "protocols"
-                    / "_helpers.py",
+                client_blocks(
+                    "stream-resume",
+                    "protocols/_helpers.py",
                     "    def resume(",
                     limit=1,
                 ),
@@ -571,8 +553,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES / "ndjson" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                client_blocks(
+                    "ndjson",
+                    "protocols/_helpers.py",
                     "    def open(",
                     limit=1,
                 ),
@@ -609,8 +592,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES / "caching" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                client_blocks(
+                    "caching",
+                    "protocols/_helpers.py",
                     "    def fetch(",
                     limit=1,
                 ),
@@ -640,8 +624,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES / "sockets" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                client_blocks(
+                    "sockets",
+                    "protocols/_helpers.py",
                     "    def connect(",
                     limit=1,
                 ),
@@ -677,14 +662,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES
-                    / "webhooks"
-                    / "pydantic_v2_BaseModel"
-                    / "client"
-                    / "webhooks"
-                    / "standard"
-                    / "message.py",
+                client_blocks(
+                    "webhooks",
+                    "webhooks/standard/message.py",
                     "def verify(",
                     limit=1,
                     separator="\n\n\n",
@@ -754,8 +734,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES / "pets" / "pydantic_v2_BaseModel" / "client" / "resources" / "pets" / "_sync.py",
+                client_blocks(
+                    "pets",
+                    "resources/pets/_sync.py",
                     "def get_pet(",
                     limit=1,
                 ),
@@ -766,14 +747,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES
-                    / "pets-unpack"
-                    / "pydantic_v2_BaseModel"
-                    / "client"
-                    / "resources"
-                    / "pets"
-                    / "_sync.py",
+                client_blocks(
+                    "pets-unpack",
+                    "resources/pets/_sync.py",
                     "def get_pet(",
                     limit=1,
                 ),
@@ -784,13 +760,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES
-                    / "pets-unpack"
-                    / "pydantic_v2_BaseModel"
-                    / "client"
-                    / "_generated"
-                    / "client_arguments.py",
+                client_blocks(
+                    "pets-unpack",
+                    "_generated/client_arguments.py",
                     "signature of get_pet",
                     "'get_pet'",
                     separator="\n\n\n",
@@ -832,14 +804,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES
-                    / "fields"
-                    / "pydantic_v2_BaseModel"
-                    / "client"
-                    / "resources"
-                    / "default"
-                    / "_sync.py",
+                client_blocks(
+                    "fields",
+                    "resources/default/_sync.py",
                     "def update_pet(",
                     limit=1,
                 ),
@@ -876,7 +843,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(CLIENT_PACKAGES / "media" / "pydantic_v2_BaseModel" / "client" / "_client.py", "_DEFAULTS = "),
+                client_blocks("media", "_client.py", "_DEFAULTS = "),
             ),
         ),
         DocsExample(
@@ -884,13 +851,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "python",
-                blocks(
-                    CLIENT_PACKAGES
-                    / "validation-arguments"
-                    / "pydantic_v2_BaseModel"
-                    / "client"
-                    / "_generated"
-                    / "client_checks.py",
+                client_blocks(
+                    "validation-arguments",
+                    "_generated/client_checks.py",
                     "_operation_1_0",
                     separator="\n\n\n",
                 ),

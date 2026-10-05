@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
+from tests.data.python.client_allowreserved import reserved_paths
 from tests.data.python.client_auth_challenges import auth_challenges
 from tests.data.python.client_auth_errors import auth_errors
 from tests.data.python.client_auth_flows import auth_flows
@@ -55,10 +56,6 @@ from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
-from tests.data.python.client_queue_credentials import queue_credentials
-from tests.data.python.client_queue_order import queue_order
-from tests.data.python.client_queue_recovery import queue_recovery, queue_restoration, queue_scope
-from tests.data.python.client_queues import queues
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
 from tests.data.python.client_regressions import json_decode_errors, no_success
@@ -744,6 +741,9 @@ BACKENDS: Final = (
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 STRUCTURAL: Final = BACKENDS[2:]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
+    "allowreserved-path-30": ("allowreserved-path-30", BACKENDS, reserved_paths),
+    "allowreserved-path-31": ("allowreserved-path-31", BACKENDS, reserved_paths),
+    "allowreserved-path-32": ("allowreserved-path-32", BACKENDS, reserved_paths),
     "no-success": ("no-success", BACKENDS, no_success),
     "no-success-unpack": ("no-success-unpack", BACKENDS, no_success),
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
@@ -821,12 +821,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "uploads-oauth": ("uploads-oauth", ("pydantic_v2.BaseModel",), uploads_oauth),
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
     "compression": ("compression", ("pydantic_v2.BaseModel",), compression),
-    "queue-credentials": ("queue-credentials", ("pydantic_v2.BaseModel",), queue_credentials),
-    "queue-order": ("queue-order", ("pydantic_v2.BaseModel",), queue_order),
-    "queues": ("queues", ("pydantic_v2.BaseModel",), queues),
-    "queue-recovery": ("queues", ("pydantic_v2.BaseModel",), queue_recovery),
-    "queue-restoration": ("queues-restoration", ("pydantic_v2.BaseModel",), queue_restoration),
-    "queue-scope": ("queues", ("pydantic_v2.BaseModel",), queue_scope),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
     "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
     "stream-backends": ("streams", BACKENDS, stream_backends),

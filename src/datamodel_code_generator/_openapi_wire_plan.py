@@ -1014,7 +1014,7 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
             style=style,
             explode=explode if isinstance(explode, bool) else style in {"form", "cookie"},
             required=required,
-            allow_reserved=_fact(declaration, "allowReserved") is True,
+            allow_reserved=_allow_reserved(planner.version, location, declaration),
             shape=shape,
             kind=kind,
             fields=fields,
