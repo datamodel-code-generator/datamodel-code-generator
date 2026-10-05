@@ -23,21 +23,8 @@ build operation-dependencies-list: HandlerConfigurationError: operation_dependen
 build operation-dependencies-items: HandlerConfigurationError: operation_dependencies['/paths/~1pets/get'] must be a sequence of Depends(...) values
 build group public: ok
 build group pets: ok
-build options-list: OpenAPIConfigurationError: fastapi_options must map FastAPI setting names to values
-build options-unknown: OpenAPIConfigurationError: fastapi_options has no setting called 'lifespan'
-build options-flag: OpenAPIConfigurationError: fastapi_options['debug'] has a value of the wrong type
-build options-text: OpenAPIConfigurationError: fastapi_options['title'] has a value of the wrong type
-build options-json: OpenAPIConfigurationError: fastapi_options['contact'] has a value of the wrong type
-build options-object: OpenAPIConfigurationError: fastapi_options['license_info'] has a value of the wrong type
-build options-objects: OpenAPIConfigurationError: fastapi_options['servers'] has a value of the wrong type
-build options-object-items: OpenAPIConfigurationError: fastapi_options['openapi_tags'] has a value of the wrong type
-build options-responses: OpenAPIConfigurationError: fastapi_options['responses'] has a value of the wrong type
-build options-response-code: OpenAPIConfigurationError: fastapi_options['responses'] has a value of the wrong type
-build options-dependencies: OpenAPIConfigurationError: fastapi_options['dependencies'] has a value of the wrong type
-build options-response-class: OpenAPIConfigurationError: fastapi_options['default_response_class'] has a value of the wrong type
-build options-unique-id-type: OpenAPIConfigurationError: fastapi_options['generate_unique_id_function'] has a value of the wrong type
 build options-unique-id: ok
-build options-unique-id-result: OpenAPIConfigurationError: fastapi_options['generate_unique_id_function'] returned something other than a string
+build options-unique-id-result: ok
 app default
 openapi info {"title": "Secured pets", "summary": "Pets behind every builtin credential helper.", "description": "Each operation names its own alternatives.", "termsOfService": "https://example.com/terms", "contact": {"name": "Pets team", "email": "pets@example.com"}, "license": {"name": "MIT", "identifier": "MIT"}, "version": "2.0"}
 openapi servers [{"url": "https://pets.example.com/v2"}]

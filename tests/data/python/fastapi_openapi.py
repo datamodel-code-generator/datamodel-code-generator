@@ -65,7 +65,9 @@ def _connected(builder: Callable[..., Any], **settings: Any) -> Any:  # noqa: AN
     services = {
         name: _stand_in(typing.get_origin(parameter.annotation) or parameter.annotation)
         for name, parameter in inspect.signature(builder).parameters.items()
-        if parameter.default is inspect.Parameter.empty and name != "authorize"
+        if parameter.default is inspect.Parameter.empty
+        and parameter.kind is inspect.Parameter.KEYWORD_ONLY
+        and name != "authorize"
     }
     if "authorize" in inspect.signature(builder).parameters:
         settings.setdefault("authorize", lambda requirement_sets, credentials: None)

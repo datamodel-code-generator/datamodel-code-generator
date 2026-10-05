@@ -6,16 +6,12 @@ from applications import Admin, Pets, Public, Untagged, User, authorize, store
 from fastapi import FastAPI
 from secured_models import FieldPetsGetResponse
 
-from secured import Authorize, FastAPIOptions, OperationDependencies, RequirementSets, Unset, create_app
+from secured import Authorize, OperationDependencies, RequirementSets, Unset, create_app
 from secured.services import PetsService, UntaggedService
 
 
 def authorize_text(requirement_sets: RequirementSets) -> str:
     return str(requirement_sets)
-
-
-class Settings:
-    pass
 
 
 class Counted(PetsService[User]):
@@ -57,10 +53,6 @@ class Wrong:
         return len(principal.name)
 
 
-unknown: FastAPIOptions = {"lifespan": None}  # error
-classes: FastAPIOptions = {"contact": {"model": Settings}}  # error
-response_class: FastAPIOptions = {"default_response_class": dict}  # error
-flag: FastAPIOptions = {"debug": "yes"}  # error
 dependencies: OperationDependencies = {"/paths/~1nope/get": []}  # error
 method_key: OperationDependencies = {"list_pets": []}  # error
 narrow: Authorize[str] = authorize_text  # error

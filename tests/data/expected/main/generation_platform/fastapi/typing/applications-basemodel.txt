@@ -1,58 +1,46 @@
-17 marked lines
+13 marked lines
 mypy secured and applications.py: clean
 pyright secured and applications.py: clean
 ty secured and applications.py: clean
-mypy applications_negative.py: 17/17 marked lines with one error, 0 elsewhere, 0 in other files
-  22 override
-  27 override
-  32 override
-  37 override
-  42 override
-  60 typeddict-unknown-key
-  61 dict-item
-  62 typeddict-item
-  63 typeddict-item
-  64 typeddict-unknown-key
-  65 typeddict-unknown-key
-  66 assignment
-  67 abstract
-  68 assignment
-  69 arg-type
-  70 call-arg
-  71 call-arg
-pyright applications_negative.py: 17/17 marked lines with one error, 0 elsewhere, 0 in other files
-  22 reportIncompatibleMethodOverride
-  27 reportIncompatibleMethodOverride
-  32 reportIncompatibleMethodOverride
-  37 reportIncompatibleMethodOverride
-  42 reportIncompatibleMethodOverride
+mypy applications_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  18 override
+  23 override
+  28 override
+  33 override
+  38 override
+  56 typeddict-unknown-key
+  57 typeddict-unknown-key
+  58 assignment
+  59 abstract
+  60 assignment
+  61 arg-type
+  62 call-arg
+  63 call-arg
+pyright applications_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  18 reportIncompatibleMethodOverride
+  23 reportIncompatibleMethodOverride
+  28 reportIncompatibleMethodOverride
+  33 reportIncompatibleMethodOverride
+  38 reportIncompatibleMethodOverride
+  56 reportAssignmentType
+  57 reportAssignmentType
+  58 reportAssignmentType
+  59 reportAbstractUsage
   60 reportAssignmentType
-  61 reportAssignmentType
-  62 reportAssignmentType
-  63 reportAssignmentType
-  64 reportAssignmentType
-  65 reportAssignmentType
-  66 reportAssignmentType
-  67 reportAbstractUsage
-  68 reportAssignmentType
-  69 reportArgumentType
-  70 reportCallIssue
-  71 reportCallIssue
-ty applications_negative.py: 17/17 marked lines with one error, 0 elsewhere, 0 in other files
-  22 invalid-method-override
-  27 invalid-method-override
-  32 invalid-method-override
-  37 invalid-method-override
-  42 invalid-method-override
-  60 invalid-key
+  61 reportArgumentType
+  62 reportCallIssue
+  63 reportCallIssue
+ty applications_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  18 invalid-method-override
+  23 invalid-method-override
+  28 invalid-method-override
+  33 invalid-method-override
+  38 invalid-method-override
+  56 invalid-key
+  57 invalid-key
+  58 invalid-assignment
+  59 call-non-callable
+  60 invalid-assignment
   61 invalid-argument-type
-  62 invalid-argument-type
-  63 invalid-argument-type
-  64 invalid-key
-  65 invalid-key
-  66 invalid-assignment
-  67 call-non-callable
-  68 invalid-assignment
-  69 invalid-argument-type
-  70 missing-argument
-  71 missing-argument
+  62 missing-argument
+  63 missing-argument

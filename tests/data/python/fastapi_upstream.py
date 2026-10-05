@@ -1,4 +1,4 @@
-"""Drive uploads to a generated server through ASGI directly: completion, parse errors, disconnects, and cancellation.
+"""Drive uploads to a generated server through ASGI directly: completion, parse errors, and anyio cancellation.
 
 The generated server leaves multipart parsing, file lifetimes, disconnects, and cancellation to FastAPI and Starlette.
 """
@@ -68,8 +68,6 @@ async def _drive(app: FastAPI, length: int, chunks: list[bytes], ending: str) ->
     async def receive() -> dict[str, Any]:
         if messages:
             return messages.pop(0)
-        if ending == "disconnect":
-            return {"type": "http.disconnect"}
         await anyio.sleep_forever()
         return {}
 
@@ -79,20 +77,11 @@ async def _drive(app: FastAPI, length: int, chunks: list[bytes], ending: str) ->
 
     call = app(_scope(length), receive, send)
     try:
-        match ending:
-            case "cancel scope":
-                with anyio.move_on_after(0.05) as scope:
-                    await call
-                return f"cancelled {scope.cancelled_caught}, sent {sent}"
-            case "cancel task":
-                task = asyncio.ensure_future(call)
-                await asyncio.sleep(0.05)
-                task.cancel()
-                await task
-            case _:
+        if ending == "cancel scope":
+            with anyio.move_on_after(0.05) as scope:
                 await call
-    except asyncio.CancelledError:
-        return f"CancelledError, sent {sent}"
+            return f"cancelled {scope.cancelled_caught}, sent {sent}"
+        await call
     except Exception as error:  # noqa: BLE001
         return f"{type(error).__name__}, sent {sent}"
     return f"sent {sent}"

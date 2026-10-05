@@ -8,18 +8,13 @@ from .application import (
     Authorize,
     Credentials,
     Dependency,
-    FastAPIOptions,
     OperationDependencies,
     OperationKey,
     RequirementSets,
     build_router,
     create_app,
 )
-from .errors import (
-    AuthConfigurationError,
-    HandlerConfigurationError,
-    OpenAPIConfigurationError,
-)
+from .errors import AuthConfigurationError, HandlerConfigurationError
 
 __all__ = [
     "UNSET",
@@ -28,10 +23,8 @@ __all__ = [
     "Authorize",
     "Credentials",
     "Dependency",
-    "FastAPIOptions",
     "HTTPResult",
     "HandlerConfigurationError",
-    "OpenAPIConfigurationError",
     "OperationDependencies",
     "OperationKey",
     "RequirementSets",

@@ -2,17 +2,12 @@
 """Build the router and the application of every selected operation from the services that implement them."""
 
 from collections.abc import Sequence
-from typing import Final
+from typing import Any, Final
 
 from fastapi import APIRouter, FastAPI
 
 from ._generated.contract import OperationDependencies, OperationKey
-from ._runtime.server.application import (
-    Dependency,
-    FastAPIOptions,
-    application_options,
-    build,
-)
+from ._runtime.server.application import Dependency, build
 from ._runtime.server.security import (
     AsyncAuthorize,
     Authorize,
@@ -23,7 +18,7 @@ from .routers import untagged
 from .services import UntaggedService
 
 ROUTES: Final = (*untagged.LITERAL_ROUTES, *untagged.TEMPLATED_ROUTES)
-INFO: Final[FastAPIOptions] = {'title': 'Server bodies', 'version': '1.0'}
+INFO: Final[dict[str, Any]] = {'title': 'Server bodies', 'version': '1.0'}
 
 
 def build_router(
@@ -46,17 +41,15 @@ def build_router(
 def create_app(
     *,
     untagged: UntaggedService,
-    dependencies: Sequence[Dependency] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
-    fastapi_options: FastAPIOptions | None = None,
+    **fastapi_kwargs: Any,
 ) -> FastAPI:
-    """Create the application with every operation."""
-    app = FastAPI(**application_options(fastapi_options, INFO))
+    """Create the application with every operation, passing the other keyword arguments to FastAPI."""
+    app = FastAPI(**{**INFO, **fastapi_kwargs})
     app.include_router(
         build_router(
             untagged=untagged,
-            dependencies=dependencies,
             operation_dependencies=operation_dependencies,
             prefix=prefix,
         )
@@ -69,7 +62,6 @@ __all__ = [
     'Authorize',
     'Credentials',
     'Dependency',
-    'FastAPIOptions',
     'OperationDependencies',
     'OperationKey',
     'RequirementSets',

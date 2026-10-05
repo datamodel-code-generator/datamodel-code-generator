@@ -1,4 +1,4 @@
-"""Typed connections to the generated secured server: services, options, authorize callbacks, and dependencies."""
+"""Typed connections to the generated secured server: services, FastAPI arguments, authorize callbacks, and dependencies."""
 
 from __future__ import annotations
 
@@ -16,7 +16,6 @@ from secured import (
     Authorize,
     Credentials,
     Dependency,
-    FastAPIOptions,
     HTTPResult,
     OperationDependencies,
     OperationKey,
@@ -95,29 +94,25 @@ async_authorizer: AsyncAuthorize[Admin] = authorize_async
 key: OperationKey = "/paths/~1pets/get"
 dependencies: list[Dependency] = [Depends(record)]
 operation_dependencies: OperationDependencies = {"/paths/~1pets/get": dependencies}
-options: FastAPIOptions = {
-    "title": "Pets",
-    "summary": None,
-    "openapi_tags": [{"name": "pets", "description": "Pets."}],
-    "servers": [{"url": "https://pets.example.com"}],
-    "responses": {404: {"description": "Missing."}, "default": {"description": "Anything."}},
-    "dependencies": dependencies,
-    "middleware": [Middleware(GZipMiddleware)],
-    "routes": [],
-    "webhooks": APIRouter(),
-    "default_response_class": PlainTextResponse,
-    "generate_unique_id_function": unique_id,
-    "strict_content_type": False,
-}
 app: FastAPI = create_app(
     pets=Pets(),
     public=Public(),
     untagged=Untagged(),
     authorize=authorizer,
-    dependencies=dependencies,
     operation_dependencies=operation_dependencies,
     prefix="/api",
-    fastapi_options=options,
+    title="Pets",
+    summary=None,
+    openapi_tags=[{"name": "pets", "description": "Pets."}],
+    servers=[{"url": "https://pets.example.com"}],
+    responses={404: {"description": "Missing."}, "default": {"description": "Anything."}},
+    dependencies=dependencies,
+    middleware=[Middleware(GZipMiddleware)],
+    routes=[],
+    webhooks=APIRouter(),
+    default_response_class=PlainTextResponse,
+    generate_unique_id_function=unique_id,
+    strict_content_type=False,
 )
 router: APIRouter = build_router(
     pets=Pets(),  # ty: ignore[invalid-argument-type]
