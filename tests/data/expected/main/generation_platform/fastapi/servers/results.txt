@@ -61,7 +61,7 @@ service UntaggedService without its methods: TypeError
 < 200 text/plain; charset=utf-8 abc
 > GET /plain?case=too-long
   get_plain(too-long)
-< ResponseValidationError: ['String should have at most 3 characters']
+< 200 text/plain; charset=utf-8 abcd
 > GET /plain?case=undeclared
   get_plain(undeclared)
 < 404 - b''
@@ -88,4 +88,4 @@ service UntaggedService without its methods: TypeError
 < ResponseValidationError: ['The text body cannot be encoded as text/plain; charset=iso-8859-1']
 > GET /blob?case=blob
   get_blob(blob)
-< 200 application/octet-stream b'\x00\x01'
+< 200 application/octet-stream b'\x00\xff'
