@@ -28,12 +28,10 @@ RESERVED_MEMBERS: Final = frozenset({
 })
 RESERVED_ARGUMENTS: Final = frozenset({"body", "media_type", "options", "response_media_type", "self"})
 HELPER_ARGUMENTS: Final = frozenset({
-    "batch_options",
     "cache_options",
     "items",
     "pagination_options",
     "poll_options",
-    "queue_options",
     "session_options",
     "source",
     "state",

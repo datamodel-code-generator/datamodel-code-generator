@@ -15,6 +15,16 @@
       "post": {
         "summary": "Subscribe",
         "operationId": "subscribe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Subscription"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Subscribed.",
@@ -27,65 +37,8 @@
           },
           "default": {
             "description": "Unexpected."
-          },
-          "400": {
-            "description": "Unexpected. The response may also have no content.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
-                },
-                "example": {
-                  "detail": "Invalid request"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unexpected. The response may also have no content.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
-                },
-                "example": {
-                  "detail": "Unsupported media type"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unexpected. The response may also have no content.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_validation_error__588558bc295c"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Unexpected. The response may also have no content.",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__588558bc295c"
-                }
-              }
-            }
           }
         },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Subscription__986fd3c7bfdb"
-              }
-            }
-          }
-        },
-        "security": [],
         "callbacks": {
           "onEvent": {
             "{$request.body#/callbackUrl}": {
@@ -96,7 +49,18 @@
                   "content": {
                     "application/json": {
                       "schema": {
-                        "$ref": "#/components/schemas/Event__37a53271f6e9"
+                        "type": "object",
+                        "required": [
+                          "id"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "kind": {
+                            "type": "string"
+                          }
+                        }
                       }
                     },
                     "multipart/form-data": {
@@ -122,11 +86,6 @@
                     "description": "Received."
                   }
                 },
-                "security": [
-                  {
-                    "dcg_signature__588558bc295c": []
-                  }
-                ],
                 "callbacks": {
                   "onReceipt": {
                     "{$request.body#/receiptUrl}": {
@@ -159,7 +118,28 @@
                   "content": {
                     "application/json": {
                       "schema": {
-                        "$ref": "#/components/schemas/Status__40fb2b2baf29"
+                        "type": "object",
+                        "required": [
+                          "state"
+                        ],
+                        "properties": {
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "up",
+                              "down"
+                            ]
+                          }
+                        },
+                        "$defs": {
+                          "State": {
+                            "type": "string",
+                            "enum": [
+                              "up",
+                              "down"
+                            ]
+                          }
+                        }
                       }
                     }
                   }
@@ -193,47 +173,43 @@
         "responses": {
           "200": {
             "description": "The events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldEventsGetResponse"
+                }
+              }
+            },
             "headers": {
               "X-Map": {
                 "schema": {
                   "type": "object"
                 }
               }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Event__fcc2f28cb876"
-                  }
-                },
-                "example": [
-                  {
-                    "id": 1,
-                    "kind": "created"
-                  }
-                ]
-              }
             }
           },
           "500": {
             "description": "Failed.",
             "content": {
-              "application/json": {
+              "application/xml": {
                 "schema": {
-                  "$ref": "#/components/schemas/Event__fcc2f28cb876"
+                  "type": "object",
+                  "properties": {
+                    "children": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  }
                 }
               },
-              "text/plain": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__588558bc295c"
+                  "$ref": "#/components/schemas/Event"
                 }
               }
             }
           }
         },
-        "security": [],
         "callbacks": {
           "onStatus": {
             "{$request.query.hook}": {
@@ -251,7 +227,28 @@
                   "content": {
                     "application/json": {
                       "schema": {
-                        "$ref": "#/components/schemas/Status__40fb2b2baf29"
+                        "type": "object",
+                        "required": [
+                          "state"
+                        ],
+                        "properties": {
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "up",
+                              "down"
+                            ]
+                          }
+                        },
+                        "$defs": {
+                          "State": {
+                            "type": "string",
+                            "enum": [
+                              "up",
+                              "down"
+                            ]
+                          }
+                        }
                       }
                     }
                   }
@@ -267,25 +264,25 @@
         },
         "externalDocs": {
           "url": "https://docs.example.com/events"
-        },
-        "servers": [
-          {
-            "url": "https://events.example.com"
-          }
-        ]
+        }
       }
     },
     "/secure": {
       "get": {
         "summary": "Get Secure",
         "operationId": "getSecure",
+        "security": [
+          {
+            "signature": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "The animal.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Animal__968918e172f8"
+                  "$ref": "#/components/schemas/Animal"
                 }
               }
             }
@@ -293,11 +290,7 @@
           "400": {
             "description": "Bad.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
-                }
-              }
+              "application/json": {}
             }
           },
           "401": {
@@ -308,54 +301,17 @@
                   "type": "string"
                 }
               }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
-                },
-                "example": {
-                  "detail": "Unauthorized"
-                }
-              }
             }
           },
           "403": {
-            "description": "Forbidden.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
-                }
-              }
-            }
+            "description": "Forbidden."
           },
           "422": {
             "description": "Invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/Event__fcc2f28cb876"
-                    },
-                    {
-                      "$ref": "#/components/schemas/Status__fec591caee37"
-                    },
-                    {
-                      "$ref": "#/components/schemas/dcg_validation_error__588558bc295c"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__588558bc295c"
+                  "$ref": "#/components/schemas/FieldSecureGetResponse"
                 }
               }
             }
@@ -369,11 +325,6 @@
               "type": "string"
             }
           }
-        ],
-        "security": [
-          {
-            "dcg_signature__588558bc295c": []
-          }
         ]
       }
     },
@@ -384,19 +335,8 @@
         "responses": {
           "200": {
             "description": "Successful Response"
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__588558bc295c"
-                }
-              }
-            }
           }
-        },
-        "security": []
+        }
       }
     },
     "/echo": {
@@ -409,217 +349,147 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FieldEventsGetResponse__807321d2eb29"
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/n_me__4f7a883de21c"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/dcg_server_error__588558bc295c"
+                  "$ref": "#/components/schemas/FieldEventsGetResponse"
                 }
               }
             }
           }
-        },
-        "security": []
+        }
       }
     }
   },
   "components": {
     "schemas": {
-      "Subscription__986fd3c7bfdb": {
+      "Animal": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Cat"
+          },
+          {
+            "$ref": "#/components/schemas/Dog"
+          }
+        ],
+        "title": "Animal",
+        "discriminator": {
+          "propertyName": "pet_type",
+          "mapping": {
+            "cat": "#/components/schemas/Cat",
+            "dog": "#/components/schemas/Dog"
+          }
+        }
+      },
+      "Cat": {
+        "properties": {
+          "pet_type": {
+            "type": "string",
+            "const": "cat",
+            "title": "Pet Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pet_type"
+        ],
+        "title": "Cat"
+      },
+      "Dog": {
+        "properties": {
+          "pet_type": {
+            "type": "string",
+            "const": "dog",
+            "title": "Pet Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pet_type"
+        ],
+        "title": "Dog"
+      },
+      "Event": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "Event"
+      },
+      "FieldEventsGetResponse": {
+        "items": {
+          "$ref": "#/components/schemas/Event"
+        },
+        "type": "array",
+        "title": "FieldEventsGetResponse"
+      },
+      "FieldSecureGetResponse": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/Event"
+          },
+          {
+            "$ref": "#/components/schemas/Status"
+          }
+        ],
+        "title": "FieldSecureGetResponse"
+      },
+      "State": {
+        "type": "string",
+        "enum": [
+          "up",
+          "down"
+        ],
+        "title": "State"
+      },
+      "Status": {
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "Status"
+      },
+      "Subscription": {
+        "properties": {
+          "callbackUrl": {
+            "type": "string",
+            "minLength": 1,
+            "format": "uri",
+            "title": "Callbackurl"
+          }
+        },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "callbackUrl"
         ],
-        "additionalProperties": false,
-        "properties": {
-          "callbackUrl": {
-            "type": "string",
-            "format": "uri"
-          }
-        }
-      },
-      "dcg_http_error__588558bc295c": {
-        "type": "object",
-        "properties": {
-          "detail": {}
-        },
-        "required": [
-          "detail"
-        ]
-      },
-      "dcg_validation_error__588558bc295c": {
-        "type": "object",
-        "properties": {
-          "detail": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "loc": {
-                  "type": "array",
-                  "items": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "integer"
-                      }
-                    ]
-                  }
-                },
-                "msg": {
-                  "type": "string"
-                },
-                "type": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "loc",
-                "msg",
-                "type"
-              ]
-            }
-          }
-        },
-        "required": [
-          "detail"
-        ]
-      },
-      "dcg_server_error__588558bc295c": {
-        "type": "string"
-      },
-      "Event__37a53271f6e9": {
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer"
-          },
-          "kind": {
-            "type": "string"
-          }
-        }
-      },
-      "Status__40fb2b2baf29": {
-        "type": "object",
-        "required": [
-          "state"
-        ],
-        "properties": {
-          "state": {
-            "$ref": "#/components/schemas/State__4a9a6d0bab08"
-          }
-        }
-      },
-      "Event__fcc2f28cb876": {
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer"
-          },
-          "kind": {
-            "type": "string"
-          }
-        }
-      },
-      "Animal__968918e172f8": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/Cat__788cd2ac3ee9"
-          },
-          {
-            "$ref": "#/components/schemas/Dog__f3a0911de655"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "pet_type",
-          "mapping": {
-            "cat": "#/components/schemas/Cat__788cd2ac3ee9",
-            "dog": "#/components/schemas/Dog__f3a0911de655",
-            "bird": "#/components/schemas/Bird"
-          }
-        }
-      },
-      "Status__fec591caee37": {
-        "type": "object",
-        "required": [
-          "state"
-        ],
-        "properties": {
-          "state": {
-            "$ref": "#/components/schemas/State__b233ea901f0d"
-          }
-        }
-      },
-      "FieldEventsGetResponse__807321d2eb29": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/Event__fcc2f28cb876"
-        }
-      },
-      "n_me__4f7a883de21c": {
-        "type": "string"
-      },
-      "State__4a9a6d0bab08": {
-        "type": "string",
-        "enum": [
-          "up",
-          "down"
-        ]
-      },
-      "Cat__788cd2ac3ee9": {
-        "type": "object",
-        "required": [
-          "pet_type"
-        ],
-        "properties": {
-          "pet_type": {
-            "type": "string"
-          }
-        }
-      },
-      "Dog__f3a0911de655": {
-        "type": "object",
-        "required": [
-          "pet_type"
-        ],
-        "properties": {
-          "pet_type": {
-            "type": "string"
-          }
-        }
-      },
-      "State__b233ea901f0d": {
-        "type": "string",
-        "enum": [
-          "up",
-          "down"
-        ]
+        "title": "Subscription"
       }
     },
     "securitySchemes": {
-      "dcg_signature__588558bc295c": {
+      "signature": {
         "type": "apiKey",
-        "name": "X-Signature",
-        "in": "header"
+        "in": "header",
+        "name": "X-Signature"
       }
     }
   }

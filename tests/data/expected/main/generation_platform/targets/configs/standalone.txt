@@ -26,4 +26,3 @@ router_names=mappingproxy({})
 parameter_names=mappingproxy({})
 hooks=()
 templates=None
-update_groups=None

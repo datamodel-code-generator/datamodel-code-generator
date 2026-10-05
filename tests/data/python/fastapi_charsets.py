@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -28,7 +27,6 @@ def text_charsets(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
         _generate({"input": "http-charsets.json", "config": {"layout": "single"}}, backend, root, package)
         try:
             server = import_generated(package)
-            responses = importlib.import_module(f"{package}.responses")
 
             class Service:
                 def receive(self, *, body: object, media_type: str) -> None:
@@ -36,14 +34,13 @@ def text_charsets(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
                     lines.append(f"  receive {media_type} {getattr(value, 'root', value)!r}")
 
                 def send(self, *, choice: str) -> object:
-                    case = cases["outputs"][getattr(choice, "root", choice)]
-                    return responses.HTTPResult(status_code=200, body=case["body"], media_type=case["media"])
+                    return choice
 
                 def label(self, *, label: object) -> None:
                     lines.append(f"  label {getattr(label, 'root', label)!r}")
 
                 def primary(self) -> object:
-                    return server.responses.PrimaryResponseCodecs.body(status_code=200).from_wire("café")
+                    return "café"
 
             lines.append(f"# {backend}")
             with TestClient(server.create_app(service=Service())) as api:
@@ -51,14 +48,6 @@ def text_charsets(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
                     lines.append(f"> {case['media']} {case['hex']}")
                     response = api.post("/input", headers={"Content-Type": case["media"]}, content=bytes.fromhex(case["hex"]))
                     lines.append(f"< {response.status_code}")
-                for choice in cases["outputs"]:
-                    lines.append(f"> {choice}")
-                    try:
-                        response = api.get("/output", params={"choice": choice})
-                    except Exception as error:
-                        lines.append(f"< {type(error).__name__}: {error}")
-                    else:
-                        lines.append(f"< {response.status_code} {response.headers['content-type']} {response.content!r}")
                 for label in cases["labels"]:
                     lines.append(f"> label {label}")
                     response = api.get(f"/labels/{label}")

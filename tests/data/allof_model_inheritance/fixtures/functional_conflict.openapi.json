@@ -1,0 +1,82 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "functional_conflict",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "A": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        }
+      },
+      "B": {
+        "type": "object",
+        "properties": {
+          "b": {
+            "type": "string"
+          }
+        }
+      },
+      "C": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/A"
+          },
+          {
+            "$ref": "#/components/schemas/B"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "c": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "D": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/B"
+          },
+          {
+            "$ref": "#/components/schemas/A"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "d": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "E": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/C"
+          },
+          {
+            "$ref": "#/components/schemas/D"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "e-key": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

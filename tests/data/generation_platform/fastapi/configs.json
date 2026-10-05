@@ -55,10 +55,7 @@
       },
       "rename"
     ],
-    "templates": "templates/custom",
-    "update_groups": [
-      "tag:pets"
-    ]
+    "templates": "templates/custom"
   },
   "invalid-values": {
     "layout": "grid",
@@ -116,8 +113,7 @@
       },
       7
     ],
-    "templates": 7,
-    "update_groups": "tag:pets"
+    "templates": 7
   },
   "invalid-shapes": {
     "body_modes": "request",

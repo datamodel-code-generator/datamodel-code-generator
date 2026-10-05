@@ -253,8 +253,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         note=(
             "generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI "
             "document with the api scope. The package declares a service Protocol for each router group, builds "
-            "routers from the services you implement in your own modules, and serves the source document's metadata "
-            "through install_openapi. They need Python 3.11 or later, both to run and as "
+            "routers from the services you implement in your own modules, and serves FastAPI's own OpenAPI document "
+            "with the source document's metadata. They need Python 3.11 or later, both to run and as "
             "model_config.target_python_version."
         ),
     ),

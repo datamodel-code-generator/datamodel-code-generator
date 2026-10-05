@@ -69,6 +69,7 @@ paths:
         url: https://docs.example.com/events
       servers:
         - url: https://events.example.com
+          x-codes: {1: one}
       responses:
         "200":
           description: The events.
@@ -92,6 +93,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/Tree'
       callbacks:
         onStatus:
           $ref: '#/components/callbacks/Status'
@@ -151,6 +155,13 @@ paths:
                 $ref: '#/components/schemas/Näme'
 components:
   schemas:
+    Tree:
+      type: object
+      properties:
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tree'
     Subscription:
       type: object
       required: [callbackUrl]

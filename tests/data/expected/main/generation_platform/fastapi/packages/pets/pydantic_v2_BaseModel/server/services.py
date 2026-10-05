@@ -3,24 +3,16 @@
 
 from __future__ import annotations
 
+import uuid
 from abc import abstractmethod
-from typing import Literal, Protocol
-from uuid import UUID
+from typing import Protocol
 
 import models
+import pydantic
 from fastapi.responses import Response
-from pydantic import AwareDatetime
 
-from .model_codecs import ModelValue, Unset
-from .responses import (
-    CreatePetResponsePayload,
-    DeletePetResponsePayload,
-    GetInventoryResponsePayload,
-    GetPetResponsePayload,
-    HTTPResult,
-    ListMyPetsResponsePayload,
-    ListPetsResponsePayload,
-)
+from ._runtime.model_codecs.unset import Unset
+from ._runtime.server.responses import HTTPResult
 
 
 class PetsService(Protocol):
@@ -32,14 +24,13 @@ class PetsService(Protocol):
         *,
         limit: int,
         tags: list[str] | Unset,
-        kind: Literal['cat', 'dog'] | Unset,
-        x_request_id: UUID | Unset,
-        since: AwareDatetime | Unset,
-        session: models.FieldPetsGetCookieSessionParameter | Unset,
+        kind: models.FieldPetsGetQueryKindParameter | Unset,
+        x_request_id: uuid.UUID | Unset,
+        since: pydantic.AwareDatetime | Unset,
+        session: str | Unset,
     ) -> (
         models.FieldPetsGetResponse
-        | ModelValue[models.FieldPetsGetResponse]
-        | HTTPResult[ListPetsResponsePayload]
+        | HTTPResult[models.FieldPetsGetResponse | models.Error]
         | Response
     ): ...
 
@@ -48,20 +39,14 @@ class PetsService(Protocol):
         self,
         *,
         body: models.NewPet,
-    ) -> (
-        models.Pet
-        | ModelValue[models.Pet]
-        | HTTPResult[CreatePetResponsePayload]
-        | Response
-    ): ...
+    ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
 
     @abstractmethod
     def list_my_pets(
         self,
     ) -> (
         models.FieldPetsMineGetResponse
-        | ModelValue[models.FieldPetsMineGetResponse]
-        | HTTPResult[ListMyPetsResponsePayload]
+        | HTTPResult[models.FieldPetsMineGetResponse]
         | Response
     ): ...
 
@@ -70,19 +55,10 @@ class PetsService(Protocol):
         self,
         *,
         pet_id: int,
-    ) -> (
-        models.Pet
-        | ModelValue[models.Pet]
-        | HTTPResult[GetPetResponsePayload]
-        | Response
-    ): ...
+    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response: ...
 
     @abstractmethod
-    def delete_pet(
-        self,
-        *,
-        pet_id: int,
-    ) -> None | HTTPResult[DeletePetResponsePayload] | Response: ...
+    def delete_pet(self, *, pet_id: int) -> None | HTTPResult[None] | Response: ...
 
 
 class StoreService(Protocol):
@@ -93,7 +69,6 @@ class StoreService(Protocol):
         self,
     ) -> (
         models.FieldStoreInventoryGetResponse
-        | ModelValue[models.FieldStoreInventoryGetResponse]
-        | HTTPResult[GetInventoryResponsePayload]
+        | HTTPResult[models.FieldStoreInventoryGetResponse]
         | Response
     ): ...

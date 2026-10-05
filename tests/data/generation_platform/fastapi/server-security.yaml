@@ -65,7 +65,7 @@ paths:
         "204": {description: Done.}
 components:
   securitySchemes:
-    api_key: {type: apiKey, in: header, name: X-API-Key}
+    api_key: {type: apiKey, in: header, name: X-API-Key, description: The caller's key.}
     query_key: {type: apiKey, in: query, name: key}
     cookie_key: {type: apiKey, in: cookie, name: session}
     basic: {type: http, scheme: Basic}

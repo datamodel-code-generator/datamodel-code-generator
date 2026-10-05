@@ -52,13 +52,6 @@
   store action: get entry=None
   store action: set entry=None
   store action: delete entry=None
-  store action: compare_exchange entry=None
-  store action: claim entry=None
-  store action: put entry=None
-  store action: open entry=None
-  store action: read entry=None
-  store action: close entry=None
-  store action: purge_terminal entry=None
   copied configuration path: True
   configuration missing path ! TypeError: ProtocolConfigurationError.__init__() missing 1 required keyword-only argument: 'field_path' []
   configuration missing condition ! TypeError: ProtocolConfigurationError.__init__() missing 1 required keyword-only argument: 'condition' []
