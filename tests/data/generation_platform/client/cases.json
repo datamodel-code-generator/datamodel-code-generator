@@ -718,7 +718,11 @@
   },
   "querystring": {
     "input": "querystring.yaml",
-    "modules": false
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "paths": {
     "input": "paths.yaml"
