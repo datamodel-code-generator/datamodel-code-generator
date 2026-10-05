@@ -20,7 +20,7 @@ from contextlib import (
 from dataclasses import dataclass, replace
 from functools import partial
 from time import monotonic
-from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeGuard, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
 from urllib.parse import quote, unquote_plus, urlsplit
 
 import httpx2
@@ -136,7 +136,7 @@ if TYPE_CHECKING:
         Iterator,
         Sequence,
     )
-    from typing import Protocol
+    from typing import Protocol, TypeGuard
 
     from ..model_codecs.parameters import ParameterFragment, ParameterPlan
     from ..model_codecs.wire import WireValue

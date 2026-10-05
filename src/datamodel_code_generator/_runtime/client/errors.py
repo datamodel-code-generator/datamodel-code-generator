@@ -5,9 +5,9 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from enum import Enum
-from typing import ClassVar, Final, Generic, Literal, TypeAlias, TypeGuard, get_args
+from typing import ClassVar, Final, Generic, Literal, TypeAlias, get_args
 
-from typing_extensions import TypeIs, TypeVar
+from typing_extensions import TypeGuard, TypeIs, TypeVar  # noqa: UP035 - The typing import line stays as it was.
 
 from ..model_codecs.unset import UNSET, Unset
 from ..protocols.references import OperationRef
