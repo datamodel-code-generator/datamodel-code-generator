@@ -858,6 +858,14 @@ def parameter_plans(wire: WirePlan) -> dict[OperationId, dict[tuple[ParameterLoc
     return {operation: {(plan.location, plan.name): plan for plan in planned} for operation, planned in wire.parameters}
 
 
+def _allow_reserved(version: str, location: ParameterLocation, declaration: WireDeclaration) -> bool:
+    """Return the effective allowReserved flag for the root OpenAPI version and parameter location."""
+    return _fact(declaration, "allowReserved") is True and not (
+        location == "path" and (version in ("3.0", "3.1") or version.startswith(("3.0.", "3.1.")))  # noqa: PLR6201
+    )
+
+
+
 def _planned(
     planner: _WirePlanner, operation: OperationId, declaration: WireDeclaration, names: list[tuple[object, str]]
 ) -> ParameterPlan | None:
