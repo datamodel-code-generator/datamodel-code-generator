@@ -139,26 +139,6 @@ def test_client_typing_polling(backend: DataModelType, tmp_path: Path) -> None:
         DataModelType.MsgspecStruct,
     ],
 )
-def test_client_typing_queues(backend: DataModelType, tmp_path: Path) -> None:
-    """Check queue helpers: typed receipts, entries, reports, store contracts, and misuses of each."""
-    if not os.environ.get(ENABLED):
-        pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "queues", ("queues",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-queues.txt",
-    )
-
-
-@pytest.mark.parametrize(
-    "backend",
-    [
-        DataModelType.PydanticV2BaseModel,
-        DataModelType.PydanticV2Dataclass,
-        DataModelType.DataclassesDataclass,
-        DataModelType.TypingTypedDict,
-        DataModelType.MsgspecStruct,
-    ],
-)
 def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
     """Check upload helpers: typed results, sync and asyncio handles and sources, and misuses of each."""
     if not os.environ.get(ENABLED):
@@ -334,16 +314,6 @@ def test_client_typing_unions(backend: DataModelType, tmp_path: Path) -> None:
     assert_output(
         client_typing_report(tmp_path, backend, "unions-schema", ("unions",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-unions.txt",
-    )
-
-
-def test_client_typing_circuits(tmp_path: Path) -> None:
-    """Check circuit breaker settings, records, stores, and the declared groups of a package's resets."""
-    if not os.environ.get(ENABLED):
-        pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "circuits", ("circuits",)),
-        EXPECTED / "pydantic_v2-BaseModel-circuits.txt",
     )
 
 

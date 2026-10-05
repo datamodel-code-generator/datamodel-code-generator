@@ -40,8 +40,8 @@
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
@@ -411,11 +411,11 @@
   defaults webhook options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options mapping ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -507,8 +507,8 @@
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
@@ -878,11 +878,11 @@
   defaults webhook options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options mapping ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -974,8 +974,8 @@
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
@@ -1345,11 +1345,11 @@
   defaults webhook options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options mapping ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -1441,8 +1441,8 @@
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
@@ -1812,11 +1812,11 @@
   defaults webhook options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options mapping ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -1908,8 +1908,8 @@
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper', 'state') keyword-only=True hints=('helper', 'state', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
@@ -2279,11 +2279,11 @@
   defaults webhook options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options mapping ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)

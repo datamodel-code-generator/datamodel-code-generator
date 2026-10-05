@@ -87,7 +87,12 @@
         }
       ],
       "signature_style": "unpack"
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "media": {
     "input": "media.yaml",
@@ -111,7 +116,12 @@
         "request": "schema",
         "response": "schema"
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "multipart-split": {
     "input": "multipart-split.yaml",
@@ -172,7 +182,12 @@
           "namespace": "store"
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "name-errors": {
     "input": "name-errors.yaml"
@@ -261,12 +276,22 @@
         ],
         "reason": "No operation is needed yet."
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "evolution": {
     "input": "evolution.yaml",
     "backends": [
       "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "models.py"
+      ]
     ]
   },
   "evolution-schema": {
@@ -292,7 +317,12 @@
     }
   },
   "querystring": {
-    "input": "querystring.yaml"
+    "input": "querystring.yaml",
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "paths": {
     "input": "paths.yaml"
@@ -504,7 +534,12 @@
           "pydantic"
         ]
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "validation-arguments-lax": {
     "input": "validation.yaml",
@@ -628,7 +663,12 @@
         ],
         "reason": "msgspec validates its union only against the schema."
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "fields-structural": {
     "input": "fields.yaml",
@@ -674,7 +714,12 @@
           "schema"
         ]
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "fields-unpack": {
     "input": "fields.yaml",
@@ -718,7 +763,12 @@
         ],
         "reason": "The fields-structural and fields-arguments cases cover the union body."
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "fields-arguments": {
     "input": "fields.yaml",
@@ -764,7 +814,12 @@
           "pydantic"
         ]
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "fields-errors": {
     "input": "fields.yaml",
@@ -914,7 +969,12 @@
         ],
         "reason": "The fields-structural and fields-arguments cases cover the union body."
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "retries": {
     "input": "retries.yaml",
@@ -970,7 +1030,12 @@
           }
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "retry-headers": {
     "input": "retry-headers.json",
@@ -1020,7 +1085,12 @@
           }
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "retry-header-conflicts": {
     "input": "retry-headers.json",
@@ -1197,7 +1267,12 @@
     },
     "model": {
       "input_filename": "auth.yaml"
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "auth-no-root": {
     "input": "auth-no-root.yaml",
@@ -1222,6 +1297,11 @@
     "input": "auth-context.yaml",
     "references": [
       "retry-security-context-external.yaml"
+    ],
+    "modules": [
+      [
+        "models.py"
+      ]
     ]
   },
   "helpers": {
@@ -1236,7 +1316,12 @@
         ],
         "reason": "Administration stays internal"
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "protocols-disabled": {
     "input": "helpers.yaml",
@@ -1751,7 +1836,12 @@
           "schema"
         ]
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "protocols-pagination-checks": {
     "input": "pagination-checks.yaml",
@@ -1820,7 +1910,12 @@
     ],
     "config": {
       "protocols": "protocols/pagination-querystring.yaml"
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "pagination-targets": {
     "input": "pagination-targets.yaml",
@@ -1886,20 +1981,8 @@
       [
         "client",
         "webhooks",
-        "standard",
-        "rejecting.py"
-      ],
-      [
-        "client",
-        "webhooks",
         "github",
         "push.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "slack",
-        "command.py"
       ],
       [
         "client",
@@ -1912,18 +1995,6 @@
         "webhooks",
         "rfc",
         "sha512.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "keyed",
-        "event.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "framed",
-        "count.py"
       ],
       [
         "client",
@@ -1946,19 +2017,7 @@
       [
         "client",
         "webhooks",
-        "framed",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "webhooks",
         "github",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "keyed",
         "__init__.py"
       ],
       [
@@ -1976,14 +2035,20 @@
       [
         "client",
         "webhooks",
-        "slack",
+        "standard",
         "__init__.py"
       ],
       [
         "client",
         "webhooks",
-        "standard",
+        "stripe",
         "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "event.py"
       ]
     ]
   },
@@ -2068,18 +2133,6 @@
         "client",
         "webhooks",
         "wycheproof",
-        "rsa.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "standard",
-        "ed25519.py"
-      ],
-      [
-        "client",
-        "webhooks",
-        "keyed",
         "rsa.py"
       ],
       [
@@ -2273,7 +2326,12 @@
           ]
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "unions-legacy": {
     "input": "unions-legacy.yaml",
@@ -3351,247 +3409,6 @@
     },
     "modules": false
   },
-  "queues": {
-    "input": "queues.yaml",
-    "references": [
-      "protocols/queues.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/queues.yaml",
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            },
-            "accepted_content_encodings": [
-              "gzip"
-            ]
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ],
-      "selection": {
-        "exclude_tags": [
-          "filtered"
-        ],
-        "reason": "Filtered listings are not queued"
-      }
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ],
-    "modules": [
-      [
-        "client",
-        "protocols",
-        "_plans.py"
-      ],
-      [
-        "client",
-        "protocols",
-        "_helpers.py"
-      ],
-      [
-        "client",
-        "protocols",
-        "_async_helpers.py"
-      ]
-    ]
-  },
-  "protocols-queue-checks": {
-    "input": "queues.yaml",
-    "references": [
-      "protocols/queue-checks.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/queue-checks.yaml",
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1orders~1{orderId}~1receipt/put",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ]
-    },
-    "modules": false
-  },
-  "protocols-queue-errors": {
-    "input": "queues.yaml",
-    "references": [
-      "protocols/queue-errors.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/queue-errors.yaml"
-    },
-    "modules": false
-  },
-  "queues-python": {
-    "input": "queues.yaml",
-    "config": {
-      "protocols": {
-        "python": "queues"
-      },
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ],
-      "selection": {
-        "exclude_tags": [
-          "filtered"
-        ],
-        "reason": "Filtered listings are not queued"
-      }
-    },
-    "modules": false
-  },
-  "queues-schema": {
-    "input": "queues-schema.yaml",
-    "references": [
-      "protocols/queues.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/queues.yaml",
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ],
-      "selection": {
-        "exclude_tags": [
-          "filtered"
-        ],
-        "reason": "Filtered listings are not queued"
-      }
-    },
-    "modules": false
-  },
-  "circuits": {
-    "input": "circuits.yaml",
-    "config": {
-      "operations": [
-        {
-          "ref": "/paths/~1status/get",
-          "runtime": {
-            "circuit_group": "backend"
-          }
-        },
-        {
-          "ref": "/paths/~1account/get",
-          "runtime": {
-            "circuit_group": "backend"
-          }
-        },
-        {
-          "ref": "/paths/~1search/get",
-          "runtime": {
-            "circuit_group": "search"
-          }
-        },
-        {
-          "ref": "/paths/~1uploads/post",
-          "runtime": {
-            "circuit_group": "backend"
-          }
-        }
-      ]
-    },
-    "modules": [
-      [
-        "client",
-        "_client.py"
-      ],
-      [
-        "client",
-        "_async_client.py"
-      ],
-      [
-        "client",
-        "_operations.py"
-      ]
-    ]
-  },
   "compression": {
     "input": "compression.yaml",
     "references": [
@@ -3712,144 +3529,6 @@
       ]
     ]
   },
-  "queues-restoration": {
-    "input": "queues.yaml",
-    "references": [
-      "protocols/queues.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/queues.yaml",
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v1"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ],
-      "selection": {
-        "exclude_tags": [
-          "filtered"
-        ],
-        "reason": "Filtered listings are not queued"
-      },
-      "codec_adapters": [
-        {
-          "kind": "model",
-          "name": "queue-restoration",
-          "import_ref": "tests.data.python.queue_recovery_adapter:order",
-          "capabilities": {
-            "record": "CodecCapabilities",
-            "backends": [
-              "pydantic_v2.BaseModel"
-            ],
-            "native_kinds": [
-              "model"
-            ]
-          },
-          "uses": [
-            {
-              "operation": "/paths/~1orders/post",
-              "role": "request_body",
-              "media_type": "application/json"
-            }
-          ]
-        },
-        {
-          "kind": "parameter",
-          "name": "queue-trace",
-          "import_ref": "tests.data.python.queue_recovery_adapter:trace",
-          "capabilities": {
-            "record": "ParameterCodecCapabilities",
-            "locations": [
-              "header"
-            ],
-            "styles": [
-              "simple"
-            ],
-            "explode_values": [
-              false
-            ],
-            "value_kinds": [
-              "string"
-            ]
-          },
-          "uses": [
-            {
-              "operation": "/paths/~1orders/post",
-              "role": "parameter",
-              "location": "header",
-              "name": "X-Trace"
-            }
-          ]
-        }
-      ],
-      "validation": {
-        "request": "schema"
-      }
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ]
-  },
-  "queues-scope": {
-    "input": "queues.yaml",
-    "references": [
-      "protocols/queues.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/queues.yaml",
-      "operations": [
-        {
-          "ref": "/paths/~1orders/post",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 86400.0,
-              "scope": "orders-v2"
-            }
-          }
-        },
-        {
-          "ref": "/paths/~1account/patch",
-          "runtime": {
-            "idempotency": {
-              "header_name": "Idempotency-Key",
-              "replay_safe_with_key": true,
-              "retention_seconds": 3600.0,
-              "scope": "orders-v1"
-            }
-          }
-        }
-      ],
-      "selection": {
-        "exclude_tags": [
-          "filtered"
-        ],
-        "reason": "Filtered listings are not queued"
-      }
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ]
-  },
   "uploads-oauth": {
     "input": "uploads-oauth.yaml",
     "references": [
@@ -3861,46 +3540,6 @@
     "backends": [
       "pydantic_v2.BaseModel"
     ]
-  },
-  "queue-credentials": {
-    "input": "queue-credentials.json",
-    "references": [
-      "protocols/queue-credentials.json"
-    ],
-    "config": {
-      "protocols": "protocols/queue-credentials.json",
-      "operations": [
-        {
-          "ref": "/paths/~1matrix/get",
-          "runtime": {
-            "request_id_header": "X-Catalog-Key"
-          }
-        },
-        {
-          "ref": "/paths/~1safe/get",
-          "runtime": {
-            "request_id_header": "X-Request-ID"
-          }
-        }
-      ]
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ],
-    "modules": false
-  },
-  "queue-order": {
-    "input": "queue-order.json",
-    "references": [
-      "protocols/queue-order.json"
-    ],
-    "config": {
-      "protocols": "protocols/queue-order.json"
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ],
-    "modules": false
   },
   "input-cycle-dict": {
     "input": "input-cycle-dict.yaml",
@@ -3955,5 +3594,35 @@
       "msgspec.Struct"
     ],
     "model_only": true
+  },
+  "allowreserved-path-30": {
+    "input": "allowreserved-path-30.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "allowreserved-path-31": {
+    "input": "allowreserved-path-31.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "allowreserved-path-32": {
+    "input": "allowreserved-path-32.yaml",
+    "config": {},
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
   }
 }

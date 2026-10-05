@@ -15,44 +15,29 @@ from models import Count as _dcg_type_0
 
 from ..._generated import model_bindings
 from ..._runtime.protocols.public_keys import RSA_PSS_SHA256, RSAPSSKey
-from ..._runtime.protocols.signatures import RAW_BODY, SignatureProfile
 from ..._runtime.protocols.verification import (
     WebhookPlan,
     averify_webhook,
     verify_webhook,
 )
 from ..._runtime.protocols.webhook_events import EventDecoder
-from ..._runtime.protocols.webhooks import (
-    AsyncReplayStore,
-    KeySet,
-    ReplayStore,
-    VerifiedWebhook,
-    WebhookOptions,
-)
+from ..._runtime.protocols.webhooks import KeySet, VerifiedWebhook, WebhookOptions
 
 __all__ = ["verify", "verify_async"]
 
 
 _PLAN: Final[WebhookPlan[_dcg_type_0, RSAPSSKey]] = WebhookPlan(
     helper_id='wycheproof.rsa',
-    fingerprint='37204347aa7db9ac01919c06b8594604b186a0b378b39ebda623d88f9eae3c20',
-    signature=SignatureProfile(
-        algorithm=RSA_PSS_SHA256,
-        header='x-signature',
-        encoding='hex',
-        prefix='',
-        separator=None,
-        key_id=None,
-        timestamp=None,
-        delivery_id=None,
-        parts=(RAW_BODY,),
-    ),
+    kind='rsa-pss-sha256',
+    algorithm=RSA_PSS_SHA256,
+    header='x-signature',
+    encoding='hex',
+    prefix='',
     event=EventDecoder(
-        model_bindings.codec_4,
-        model_bindings.CONTEXT_4,
+        model_bindings.codec_3,
+        model_bindings.CONTEXT_3,
         validate=False,
     ),
-    duplicates='report',
 )
 
 
@@ -62,28 +47,14 @@ def verify(
     keys: KeySet[RSAPSSKey],
     *,
     now: datetime,
-    replay_store: ReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0]:
-    """Verify a delivery and decode its event, claiming it in a store.
+    """Verify a delivery and decode its event.
 
-    This webhook has no timestamp, so replay protection has no time window: a replay
-    store keeps a claim for replay_ttl after now. Duplicates are detected only until the
-    claim expires. The claim is made after decoding, before your code processes the
-    event: if processing then fails, a retried delivery is a duplicate, or rejected
-    under duplicates: reject, until the claim expires, so make processing durable or
-    idempotent before acknowledging, or use a store whose claims you can release.
-    Without a replay store, duplicate=False does not mean the delivery is new.
+    Verification retains no delivery state; deduplicate in your application using
+    delivery_id when present.
     """
-    return verify_webhook(
-        _PLAN,
-        raw_body,
-        headers,
-        keys,
-        now=now,
-        replay_store=replay_store,
-        options=options,
-    )
+    return verify_webhook(_PLAN, raw_body, headers, keys, now=now, options=options)
 
 
 async def verify_async(
@@ -92,18 +63,12 @@ async def verify_async(
     keys: KeySet[RSAPSSKey],
     *,
     now: datetime,
-    replay_store: AsyncReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0]:
-    """Verify a delivery and decode its event, claiming it in an asyncio store.
+    """Verify a delivery and decode its event.
 
-    This webhook has no timestamp, so replay protection has no time window: a replay
-    store keeps a claim for replay_ttl after now. Duplicates are detected only until the
-    claim expires. The claim is made after decoding, before your code processes the
-    event: if processing then fails, a retried delivery is a duplicate, or rejected
-    under duplicates: reject, until the claim expires, so make processing durable or
-    idempotent before acknowledging, or use a store whose claims you can release.
-    Without a replay store, duplicate=False does not mean the delivery is new.
+    Verification retains no delivery state; deduplicate in your application using
+    delivery_id when present.
     """
     return await averify_webhook(
         _PLAN,
@@ -111,6 +76,5 @@ async def verify_async(
         headers,
         keys,
         now=now,
-        replay_store=replay_store,
         options=options,
     )

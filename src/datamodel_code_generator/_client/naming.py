@@ -21,7 +21,6 @@ RESERVED_MEMBERS: Final = frozenset({
     "close",
     "protocols",
     "request_raw",
-    "reset_circuit",
     "with_options",
     "with_raw_response",
     "with_response",
@@ -29,12 +28,10 @@ RESERVED_MEMBERS: Final = frozenset({
 })
 RESERVED_ARGUMENTS: Final = frozenset({"body", "media_type", "options", "response_media_type", "self"})
 HELPER_ARGUMENTS: Final = frozenset({
-    "batch_options",
     "cache_options",
     "items",
     "pagination_options",
     "poll_options",
-    "queue_options",
     "session_options",
     "source",
     "state",

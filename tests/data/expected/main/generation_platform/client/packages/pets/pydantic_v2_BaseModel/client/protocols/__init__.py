@@ -11,39 +11,18 @@ from .._runtime.protocols.caches import (
     CacheResult,
     CacheStore,
 )
-from .._runtime.protocols.circuit_records import (
-    CircuitKey,
-    CircuitPermit,
-    CircuitSnapshot,
-)
 from .._runtime.protocols.options import (
-    AsyncCircuitStore,
     CacheOptions,
-    CircuitBreakerOptions,
-    CircuitStore,
     PaginationOptions,
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
-    QueueOptions,
-    ResolvedCircuitBreakerOptions,
     StreamOptions,
     UploadOptions,
     WebSocketTransportOptions,
     WSOptions,
 )
 from .._runtime.protocols.origins import Origin
-from .._runtime.protocols.queues import (
-    AsyncQueueStore,
-    BlobRef,
-    DrainReport,
-    QueueEntry,
-    QueueLease,
-    QueueOutcome,
-    QueueReceipt,
-    QueueStore,
-    ResolvedQueueOptions,
-)
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
@@ -63,9 +42,7 @@ from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.resume import ResumeState, import_state
 from .._runtime.protocols.sources import UploadProgress, UploadSource
 from .._runtime.protocols.webhooks import (
-    AsyncReplayStore,
     KeySet,
-    ReplayStore,
     ResolvedWebhookOptions,
     VerifiedSignature,
     VerifiedWebhook,
@@ -87,11 +64,8 @@ from .._runtime.protocols.websocket_types import (
 
 if TYPE_CHECKING:
     from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
-    from .._runtime.protocols.circuits import AsyncMemoryCircuitStore, MemoryCircuitStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
-    from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
-    from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import (
         AsyncEventStream,
         EventStream,
@@ -103,21 +77,14 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AsyncCacheStore",
-    "AsyncCircuitStore",
     "AsyncEventStream",
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
-    "AsyncMemoryCircuitStore",
-    "AsyncMemoryQueueStore",
-    "AsyncMemoryReplayStore",
     "AsyncPager",
-    "AsyncQueueStore",
-    "AsyncReplayStore",
     "AsyncUploadHandle",
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "AsyncWebSocketSession",
-    "BlobRef",
     "BodySelector",
     "BodyTarget",
     "CacheEntry",
@@ -125,21 +92,12 @@ __all__ = [
     "CacheResult",
     "CacheStore",
     "CancelReceipt",
-    "CircuitBreakerOptions",
-    "CircuitKey",
-    "CircuitPermit",
-    "CircuitSnapshot",
-    "CircuitStore",
     "Continuation",
-    "DrainReport",
     "EventStream",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
     "MemoryCacheStore",
-    "MemoryCircuitStore",
-    "MemoryQueueStore",
-    "MemoryReplayStore",
     "Message",
     "OperationRef",
     "Origin",
@@ -155,16 +113,7 @@ __all__ = [
     "ProtocolProgress",
     "ProtocolSecurityContext",
     "QuerystringTarget",
-    "QueueEntry",
-    "QueueLease",
-    "QueueOptions",
-    "QueueOutcome",
-    "QueueReceipt",
-    "QueueStore",
-    "ReplayStore",
     "RequestTarget",
-    "ResolvedCircuitBreakerOptions",
-    "ResolvedQueueOptions",
     "ResolvedWSOptions",
     "ResolvedWebSocketTransportOptions",
     "ResolvedWebhookOptions",
@@ -211,10 +160,6 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
-    if name in {"AsyncMemoryCircuitStore", "MemoryCircuitStore"}:
-        from .._runtime.protocols import circuits
-
-        return getattr(circuits, name)
     if name in {"AsyncUploadHandle", "UploadHandle"}:
         from .._runtime.protocols import uploads
 
@@ -223,17 +168,5 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import websocket
 
         return getattr(websocket, name)
-    if name in {"AsyncMemoryQueueStore", "MemoryQueueStore"}:
-        from .._runtime.protocols import queue_stores
-
-        return getattr(queue_stores, name)
-    if name == "MemoryReplayStore":
-        from .._runtime.protocols.replay import MemoryReplayStore
-
-        return MemoryReplayStore
-    if name == "AsyncMemoryReplayStore":
-        from .._runtime.protocols.replay import AsyncMemoryReplayStore
-
-        return AsyncMemoryReplayStore
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)

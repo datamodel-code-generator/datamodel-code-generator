@@ -6,14 +6,6 @@ helpers:
     validator: both
     authenticated: false
     vary_allowlist: [Accept-Language]
-    tags: ["user:{userId}", users]
-    mutations:
-      rename:
-        operation: /paths/~1users~1{userId}/patch
-        invalidate_tags: ["user:{userId}"]
-      remove:
-        operation: /paths/~1users~1{userId}/delete
-        invalidate_tags: ["user:{userId}", users]
   users.dated:
     kind: cache
     operation: /paths/~1users~1{userId}/get
@@ -26,11 +18,6 @@ helpers:
     validator: etag
     authenticated: false
     vary_allowlist: [Accept-Language]
-    tags: [users]
-    mutations:
-      create:
-        operation: /paths/~1users/post
-        invalidate_tags: [users]
   carts.current:
     kind: cache
     operation: /paths/~1carts~1current/get
