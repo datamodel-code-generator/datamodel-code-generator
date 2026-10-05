@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info:
+  title: shared_ancestor
+  version: '1'
+paths:
+  /shared:
+    post:
+      operationId: createShared
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/D'
+      responses:
+        '204':
+          description: Created
+components:
+  schemas:
+    A:
+      type: object
+      properties:
+        a:
+          type: string
+    B:
+      allOf:
+        - $ref: '#/components/schemas/A'
+        - type: object
+          properties:
+            b:
+              type: string
+    C:
+      allOf:
+        - $ref: '#/components/schemas/A'
+        - type: object
+          properties:
+            c:
+              type: string
+    D:
+      allOf:
+        - $ref: '#/components/schemas/A'
+        - $ref: '#/components/schemas/B'
+        - $ref: '#/components/schemas/C'
+        - type: object
+          properties:
+            d:
+              type: string

@@ -10,9 +10,15 @@ from dataclasses import fields
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, TypeAlias
 
-from datamodel_code_generator import DataModelType, GenerateConfig, generate
+from datamodel_code_generator import DataModelType, Error, GenerateConfig, generate
 from datamodel_code_generator._api_generation import generate_target, render_target
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, GeneratedProject, OperationSelection
+from datamodel_code_generator._api_types import (
+    APIGenerationError,
+    Diagnostic,
+    GeneratedProject,
+    OperationSelection,
+    attached_diagnostic,
+)
 from datamodel_code_generator._client.config import (
     BodyFieldName,
     ClientGenerationConfig,
@@ -232,6 +238,10 @@ def _render(
             )
     except APIGenerationError as error:
         return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
+    except Error as error:
+        if (diagnostic := attached_diagnostic(error)) is None:
+            raise
+        return ["  Error", _diagnostic(diagnostic)]
     lines: list[str] = []
     for artifact in project.artifacts:
         path, content = artifact.path.relative_to(root), artifact.content or b""
