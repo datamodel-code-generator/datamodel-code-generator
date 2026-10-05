@@ -49,7 +49,6 @@ def build_router(
     """Check the service and settings, then register the store operations on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
-        contract.SCHEMES,
         services={'store': store},
         dependencies=dependencies,
         operation_dependencies=operation_dependencies,

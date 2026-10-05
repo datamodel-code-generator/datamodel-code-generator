@@ -11,7 +11,6 @@ generate
   written target server/_generated/__init__.py (target)
   written target server/_generated/contract.py (target)
   written target server/errors.py (target)
-  written target server/auth_types.py (target)
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
@@ -110,7 +109,6 @@ show server/routers/pets.py
   |     """Check the service and settings, then register the pets operations on a new router, literal paths first."""
   |     return build(
   |         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
-  |         contract.SCHEMES,
   |         services={'pets': pets},
   |         dependencies=dependencies,
   |         operation_dependencies=operation_dependencies,
@@ -128,16 +126,14 @@ show server/__init__.py
   | from ._runtime.model_codecs.unset import UNSET, Unset
   | from ._runtime.server.responses import HTTPResult
   | from .application import (
-  |     AsyncAuthorizer,
-  |     AsyncCredentialExtractor,
-  |     Authorizer,
-  |     CredentialExtractor,
-  |     CredentialExtractors,
+  |     AsyncAuthorize,
+  |     Authorize,
+  |     Credentials,
   |     Dependency,
   |     FastAPIOptions,
   |     OperationDependencies,
   |     OperationKey,
-  |     SchemeKey,
+  |     RequirementSets,
   |     build_router,
   |     create_app,
   | )
@@ -149,12 +145,10 @@ show server/__init__.py
   | 
   | __all__ = [
   |     "UNSET",
-  |     "AsyncAuthorizer",
-  |     "AsyncCredentialExtractor",
+  |     "AsyncAuthorize",
   |     "AuthConfigurationError",
-  |     "Authorizer",
-  |     "CredentialExtractor",
-  |     "CredentialExtractors",
+  |     "Authorize",
+  |     "Credentials",
   |     "Dependency",
   |     "FastAPIOptions",
   |     "HTTPResult",
@@ -162,7 +156,7 @@ show server/__init__.py
   |     "OpenAPIConfigurationError",
   |     "OperationDependencies",
   |     "OperationKey",
-  |     "SchemeKey",
+  |     "RequirementSets",
   |     "Unset",
   |     "build_router",
   |     "create_app",

@@ -9,13 +9,12 @@ render
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
   write target server/errors.py (target)
-  write target server/auth_types.py (target)
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  12 runtime modules ['write']
+  11 runtime modules ['write']
 {
   "bindings": [],
   "diagnostics": [],
@@ -71,13 +70,6 @@ render
       "group": null,
       "kind": "errors",
       "path": "errors.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "auth_types",
-      "path": "auth_types.py",
       "sha256": "<sha256>",
       "size": "<masked>"
     },

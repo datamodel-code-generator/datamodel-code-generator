@@ -10,7 +10,7 @@ render pydantic_v2.BaseModel
   write server/_generated/__init__.py
   write server/_generated/contract.py
   write server/errors.py
-  write server/auth_types.py
+  write server/security.py
   write server/services.py
   write server/README.md
   write server/routers/pets.json

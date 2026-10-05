@@ -25,17 +25,11 @@ A method takes the operation's arguments as keywords and returns the value to se
 Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
 Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
 {%- if schemes %}
-The Protocols of groups with secured operations take the type of the principal your authorizer returns.
+The Protocols of groups with secured operations take the type of the principal your `authorize` callback returns.
 {%- endif %}
 
 ```python
-{%- if schemes %}
-from typing import Never
-{% endif %}
-from {{ package }} import create_app
-{%- if schemes %}
-from {{ package }}.auth_types import AuthContext
-{%- endif %}
+from {{ package }} import {% if schemes %}Credentials, RequirementSets, {% endif %}create_app
 {%- if protocols %}
 from {{ package }}.services import {{ protocols }}
 {%- endif %}
@@ -48,7 +42,7 @@ class {{ service.implementation }}({{ service.protocol }}{% if service.secured %
 {%- if schemes %}
 
 
-def authorize(context: AuthContext[Never]) -> Principal:
+def authorize(requirement_sets: RequirementSets, credentials: Credentials) -> Principal:
     ...
 {%- endif %}
 
@@ -76,16 +70,11 @@ The secured operations use these security schemes:
 - `{{ scheme.name }}`: {{ scheme.credential }}
 {%- endfor %}
 
-Each secured operation receives the principal the authorizer returns.
-The authorizer reads the credentials of each security alternative from `AuthContext` and rejects a request by raising `HTTPException`, such as `403`.
-A request that presents no complete alternative answers `401`, and missing authentication settings never fall back to anonymous access.
-`credential_extractors` replace the builtin credential of a scheme, or read a scheme that has none.
-An extractor may return any payload, such as a `BasicSecret` it decodes as UTF-8 or a `CustomSecret` of its own type, so the authorizer checks each credential's `kind` instead of assuming its scheme's builtin credential.
-`SecretT` is `Never` while no extractor returns a `CustomSecret`, and otherwise the union of their value types.
-Bearer credentials, including OAuth2 and OpenID Connect tokens, reach the authorizer as they are: the package never contacts a token endpoint, and the authorizer checks tokens and scopes.
-{%- if basic %}
-HTTP Basic credentials are decoded as ASCII, as FastAPI's `HTTPBasic` decodes them, so other usernames and passwords answer `401`; register a credential extractor for the scheme to accept UTF-8.
-{%- endif %}
+`security.py` declares one FastAPI dependency for each scheme; replace one with `app.dependency_overrides`, for example to read a scheme no FastAPI class reads.
+Each secured operation calls `authorize` once with its requirement sets whose every scheme presented a credential, in declaration order, and the credentials by scheme name, and receives the principal it returns.
+`authorize` checks the credentials, tokens, and scopes, and rejects a request by raising `HTTPException`, such as `403`; it may be a coroutine function.
+A request that presents no complete requirement set answers `401`, unless the operation also accepts no credentials, in which case it receives `None`.
+The package never contacts a token endpoint.
 {%- endif %}
 
 ## Served OpenAPI document

@@ -1,4 +1,4 @@
-"""Typed connections to the generated secured server: services, options, authorizers, extractors, and dependencies."""
+"""Typed connections to the generated secured server: services, options, authorize callbacks, and dependencies."""
 
 from __future__ import annotations
 
@@ -12,20 +12,19 @@ from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
 
 from secured import (
-    AsyncAuthorizer,
-    Authorizer,
-    CredentialExtractors,
+    AsyncAuthorize,
+    Authorize,
+    Credentials,
     Dependency,
     FastAPIOptions,
     HTTPResult,
     OperationDependencies,
     OperationKey,
-    SchemeKey,
+    RequirementSets,
     Unset,
     build_router,
     create_app,
 )
-from secured.auth_types import AuthContext, Credential, CredentialExtractor, CustomSecret
 from secured.routers import pets, public
 from secured.services import PetsService, UntaggedService
 
@@ -45,31 +44,15 @@ class Admin(User):
     pass
 
 
-def authorize(context: AuthContext[Certificate | str]) -> User:
-    operation: OperationKey = context.operation_key
-    for candidate in context.candidates:
-        for name, credential in candidate.credentials.items():
-            scheme: SchemeKey = name
-            payload = credential.payload
-            if isinstance(payload, CustomSecret) and isinstance(payload.value, Certificate):
-                return User(f"{operation} {scheme} {payload.value.subject}")
-    return User(operation)
+def authorize(requirement_sets: RequirementSets, credentials: Credentials) -> User:
+    names = [name for requirement in requirement_sets for name, _ in requirement]
+    certificate = credentials.get("mtls")
+    subject = certificate.subject if isinstance(certificate, Certificate) else ""
+    return User(f"{names} {subject}")
 
 
-async def authorize_async(context: AuthContext[Certificate | str]) -> Admin:
-    return Admin(context.operation_key)
-
-
-def digest(request: Request) -> Credential[str] | None:
-    value = request.headers.get("x-digest")
-    return None if value is None else Credential[str](scheme_name="digest", payload=CustomSecret(value=value))
-
-
-async def certificate(request: Request) -> Credential[Certificate] | None:
-    subject = request.headers.get("x-client-cert")
-    if subject is None:
-        return None
-    return Credential[Certificate](scheme_name="mtls", payload=CustomSecret(value=Certificate(subject)))
+async def authorize_async(requirement_sets: RequirementSets, credentials: Credentials) -> Admin:
+    return Admin(f"{len(requirement_sets)} {len(credentials)}")
 
 
 def unique_id(route: APIRoute) -> str:
@@ -107,10 +90,9 @@ class Untagged(UntaggedService[User]):
 
 store: dict[str, FieldPetsGetResponse] = {}
 admin_pets: PetsService[Admin] = Pets()
-extractors: CredentialExtractors[Certificate | str] = {"digest": digest, "mtls": certificate}
-digest_only: CredentialExtractor[str] = digest
-authorizer: Authorizer[Certificate | str, User] = authorize
-async_authorizer: AsyncAuthorizer[Certificate | str, Admin] = authorize_async
+authorizer: Authorize[User] = authorize
+async_authorizer: AsyncAuthorize[Admin] = authorize_async
+key: OperationKey = "/paths/~1pets/get"
 dependencies: list[Dependency] = [Depends(record)]
 operation_dependencies: OperationDependencies = {"/paths/~1pets/get": dependencies}
 options: FastAPIOptions = {
@@ -131,8 +113,7 @@ app: FastAPI = create_app(
     pets=Pets(),
     public=Public(),
     untagged=Untagged(),
-    authorizer=authorizer,
-    credential_extractors=extractors,
+    authorize=authorizer,
     dependencies=dependencies,
     operation_dependencies=operation_dependencies,
     prefix="/api",
@@ -142,8 +123,7 @@ router: APIRouter = build_router(
     pets=Pets(),  # ty: ignore[invalid-argument-type]
     public=Public(),
     untagged=Untagged(),  # ty: ignore[invalid-argument-type]
-    authorizer=async_authorizer,
-    credential_extractors=extractors,
+    authorize=async_authorizer,
 )
-pets_router: APIRouter = pets.build_router(pets=Pets(), authorizer=authorizer, credential_extractors=extractors)
+pets_router: APIRouter = pets.build_router(pets=Pets(), authorize=authorizer)
 public_router: APIRouter = public.build_router(public=Public())

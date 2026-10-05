@@ -6,20 +6,18 @@ from typing import Final
 
 from fastapi import APIRouter, FastAPI
 
-from ._generated import contract
-from ._generated.contract import OperationDependencies, OperationKey, SchemeKey
+from ._generated.contract import OperationDependencies, OperationKey
 from ._runtime.server.application import (
     Dependency,
     FastAPIOptions,
     application_options,
     build,
 )
-from .auth_types import (
-    AsyncAuthorizer,
-    AsyncCredentialExtractor,
-    Authorizer,
-    CredentialExtractor,
-    CredentialExtractors,
+from ._runtime.server.security import (
+    AsyncAuthorize,
+    Authorize,
+    Credentials,
+    RequirementSets,
 )
 from .routers import pets, untagged
 from .services import PetsService, UntaggedService
@@ -44,7 +42,6 @@ def build_router(
     """Check the services and settings, then register every operation, literal paths first."""
     return build(
         ROUTES,
-        contract.SCHEMES,
         services={'pets': pets, 'untagged': untagged},
         dependencies=dependencies,
         operation_dependencies=operation_dependencies,
@@ -76,16 +73,14 @@ def create_app(
 
 
 __all__ = [
-    'AsyncAuthorizer',
-    'AsyncCredentialExtractor',
-    'Authorizer',
-    'CredentialExtractor',
-    'CredentialExtractors',
+    'AsyncAuthorize',
+    'Authorize',
+    'Credentials',
     'Dependency',
     'FastAPIOptions',
     'OperationDependencies',
     'OperationKey',
-    'SchemeKey',
+    'RequirementSets',
     'build_router',
     'create_app',
 ]

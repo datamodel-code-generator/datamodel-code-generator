@@ -3,24 +3,15 @@
 from __future__ import annotations
 
 from applications import Admin, Pets, Public, Untagged, User, authorize, store
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from secured_models import FieldPetsGetResponse
 
-from secured import FastAPIOptions, OperationDependencies, Unset, create_app
-from secured.auth_types import AuthContext, Authorizer, Credential, CredentialExtractor, CustomSecret
+from secured import Authorize, FastAPIOptions, OperationDependencies, RequirementSets, Unset, create_app
 from secured.services import PetsService, UntaggedService
 
 
-def authorize_text(context: AuthContext[str]) -> str:
-    return context.operation_key
-
-
-def wrong_scheme(request: Request) -> Credential[str] | None:
-    return None
-
-
-def raw_digest(request: Request) -> Credential[bytes] | None:
-    return None
+def authorize_text(requirement_sets: RequirementSets) -> str:
+    return str(requirement_sets)
 
 
 class Settings:
@@ -72,12 +63,9 @@ response_class: FastAPIOptions = {"default_response_class": dict}  # error
 flag: FastAPIOptions = {"debug": "yes"}  # error
 dependencies: OperationDependencies = {"/paths/~1nope/get": []}  # error
 method_key: OperationDependencies = {"list_pets": []}  # error
-scheme = Credential[str](scheme_name="nope", payload=CustomSecret(value="x"))  # error
-narrow: Authorizer[int, str] = authorize_text  # error
-extractor: CredentialExtractor[bytes] = wrong_scheme  # error
+narrow: Authorize[str] = authorize_text  # error
 incomplete = Incomplete()  # error
 structural: PetsService[User] = Wrong()  # error
-admins: FastAPI = create_app(pets=Admins(), public=Public(), untagged=Untagged(), authorizer=authorize)  # error
-create_app(public=Public(), untagged=Untagged(), authorizer=authorize)  # error
+admins: FastAPI = create_app(pets=Admins(), public=Public(), untagged=Untagged(), authorize=authorize)  # error
+create_app(public=Public(), untagged=Untagged(), authorize=authorize)  # error
 create_app(pets=Pets(), public=Public(), untagged=Untagged())  # error
-secret: FastAPI = create_app(pets=Pets(), public=Public(), untagged=Untagged(), authorizer=authorize, credential_extractors={"digest": raw_digest})  # error

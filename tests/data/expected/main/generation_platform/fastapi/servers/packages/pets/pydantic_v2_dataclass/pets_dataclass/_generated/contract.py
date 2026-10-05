@@ -9,7 +9,6 @@ from typing import Final, Literal, TypeAlias, TypedDict
 
 import pets_dataclass_models
 from pydantic import TypeAdapter
-from typing_extensions import Never
 
 from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.model_codecs.unset import Unset
@@ -25,7 +24,6 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1pets~1{petId}/delete',
     '/paths/~1store~1inventory/get',
 ]
-SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
@@ -38,7 +36,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = ()
 
 
 class ListPets:

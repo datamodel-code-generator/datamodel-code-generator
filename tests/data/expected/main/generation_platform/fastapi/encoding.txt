@@ -8,7 +8,6 @@ render pydantic_v2.BaseModel
   write server/src/server/_generated/__init__.py
   write server/src/server/_generated/contract.py
   write server/src/server/errors.py
-  write server/src/server/auth_types.py
   write server/src/server/services.py
   write server/README.md
   write server/src/server/_runtime/__init__.py (copied runtime)

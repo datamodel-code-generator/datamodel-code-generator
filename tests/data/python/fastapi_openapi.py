@@ -28,7 +28,6 @@ PACKAGES: Final[dict[str, dict[str, Any]]] = {
     "methods": {"input": "methods.yaml"},
     "names": {"input": "names.yaml"},
 }
-EXTRACTORS: Final = ("digest", "mtls")
 Scenario: TypeAlias = Callable[[dict[str, Any]], list[str]]
 SCENARIOS: dict[str, tuple[tuple[str, ...], Scenario]] = {}
 
@@ -39,10 +38,6 @@ def _scenario(*packages: str) -> Callable[[Scenario], Scenario]:
         return function
 
     return register
-
-
-def _extractors() -> dict[str, Callable[..., object]]:
-    return dict.fromkeys(EXTRACTORS, lambda request: None)
 
 
 def _stand_in(protocol: type) -> object:
@@ -66,14 +61,14 @@ def _stand_in(protocol: type) -> object:
 
 
 def _connected(builder: Callable[..., Any], **settings: Any) -> Any:  # noqa: ANN401
-    """Call a generated builder with a stand-in for each service it takes, and an authorizer where it needs one."""
+    """Call a generated builder with a stand-in for each service it takes, and an authorize callback if it needs one."""
     services = {
         name: _stand_in(typing.get_origin(parameter.annotation) or parameter.annotation)
         for name, parameter in inspect.signature(builder).parameters.items()
-        if parameter.default is inspect.Parameter.empty and name != "authorizer"
+        if parameter.default is inspect.Parameter.empty and name != "authorize"
     }
-    if "authorizer" in inspect.signature(builder).parameters:
-        settings.setdefault("authorizer", lambda context: None)
+    if "authorize" in inspect.signature(builder).parameters:
+        settings.setdefault("authorize", lambda requirement_sets, credentials: None)
     return builder(**services, **settings)
 
 
@@ -100,9 +95,8 @@ def document_parameters(packages: dict[str, Any]) -> list[str]:
 
 @_scenario("secured")
 def document_security(packages: dict[str, Any]) -> list[str]:
-    """Serve security requirements under the package's scheme components."""
-    app = _connected(packages["secured"].create_app, credential_extractors=_extractors())
-    return [json.dumps(app.openapi(), indent=2)]
+    """Serve the security schemes and requirements of the package's FastAPI security dependencies."""
+    return [json.dumps(_connected(packages["secured"].create_app).openapi(), indent=2)]
 
 
 @_scenario("bodies")

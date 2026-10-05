@@ -18,5 +18,4 @@ render
   E_TARGET_SOURCE error format _generated/__init__.py: The generated Python source is invalid: invalid syntax
   E_TARGET_SOURCE error format _generated/contract.py: The generated Python source is invalid: invalid syntax
   E_TARGET_SOURCE error format errors.py: The generated Python source is invalid: invalid syntax
-  E_TARGET_SOURCE error format auth_types.py: The generated Python source is invalid: invalid syntax
   E_TARGET_SOURCE error format services.py: The generated Python source is invalid: invalid syntax

@@ -988,7 +988,7 @@
             "method": "GET",
             "url": "/custom",
             "headers": {
-              "X-Digest": "d1"
+              "Authorization": "Digest d1"
             }
           },
           {
@@ -996,20 +996,6 @@
             "url": "/custom",
             "headers": {
               "X-Client-Cert": "CN=client"
-            }
-          },
-          {
-            "method": "GET",
-            "url": "/custom",
-            "headers": {
-              "X-Digest": "wrong-type"
-            }
-          },
-          {
-            "method": "GET",
-            "url": "/custom",
-            "headers": {
-              "X-Digest": "wrong-scheme"
             }
           },
           {

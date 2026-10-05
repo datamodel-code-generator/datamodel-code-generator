@@ -89,4 +89,4 @@ server/application.py: ..model_codecs.wire, .security, __future__, collections.a
 server/errors.py: ..model_codecs.errors, ..model_codecs.wire, __future__, fastapi.exceptions, pydantic, typing
 server/requests.py: ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, ..model_codecs.wire, .errors, __future__, collections.abc, copy, dataclasses, fastapi.exceptions, pydantic, re, starlette.datastructures, starlette.requests, typing, urllib.parse
 server/responses.py: ..model_codecs.media, .application, .errors, __future__, collections.abc, dataclasses, fastapi.encoders, fastapi.exceptions, json, pydantic, starlette.responses, typing, typing_extensions
-server/security.py: ..model_codecs.parameters, .errors, __future__, collections.abc, dataclasses, fastapi, fastapi.security, inspect, starlette.concurrency, starlette.requests, types, typing, typing_extensions
+server/security.py: __future__, collections.abc, fastapi, inspect, starlette.concurrency, typing, typing_extensions

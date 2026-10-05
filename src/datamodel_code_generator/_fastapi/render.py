@@ -13,6 +13,8 @@ from datamodel_code_generator._fastapi._compiled_templates import application as
 from datamodel_code_generator._fastapi._compiled_templates import readme as readme_template
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
+from datamodel_code_generator._fastapi.documentation import documentation
+from datamodel_code_generator._fastapi.naming import normalize
 from datamodel_code_generator._fastapi.plan import CONSTRAINED, Default, default_media, fact, symbol_imports
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
 from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, invalid
@@ -65,19 +67,41 @@ _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
     ("_generated.contract", "OperationKey"),
-    ("_generated.contract", "SchemeKey"),
     ("_runtime.server.application", "Dependency"),
     ("_runtime.server.application", "FastAPIOptions"),
-    ("auth_types", "AsyncAuthorizer"),
-    ("auth_types", "AsyncCredentialExtractor"),
-    ("auth_types", "Authorizer"),
-    ("auth_types", "CredentialExtractor"),
-    ("auth_types", "CredentialExtractors"),
+    ("_runtime.server.security", "AsyncAuthorize"),
+    ("_runtime.server.security", "Authorize"),
+    ("_runtime.server.security", "Credentials"),
+    ("_runtime.server.security", "RequirementSets"),
 )
 _CREDENTIALS: Final[dict[SchemeKind, str]] = {
-    "basic": "HTTP Basic credentials",
-    "bearer": "a bearer token",
-    "custom": "no builtin credential; a credential extractor reads it",
+    "basic": "HTTP Basic credentials, as `HTTPBasicCredentials`",
+    "bearer": "a bearer token, as `HTTPAuthorizationCredentials`",
+    "digest": "HTTP Digest credentials, as `HTTPAuthorizationCredentials`",
+    "oauth2": "the `Authorization` header, as FastAPI's `OAuth2` reads it",
+    "openid": "the `Authorization` header, as FastAPI's `OpenIdConnect` reads it",
+    "custom": "no FastAPI class reads it: override its dependency to return the credential",
+}
+_SCHEME_CLASSES: Final[dict[SchemeKind, str]] = {
+    "basic": "HTTPBasic",
+    "bearer": "HTTPBearer",
+    "digest": "HTTPDigest",
+    "oauth2": "OAuth2",
+    "openid": "OpenIdConnect",
+}
+_API_KEY_CLASSES: Final = {"header": "APIKeyHeader", "query": "APIKeyQuery", "cookie": "APIKeyCookie"}
+_CHALLENGES: Final[dict[SchemeKind, str]] = {
+    "api_key": "APIKey",
+    "basic": "Basic",
+    "bearer": "Bearer",
+    "digest": "Digest",
+    "oauth2": "Bearer",
+    "openid": "Bearer",
+}
+_SCHEME_FACTS: Final[dict[SchemeKind, tuple[str, ...]]] = {
+    "bearer": ("bearerFormat", "description"),
+    "oauth2": ("flows", "description"),
+    "openid": ("openIdConnectUrl", "description"),
 }
 
 
@@ -199,6 +223,11 @@ class ServerRenderer:  # noqa: PLR0904
         self.wire = wire
         self.symbols = symbol_imports(batch)
         self.services = {group.key: group.stem for group in plan.groups}
+        taken: set[str] = set()
+        self.scheme_names: dict[str, str] = {}
+        for scheme in plan.schemes:
+            taken.add(name := _unique(normalize(scheme.name, empty="scheme", digit="s_"), taken))
+            self.scheme_names[scheme.name] = name
 
     def role(self, name: str, compiled: Callable[..., str], **frame: object) -> Callable[..., str]:
         """Return the renderer of one builtin role: the template directory's override, or the compiled builtin."""
@@ -266,7 +295,7 @@ class ServerRenderer:  # noqa: PLR0904
             self.file(generated / "__init__.py", "package", '"""Generated plans of this package."""\n'),
             self.file(generated / "contract.py", "contract", self.contract()),
             self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
-            self.file(PurePosixPath("auth_types.py"), "auth_types", _AUTH_TYPES),
+            *((self.file(PurePosixPath("security.py"), "security", self.security()),) if self.plan.schemes else ()),
             self.file(PurePosixPath("services.py"), "services", self.services_module()),
             RenderedFile(path=PurePosixPath("README.md"), kind="readme", text=self.readme()),
         )
@@ -308,9 +337,8 @@ class ServerRenderer:  # noqa: PLR0904
                 for group in groups
             ],
             protocols=", ".join(group.service for group in groups),
-            arguments=", ".join((*arguments, *(("authorizer=authorize",) if plan.schemes else ()))),
+            arguments=", ".join((*arguments, *(("authorize=authorize",) if plan.schemes else ()))),
             schemes=[{"name": scheme.name, "credential": _credential(scheme)} for scheme in plan.schemes],
-            basic=any(scheme.kind == "basic" for scheme in plan.schemes),
             forms=any(spec.body is not None and spec.body.form for spec in plan.operations),
             raw_request=any(
                 spec.body is not None and spec.body.decision.transport == "raw_request" for spec in plan.operations
@@ -353,7 +381,6 @@ class ServerRenderer:  # noqa: PLR0904
             info=layout(info, 0, len(f"INFO: {final}[{options}] = "), WIDTH),
             build_signature=_builder(module, "build_router", router, groups, secured=secured),
             build=module.local("_runtime.server.application", "build"),
-            schemes=f"{module.local('_generated', 'contract')}.SCHEMES",
             services=_services(services),
             settings=_settings(secured=secured),
             app_signature=_builder(
@@ -419,7 +446,6 @@ class ServerRenderer:  # noqa: PLR0904
             signature=_builder(module, "build_router", router, groups, secured=secured),
             group=name,
             build=module.local("_runtime.server.application", "build"),
-            schemes=f"{contract}.SCHEMES",
             services=_services(services),
             settings=_settings(secured=secured),
             imports=module.imports(),
@@ -458,12 +484,64 @@ class ServerRenderer:  # noqa: PLR0904
             "handler": handler,
             "handlers": "async_handlers" if asynchronous else "handlers",
             "name": repr(spec.python_name),
-            "principal": principal,
+            "principal": "" if not principal else self.principal(module, spec, principal),
             "key": repr(spec.key),
             "registration": layout(self.registration(module, spec), 4, 0, WIDTH),
             "signature": layout(signature, 4, 0, WIDTH),
             "body": layout(body, 8, 0, WIDTH),
         }
+
+    def principal(self, module: Module, spec: OperationSpec, name: str) -> str:
+        """Return the dependency that authorizes an operation from the credentials of its schemes' dependencies."""
+        assert spec.security is not None
+        requirements = spec.security.requirements
+        scopes: dict[str, dict[str, None]] = {}
+        for requirement in requirements:
+            for scheme, needed in requirement:
+                scopes.setdefault(scheme, {}).update(dict.fromkeys(needed))
+        schemes = {scheme.name: scheme for scheme in self.plan.schemes}
+        security = module.local("", "security")
+        annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Security")
+        authenticate = module.local("_runtime.server.security", "authenticate")
+        taken = {"wiring", authenticate}
+        names: dict[str, str] = {}
+        parameters: list[Doc] = []
+        for scheme, needed in scopes.items():
+            taken.add(local := names.setdefault(scheme, _unique(self.scheme_names[scheme], taken)))
+            arguments = f"{security}.{self.scheme_names[scheme]}" + (f", scopes={list(needed)!r}" if needed else "")
+            kind = _credential_type(module, schemes[scheme])
+            parameters.append(f"{local}: {annotated}[{kind}, {depends}({arguments})]")
+        signature = Group(f"async def {name}(", _items(("*", *parameters)), ") -> object:")
+        credentials = Group("{", tuple((f"{scheme!r}: ", names[scheme]) for scheme in scopes), "}")
+        challenge = ", ".join(
+            dict.fromkeys(_CHALLENGES[kind] for scheme in scopes if (kind := schemes[scheme].kind) in _CHALLENGES)
+        )
+        call = Group(
+            f"return await {authenticate}(",
+            (
+                ("", Group("(", _items(_requirement(item) for item in requirements), ")", ",")),
+                ("", credentials),
+                ("", "wiring.authorize"),
+                ("", repr(challenge)),
+            ),
+            ")",
+        )
+        return f"{layout(signature, 4, 0, WIDTH)}\n        {layout(call, 8, 0, WIDTH)}"
+
+    def security(self) -> str:
+        """Return the security module: one overridable FastAPI dependency for each scheme the operations use."""
+        module = Module(set(self.scheme_names.values()), self.symbols, level=1)
+        definitions = [
+            _scheme_dependency(module, scheme, self.scheme_names[scheme.name]) for scheme in self.plan.schemes
+        ]
+        names = sorted(self.scheme_names.values())
+        listing = "".join(f"    {name!r},\n" for name in names)
+        head = (
+            '"""Security dependencies of this package, one for each scheme; override one with '
+            'app.dependency_overrides."""\n'
+        )
+        imports = module.imports()
+        return f"{head}\n{imports}\n\n\n" + "\n\n".join(definitions) + f"\n\n__all__ = [\n{listing}]\n"
 
     def parameter(self, module: Module, spec: OperationSpec, argument: Argument, plan: str, principal: str) -> Doc:
         """Return the endpoint parameter of one handler argument that FastAPI or an adapter supplies."""
@@ -587,7 +665,7 @@ class ServerRenderer:  # noqa: PLR0904
 
     def contract(self) -> str:
         """Return the contract module: key types, schemes, and each operation's plans and request adapters."""
-        reserved = {"OperationKey", "SchemeKey", "OperationDependencies", "SCHEMES"}
+        reserved = {"OperationKey", "OperationDependencies"}
         module = Module({*reserved, *(spec.pascal for spec in self.plan.operations)}, self.symbols, level=2)
         sections = [self.operation_plan(module, spec) for spec in self.plan.operations]
         alias = module.name("typing", "TypeAlias")
@@ -601,21 +679,14 @@ class ServerRenderer:  # noqa: PLR0904
             (("", "'OperationDependencies'"), ("", dependencies), ("total=", "False")),
             ")",
         )
-        schemes = Group("(", _items(_scheme_plan(module, scheme) for scheme in self.plan.schemes), ")", ",")
-        final = module.name("typing", "Final")
         head = (
             '"""Operation plans of this package; regenerate them instead of editing."""\n\n'
             "from __future__ import annotations\n\n"
         )
-        keys = (
-            ("OperationKey", [spec.key for spec in self.plan.operations]),
-            ("SchemeKey", [scheme.name for scheme in self.plan.schemes]),
-        )
-        definitions = "".join(
-            f"{name}: {alias} = {_literal(module, values, len(f'{name}: {alias} = '))}\n" for name, values in keys
-        ) + (
+        keys = [spec.key for spec in self.plan.operations]
+        definitions = (
+            f"OperationKey: {alias} = {_literal(module, keys, len(f'OperationKey: {alias} = '))}\n"
             f"OperationDependencies = {layout(typed, 0, len('OperationDependencies = '), WIDTH)}\n"
-            f"SCHEMES: {final} = {layout(schemes, 0, len(f'SCHEMES: {final} = '), WIDTH)}\n"
         )
         return head + module.imports() + "\n\n" + definitions + "\n\n" + "\n\n".join(sections)
 
@@ -661,11 +732,7 @@ class ServerRenderer:  # noqa: PLR0904
         if spec.mode == "async":
             items.append(("asynchronous=", "True"))
         if spec.security is not None:
-            requirements = Group("(", _items(_requirement(item) for item in spec.security.requirements), ")", ",")
-            plan = Group(
-                f"{module.local('_runtime.server.security', 'SecurityPlan')}(", (("requirements=", requirements),), ")"
-            )
-            items.append(("security=", plan))
+            items.append(("secured=", "True"))
         return Group(f"{module.local('_runtime.server.application', 'OperationPlan')}(", tuple(items), ")")
 
 
@@ -919,7 +986,7 @@ def _raw_path(module: Module, spec: OperationSpec, adapters: list[Argument]) -> 
 
 
 def _settings(*, secured: bool) -> tuple[str, ...]:
-    return ("authorizer", "credential_extractors", *_SETTINGS) if secured else _SETTINGS
+    return ("authorize", *_SETTINGS) if secured else _SETTINGS
 
 
 def _services(services: list[str]) -> str:
@@ -952,13 +1019,12 @@ def _service(module: Module, group: GroupSpec) -> str:
 
 
 def _security(module: Module) -> tuple[tuple[str, Doc, str], ...]:
-    secret = module.local("_runtime.server.security", "SecretT")
     principal = module.local("_runtime.server.security", "PrincipalT")
-    authorizers = (module.local("auth_types", "Authorizer"), module.local("auth_types", "AsyncAuthorizer"))
-    return (
-        ("authorizer", Chain("|", tuple(f"{item}[{secret}, {principal}]" for item in authorizers)), ""),
-        ("credential_extractors", f"{module.local('auth_types', 'CredentialExtractors')}[{secret}] | None", " = None"),
+    authorizers = (
+        module.local("_runtime.server.security", "Authorize"),
+        module.local("_runtime.server.security", "AsyncAuthorize"),
     )
+    return (("authorize", Chain("|", tuple(f"{item}[{principal}]" for item in authorizers)), ""),)
 
 
 def _dependency_sequence(module: Module) -> str:
@@ -973,11 +1039,47 @@ def _literal(module: Module, values: list[str], used: int) -> str:
     )
 
 
-def _scheme_plan(module: Module, scheme: SchemeSpec) -> Group:
-    items: list[tuple[str, Doc]] = [("name=", repr(scheme.name)), ("kind=", repr(scheme.kind))]
-    if scheme.location is not None:
-        items.extend((("location=", repr(scheme.location)), ("parameter=", repr(scheme.parameter))))
-    return Group(f"{module.local('_runtime.server.security', 'SchemePlan')}(", tuple(items), ")")
+def _credential_type(module: Module, scheme: SchemeSpec) -> str:
+    """Return the type of the credential a scheme's FastAPI dependency returns."""
+    match scheme.kind:
+        case "basic":
+            return f"{module.name('fastapi.security', 'HTTPBasicCredentials')} | None"
+        case "bearer" | "digest":
+            return f"{module.name('fastapi.security', 'HTTPAuthorizationCredentials')} | None"
+        case "custom":
+            return "object"
+        case _:
+            pass
+    return "str | None"
+
+
+def _scheme_dependency(module: Module, scheme: SchemeSpec, name: str) -> str:
+    """Return the module-level dependency of one scheme: a FastAPI security class, or a function to override."""
+    if scheme.kind == "custom":
+        return (
+            f"def {name}() -> object:\n"
+            f'    """Return the {scheme.name} credential, which no FastAPI security class reads; override this '
+            'dependency."""\n'
+            "    return None\n"
+        )
+    facts = dict(scheme.declaration.facts)
+    keywords: list[tuple[str, Doc]] = []
+    if scheme.kind == "api_key":
+        keywords.append(("name=", repr(scheme.parameter)))
+        cls = _API_KEY_CLASSES[str(scheme.location)]
+    else:
+        cls = _SCHEME_CLASSES[scheme.kind]
+    keywords.extend(
+        (f"{keyword}=", _json_literal(value))
+        for keyword in _SCHEME_FACTS.get(scheme.kind, ("description",))
+        if (fact_value := facts.get(keyword)) is not None and (value := documentation(fact_value)) is not None
+    )
+    keywords.extend((("scheme_name=", repr(scheme.name)), ("auto_error=", "False")))
+    return (
+        f"{name} = "
+        + layout(Group(f"{module.name('fastapi.security', cls)}(", tuple(keywords), ")"), 0, len(name) + 3, WIDTH)
+        + "\n"
+    )
 
 
 def _requirement(requirement: Requirement) -> Group:
@@ -1001,16 +1103,14 @@ def _request_kind(media: MediaSpec) -> str:
 _PACKAGE: Final = '''"""FastAPI server generated by datamodel-code-generator."""
 
 from .application import (
-    AsyncAuthorizer,
-    AsyncCredentialExtractor,
-    Authorizer,
-    CredentialExtractor,
-    CredentialExtractors,
+    AsyncAuthorize,
+    Authorize,
+    Credentials,
     Dependency,
     FastAPIOptions,
     OperationDependencies,
     OperationKey,
-    SchemeKey,
+    RequirementSets,
     build_router,
     create_app,
 )
@@ -1020,12 +1120,10 @@ from ._runtime.server.responses import HTTPResult
 
 __all__ = [
     "UNSET",
-    "AsyncAuthorizer",
-    "AsyncCredentialExtractor",
+    "AsyncAuthorize",
     "AuthConfigurationError",
-    "Authorizer",
-    "CredentialExtractor",
-    "CredentialExtractors",
+    "Authorize",
+    "Credentials",
     "Dependency",
     "FastAPIOptions",
     "HTTPResult",
@@ -1033,7 +1131,7 @@ __all__ = [
     "OpenAPIConfigurationError",
     "OperationDependencies",
     "OperationKey",
-    "SchemeKey",
+    "RequirementSets",
     "Unset",
     "build_router",
     "create_app",
@@ -1045,55 +1143,4 @@ from ._runtime.server.application import HandlerConfigurationError, OpenAPIConfi
 from ._runtime.server.security import AuthConfigurationError
 
 __all__ = ["AuthConfigurationError", "HandlerConfigurationError", "OpenAPIConfigurationError"]
-'''
-_AUTH_TYPES: Final = '''"""Authentication records and protocols keyed by this package's operation and scheme names."""
-
-from collections.abc import Mapping
-from typing import TypeAlias
-
-from typing_extensions import TypeVar
-
-from ._generated.contract import OperationKey, SchemeKey
-from ._runtime.server.security import ApiKeySecret, BasicSecret, BearerSecret, CustomSecret
-from ._runtime.server.security import AsyncAuthorizer as _AsyncAuthorizer
-from ._runtime.server.security import AsyncCredentialExtractor as _AsyncCredentialExtractor
-from ._runtime.server.security import AuthContext as _AuthContext
-from ._runtime.server.security import Authorizer as _Authorizer
-from ._runtime.server.security import Credential as _Credential
-from ._runtime.server.security import CredentialExtractor as _CredentialExtractor
-from ._runtime.server.security import RequirementCandidate as _RequirementCandidate
-from ._runtime.server.security import SchemeRequirement as _SchemeRequirement
-
-_SecretT = TypeVar("_SecretT")
-_SecretT_co = TypeVar("_SecretT_co", covariant=True)
-_SecretT_contra = TypeVar("_SecretT_contra", contravariant=True)
-_PrincipalT_co = TypeVar("_PrincipalT_co", covariant=True)
-
-Credential: TypeAlias = _Credential[_SecretT_co, SchemeKey]
-SchemeRequirement: TypeAlias = _SchemeRequirement[SchemeKey]
-RequirementCandidate: TypeAlias = _RequirementCandidate[_SecretT_co, SchemeKey]
-AuthContext: TypeAlias = _AuthContext[_SecretT_co, SchemeKey, OperationKey]
-Authorizer: TypeAlias = _Authorizer[_SecretT_contra, _PrincipalT_co, SchemeKey, OperationKey]
-AsyncAuthorizer: TypeAlias = _AsyncAuthorizer[_SecretT_contra, _PrincipalT_co, SchemeKey, OperationKey]
-CredentialExtractor: TypeAlias = _CredentialExtractor[_SecretT_co, SchemeKey]
-AsyncCredentialExtractor: TypeAlias = _AsyncCredentialExtractor[_SecretT_co, SchemeKey]
-CredentialExtractors: TypeAlias = Mapping[SchemeKey, CredentialExtractor[_SecretT] | AsyncCredentialExtractor[_SecretT]]
-
-__all__ = [
-    "ApiKeySecret",
-    "AsyncAuthorizer",
-    "AsyncCredentialExtractor",
-    "AuthContext",
-    "Authorizer",
-    "BasicSecret",
-    "BearerSecret",
-    "Credential",
-    "CredentialExtractor",
-    "CredentialExtractors",
-    "CustomSecret",
-    "OperationKey",
-    "RequirementCandidate",
-    "SchemeKey",
-    "SchemeRequirement",
-]
 '''

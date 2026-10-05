@@ -9,7 +9,6 @@ from typing import Final, Literal, TypeAlias, TypedDict
 
 import models
 from pydantic import TypeAdapter
-from typing_extensions import Never
 
 from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.model_codecs.unset import Unset
@@ -18,7 +17,6 @@ from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal['/paths/~1values~1{id}/get']
-SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
@@ -26,7 +24,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = ()
 
 
 class GetValue:

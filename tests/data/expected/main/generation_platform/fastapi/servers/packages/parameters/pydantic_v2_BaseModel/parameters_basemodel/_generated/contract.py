@@ -10,7 +10,6 @@ from typing import Annotated, Final, Literal, TypeAlias, TypedDict
 
 import parameters_basemodel_models
 from pydantic import StringConstraints, TypeAdapter
-from typing_extensions import Never
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
@@ -28,7 +27,6 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1menü~1{item}/get',
     '/paths/~1items~1{level}/get',
 ]
-SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
@@ -42,7 +40,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = ()
 
 
 class Search:

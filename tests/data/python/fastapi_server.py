@@ -164,9 +164,11 @@ def _serve(  # noqa: PLR0913
 ) -> FastAPI:
     if (app := built.get(app_case["set"])) is None:
         options = {**settings.get(app_case["set"], {})}
+        overrides = options.pop("dependency_overrides", {})
         if "options" in app_case:
             options["fastapi_options"] = app_case["options"]
         app = server.create_app(**sets[app_case["set"]], **options)
+        app.dependency_overrides.update(overrides)
     lines.extend(f"openapi {key} {json.dumps(app.openapi().get(key))}" for key in app_case.get("openapi", ()))
     return app
 
