@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from math import isfinite
 from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar
@@ -215,16 +214,6 @@ def _media(value: object) -> bool:
     except ValueError:
         return False
     return True
-
-
-def _positive_seconds(value: object) -> float | None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    try:
-        seconds = float(value)
-    except OverflowError:
-        return None
-    return seconds if isfinite(seconds) and seconds > 0 else None
 
 
 def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
