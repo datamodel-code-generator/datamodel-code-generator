@@ -33,7 +33,6 @@ class RedirectState:
     visited: frozenset[tuple[str, str]] = field(repr=False)
     retry_safety: Literal["method_default", "idempotent", "never"]
     idempotency: IdempotencyPlan | None
-    key_expires_at: float | None
     body_replayable: bool
 
 
@@ -48,8 +47,8 @@ class RedirectTarget:
     cross_origin: bool
 
 
-def _method(status: int, state: RedirectState, redirects: ResolvedRedirectOptions, now: float) -> str:
-    if state.retry_safety == "never" or (state.key_expires_at is not None and now >= state.key_expires_at):
+def _method(status: int, state: RedirectState, redirects: ResolvedRedirectOptions) -> str:
+    if state.retry_safety == "never":
         raise redirect_refused()
     if status == _SEE_OTHER:
         if state.method in _READ_METHODS or redirects.allow_303_to_get:
@@ -58,7 +57,7 @@ def _method(status: int, state: RedirectState, redirects: ResolvedRedirectOption
         if status in {301, 302}:
             if state.method in _READ_METHODS:
                 return state.method
-        elif body_replay_safe(state.method, state.retry_safety, state.idempotency, state.key_expires_at, now=now):
+        elif body_replay_safe(state.method, state.retry_safety, state.idempotency):
             return state.method
     raise redirect_refused()
 
@@ -68,8 +67,6 @@ def redirect_target(
     headers: HeadersView,
     state: RedirectState,
     redirects: ResolvedRedirectOptions,
-    *,
-    now: float,
 ) -> RedirectTarget:
     """Return a permitted hop, or preserve a terminal redirect-policy failure."""
     locations = headers.get_all("Location")
@@ -83,7 +80,7 @@ def redirect_target(
         raise redirect_refused()
     if state.current_origin[0] == "https" and target.origin[0] == "http" and not redirects.allow_https_downgrade:
         raise redirect_refused()
-    method = _method(status, state, redirects, now)
+    method = _method(status, state, redirects)
     if (method, target.url) in state.visited:
         raise redirect_refused()
     return RedirectTarget(

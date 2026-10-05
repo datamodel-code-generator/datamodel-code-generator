@@ -198,16 +198,9 @@
   rejected key attempts=0 elapsed=0.0 request=None info=None
   key value 'key\udfffvalue' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   rejected key attempts=0 elapsed=0.0 request=None info=None
-  key first-used text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='idempotency_key.first_used_at') [field_path=('idempotency_key', 'first_used_at'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  key first-used number ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='idempotency_key.first_used_at') [field_path=('idempotency_key', 'first_used_at'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  key first-used naive ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key.first_used_at') [field_path=('idempotency_key', 'first_used_at'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  key first-used no offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key.first_used_at') [field_path=('idempotency_key', 'first_used_at'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  key first-used invalid offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key.first_used_at') [field_path=('idempotency_key', 'first_used_at'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=ValueError('invalid timezone offset')] invalid_value
-  key first-used positional ! TypeError: IdempotencyKey.__init__() takes 2 positional arguments but 3 were given []
-  key unknown use = IdempotencyKey(first_used_at=None)
-  key unicode value = IdempotencyKey(first_used_at=None)
-  key timezone preserved=True value='caller-key'
-  new key version=4 utc=True current=True
+  caller key = IdempotencyKey()
+  key unicode value = IdempotencyKey()
+  new key version=4
   option preserves key=True
   omitted RetryOptions=(('max_retries', True), ('initial_delay', True), ('max_delay', True), ('jitter', True), ('statuses', True), ('max_retry_after', True), ('respect_retry_after', True), ('retry_after_ms_header', True), ('should_retry_header', True), ('retry_on_pool_timeout', True))
   omitted RedirectOptions=(('enabled', True), ('max_redirects', True), ('allow_303_to_get', True), ('allowed_origins', True), ('allow_https_downgrade', True))
@@ -231,14 +224,14 @@
   init hints RedirectOptions=('enabled', 'max_redirects', 'allow_303_to_get', 'allowed_origins', 'allow_https_downgrade', 'return')
   hints TransportOptions=('verify', 'ssl_context', 'proxy', 'trust_env', 'http2', 'max_connections', 'max_keepalive_connections', 'keepalive_expiry', 'retry_owner')
   init hints TransportOptions=('verify', 'ssl_context', 'proxy', 'trust_env', 'http2', 'max_connections', 'max_keepalive_connections', 'keepalive_expiry', 'retry_owner', 'return')
-  hints IdempotencyKey=('value', 'first_used_at')
-  init hints IdempotencyKey=('value', 'first_used_at', 'return')
+  hints IdempotencyKey=('value',)
+  init hints IdempotencyKey=('value', 'return')
   hints ClientOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'protocols', 'clock')
   init hints ClientOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'protocols', 'clock', 'return')
   hints RequestOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth')
   init hints RequestOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'return')
   new hints=('return',)
-  key signature=(('value', 'POSITIONAL_OR_KEYWORD'), ('first_used_at', 'KEYWORD_ONLY'))
+  key signature=(('value', 'POSITIONAL_OR_KEYWORD'),)
   option omitted ClientOptions=(True, True, True)
   option omitted RequestOptions=(True, True, True)
   optional-free public options=True

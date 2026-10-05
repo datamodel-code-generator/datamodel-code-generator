@@ -164,12 +164,7 @@ OPERATION_3: Final[OperationPlan[PostKeyedResponse]] = OperationPlan(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
         default='application/octet-stream',
     ),
-    idempotency=IdempotencyPlan(
-        header_name='Idempotency-Key',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
 )
 
 OPERATION_4: Final[OperationPlan[PostKeyOnlyResponse]] = OperationPlan(
@@ -205,12 +200,7 @@ OPERATION_4: Final[OperationPlan[PostKeyOnlyResponse]] = OperationPlan(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
         default='application/octet-stream',
     ),
-    idempotency=IdempotencyPlan(
-        header_name='Idempotency-Key',
-        replay_safe_with_key=False,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
 )
 
 OPERATION_5: Final[OperationPlan[GetNeverResponse]] = OperationPlan(
@@ -343,10 +333,5 @@ OPERATION_8: Final[OperationPlan[GetKeyedSafeResponse]] = OperationPlan(
             ),
         ),
     ),
-    idempotency=IdempotencyPlan(
-        header_name='Idempotency-Key',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
 )

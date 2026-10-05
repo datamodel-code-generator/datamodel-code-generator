@@ -63,247 +63,247 @@
   pre-send failure retry_scheduled = (('SDKError', None, 1, None, ()), False, True, 1)
     events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('attempt_end', 1, None, False, 1, None, None), ('call_end', 1, None, True, 1, None, 'error')] one-call=True queued=1
   key client typed declared=True omitted = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client typed declared=True empty = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client typed declared=True UNSET = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key'], 0)
-  key client typed declared=True None = FieldKeyedPostResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = (['client-key', 'client-key'], 0)
+  key client typed declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
+  key admission = ([None], 1)
   key client typed declared=True override = FieldKeyedPostResponse(root='call-key')
-  key admission = (['call-key'], 0)
+  key admission = (['call-key', 'call-key'], 0)
   key client typed declared=True same object = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client response declared=True omitted = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client response declared=True empty = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client response declared=True UNSET = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key'], 0)
-  key client response declared=True None = FieldKeyedPostResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = (['client-key', 'client-key'], 0)
+  key client response declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
+  key admission = ([None], 1)
   key client response declared=True override = FieldKeyedPostResponse(root='call-key')
-  key admission = (['call-key'], 0)
+  key admission = (['call-key', 'call-key'], 0)
   key client response declared=True same object = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client buffered declared=True omitted = b'client-key'
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client buffered declared=True empty = b'client-key'
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client buffered declared=True UNSET = b'client-key'
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client buffered declared=True None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None], 1)
   key client buffered declared=True override = b'call-key'
-  key admission = (['call-key'], 0)
+  key admission = (['call-key', 'call-key'], 0)
   key client buffered declared=True same object = b'client-key'
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client stream declared=True omitted = b'client-key'
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client stream declared=True empty = b'client-key'
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client stream declared=True UNSET = b'client-key'
-  key admission = (['client-key'], 0)
+  key admission = (['client-key', 'client-key'], 0)
   key client stream declared=True None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None], 1)
   key client stream declared=True override = b'call-key'
-  key admission = (['call-key'], 0)
+  key admission = (['call-key', 'call-key'], 0)
   key client stream declared=True same object = b'client-key'
-  key admission = (['client-key'], 0)
-  key client typed declared=False omitted = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
-  key client typed declared=False empty = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
-  key client typed declared=False UNSET = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = (['client-key', 'client-key'], 0)
+  key client typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key client typed declared=False None = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key client typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key client typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
-  key client response declared=False omitted = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
-  key client response declared=False empty = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
-  key client response declared=False UNSET = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = ([], 2)
+  key client response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key client response declared=False None = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key client response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key client response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
-  key client buffered declared=False omitted = b'absent'
-  key admission = ([None], 0)
-  key client buffered declared=False empty = b'absent'
-  key admission = ([None], 0)
-  key client buffered declared=False UNSET = b'absent'
-  key admission = ([None], 0)
+  key admission = ([], 2)
+  key client buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key client buffered declared=False None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key client buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key client buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
-  key client stream declared=False omitted = b'absent'
-  key admission = ([None], 0)
-  key client stream declared=False empty = b'absent'
-  key admission = ([None], 0)
-  key client stream declared=False UNSET = b'absent'
-  key admission = ([None], 0)
+  key admission = ([], 2)
+  key client stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key client stream declared=False None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key client stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key client stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
-  key client request raw declared=False omitted = b'absent'
-  key admission = ([None], 0)
-  key client request raw declared=False empty = b'absent'
-  key admission = ([None], 0)
-  key client request raw declared=False UNSET = b'absent'
-  key admission = ([None], 0)
+  key admission = ([], 2)
+  key client request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key client request raw declared=False None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key client request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key client request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
-  key client request stream declared=False omitted = b'absent'
-  key admission = ([None], 0)
-  key client request stream declared=False empty = b'absent'
-  key admission = ([None], 0)
-  key client request stream declared=False UNSET = b'absent'
-  key admission = ([None], 0)
+  key admission = ([], 2)
+  key client request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key client request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key client request stream declared=False None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key client request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key client request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key view typed declared=True omitted = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view typed declared=True empty = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view typed declared=True UNSET = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key'], 0)
-  key view typed declared=True None = FieldKeyedPostResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = (['view-key', 'view-key'], 0)
+  key view typed declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
+  key admission = ([None], 1)
   key view typed declared=True override = FieldKeyedPostResponse(root='call-key')
-  key admission = (['call-key'], 0)
+  key admission = (['call-key', 'call-key'], 0)
   key view typed declared=True same object = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view response declared=True omitted = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view response declared=True empty = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view response declared=True UNSET = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key'], 0)
-  key view response declared=True None = FieldKeyedPostResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = (['view-key', 'view-key'], 0)
+  key view response declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
+  key admission = ([None], 1)
   key view response declared=True override = FieldKeyedPostResponse(root='call-key')
-  key admission = (['call-key'], 0)
+  key admission = (['call-key', 'call-key'], 0)
   key view response declared=True same object = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view buffered declared=True omitted = b'view-key'
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view buffered declared=True empty = b'view-key'
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view buffered declared=True UNSET = b'view-key'
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view buffered declared=True None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None], 1)
   key view buffered declared=True override = b'call-key'
-  key admission = (['call-key'], 0)
+  key admission = (['call-key', 'call-key'], 0)
   key view buffered declared=True same object = b'view-key'
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view stream declared=True omitted = b'view-key'
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view stream declared=True empty = b'view-key'
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view stream declared=True UNSET = b'view-key'
-  key admission = (['view-key'], 0)
+  key admission = (['view-key', 'view-key'], 0)
   key view stream declared=True None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None], 1)
   key view stream declared=True override = b'call-key'
-  key admission = (['call-key'], 0)
+  key admission = (['call-key', 'call-key'], 0)
   key view stream declared=True same object = b'view-key'
-  key admission = (['view-key'], 0)
-  key view typed declared=False omitted = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
-  key view typed declared=False empty = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
-  key view typed declared=False UNSET = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = (['view-key', 'view-key'], 0)
+  key view typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key view typed declared=False None = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key view typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key view typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
-  key view response declared=False omitted = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
-  key view response declared=False empty = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
-  key view response declared=False UNSET = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = ([], 2)
+  key view response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key view response declared=False None = FieldSafeGetResponse(root='absent')
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key view response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key view response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
-  key view buffered declared=False omitted = b'absent'
-  key admission = ([None], 0)
-  key view buffered declared=False empty = b'absent'
-  key admission = ([None], 0)
-  key view buffered declared=False UNSET = b'absent'
-  key admission = ([None], 0)
+  key admission = ([], 2)
+  key view buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key view buffered declared=False None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key view buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key view buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
-  key view stream declared=False omitted = b'absent'
-  key admission = ([None], 0)
-  key view stream declared=False empty = b'absent'
-  key admission = ([None], 0)
-  key view stream declared=False UNSET = b'absent'
-  key admission = ([None], 0)
+  key admission = ([], 2)
+  key view stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key view stream declared=False None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key view stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key view stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
-  key view request raw declared=False omitted = b'absent'
-  key admission = ([None], 0)
-  key view request raw declared=False empty = b'absent'
-  key admission = ([None], 0)
-  key view request raw declared=False UNSET = b'absent'
-  key admission = ([None], 0)
+  key admission = ([], 2)
+  key view request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key view request raw declared=False None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key view request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key view request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
-  key view request stream declared=False omitted = b'absent'
-  key admission = ([None], 0)
-  key view request stream declared=False empty = b'absent'
-  key admission = ([None], 0)
-  key view request stream declared=False UNSET = b'absent'
-  key admission = ([None], 0)
+  key admission = ([], 2)
+  key view request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
+  key view request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  key admission = ([], 2)
   key view request stream declared=False None = b'absent'
-  key admission = ([None], 0)
+  key admission = ([None, None], 0)
   key view request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
+  key admission = ([], 2)
   key view request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  key admission = ([], 1)
-  concurrent inherited keys = (FieldKeyedPostResponse(root='client-key'), b'absent', FieldKeyedPostResponse(root='view-key'), b'absent')
-  concurrent key admission = (['client-key', 'view-key', None, None], 0)
+  key admission = ([], 2)
+  concurrent inherited keys = ((FieldKeyedPostResponse(root='client-key'), None), ('ConfigurationError', None, 0, None, ()), (FieldKeyedPostResponse(root='view-key'), None), ('ConfigurationError', None, 0, None, ()))
+  concurrent key admission = (['client-key', 'view-key'], 2)
   key client unchanged after mixed calls = FieldKeyedPostResponse(root='client-key')
   key view unchanged after mixed calls = FieldKeyedPostResponse(root='view-key')
   async typed read retry = (FieldSafeGetResponse(root='complete'), 2)
@@ -353,246 +353,249 @@
   async pre-send failure retry_scheduled = (('SDKError', None, 1, None, ()), False, True, 1)
     events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('attempt_end', 1, None, False, 1, None, None), ('call_end', 1, None, True, 1, None, 'error')] one-call=True queued=1
   async key client typed declared=True omitted = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client typed declared=True empty = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client typed declared=True UNSET = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key'], 0)
-  async key client typed declared=True None = FieldKeyedPostResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = (['client-key', 'client-key'], 0)
+  async key client typed declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
+  async key admission = ([None], 1)
   async key client typed declared=True override = FieldKeyedPostResponse(root='call-key')
-  async key admission = (['call-key'], 0)
+  async key admission = (['call-key', 'call-key'], 0)
   async key client typed declared=True same object = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client response declared=True omitted = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client response declared=True empty = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client response declared=True UNSET = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key'], 0)
-  async key client response declared=True None = FieldKeyedPostResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = (['client-key', 'client-key'], 0)
+  async key client response declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
+  async key admission = ([None], 1)
   async key client response declared=True override = FieldKeyedPostResponse(root='call-key')
-  async key admission = (['call-key'], 0)
+  async key admission = (['call-key', 'call-key'], 0)
   async key client response declared=True same object = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client buffered declared=True omitted = b'client-key'
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client buffered declared=True empty = b'client-key'
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client buffered declared=True UNSET = b'client-key'
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client buffered declared=True None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None], 1)
   async key client buffered declared=True override = b'call-key'
-  async key admission = (['call-key'], 0)
+  async key admission = (['call-key', 'call-key'], 0)
   async key client buffered declared=True same object = b'client-key'
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client stream declared=True omitted = b'client-key'
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client stream declared=True empty = b'client-key'
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client stream declared=True UNSET = b'client-key'
-  async key admission = (['client-key'], 0)
+  async key admission = (['client-key', 'client-key'], 0)
   async key client stream declared=True None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None], 1)
   async key client stream declared=True override = b'call-key'
-  async key admission = (['call-key'], 0)
+  async key admission = (['call-key', 'call-key'], 0)
   async key client stream declared=True same object = b'client-key'
-  async key admission = (['client-key'], 0)
-  async key client typed declared=False omitted = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
-  async key client typed declared=False empty = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
-  async key client typed declared=False UNSET = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = (['client-key', 'client-key'], 0)
+  async key client typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key client typed declared=False None = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key client typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key client typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
-  async key client response declared=False omitted = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
-  async key client response declared=False empty = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
-  async key client response declared=False UNSET = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = ([], 2)
+  async key client response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key client response declared=False None = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key client response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key client response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
-  async key client buffered declared=False omitted = b'absent'
-  async key admission = ([None], 0)
-  async key client buffered declared=False empty = b'absent'
-  async key admission = ([None], 0)
-  async key client buffered declared=False UNSET = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([], 2)
+  async key client buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key client buffered declared=False None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key client buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key client buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
-  async key client stream declared=False omitted = b'absent'
-  async key admission = ([None], 0)
-  async key client stream declared=False empty = b'absent'
-  async key admission = ([None], 0)
-  async key client stream declared=False UNSET = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([], 2)
+  async key client stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key client stream declared=False None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key client stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key client stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
-  async key client request raw declared=False omitted = b'absent'
-  async key admission = ([None], 0)
-  async key client request raw declared=False empty = b'absent'
-  async key admission = ([None], 0)
-  async key client request raw declared=False UNSET = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([], 2)
+  async key client request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key client request raw declared=False None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key client request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key client request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
-  async key client request stream declared=False omitted = b'absent'
-  async key admission = ([None], 0)
-  async key client request stream declared=False empty = b'absent'
-  async key admission = ([None], 0)
-  async key client request stream declared=False UNSET = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([], 2)
+  async key client request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key client request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key client request stream declared=False None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key client request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key client request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key view typed declared=True omitted = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view typed declared=True empty = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view typed declared=True UNSET = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key'], 0)
-  async key view typed declared=True None = FieldKeyedPostResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = (['view-key', 'view-key'], 0)
+  async key view typed declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
+  async key admission = ([None], 1)
   async key view typed declared=True override = FieldKeyedPostResponse(root='call-key')
-  async key admission = (['call-key'], 0)
+  async key admission = (['call-key', 'call-key'], 0)
   async key view typed declared=True same object = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view response declared=True omitted = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view response declared=True empty = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view response declared=True UNSET = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key'], 0)
-  async key view response declared=True None = FieldKeyedPostResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = (['view-key', 'view-key'], 0)
+  async key view response declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
+  async key admission = ([None], 1)
   async key view response declared=True override = FieldKeyedPostResponse(root='call-key')
-  async key admission = (['call-key'], 0)
+  async key admission = (['call-key', 'call-key'], 0)
   async key view response declared=True same object = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view buffered declared=True omitted = b'view-key'
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view buffered declared=True empty = b'view-key'
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view buffered declared=True UNSET = b'view-key'
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view buffered declared=True None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None], 1)
   async key view buffered declared=True override = b'call-key'
-  async key admission = (['call-key'], 0)
+  async key admission = (['call-key', 'call-key'], 0)
   async key view buffered declared=True same object = b'view-key'
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view stream declared=True omitted = b'view-key'
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view stream declared=True empty = b'view-key'
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view stream declared=True UNSET = b'view-key'
-  async key admission = (['view-key'], 0)
+  async key admission = (['view-key', 'view-key'], 0)
   async key view stream declared=True None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None], 1)
   async key view stream declared=True override = b'call-key'
-  async key admission = (['call-key'], 0)
+  async key admission = (['call-key', 'call-key'], 0)
   async key view stream declared=True same object = b'view-key'
-  async key admission = (['view-key'], 0)
-  async key view typed declared=False omitted = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
-  async key view typed declared=False empty = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
-  async key view typed declared=False UNSET = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = (['view-key', 'view-key'], 0)
+  async key view typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key view typed declared=False None = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key view typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key view typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
-  async key view response declared=False omitted = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
-  async key view response declared=False empty = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
-  async key view response declared=False UNSET = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = ([], 2)
+  async key view response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key view response declared=False None = FieldSafeGetResponse(root='absent')
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key view response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key view response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
-  async key view buffered declared=False omitted = b'absent'
-  async key admission = ([None], 0)
-  async key view buffered declared=False empty = b'absent'
-  async key admission = ([None], 0)
-  async key view buffered declared=False UNSET = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([], 2)
+  async key view buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key view buffered declared=False None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key view buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key view buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
-  async key view stream declared=False omitted = b'absent'
-  async key admission = ([None], 0)
-  async key view stream declared=False empty = b'absent'
-  async key admission = ([None], 0)
-  async key view stream declared=False UNSET = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([], 2)
+  async key view stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key view stream declared=False None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key view stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key view stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
-  async key view request raw declared=False omitted = b'absent'
-  async key admission = ([None], 0)
-  async key view request raw declared=False empty = b'absent'
-  async key admission = ([None], 0)
-  async key view request raw declared=False UNSET = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([], 2)
+  async key view request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key view request raw declared=False None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key view request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key view request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
-  async key view request stream declared=False omitted = b'absent'
-  async key admission = ([None], 0)
-  async key view request stream declared=False empty = b'absent'
-  async key admission = ([None], 0)
-  async key view request stream declared=False UNSET = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([], 2)
+  async key view request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
+  async key view request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
+  async key admission = ([], 2)
   async key view request stream declared=False None = b'absent'
-  async key admission = ([None], 0)
+  async key admission = ([None, None], 0)
   async key view request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
+  async key admission = ([], 2)
   async key view request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
-  async key admission = ([], 1)
-  async concurrent inherited keys = [FieldKeyedPostResponse(root='client-key'), b'absent', FieldKeyedPostResponse(root='view-key'), b'absent']
-  async concurrent key admission = (['client-key', 'view-key', None, None], 0)
+  async key admission = ([], 2)
+  async concurrent inherited keys = [(FieldKeyedPostResponse(root='client-key'), None), ('ConfigurationError', None, 0, None, ()), (FieldKeyedPostResponse(root='view-key'), None), ('ConfigurationError', None, 0, None, ())]
+  async concurrent key admission = (['client-key', 'view-key'], 2)
   async key client unchanged after mixed calls = FieldKeyedPostResponse(root='client-key')
   async key view unchanged after mixed calls = FieldKeyedPostResponse(root='view-key')
+  async automatic key retained through retry = FieldKeyedPostResponse(root='<call>')
+  async automatic key fresh next call = FieldKeyedPostResponse(root='<call>')
+  async automatic key admission = (3, True, True)

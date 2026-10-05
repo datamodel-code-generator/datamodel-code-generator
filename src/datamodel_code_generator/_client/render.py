@@ -1696,12 +1696,7 @@ class _Registry(_Typing):
                 "idempotency=",
                 _call(
                     module.local("_runtime.client.retry", "IdempotencyPlan"),
-                    (
-                        ("header_name=", repr(idempotency.header_name)),
-                        ("replay_safe_with_key=", repr(idempotency.replay_safe_with_key)),
-                        ("retention_seconds=", repr(idempotency.retention_seconds)),
-                        ("scope=", repr(idempotency.scope)),
-                    ),
+                    (("header_name=", repr(idempotency.header_name)),),
                 ),
             ))
         entries.extend(
@@ -2983,9 +2978,6 @@ class ClientRenderer:
                 if (item := spec.idempotency) is None
                 else {
                     "header_name": item.header_name,
-                    "replay_safe_with_key": item.replay_safe_with_key,
-                    "retention_seconds": item.retention_seconds,
-                    "scope": item.scope,
                 },
                 "retry_after_ms_header": spec.retry_after_ms_header,
                 "should_retry_header": spec.should_retry_header,
@@ -3025,8 +3017,8 @@ See the [runtime reference]({reference}) for defaults, ownership, cancellation, 
 ## Selected operation contracts
 
 These declarations come from the finalized operation selection and generation configuration. A key contract does
-not guarantee exactly-once execution. A null idempotency declaration or a false replay guarantee cannot make an
-unsafe method replay-safe. No vendor retry-header name is inferred. Security requirements preserve ordered OR
+not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
+No vendor retry-header name is inferred. Security requirements preserve ordered OR
 alternatives and their AND members; `[]` and `[{{}}]` remain distinct declared anonymous choices. Missing required
 credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
 `operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
@@ -3195,12 +3187,12 @@ phase cap still applies. Close an abandoned stream to release its response and l
 
 ## Idempotency and replayable input
 
-`IdempotencyKey(value, first_used_at=aware_datetime)` retains a caller's key and known first-use time.
-`IdempotencyKey.new()` creates a UUID4 value with a UTC timestamp. `idempotency_key=None` disables automatic creation;
-`UNSET` permits it for an operation with declared idempotency metadata, including `replay_safe_with_key=False`.
-A false replay-safety flag does not make an unsafe operation eligible for retries. The key is created once and never
-replaced to retry. Unknown prior-use time or expired retention does not establish retry safety. One logical call
-retains its key, origin, scope, encoded body, and multipart boundary across eligible attempts.
+`IdempotencyKey(value)` supplies a caller's stable key; `IdempotencyKey.new()` creates a UUID4 value.
+`idempotency_key=None` disables automatic creation; `UNSET` permits it for an operation with a declared key header.
+The key is created once per logical call and reused across eligible retries. Caller keys are sent unchanged.
+An effective caller key on an operation without a declared header fails before sending, including inherited keys.
+One logical call retains its key, origin, encoded body, and multipart boundary across eligible attempts.
+
 
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
 `FileBody(file)` remembers the entry offset and seeks there for replay when possible. Borrowed files stay open and

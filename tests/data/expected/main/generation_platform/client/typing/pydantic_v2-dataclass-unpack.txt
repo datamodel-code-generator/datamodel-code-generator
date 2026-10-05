@@ -1,8 +1,8 @@
 mypy pets and clients.py and signatures.py and webhooks.py and protocols.py: clean
 pyright pets and clients.py and signatures.py and webhooks.py and protocols.py: clean
 ty pets and clients.py and signatures.py and webhooks.py and protocols.py: clean
-clients_negative.py 84 marked lines
-mypy clients_negative.py: 84/84 marked lines with one error, 0 elsewhere, 0 in other files
+clients_negative.py 82 marked lines
+mypy clients_negative.py: 82/82 marked lines with one error, 0 elsewhere, 0 in other files
   47 call-arg
   48 arg-type
   49 call-overload
@@ -80,14 +80,12 @@ mypy clients_negative.py: 84/84 marked lines with one error, 0 elsewhere, 0 in o
   173 arg-type
   174 call-arg
   175 call-arg
-  176 arg-type
-  177 misc
-  178 misc
-  185 arg-type
-  187 misc
-  188 call-arg
-  189 assignment
-pyright clients_negative.py: 81/84 marked lines with one error, 0 elsewhere, 0 in other files
+  176 misc
+  183 arg-type
+  185 misc
+  186 call-arg
+  187 assignment
+pyright clients_negative.py: 79/82 marked lines with one error, 0 elsewhere, 0 in other files
   47 reportCallIssue
   48 reportArgumentType
   49 reportArgumentType
@@ -168,14 +166,12 @@ pyright clients_negative.py: 81/84 marked lines with one error, 0 elsewhere, 0 i
   173 reportArgumentType
   174 reportCallIssue
   175 reportCallIssue
-  176 reportArgumentType
-  177 reportAttributeAccessIssue
-  178 reportAttributeAccessIssue
-  185 reportArgumentType
+  176 reportAttributeAccessIssue
+  183 reportArgumentType
+  185 reportAttributeAccessIssue
+  186 reportCallIssue
   187 reportAttributeAccessIssue
-  188 reportCallIssue
-  189 reportAttributeAccessIssue
-ty clients_negative.py: 83/84 marked lines with one error, 0 elsewhere, 0 in other files
+ty clients_negative.py: 81/82 marked lines with one error, 0 elsewhere, 0 in other files
   47 missing-argument
   48 invalid-argument-type
   49 no-matching-overload
@@ -253,12 +249,10 @@ ty clients_negative.py: 83/84 marked lines with one error, 0 elsewhere, 0 in oth
   173 invalid-argument-type
   174 missing-argument
   175 too-many-positional-arguments
-  176 invalid-argument-type
-  177 invalid-assignment
-  178 invalid-assignment
-  185 invalid-argument-type
+  176 invalid-assignment
+  183 invalid-argument-type
+  185 invalid-assignment
   187 invalid-assignment
-  189 invalid-assignment
 signatures_negative.py 2 marked lines
 mypy signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
   41 misc

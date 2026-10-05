@@ -649,10 +649,10 @@ class _KeyReply:
     def __init__(self) -> None:
         self.keys: list[str | None] = []
 
-    def __call__(self, request: httpx2.Request) -> httpx2.Response:
+    def __call__(self, request: httpx2.Request, *, status: int = 200) -> httpx2.Response:
         key = request.headers.get("Idempotency-Key")
         self.keys.append(key)
-        return raw_response(200, ("absent" if key is None else key).encode(), "text/plain")(request)
+        return raw_response(status, ("absent" if key is None else key).encode(), "text/plain")(request)
 
 
 def _key_cases(options: ModuleType, key: object) -> Iterator[tuple[str, bool, str, object]]:
@@ -716,13 +716,16 @@ def _key_inheritance(package: ModuleType, options: ModuleType, lines: list[str])
     client_key, view_key = options.IdempotencyKey("client-key"), options.IdempotencyKey("view-key")
     with (
         exchange.client() as native,
-        package.Client(http_client=native, options=options.ClientOptions(idempotency_key=client_key)) as api,
+        package.Client(
+            http_client=native,
+            options=options.ClientOptions(idempotency_key=client_key, retry=options.RetryOptions(initial_delay=0)),
+        ) as api,
         api.with_options(options.RequestOptions(idempotency_key=view_key)) as view,
     ):
         for layer, current, key in (("client", api, client_key), ("view", view, view_key)):
             for surface, declared, label, request in _key_cases(options, key):
                 before = len(reply.keys)
-                exchange.respond(reply)
+                exchange.respond(lambda request: reply(request, status=503), reply)
                 record(
                     lines,
                     f"key {layer} {surface} declared={declared} {label}",
@@ -742,12 +745,16 @@ def _key_inheritance(package: ModuleType, options: ModuleType, lines: list[str])
 
         def concurrent(action: Callable[[], object]) -> object:
             barrier.wait(timeout=5)
-            return action()
+            return _capture(action)
 
+        before = len(reply.keys)
         exchange.respond(reply, reply, reply, reply)
         with ThreadPoolExecutor(max_workers=4) as executor:
             record(lines, "concurrent inherited keys", lambda: tuple(executor.map(concurrent, actions)))
-        record(lines, "concurrent key admission", lambda: (sorted(reply.keys[-4:], key=repr), len(exchange.responders)))
+        record(
+            lines, "concurrent key admission", lambda: (sorted(reply.keys[before:], key=repr), len(exchange.responders))
+        )
+        exchange.responders.clear()
         for layer, current in (("client", api), ("view", view)):
             exchange.respond(reply)
             record(
@@ -762,13 +769,16 @@ async def _async_key_inheritance(package: ModuleType, options: ModuleType, lines
     client_key, view_key = options.IdempotencyKey("client-key"), options.IdempotencyKey("view-key")
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(http_client=native, options=options.ClientOptions(idempotency_key=client_key)) as api,
+        package.AsyncClient(
+            http_client=native,
+            options=options.ClientOptions(idempotency_key=client_key, retry=options.RetryOptions(initial_delay=0)),
+        ) as api,
         api.with_options(options.RequestOptions(idempotency_key=view_key)) as view,
     ):
         for layer, current, key in (("client", api, client_key), ("view", view, view_key)):
             for surface, declared, label, request in _key_cases(options, key):
                 before = len(reply.keys)
-                exchange.respond(reply)
+                exchange.respond(lambda request: reply(request, status=503), reply)
                 await arecord(
                     lines,
                     f"async key {layer} {surface} declared={declared} {label}",
@@ -780,22 +790,24 @@ async def _async_key_inheritance(package: ModuleType, options: ModuleType, lines
                     lines, "async key admission", lambda before=before: (reply.keys[before:], len(exchange.responders))
                 )
                 exchange.responders.clear()
+        before = len(reply.keys)
         exchange.respond(reply, reply, reply, reply)
         await arecord(
             lines,
             "async concurrent inherited keys",
             lambda: asyncio.gather(
-                _async_key_call(api, "typed", True, None),
-                _async_key_call(api, "stream", False, None),
-                _async_key_call(view, "response", True, None),
-                _async_key_call(view, "request raw", False, None),
+                _acapture(lambda: _async_key_call(api, "typed", True, None)),
+                _acapture(lambda: _async_key_call(api, "stream", False, None)),
+                _acapture(lambda: _async_key_call(view, "response", True, None)),
+                _acapture(lambda: _async_key_call(view, "request raw", False, None)),
             ),
         )
         record(
             lines,
             "async concurrent key admission",
-            lambda: (sorted(reply.keys[-4:], key=repr), len(exchange.responders)),
+            lambda: (sorted(reply.keys[before:], key=repr), len(exchange.responders)),
         )
+        exchange.responders.clear()
         for layer, current in (("client", api), ("view", view)):
             exchange.respond(reply)
             await arecord(
@@ -803,3 +815,21 @@ async def _async_key_inheritance(package: ModuleType, options: ModuleType, lines
                 f"async key {layer} unchanged after mixed calls",
                 lambda current=current: current.retry.post_keyed(),
             )
+
+    reply.keys.clear()
+    exchange.responders.clear()
+    exchange.respond(lambda request: reply(request, status=503), reply, reply)
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(
+            http_client=native,
+            options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0)),
+        ) as automatic,
+    ):
+        await arecord(lines, "async automatic key retained through retry", automatic.retry.post_keyed)
+        await arecord(lines, "async automatic key fresh next call", automatic.retry.post_keyed)
+    record(
+        lines,
+        "async automatic key admission",
+        lambda: (len(reply.keys), reply.keys[0] == reply.keys[1], reply.keys[1] != reply.keys[2]),
+    )

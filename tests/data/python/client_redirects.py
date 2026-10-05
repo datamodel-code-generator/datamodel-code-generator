@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import importlib
-from datetime import datetime, timedelta, timezone
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -157,7 +156,6 @@ def _methods(package: ModuleType, options: ModuleType, lines: list[str]) -> None
     exchange = Exchange(lines)
     bodies = importlib.import_module(f"{package.__name__}.bodies")
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
-    now = datetime.now(timezone.utc)
     with (
         exchange.client() as native,
         package.Client(
@@ -187,25 +185,16 @@ def _methods(package: ModuleType, options: ModuleType, lines: list[str]) -> None
             ("307 declared idempotent", "post_idempotent", 307, options.RequestOptions()),
             ("308 declared idempotent", "post_idempotent", 308, options.RequestOptions()),
             (
-                "308 retained key",
+                "308 caller key",
                 "post_keyed",
                 308,
-                options.RequestOptions(idempotency_key=options.IdempotencyKey("same-key", first_used_at=now)),
+                options.RequestOptions(idempotency_key=options.IdempotencyKey("same-key")),
             ),
             (
-                "308 unknown key age",
+                "308 key suppressed",
                 "post_keyed",
                 308,
-                options.RequestOptions(idempotency_key=options.IdempotencyKey("unknown-age")),
-            ),
-            (
-                "303 expired key",
-                "post_keyed",
-                303,
-                options.RequestOptions(
-                    idempotency_key=options.IdempotencyKey("expired-key", first_used_at=now - timedelta(days=2)),
-                    redirects=options.RedirectOptions(allow_303_to_get=True),
-                ),
+                options.RequestOptions(idempotency_key=None),
             ),
         ):
             exchange.responders.clear()

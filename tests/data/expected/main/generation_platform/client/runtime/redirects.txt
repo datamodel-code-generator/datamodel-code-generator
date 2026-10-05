@@ -154,15 +154,11 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: same-key, content-length: 7] b'payload'
   > POST https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: same-key, content-length: 7] b'payload'
-  308 retained key = (FieldKeyedPostResponse(root='server payload'), 200, 1)
+  308 caller key = (FieldKeyedPostResponse(root='server payload'), 200, 1)
     unused=0
   > POST https://api.example.com/keyed
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: unknown-age, content-length: 7] b'payload'
-  308 unknown key age = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 308, 1, 'NoneType')
-    unused=1
-  > POST https://api.example.com/keyed
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: expired-key, content-length: 7] b'payload'
-  303 expired key = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 303, 1, 'NoneType')
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
+  308 key suppressed = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 308, 1, 'NoneType')
     unused=1
   > HEAD https://api.example.com/start
     [host: api.example.com, accept-encoding: gzip, deflate] b''
