@@ -10,7 +10,7 @@ from dataclasses import fields
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, TypeAlias
 
-from datamodel_code_generator import DataModelType, Error, GenerateConfig, generate
+from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, generate
 from datamodel_code_generator._api_generation import generate_target, render_target
 from datamodel_code_generator._api_types import (
     APIGenerationError,
@@ -372,10 +372,100 @@ def client_model_parity_report(case_name: str, root: Path, rendered: dict[str, M
     return f"{bool(matches) and all(matches)}\n"
 
 
+def cyclic_input_failure(error: Exception, *, source: str, pointer: str, location: tuple[int, int]) -> str:
+    """Report only the two handled cyclic-input refusals for the seven retained YAML cases.
+
+    A loader may reject the fixed anchor before the target can report E_INPUT_CYCLE. Raw recursion errors,
+    other parse errors, model errors, and the removed BindingCaptureError remain failures.
+    """
+    if isinstance(error, APIGenerationError) and len(error.diagnostics) == 1:
+        diagnostic = error.diagnostics[0]
+        if (diagnostic.code, diagnostic.severity, diagnostic.stage, diagnostic.message, diagnostic.source_pointer) == (
+            "E_INPUT_CYCLE",
+            "error",
+            "input",
+            "The input document contains a cyclic mapping or sequence",
+            pointer,
+        ) and Path(diagnostic.source_uri or "").name == source:
+            return "cyclic YAML input rejected"
+    if isinstance(error, InvalidFileFormatError):
+        original = error.original_error
+        if type(original) is Error:
+            original = original.__cause__
+        if (
+            type(original).__module__ == "_ryaml"
+            and type(original).__name__ == "InvalidYamlError"
+            and str(original) == f"recursion limit exceeded at line {location[0]} column {location[1]}"
+            and (error.source is None or Path(error.source).name == source)
+        ):
+            return "cyclic YAML input rejected"
+    raise error
+
+
+def client_cyclic_metadata_report(source: Path, root: Path, model: Mapping[str, Any]) -> str:
+    """Keep cyclic session metadata on the public target path without accepting the old capture crash."""
+    lines = ["# session-cyclic-metadata", "render pydantic_v2.BaseModel default"]
+    try:
+        project = render_target(
+            source,
+            model_config=model_config(root / "models.py", "pydantic_v2.BaseModel", model),
+            config=client_config({"default_base_url": "https://bindings.invalid"}, root),
+            generator=ClientTarget(),
+        )
+    except (APIGenerationError, InvalidFileFormatError) as error:
+        lines.append(
+            "  "
+            + cyclic_input_failure(
+                error,
+                source=source.name,
+                pointer="/paths/~1items/get/externalDocs/extra",
+                location=(8, 21),
+            )
+        )
+    else:
+        lines.append(f"  render succeeded with {len(project.artifacts)} artifacts")
+    files = sorted(
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*")
+        if path.is_file() and not path.is_relative_to(root / "inputs")
+    )
+    lines.append(f"  files {files}")
+    return "\n".join(lines) + "\n"
+
+
+def _cyclic_reference_models(source: Path, output: Path, backend: str, case: dict[str, Any]) -> list[str]:
+    """Keep ordinary model output or the exact loader refusal of the retained cyclic reference."""
+    lines = [f"model-only {backend}"]
+    try:
+        generate(source, config=model_config(output, backend, case.get("model", {})))
+    except InvalidFileFormatError as error:
+        lines.append(
+            "  InvalidFileFormatError: "
+            + cyclic_input_failure(
+                error, source="input-cycle-reference-model.yaml", pointer="/x-cycle/self", location=(6, 10)
+            )
+        )
+        files = sorted(
+            path.relative_to(output.parent).as_posix()
+            for path in output.parent.rglob("*")
+            if path.is_file() and path.name not in {case["input"], *case.get("references", ())}
+        )
+        lines.append(f"  files {files}")
+    else:
+        lines.extend(f"  | {line}" for line in output.read_text(encoding="utf-8").splitlines())
+    return lines
+
+
 def client_input_report(case_name: str, root: Path) -> str:
     """Render and publish an input for each backend, reporting diagnostics, digests, and the resulting files."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     lines = [f"# {case_name}"]
+    cycles = {
+        "input-cycle-dict": ("input-cycle-dict.yaml", "/x-cycle/self", (14, 10)),
+        "input-cycle-list": ("input-cycle-list.yaml", "/x-cycle/0", (14, 10)),
+        "input-cycle-mutual": ("input-cycle-mutual.yaml", "/x-outer/nested/child/back~1to~0outer/0", (15, 11)),
+        "input-cycle-reference": ("input-cycle-reference-model.yaml", "/x-cycle/self", (6, 10)),
+    }
     for backend in case["backends"]:
         for name, entry in (("render", render_target), ("generate", generate_target)):
             attempt = root / backend.replace(".", "_") / name
@@ -391,9 +481,24 @@ def client_input_report(case_name: str, root: Path) -> str:
                     config=config,
                     generator=ClientTarget(),
                 )
-            except APIGenerationError as error:
-                lines.extend(("  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)))
-                lines.extend(f"  source {item.source_uri}" for item in error.diagnostics)
+            except (APIGenerationError, InvalidFileFormatError) as error:
+                if case_name in cycles:
+                    filename, pointer, location = cycles[case_name]
+                    failure = cyclic_input_failure(error, source=filename, pointer=pointer, location=location)
+                    lines.extend(
+                        (
+                            "  APIGenerationError",
+                            *(_diagnostic(item) for item in error.diagnostics),
+                            *(f"  source {item.source_uri}" for item in error.diagnostics),
+                        )
+                        if case_name == "input-cycle-reference" and isinstance(error, APIGenerationError)
+                        else ("  " + failure, f"  source ../{filename}")
+                    )
+                elif isinstance(error, APIGenerationError):
+                    lines.extend(("  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)))
+                    lines.extend(f"  source {item.source_uri}" for item in error.diagnostics)
+                else:
+                    raise
             else:
                 if isinstance(result, GeneratedProject):
                     manifest = next(item.content for item in result.artifacts if item.path.name == MANIFEST)
@@ -417,9 +522,12 @@ def client_input_report(case_name: str, root: Path) -> str:
             source = shutil.copy2(SOURCE / case["input"], attempt / case["input"])
             copy_references(case, attempt)
             output = attempt / "models.py"
-            generate(source, config=model_config(output, backend, case.get("model", {})))
-            lines.append(f"model-only {backend}")
-            lines.extend(f"  | {line}" for line in output.read_text(encoding="utf-8").splitlines())
+            if case_name == "input-cycle-reference":
+                lines.extend(_cyclic_reference_models(source, output, backend, case))
+            else:
+                generate(source, config=model_config(output, backend, case.get("model", {})))
+                lines.append(f"model-only {backend}")
+                lines.extend(f"  | {line}" for line in output.read_text(encoding="utf-8").splitlines())
     return "\n".join(lines) + "\n"
 
 
@@ -466,3 +574,63 @@ def client_config_report(case_name: str, root: Path) -> str:
     except TypeError as error:
         return f"TypeError: {error}\n"
     return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
+
+
+def client_metadata_cycle_diagnostic_report(backend: str, root: Path, *, external_sequence: bool = False) -> str:
+    """Render and publish fixed metadata cycles through the public target entry points."""
+    import yaml
+
+    source = SOURCE.parent / "binding" / "session-cyclic-metadata.yaml"
+    lines = [f"# cyclic metadata {backend}"]
+    for name, entry in (("render", render_target), ("generate", generate_target)):
+        attempt = root / name
+        attempt.mkdir(parents=True)
+        if external_sequence:
+            inputs = attempt / "inputs"
+            inputs.mkdir()
+            for filename in ("session-cyclic-sequence.yaml", "session-cyclic-sequence-library.yaml"):
+                shutil.copy2(source.parent / filename, inputs / filename)
+            document = inputs / "session-cyclic-sequence.yaml"
+        else:
+            document = yaml.safe_load(source.read_text(encoding="utf-8"))
+        lines.append(name)
+        try:
+            entry(
+                document,
+                model_config=model_config(attempt / "models.py", backend, {}),
+                config=client_config({}, attempt),
+                generator=ClientTarget(),
+            )
+        except (APIGenerationError, InvalidFileFormatError) as error:
+            if external_sequence:
+                lines.append(
+                    cyclic_input_failure(
+                        error,
+                        source="session-cyclic-sequence-library.yaml",
+                        pointer="/path-item/get/externalDocs/extra/0",
+                        location=(5, 14),
+                    )
+                )
+            elif isinstance(error, APIGenerationError):
+                lines.extend((
+                    type(error).__name__,
+                    json.dumps(
+                        [
+                            {field.name: getattr(item, field.name) for field in fields(item)}
+                            for item in error.diagnostics
+                        ],
+                        indent=2,
+                        sort_keys=True,
+                    ),
+                ))
+            else:
+                raise
+        else:
+            lines.append("generation succeeded")
+        files = sorted(
+            path.relative_to(attempt).as_posix()
+            for path in attempt.rglob("*")
+            if path.is_file() and not path.is_relative_to(attempt / "inputs")
+        )
+        lines.append(f"files {files}")
+    return "\n".join(lines) + "\n"

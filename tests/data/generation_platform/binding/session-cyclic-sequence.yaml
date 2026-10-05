@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info:
+  title: Cyclic external metadata
+  version: '1'
+paths:
+  /items:
+    $ref: session-cyclic-sequence-library.yaml#/path-item
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        value:
+          type: string
