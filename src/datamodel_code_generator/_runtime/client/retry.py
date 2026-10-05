@@ -44,12 +44,9 @@ _LEAP_SECOND: Final = 60
 
 @dataclass(frozen=True, slots=True)
 class IdempotencyPlan:
-    """The generated operation's complete server idempotency declaration."""
+    """The generated operation's server idempotency key header."""
 
     header_name: str
-    replay_safe_with_key: bool
-    retention_seconds: float
-    scope: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,7 +116,6 @@ class RetryState:
     method: str
     retry_safety: Literal["method_default", "idempotent", "never"]
     idempotency: IdempotencyPlan | None
-    key_expires_at: float | None
     delivery_state: DeliveryState
     resource_attempt_count: int
     body_replayable: bool
@@ -132,33 +128,18 @@ def replay_safe(
     method: str,
     retry_safety: Literal["method_default", "idempotent", "never"],
     idempotency: IdempotencyPlan | None,
-    key_expires_at: float | None,
-    *,
-    now: float,
 ) -> bool:
     """Check payload-independent safety after the operation-never gate has passed."""
-    if key_expires_at is not None and now >= key_expires_at:
-        return False
-    return (
-        method in _SAFE_METHODS
-        or retry_safety == "idempotent"
-        or (idempotency is not None and idempotency.replay_safe_with_key and key_expires_at is not None)
-    )
+    return method in _SAFE_METHODS or retry_safety == "idempotent" or idempotency is not None
 
 
 def body_replay_safe(
     method: str,
     retry_safety: Literal["method_default", "idempotent", "never"],
     idempotency: IdempotencyPlan | None,
-    key_expires_at: float | None,
-    *,
-    now: float,
 ) -> bool:
-    """Return whether a request may send its body again with its method, as a 307 or 308 redirect does.
-
-    An operation that never retries never sends its body again; otherwise the payload-independent safety decides.
-    """
-    return retry_safety != "never" and replay_safe(method, retry_safety, idempotency, key_expires_at, now=now)
+    """Return whether a request may send its body again with its method, as a 307 or 308 redirect does."""
+    return retry_safety != "never" and replay_safe(method, retry_safety, idempotency)
 
 
 _NOT_RETRYABLE: Final[dict[str, RetryStopReason]] = {
@@ -191,7 +172,6 @@ def retry_stop(
     retry: ResolvedRetryOptions,
     *,
     retry_owner: Literal["sdk", "transport"],
-    now: float,
     auth_recovery_used: bool = False,
 ) -> RetryStopReason | None:
     """Return the first failed retry gate, after termination precedence has been checked."""
@@ -201,22 +181,14 @@ def retry_stop(
         return "max_retries_exhausted"
     if state.reason == "auth_invalid_token" and auth_recovery_used:
         return "auth_recovery_exhausted"
-    return _replay_stop(state, now=now)
+    return _replay_stop(state)
 
 
-def _replay_stop(state: RetryState, *, now: float) -> RetryStopReason | None:
+def _replay_stop(state: RetryState) -> RetryStopReason | None:
     """Return why the request cannot be sent again: its body, its safety, or the network budget."""
     if not state.body_replayable:
         return "body_not_replayable"
-    safe = replay_safe(
-        state.method,
-        state.retry_safety,
-        state.idempotency,
-        state.key_expires_at,
-        now=now,
-    )
-    unsent = state.proven_not_sent and (state.key_expires_at is None or now < state.key_expires_at)
-    if not (safe or unsent):
+    if not (replay_safe(state.method, state.retry_safety, state.idempotency) or state.proven_not_sent):
         return "unsafe_operation"
     if not state.network_available:
         return "network_budget_exhausted"

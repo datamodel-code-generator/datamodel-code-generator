@@ -279,20 +279,14 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: stable-key, content-length: 7] b'payload'
   > POST https://api.example.com/keyed
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: stable-key, content-length: 7] b'payload'
-  retained caller key = (FieldKeyedPostResponse(root='server payload'), 2, 2, 2)
+  caller key = (FieldKeyedPostResponse(root='server payload'), 2, 2, 2)
     unused=0
-  > POST https://api.example.com/keyed
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: unknown-key, content-length: 7] b'payload'
-  unknown prior use = ('PostKeyedHTTPError', 'unsafe_operation', 1, 1, 1, b'server payload', FieldKeyedPostResponse(root='server payload'), None, False, 503)
-    unused=1
-  > POST https://api.example.com/keyed
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: expired-key, content-length: 7] b'payload'
-  expired key = ('PostKeyedHTTPError', 'unsafe_operation', 1, 1, 1, b'server payload', FieldKeyedPostResponse(root='server payload'), None, False, 503)
-    unused=1
   > POST https://api.example.com/key-only
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: header-only, content-length: 7] b'payload'
-  key declaration insufficient = ('PostKeyOnlyHTTPError', 'unsafe_operation', 1, 1, 1, b'server payload', FieldKeyOnlyPostResponse(root='server payload'), None, False, 503)
-    unused=1
+  > POST https://api.example.com/key-only
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: header-only, content-length: 7] b'payload'
+  header-only declaration = (FieldKeyOnlyPostResponse(root='server payload'), 2, 2, 2)
+    unused=0
   > POST https://api.example.com/keyed
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 7] b'payload'
   key suppressed = ('PostKeyedHTTPError', 'unsafe_operation', 1, 1, 1, b'server payload', FieldKeyedPostResponse(root='server payload'), None, False, 503)
@@ -300,19 +294,17 @@
   undeclared key = ('ConfigurationError', None, 0, 0, 0, None, None, ('idempotency_key',), None, None)
     unused=2
   > GET https://api.example.com/keyed-safe
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: fresh-safe] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: safe-key] b''
   > GET https://api.example.com/keyed-safe
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: fresh-safe] b''
-  safe method fresh key = (FieldKeyedSafeGetResponse(root='server payload'), 2, 2, 2)
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: safe-key] b''
+  safe method caller key = (FieldKeyedSafeGetResponse(root='server payload'), 2, 2, 2)
     unused=0
-  > GET https://api.example.com/keyed-safe
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: expired-safe] b''
-  safe method expired key = ('GetKeyedSafeHTTPError', 'unsafe_operation', 1, 1, 1, b'server payload', FieldKeyedSafeGetResponse(root='server payload'), None, False, 503)
-    unused=1
   > POST https://api.example.com/key-only
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 9] b'automatic'
-  automatic false declaration = ('PostKeyOnlyHTTPError', 'unsafe_operation', 1, 1, 1, b'server payload', FieldKeyOnlyPostResponse(root='server payload'), None, False, 503)
-    uuid4=True canonical=True counts=1/1 retries=0 unused=1
+  > POST https://api.example.com/key-only
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 9] b'automatic'
+  automatic declared key = (None, None, None, None)
+    uuid4=True canonical=True counts=2/2 retries=1 unused=0
   unclassified before owner = ('TransportError', 'transport_not_retryable', 1, 1, 1, None, None, None, None, None)
     sends=1 cause-retained=True
   owner before never = ('TransportError', 'retry_owned_by_transport', 1, 1, 1, None, None, None, None, None)
@@ -440,14 +432,6 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   original server cap survives hook = ('GetVendorHTTPError', 'server_delay_exceeds_limit', 1, 1, 1, b'server payload', FieldVendorGetResponse(root='server payload'), None, False, 503)
     delays=() expected=() match=True
-  > POST https://api.example.com/keyed
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: retained-expiring-key, content-length: 7] b'payload'
-  key expires during response hook = ('PostKeyedHTTPError', 'unsafe_operation', 1, 1, 1, b'server payload', FieldKeyedPostResponse(root='server payload'), None, False, 503)
-    delays=() unused=1
-  > POST https://api.example.com/keyed
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: retained-expiring-key, content-length: 7] b'payload'
-  key expires during retry hook = ('PostKeyedHTTPError', 'unsafe_operation', 1, 1, 1, b'', None, None, True, 503)
-    delays=(2.0,) unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
@@ -472,5 +456,7 @@
     attempts=3
   > POST https://api.example.com/key-only
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 9] b'automatic'
-  async automatic false declaration ! PostKeyOnlyHTTPError: PostKeyOnlyHTTPError(status_code=503, operation_id='postKeyOnly', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyOnly', status_code=503, error_decoded=True, error_data=FieldKeyOnlyPostResponse(root='server payload'), body_bytes=b'server payload', truncated=False] post_key_only_http_error
-    uuid4=True canonical=True counts=1/1 retries=0 unused=1
+  > POST https://api.example.com/key-only
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 9] b'automatic'
+  async automatic declared key = None
+    uuid4=True canonical=True counts=2/2 retries=1 unused=0
