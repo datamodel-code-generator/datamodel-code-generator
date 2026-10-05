@@ -1,0 +1,39 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "reuse",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "A": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        }
+      },
+      "B": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        }
+      },
+      "Holder": {
+        "type": "object",
+        "properties": {
+          "left": {
+            "$ref": "#/components/schemas/A"
+          },
+          "right": {
+            "$ref": "#/components/schemas/B"
+          }
+        }
+      }
+    }
+  }
+}

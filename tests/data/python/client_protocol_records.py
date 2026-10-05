@@ -30,8 +30,6 @@ from datamodel_code_generator._client.protocols import (
     PollInterval,
     ProtocolConfiguration,
     PublicKeySignature,
-    QueuedOperation,
-    QueueHelper,
     RemoteCancel,
     SourceValue,
     StandardWebhooksSignature,
@@ -421,35 +419,6 @@ CACHING = ProtocolConfiguration(
     }
 )
 
-KEY = ParameterTarget(location="header", name="Idempotency-Key")
-QUEUES = ProtocolConfiguration(
-    helpers={
-        "orders.outbox": QueueHelper(
-            operations={
-                "create_order": QueuedOperation(
-                    operation=OperationRef(pointer="/paths/~1orders/post"),
-                    side_effects=True,
-                    key_binding=KEY,
-                    dedupe_ttl=3600,
-                ),
-                "refresh": QueuedOperation(
-                    operation=OperationRef(pointer="/paths/~1orders~1{orderId}/get"), side_effects=False
-                ),
-            }
-        ),
-        "account.offline": QueueHelper(
-            operations={
-                "fetch": QueuedOperation(operation=OperationRef(pointer="/paths/~1account/get"), side_effects=False),
-                "rename": QueuedOperation(
-                    operation=OperationRef(pointer="/paths/~1account/patch"),
-                    side_effects=True,
-                    key_binding=KEY,
-                    dedupe_ttl=600.0,
-                ),
-            }
-        ),
-    }
-)
 
 RECORDS = {
     "disabled": DISABLED,
@@ -459,5 +428,4 @@ RECORDS = {
     "public_keys": PUBLIC_KEYS,
     "adapters": ADAPTERS,
     "caching": CACHING,
-    "queues": QUEUES,
 }
