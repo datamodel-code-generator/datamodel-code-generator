@@ -395,6 +395,13 @@ def _terminal(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
     _report(lines, events, exchange)
 
 
+def _caller_block(failure: str) -> None:
+    if failure != "block":
+        return
+    message = "caller block failure"
+    raise ValueError(message)
+
+
 def _failed_streams(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     for failure in ("body", "block"):
         primary = KeyboardInterrupt("stream_end interruption")
@@ -410,9 +417,7 @@ def _failed_streams(package: ModuleType, options: ModuleType, lines: list[str]) 
         ):
             try:
                 with api.retry.with_streaming_response.get_safe() as response:
-                    if failure == "block":
-                        message = "caller block failure"
-                        raise ValueError(message)
+                    _caller_block(failure)
                     response.read()
             except BaseException as error:  # noqa: BLE001
                 observed = type(error).__name__, error is primary, getattr(error, "__notes__", ())
@@ -434,9 +439,7 @@ async def _async_failed_streams(package: ModuleType, options: ModuleType, lines:
         ):
             try:
                 async with api.retry.with_streaming_response.get_safe() as response:
-                    if failure == "block":
-                        message = "caller block failure"
-                        raise ValueError(message)
+                    _caller_block(failure)
                     await response.read()
             except BaseException as error:  # noqa: BLE001
                 observed = type(error).__name__, error is primary, getattr(error, "__notes__", ())

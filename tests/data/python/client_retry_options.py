@@ -159,6 +159,24 @@ def _origins(options: ModuleType, lines: list[str]) -> None:
     lines.append(f"  frozen origins={configured.allowed_origins!r} tuple={type(configured.allowed_origins) is tuple}")
 
 
+def _key_value(options: ModuleType, errors: ModuleType, lines: list[str], value: object) -> None:
+    try:
+        accepted = options.IdempotencyKey(value)
+    except errors.ConfigurationError as error:
+        lines.extend((
+            f"  key value {value!r} ! {describe(error)}",
+            (
+                f"  rejected key attempts={error.resource_attempt_count} redirects={error.redirect_count}"
+                f" auth={error.auth_exchange_count} sends={error.network_send_count}"
+                f" budget={error.network_send_budget_used} auth_budget={error.auth_exchange_budget_used}"
+                f" refresh_ids={error.auth_refresh_ids} pending={error.auth_refresh_pending}"
+                f" wire={error.wire_send_count} info={error.info}"
+            ),
+        ))
+        return
+    record(lines, f"unexpected accepted key {value!r}", lambda: accepted)
+
+
 def _keys(options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
     for value in (
         None,
@@ -184,19 +202,7 @@ def _keys(options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
         "key\ud800value",
         "key\udfffvalue",
     ):
-        try:
-            accepted = options.IdempotencyKey(value)
-        except errors.ConfigurationError as error:
-            lines.append(f"  key value {value!r} ! {describe(error)}")
-            lines.append(
-                f"  rejected key attempts={error.resource_attempt_count} redirects={error.redirect_count}"
-                f" auth={error.auth_exchange_count} sends={error.network_send_count}"
-                f" budget={error.network_send_budget_used} auth_budget={error.auth_exchange_budget_used}"
-                f" refresh_ids={error.auth_refresh_ids} pending={error.auth_refresh_pending}"
-                f" wire={error.wire_send_count} info={error.info}"
-            )
-        else:
-            record(lines, f"unexpected accepted key {value!r}", lambda accepted=accepted: accepted)
+        _key_value(options, errors, lines, value)
     record(lines, "caller key", lambda: options.IdempotencyKey("caller-key"))
     record(lines, "key unicode value", lambda: options.IdempotencyKey("clé"))
     caller = options.IdempotencyKey(value="caller-key")
