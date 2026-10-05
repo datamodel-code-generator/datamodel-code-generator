@@ -1,61 +1,51 @@
 # input-cycle-dict
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_INPUT_CYCLE input /x-cycle/self: The input document contains a cyclic mapping or sequence
+  cyclic YAML input rejected
   source ../input-cycle-dict.yaml
   files []
   runtime files 0
 generate pydantic_v2.BaseModel
-  APIGenerationError
-  E_INPUT_CYCLE input /x-cycle/self: The input document contains a cyclic mapping or sequence
+  cyclic YAML input rejected
   source ../input-cycle-dict.yaml
   files []
   runtime files 0
 render pydantic_v2.dataclass
-  APIGenerationError
-  E_INPUT_CYCLE input /x-cycle/self: The input document contains a cyclic mapping or sequence
+  cyclic YAML input rejected
   source ../input-cycle-dict.yaml
   files []
   runtime files 0
 generate pydantic_v2.dataclass
-  APIGenerationError
-  E_INPUT_CYCLE input /x-cycle/self: The input document contains a cyclic mapping or sequence
+  cyclic YAML input rejected
   source ../input-cycle-dict.yaml
   files []
   runtime files 0
 render dataclasses.dataclass
-  APIGenerationError
-  E_INPUT_CYCLE input /x-cycle/self: The input document contains a cyclic mapping or sequence
+  cyclic YAML input rejected
   source ../input-cycle-dict.yaml
   files []
   runtime files 0
 generate dataclasses.dataclass
-  APIGenerationError
-  E_INPUT_CYCLE input /x-cycle/self: The input document contains a cyclic mapping or sequence
+  cyclic YAML input rejected
   source ../input-cycle-dict.yaml
   files []
   runtime files 0
 render typing.TypedDict
-  APIGenerationError
-  E_INPUT_CYCLE input /x-cycle/self: The input document contains a cyclic mapping or sequence
+  cyclic YAML input rejected
   source ../input-cycle-dict.yaml
   files []
   runtime files 0
 generate typing.TypedDict
-  APIGenerationError
-  E_INPUT_CYCLE input /x-cycle/self: The input document contains a cyclic mapping or sequence
+  cyclic YAML input rejected
   source ../input-cycle-dict.yaml
   files []
   runtime files 0
 render msgspec.Struct
-  APIGenerationError
-  E_INPUT_CYCLE input /x-cycle/self: The input document contains a cyclic mapping or sequence
+  cyclic YAML input rejected
   source ../input-cycle-dict.yaml
   files []
   runtime files 0
 generate msgspec.Struct
-  APIGenerationError
-  E_INPUT_CYCLE input /x-cycle/self: The input document contains a cyclic mapping or sequence
+  cyclic YAML input rejected
   source ../input-cycle-dict.yaml
   files []
   runtime files 0
