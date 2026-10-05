@@ -65,13 +65,6 @@ _StoreAction: TypeAlias = Literal[
     "get",
     "set",
     "delete",
-    "compare_exchange",
-    "claim",
-    "put",
-    "open",
-    "read",
-    "close",
-    "purge_terminal",
 ]
 
 _CONDITION: Final = re.compile(r"[a-z][a-z0-9_]{0,63}")
@@ -2058,13 +2051,6 @@ class ProtocolStoreError(ProtocolError):
                 "get",
                 "set",
                 "delete",
-                "compare_exchange",
-                "claim",
-                "put",
-                "open",
-                "read",
-                "close",
-                "purge_terminal",
             ),
             "action",
         )
