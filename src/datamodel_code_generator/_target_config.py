@@ -105,7 +105,6 @@ class TargetConfig:
     model_dependency: str | None = None
 
     toml_converters: ClassVar[Mapping[str, Converter]] = MappingProxyType({})
-    manifest_exclusions: ClassVar[frozenset[str]] = frozenset({"selection"})
 
     def __post_init__(self) -> None:
         """Reject values and combinations the shared contract does not allow, in field order."""

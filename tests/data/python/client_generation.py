@@ -15,7 +15,6 @@ from datamodel_code_generator._api_generation import generate_target, render_tar
 from datamodel_code_generator._api_types import (
     APIGenerationError,
     Diagnostic,
-    GeneratedProject,
     OperationRef,
     OperationSelection,
     attached_diagnostic,
@@ -42,7 +41,6 @@ if TYPE_CHECKING:
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
-MANIFEST = ".dcg-target-manifest.json"
 _DIGEST = re.compile(r"[0-9a-f]{64}")
 Modules: TypeAlias = dict[tuple[str, ...], str]
 
@@ -160,38 +158,6 @@ def _diagnostic(item: Diagnostic) -> str:
     return f"  {item.code} {location}: {item.message}"
 
 
-def _public_api(content: bytes) -> list[str]:
-    """Report the operations and helper identities of a rendered client manifest."""
-    manifest = json.loads(content)
-    data = manifest["target_data"]["client"]
-    helpers = data["protocol_helpers"]
-    lines = [
-        (
-            f"  namespace {data['namespace']} helpers {[item['name'] for item in helpers]} "
-            f"bindings {len(data['binding_refs'])}"
-        ),
-        f"  refs {data['runtime_defaults_ref']} {data['selection_ref']} {data['extension_refs']}",
-        *(
-            f"  helper {item['name']} {item['kind']} enabled {item['enabled']} {item['metadata_ref']} "
-            f"{item['contract_sha256']}"
-            for item in helpers
-        ),
-    ]
-    if metadata := manifest["inputs"]["target_config"]["protocol_metadata"]:
-        lines.extend(f"  {line}" for line in json.dumps(metadata, indent=2).splitlines())
-    for operation in data["public_api"]:
-        parameters = ", ".join(
-            f"{item['location']}:{item['wire_name']}={item['python_name']}" for item in operation["parameters"]
-        )
-        exports = operation["exports"]
-        lines.extend((
-            f"  {operation['operation_ref']} {operation['resource']}.{operation['method']}({parameters})",
-            f"    exports {exports['response']} {exports['error_data']} {exports['http_error']}",
-            f"    exports {exports['header_decoder']}",
-        ))
-    return lines
-
-
 def copy_references(case: dict[str, Any], root: Path) -> None:
     """Copy the documents a case references beside its input, keeping their relative paths."""
     for reference in case.get("references", ()):
@@ -241,9 +207,6 @@ def _render(
                 continue
             case ".py", parts:
                 modules[parts] = content.decode(case.get("config", {}).get("encoding", "utf-8"))
-            case _, parts if path.name == MANIFEST:
-                lines.extend(_public_api(content))
-                continue
             case _:
                 pass
         lines.append(f"  {artifact.action} {path.as_posix()}")
@@ -302,32 +265,27 @@ def render_client(
     return [*lines, *(target.binding_diagnostics if binding_diagnostics else ())], modules
 
 
-def _manifest(case: dict[str, Any], root: Path) -> tuple[dict[str, Any], bytes]:
-    """Return the client data in the manifest of a rendered case, and its models."""
+def _rendered(case: dict[str, Any], root: Path) -> dict[str, bytes]:
+    """Render a case into its own root and return every artifact by its path relative to that root."""
     root.mkdir(parents=True)
     copy_references(case, root)
-    config = client_config(case.get("config", {}), root)
     project = render_target(
         shutil.copy2(SOURCE / case["input"], root / case["input"]),
         model_config=model_config(root / "models.py", "pydantic_v2.BaseModel", case.get("model", {})),
-        config=config,
+        config=client_config(case.get("config", {}), root),
         generator=ClientTarget(),
     )
-    manifest = next(item for item in project.artifacts if item.path.name == MANIFEST)
-    models = next(item for item in project.artifacts if item.path == root / "models.py")
-    return json.loads(manifest.content or b"")["target_data"]["client"], models.content or b""
+    return {artifact.path.relative_to(root).as_posix(): artifact.content or b"" for artifact in project.artifacts}
 
 
-def client_helper_digest_report(first: str, second: str, root: Path) -> str:
-    """Render two cases and report, for each helper both declare, whether its contract digest is the same."""
+def client_helper_spelling_report(first: str, second: str, root: Path) -> str:
+    """Render two spellings of the same helper settings and report each file whose bytes differ between them."""
     cases = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))
-    left, right = (
-        {item["name"]: item["contract_sha256"] for item in _manifest(cases[name], root / name)[0]["protocol_helpers"]}
-        for name in (first, second)
-    )
+    left, right = (_rendered(cases[name], root / name) for name in (first, second))
     return "".join([
         f"# {first} and {second}\n",
-        *(f"  {name} same {left[name] == digest}\n" for name, digest in right.items()),
+        f"  same files {left == right}\n",
+        *(f"  differs {path}\n" for path in sorted(left.keys() | right.keys()) if left.get(path) != right.get(path)),
     ])
 
 
@@ -366,7 +324,7 @@ def client_model_parity_report(case_name: str, root: Path, rendered: dict[str, M
 
 
 def client_input_report(case_name: str, root: Path) -> str:
-    """Render and publish an input for each backend, reporting diagnostics, digests, and the resulting files."""
+    """Render and publish an input for each backend, reporting diagnostics and the resulting files."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     lines = [f"# {case_name}"]
     for backend in case["backends"]:
@@ -378,7 +336,7 @@ def client_input_report(case_name: str, root: Path) -> str:
             config = client_config(case.get("config", {}), attempt)
             lines.append(f"{name} {backend}")
             try:
-                result = entry(
+                entry(
                     source,
                     model_config=model_config(attempt / "models.py", backend, case.get("model", {})),
                     config=config,
@@ -388,12 +346,7 @@ def client_input_report(case_name: str, root: Path) -> str:
                 lines.extend(("  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)))
                 lines.extend(f"  source {item.source_uri}" for item in error.diagnostics)
             else:
-                if isinstance(result, GeneratedProject):
-                    manifest = next(item.content for item in result.artifacts if item.path.name == MANIFEST)
-                else:
-                    manifest = (config.output / MANIFEST).read_bytes()
-                document = json.loads(manifest or b"")["inputs"]["root"]
-                lines.append(f"  source {document['uri']} digest {document['digest']}")
+                lines.append("  accepted")
             files = sorted(
                 _DIGEST.sub("<sha256>", path.relative_to(attempt).as_posix())
                 for path in attempt.rglob("*")

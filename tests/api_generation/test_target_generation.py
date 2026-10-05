@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 import sys
@@ -35,6 +34,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "deletion",
         "conflict",
         "state",
+        "unowned",
         "verify",
         "selection",
         "inputs",
@@ -44,7 +44,6 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "validation",
         "empty",
         "modular",
-        "provenance",
         "references",
         "locks",
         "publish",
@@ -388,7 +387,7 @@ def test_target_toml_values(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Read the selection and paths of a flat target file, recording them in the published manifest."""
+    """Read the selection and paths of a flat target file, which decide the published files."""
     monkeypatch.chdir(tmp_path)
     shutil.copytree(SOURCE / "spec", tmp_path / "spec")
     run_main_and_assert(
@@ -398,9 +397,12 @@ def test_target_toml_values(
         extra_args=_toml_arguments(*arguments),
         copy_files=[(SOURCE / "configs" / f"{case}.toml", tmp_path / "target.toml")],
     )
-    manifest = json.loads((tmp_path / output / ".dcg-target-manifest.json").read_text(encoding="utf-8"))
-    recorded = {"selection": manifest["selection"], "target_config": manifest["inputs"]["target_config"]}
+    published = sorted(
+        path.relative_to(tmp_path).as_posix()
+        for path in (tmp_path / output).rglob("*")
+        if path.is_file() and "_runtime" not in path.parts
+    )
     assert_output(
-        capsys.readouterr().err + json.dumps(recorded, indent=2, sort_keys=True) + "\n",
+        capsys.readouterr().err + "\n".join(published) + "\n",
         EXPECTED / "configs" / f"{case}.txt",
     )

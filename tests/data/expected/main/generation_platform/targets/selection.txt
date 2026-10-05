@@ -12,286 +12,37 @@ render
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
-  write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
   11 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is included by include_tags 'pets' but excluded by exclude_operations: Only reading pets
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is matched by no include rule: Only reading pets
   S_OPERATION_EXCLUDED info selection /paths/~1health/get: GET /health is matched by no include rule: Only reading pets
 {
-  "bindings": [],
-  "diagnostics": [
-    {
-      "artifact_path": null,
-      "code": "S_OPERATION_EXCLUDED",
-      "message": "POST /pets is included by include_tags 'pets' but excluded by exclude_operations: Only reading pets",
-      "operation": {
-        "document": "/inputs/root",
-        "pointer": "/paths/~1pets/post"
-      },
-      "option_path": null,
-      "severity": "info",
-      "source_pointer": "/paths/~1pets/post",
-      "source_uri": "../spec/api.yaml",
-      "stage": "selection",
-      "target_id": "<sha256>"
-    },
-    {
-      "artifact_path": null,
-      "code": "S_OPERATION_EXCLUDED",
-      "message": "GET /store/orders is matched by no include rule: Only reading pets",
-      "operation": {
-        "document": "/inputs/root",
-        "pointer": "/paths/~1store~1orders/get"
-      },
-      "option_path": null,
-      "severity": "info",
-      "source_pointer": "/paths/~1store~1orders/get",
-      "source_uri": "../spec/api.yaml",
-      "stage": "selection",
-      "target_id": "<sha256>"
-    },
-    {
-      "artifact_path": null,
-      "code": "S_OPERATION_EXCLUDED",
-      "message": "GET /health is matched by no include rule: Only reading pets",
-      "operation": {
-        "document": "/inputs/root",
-        "pointer": "/paths/~1health/get"
-      },
-      "option_path": null,
-      "severity": "info",
-      "source_pointer": "/paths/~1health/get",
-      "source_uri": "../spec/api.yaml",
-      "stage": "selection",
-      "target_id": "<sha256>"
-    }
-  ],
-  "extensions": {
-    "formatters": [],
-    "hooks": [],
-    "templates": []
+  "files": {
+    "README.md": "sha256:e73a17e91f9c7545e984dddeb1fc2a2bb1f1c1502a200b6c9f5000ed0574c7ee",
+    "__init__.py": "sha256:fa3a4edd4eedf761a5a21315681c8f9a17cda023e3ece80dd61043a24864892b",
+    "_generated/__init__.py": "sha256:41b0f77c872513da0026ab0b281e7cdba021c0c940f3f113dae177b0f7fe8881",
+    "_generated/contract.py": "sha256:49e25bcc3ade5a9864c22fb42d8a5db972895082ce823baa4cb62aa4d0ad39cc",
+    "application.py": "sha256:b7e9cf94d32fddf99714ab4e5b1c2a0e7f8d8feb6060f6ae28ee739f77be1f6c",
+    "errors.py": "sha256:3871856272b5dbcbdfd0f1e8567a063e972621320f7ec42b481519570a1692b0",
+    "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "routers/__init__.py": "sha256:2351ea2590b5b524515d25bef2cc4727a889b3724209c156ab83bb55635cee52",
+    "routers/pets.py": "sha256:29868cec03454adebeda2eb004139ed6d22b10686fd45a213d52918a130339e6",
+    "services.py": "sha256:e5fcdc0a71841a68629ad8bd0872a1d16f814de4a0050b3a0b7884ad8c523dcc"
   },
-  "files": [
-    {
-      "group": null,
-      "kind": "package",
-      "path": "__init__.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "application",
-      "path": "application.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "package",
-      "path": "routers/__init__.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "router",
-      "path": "routers/pets.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "package",
-      "path": "_generated/__init__.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "contract",
-      "path": "_generated/contract.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "errors",
-      "path": "errors.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "services",
-      "path": "services.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "readme",
-      "path": "README.md",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "typing",
-      "path": "py.typed",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    }
-  ],
+  "format": 1,
   "generator": {
     "name": "datamodel-code-generator",
-    "runtime_revision": "<masked>",
     "version": "<masked>"
   },
-  "inputs": {
-    "documents": [
-      {
-        "digest": "<sha256>",
-        "uri": "../spec/common.yaml"
-      }
-    ],
-    "provenance": [
-      {
-        "digest": "<sha256>",
-        "identity": null,
-        "opaque": false,
-        "option_path": "model_config.target_python_version"
-      },
-      {
-        "digest": "<sha256>",
-        "identity": null,
-        "opaque": false,
-        "option_path": "model_config.disable_timestamp"
-      },
-      {
-        "digest": "<sha256>",
-        "identity": null,
-        "opaque": false,
-        "option_path": "model_config.formatters"
-      },
-      {
-        "digest": "<sha256>",
-        "identity": null,
-        "opaque": false,
-        "option_path": "model_config.openapi_scopes"
-      }
-    ],
-    "root": {
-      "digest": "<sha256>",
-      "kind": "file",
-      "uri": "../spec/api.yaml"
-    },
-    "target_config": {
-      "opaque_options": [],
-      "protocol_metadata": {},
-      "public_options": {
-        "body_mode": "typed",
-        "body_modes": {},
-        "custom_formatter_kwargs": {},
-        "custom_formatters": [],
-        "distribution_name": null,
-        "encoding": "utf-8",
-        "formatter_settings": null,
-        "formatters": [
-          "builtin"
-        ],
-        "handler_mode": "sync",
-        "handler_modes": {},
-        "header": null,
-        "hooks": [],
-        "include_request": false,
-        "include_timestamp": false,
-        "layout": "routers",
-        "model_dependency": null,
-        "model_mode": "generate",
-        "model_package": "example.models",
-        "operation_names": {},
-        "output": ".",
-        "package": "example.server",
-        "package_mode": "embedded",
-        "package_version": null,
-        "parameter_names": {},
-        "primary_responses": {},
-        "router_names": {},
-        "templates": null
-      },
-      "runtime_defaults": {}
-    }
-  },
   "model": {
-    "artifacts": [
-      {
-        "kind": "model",
-        "path": "models.py",
-        "sha256": "<sha256>",
-        "size": "<masked>"
-      }
-    ],
-    "fingerprint": "<sha256>",
-    "mode": "generate",
-    "output_uri": "../models.py",
-    "package": "example.models"
-  },
-  "schema_version": 1,
-  "selection": {
-    "excluded_operations": [
-      {
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1pets/post"
-        },
-        "reason": "Only reading pets"
-      },
-      {
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1store~1orders/get"
-        },
-        "reason": "Only reading pets"
-      },
-      {
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1health/get"
-        },
-        "reason": "Only reading pets"
-      }
-    ],
-    "reason": "Only reading pets",
-    "rules": {
-      "exclude_operations": [
-        {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1pets/post"
-        }
-      ],
-      "exclude_tags": [],
-      "include_operations": [],
-      "include_tags": [
-        "pets"
-      ],
-      "reason": "Only reading pets"
-    },
-    "selected_operations": [
-      {
-        "document": "/inputs/root",
-        "pointer": "/paths/~1pets/get"
-      }
-    ]
+    "output": "../models.py",
+    "sha256": "<sha256>"
   },
   "target": {
-    "id": "<sha256>",
     "kind": "fastapi",
-    "package": "example.server",
-    "root_uri": "."
-  },
-  "target_data": "<fastapi>"
+    "package": "example.server"
+  }
 }
 render
   target=fastapi schema_version=1
@@ -308,7 +59,6 @@ render
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
-  write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is excluded by exclude_tags 'admin': Administration runs elsewhere
@@ -333,7 +83,6 @@ render
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
-  write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
   11 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is matched by no include rule: One operation
@@ -352,7 +101,6 @@ render
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
-  write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
   11 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is matched by no include rule: One operation
@@ -372,7 +120,6 @@ render
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
-  write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
   11 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is matched by no include rule: One operation

@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from pathlib import Path
 
-MANIFEST = ".dcg-target-manifest.json"
 CLIENT = {"default_base_url": "https://codecs.invalid"}
 
 
@@ -44,15 +43,31 @@ class _Unset:
 _UNSET = _Unset()
 
 
-def _use_key(use: dict[str, Any]) -> str:
-    parts = (use["owner"]["source"]["pointer"], use["role"], use["status"], use["location"], use["name"])
-    return " ".join(str(part) for part in parts if part)
+_LOCATIONS = frozenset({"path", "query", "querystring", "header", "cookie"})
+_STATUS = re.compile(r"\d{3}|[1-5]XX|default")
+_CODEC = re.compile(r"codec_(\d+)")
+
+
+def _use_key(description: str) -> str:
+    """Key a codec by the use its generated docstring describes: owner, role, status, location, and name."""
+    head, _, selectors = description.removeprefix("Codec of ").removesuffix(").").partition(" (")
+    _, *parts = selectors.split(" ")
+    if parts and "/" in parts[-1]:
+        parts.pop()
+    status = parts.pop() if parts and _STATUS.fullmatch(parts[-1]) else None
+    location = parts.pop(0) if parts and parts[0] in _LOCATIONS else None
+    return " ".join(part for part in (head, status, location, " ".join(parts)) if part)
 
 
 def _uses(root: Path, package: str) -> list[str]:
-    """Return the use key of each binding in a generated package's manifest, in the order of its codecs."""
-    manifest = json.loads((root / package / MANIFEST).read_text(encoding="utf-8"))
-    return [_use_key(item["use_id"]) for item in manifest["bindings"]]
+    """Return the use key of each codec a generated package binds, in the order of its codecs."""
+    module = ast.parse((root / package / "_generated" / "model_bindings.py").read_text(encoding="utf-8"))
+    codecs = {
+        int(found[1]): ast.get_docstring(node) or ""
+        for node in module.body
+        if isinstance(node, ast.FunctionDef) and (found := _CODEC.fullmatch(node.name))
+    }
+    return [_use_key(codecs[index]) for index in range(len(codecs))]
 
 
 def copied_input(source: Path, root: Path) -> Path:

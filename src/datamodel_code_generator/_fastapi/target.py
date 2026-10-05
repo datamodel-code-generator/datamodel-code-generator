@@ -77,10 +77,8 @@ class FastAPITarget:
         )
         return TargetRender(
             files=renderer.files(),
-            target_data={},
             dependencies=_dependencies(plan, request.models),
-            diagnostics=tuple(docs.problems),
-            persistent_diagnostics=excluded,
+            diagnostics=(*docs.problems, *excluded),
         )
 
 

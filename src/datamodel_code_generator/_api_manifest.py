@@ -1,4 +1,4 @@
-"""Target ownership manifests and model inventories: canonical JSON, identities, state, and ownership plans."""
+"""Target ownership manifests: canonical JSON, identities, state, and ownership plans."""
 
 from __future__ import annotations
 
@@ -6,13 +6,11 @@ import hashlib
 import json
 import os
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field, fields, is_dataclass
-from enum import Enum
+from dataclasses import dataclass, field
 from functools import cache
-from math import isfinite
-from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import urlsplit
 from urllib.request import url2pathname
 
@@ -22,9 +20,7 @@ from datamodel_code_generator._api_types import APIGenerationError, ArtifactActi
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_types import TargetKind
-    from datamodel_code_generator._openapi_generation import SourceLease
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
-    from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         ModelArtifact,
@@ -35,26 +31,15 @@ if TYPE_CHECKING:
     )
 
 MANIFEST_NAME: Final = ".dcg-target-manifest.json"
-INVENTORY_PATH: Final = PurePosixPath(".dcg-state", "model-artifacts.json")
 GENERATOR_NAME: Final = "datamodel-code-generator"
 ROOT_URN: Final = "urn:dcg:root"
 ROOT_POINTER: Final = "/inputs/root"
 Observed: TypeAlias = "tuple[str, int] | None"
-RootKind: TypeAlias = Literal["file", "url", "text", "mapping"]
 JSONObject: TypeAlias = "dict[str, JSONValue]"
 
 _SHA256_HEX_LENGTH: Final = 64
-_RECORD_KEYS: Final = {
-    "target": frozenset({"id", "kind", "package", "root_uri"}),
-    "generator": frozenset({"name", "version", "runtime_revision"}),
-    "inputs": frozenset({"root", "documents", "provenance", "target_config"}),
-    "model": frozenset({"output_uri", "package", "mode", "fingerprint", "artifacts"}),
-    "selection": frozenset({"rules", "reason", "selected_operations", "excluded_operations"}),
-    "extensions": frozenset({"hooks", "templates", "formatters"}),
-}
-_MANIFEST_KEYS: Final = frozenset({"schema_version", *_RECORD_KEYS, "files", "diagnostics", "bindings", "target_data"})
-_INVENTORY_KEYS: Final = frozenset({"schema_version", "model"})
-_FILE_KEYS: Final = frozenset({"path", "kind", "sha256", "size", "group"})
+_HASH_PREFIX: Final = "sha256:"
+_MANIFEST_KEYS: Final = frozenset({"format", "generator", "target", "model", "files"})
 _DECLARED_ROLES: Final = frozenset({
     "parameter",
     "response_header",
@@ -103,48 +88,6 @@ def runtime_revision() -> str:
     return sha256(canonical_bytes([{"path": name, "sha256": sha256(path.read_bytes())} for name, path in sources]))
 
 
-def json_object() -> JSONObject:
-    """Return a new empty JSON object."""
-    return {}
-
-
-def json_projection(value: YamlValue, *, source_uri: str) -> JSONValue:
-    """Project a document into JSON, refusing cycles while allowing repeated acyclic aliases."""
-    ancestors: set[int] = set()
-
-    def project(item: YamlValue, pointer: str) -> JSONValue:
-        """Project one value at its source pointer, retaining only its active container ancestry."""
-        match item:
-            case dict() | list():
-                identity = id(item)
-                if identity in ancestors:
-                    raise APIGenerationError((
-                        Diagnostic(
-                            code="E_INPUT_CYCLE",
-                            severity="error",
-                            stage="input",
-                            message="The input document contains a cyclic mapping or sequence",
-                            source_uri=source_uri,
-                            source_pointer=pointer,
-                        ),
-                    ))
-                ancestors.add(identity)
-                if isinstance(item, dict):
-                    result: JSONValue = {
-                        (name := str(key)): project(value, f"{pointer}/{name.replace('~', '~0').replace('/', '~1')}")
-                        for key, value in item.items()
-                    }
-                else:
-                    result = [project(value, f"{pointer}/{index}") for index, value in enumerate(item)]
-                ancestors.remove(identity)
-                return result
-            case float() if not isfinite(item):
-                return None
-        return item
-
-    return project(value, "")
-
-
 def config_error(*, code: str, option_path: str | None, message: str) -> APIGenerationError:
     """Raise one configuration diagnostic as an API generation error."""
     return APIGenerationError((
@@ -179,7 +122,6 @@ def document_identity(document: str, base: Path) -> str:
 class RootInput:
     """Identify the root input for selectors and the directory its loader resolves relative references in."""
 
-    kind: RootKind
     identity: str
     base: Path
 
@@ -199,49 +141,26 @@ def persistent_uri(identity: str, root: Path, option_path: str) -> str:
     return identity
 
 
-def _digest(lease: SourceLease, document: SourceDocumentId, uri: str) -> str:
-    """Digest a borrowed document, locating cyclic values in its persistent source URI."""
-    from datamodel_code_generator._target_contract import SourceLocation  # noqa: PLC0415
-
-    return sha256(
-        canonical_bytes(json_projection(lease.borrow(SourceLocation(document, "", "schema")), source_uri=uri))
-    )
-
-
 class DocumentTable:
-    """Map the accepted attempt's documents to the manifest: the root, then the others by URI and digest."""
+    """Locate the accepted attempt's documents: the root, then the others in URI order."""
 
-    __slots__ = ("_lookup", "documents", "pointers", "root", "root_uri", "uris")
+    __slots__ = ("_lookup", "pointers", "root_uri", "uris")
 
-    def __init__(self, batch: GeneratedTypeContractBatch, lease: SourceLease, source: RootInput, root: Path) -> None:
-        """Digest each borrowed document once and order the non-root ones by URI, then digest."""
+    def __init__(self, batch: GeneratedTypeContractBatch, source: RootInput, root: Path) -> None:
+        """Order the non-root documents by their persistent URI, without reading their contents."""
         first, *others = batch.documents
         self.root_uri = persistent_uri(source.identity, root, "input")
-        self.root: JSONObject = {
-            "kind": source.kind,
-            "uri": self.root_uri,
-            "digest": _digest(lease, first.id, self.root_uri),
-        }
-        located = [(document, document_identity(document.uri, source.base)) for document in others]
+        located = [(document_identity(document.uri, source.base), document) for document in others]
         entries = sorted(
-            (
-                uri := persistent_uri(identity, root, "input"),
-                _digest(lease, document.id, uri),
-                document.id,
-                identity,
-                document.uri,
-            )
-            for document, identity in located
+            (persistent_uri(identity, root, "input"), identity, document.uri, document.id)
+            for identity, document in located
         )
-        self.documents: list[JSONValue] = []
         self.pointers: dict[SourceDocumentId, str] = {first.id: ROOT_POINTER}
         self.uris: dict[SourceDocumentId, str] = {first.id: self.root_uri}
         self._lookup: dict[str, str] = {source.identity: ROOT_POINTER, first.uri: ROOT_POINTER}
-        seen: dict[tuple[str, str], str] = {}
-        for uri, digest, document, identity, name in entries:
-            if (pointer := seen.get((uri, digest))) is None:
-                pointer = seen[uri, digest] = f"/inputs/documents/{len(self.documents)}"
-                self.documents.append({"uri": uri, "digest": digest})
+        seen: dict[str, str] = {}
+        for uri, identity, name, document in entries:
+            pointer = seen.setdefault(uri, f"/inputs/documents/{len(seen)}")
             self.pointers[document] = self._lookup[identity] = self._lookup[name] = pointer
             self.uris[document] = uri
 
@@ -281,91 +200,36 @@ class DocumentTable:
         }
 
 
-def portable(  # noqa: PLR0911
-    value: object, locate: Callable[[Path], str], refer: Callable[[OperationRef | SchemaRef], JSONValue]
-) -> JSONValue:
-    """Project a configuration value into canonical JSON, with paths as target-relative URIs."""
+def portable(value: object, refer: Callable[[OperationRef | SchemaRef], JSONValue]) -> JSONValue:
+    """Project a validated helper setting into canonical JSON, with references as source references."""
     match value:
-        case Enum():
-            return portable(value.value, locate, refer)
-        case None | bool() | int() | str():
-            return value
-        case float() if isfinite(value):
-            return value
-        case PurePath():
-            return locate(Path(value))
         case OperationRef() | SchemaRef():
             return refer(value)
         case Mapping():
-            return {_portable_key(key, locate, refer): portable(item, locate, refer) for key, item in value.items()}
-        case set() | frozenset():
-            return sorted((portable(item, locate, refer) for item in value), key=canonical_bytes)
+            return {
+                key if isinstance(key, str) else canonical_bytes(portable(key, refer)).decode(): portable(item, refer)
+                for key, item in value.items()
+            }
         case list() | tuple():
-            return [portable(item, locate, refer) for item in value]
-        case _ if is_dataclass(value) and not isinstance(value, type):
-            return {item.name: portable(getattr(value, item.name), locate, refer) for item in fields(value)}
-    raise TypeError(type(value).__qualname__)
+            return [portable(item, refer) for item in value]
+    return cast("JSONValue", value)
 
 
-def _portable_key(
-    key: object, locate: Callable[[Path], str], refer: Callable[[OperationRef | SchemaRef], JSONValue]
-) -> str:
-    return key if isinstance(key, str) else canonical_bytes(portable(key, locate, refer)).decode()
-
-
-def model_record(*, output_uri: str, package: str, mode: str, artifacts: Sequence[ModelArtifact]) -> JSONObject:
-    """Describe the model artifacts a target binds, with their fingerprint, in ordinary emit order."""
-    hashes = [("/".join(artifact.path), sha256(artifact.content), len(artifact.content)) for artifact in artifacts]
-    fingerprint = sha256(
-        canonical_bytes({
-            "schema_version": 1,
-            "model_package": package,
-            "artifacts": [{"path": path, "kind": "model", "sha256": digest} for path, digest, _ in hashes],
-        })
-    )
-    return {
-        "output_uri": output_uri,
-        "package": package,
-        "mode": mode,
-        "fingerprint": fingerprint,
-        "artifacts": [{"path": path, "kind": "model", "sha256": digest, "size": size} for path, digest, size in hashes],
-    }
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class RecordedFile:
-    """One file of a previous manifest, with the hash its generation recorded."""
-
-    path: PurePosixPath
-    kind: str
-    sha256: str
-    group: str | None
+def model_record(*, output: str, artifacts: Sequence[ModelArtifact]) -> JSONObject:
+    """Record where the models live and one hash of their files, in ordinary emit order."""
+    listing: list[JSONValue] = [
+        {"path": "/".join(artifact.path), "sha256": sha256(artifact.content)} for artifact in artifacts
+    ]
+    return {"output": output, "sha256": sha256(canonical_bytes(listing))}
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TargetState:
-    """A target root's previous manifest and inventory, as read, or nothing on first generation."""
+    """A target root's previous manifest, as read: the files it owns, or nothing on first generation."""
 
-    manifest: JSONObject | None = None
-    files: Mapping[PurePosixPath, RecordedFile] = field(default_factory=lambda: MappingProxyType({}))
-    snapshot: tuple[Observed, Observed] = (None, None)
-
-
-def _state_error(*, code: str, path: PurePosixPath, message: str, target_id: str) -> APIGenerationError:
-    return APIGenerationError((
-        Diagnostic(
-            code=code,
-            severity="error",
-            stage="ownership",
-            message=message,
-            artifact_path=path.as_posix(),
-            target_id=target_id,
-        ),
-    ))
-
-
-def _is_object(value: object) -> TypeIs[JSONObject]:
-    return isinstance(value, dict)
+    files: Mapping[PurePosixPath, str] = field(default_factory=lambda: MappingProxyType({}))
+    snapshot: Observed = None
+    diagnostics: tuple[Diagnostic, ...] = ()
 
 
 def _is_hash(value: object) -> TypeIs[str]:
@@ -381,143 +245,58 @@ def _is_contained(path: str) -> bool:
     return bool(posix.parts) and posix.as_posix() == path and not windows.anchor and ".." not in windows.parts
 
 
-def _read_json(path: Path, relative: PurePosixPath, target_id: str) -> tuple[JSONObject, bytes]:
-    data = path.read_bytes()
-    try:
-        value = json.loads(data)
-    except ValueError:
-        raise _state_error(
-            code="E_STATE_CORRUPT", path=relative, message="The management file is not JSON", target_id=target_id
-        ) from None
-    match value:
-        case {"schema_version": 1 as version} if type(version) is int:
-            return value, data
-        case {"schema_version": int() as version} if type(version) is int:
-            raise _state_error(
-                code="E_STATE_VERSION",
-                path=relative,
-                message="The management file has an unknown version",
-                target_id=target_id,
-            )
-    raise _state_error(
-        code="E_STATE_CORRUPT",
-        path=relative,
-        message="The management file has no schema version",
-        target_id=target_id,
-    )
-
-
-def _recorded(entry: JSONValue, target_id: str) -> RecordedFile:
-    match entry:
+def _owned(manifest: object, kind: TargetKind, package: str) -> dict[PurePosixPath, str] | None:
+    """Return the files a current manifest owns, or None for an old or unknown manifest."""
+    match manifest:
         case {
-            "path": str() as path,
-            "kind": str() as kind,
-            "sha256": digest,
-            "size": int() as size,
-            "group": str() | None as group,
-        } if (
-            len(entry) == len(_FILE_KEYS)
-            and _is_contained(path)
-            and _is_hash(digest)
-            and not isinstance(size, bool)
-            and size >= 0
-        ):
-            return RecordedFile(path=PurePosixPath(path), kind=kind, sha256=digest, group=group)
-    raise _state_error(
-        code="E_STATE_CORRUPT",
-        path=PurePosixPath(MANIFEST_NAME),
-        message="A manifest file record is invalid",
-        target_id=target_id,
-    )
-
-
-def _check_manifest(manifest: JSONObject, kind: TargetKind, package: str, target_id: str) -> list[JSONValue]:
-    name = PurePosixPath(MANIFEST_NAME)
-    if frozenset(manifest) != _MANIFEST_KEYS:
-        raise _state_error(
-            code="E_STATE_CORRUPT", path=name, message="The manifest has unknown or missing keys", target_id=target_id
-        )
-    for key, keys in _RECORD_KEYS.items():
-        if not _is_object(record := manifest[key]) or frozenset(record) != keys:
-            raise _state_error(
-                code="E_STATE_CORRUPT", path=name, message=f"The manifest {key} record is invalid", target_id=target_id
-            )
-    match manifest["files"], manifest["diagnostics"], manifest["bindings"], manifest["target_data"]:
-        case list() as files, list(), list(), dict() as data if frozenset(data) == frozenset((kind,)):
-            pass
-        case _:
-            raise _state_error(
-                code="E_STATE_CORRUPT",
-                path=name,
-                message="The manifest has an invalid list or target data",
-                target_id=target_id,
-            )
-    match manifest["target"]:
-        case {"kind": str() as recorded_kind, "package": str() as recorded_package} if (
-            recorded_kind,
-            recorded_package,
-        ) != (kind, package):
-            raise _state_error(
-                code="E_OUTPUT_CONFLICT",
-                path=name,
-                message="The manifest belongs to another target",
-                target_id=target_id,
-            )
-        case {"id": identity, "kind": recorded_kind, "package": recorded_package, "root_uri": "."} if (
-            identity,
-            recorded_kind,
-            recorded_package,
-        ) == (target_id, kind, package):
-            return files
-    raise _state_error(
-        code="E_STATE_CORRUPT", path=name, message="The manifest target record is invalid", target_id=target_id
-    )
+            "format": 1 as version,
+            "generator": {"name": str(), "version": str()},
+            "target": {"kind": str() as recorded_kind, "package": str() as recorded_package},
+            "model": {"output": str(), "sha256": model},
+            "files": dict() as files,
+        } if type(version) is int and manifest.keys() == _MANIFEST_KEYS and _is_hash(model):
+            owned = {
+                PurePosixPath(path): digest.removeprefix(_HASH_PREFIX)
+                for path, digest in files.items()
+                if _is_contained(path) and isinstance(digest, str) and digest.startswith(_HASH_PREFIX)
+            }
+            if len(owned) != len(files) or not all(map(_is_hash, owned.values())):
+                return None
+            if (recorded_kind, recorded_package) != (kind, package):
+                raise APIGenerationError((
+                    Diagnostic(
+                        code="E_OUTPUT_CONFLICT",
+                        severity="error",
+                        stage="ownership",
+                        message="The manifest belongs to another target",
+                        artifact_path=MANIFEST_NAME,
+                        target_id=target_identity(kind, package),
+                    ),
+                ))
+            return owned
+    return None
 
 
 def read_target_state(root: Path, kind: TargetKind, package: str) -> TargetState:
-    """Read and check a target root's previous manifest and model inventory."""
-    target_id = target_identity(kind, package)
-    manifest_path, inventory_path = root / MANIFEST_NAME, root.joinpath(*INVENTORY_PATH.parts)
-    match manifest_path.is_file(), inventory_path.is_file():
-        case False, False:
-            return TargetState()
-        case True, False:
-            raise _state_error(
-                code="E_STATE_MISSING",
-                path=INVENTORY_PATH,
-                message="The model inventory is missing",
-                target_id=target_id,
-            )
-        case False, True:
-            raise _state_error(
-                code="E_STATE_MISSING",
-                path=PurePosixPath(MANIFEST_NAME),
-                message="The manifest is missing",
-                target_id=target_id,
-            )
-        case _:
-            pass
-    manifest, manifest_data = _read_json(manifest_path, PurePosixPath(MANIFEST_NAME), target_id)
-    inventory, inventory_data = _read_json(inventory_path, INVENTORY_PATH, target_id)
-    files = _check_manifest(manifest, kind, package, target_id)
-    if frozenset(inventory) != _INVENTORY_KEYS or inventory["model"] != manifest["model"]:
-        raise _state_error(
-            code="E_STATE_CORRUPT",
-            path=INVENTORY_PATH,
-            message="The model inventory disagrees with the manifest",
-            target_id=target_id,
-        )
-    recorded: dict[PurePosixPath, RecordedFile] = {}
-    for entry in files:
-        if (record := _recorded(entry, target_id)).path in recorded:
-            raise _state_error(
-                code="E_STATE_CORRUPT",
-                path=PurePosixPath(MANIFEST_NAME),
-                message="The manifest repeats a file",
-                target_id=target_id,
-            )
-        recorded[record.path] = record
-    return TargetState(manifest=manifest, files=recorded, snapshot=(observe(manifest_data), observe(inventory_data)))
+    """Read a target root's previous manifest; an old or unknown one owns nothing, so nothing is deleted."""
+    if not (path := root / MANIFEST_NAME).is_file():
+        return TargetState()
+    data = path.read_bytes()
+    try:
+        manifest = json.loads(data)
+    except ValueError:
+        manifest = None
+    if (owned := _owned(manifest, kind, package)) is not None:
+        return TargetState(files=MappingProxyType(owned), snapshot=observe(data))
+    unowned = Diagnostic(
+        code="W_STATE_UNOWNED",
+        severity="warning",
+        stage="ownership",
+        message="The manifest has an old or unknown format, so the target owns no files and deletes none",
+        artifact_path=MANIFEST_NAME,
+        target_id=target_identity(kind, package),
+    )
+    return TargetState(snapshot=observe(data), diagnostics=(unowned,))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -525,9 +304,7 @@ class PlannedFile:
     """One target file a renderer produced; the target owns every file it plans."""
 
     path: PurePosixPath
-    kind: str
     content: bytes
-    group: str | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -535,10 +312,8 @@ class FilePlan:
     """What publication does with one target path, and the bytes the path holds afterwards."""
 
     path: PurePosixPath
-    kind: str
     action: ArtifactAction
     content: bytes | None
-    group: str | None
     observed: Observed
 
 
@@ -571,41 +346,44 @@ def plan_files(root: Path, state: TargetState, planned: Sequence[PlannedFile], t
         plans.append(
             FilePlan(
                 path=item.path,
-                kind=item.kind,
                 action="unchanged" if content == item.content else "write",
                 content=item.content,
-                group=item.group,
                 observed=observe(content),
             )
         )
     kept = {item.path for item in planned}
     plans.extend(
-        FilePlan(
-            path=path,
-            kind=previous.kind,
-            action="delete",
-            content=None,
-            group=previous.group,
-            observed=observe(content),
-        )
-        for path, previous in state.files.items()
+        FilePlan(path=path, action="delete", content=None, observed=observe(content))
+        for path in state.files
         if path not in kept and (content := current(path)) is not None
     )
     if conflicts:
-        raise APIGenerationError(tuple(conflicts))
+        raise APIGenerationError((*state.diagnostics, *conflicts))
     return tuple(plans)
 
 
-def manifest_files(plans: Sequence[FilePlan]) -> list[JSONValue]:
-    """Record the final file inventory: every file the target keeps, with its hash and size."""
-    return [
-        {
-            "path": plan.path.as_posix(),
-            "kind": plan.kind,
-            "sha256": sha256(content),
-            "size": len(content),
-            "group": plan.group,
-        }
+def hand_edits(state: TargetState, plans: Sequence[FilePlan], target_id: str) -> tuple[Diagnostic, ...]:
+    """Warn about each owned file whose bytes differ from the hash its last generation recorded."""
+    return tuple(
+        Diagnostic(
+            code="W_TARGET_EDITED",
+            severity="warning",
+            stage="ownership",
+            message="The owned file changed since the last generation, and this generation discards the change",
+            artifact_path=plan.path.as_posix(),
+            target_id=target_id,
+        )
+        for plan in plans
+        if (observed := plan.observed) is not None
+        and (recorded := state.files.get(plan.path)) is not None
+        and observed[0] != recorded
+    )
+
+
+def manifest_files(plans: Sequence[FilePlan]) -> JSONObject:
+    """Record every file the target keeps, with its hash."""
+    return {
+        plan.path.as_posix(): f"{_HASH_PREFIX}{sha256(content)}"
         for plan in plans
         if (content := plan.content) is not None
-    ]
+    }

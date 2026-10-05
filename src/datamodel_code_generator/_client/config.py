@@ -139,7 +139,6 @@ class ClientGenerationConfig(TargetConfig):
     protocols: Path | ProtocolConfiguration | None = None
 
     toml_converters: ClassVar[Mapping[str, Converter]]
-    manifest_exclusions: ClassVar[frozenset[str]] = frozenset({"selection", "protocols"})
 
     def _problems(self) -> Iterator[Diagnostic]:
         yield from TargetConfig._problems(self)  # noqa: SLF001

@@ -35,9 +35,7 @@ DiagnosticSeverity: TypeAlias = Literal["error", "warning", "info"]
 DiagnosticStage: TypeAlias = Literal[
     "config", "input", "model", "binding", "selection", "hook", "target", "verify", "ownership", "format", "publication"
 ]
-ArtifactKind: TypeAlias = Literal[
-    "model", "model_metadata", "remote_lock", "target", "model_inventory", "target_manifest"
-]
+ArtifactKind: TypeAlias = Literal["model", "model_metadata", "remote_lock", "target", "target_manifest"]
 ArtifactAction: TypeAlias = Literal["write", "delete", "unchanged"]
 _ATTACHED: Final = "__dcg_diagnostic__"
 

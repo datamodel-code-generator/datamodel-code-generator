@@ -14,12 +14,10 @@ generate
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
-  written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['written']
 tree
   models.py
-  server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
@@ -49,7 +47,6 @@ generate
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
-  unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['unchanged']
 generate
@@ -67,12 +64,10 @@ generate
   unchanged target server/_generated/__init__.py (target)
   unchanged target server/errors.py (target)
   unchanged target server/py.typed (target)
-  unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   13 runtime modules ['unchanged']
   deleted target server/routers/store.py (target)
 tree
   models.py
-  server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
@@ -100,7 +95,6 @@ render
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
-  unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['unchanged']
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is excluded by exclude_tags 'store': Orders move to their own service

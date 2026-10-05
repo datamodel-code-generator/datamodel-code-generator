@@ -10,33 +10,28 @@ import sys
 import tempfile
 import unicodedata
 from contextlib import ExitStack
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from functools import partial
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Any, Protocol, TypeAlias
 from urllib.parse import ParseResult
 
 from datamodel_code_generator._api_manifest import (
     GENERATOR_NAME,
-    INVENTORY_PATH,
     MANIFEST_NAME,
-    ROOT_POINTER,
     ROOT_URN,
     DocumentTable,
     PlannedFile,
     RootInput,
-    canonical_bytes,
     canonical_document,
     config_error,
     document_identity,
-    json_object,
+    hand_edits,
     manifest_files,
     model_record,
     observe,
     observe_file,
     plan_files,
-    portable,
     read_target_state,
     relative_uri,
     runtime_revision,
@@ -49,12 +44,11 @@ from datamodel_code_generator._api_types import (
     GeneratedArtifact,
     GeneratedProject,
     OperationRef,
-    SchemaRef,
     attach_diagnostic,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterable
 
     from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._api_manifest import FilePlan, JSONObject, Observed, TargetState
@@ -68,45 +62,23 @@ if TYPE_CHECKING:
         TargetKind,
     )
     from datamodel_code_generator._openapi_generation import ModelGenerationProduct, SourceLease
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_config import TargetConfig
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         ModelArtifact,
         OperationContract,
         OperationId,
-        TypeUseId,
     )
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.enums import DataModelType
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
-Strategy: TypeAlias = Literal["native", "envelope"]
-ConverterStrategy: TypeAlias = Literal[
-    "pydantic_type_adapter",
-    "dataclass_structural",
-    "typeddict_structural",
-    "msgspec_convert",
-    "msgspec_structural",
-]
 Exclusion: TypeAlias = "tuple[OperationContract, str]"
 
-_SECRET_MODEL_OPTIONS = frozenset({"http_headers", "http_query_parameters"})
 _PYTHON_MINIMUM = (3, 11)
 _PYTHON_MINIMUM_TEXT = f"{_PYTHON_MINIMUM[0]}.{_PYTHON_MINIMUM[1]}"
 _README = PurePosixPath("README.md")
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TargetBinding:
-    """How the target converts one type use, as recorded in the manifest."""
-
-    use: TypeUseId
-    backend: str
-    strategy: Strategy
-    converter_strategy: ConverterStrategy
-    adapter_identity: str | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -146,7 +118,6 @@ class TargetRequest:
     operations: tuple[OperationContract, ...]
     excluded: tuple[Exclusion, ...]
     documents: DocumentTable
-    state: TargetState
     resolve: Callable[[OperationRef], OperationContract | None]
     cwd: Path
 
@@ -159,13 +130,8 @@ class TargetRender:
     """
 
     files: tuple[RenderedFile, ...]
-    target_data: JSONObject
     dependencies: tuple[str, ...] = ()
-    bindings: tuple[TargetBinding, ...] = ()
     diagnostics: tuple[Diagnostic, ...] = ()
-    persistent_diagnostics: tuple[Diagnostic, ...] = ()
-    runtime_defaults: JSONObject = field(default_factory=json_object)
-    protocol_metadata: JSONObject = field(default_factory=json_object)
 
 
 class TargetGenerator(Protocol):
@@ -272,12 +238,10 @@ def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
     match input_:
         case Path():
             path = (cwd / input_.expanduser()).resolve()
-            return RootInput("file", path.as_uri(), path.parent)
+            return RootInput(path.as_uri(), path.parent)
         case ParseResult():
-            return RootInput("url", input_.geturl(), cwd)
-        case str():
-            return RootInput("text", ROOT_URN, cwd)
-    return RootInput("mapping", ROOT_URN, cwd)
+            return RootInput(input_.geturl(), cwd)
+    return RootInput(ROOT_URN, cwd)
 
 
 def target_layout(config: TargetConfig) -> TargetLayout:
@@ -521,28 +485,6 @@ def select_operations(
     return tuple(selected), tuple(excluded)
 
 
-def _identity(value: object) -> str:
-    owner = value if callable(value) and hasattr(value, "__qualname__") else type(value)
-    return f"{owner.__module__}.{owner.__qualname__}"
-
-
-def _portable_diagnostic(diagnostic: Diagnostic) -> JSONObject:
-    return {
-        "code": diagnostic.code,
-        "severity": diagnostic.severity,
-        "stage": diagnostic.stage,
-        "message": diagnostic.message,
-        "source_uri": diagnostic.source_uri,
-        "source_pointer": diagnostic.source_pointer,
-        "operation": None
-        if diagnostic.operation is None
-        else {"document": ROOT_POINTER, "pointer": diagnostic.operation.pointer},
-        "option_path": diagnostic.option_path,
-        "artifact_path": diagnostic.artifact_path,
-        "target_id": diagnostic.target_id,
-    }
-
-
 class _Planner:
     def __init__(
         self, models: _Models, effective: GenerateConfig, config: TargetConfig, generator: TargetGenerator
@@ -556,7 +498,7 @@ class _Planner:
         self.cwd = models.cwd
         self.root = (self.cwd / config.output.expanduser()).resolve()
         self.target_id = target_identity(generator.kind, config.package)
-        self.documents = DocumentTable(models.product.batch, models.product.source_lease, models.source, self.root)
+        self.documents = DocumentTable(models.product.batch, models.source, self.root)
         self.operations: dict[str, OperationContract] = {}
         self.observed: dict[Path, Observed] = {}
         self.version, self.revision = get_version(), runtime_revision()
@@ -570,86 +512,6 @@ class _Planner:
         if document is None or document_identity(document, self.cwd) == self.models.source.identity:
             return self.operations.get(reference.pointer)
         return None
-
-    def refer(self, reference: OperationRef | SchemaRef) -> JSONValue:
-        """Return the manifest reference of a configured operation, which validation already resolved.
-
-        No target setting holds a schema reference, so every reference is a validated root operation.
-        """
-        return self.documents.operation(self.operations[reference.pointer].id)
-
-    def portable(self, value: object, option_path: str) -> JSONValue:
-        return portable(value, partial(self.locate, option_path=option_path), self.refer)
-
-    def provenance(self) -> Iterator[JSONValue]:
-        config = self.effective
-        for name, info in type(config).model_fields.items():
-            if name == "output" or (value := getattr(config, name)) == info.get_default(call_default_factory=True):
-                continue
-            option_path = f"model_config.{name}"
-            if name in _SECRET_MODEL_OPTIONS:
-                yield {"option_path": option_path, "identity": None, "digest": None, "opaque": True}
-                continue
-            try:
-                digest = sha256(canonical_bytes(self.portable(value, option_path)))
-            except TypeError:
-                yield {"option_path": option_path, "identity": _identity(value), "digest": None, "opaque": True}
-            else:
-                yield {"option_path": option_path, "identity": None, "digest": digest, "opaque": False}
-
-    def target_config(self, rendered: TargetRender) -> JSONObject:
-        public: JSONObject = {}
-        opaque: list[JSONValue] = []
-        for item in fields(self.config):
-            if item.name in type(self.config).manifest_exclusions:
-                continue
-            value = getattr(self.config, item.name)
-            try:
-                public[item.name] = self.portable(value, item.name)
-            except TypeError:
-                opaque.append({"option_path": item.name, "identity": _identity(value)})
-        return {
-            "public_options": public,
-            "runtime_defaults": rendered.runtime_defaults,
-            "protocol_metadata": rendered.protocol_metadata,
-            "opaque_options": opaque,
-        }
-
-    def formatters(self) -> list[JSONValue]:
-        config = self.config
-        entries: list[JSONValue] = []
-        if (settings := config.formatter_settings) is not None:
-            uri = self.locate(settings, option_path="formatter_settings")
-            entries.append({"identity": None, "uri": uri, "digest": None, "opaque": True})
-        entries.extend(
-            {"identity": name, "uri": None, "digest": None, "opaque": False} for name in config.custom_formatters
-        )
-        return entries
-
-    def selection(self, selected: tuple[OperationContract, ...], excluded: tuple[Exclusion, ...]) -> JSONObject:
-        selection = self.config.selection
-
-        def references(selectors: tuple[OperationSelector, ...]) -> list[JSONValue]:
-            return [
-                self.portable(OperationRef(pointer=item) if isinstance(item, str) else item, "selection")
-                for item in selectors
-            ]
-
-        return {
-            "rules": {
-                "include_operations": references(selection.include_operations),
-                "include_tags": list(selection.include_tags),
-                "exclude_operations": references(selection.exclude_operations),
-                "exclude_tags": list(selection.exclude_tags),
-                "reason": selection.reason,
-            },
-            "reason": selection.reason,
-            "selected_operations": [self.documents.operation(operation.id) for operation in selected],
-            "excluded_operations": [
-                {"operation": self.documents.operation(operation.id), "reason": selection.reason}
-                for operation, _ in excluded
-            ],
-        }
 
     def exclusions(self, excluded: tuple[Exclusion, ...]) -> tuple[Diagnostic, ...]:
         reason = self.config.selection.reason
@@ -724,24 +586,19 @@ class _Planner:
         action: ArtifactAction = "unchanged" if current == content else "write"
         return (self.artifact(lock.path, "remote_lock", content, None, (action, self.models.lock_state)),)
 
-    def check_state(self, state: TargetState, inventory: GeneratedArtifact, manifest: GeneratedArtifact) -> None:
-        paths = (manifest.path, inventory.path)
-        if changed := [
-            path for path, before in zip(paths, state.snapshot, strict=True) if self.observed[self.cwd / path] != before
-        ]:
-            raise APIGenerationError(
-                tuple(
-                    Diagnostic(
-                        code="E_STATE_CHANGED",
-                        severity="error",
-                        stage="ownership",
-                        message="The management file changed while the target was planned",
-                        artifact_path=path.as_posix(),
-                        target_id=self.target_id,
-                    )
-                    for path in changed
-                )
-            )
+    def check_state(self, state: TargetState, manifest: GeneratedArtifact) -> None:
+        if self.observed[self.cwd / manifest.path] == state.snapshot:
+            return
+        raise APIGenerationError((
+            Diagnostic(
+                code="E_STATE_CHANGED",
+                severity="error",
+                stage="ownership",
+                message="The manifest changed while the target was planned",
+                artifact_path=manifest.path.as_posix(),
+                target_id=self.target_id,
+            ),
+        ))
 
     def check_collisions(self, artifacts: tuple[GeneratedArtifact, ...]) -> None:
         seen: set[str] = set()
@@ -764,41 +621,13 @@ class _Planner:
         if problems:
             raise APIGenerationError(tuple(problems))
 
-    def manifest(
-        self,
-        rendered: TargetRender,
-        plans: tuple[FilePlan, ...],
-        model: JSONObject,
-        chosen: tuple[tuple[OperationContract, ...], tuple[Exclusion, ...]],
-        diagnostics: tuple[Diagnostic, ...],
-    ) -> JSONObject:
-        generator, config = self.generator, self.config
+    def manifest(self, plans: tuple[FilePlan, ...], model: JSONObject) -> JSONObject:
         return {
-            "schema_version": 1,
-            "target": {"id": self.target_id, "kind": generator.kind, "package": config.package, "root_uri": "."},
-            "generator": {"name": GENERATOR_NAME, "version": self.version, "runtime_revision": self.revision},
-            "inputs": {
-                "root": self.documents.root,
-                "documents": self.documents.documents,
-                "provenance": list(self.provenance()),
-                "target_config": self.target_config(rendered),
-            },
+            "format": 1,
+            "generator": {"name": GENERATOR_NAME, "version": self.version},
+            "target": {"kind": self.generator.kind, "package": self.config.package},
             "model": model,
             "files": manifest_files(plans),
-            "selection": self.selection(*chosen),
-            "diagnostics": [_portable_diagnostic(item) for item in (*diagnostics, *rendered.persistent_diagnostics)],
-            "extensions": {"hooks": [], "templates": [], "formatters": self.formatters()},
-            "bindings": [
-                {
-                    "use_id": self.documents.use(binding.use),
-                    "backend": binding.backend,
-                    "strategy": binding.strategy,
-                    "converter_strategy": binding.converter_strategy,
-                    "adapter_identity": binding.adapter_identity,
-                }
-                for binding in rendered.bindings
-            ],
-            "target_data": {generator.kind: rendered.target_data},
         }
 
     def project(self) -> GeneratedProject:
@@ -820,7 +649,6 @@ class _Planner:
                 operations=selected,
                 excluded=excluded,
                 documents=self.documents,
-                state=state,
                 resolve=self.operation,
                 cwd=self.cwd,
             )
@@ -831,14 +659,9 @@ class _Planner:
         plans = plan_files(self.root, state, finished, self.target_id)
         output = self.effective.output
         assert output is not None
-        model = model_record(
-            output_uri=self.locate(output, option_path="model_config.output"),
-            package=config.model_package,
-            mode=config.model_mode,
-            artifacts=models.artifacts,
-        )
+        model = model_record(output=self.locate(output, option_path="model_config.output"), artifacts=models.artifacts)
         exclusions = self.exclusions(excluded)
-        manifest = self.manifest(rendered, plans, model, (selected, excluded), exclusions)
+        manifest = self.manifest(plans, model)
         artifacts = (
             *(
                 self.artifact(
@@ -866,22 +689,21 @@ class _Planner:
                 else (self.artifact(models.metadata[0], "model_metadata", models.metadata[1], None),)
             ),
             *self.lock_artifacts(),
-            inventory := self.artifact(
-                config.output.joinpath(*INVENTORY_PATH.parts),
-                "model_inventory",
-                canonical_document({"schema_version": 1, "model": model}),
-                self.target_id,
-            ),
             manifest_artifact := self.artifact(
                 config.output / MANIFEST_NAME, "target_manifest", canonical_document(manifest), self.target_id
             ),
         )
-        self.check_state(state, inventory, manifest_artifact)
+        self.check_state(state, manifest_artifact)
         self.check_collisions(artifacts)
         return GeneratedProject(
             target=generator.kind,
             artifacts=artifacts,
-            diagnostics=(*exclusions, *rendered.diagnostics, *rendered.persistent_diagnostics),
+            diagnostics=(
+                *state.diagnostics,
+                *exclusions,
+                *rendered.diagnostics,
+                *hand_edits(state, plans, self.target_id),
+            ),
             generator_version=self.version,
             runtime_revision=self.revision,
             dependencies=_dependencies(rendered, config.model_dependency),
@@ -1002,7 +824,6 @@ class _Finisher:
         return tuple(
             PlannedFile(
                 path=file.path,
-                kind=file.kind,
                 content=text.encode(config.encoding if _is_python(file.path) else "utf-8"),
             )
             for file, text in texts

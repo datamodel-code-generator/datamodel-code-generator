@@ -25,7 +25,6 @@ render pydantic_v2.BaseModel
   write server/src/server/_runtime/server/security.py (copied runtime)
   write server/src/server/py.typed
   write server/pyproject.toml
-  write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
   file server/README.md
     | # Server parameters
@@ -121,5 +120,3 @@ render pydantic_v2.BaseModel
     |
     | [tool.hatch.build.targets.sdist]
     | only-include = ["src/server", "README.md", "pyproject.toml"]
-  file server/.dcg-state/model-artifacts.json
-    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"<sha256>","size":"<size>"}],"fingerprint":"<sha256>","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
