@@ -80,6 +80,9 @@
         "pets",
         "photos",
         "_sync.py"
+      ],
+      [
+        "models.py"
       ]
     ],
     "config": {
