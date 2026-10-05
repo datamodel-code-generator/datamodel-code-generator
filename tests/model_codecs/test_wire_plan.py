@@ -1,4 +1,4 @@
-"""Generate server packages from wire plan fixtures, pinning their schema bundles or reporting each refused rule."""
+"""Generate server packages from wire plan fixtures, pinning their native plans or reporting each refused rule."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
 
 @pytest.mark.parametrize("name", ["oas30", "oas31", "oas32", "parameters", "directions-accepted"])
 def test_wire_plan_bundles_validate(name: str, tmp_path: Path) -> None:
-    """Bundle each document's offline resources into the generated bindings, whose bundles validate instances."""
+    """Pin the native application and route plans, validating instances with the generated models."""
     report, modules = wire_plan_report(name, tmp_path)
     assert_output(report, EXPECTED / f"{name}.txt")
     assert_generated_modules_output(modules, EXPECTED / name)
@@ -22,7 +22,7 @@ def test_wire_plan_bundles_validate(name: str, tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("name", ["dialects", "dialects32", "directions", "querystring-version"])
 def test_wire_plan_rules(name: str, tmp_path: Path) -> None:
-    """Refuse to generate a server while any schema or parameter rule needs an explicit adapter."""
+    """Report target-generation diagnostics for the fixed schema and parameter rule cases."""
     assert_output(wire_plan_report(name, tmp_path)[0], EXPECTED / f"{name}.txt")
 
 

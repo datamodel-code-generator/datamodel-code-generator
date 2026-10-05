@@ -8,18 +8,16 @@ from dataclasses import dataclass
 from typing import Final, Literal, TypeAlias, TypedDict
 
 import plan_oas30_models
-from typing_extensions import Never
+from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
-from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
-from . import model_bindings
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal['/paths/~1items/get']
-SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
@@ -27,7 +25,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = ()
 
 
 class GetItems:
@@ -43,9 +40,9 @@ class GetItems:
     class Parameters:
         """The adapter parameters of get__items."""
 
-        flags: plan_oas30_models.FieldItemsGetQueryFlagsParameter | Unset
+        flags: list[bool] | Unset
         page: plan_oas30_models.FieldItemsGetQueryPageParameter | Unset
-        x_id: plan_oas30_models.FieldItemsGetHeaderXIdParameter
+        x_id: list[int]
         pref: plan_oas30_models.FieldItemsGetCookiePrefParameter | Unset
 
     PARAMETERS: Final = ParameterAdapter(
@@ -60,7 +57,7 @@ class GetItems:
                     kind='boolean',
                     reserved_names=('limit', 'page', 'q'),
                 ),
-                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
+                adapter=TypeAdapter(list[bool]),
             ),
             ParameterArgument(
                 name='page',
@@ -73,7 +70,7 @@ class GetItems:
                     additional=FieldPlan('', 'string'),
                     reserved_names=('flags', 'limit', 'q'),
                 ),
-                codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                adapter=TypeAdapter(plan_oas30_models.FieldItemsGetQueryPageParameter),
             ),
             ParameterArgument(
                 name='x_id',
@@ -85,7 +82,7 @@ class GetItems:
                     shape='array',
                     kind='integer',
                 ),
-                codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                adapter=TypeAdapter(list[int]),
             ),
             ParameterArgument(
                 name='pref',
@@ -98,24 +95,16 @@ class GetItems:
                     fields=(FieldPlan('theme', 'string'),),
                     additional=FieldPlan('', 'string'),
                 ),
-                codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
+                adapter=TypeAdapter(plan_oas30_models.FieldItemsGetCookiePrefParameter),
             ),
         ),
         record=Parameters,
-        names=frozenset({'size', 'theme'}),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(plan_oas30_models.Item),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )

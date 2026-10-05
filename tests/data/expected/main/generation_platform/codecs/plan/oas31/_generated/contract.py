@@ -8,28 +8,22 @@ from dataclasses import dataclass
 from typing import Final, Literal, TypeAlias, TypedDict
 
 import plan_oas31_models
+from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
-from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
-from .._runtime.server.security import SchemePlan, SecurityPlan
-from . import model_bindings
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal['/paths/~1pets~1{petId}/get']
-SchemeKey: TypeAlias = Literal['ApiKey', 'Bearer']
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
         '/paths/~1pets~1{petId}/get': Sequence[Dependency]
     },
     total=False,
-)
-SCHEMES: Final = (
-    SchemePlan(name='ApiKey', kind='api_key', location='query', parameter='api_key'),
-    SchemePlan(name='Bearer', kind='bearer'),
 )
 
 
@@ -51,18 +45,16 @@ class GetPetsPetId:
             'ids',
             'when',
         ),
-        security=SecurityPlan(requirements=((('ApiKey', ()),), (('Bearer', ()),))),
+        secured=True,
     )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__pets_pet_id."""
 
         filter: plan_oas31_models.Filter | Unset
-        x_trace: plan_oas31_models.FieldPetsPetIdGetHeaderXTraceParameter | Unset
-        session: plan_oas31_models.FieldPetsPetIdGetCookieSessionParameter | Unset
+        session: str | Unset
         coords: plan_oas31_models.Coords | Unset
-        ids: plan_oas31_models.FieldPetsPetIdGetQueryIdsParameter | Unset
-        when: plan_oas31_models.FieldPetsPetIdGetQueryWhenParameter | Unset
+        ids: list[plan_oas31_models.FieldPetsPetIdGetQueryIdsParameterEnum] | Unset
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -77,12 +69,7 @@ class GetPetsPetId:
                     fields=(FieldPlan('kind', 'string'), FieldPlan('size', 'integer')),
                     reserved_names=('api_key', 'coords', 'ids', 'tags', 'when'),
                 ),
-                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-            ),
-            ParameterArgument(
-                name='x_trace',
-                plan=ParameterPlan(location='header', name='X-Trace', style='simple'),
-                codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                adapter=TypeAdapter(plan_oas31_models.Filter),
             ),
             ParameterArgument(
                 name='session',
@@ -92,7 +79,7 @@ class GetPetsPetId:
                     style='form',
                     explode=True,
                 ),
-                codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                adapter=TypeAdapter(str),
             ),
             ParameterArgument(
                 name='coords',
@@ -101,7 +88,7 @@ class GetPetsPetId:
                     name='coords',
                     content_media_type='application/json',
                 ),
-                codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
+                adapter=TypeAdapter(plan_oas31_models.Coords),
             ),
             ParameterArgument(
                 name='ids',
@@ -113,36 +100,16 @@ class GetPetsPetId:
                     kind='integer',
                     reserved_names=('api_key', 'coords', 'filter', 'tags', 'when'),
                 ),
-                codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
-            ),
-            ParameterArgument(
-                name='when',
-                plan=ParameterPlan(
-                    location='query',
-                    name='when',
-                    style='form',
-                    explode=True,
-                    kind='number',
-                    reserved_names=('api_key', 'coords', 'filter', 'ids', 'tags'),
-                ),
-                codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
+                adapter=TypeAdapter(list[plan_oas31_models.FieldPetsPetIdGetQueryIdsParameterEnum]),
             ),
         ),
         record=Parameters,
-        names=frozenset({'kind', 'lat', 'size'}),
     )
     RESPONSES: Final = OperationResponses(
-        responses=(
-            ResponsePlan(
-                status='200',
-                media=(
-                    MediaPlan(
-                        media_type='application/json',
-                        kind='json',
-                        codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
-                    ),
-                ),
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                adapter=TypeAdapter(plan_oas31_models.Pet),
             ),
-        ),
-        primary=(200, 'application/json'),
+        },
     )

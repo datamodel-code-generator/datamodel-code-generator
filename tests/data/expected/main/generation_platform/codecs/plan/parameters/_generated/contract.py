@@ -3,20 +3,20 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Final, Literal, TypeAlias, TypedDict
 
 import plan_parameters_models
-from typing_extensions import Never
+from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
-from .._runtime.server.responses import OperationResponses, ResponsePlan
-from . import model_bindings
+from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1pages/get',
@@ -24,7 +24,6 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1more/get',
     '/paths/~1headers/get',
 ]
-SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
@@ -35,7 +34,6 @@ OperationDependencies = TypedDict(
     },
     total=False,
 )
-SCHEMES: Final = ()
 
 
 class GetPages:
@@ -66,16 +64,12 @@ class GetPages:
                     fields=(FieldPlan('size', 'integer'),),
                     reserved_names=('page',),
                 ),
-                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
+                adapter=TypeAdapter(plan_parameters_models.FieldPagesGetQueryPagerParameter),
             ),
         ),
         record=Parameters,
-        names=frozenset({'size'}),
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetOptions:
@@ -105,15 +99,12 @@ class GetOptions:
                     shape='object',
                     additional=FieldPlan('', 'string'),
                 ),
-                codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                adapter=TypeAdapter(plan_parameters_models.FieldOptionsGetQueryOptsParameter),
             ),
         ),
         record=Parameters,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetMore:
@@ -143,15 +134,12 @@ class GetMore:
                     shape='object',
                     additional=FieldPlan('', 'string'),
                 ),
-                codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                adapter=TypeAdapter(plan_parameters_models.FieldMoreGetQueryMoreParameter),
             ),
         ),
         record=Parameters,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetHeaders:
@@ -179,9 +167,9 @@ class GetHeaders:
         combined: plan_parameters_models.FieldHeadersGetHeaderCombinedParameter | Unset
         flag: plan_parameters_models.FieldHeadersGetHeaderFlagParameter | Unset
         ratio: plan_parameters_models.FieldHeadersGetHeaderRatioParameter | Unset
-        shaped: plan_parameters_models.FieldHeadersGetHeaderShapedParameter | Unset
-        counts: plan_parameters_models.FieldHeadersGetHeaderCountsParameter | Unset
-        any_map: plan_parameters_models.FieldHeadersGetHeaderAnyMapParameter | Unset
+        shaped: typing.Any | Unset
+        counts: dict[str, int] | Unset
+        any_map: dict[str, typing.Any] | Unset
         plain: str | Unset
 
     PARAMETERS: Final = ParameterAdapter(
@@ -194,7 +182,7 @@ class GetHeaders:
                     style='simple',
                     reserved_names=('anyMap', 'counts', 'flag', 'mode', 'plain', 'ratio', 'shaped'),
                 ),
-                codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
+                adapter=TypeAdapter(plan_parameters_models.FieldHeadersGetHeaderCombinedParameter),
             ),
             ParameterArgument(
                 name='flag',
@@ -205,7 +193,7 @@ class GetHeaders:
                     kind='boolean',
                     reserved_names=('anyMap', 'combined', 'counts', 'mode', 'plain', 'ratio', 'shaped'),
                 ),
-                codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
+                adapter=TypeAdapter(plan_parameters_models.FieldHeadersGetHeaderFlagParameter),
             ),
             ParameterArgument(
                 name='ratio',
@@ -216,7 +204,7 @@ class GetHeaders:
                     kind='number',
                     reserved_names=('anyMap', 'combined', 'counts', 'flag', 'mode', 'plain', 'shaped'),
                 ),
-                codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
+                adapter=TypeAdapter(plan_parameters_models.FieldHeadersGetHeaderRatioParameter),
             ),
             ParameterArgument(
                 name='shaped',
@@ -228,7 +216,7 @@ class GetHeaders:
                     additional=FieldPlan('', 'string'),
                     reserved_names=('anyMap', 'combined', 'counts', 'flag', 'mode', 'plain', 'ratio'),
                 ),
-                codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
+                adapter=TypeAdapter(typing.Any),
             ),
             ParameterArgument(
                 name='counts',
@@ -241,7 +229,7 @@ class GetHeaders:
                     additional=FieldPlan('', 'integer'),
                     reserved_names=('anyMap', 'combined', 'flag', 'mode', 'plain', 'ratio', 'shaped'),
                 ),
-                codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
+                adapter=TypeAdapter(dict[str, int]),
             ),
             ParameterArgument(
                 name='any_map',
@@ -254,7 +242,7 @@ class GetHeaders:
                     additional=FieldPlan('', 'string'),
                     reserved_names=('combined', 'counts', 'flag', 'mode', 'plain', 'ratio', 'shaped'),
                 ),
-                codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
+                adapter=TypeAdapter(dict[str, typing.Any]),
             ),
             ParameterArgument(
                 name='plain',
@@ -267,7 +255,4 @@ class GetHeaders:
         ),
         record=Parameters,
     )
-    RESPONSES: Final = OperationResponses(
-        responses=(ResponsePlan(status='204'),),
-        primary=(204, None),
-    )
+    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
