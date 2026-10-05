@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from math import isfinite
 from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar
@@ -76,16 +75,9 @@ class BodyFieldName:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class IdempotencyMetadata:
-    """An API's explicit key header, replay guarantee, retention, and nonsecret scope."""
+    """An API's explicit idempotency key header."""
 
     header_name: str
-    replay_safe_with_key: bool
-    retention_seconds: float
-    scope: str
-
-    def __post_init__(self) -> None:
-        if (value := _positive_seconds(self.retention_seconds)) is not None:
-            object.__setattr__(self, "retention_seconds", value)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -189,16 +181,6 @@ def _media(value: object) -> bool:
     except ValueError:
         return False
     return True
-
-
-def _positive_seconds(value: object) -> float | None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    try:
-        seconds = float(value)
-    except OverflowError:
-        return None
-    return seconds if isfinite(seconds) and seconds > 0 else None
 
 
 def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
@@ -347,14 +329,6 @@ def _idempotency_problems(value: object, at: str) -> Iterator[Diagnostic]:
         return
     if not token(value.header_name):
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.header_name", "header_name must be a header name")
-    if type(value.replay_safe_with_key) is not bool:
-        yield _diagnostic("E_CONFIG_VALUE", f"{at}.replay_safe_with_key", "replay_safe_with_key must be a boolean")
-    if _positive_seconds(value.retention_seconds) is None:
-        yield _diagnostic(
-            "E_CONFIG_VALUE", f"{at}.retention_seconds", "retention_seconds must be positive finite seconds"
-        )
-    if not isinstance(value.scope, str) or not value.scope.strip():
-        yield _diagnostic("E_CONFIG_VALUE", f"{at}.scope", "scope must be a string containing non-whitespace text")
 
 
 def _parameter_name_problems(value: object, at: str) -> Iterator[Diagnostic]:
@@ -462,17 +436,8 @@ def _is_retry_safety(value: str) -> TypeIs[Literal["method_default", "idempotent
 
 
 def _idempotency(value: object, base: Path, option_path: str) -> IdempotencyMetadata:
-    table = _table(value, option_path, frozenset({"header_name", "replay_safe_with_key", "retention_seconds", "scope"}))
-    retention = _positive_seconds(table.get("retention_seconds"))
-    if retention is None:
-        option = f"{option_path}.retention_seconds"
-        raise _ConfigValueError(option, "retention_seconds must be positive finite seconds")
-    return IdempotencyMetadata(
-        header_name=_string(table.get("header_name"), base, f"{option_path}.header_name"),
-        replay_safe_with_key=_boolean(table.get("replay_safe_with_key"), base, f"{option_path}.replay_safe_with_key"),
-        retention_seconds=retention,
-        scope=_string(table.get("scope"), base, f"{option_path}.scope"),
-    )
+    table = _table(value, option_path, frozenset({"header_name"}))
+    return IdempotencyMetadata(header_name=_string(table.get("header_name"), base, f"{option_path}.header_name"))
 
 
 def _body_field_names(value: object, base: Path, option_path: str) -> tuple[BodyFieldName, ...]:

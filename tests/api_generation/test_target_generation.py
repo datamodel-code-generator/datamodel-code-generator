@@ -15,6 +15,7 @@ import pytest
 from datamodel_code_generator import _api_manifest, _api_publication, _publication
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
+from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_output, freeze_time
 from tests.data.python.target_generation import SOURCE, target_config_report, target_render_report
 from tests.main.conftest import run_main_and_assert
@@ -65,7 +66,10 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
 )
 def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Generate models once, select operations, plan target files, and publish them through a reversible journal."""
-    assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
+    expected = f"{case}.txt"
+    if case.startswith("input-cycle"):
+        expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
+    assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / expected)
 
 
 @pytest.mark.skipif(sys.version_info < (3, 12), reason="type statements require Python 3.12")

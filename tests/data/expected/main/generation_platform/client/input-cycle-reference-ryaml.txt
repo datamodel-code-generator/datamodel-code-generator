@@ -1,0 +1,66 @@
+# input-cycle-reference
+render pydantic_v2.BaseModel
+  cyclic YAML input rejected
+  source ../input-cycle-reference-model.yaml
+  files []
+  runtime files 0
+generate pydantic_v2.BaseModel
+  cyclic YAML input rejected
+  source ../input-cycle-reference-model.yaml
+  files []
+  runtime files 0
+model-only pydantic_v2.BaseModel
+  InvalidFileFormatError: cyclic YAML input rejected
+  files []
+render pydantic_v2.dataclass
+  cyclic YAML input rejected
+  source ../input-cycle-reference-model.yaml
+  files []
+  runtime files 0
+generate pydantic_v2.dataclass
+  cyclic YAML input rejected
+  source ../input-cycle-reference-model.yaml
+  files []
+  runtime files 0
+model-only pydantic_v2.dataclass
+  InvalidFileFormatError: cyclic YAML input rejected
+  files []
+render dataclasses.dataclass
+  cyclic YAML input rejected
+  source ../input-cycle-reference-model.yaml
+  files []
+  runtime files 0
+generate dataclasses.dataclass
+  cyclic YAML input rejected
+  source ../input-cycle-reference-model.yaml
+  files []
+  runtime files 0
+model-only dataclasses.dataclass
+  InvalidFileFormatError: cyclic YAML input rejected
+  files []
+render typing.TypedDict
+  cyclic YAML input rejected
+  source ../input-cycle-reference-model.yaml
+  files []
+  runtime files 0
+generate typing.TypedDict
+  cyclic YAML input rejected
+  source ../input-cycle-reference-model.yaml
+  files []
+  runtime files 0
+model-only typing.TypedDict
+  InvalidFileFormatError: cyclic YAML input rejected
+  files []
+render msgspec.Struct
+  cyclic YAML input rejected
+  source ../input-cycle-reference-model.yaml
+  files []
+  runtime files 0
+generate msgspec.Struct
+  cyclic YAML input rejected
+  source ../input-cycle-reference-model.yaml
+  files []
+  runtime files 0
+model-only msgspec.Struct
+  InvalidFileFormatError: cyclic YAML input rejected
+  files []

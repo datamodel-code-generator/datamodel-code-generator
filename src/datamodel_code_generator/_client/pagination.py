@@ -540,7 +540,7 @@ class _Pages:
             message = None
             if spec.body is None:
                 message = f"The next URL of {name!r} repeats the request body, which {_label(spec)} does not take"
-            elif not body_replay_safe(spec.contract.method.upper(), spec.retry_safety, None, None, now=0.0):
+            elif not body_replay_safe(spec.contract.method.upper(), spec.retry_safety, None):
                 message = (
                     f"The next URL of {name!r} repeats the request body of {_label(spec)}, which is not safe to send "
                     "again; declare the operation's retry_safety idempotent"

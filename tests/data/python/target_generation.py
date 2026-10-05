@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import yaml
 
-from datamodel_code_generator import Error, GenerateConfig
+from datamodel_code_generator import Error, GenerateConfig, InvalidFileFormatError
 from datamodel_code_generator.fastapi import (
     APIGenerationError,
     Diagnostic,
@@ -28,6 +28,7 @@ from datamodel_code_generator.fastapi import (
 )
 from datamodel_code_generator.remote_lock import RemoteLockError, RemoteReferenceLock
 from tests.data.python import fastapi_hooks
+from tests.data.python.client_generation import cyclic_input_failure
 
 if TYPE_CHECKING:
     import pytest
@@ -196,14 +197,39 @@ def _run(
         return (generate_fastapi if publish else render_fastapi)(
             _input(spec["input"], server), model_config=_model(model, root), config=_config(config)
         )
-    except APIGenerationError as error:
-        lines = ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
-        return "\n".join(lines).replace(root.resolve().as_posix(), "<root>")
-    except PublicationRollbackError as error:
-        unrestored = ", ".join(_relative(path, root) for path in error.unrestored)
-        cause = type(error.__cause__).__name__
-        return f"  PublicationRollbackError after {cause}: unrestored {unrestored}; {len(error.backups)} backups kept"
-    except (Error, RemoteLockError, OSError, UnicodeError, KeyboardInterrupt) as error:
+    except (
+        APIGenerationError,
+        PublicationRollbackError,
+        Error,
+        RemoteLockError,
+        OSError,
+        UnicodeError,
+        KeyboardInterrupt,
+    ) as error:
+        if case["input"] in ({"path": "input-cycle-dict.yaml"}, {"path": "input-cycle-reference.yaml"}):
+            if not isinstance(error, (APIGenerationError, InvalidFileFormatError)):
+                raise
+            cycles = {
+                "input-cycle-dict.yaml": ("input-cycle-dict.yaml", "/x-cycle/self", (12, 10)),
+                "input-cycle-list.yaml": ("input-cycle-list.yaml", "/x-cycle/0", (12, 10)),
+                "input-cycle-mutual.yaml": (
+                    "input-cycle-mutual.yaml",
+                    "/x-outer/nested/child/back~1to~0outer/0",
+                    (13, 11),
+                ),
+                "input-cycle-reference.yaml": ("input-cycle-reference-model.yaml", "/x-cycle/self", (6, 10)),
+            }
+            filename, pointer, location = cycles[spec["input"]["path"]]
+            return "  " + cyclic_input_failure(error, source=filename, pointer=pointer, location=location)
+        if isinstance(error, APIGenerationError):
+            lines = ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
+            return "\n".join(lines).replace(root.resolve().as_posix(), "<root>")
+        if isinstance(error, PublicationRollbackError):
+            unrestored = ", ".join(_relative(path, root) for path in error.unrestored)
+            cause = type(error.__cause__).__name__
+            return (
+                f"  PublicationRollbackError after {cause}: unrestored {unrestored}; {len(error.backups)} backups kept"
+            )
         return f"  {type(error).__name__}: {error}".replace(str(root.resolve()), "<root>").replace("\\", "/")
 
 
