@@ -438,6 +438,8 @@ class FieldNameResolver:
                 continue
             name = f"{self.special_field_name_prefix}{name}"
             break
+        if name[0].isnumeric() and name.isascii():
+            name = f"{self.special_field_name_prefix}_{name}"
         if self.capitalise_enum_members or (self.snake_case_field and not ignore_snake_case_field):
             name = camel_to_snake(name)
         count = 1

@@ -168,7 +168,7 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                     environment.setenv("HTTPS_PROXY", peer.proxy_url)
                     if name.startswith("no-proxy"):
                         environment.delenv("NO_PROXY")
-                        environment.setenv("NO_PROXY" if name.endswith("upper") else "no_proxy", "localhost")
+                        environment.setenv("NO_PROXY" if name.endswith("upper") else "no_proxy", "127.0.0.1")
                     else:
                         environment.setenv("NO_PROXY", "")
                         transport = options.TransportOptions(ssl_context=server.verify, trust_env=False)
