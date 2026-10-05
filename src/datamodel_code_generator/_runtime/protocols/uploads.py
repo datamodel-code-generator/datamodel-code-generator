@@ -114,7 +114,7 @@ def _unreplayed(call: OperationPlan[T]) -> OperationPlan[T]:
 
     from ..client.retry import replay_safe  # noqa: PLC0415
 
-    if call.idempotency is None and not replay_safe(call.method, call.retry_safety, None, None, now=0.0):
+    if call.idempotency is None and not replay_safe(call.method, call.retry_safety, None):
         return call
     return replace(call, retry_safety="never")
 

@@ -147,12 +147,7 @@ OPERATION_5: Final[OperationPlan[CookieResponse]] = OperationPlan(
         ),
         (),
     ),
-    idempotency=IdempotencyPlan(
-        header_name='session',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='session'),
     security=security.OPERATION_5,
 )
 
@@ -172,12 +167,7 @@ OPERATION_6: Final[OperationPlan[QueryResponse]] = OperationPlan(
         ),
         (),
     ),
-    idempotency=IdempotencyPlan(
-        header_name='token',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='token'),
     security=security.OPERATION_6,
 )
 
@@ -197,12 +187,7 @@ OPERATION_7: Final[OperationPlan[IgnoredResponse]] = OperationPlan(
         ),
         (),
     ),
-    idempotency=IdempotencyPlan(
-        header_name='Authorization',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='Authorization'),
 )
 
 OPERATION_8: Final[OperationPlan[DirectionResponse]] = OperationPlan(
@@ -232,12 +217,7 @@ OPERATION_8: Final[OperationPlan[DirectionResponse]] = OperationPlan(
         ),
     ),
     request_id_header='X-Idempotency',
-    idempotency=IdempotencyPlan(
-        header_name='X-Idempotency',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='X-Idempotency'),
     retry_after_ms_header='X-Idempotency',
     should_retry_header='X-Retry-Control',
 )
@@ -258,11 +238,6 @@ OPERATION_9: Final[OperationPlan[UnusedResponse]] = OperationPlan(
         ),
         (),
     ),
-    idempotency=IdempotencyPlan(
-        header_name='X-Auth-Key',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='X-Auth-Key'),
     security=security.OPERATION_9,
 )

@@ -195,6 +195,23 @@ class _UnsupportedError(Exception):
     """A type expression that the contract values cannot represent."""
 
 
+class _LiteralCycleError(_UnsupportedError):
+    """A recursive literal, located as its containers unwind."""
+
+    def __init__(self) -> None:
+        self.tokens: tuple[str, ...] = ()
+        super().__init__()
+
+
+class MetadataCycleError(Exception):
+    """A detected cycle in an API metadata fact at its original source location."""
+
+    def __init__(self, document: str, pointer: str) -> None:
+        self.document = document
+        self.pointer = pointer
+        super().__init__("The input document contains a cyclic mapping or sequence")
+
+
 class RecordingGenerationStore(GenerationStore):
     """Record the two reference redirects that leave no trace in the final graph."""
 
@@ -357,16 +374,27 @@ def _freeze_literal(value: object, active: set[int]) -> FrozenLiteral:
     if (scalar := _literal_scalar(value)) is not None:
         return scalar
     if id(value) in active:
-        raise _UnsupportedError
+        raise _LiteralCycleError
     active.add(id(value))
     try:
         match value:
             case dict() if type(value) is dict:
-                return LiteralMapping(
-                    tuple((_freeze_literal(key, active), _freeze_literal(item, active)) for key, item in value.items())
-                )
+                items: list[tuple[FrozenLiteral, FrozenLiteral]] = []
+                try:
+                    for key, item in value.items():
+                        items.append((_freeze_literal(key, active), _freeze_literal(item, active)))
+                except _LiteralCycleError as error:
+                    error.tokens = (str(key), *error.tokens)
+                    raise
+                return LiteralMapping(tuple(items))
             case list() | tuple() | set() | frozenset() if (kind := _SEQUENCES.get(type(value))) is not None:
-                return LiteralSequence(kind, tuple(_freeze_literal(item, active) for item in value))
+                items_sequence: list[FrozenLiteral] = []
+                try:
+                    items_sequence.extend(_freeze_literal(item, active) for item in value)
+                except _LiteralCycleError as error:
+                    error.tokens = (str(len(items_sequence)), *error.tokens)
+                    raise
+                return LiteralSequence(kind, tuple(items_sequence))
             case _:
                 raise _UnsupportedError
     finally:
@@ -383,8 +411,17 @@ def _freeze_argument(value: object) -> TypeArgument:
             return _freeze_literal(value, set())
 
 
-def _facts(raw: dict[str, YamlValue], keys: tuple[str, ...]) -> tuple[tuple[str, FrozenLiteral], ...]:
-    return tuple((key, _freeze_literal(value, set())) for key, value in raw.items() if key in keys)
+def _facts(
+    raw: dict[str, YamlValue], keys: tuple[str, ...], declaration: _Declaration
+) -> tuple[tuple[str, FrozenLiteral], ...]:
+    facts: list[tuple[str, FrozenLiteral]] = []
+    try:
+        for key, value in raw.items():
+            if key in keys:
+                facts.append((key, _freeze_literal(value, set())))
+    except _LiteralCycleError as error:
+        raise MetadataCycleError(declaration.document, _escape((*declaration.tokens, key, *error.tokens))) from error
+    return tuple(facts)
 
 
 def _backend_value(value: object) -> KnownBackendValue:
@@ -2105,7 +2142,7 @@ class _Contracts(_SchemaUses):
             name,
             DeclarationId(locate(declaration, "declaration")),
             locate(use_site, "use"),
-            _facts(value, ("$ref", *keys)),
+            _facts(value, ("$ref", *keys), declaration),
             references=tuple(references),
         )
 
@@ -2168,7 +2205,7 @@ class _Contracts(_SchemaUses):
                             property_name,
                             DeclarationId(locate(declared, "declaration")),
                             locate(used, "use"),
-                            _facts(encoding, ("contentType", "style", "explode", "allowReserved")),
+                            _facts(encoding, ("contentType", "style", "explode", "allowReserved"), declared),
                             children=self.headers(
                                 encoding.get("headers"),
                                 _child(declared, "headers"),
@@ -2186,7 +2223,7 @@ class _Contracts(_SchemaUses):
                     name,
                     DeclarationId(locate(media_declaration, "declaration")),
                     locate(media_use, "use"),
-                    _facts(medium, ("example", "examples")),
+                    _facts(medium, ("example", "examples"), media_declaration),
                     tuple(uses),
                     tuple(encodings),
                 )
@@ -2242,7 +2279,7 @@ class _Contracts(_SchemaUses):
             wire_name,
             DeclarationId(locate(declared, "declaration")),
             locate(use_site, "use"),
-            _facts(value, _PARAMETER_FACTS),
+            _facts(value, _PARAMETER_FACTS, declared),
             schemas,
             children,
         )
@@ -2296,7 +2333,7 @@ class _Contracts(_SchemaUses):
             status,
             DeclarationId(locate(declared, "declaration")),
             locate(use_site, "use"),
-            _facts(value, ("description",)),
+            _facts(value, ("description",), declared),
             children=(*content, *headers, *links),
         )
 
@@ -2427,8 +2464,6 @@ class _Contracts(_SchemaUses):
         effective_operation: dict[str, YamlValue] = raw
         if common:
             effective_operation = {**raw, "parameters": [entry[3] for entry in effective]}
-        if self.security is not None and "security" not in raw:
-            effective_operation = {**effective_operation, "security": self.security}
         locate = self.schemas.location
         kind: Literal["path", "webhook", "callback"] = (
             "callback"
@@ -2458,7 +2493,7 @@ class _Contracts(_SchemaUses):
                 None,
                 DeclarationId(locate(declared, "declaration")),
                 locate(used, "use"),
-                _facts(value, ("required", "description")),
+                _facts(value, ("required", "description"), declared),
                 children=self.media(value.get("content"), declared, used, identity, "request_body"),
             )
         statuses = {str(status): value for status, value in _mapping(raw.get("responses")).items()}
@@ -2478,11 +2513,20 @@ class _Contracts(_SchemaUses):
             )
             for name, callback in _mapping(raw.get("callbacks")).items()
         )
-        facts = _facts(effective_operation, _OPERATION_FACTS)
+        facts = _facts(effective_operation, _OPERATION_FACTS, declaration)
+        if self.security is not None and "security" not in raw:
+            facts = (*facts, *_facts({"security": self.security}, ("security",), _Declaration(use_site.document, ())))
         if "servers" not in effective_operation:
             path_item = _mapping(self.schemas.borrow(self.path_of(declaration)))
             root = _mapping(self.schemas.documents.get(use_site.document))
-            facts = (*facts, *_facts(path_item if "servers" in path_item else root, ("servers",)))
+            facts = (
+                *facts,
+                *_facts(
+                    path_item if "servers" in path_item else root,
+                    ("servers",),
+                    self.path_of(declaration) if "servers" in path_item else _Declaration(use_site.document, ()),
+                ),
+            )
         self.operations.append(
             OperationContract(
                 identity,
