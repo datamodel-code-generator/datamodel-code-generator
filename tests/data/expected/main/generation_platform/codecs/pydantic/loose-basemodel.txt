@@ -1,6 +1,3 @@
-use /paths/~1loose/put request_body: native model models:Holder models=[('models:Holder', 'model', 'ignore', True), ('models:Tag', 'model', 'forbid', False)]
-use /paths/~1loose/post request_body: native model models:Holder models=[('models:Holder', 'model', 'ignore', True), ('models:Tag', 'model', 'forbid', False)]
-use /paths/~1loose/post response_body 200: native model models:Holder models=[('models:Holder', 'model', 'ignore', True), ('models:Tag', 'model', 'forbid', False)]
-holder-client-decode-tag: model Holder(value=Tag(label='x')) set=['value'] wire={"value":{"label":"x"}} presence=['', '/value', '/value/label'] extras={}
-holder-client-decode-other: model Holder(value={'other': 1}) set=['value'] wire={"value":{"other":1}} presence=['', '/value', '/value/other'] extras={}
-holder-client-convert-other: converted Holder(value={'other': 1})
+holder-client-decode-tag: native Holder(value=Tag(label='x')) set=['value'] json={"value":{"label":"x"}}
+holder-client-decode-other: native Holder(value={'other': 1}) set=['value'] json={"value":{"other":1}}
+holder-client-convert-other: native Holder(value={'other': 1}) set=['value'] json={"value":{"other":1}}

@@ -5,22 +5,28 @@ from __future__ import annotations
 import ast
 import dataclasses
 import importlib
+import inspect
 import json
+import re
 import shutil
+import warnings
 from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime, time
+from functools import reduce
+from itertools import starmap
+from operator import or_
 from pathlib import PurePath
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, get_args, get_type_hints
 
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel, TypeAdapter, ValidationError
 
 from datamodel_code_generator import SchemaParseError
 from datamodel_code_generator.api_types import APIGenerationError
 from datamodel_code_generator.fastapi import generate_fastapi
 from tests.data.python.client_generation import generate_client, model_config
 from tests.data.python.fastapi_generation import fastapi_config
-from tests.data.python.generated_packages import generated_root, import_generated_codecs
+from tests.data.python.generated_packages import generated_root, import_generated, import_generated_codecs
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -60,8 +66,7 @@ def generate_package(
 ) -> list[str]:
     """Generate a fixture's client or FastAPI server package, returning a refusal's diagnostics, the error, or nothing.
 
-    A server package keeps the models module and the model codec layout of a client package, so the same reports read
-    either; `config` holds the settings of the chosen target.
+    Both targets keep the generated models module; `config` holds the settings of the chosen target.
     """
     options = dict(fixture.get("options", {}))
     if "extra_template_data" in options:
@@ -276,7 +281,9 @@ class _Runner:
                 case "envelope-outbound":
                     result = self.package.outbound.EnvelopeOutboundCodec(codec, context).from_wire(value)
                 case "envelope-snapshot":
-                    result = self.package.outbound.EnvelopeOutboundCodec(codec, context).snapshot(value, presence=presence)
+                    result = self.package.outbound.EnvelopeOutboundCodec(codec, context).snapshot(
+                        value, presence=presence
+                    )
                 case "mutate":
                     target = self.results[str(case["target"])]
                     native = self.native(case.get("native")) if "native" in case else value
@@ -328,8 +335,191 @@ def _codecs(package: GeneratedCodecs, lines: list[str] | None = None, *, strateg
     return codecs
 
 
+def _unordered_json(value: object, wire: Any) -> Any:
+    """Sort only native set elements in an observed JSON report; retain ordered arrays and backend field names."""
+    if isinstance(value, RootModel):
+        return _unordered_json(value.root, wire)
+    if isinstance(value, (set, frozenset)) and isinstance(wire, list):
+        return sorted(wire, key=lambda item: json.dumps(item, sort_keys=True))
+    if isinstance(value, (list, tuple)) and isinstance(wire, list):
+        return list(starmap(_unordered_json, zip(value, wire, strict=True)))
+    if isinstance(value, dict) and isinstance(wire, dict):
+        return {key: _unordered_json(value.get(key), encoded) for key, encoded in wire.items()}
+    if isinstance(wire, dict) and (isinstance(value, BaseModel) or dataclasses.is_dataclass(value)):
+        fields = type(value).model_fields if isinstance(value, BaseModel) else type(value).__pydantic_fields__
+        names = {(field.serialization_alias or field.alias or name): name for name, field in fields.items()}
+        return {
+            key: _unordered_json(getattr(value, names.get(key, key), None), encoded) for key, encoded in wire.items()
+        }
+    return wire
+
+
+class _NativeServerCases:
+    """Observe fixture operations through the generated FastAPI app and its native model annotations."""
+
+    def __init__(self, server: Any, package: str) -> None:
+        self.package = package
+        self.results: dict[str, Any] = {}
+        self.calls: dict[str, Any] = {}
+        self.services = get_type_hints(server.create_app)
+        services = {
+            name: self
+            for name, parameter in inspect.signature(server.create_app).parameters.items()
+            if parameter.default is inspect.Parameter.empty and parameter.kind == inspect.Parameter.KEYWORD_ONLY
+        }
+        self.app = server.create_app(**services)
+        router = server.build_router(**services)
+        self.routes = {
+            (route.path, method.lower()): route
+            for route in router.routes
+            if hasattr(route, "methods")
+            for method in route.methods
+        }
+
+    def __getattr__(self, name: str) -> Any:
+        from fastapi.responses import Response
+
+        def handle(**values: Any) -> Response:
+            self.calls.update(values)
+            return Response(status_code=204)
+
+        return handle
+
+    def native(self, spec: object) -> object:
+        if isinstance(spec, dict) and "call" in spec:
+            module, _, name = spec["call"].rpartition(":")
+            module = f"{self.package}_models" if module in {"", "models"} else module
+            return getattr(importlib.import_module(module), name)(**{
+                key: self.native(value) for key, value in spec["args"].items()
+            })
+        if isinstance(spec, dict) and "result" in spec:
+            value = self.results[spec["result"]]
+            return getattr(value, spec["attr"]) if spec.get("attr") not in {None, "value"} else value
+        if isinstance(spec, dict) and spec.keys() & {"py", "nested"}:
+            return self.literal(spec)
+        if isinstance(spec, dict):
+            return {key: self.native(value) for key, value in spec.items()}
+        if isinstance(spec, list):
+            return [self.native(value) for value in spec]
+        return spec
+
+    def literal(self, spec: dict[str, Any]) -> object:
+        if "nested" in spec:
+            value: list[object] = []
+            for _ in range(spec["nested"]):
+                value = [value]
+            return value
+        name = spec["py"]
+        if name in {"object", "float", "datetime", "time"}:
+            constructors = {
+                "object": object,
+                "float": float,
+                "datetime": datetime.fromisoformat,
+                "time": time.fromisoformat,
+            }
+            return constructors[name](spec["text"]) if "text" in spec else constructors[name]()
+        items = spec["items"]
+        if name == "dict":
+            return {self.native(key): self.native(value) for key, value in items}
+        constructor = {"set": set, "tuple": tuple}[name]
+        return constructor(self.native(value) for value in items)
+
+    def use(self, key: str) -> tuple[Any, object]:
+        pointer, role, *parts = key.split()
+        _, _, path, method = pointer.split("/")
+        path = path.replace("~1", "/").replace("~0", "~")
+        route = self.routes[path, method]
+        if role == "response_body":
+            status = parts[0]
+            native_type = route.response_model if int(status) == route.status_code else route.responses[status]["model"]
+        else:
+            name = "body" if role == "request_body" else parts[-1]
+            hints = get_type_hints(route.endpoint, include_extras=True)
+            if name in hints:
+                native_type = hints[name]
+            else:
+                name = re.sub(r"\W", "_", name).lower()
+                service = next(service for service in self.services.values() if hasattr(service, route.name))
+                native_type = get_type_hints(getattr(service, route.name))[name]
+                members = tuple(
+                    member for member in get_args(native_type) if getattr(member, "__name__", "") != "Unset"
+                )
+                if members:
+                    native_type = reduce(or_, members)
+        return route, native_type
+
+    def request(self, route: Any, value: object) -> object:
+        from fastapi.testclient import TestClient
+
+        self.calls.clear()
+        path = re.sub(r"\{[^}]+\}", "1", route.path)
+        with TestClient(self.app) as api:
+            response = api.request(next(iter(route.methods)), path, json=value)
+        if response.status_code != 204:
+            return f"HTTP {response.status_code} {response.text}"
+        return self.calls["body"]
+
+    def run(self, case: dict[str, Any]) -> str:
+        route, native_type = self.use(case["use"])
+        try:
+            return self.operation(case, route, native_type)
+        except ValidationError as error:
+            return "ValidationError " + ",".join(f"{item['type']}@{list(item['loc'])}" for item in error.errors())
+        except RecursionError:
+            return "RecursionError"
+        except (TypeError, ValueError, KeyError, AttributeError) as error:
+            return f"{type(error).__name__} {error}"
+
+    def operation(self, case: dict[str, Any], route: Any, native_type: object) -> str:
+        adapter = TypeAdapter(native_type)
+        value = self.native(case.get("value"))
+        operation = case["op"]
+        if operation == "mutate":
+            setattr(self.results[case["target"]], case["attr"], self.native(case.get("native", case.get("value"))))
+            return f"mutated {case['attr']}"
+        if operation == "require":
+            return f"native {_native(self.results[case['target']])}"
+        if operation in {"assemble", "convert"}:
+            value = self.native(case["fields"]) if operation == "assemble" else value
+        if operation in {
+            "decode",
+            "from_wire",
+            "convert",
+            "assemble",
+            "native-outbound",
+            "envelope-outbound",
+            "echo",
+            "resend",
+        }:
+            if operation == "decode" and " request_body" in case["use"]:
+                value = self.request(route, value)
+                if isinstance(value, str) and value.startswith("HTTP "):
+                    return value
+            else:
+                value = adapter.validate_python(value)
+        self.results[case["name"]] = value
+        with warnings.catch_warnings(record=True) as observed:
+            warnings.simplefilter("always", UserWarning)
+            encoded = adapter.dump_json(value, by_alias=True, exclude_unset=True).decode()
+        encoded = json.dumps(_unordered_json(value, json.loads(encoded)), separators=(",", ":"), ensure_ascii=False)
+        fields_set = getattr(value, "model_fields_set", None)
+        return (
+            f"native {_native(value)}"
+            + (f" set={sorted(fields_set)}" if fields_set is not None else "")
+            + f" json={encoded}"
+            + (f" warnings={[str(item.message) for item in observed]}" if observed else "")
+        )
+
+
+def _native_server_report(root: Path, package: str, fixture: dict[str, Any]) -> list[str]:
+    """Run the retained recipes against the generated native app and model types, without codec sidecars."""
+    with generated_root(root, package):
+        runner = _NativeServerCases(import_generated(package), package)
+        return [f"{case['name']}: {runner.run(case)}" for case in fixture["cases"]]
+
+
 def builtin_codec_report(source: Path, cases: Path, root: Path, *, server: bool = False) -> str:
-    """Generate a client or server package, import it, and run every case through the generated codec of its use.
+    """Run cases through native server models or the generated client codec of their use.
 
     A fixture's `refusal` configuration first reports the diagnostics of a generation the target refuses; its
     `config` then generates the package that runs the cases.
@@ -344,6 +534,8 @@ def builtin_codec_report(source: Path, cases: Path, root: Path, *, server: bool 
     accepted = root / "accepted"
     if diagnostics := generate_package(source, fixture, accepted, backend, fixture.get("config", {}), server=server):
         return _text([*lines, *diagnostics], package)
+    if server:
+        return _text([*lines, *_native_server_report(accepted, package, fixture)], package)
     with imported(accepted, package) as generated:
         codecs = _codecs(generated, lines, strategies=bool(fixture.get("strategies")))
         runner = _Runner(generated, codecs)
@@ -513,8 +705,30 @@ def _startup(generated: Path, root: Path, package: str, case: dict[str, Any], va
     return "built"
 
 
+def _native_startup(generated: Path, root: Path, package: str, case: dict[str, Any]) -> str:
+    """Apply retained model substitutions and start the native app; codec-sidecar edits have no native surface."""
+    directory = root / case["name"]
+    shutil.copytree(generated, directory)
+    _swap_models(directory / f"{package}_models.py", case)
+    with generated_root(directory, package):
+        runner = _NativeServerCases(import_generated(package), package)
+        removed = [key for key in ("binding", "bundle", "patch") if key in case]
+        lines = [f"native app routes={len(runner.app.openapi()['paths'])}"]
+        if removed:
+            lines.append(f"removed codec-sidecar edits={removed}")
+        if "models" in case:
+            models = importlib.import_module(f"{package}_models")
+            lines.append(
+                "models=" + repr({key: getattr(models, key.rpartition(":")[2]).__name__ for key in case["models"]})
+            )
+        if "decode" in case or "convert" in case:
+            operation = "decode" if "decode" in case else "convert"
+            lines.append(runner.run({**case, "op": operation, "value": case[operation]}))
+        return " ".join(lines)
+
+
 def builtin_codec_startup_report(source: Path, cases: Path, root: Path, *, server: bool = False) -> str:
-    """Generate a client or server package, then edit a copy per case out of sync with itself and build its codec.
+    """Edit generated copies and start their native app or client codec.
 
     Each case edits the generated files as a stale or hand-edited package would: it rebinds model names in the
     models module, or changes the binding, models, bundle, or directional view of one generated codec.
@@ -525,6 +739,15 @@ def builtin_codec_startup_report(source: Path, cases: Path, root: Path, *, serve
     generated = root / "generated"
     if diagnostics := generate_package(source, fixture, generated, backend, fixture.get("config", {}), server=server):
         return _text(diagnostics, package)
+    if server:
+        return _text(
+            [
+                f"{case['name']}: {_native_startup(generated, root / 'cases', package, case)}"
+                for case in fixture["startup"]
+                if case["name"] not in {"converter", "backend", "missing-model"}
+            ],
+            package,
+        )
     with imported(generated, package) as codecs:
         values = codecs.load(cases)["startup"]
     lines = [

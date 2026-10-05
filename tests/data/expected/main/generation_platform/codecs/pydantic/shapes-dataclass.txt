@@ -1,23 +1,13 @@
-use /paths/~1animals/post request_body: envelope alias models:FieldAnimalsPostRequest models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
-use /paths/~1animals/post response_body 200: native alias models:FieldAnimalsPostResponse models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
-use /paths/~1animals~1any/put request_body: envelope alias models:FieldAnimalsAnyPutRequest models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
-use /paths/~1kin/put request_body: envelope alias models:FieldKinPutRequest models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'forbid', False)]
-use /paths/~1kin/get response_body 200: native alias models:FieldKinGetResponse models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'forbid', False)]
-use /paths/~1tree/put request_body: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
-use /paths/~1tree/put response_body 200: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
-use /paths/~1mixed/post request_body: native alias models:Mixed models=[('models:Large', 'dataclass', 'ignore', True), ('models:Small', 'dataclass', 'ignore', True)]
-use /paths/~1values/post request_body: native dataclass models:Values models=[('models:Values', 'dataclass', 'ignore', True)]
-use /paths/~1values/post response_body 200: native dataclass models:Values models=[('models:Values', 'dataclass', 'ignore', True)]
-animal-client-cat: input issues=DIRECTIONAL_REQUIRED@/id:models:Cat.id wire={"meow":true} extras={}
-animal-server-dog-extra: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"meow":true,"bark":1} extras={"/meow":true}
-animal-client-decode-dog: model Dog(id=2, name=None, nick_name=None, bark=3) wire={"id":2,"bark":3,"x":1} presence=['', '/id', '/bark', '/x'] extras={"/x":1}
-animal-server-encode-dog: wire={"id":2,"bark":3}
-animal-client-decode-null: model None wire=null presence=[''] extras={}
-animal-server-encode-null: wire=null
-animal-server-encode-wrong-type: ModelProjectionError The value at / does not have its bound shape
-tree-client-decode: model Node(value=1, children=[Node(value=2, children=None, pair=None, contact=None, index=None)], pair=None, contact=None, index={'a': Node(value=3, children=None, pair=None, contact=None, index=None)}) wire={"value":1,"children":[{"value":2,"extra":1}],"index":{"a":{"value":3,"deep":true}}} presence=['', '/value', '/children', '/children/0', '/children/0/value', '/children/0/extra', '/index', '/index/a', '/index/a/value', '/index/a/deep'] extras={"/children/0/extra":1,"/index/a/deep":true}
-tree-server-encode: wire={"value":1,"children":[{"value":2}],"index":{"a":{"value":3}}}
-values-server-decode: model Values(amount=Decimal('2'), day=None, clock=None, span=None, uid=None, secret=SecretStr('**********'), blob=None, level=<Level.integer_1: 1>, link=None, any=None, list=None, codes=None, un=None, mark=None) wire={"amount":2,"secret":"pw","level":1} presence=['', '/amount', '/secret', '/level'] extras={}
-values-client-encode: wire={"amount":2,"secret":"pw","level":1}
-kin-server-encode-cat: wire={"id":1,"meow":true}
-kin-server-encode-dog: wire={"id":2}
+animal-client-cat: native Cat(id=3, name=None, nick_name=None, meow=True) json={"id":3,"name":null,"nick-name":null,"meow":true}
+animal-server-dog-extra: HTTP 422 {"detail":[{"type":"missing","loc":["body","Cat","id"],"msg":"Field required","input":{"meow":true,"bark":1}},{"type":"unexpected_keyword_argument","loc":["body","Cat","bark"],"msg":"Unexpected keyword argument","input":1},{"type":"missing","loc":["body","Dog","id"],"msg":"Field required","input":{"meow":true,"bark":1}}]}
+animal-client-decode-dog: native Dog(id=2, name=None, nick_name=None, bark=3) json={"id":2,"name":null,"nick-name":null,"bark":3}
+animal-server-encode-dog: native Dog(id=2, name=None, nick_name=None, bark=3) json={"id":2,"name":null,"nick-name":null,"bark":3}
+animal-client-decode-null: native None json=null
+animal-server-encode-null: native None json=null
+animal-server-encode-wrong-type: native Node(value=1, children=None, pair=None, contact=None, index=None) json={"value":1,"children":null,"pair":null,"contact":null,"index":null} warnings=['Pydantic serializer warnings:\n  PydanticSerializationUnexpectedValue(Expected `Cat` - serialized value may not be as expected [input_value=Node(value=1, children=No...ontact=None, index=None), input_type=Node])\n  PydanticSerializationUnexpectedValue(Expected `Dog` - serialized value may not be as expected [input_value=Node(value=1, children=No...ontact=None, index=None), input_type=Node])']
+tree-client-decode: native Node(value=1, children=[Node(value=2, children=None, pair=None, contact=None, index=None)], pair=None, contact=None, index={'a': Node(value=3, children=None, pair=None, contact=None, index=None)}) json={"value":1,"children":[{"value":2,"children":null,"pair":null,"contact":null,"index":null}],"pair":null,"contact":null,"index":{"a":{"value":3,"children":null,"pair":null,"contact":null,"index":null}}}
+tree-server-encode: native Node(value=1, children=[Node(value=2, children=None, pair=None, contact=None, index=None)], pair=None, contact=None, index={'a': Node(value=3, children=None, pair=None, contact=None, index=None)}) json={"value":1,"children":[{"value":2,"children":null,"pair":null,"contact":null,"index":null}],"pair":null,"contact":null,"index":{"a":{"value":3,"children":null,"pair":null,"contact":null,"index":null}}}
+values-server-decode: native Values(amount=Decimal('2'), day=None, clock=None, span=None, uid=None, secret=SecretStr('**********'), blob=None, level=<Level.integer_1: 1>, link=None, any=None, list=None, codes=None, un=None, mark=None) json={"amount":"2","day":null,"clock":null,"span":null,"uid":null,"secret":"**********","blob":null,"level":1,"link":null,"any":null,"list":null,"codes":null,"un":null,"mark":null}
+values-client-encode: native Values(amount=Decimal('2'), day=None, clock=None, span=None, uid=None, secret=SecretStr('**********'), blob=None, level=<Level.integer_1: 1>, link=None, any=None, list=None, codes=None, un=None, mark=None) json={"amount":"2","day":null,"clock":null,"span":null,"uid":null,"secret":"**********","blob":null,"level":1,"link":null,"any":null,"list":null,"codes":null,"un":null,"mark":null}
+kin-server-encode-cat: native Cat(id=1, name=None, nick_name=None, meow=True) json={"id":1,"name":null,"nick-name":null,"meow":true}
+kin-server-encode-dog: native Dog(id=2, name=None, nick_name=None, bark=3) json={"id":2,"name":null,"nick-name":null}
