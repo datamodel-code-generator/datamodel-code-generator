@@ -3158,10 +3158,8 @@
     }
   },
   "session-cyclic-metadata": {
-    "pins": "cyclic YAML metadata escapes target generation as the internal BindingCaptureError instead of a diagnostic (not yet filed)",
     "source": "generation_platform/binding/session-cyclic-metadata.yaml",
-    "verbatim": true,
-    "raises": "BindingCaptureError"
+    "verbatim": true
   },
   "session-self-array": {
     "source": "generation_platform/binding/session-self-array.json",

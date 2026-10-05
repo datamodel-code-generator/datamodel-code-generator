@@ -8,7 +8,6 @@ import ssl
 import subprocess
 import sys
 from dataclasses import fields
-from datetime import datetime, timedelta, timezone, tzinfo
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, get_type_hints
 from uuid import UUID
@@ -22,24 +21,6 @@ if TYPE_CHECKING:
     from types import ModuleType
 
     import httpx2
-
-
-class _NoOffset(tzinfo):
-    def utcoffset(self, dt: datetime | None) -> None:
-        del dt
-
-    def dst(self, dt: datetime | None) -> None:
-        del dt
-
-    def tzname(self, dt: datetime | None) -> None:
-        del dt
-
-
-class _InvalidOffset(_NoOffset):
-    def utcoffset(self, dt: datetime | None) -> None:
-        del dt
-        msg = "invalid timezone offset"
-        raise ValueError(msg)
 
 
 def _invalid_numbers(options: ModuleType, lines: list[str]) -> None:
@@ -178,6 +159,24 @@ def _origins(options: ModuleType, lines: list[str]) -> None:
     lines.append(f"  frozen origins={configured.allowed_origins!r} tuple={type(configured.allowed_origins) is tuple}")
 
 
+def _key_value(options: ModuleType, errors: ModuleType, lines: list[str], value: object) -> None:
+    try:
+        accepted = options.IdempotencyKey(value)
+    except errors.ConfigurationError as error:
+        lines.extend((
+            f"  key value {value!r} ! {describe(error)}",
+            (
+                f"  rejected key attempts={error.resource_attempt_count} redirects={error.redirect_count}"
+                f" auth={error.auth_exchange_count} sends={error.network_send_count}"
+                f" budget={error.network_send_budget_used} auth_budget={error.auth_exchange_budget_used}"
+                f" refresh_ids={error.auth_refresh_ids} pending={error.auth_refresh_pending}"
+                f" wire={error.wire_send_count} info={error.info}"
+            ),
+        ))
+        return
+    record(lines, f"unexpected accepted key {value!r}", lambda: accepted)
+
+
 def _keys(options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
     for value in (
         None,
@@ -203,40 +202,12 @@ def _keys(options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
         "key\ud800value",
         "key\udfffvalue",
     ):
-        try:
-            accepted = options.IdempotencyKey(value)
-        except errors.ConfigurationError as error:
-            lines.append(f"  key value {value!r} ! {describe(error)}")
-            lines.append(
-                f"  rejected key attempts={error.resource_attempt_count} redirects={error.redirect_count}"
-                f" auth={error.auth_exchange_count} sends={error.network_send_count}"
-                f" budget={error.network_send_budget_used} auth_budget={error.auth_exchange_budget_used}"
-                f" refresh_ids={error.auth_refresh_ids} pending={error.auth_refresh_pending}"
-                f" wire={error.wire_send_count} info={error.info}"
-            )
-        else:
-            record(lines, f"unexpected accepted key {value!r}", lambda accepted=accepted: accepted)
-    for label, value in (
-        ("text", "2026-09-28"),
-        ("number", 0),
-        ("naive", datetime(2026, 9, 28, tzinfo=timezone.utc).replace(tzinfo=None)),
-        ("no offset", datetime(2026, 9, 28, tzinfo=_NoOffset())),
-        ("invalid offset", datetime(2026, 9, 28, tzinfo=_InvalidOffset())),
-    ):
-        record(lines, f"key first-used {label}", lambda value=value: options.IdempotencyKey("key", first_used_at=value))
-    record(lines, "key first-used positional", lambda: options.IdempotencyKey("key", datetime.now(timezone.utc)))
-    record(lines, "key unknown use", lambda: options.IdempotencyKey("caller-key"))
+        _key_value(options, errors, lines, value)
+    record(lines, "caller key", lambda: options.IdempotencyKey("caller-key"))
     record(lines, "key unicode value", lambda: options.IdempotencyKey("clé"))
-    offset = datetime(2026, 9, 28, 9, tzinfo=timezone(timedelta(hours=9)))
-    caller = options.IdempotencyKey(value="caller-key", first_used_at=offset)
-    lines.append(f"  key timezone preserved={caller.first_used_at is offset} value={caller.value!r}")
-    before = datetime.now(timezone.utc)
+    caller = options.IdempotencyKey(value="caller-key")
     created = options.IdempotencyKey.new()
-    after = datetime.now(timezone.utc)
-    lines.append(
-        f"  new key version={UUID(created.value).version} utc={created.first_used_at.tzinfo is timezone.utc}"
-        f" current={before <= created.first_used_at <= after}"
-    )
+    lines.append(f"  new key version={UUID(created.value).version}")
     values = options.RequestOptions(idempotency_key=caller)
     lines.append(f"  option preserves key={values.idempotency_key is caller}")
 
@@ -649,7 +620,7 @@ def _key_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> No
     observed.clear()
     exchange = Exchange(lines)
     exchange.respond(reply, reply)
-    key = options.IdempotencyKey("caller-owned", first_used_at=datetime.now(timezone.utc))
+    key = options.IdempotencyKey("caller-owned")
     with (
         exchange.client() as native,
         package.Client(
