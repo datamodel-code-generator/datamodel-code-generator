@@ -272,6 +272,17 @@ paths:
         '204':
           description: Stored.
   /files:
+    get:
+      operationId: readFile
+      tags: [files]
+      responses:
+        '200':
+          description: The image.
+          content:
+            image/*:
+              schema: {type: string, format: binary}
+        '204':
+          description: No image.
     post:
       operationId: storeFile
       tags: [files]
