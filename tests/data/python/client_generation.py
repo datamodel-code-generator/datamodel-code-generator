@@ -576,8 +576,8 @@ def client_config_report(case_name: str, root: Path) -> str:
     return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
 
 
-def client_metadata_cycle_diagnostic_report(backend: str, root: Path) -> str:
-    """Render and publish the retained metadata YAML graph through the in-memory target entry points."""
+def client_metadata_cycle_diagnostic_report(backend: str, root: Path, *, external_sequence: bool = False) -> str:
+    """Render and publish fixed metadata cycles through the public target entry points."""
     import yaml
 
     source = SOURCE.parent / "binding" / "session-cyclic-metadata.yaml"
@@ -585,7 +585,14 @@ def client_metadata_cycle_diagnostic_report(backend: str, root: Path) -> str:
     for name, entry in (("render", render_target), ("generate", generate_target)):
         attempt = root / name
         attempt.mkdir(parents=True)
-        document = yaml.safe_load(source.read_text(encoding="utf-8"))
+        if external_sequence:
+            inputs = attempt / "inputs"
+            inputs.mkdir()
+            for filename in ("session-cyclic-sequence.yaml", "session-cyclic-sequence-library.yaml"):
+                shutil.copy2(source.parent / filename, inputs / filename)
+            document = inputs / "session-cyclic-sequence.yaml"
+        else:
+            document = yaml.safe_load(source.read_text(encoding="utf-8"))
         lines.append(name)
         try:
             entry(
@@ -594,18 +601,36 @@ def client_metadata_cycle_diagnostic_report(backend: str, root: Path) -> str:
                 config=client_config({}, attempt),
                 generator=ClientTarget(),
             )
-        except APIGenerationError as error:
-            lines.extend((
-                type(error).__name__,
-                json.dumps(
-                    [{field.name: getattr(item, field.name) for field in fields(item)} for item in error.diagnostics],
-                    indent=2,
-                    sort_keys=True,
-                ),
-            ))
+        except (APIGenerationError, InvalidFileFormatError) as error:
+            if external_sequence:
+                lines.append(
+                    cyclic_input_failure(
+                        error,
+                        source="session-cyclic-sequence-library.yaml",
+                        pointer="/path-item/get/externalDocs/extra/0",
+                        location=(5, 14),
+                    )
+                )
+            elif isinstance(error, APIGenerationError):
+                lines.extend((
+                    type(error).__name__,
+                    json.dumps(
+                        [
+                            {field.name: getattr(item, field.name) for field in fields(item)}
+                            for item in error.diagnostics
+                        ],
+                        indent=2,
+                        sort_keys=True,
+                    ),
+                ))
+            else:
+                raise
         else:
             lines.append("generation succeeded")
-        lines.append(
-            f"files {sorted(path.relative_to(attempt).as_posix() for path in attempt.rglob('*') if path.is_file())}"
+        files = sorted(
+            path.relative_to(attempt).as_posix()
+            for path in attempt.rglob("*")
+            if path.is_file() and not path.is_relative_to(attempt / "inputs")
         )
+        lines.append(f"files {files}")
     return "\n".join(lines) + "\n"
