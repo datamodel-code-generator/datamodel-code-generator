@@ -1,473 +1,189 @@
 # retries pydantic_v2.BaseModel
-  sync custom read unsafe=False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  sync custom read unsafe=True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom write unsafe=False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  sync custom write unsafe=True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom pool unsafe=False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=pool stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom pool unsafe=True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=pool stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom unknown unsafe=False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom unknown unsafe=True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom claimed-unsent unsafe=False = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  sync custom claimed-unsent unsafe=True = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=read stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom connect-transient unsafe=False = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectionRefusedError'
-  custom calls=3
-  sync custom connect-transient unsafe=True = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=unsafe_operation attempts=1 reason=None status=None cause=ConnectionRefusedError'
-  custom calls=1
-  sync custom connect-unknown unsafe=False = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom connect-unknown unsafe=True = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom connect-permanent unsafe=False = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=gaierror'
-  custom calls=1
-  sync custom connect-permanent unsafe=True = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=gaierror'
-  custom calls=1
-  sync custom programming-value unsafe=False = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=ValueError'
-  custom calls=1
-  sync custom programming-value unsafe=True = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=ValueError'
-  custom calls=1
-  sync custom programming-type unsafe=False = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=TypeError'
-  custom calls=1
-  sync custom programming-type unsafe=True = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=TypeError'
-  custom calls=1
-  sync custom unclassified-os unsafe=False = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=ConnectionRefusedError'
-  custom calls=1
-  sync custom unclassified-os unsafe=True = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=ConnectionRefusedError'
-  custom calls=1
-  sync custom connect-timeout unsafe=False = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  sync custom connect-timeout unsafe=True = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=connect stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom read-timeout unsafe=False = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  sync custom read-timeout unsafe=True = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom write-timeout unsafe=False = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  sync custom write-timeout unsafe=True = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom pool-timeout unsafe=False = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=pool stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom pool-timeout unsafe=True = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=pool stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  sync custom pool enabled deadline=False = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  sync custom pool enabled deadline=True = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=send stop=None attempts=1 reason=deadline_exceeded status=None cause=APITimeoutError'
-  custom calls=1
-  sync native fault ConnectTimeout = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
-  injected adapter invocations=3
-  sync native fault PoolTimeout = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
-  injected adapter invocations=1
-  sync native fault ReadTimeout = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ReadTimeout'
-  injected adapter invocations=3
-  sync native fault WriteTimeout = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=WriteTimeout'
-  injected adapter invocations=3
-  sync native fault ReadError = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=ReadError'
-  injected adapter invocations=3
-  sync native fault WriteError = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=max_retries_exhausted attempts=3 reason=None status=None cause=WriteError'
-  injected adapter invocations=3
-  sync native fault ConnectError = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault ProxyError = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 reason=None status=None cause=ProxyError'
-  injected adapter invocations=1
-  sync native fault UnsupportedProtocol = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=UnsupportedProtocol'
-  injected adapter invocations=1
-  sync native fault LocalProtocolError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=LocalProtocolError'
-  injected adapter invocations=1
-  sync native fault DecodingError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=DecodingError'
-  injected adapter invocations=1
-  sync native fault CloseError = 'CleanupError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=CloseError'
-  injected adapter invocations=1
-  sync native fault SSEError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=SSEError'
-  injected adapter invocations=1
-  sync native fault InvalidURL = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=InvalidURL'
-  injected adapter invocations=1
-  sync native fault TransportError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=TransportError'
-  injected adapter invocations=1
-  sync native fault remote-client = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=RemoteProtocolError'
-  injected adapter invocations=1
-  sync native fault remote-client-head = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=302 cause=RemoteProtocolError'
-  injected adapter invocations=1
-  sync native fault invalid-head = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=302 cause=InvalidURL'
-  injected adapter invocations=1
-  sync native fault remote-core = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=RemoteProtocolError'
-  injected adapter invocations=3
-  sync native fault remote-core-head = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=RemoteProtocolError'
-  injected adapter invocations=3
-  sync native fault connect-observed-errno = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-observed-dns-again = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-observed-dns-permanent = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-observed-enoent = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-observed-unknown = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-observed-group = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-observed-group-before-cause = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-observed-mixed = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-observed-ssl-wrapper = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-observed-shared = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-observed-context = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-observed-suppressed-context = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-observed-explicit-before-context = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-observed-depth-limit = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-observed-depth-excess = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-observed-node-limit = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-observed-node-excess = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-observed-cycle = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-final-unknown = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-final-permanent = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-final-transient = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-final-mismatch = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-final-suppressed = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-final-ssl = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-final-cycle = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-final-depth-limit = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-final-depth-excess = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-final-node-limit = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault connect-final-node-excess = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-observed-ssl-rewritten = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault connect-after-headers = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  sync native fault trace-name = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-info = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-failed-value = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-broken-before-error = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault trace-missing-request = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-request-method = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-request-url = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-request-target = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-different-request = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-complete-before-start = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-type = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-length = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-version = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-reason = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-h2-length = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-empty-version = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-headers-type = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-pair-type = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-pair-length = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-name-type = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-value-type = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-status-type = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-head-status-range = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  sync native fault trace-harmless-events = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault trace-repeated-headers = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  sync native fault trace-nonredirect-head = 'AdapterExecutionError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=InvalidURL'
-  injected adapter invocations=1
-  sync native fault trace-missing-location = 'AdapterExecutionError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=InvalidURL'
-  injected adapter invocations=1
-  sync native fault trace-different-core-provenance = 'AdapterExecutionError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=InvalidURL'
-  injected adapter invocations=1
-  sync native fault trace-processing-cycle = 'AdapterExecutionError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=RemoteProtocolError'
-  injected adapter invocations=1
-  sync native fault trace-processing-excess = 'AdapterExecutionError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=RemoteProtocolError'
-  injected adapter invocations=1
-  sync native missing required trace = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  missing trace actual arrivals=1
-  sync custom malformed phase list = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  sync custom malformed phase dict = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  sync custom malformed phase NoneType = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  sync custom malformed phase str = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  sync contract close OSError: AdapterContractError secondary=['OSError'] same=False
-  sync contract stream closes=1
-  sync contract close Stop: Stop secondary=[] same=True
-  sync contract stream closes=1
-  async custom read unsafe=False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  async custom read unsafe=True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom write unsafe=False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  async custom write unsafe=True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom pool unsafe=False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=pool stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom pool unsafe=True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=pool stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom unknown unsafe=False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom unknown unsafe=True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom claimed-unsent unsafe=False = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  async custom claimed-unsent unsafe=True = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=read stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom connect-transient unsafe=False = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectionRefusedError'
-  custom calls=3
-  async custom connect-transient unsafe=True = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=unsafe_operation attempts=1 reason=None status=None cause=ConnectionRefusedError'
-  custom calls=1
-  async custom connect-unknown unsafe=False = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom connect-unknown unsafe=True = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom connect-permanent unsafe=False = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=gaierror'
-  custom calls=1
-  async custom connect-permanent unsafe=True = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=gaierror'
-  custom calls=1
-  async custom programming-value unsafe=False = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=ValueError'
-  custom calls=1
-  async custom programming-value unsafe=True = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=ValueError'
-  custom calls=1
-  async custom programming-type unsafe=False = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=TypeError'
-  custom calls=1
-  async custom programming-type unsafe=True = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=TypeError'
-  custom calls=1
-  async custom unclassified-os unsafe=False = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=ConnectionRefusedError'
-  custom calls=1
-  async custom unclassified-os unsafe=True = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=ConnectionRefusedError'
-  custom calls=1
-  async custom connect-timeout unsafe=False = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  async custom connect-timeout unsafe=True = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=connect stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom read-timeout unsafe=False = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  async custom read-timeout unsafe=True = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom write-timeout unsafe=False = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  async custom write-timeout unsafe=True = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unsafe_operation attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom pool-timeout unsafe=False = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=pool stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom pool-timeout unsafe=True = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=pool stop=transport_not_retryable attempts=1 reason=None status=None cause=NoneType'
-  custom calls=1
-  async custom pool enabled deadline=False = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=max_retries_exhausted attempts=3 reason=None status=None cause=NoneType'
-  custom calls=3
-  async custom pool enabled deadline=True = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=send stop=None attempts=1 reason=deadline_exceeded status=None cause=APITimeoutError'
-  custom calls=1
-  async native fault ConnectTimeout = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
-  injected adapter invocations=3
-  async native fault PoolTimeout = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
-  injected adapter invocations=1
-  async native fault ReadTimeout = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ReadTimeout'
-  injected adapter invocations=3
-  async native fault WriteTimeout = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=WriteTimeout'
-  injected adapter invocations=3
-  async native fault ReadError = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=ReadError'
-  injected adapter invocations=3
-  async native fault WriteError = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=max_retries_exhausted attempts=3 reason=None status=None cause=WriteError'
-  injected adapter invocations=3
-  async native fault ConnectError = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault ProxyError = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 reason=None status=None cause=ProxyError'
-  injected adapter invocations=1
-  async native fault UnsupportedProtocol = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=UnsupportedProtocol'
-  injected adapter invocations=1
-  async native fault LocalProtocolError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=LocalProtocolError'
-  injected adapter invocations=1
-  async native fault DecodingError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=DecodingError'
-  injected adapter invocations=1
-  async native fault CloseError = 'CleanupError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=CloseError'
-  injected adapter invocations=1
-  async native fault SSEError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=SSEError'
-  injected adapter invocations=1
-  async native fault InvalidURL = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=InvalidURL'
-  injected adapter invocations=1
-  async native fault TransportError = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=TransportError'
-  injected adapter invocations=1
-  async native fault remote-client = 'AdapterExecutionError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=RemoteProtocolError'
-  injected adapter invocations=1
-  async native fault remote-client-head = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=302 cause=RemoteProtocolError'
-  injected adapter invocations=1
-  async native fault invalid-head = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=302 cause=InvalidURL'
-  injected adapter invocations=1
-  async native fault remote-core = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=RemoteProtocolError'
-  injected adapter invocations=3
-  async native fault remote-core-head = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=read stop=max_retries_exhausted attempts=3 reason=None status=None cause=RemoteProtocolError'
-  injected adapter invocations=3
-  async native fault connect-observed-errno = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-observed-dns-again = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-observed-dns-permanent = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-observed-enoent = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-observed-unknown = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-observed-group = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-observed-group-before-cause = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-observed-mixed = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-observed-ssl-wrapper = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-observed-shared = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-observed-context = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-observed-suppressed-context = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-observed-explicit-before-context = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-observed-depth-limit = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-observed-depth-excess = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-observed-node-limit = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-observed-node-excess = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-observed-cycle = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-final-unknown = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-final-permanent = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-final-transient = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-final-mismatch = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-final-suppressed = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-final-ssl = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-final-cycle = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-final-depth-limit = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-final-depth-excess = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-final-node-limit = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault connect-final-node-excess = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-observed-ssl-rewritten = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault connect-after-headers = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
-  injected adapter invocations=3
-  async native fault trace-name = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-info = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-failed-value = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-broken-before-error = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault trace-missing-request = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-request-method = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-request-url = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-request-target = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-different-request = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-complete-before-start = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-type = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-length = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-version = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-reason = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-h2-length = 'AdapterContractError delivery=DeliveryState.MAYBE_SENT phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-empty-version = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-headers-type = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-pair-type = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-pair-length = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-name-type = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-value-type = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-status-type = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-head-status-range = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  injected adapter invocations=1
-  async native fault trace-harmless-events = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault trace-repeated-headers = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=transport_not_retryable attempts=1 reason=None status=None cause=ConnectError'
-  injected adapter invocations=1
-  async native fault trace-nonredirect-head = 'AdapterExecutionError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=InvalidURL'
-  injected adapter invocations=1
-  async native fault trace-missing-location = 'AdapterExecutionError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=InvalidURL'
-  injected adapter invocations=1
-  async native fault trace-different-core-provenance = 'AdapterExecutionError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=InvalidURL'
-  injected adapter invocations=1
-  async native fault trace-processing-cycle = 'AdapterExecutionError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=RemoteProtocolError'
-  injected adapter invocations=1
-  async native fault trace-processing-excess = 'AdapterExecutionError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=RemoteProtocolError'
-  injected adapter invocations=1
-  async native missing required trace = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  missing trace actual arrivals=1
-  async custom malformed phase list = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  async custom malformed phase dict = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  async custom malformed phase NoneType = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  async custom malformed phase str = 'AdapterContractError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=None status=None cause=NoneType'
-  async contract close OSError: AdapterContractError secondary=['OSError'] same=False
-  async contract stream closes=1
-  async contract close Stop: Stop secondary=[] same=True
-  async contract stream closes=1
+  sync native ConnectError get_safe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  native send invocations=3 required=3
+  sync native ConnectError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  native send invocations=3 required=3
+  sync native ConnectError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  native send invocations=3 required=3
+  sync native ConnectError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  native send invocations=3 required=3
+  sync native ConnectError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  native send invocations=3 required=3
+  sync native ConnectTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  native send invocations=3 required=3
+  sync native ConnectTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  native send invocations=3 required=3
+  sync native ConnectTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  native send invocations=3 required=3
+  sync native ConnectTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  native send invocations=3 required=3
+  sync native ConnectTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  native send invocations=3 required=3
+  sync native PoolTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  native send invocations=1 required=1
+  sync native PoolTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  native send invocations=1 required=1
+  sync native PoolTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  native send invocations=1 required=1
+  sync native PoolTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  native send invocations=1 required=1
+  sync native PoolTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  native send invocations=1 required=1
+  sync native ReadError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  native send invocations=1 required=1
+  sync native ReadError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  native send invocations=1 required=1
+  sync native ReadError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  native send invocations=1 required=1
+  sync native ReadError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  native send invocations=1 required=1
+  sync native ReadError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  native send invocations=1 required=1
+  sync native ReadTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  native send invocations=1 required=1
+  sync native ReadTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  native send invocations=1 required=1
+  sync native ReadTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  native send invocations=1 required=1
+  sync native ReadTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  native send invocations=1 required=1
+  sync native ReadTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  native send invocations=1 required=1
+  sync native WriteError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  native send invocations=1 required=1
+  sync native WriteError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  native send invocations=1 required=1
+  sync native WriteError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  native send invocations=1 required=1
+  sync native WriteError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  native send invocations=1 required=1
+  sync native WriteError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  native send invocations=1 required=1
+  sync native WriteTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  native send invocations=1 required=1
+  sync native WriteTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  native send invocations=1 required=1
+  sync native WriteTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  native send invocations=1 required=1
+  sync native WriteTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  native send invocations=1 required=1
+  sync native WriteTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  native send invocations=1 required=1
+  sync native RemoteProtocolError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  native send invocations=1 required=1
+  sync native RemoteProtocolError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  native send invocations=1 required=1
+  sync native RemoteProtocolError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  native send invocations=1 required=1
+  sync native RemoteProtocolError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  native send invocations=1 required=1
+  sync native RemoteProtocolError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  native send invocations=1 required=1
+  sync native RuntimeError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  native send invocations=1 required=1
+  sync native RuntimeError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  native send invocations=1 required=1
+  sync native RuntimeError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  native send invocations=1 required=1
+  sync native RuntimeError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  native send invocations=1 required=1
+  sync native RuntimeError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  native send invocations=1 required=1
+  async native ConnectError get_safe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  native send invocations=3 required=3
+  async native ConnectError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  native send invocations=3 required=3
+  async native ConnectError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  native send invocations=3 required=3
+  async native ConnectError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  native send invocations=3 required=3
+  async native ConnectError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=None status=None cause=ConnectError'
+  native send invocations=3 required=3
+  async native ConnectTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  native send invocations=3 required=3
+  async native ConnectTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  native send invocations=3 required=3
+  async native ConnectTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  native send invocations=3 required=3
+  async native ConnectTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  native send invocations=3 required=3
+  async native ConnectTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 reason=phase_timeout status=None cause=ConnectTimeout'
+  native send invocations=3 required=3
+  async native PoolTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  native send invocations=1 required=1
+  async native PoolTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  native send invocations=1 required=1
+  async native PoolTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  native send invocations=1 required=1
+  async native PoolTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  native send invocations=1 required=1
+  async native PoolTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.NOT_SENT phase=pool stop=transport_not_retryable attempts=1 reason=phase_timeout status=None cause=PoolTimeout'
+  native send invocations=1 required=1
+  async native ReadError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  native send invocations=1 required=1
+  async native ReadError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  native send invocations=1 required=1
+  async native ReadError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  native send invocations=1 required=1
+  async native ReadError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  native send invocations=1 required=1
+  async native ReadError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=ReadError'
+  native send invocations=1 required=1
+  async native ReadTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  native send invocations=1 required=1
+  async native ReadTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  native send invocations=1 required=1
+  async native ReadTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  native send invocations=1 required=1
+  async native ReadTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  native send invocations=1 required=1
+  async native ReadTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=ReadTimeout'
+  native send invocations=1 required=1
+  async native WriteError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  native send invocations=1 required=1
+  async native WriteError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  native send invocations=1 required=1
+  async native WriteError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  native send invocations=1 required=1
+  async native WriteError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  native send invocations=1 required=1
+  async native WriteError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=None status=None cause=WriteError'
+  native send invocations=1 required=1
+  async native WriteTimeout get_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  native send invocations=1 required=1
+  async native WriteTimeout get_keyed_safe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  native send invocations=1 required=1
+  async native WriteTimeout get_keyed_safe key='caller-key' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  native send invocations=1 required=1
+  async native WriteTimeout get_keyed_safe key='disabled' = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  native send invocations=1 required=1
+  async native WriteTimeout post_unsafe key=None = 'APITimeoutError delivery=DeliveryState.MAYBE_SENT phase=write stop=unknown_delivery attempts=1 reason=phase_timeout status=None cause=WriteTimeout'
+  native send invocations=1 required=1
+  async native RemoteProtocolError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  native send invocations=1 required=1
+  async native RemoteProtocolError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  native send invocations=1 required=1
+  async native RemoteProtocolError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  native send invocations=1 required=1
+  async native RemoteProtocolError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  native send invocations=1 required=1
+  async native RemoteProtocolError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
+  native send invocations=1 required=1
+  async native RuntimeError get_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  native send invocations=1 required=1
+  async native RuntimeError get_keyed_safe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  native send invocations=1 required=1
+  async native RuntimeError get_keyed_safe key='caller-key' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  native send invocations=1 required=1
+  async native RuntimeError get_keyed_safe key='disabled' = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  native send invocations=1 required=1
+  async native RuntimeError post_unsafe key=None = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=unknown_delivery attempts=1 reason=None status=None cause=RuntimeError'
+  native send invocations=1 required=1
+  native task cancellation propagated count=1
+  call after native cancellation = FieldSafeGetResponse(root='ready')
+  borrowed native after repeated root close=False
+  real requests including cancelled response=2
+  owned sync primary=ValueError notes=1
+  owned sync native closes=1
+  owned async primary=CancelledError notes=1 count=1
+  owned async native closes=1

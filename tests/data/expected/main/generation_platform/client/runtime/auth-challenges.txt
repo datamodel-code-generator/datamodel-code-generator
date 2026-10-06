@@ -150,15 +150,15 @@
   auth gate 407 no recovery ! APIStatusError: APIStatusError(status_code=407, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=407, body=b'rejected', body_bytes=b'rejected', truncated=False] api_status_error
     callbacks=[('get', 'bearer', ())] unused=1
   > POST https://api.example.com/unsafe
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, authorization: Bearer first-material, content-length: 7] b'request'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, content-length: 7, authorization: Bearer first-material] b'request'
   auth gate disabled before unsafe ! AuthenticationError: AuthenticationError(status_code=401, operation_id='unsafe_auth', call_id='<call>', retry_stop_reason='disabled') [operation_id='unsafe_auth', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=401, body=b'rejected', body_bytes=b'rejected', truncated=False] authentication_error
     callbacks=[('get', 'bearer', ()), ('invalidate', True, True)] unused=1
   > POST https://api.example.com/unsafe
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, authorization: Bearer first-material, content-length: 7] b'request'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, content-length: 7, authorization: Bearer first-material] b'request'
   auth gate unsafe no recovery ! AuthenticationError: AuthenticationError(status_code=401, operation_id='unsafe_auth', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='unsafe_auth', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=401, body=b'rejected', body_bytes=b'rejected', truncated=False] authentication_error
     callbacks=[('get', 'bearer', ()), ('invalidate', True, True)] unused=1
   > POST https://api.example.com/idempotent
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, authorization: Bearer first-material, transfer-encoding: chunked] b'request'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, transfer-encoding: chunked, authorization: Bearer first-material] b'request'
   auth gate body before safety ! AuthenticationError: AuthenticationError(status_code=401, operation_id='idempotent_auth', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='idempotent_auth', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=401, body=b'rejected', body_bytes=b'rejected', truncated=False] authentication_error
     callbacks=[('get', 'bearer', ()), ('invalidate', True, True)] unused=1
   > GET https://api.example.com/never

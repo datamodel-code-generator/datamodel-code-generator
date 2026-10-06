@@ -154,7 +154,6 @@
     event call_end status=304
     delete
   refused 304 with a deletion result ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error"]
-  cancelled before lookup ! RequestCancelledError: RequestCancelledError(operation_id='getUser', call_id='<call>', delivery_state='NOT_SENT') [operation_id='getUser', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
     get key=32
   lookup failure ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('disk')] cache_store_error
     get key=32

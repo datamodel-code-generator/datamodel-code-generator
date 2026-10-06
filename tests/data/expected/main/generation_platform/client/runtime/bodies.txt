@@ -83,7 +83,7 @@
   > PUT https://api.example.com/v1/pets/1/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'ok'
   attempt closed
-  attempt failing to close ! CleanupError: CleanupError(operation_id='uploadPhoto', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=SDKError()] cleanup_error
+  attempt failing to close ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='cleanup_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
   factory <call> 0 0 True
   attempt closed
   attempt failing to read and to close: SDKError secondary ['SDKError']
@@ -100,16 +100,14 @@
   factory attempt built directly None application/x-attempt b'direct'
   attempt closed
   factory <call> 0 0 True
-  > PUT https://api.example.com/v1/pets/1/photo [Accept-Encoding: gzip, deflate, Accept: image/*, Content-Type: application/octet-stream] b'x' None application/x-attempt
-    unknown 5.0/30.0/30.0/5.0
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'x'
   attempt closed
-  < closed
   interrupted attempt close propagated
   factory <call> 0 0 True
-  > PUT https://api.example.com/v1/pets/1/photo [Accept-Encoding: gzip, deflate, Accept: image/*, Content-Type: application/octet-stream] b'x' None application/x-attempt
-    unknown 5.0/30.0/30.0/5.0
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'x'
   attempt closed
-  < closed
   async interrupted attempt close propagated
   > PUT https://api.example.com/v1/pets/1/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'cdef'
@@ -168,7 +166,7 @@
   > PUT https://api.example.com/v1/pets/1/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'ok'
   attempt closed
-  async attempt failing to close ! CleanupError: CleanupError(operation_id='uploadPhoto', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=SDKError()] cleanup_error
+  async attempt failing to close ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='cleanup_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
   factory <call> 0 0 True
   attempt closed
   async attempt failing to read and to close: SDKError secondary ['SDKError']

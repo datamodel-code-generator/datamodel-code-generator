@@ -4,40 +4,40 @@
   CheckArchiveResponse = None
   EmptyArchiveResponse = None
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   bodyless error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > GET https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   JSON error ! NotFoundError: NotFoundError(status_code=404, operation_id='readArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='readArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail":"missing"}', truncated=False] not_found_error
   > PATCH https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   range error ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='checkArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='checkArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body_bytes=b'', truncated=False] permission_denied_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   undeclared success ! APIStatusError: APIStatusError(status_code=200, operation_id='createArchive', call_id='<call>', reason='unexpected_status') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > DELETE https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   empty responses ! APIStatusError: APIStatusError(status_code=204, operation_id='emptyArchive', call_id='<call>', reason='unexpected_status') [operation_id='emptyArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   metadata error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async bodyless error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > GET https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async JSON error ! NotFoundError: NotFoundError(status_code=404, operation_id='readArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='readArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail":"missing"}', truncated=False] not_found_error
   > PATCH https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async range error ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='checkArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='checkArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body_bytes=b'', truncated=False] permission_denied_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async undeclared success ! APIStatusError: APIStatusError(status_code=200, operation_id='createArchive', call_id='<call>', reason='unexpected_status') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > DELETE https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async empty responses ! APIStatusError: APIStatusError(status_code=204, operation_id='emptyArchive', call_id='<call>', reason='unexpected_status') [operation_id='emptyArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async metadata error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
 # no-success pydantic_v2.dataclass
   CreateArchiveResponse = None
@@ -45,40 +45,40 @@
   CheckArchiveResponse = None
   EmptyArchiveResponse = None
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   bodyless error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > GET https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   JSON error ! NotFoundError: NotFoundError(status_code=404, operation_id='readArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='readArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail":"missing"}', truncated=False] not_found_error
   > PATCH https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   range error ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='checkArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='checkArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body_bytes=b'', truncated=False] permission_denied_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   undeclared success ! APIStatusError: APIStatusError(status_code=200, operation_id='createArchive', call_id='<call>', reason='unexpected_status') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > DELETE https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   empty responses ! APIStatusError: APIStatusError(status_code=204, operation_id='emptyArchive', call_id='<call>', reason='unexpected_status') [operation_id='emptyArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   metadata error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async bodyless error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > GET https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async JSON error ! NotFoundError: NotFoundError(status_code=404, operation_id='readArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='readArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail":"missing"}', truncated=False] not_found_error
   > PATCH https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async range error ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='checkArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='checkArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body_bytes=b'', truncated=False] permission_denied_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async undeclared success ! APIStatusError: APIStatusError(status_code=200, operation_id='createArchive', call_id='<call>', reason='unexpected_status') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > DELETE https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async empty responses ! APIStatusError: APIStatusError(status_code=204, operation_id='emptyArchive', call_id='<call>', reason='unexpected_status') [operation_id='emptyArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async metadata error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
 # no-success dataclasses.dataclass
   CreateArchiveResponse = None
@@ -86,40 +86,40 @@
   CheckArchiveResponse = None
   EmptyArchiveResponse = None
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   bodyless error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > GET https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   JSON error ! NotFoundError: NotFoundError(status_code=404, operation_id='readArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='readArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail":"missing"}', truncated=False] not_found_error
   > PATCH https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   range error ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='checkArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='checkArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body_bytes=b'', truncated=False] permission_denied_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   undeclared success ! APIStatusError: APIStatusError(status_code=200, operation_id='createArchive', call_id='<call>', reason='unexpected_status') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > DELETE https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   empty responses ! APIStatusError: APIStatusError(status_code=204, operation_id='emptyArchive', call_id='<call>', reason='unexpected_status') [operation_id='emptyArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   metadata error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async bodyless error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > GET https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async JSON error ! NotFoundError: NotFoundError(status_code=404, operation_id='readArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='readArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail":"missing"}', truncated=False] not_found_error
   > PATCH https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async range error ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='checkArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='checkArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body_bytes=b'', truncated=False] permission_denied_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async undeclared success ! APIStatusError: APIStatusError(status_code=200, operation_id='createArchive', call_id='<call>', reason='unexpected_status') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > DELETE https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async empty responses ! APIStatusError: APIStatusError(status_code=204, operation_id='emptyArchive', call_id='<call>', reason='unexpected_status') [operation_id='emptyArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async metadata error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
 # no-success typing.TypedDict
   CreateArchiveResponse = None
@@ -127,40 +127,40 @@
   CheckArchiveResponse = None
   EmptyArchiveResponse = None
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   bodyless error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > GET https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   JSON error ! NotFoundError: NotFoundError(status_code=404, operation_id='readArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='readArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body={'detail': 'missing'}, body_bytes=b'{"detail":"missing"}', truncated=False] not_found_error
   > PATCH https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   range error ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='checkArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='checkArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body_bytes=b'', truncated=False] permission_denied_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   undeclared success ! APIStatusError: APIStatusError(status_code=200, operation_id='createArchive', call_id='<call>', reason='unexpected_status') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > DELETE https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   empty responses ! APIStatusError: APIStatusError(status_code=204, operation_id='emptyArchive', call_id='<call>', reason='unexpected_status') [operation_id='emptyArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   metadata error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async bodyless error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > GET https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async JSON error ! NotFoundError: NotFoundError(status_code=404, operation_id='readArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='readArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body={'detail': 'missing'}, body_bytes=b'{"detail":"missing"}', truncated=False] not_found_error
   > PATCH https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async range error ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='checkArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='checkArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body_bytes=b'', truncated=False] permission_denied_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async undeclared success ! APIStatusError: APIStatusError(status_code=200, operation_id='createArchive', call_id='<call>', reason='unexpected_status') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > DELETE https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async empty responses ! APIStatusError: APIStatusError(status_code=204, operation_id='emptyArchive', call_id='<call>', reason='unexpected_status') [operation_id='emptyArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async metadata error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
 # no-success msgspec.Struct
   CreateArchiveResponse = None
@@ -168,38 +168,38 @@
   CheckArchiveResponse = None
   EmptyArchiveResponse = None
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   bodyless error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > GET https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   JSON error ! NotFoundError: NotFoundError(status_code=404, operation_id='readArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='readArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail":"missing"}', truncated=False] not_found_error
   > PATCH https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   range error ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='checkArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='checkArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body_bytes=b'', truncated=False] permission_denied_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   undeclared success ! APIStatusError: APIStatusError(status_code=200, operation_id='createArchive', call_id='<call>', reason='unexpected_status') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > DELETE https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   empty responses ! APIStatusError: APIStatusError(status_code=204, operation_id='emptyArchive', call_id='<call>', reason='unexpected_status') [operation_id='emptyArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   metadata error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async bodyless error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
   > GET https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async JSON error ! NotFoundError: NotFoundError(status_code=404, operation_id='readArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='readArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail":"missing"}', truncated=False] not_found_error
   > PATCH https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async range error ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='checkArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='checkArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body_bytes=b'', truncated=False] permission_denied_error
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async undeclared success ! APIStatusError: APIStatusError(status_code=200, operation_id='createArchive', call_id='<call>', reason='unexpected_status') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=200, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > DELETE https://api.example.com/archives
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async empty responses ! APIStatusError: APIStatusError(status_code=204, operation_id='emptyArchive', call_id='<call>', reason='unexpected_status') [operation_id='emptyArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > POST https://api.example.com/archives
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   async metadata error ! ConflictError: ConflictError(status_code=409, operation_id='createArchive', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createArchive', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body_bytes=b'', truncated=False] conflict_error
