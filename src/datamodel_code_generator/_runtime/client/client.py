@@ -92,7 +92,6 @@ from .options import (
     context,
     layered_redirects,
     layered_retry,
-    new_key,
     resolve_transport_options,
 )
 from .paths import PLACEHOLDER, dot_segment, dotted_route, path_segments
@@ -989,7 +988,6 @@ class _Call(LogicalCallContext):
         "idempotency",
         "initial_origin",
         "key",
-        "key_expires_at",
         "last_failure",
         "last_info",
         "method",
@@ -1020,16 +1018,9 @@ class _Call(LogicalCallContext):
         )
         self.idempotency = None if operation is None else operation.idempotency
         key = settings.idempotency_key
-        self.key = new_key(settings.clock) if self.idempotency is not None and isinstance(key, Unset) else key
-        self.key_expires_at: float | None = None
+        self.key = IdempotencyKey.new() if self.idempotency is not None and isinstance(key, Unset) else key
         self.last_failure: BaseException | None = None
         self.last_info: ResponseInfo | None = None
-        if self.idempotency is not None and isinstance(self.key, IdempotencyKey) and self.key.first_used_at is not None:
-            self.key_expires_at = (
-                self.started
-                + self.idempotency.retention_seconds
-                - (settings.clock.time() - self.key.first_used_at.timestamp())
-            )
         self.retry_headers = EMPTY_RETRY_HEADERS
         self.allowed_origins = _EMPTY_ORIGINS
         self.initial_origin: Origin | None = None
@@ -1046,13 +1037,11 @@ class _Call(LogicalCallContext):
         self.received_wall_time = 0.0
         self.response_transferred = False
 
-    def bind(self, capabilities: TransportCapabilities, options: RequestOptions | None) -> None:
+    def bind(self, capabilities: TransportCapabilities) -> None:
         """Validate operation-bound controls before hooks, encoding, and any send."""
         operation = self.operation
         if self.idempotency is None and isinstance(self.key, IdempotencyKey):
-            if options is not None and isinstance(options.idempotency_key, IdempotencyKey):
-                raise ConfigurationError(field_path=("idempotency_key",), condition="not_declared")
-            self.key = None
+            raise ConfigurationError(field_path=("idempotency_key",), condition="not_declared")
         retry = self.settings.retry
         if (
             retry.retry_after_ms_header is not UNSET
@@ -1156,8 +1145,7 @@ class _Call(LogicalCallContext):
                 reason=reason,
                 method=self.method,
                 retry_safety=self.retry_safety,
-                idempotency=self.idempotency,
-                key_expires_at=self.key_expires_at,
+                idempotency=self.idempotency if isinstance(self.key, IdempotencyKey) else None,
                 delivery_state=self.delivery_state,
                 resource_attempt_count=self.resource_attempt_count,
                 body_replayable=replayable,
@@ -1167,7 +1155,6 @@ class _Call(LogicalCallContext):
             ),
             retry,
             retry_owner=retry_owner,
-            now=now,
             auth_recovery_used=auth is not None and auth.recovery_used,
         )
         if self.stop_reason is not None:
@@ -1209,27 +1196,11 @@ class _Call(LogicalCallContext):
         return failure
 
     def resending(self, error: BaseException) -> None:
-        """Recheck termination and key retention before waiting or opening another body."""
+        """Recheck termination before waiting or opening another body."""
         self.check("sleep")
         if self.retry_blocked:
             self.stop_reason = "callback_failure"
             raise self.stopped(error)
-        if self.key_expires_at is not None and self.monotonic() >= self.key_expires_at:
-            self.stop_reason = "unsafe_operation"
-            raise self.stopped(error)
-
-    def retained(self) -> None:
-        """Do not admit a resend after its stable idempotency key has expired during preparation."""
-        if self.key_expires_at is None or self.monotonic() < self.key_expires_at:
-            return
-        if self.hop_index:
-            raise self.snapshot_error(
-                RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=self.last_info)
-            )
-        if self.attempt_index:
-            assert self.last_failure is not None
-            self.stop_reason = "unsafe_operation"
-            raise self.stopped(self.last_failure)
 
     def restart(self, original: PreparedRequest[EncodedAttempt]) -> frozenset[tuple[str, str]]:
         """Begin the next resource candidate from the once-encoded original request."""
@@ -1279,12 +1250,10 @@ class _Call(LogicalCallContext):
                 redirect_count=self.redirect_count,
                 visited=visited,
                 retry_safety=self.retry_safety,
-                idempotency=self.idempotency,
-                key_expires_at=self.key_expires_at,
+                idempotency=self.idempotency if isinstance(self.key, IdempotencyKey) else None,
                 body_replayable=replayable,
             ),
             redirects,
-            now=self.monotonic(),
         )
         if self.send_limit is not None and self.network_send_budget_used >= self.send_limit:
             raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info)
@@ -2679,7 +2648,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             if fields:
                 body = operation.bound(body, fields, media_type)
-            result = self._run(call, body, prepare, receive, options)
+            result = self._run(call, body, prepare, receive)
             call.check("decode")
             if events is not None:
                 events.finish(result)
@@ -2736,7 +2705,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             return Response(data=data, info=info), result
 
         try:
-            completed, result = self._run(call, body, prepare, receive, options)
+            completed, result = self._run(call, body, prepare, receive)
             call.check("decode")
             if events is not None:
                 events.finish(completed)
@@ -2784,7 +2753,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             return built
 
         try:
-            completed, result = self._run(call, UNSET, lambda: (request, UNSET), receive, options)
+            completed, result = self._run(call, UNSET, lambda: (request, UNSET), receive)
             call.check("decode")
             if events is not None:
                 events.finish(completed)
@@ -2845,7 +2814,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             if fields:
                 body = operation.bound(body, fields, media_type)
-            result = self._run(call, body, prepare, receive, options)
+            result = self._run(call, body, prepare, receive)
             call.check("send")
             if _auth_failed(call) or session is not None:
                 result.raise_for_status()
@@ -2925,7 +2894,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             return self._raw_prepared(method, url, body, options)
 
         try:
-            result = self._run(call, body, prepare, receive, options)
+            result = self._run(call, body, prepare, receive)
             call.check("send")
             if _auth_failed(call):
                 result.raise_for_status()
@@ -3005,7 +2974,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             return self._raw_response(response, info, call, stream=True)
 
         try:
-            result = self._run(call, UNSET, prepare, receive, options, adapter)
+            result = self._run(call, UNSET, prepare, receive, adapter)
             call.check("send")
             if result.info.status_code != _SWITCHING:
                 refused(result)
@@ -3030,13 +2999,12 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             if not call.streaming:
                 call.finish()
 
-    def _run(  # noqa: PLR0913, PLR0917
+    def _run(
         self,
         call: _Call,
         body: object,
         prepare: Callable[[], tuple[PreparedRequest[EncodedAttempt], object]],
         receive: Callable[[TransportResponse, ResponseInfo], T],
-        options: RequestOptions | None,
         adapter: TransportAdapter | None = None,
     ) -> T:
         """Own entry capture, the single encode, every hop, and final source release.
@@ -3053,7 +3021,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 else None
             )
             call.check("encode")
-            call.bind(adapter.capabilities, options)
+            call.bind(adapter.capabilities)
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
                 self._bind_auth(call)
             if (events := call.events) is not None:
@@ -3390,7 +3358,6 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         events, trace = call.events, call.trace
         try:
             call.check("encode")
-            call.retained()
             self._authorize(source, call)
             renewed = False
             while True:
@@ -3408,15 +3375,12 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 _released(partial(_release_permit, releasing), call.operation_id, call.call_id)
                 self._authenticate(call)
             call.check("encode")
-            call.retained()
             if source is not None and call.body_enabled:
                 attempt = source.open(_context(call))
             call.check("encode")
-            call.retained()
             request = self._outgoing(request, attempt, source, call)
             if events is not None and call.hop_index == 0:
                 events.emit(events.attempting())
-            call.retained()
             _usable_credentials(call)
             io = call.io_context(trace)
             call.admit_send(redirect=call.hop_index != 0)
@@ -3665,7 +3629,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         try:
             if fields:
                 body = operation.bound(body, fields, media_type)
-            result = await call.bounded(lambda: self._run(call, body, prepare, receive, options))
+            result = await call.bounded(lambda: self._run(call, body, prepare, receive))
             call.check("decode")
             if events is not None:
                 await events.afinish(result)
@@ -3723,7 +3687,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             return Response(data=data, info=info), result
 
         try:
-            completed, result = await call.bounded(lambda: self._run(call, body, prepare, receive, options))
+            completed, result = await call.bounded(lambda: self._run(call, body, prepare, receive))
             call.check("decode")
             if events is not None:
                 await events.afinish(completed)
@@ -3772,9 +3736,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             return built
 
         try:
-            completed, result = await call.bounded(
-                lambda: self._run(call, UNSET, lambda: (request, UNSET), receive, options)
-            )
+            completed, result = await call.bounded(lambda: self._run(call, UNSET, lambda: (request, UNSET), receive))
             call.check("decode")
             if events is not None:
                 await events.afinish(completed)
@@ -3837,7 +3799,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             if fields:
                 body = operation.bound(body, fields, media_type)
             result = await call.bounded(
-                lambda: self._run(call, body, prepare, receive, options), cleanup=AsyncRawResponse.aclose
+                lambda: self._run(call, body, prepare, receive), cleanup=AsyncRawResponse.aclose
             )
             call.check("send")
             if _auth_failed(call) or session is not None:
@@ -3920,7 +3882,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
         try:
             result = await call.bounded(
-                lambda: self._run(call, body, prepare, receive, options), cleanup=AsyncRawResponse.aclose
+                lambda: self._run(call, body, prepare, receive), cleanup=AsyncRawResponse.aclose
             )
             call.check("send")
             if _auth_failed(call):
@@ -3998,7 +3960,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
         try:
             result = await call.bounded(
-                lambda: self._run(call, UNSET, prepare, receive, options, adapter), cleanup=AsyncRawResponse.aclose
+                lambda: self._run(call, UNSET, prepare, receive, adapter), cleanup=AsyncRawResponse.aclose
             )
             call.check("send")
             if result.info.status_code != _SWITCHING:
@@ -4024,13 +3986,12 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             if not call.streaming:
                 call.finish()
 
-    async def _run(  # noqa: PLR0913, PLR0917
+    async def _run(
         self,
         call: _Call,
         body: object,
         prepare: Callable[[], tuple[PreparedRequest[EncodedAttempt], object]],
         receive: Callable[[AsyncTransportResponse, ResponseInfo], Awaitable[T]],
-        options: RequestOptions | None,
         adapter: AsyncTransportAdapter | None = None,
     ) -> T:
         """Own entry capture, the single encode, every hop, and final source release.
@@ -4047,7 +4008,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 else None
             )
             call.check("encode")
-            call.bind(adapter.capabilities, options)
+            call.bind(adapter.capabilities)
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
                 self._bind_auth(call)
             if (events := call.events) is not None:
@@ -4387,7 +4348,6 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         events, trace = call.events, call.trace
         try:
             call.check("encode")
-            call.retained()
             await self._authorize(source, call)
             renewed = False
             while True:
@@ -4405,15 +4365,12 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 await call.cleanup(partial(_arelease_permit, releasing))
                 await self._authenticate(call)
             call.check("encode")
-            call.retained()
             if source is not None and call.body_enabled:
                 attempt = await source.aopen(_context(call))
             call.check("encode")
-            call.retained()
             request = await self._outgoing(request, attempt, source, call)
             if events is not None and call.hop_index == 0:
                 await events.aemit(events.attempting())
-            call.retained()
             _usable_credentials(call)
             io = call.io_context(trace)
             call.admit_send(redirect=call.hop_index != 0)
