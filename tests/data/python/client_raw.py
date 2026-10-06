@@ -15,10 +15,10 @@ from typing import TYPE_CHECKING, Any, Final, NoReturn
 import httpx2
 import pytest
 
-from tests.data.python.client_transports import Stop
 from tests.data.python.client_runtime import (
     Exchange,
     Injected,
+    Stop,
     aoutcome,
     arecord,
     argument,

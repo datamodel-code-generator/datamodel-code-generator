@@ -15,7 +15,7 @@ import httpx2
 import pytest
 
 from tests.data.python.client_generation import SOURCE
-from tests.data.python.client_runtime import arecord, record, run
+from tests.data.python.client_runtime import Stop, arecord, record, run
 from tests.data.python.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
@@ -564,7 +564,6 @@ class _HeaderHook:
 
 
 def _location_hooks(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
-    from tests.data.python.client_transports import Stop
 
     mode = "async" if asynchronous else "sync"
     server = NativeFixture()

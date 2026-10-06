@@ -358,6 +358,13 @@ class _Raw(Generic[SourceT, HandleT]):
         self._check()
 
 
+def _cleanup_failure(failure: Exception) -> SDKError:
+    """Return the failure of releasing a response, which a release that already classified it keeps."""
+    if isinstance(failure, SDKError) and failure.reason == "cleanup_failed":
+        return failure
+    return SDKError(reason="cleanup_failed", cause=failure)
+
+
 def checked(response: _Raw[SourceT, HandleT]) -> None:
     """Raise what stops a response's call now, before using bytes it already read: expiry.
 
@@ -646,7 +653,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             close()
         except Exception as failure:  # noqa: BLE001
             if error is None:
-                failed = error = self._call.snapshot_error(SDKError(reason="cleanup_failed", cause=failure))
+                failed = error = self._call.snapshot_error(_cleanup_failure(failure))
                 failed.info = self._info
             else:
                 self._call.retry_blocked = True
@@ -959,7 +966,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             await close()
         except Exception as failure:  # noqa: BLE001
             if error is None:
-                failed = error = self._call.snapshot_error(SDKError(reason="cleanup_failed", cause=failure))
+                failed = error = self._call.snapshot_error(_cleanup_failure(failure))
                 failed.info = self._info
             else:
                 self._call.retry_blocked = True

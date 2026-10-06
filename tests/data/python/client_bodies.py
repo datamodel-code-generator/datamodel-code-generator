@@ -12,8 +12,17 @@ from typing import TYPE_CHECKING, Any
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, aoutcome, arecord, argument, outcome, raw_response, record, run
-from tests.data.python.client_transports import Stop
+from tests.data.python.client_runtime import (
+    Exchange,
+    Stop,
+    aoutcome,
+    arecord,
+    argument,
+    outcome,
+    raw_response,
+    record,
+    run,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
