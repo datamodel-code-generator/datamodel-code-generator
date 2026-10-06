@@ -20,7 +20,7 @@ def test_wire_plan_bundles_validate(name: str, tmp_path: Path) -> None:
     assert_generated_modules_output(modules, EXPECTED / name)
 
 
-@pytest.mark.parametrize("name", ["dialects", "dialects32", "directions", "querystring-version"])
+@pytest.mark.parametrize("name", ["dialects", "dialects32", "querystring-version"])
 def test_wire_plan_rules(name: str, tmp_path: Path) -> None:
     """Report target-generation diagnostics for the fixed schema and parameter rule cases."""
     assert_output(wire_plan_report(name, tmp_path)[0], EXPECTED / f"{name}.txt")

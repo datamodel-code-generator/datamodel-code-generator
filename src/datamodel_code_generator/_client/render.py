@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
     from datamodel_code_generator._client.codec_plan import ClientCodecs
+    from datamodel_code_generator._client.codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.model_facts import ItemStep
     from datamodel_code_generator._client.pagination import PaginationSpec
@@ -46,7 +47,6 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
-    from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.client.multipart import PartPlan
     from datamodel_code_generator._target_contract import (

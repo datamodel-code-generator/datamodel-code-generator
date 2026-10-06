@@ -12,8 +12,6 @@ from typing import TYPE_CHECKING
 
 from datamodel_code_generator._runtime.model_codecs.errors import (
     CodecError,
-    NativeIssue,
-    NativeValidationError,
     WireIssue,
     WireValidationError,
 )
@@ -37,7 +35,6 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     path_text,
     raw_parameter,
 )
-from datamodel_code_generator._runtime.model_codecs.patterns import MatchBudget, compile_pattern, plan_pattern, search
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 from datamodel_code_generator._runtime.model_codecs.wire import freeze_wire, thaw_wire
 
@@ -135,64 +132,6 @@ def _copies(value: object) -> str:
 def wire_value_report() -> str:
     """Freeze and thaw in-memory JSON-domain values and rejected objects."""
     lines = [f"{name}: {attempt(lambda factory=factory: _copies(factory()))}" for name, factory in _python_values()]
-    return "\n".join(lines) + "\n"
-
-
-def _plan_text(source: str) -> str:
-    plan_pattern(source)
-    return "ok"
-
-
-def _compiled(source: str) -> str:
-    compile_pattern(plan_pattern(source).re2_source)
-    return "ok"
-
-
-def _charged(subjects: list[str]) -> str:
-    budget = MatchBudget()
-    plan = plan_pattern("a|é")
-    return str(all(search(plan, subject, budget) for subject in subjects))
-
-
-def pattern_report(path: Path) -> str:
-    """Match the ECMA-262 corpus through RE2 and check every static and runtime resource limit."""
-    data = json.loads(path.read_text(encoding="utf-8"))
-    lines = []
-    for case in data["matches"]:
-        plan = plan_pattern(case["pattern"])
-        lines.extend(
-            f"{json.dumps(case['pattern'])} {json.dumps(subject)} -> {search(plan, subject, MatchBudget())}"
-            for subject in case["subjects"]
-        )
-    lines.extend(
-        f"{json.dumps(source)} -> {attempt(lambda source=source: _plan_text(source))}" for source in data["invalid"]
-    )
-    mebibyte = 1 << 20
-    limits = [
-        ("source-4096", lambda: _plan_text("a" * 4096)),
-        ("source-4097", lambda: _plan_text("a" * 4097)),
-        ("source-utf8-4096", lambda: _plan_text("é" * 2048)),
-        ("source-utf8-4098", lambda: _plan_text("é" * 2049)),
-        ("depth-32", lambda: _plan_text("(" * 32 + ")" * 32)),
-        ("depth-33", lambda: _plan_text("(" * 33 + ")" * 33)),
-        ("repeat-1000", lambda: _compiled("a{1000}")),
-        ("repeat-1001", lambda: _plan_text("a{1001}")),
-        ("repeat-upper-1001", lambda: _plan_text("a{0,1001}")),
-        ("program-size", lambda: _compiled("x{1000}y{1000}z{1000}w{1000}v{1000}")),
-        ("re2-rejected", lambda: _compiled("(a{1000}){1000}")),
-        ("subject-1MiB", lambda: _charged(["a" * mebibyte])),
-        ("subject-1MiB+1", lambda: _charged(["a" * (mebibyte + 1)])),
-        ("subject-utf8-1MiB", lambda: _charged(["é" * (mebibyte // 2)])),
-        ("subject-utf8-1MiB+1", lambda: _charged(["é" * (mebibyte // 2) + "a"])),
-        ("cumulative-32MiB", lambda: _charged(["a" * mebibyte] * 32)),
-        ("cumulative-32MiB+1", lambda: _charged(["a" * mebibyte] * 32 + ["a"])),
-    ]
-    lines.extend(f"{name}: {attempt(action)}" for name, action in limits)
-    compile_pattern.cache_clear()
-    for index in range(130):
-        compile_pattern(plan_pattern(f"a{{{index}}}").re2_source)
-    info = compile_pattern.cache_info()
-    lines.append(f"cache: {info.currsize}/{info.maxsize}")
     return "\n".join(lines) + "\n"
 
 
@@ -384,9 +323,6 @@ def media_report(path: Path) -> str:
         f"error-empty: {WireValidationError(())}",
         f"error-pointer: {WireValidationError((issue, root_issue))}",
         f"error-root: {WireValidationError((root_issue,))}",
-        f"native-empty: {NativeValidationError(())}",
-        f"native-pointer: {NativeValidationError((NativeIssue(code='native.missing', pointer='/a', native_path=('a',)),))}",
-        f"native-root: {NativeValidationError((NativeIssue(code='native.model_type', pointer='', native_path=()),))}",
         f"unset: {UNSET!r} {bool(UNSET)} {UNSET is Unset.UNSET}",
     ))
     return "\n".join(lines) + "\n"

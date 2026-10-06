@@ -10,11 +10,6 @@ if TYPE_CHECKING:
 PydanticBackend: TypeAlias = Literal["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
 
 
-CodecBackend: TypeAlias = Literal[
-    "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"
-]
-
-
 def artifact_module(artifact: ModelArtifactAddress) -> str:
     """Return the dotted module path of a model artifact below its model package."""
     *parents, name = artifact.relative_path

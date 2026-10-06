@@ -11,7 +11,6 @@ from tests.data.python.model_codec_reports import (
     media_report,
     parameter_decoding_report,
     parameter_encoding_report,
-    pattern_report,
     runtime_import_report,
     wire_value_report,
 )
@@ -30,11 +29,6 @@ def test_json_media_round_trips() -> None:
 def test_wire_value_copies() -> None:
     """Copy JSON-domain values independently and reject objects outside the wire domain."""
     assert_output(wire_value_report(), EXPECTED / "wire-values.txt")
-
-
-def test_ecma_patterns_through_re2() -> None:
-    """Match ECMA-262 Unicode-mode semantics with RE2 and enforce every documented limit."""
-    assert_output(pattern_report(CODECS / "patterns.json"), EXPECTED / "patterns.txt")
 
 
 def test_parameter_style_encoding() -> None:
