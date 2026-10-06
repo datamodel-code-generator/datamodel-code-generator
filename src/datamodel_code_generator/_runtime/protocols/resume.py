@@ -8,8 +8,10 @@ from typing import Final, Literal, TypeAlias, cast, final, get_args
 
 from ..client.errors import ProtocolError, error_choice
 from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
-from ..model_codecs.media import json_value
-from ..model_codecs.plain import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
+from ..model_codecs.media import (
+    JSONValue,
+    json_value,
+)
 from .records import Sealed, canonical_json, wire_string
 from .references import OperationRef  # noqa: TC001 - Public annotations support get_type_hints().
 

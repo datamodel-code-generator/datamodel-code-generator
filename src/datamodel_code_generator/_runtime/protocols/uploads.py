@@ -68,7 +68,7 @@ if TYPE_CHECKING:
     from ..client.operations import OperationPlan
     from ..client.responses import ResponseInfo
     from ..client.timing import Deadline
-    from ..model_codecs.plain import JSONValue
+    from ..model_codecs.media import JSONValue
     from .pagination import PageBinding
     from .records import ParameterTarget, ProtocolProgress, Selector
     from .references import OperationRef

@@ -67,7 +67,7 @@ if TYPE_CHECKING:
     from ..client.responses import HeadersView
     from ..client.timing import Clock, Deadline
     from ..client.urls import Origin
-    from ..model_codecs.plain import JSONValue
+    from ..model_codecs.media import JSONValue
     from .references import OperationRef
     from .writes import ReadPaths
 

@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from concurrent.futures import Future
     from types import TracebackType
 
-    from ..model_codecs.plain import JSONValue
+    from ..model_codecs.media import JSONValue
     from .disk import DiskWorker
     from .errors import RetryStopReason
     from .events import CallEvents

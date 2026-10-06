@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.plain import JSONValue
+    from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import FieldUseBinding, FinalPythonType, TypeUseBinding, TypeUseId
 
 _INTEGER: Final = re.compile(r"-?[0-9]+")

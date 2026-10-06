@@ -30,9 +30,9 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage, SchemaRef
     from datamodel_code_generator._client.codec_plan import ClientCodecs
+    from datamodel_code_generator._client.codec_render import UseAccessors
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_codec_render import UseAccessors
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
 
 __all__ = (

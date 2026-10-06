@@ -11,8 +11,10 @@ from typing import Final, Generic, Literal, NoReturn, TypeAlias, final, get_args
 from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
-from ..model_codecs.media import json_value
-from ..model_codecs.plain import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
+from ..model_codecs.media import (
+    JSONValue,
+    json_value,
+)
 
 __all__ = (
     "BodySelector",

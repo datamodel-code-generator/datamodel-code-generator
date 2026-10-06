@@ -73,7 +73,7 @@ if TYPE_CHECKING:
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
     from ..client.timing import Clock, Deadline
-    from ..model_codecs.plain import JSONValue
+    from ..model_codecs.media import JSONValue
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
     from .pagination import PageBinding
     from .records import BodySelector, HeaderSelector, ProtocolProgress, RequestTarget, Selector

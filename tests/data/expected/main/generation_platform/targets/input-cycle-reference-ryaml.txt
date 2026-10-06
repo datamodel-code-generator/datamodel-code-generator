@@ -1,0 +1,13 @@
+# input-cycle-reference
+render
+  cyclic YAML input rejected
+tree
+generate
+  cyclic YAML input rejected
+tree
+render
+  cyclic YAML input rejected
+tree
+generate
+  cyclic YAML input rejected
+tree

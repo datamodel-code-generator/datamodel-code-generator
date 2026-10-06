@@ -63,7 +63,7 @@ if TYPE_CHECKING:
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
     from ..client.timing import Clock, Deadline
-    from ..model_codecs.plain import JSONValue
+    from ..model_codecs.media import JSONValue
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
     from .pagination import PageBinding
     from .records import ProtocolProgress, Selector

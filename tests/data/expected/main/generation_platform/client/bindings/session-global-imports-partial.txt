@@ -150,7 +150,7 @@ render dataclasses.dataclass plain
 render dataclasses.dataclass remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic APIGenerationError
-  diagnostic MC_CODEC_UNSUPPORTED binding /paths/~1native/post/requestBody: The dataclasses.dataclass converter has no conversion for the custom_uuid.UUID type
+  diagnostic MC_CODEC_UNSUPPORTED binding /paths/~1native/post/requestBody/content/application~1json/schema: The dataclasses.dataclass converter has no conversion for the custom_uuid.UUID type
 render typing.TypedDict plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -181,7 +181,7 @@ render typing.TypedDict plain
 render typing.TypedDict remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic APIGenerationError
-  diagnostic MC_CODEC_UNSUPPORTED binding /paths/~1native/post/requestBody: The typing.TypedDict converter has no conversion for the custom_uuid.UUID type
+  diagnostic MC_CODEC_UNSUPPORTED binding /paths/~1native/post/requestBody/content/application~1json/schema: The typing.TypedDict converter has no conversion for the custom_uuid.UUID type
 render msgspec.Struct plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py

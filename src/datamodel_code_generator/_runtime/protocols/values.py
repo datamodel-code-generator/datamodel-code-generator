@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from ..client.responses import ResponseInfo
-    from ..model_codecs.plain import JSONValue
+    from ..model_codecs.media import JSONValue
     from .records import Selector
 
 __all__ = ("MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected", "server_expiry", "written")
