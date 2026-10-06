@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Final
 from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
-from datamodel_code_generator._codec_declarations import CodecDeclarations, OperationRef
+from datamodel_code_generator._codec_declarations import OperationRef
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
 from datamodel_code_generator._fastapi.fingerprints import Fingerprints
@@ -19,7 +19,6 @@ from datamodel_code_generator._fastapi.plan import PlanError, Planner, Revision
 from datamodel_code_generator._fastapi.render import ServerRenderer
 from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, TemplateSet
 from datamodel_code_generator._fastapi.views import ContextBuilder
-from datamodel_code_generator._openapi_codec_adapters import select_adapters
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
@@ -126,7 +125,7 @@ class _Stage:
     """Plan the server and bind its codecs under a hook revision, keeping the latest plan."""
 
     def __init__(self, request: TargetRequest, config: FastAPIConfig) -> None:
-        """Plan the wire of the selected operations and choose their codec adapters once."""
+        """Plan the wire of the selected operations once."""
         self.request = request
         self.config = config
         self.wire = plan_wire(
@@ -136,8 +135,6 @@ class _Stage:
             operations=frozenset(operation.id for operation in request.operations),
             documents=request.documents.pointers,
         )
-        self.declarations = CodecDeclarations(adapters=config.codec_adapters)
-        self.adapters = select_adapters(request.batch, self.wire, self.declarations, "server")
         self.latest: tuple[Revision, ServerPlan, CodecPlan] | None = None
         self.view: tuple[Revision, FastAPIContext] | None = None
 
@@ -146,16 +143,12 @@ class _Stage:
         if (latest := self.latest) is not None and latest[0] == revision:
             return latest[1], latest[2]
         request = self.request
-        plan = Planner(request, self.config, self.wire, self.adapters, revision).plan()
+        plan = Planner(request, self.config, self.wire, revision).plan()
         uses = _codec_uses(plan)
         codecs = plan_model_codecs(
             request.batch,
             replace(self.wire, schema_ids=tuple(item for item in self.wire.schema_ids if item[0] in uses)),
             _BACKENDS[request.model_config.output_model_type],
-            declarations=self.declarations,
-            surface="server",
-            lease=request.lease,
-            selection=self.adapters,
         )
         selected = {operation.contract.id for operation in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
@@ -270,7 +263,7 @@ def _bindings(codecs: CodecPlan, backend: str) -> tuple[TargetBinding, ...]:
         TargetBinding(
             use=use,
             backend=backend,
-            strategy="adapter" if binding.converter_strategy == "registered_adapter" else binding.projection_mode,
+            strategy=binding.projection_mode,
             converter_strategy=binding.converter_strategy,
         )
         for use, binding in codecs.bindings

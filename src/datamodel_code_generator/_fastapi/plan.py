@@ -62,7 +62,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
     from datamodel_code_generator._fastapi.context import ArgumentLocation
     from datamodel_code_generator._fastapi.native import Reason, Schema
-    from datamodel_code_generator._openapi_codec_adapters import AdapterSelection
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
@@ -444,7 +443,6 @@ class Planner:  # noqa: PLR0904
         request: TargetRequest,
         config: FastAPIConfig,
         wire: WirePlan,
-        selection: AdapterSelection,
         revision: Revision | None = None,
     ) -> None:
         """Index the batch, and resolve the per-operation settings to operation keys."""
@@ -452,7 +450,6 @@ class Planner:  # noqa: PLR0904
         self.config = config
         self.revision = revision or Revision()
         self.wire = wire
-        self.adapted = frozenset(use for _, use in selection.chosen)
         self.uses = {use.id: use for use in request.batch.type_uses}
         self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
         self.members: dict[SymbolId, list[FieldUseBinding]] = {}
@@ -463,7 +460,7 @@ class Planner:  # noqa: PLR0904
             for member in reversed(request.batch.fields)
             if member.model_facts is not None
         }
-        self.parameter_plans = parameter_plans(wire, request.operations, selection.uses("parameter"))
+        self.parameter_plans = parameter_plans(wire)
         self.header_plans = dict(wire.headers)
         self.scheme_declarations = {
             (declaration.use_site.document, declaration.name): declaration
@@ -697,8 +694,6 @@ class Planner:  # noqa: PLR0904
             source=declaration.use_site,
             default=self.default(use),
         )
-        if any(item in self.adapted for item in uses):
-            return replace(spec, decision=replace(spec.decision, reason="explicit_adapter"))
         if plan is None or use is None or not _natively_serialized(plan, location, repeated=name in repeated):
             return spec
         native, reason, source = self.native_parameter(declaration, use, plan)
@@ -819,8 +814,6 @@ class Planner:  # noqa: PLR0904
         )
         if self.body_modes.get(operation.id.use_site.pointer, self.config.body_mode) == "request":
             return replace(spec, decision=replace(spec.decision, transport="raw_request", reason="explicit_raw"))
-        if any(use in self.adapted for use in uses):
-            return replace(spec, decision=replace(spec.decision, reason="explicit_adapter"))
         if len(media) == 1 and media[0].kind in {"form", "multipart"}:
             return self.form_body(operation, spec, media[0])
         self.problems.extend(
@@ -1034,8 +1027,6 @@ class Planner:  # noqa: PLR0904
             source=response.declaration.use_site,
             uses=() if use is None else (use.id,),
         )
-        if use is not None and use.id in self.adapted:
-            return replace(decision, reason="explicit_adapter", source=None)
         if (
             use is None
             or media is None

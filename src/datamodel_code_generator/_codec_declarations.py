@@ -10,11 +10,9 @@ from dataclasses import dataclass
 from typing import Final, Literal, TypeAlias
 
 from datamodel_code_generator._runtime.model_codecs.capabilities import (
-    ClientMediaCodecCapabilities,
     CodecCapabilities,
     ParameterCodecCapabilities,
     SchemaCodecCapabilities,
-    ServerMediaCodecCapabilities,
 )
 from datamodel_code_generator._runtime.model_codecs.context import (  # noqa: TC001 - Public annotations support get_type_hints().
     Direction,
@@ -23,7 +21,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (  # noqa:
     ParameterLocation,
 )
 
-AdapterKind: TypeAlias = Literal["model", "parameter", "media", "schema"]
+AdapterKind: TypeAlias = Literal["model", "parameter", "schema"]
 TypeUseRefRole: TypeAlias = Literal[
     "parameter",
     "request_body",
@@ -32,18 +30,11 @@ TypeUseRefRole: TypeAlias = Literal[
     "request_encoding_header",
     "response_encoding_header",
 ]
-RegistrationCapabilities: TypeAlias = (
-    CodecCapabilities
-    | ParameterCodecCapabilities
-    | ClientMediaCodecCapabilities
-    | ServerMediaCodecCapabilities
-    | SchemaCodecCapabilities
-)
+RegistrationCapabilities: TypeAlias = CodecCapabilities | ParameterCodecCapabilities | SchemaCodecCapabilities
 
 _KIND_CAPABILITIES: Final[dict[AdapterKind, tuple[type, ...]]] = {
     "model": (CodecCapabilities,),
     "parameter": (ParameterCodecCapabilities,),
-    "media": (ClientMediaCodecCapabilities, ServerMediaCodecCapabilities),
     "schema": (SchemaCodecCapabilities,),
 }
 _REQUIRED_FIELDS: Final[dict[TypeUseRefRole, frozenset[str]]] = {

@@ -110,7 +110,7 @@ class ClientTarget:
         protocols = plan_protocols(request, config.protocols)
         wire = _wire(request, request.batch)
         declarations = CodecDeclarations(adapters=config.codec_adapters)
-        selection = select_adapters(request.batch, wire, declarations, "client") if config.codec_adapters else None
+        selection = select_adapters(request.batch, wire, declarations) if config.codec_adapters else None
         adapted = frozenset() if selection is None else selection.uses("parameter")
         try:
             plan = Planner(request, config, wire, adapted).plan()
@@ -134,7 +134,6 @@ class ClientTarget:
             replace(wire, schema_ids=tuple(item for item in wire.schema_ids if item[0] in uses)),
             backend,
             declarations=declarations,
-            surface="client",
             lease=request.lease,
             selection=selection,
         )

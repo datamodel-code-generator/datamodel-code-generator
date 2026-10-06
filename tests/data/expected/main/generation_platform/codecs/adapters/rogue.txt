@@ -1,20 +1,20 @@
-use /paths/~1v2/post request_body: codec_0 None None pydantic_type_adapter native
+use /paths/~1v2/post request_body: codec_0 outbound_0 None pydantic_type_adapter native
 adapter version-two /paths/~1v2/post request_body: schema excluded=[]
-use /paths/~1capabilities/post request_body: codec_1 None None pydantic_type_adapter native
+use /paths/~1capabilities/post request_body: codec_1 outbound_1 None pydantic_type_adapter native
 adapter other-capabilities /paths/~1capabilities/post request_body: schema excluded=[]
-use /paths/~1capabilities-failure/post request_body: codec_2 None None pydantic_type_adapter native
+use /paths/~1capabilities-failure/post request_body: codec_2 outbound_2 None pydantic_type_adapter native
 adapter failing-capabilities /paths/~1capabilities-failure/post request_body: schema excluded=[]
-use /paths/~1compile-failure/post request_body: codec_3 None None pydantic_type_adapter native
+use /paths/~1compile-failure/post request_body: codec_3 outbound_3 None pydantic_type_adapter native
 adapter failing-compile /paths/~1compile-failure/post request_body: schema excluded=[]
-use /paths/~1compile-refusal/post request_body: codec_4 None None pydantic_type_adapter native
+use /paths/~1compile-refusal/post request_body: codec_4 outbound_4 None pydantic_type_adapter native
 adapter refusing-compile /paths/~1compile-refusal/post request_body: schema excluded=[]
-use /paths/~1scripted/post request_body: codec_5 None None pydantic_type_adapter native
+use /paths/~1scripted/post request_body: codec_5 outbound_5 None pydantic_type_adapter native
 adapter scripted-lookaround /paths/~1scripted/post request_body: schema excluded=[]
-use /paths/~1limits/post request_body: codec_6 None None pydantic_type_adapter native
+use /paths/~1limits/post request_body: codec_6 outbound_6 None pydantic_type_adapter native
 adapter small-lookaround /paths/~1limits/post request_body: schema excluded=[]
-use /paths/~1boxes/post request_body: codec_7 None None pydantic_type_adapter native
+use /paths/~1boxes/post request_body: codec_7 outbound_7 None pydantic_type_adapter native
 adapter box-lookaround /paths/~1boxes/post request_body: schema excluded=['id']
-use /paths/~1boxes/post response_body 200: codec_8 outbound_8 None pydantic_type_adapter native
+use /paths/~1boxes/post response_body 200: codec_8 None None pydantic_type_adapter native
 adapter box-lookaround /paths/~1boxes/post response_body 200: schema excluded=['secret']
 version-two: CodecAdapterError The version-two adapter does not implement codec adapter API version 1
 other-capabilities: CodecAdapterError The other-capabilities adapter reports capabilities that differ from its registration
@@ -27,11 +27,11 @@ scripted-limit: CodecResourceLimitError The subject exceeds the matcher budget
 scripted-list: CodecAdapterError A schema adapter returned something other than a tuple of WireIssue records
 small-fits: model Code 'ab' wire="ab" presence=['']
 small-exceeds: CodecResourceLimitError A pattern subject exceeds 2 bytes
-box-decode: model Box {'id': None, 'code': 'ab', 'codes': ['ab', 'ab'], 'count': 1, 'weight': None, 'secret': 's'} wire={"code":"ab","codes":["ab","ab"],"count":1,"secret":"s"} presence=['', '/code', '/codes', '/codes/0', '/codes/1', '/count', '/secret']
+box-decode: WireValidationError schema.writeOnly@/secret
 box-decode-invalid: WireValidationError schema.pattern@/codes/1
-box-decode-read-only: WireValidationError schema.readOnly@/id
-box-send: model Box {'id': 1, 'code': 'ab', 'codes': None, 'count': None, 'weight': None, 'secret': None} wire={"id":1,"code":"ab"} presence=['', '/id', '/code']
+box-decode-read-only: model Box {'id': 1, 'code': 'ab', 'codes': None, 'count': None, 'weight': None, 'secret': None} wire={"id":1,"code":"ab"} presence=['', '/id', '/code']
+box-send: model Box {'id': None, 'code': 'ab', 'codes': None, 'count': None, 'weight': None, 'secret': 's'} wire={"code":"ab","secret":"s"} presence=['', '/code', '/secret']
 box-send-invalid: WireValidationError schema.pattern@/code
-box-snapshot-float: model Box {'id': 1, 'code': 'ab', 'codes': ['ab'], 'count': None, 'weight': 1.5, 'secret': None} wire={"id":1,"code":"ab","codes":["ab"],"weight":1.5} presence=['', '/id', '/code', '/codes', '/codes/0', '/weight']
+box-snapshot-float: model Box {'id': 1, 'code': 'ab', 'codes': ['ab'], 'count': None, 'weight': 1.5, 'secret': None} wire={"code":"ab","codes":["ab"],"weight":1.5} presence=['', '/code', '/codes', '/codes/0', '/weight']
 box-decode-decimal: model Box {'id': None, 'code': 'ab', 'codes': None, 'count': None, 'weight': 2.5, 'secret': None} wire={"code":"ab","weight":2.5} presence=['', '/code', '/weight']
 box-decode-decimal-invalid: WireValidationError schema.multipleOf@/weight

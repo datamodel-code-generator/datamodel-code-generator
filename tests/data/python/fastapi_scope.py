@@ -14,7 +14,6 @@ WATCHED = (
     "datamodel_code_generator._api_publication",
     "datamodel_code_generator._openapi_generation",
     "probe_hooks",
-    "probe_codecs",
 )
 TARGET = (
     "datamodel_code_generator._target_cli",
@@ -35,7 +34,6 @@ SELECTION = '[selection]\nexclude_tags = ["names"]\nreason = "Nothing is selecte
 
 def _write(root: Path) -> None:
     (root / "probe_hooks.py").write_text("def transform(context):\n    return context\n", encoding="utf-8")
-    (root / "probe_codecs.py").write_text("adapter = object()\n", encoding="utf-8")
     for name, text, extra in (
         ("primitive", PRIMITIVE, ""),
         ("empty", EMPTY, ""),
@@ -50,11 +48,8 @@ def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> s
     from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope
     from datamodel_code_generator.fastapi import (
         APIGenerationError,
-        CodecAdapterRegistration,
-        CodecCapabilities,
         FastAPIConfig,
         HookReference,
-        TypeUseRef,
         generate_fastapi,
         render_fastapi,
     )
@@ -67,22 +62,12 @@ def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> s
         output_model_type=DataModelType(backend),
         use_missing_sentinel=sentinel,
     )
-    adapter = CodecAdapterRegistration(
-        kind="model",
-        name="probe",
-        import_ref="probe_codecs:adapter",
-        dependencies=(),
-        python_requires=">=3.10",
-        capabilities=CodecCapabilities(backends=("msgspec.Struct",), native_kinds=("model",)),
-        uses=(TypeUseRef(operation="/paths/~1names/get", role="response_body", status="204", media_type="*/*"),),
-    )
     config = FastAPIConfig(
         output=root / "server",
         package="server",
         model_package="models",
         model_mode="verify" if mode == "verify" else "generate",
         hooks=(HookReference(module="probe_hooks"),),
-        codec_adapters=(adapter,),
     )
     entry = render_fastapi if mode == "render" else generate_fastapi
     try:

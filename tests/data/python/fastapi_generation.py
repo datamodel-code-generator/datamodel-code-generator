@@ -29,7 +29,6 @@ from datamodel_code_generator.fastapi import (
 )
 from datamodel_code_generator.format import Formatter
 from tests.data.python import fastapi_hooks
-from tests.data.python.codec_declarations import declaration
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "fastapi"
 PACKAGE = "server"
@@ -64,8 +63,6 @@ def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
                 }
             case "handler_modes" | "body_modes" | "operation_names" | "parameter_names" if isinstance(value, list):
                 converted[key] = {_selector(selector): item for selector, item in value}
-            case "codec_adapters" if isinstance(value, list):
-                converted[key] = tuple(declaration("adapters", item) for item in value)
             case "formatters":
                 converted[key] = tuple(value)
             case "hooks" if isinstance(value, list):

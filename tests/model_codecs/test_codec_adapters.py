@@ -25,7 +25,6 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/adapters"
         ("rogue", "rogue"),
         ("scripted", "scripted"),
         ("types", "types"),
-        ("types", "types-server"),
         ("types", "listed"),
         ("plans-accepted", "plans"),
         ("enums", "enums"),
@@ -37,7 +36,6 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/adapters"
         ("enums", "structural-msgspec"),
         ("unplanned", "unplanned"),
         ("unplanned", "unplanned-client"),
-        ("unplanned", "unplanned-server"),
     ],
 )
 def test_codec_adapters(source: str, cases: str, tmp_path: PathType) -> None:

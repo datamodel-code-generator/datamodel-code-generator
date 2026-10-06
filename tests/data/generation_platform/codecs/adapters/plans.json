@@ -1,4 +1,5 @@
 {
+ "surface": "client",
  "scopes": [
   "schemas",
   "paths"
@@ -168,25 +169,6 @@
        "role": "response_body",
        "status": "201",
        "media_type": "application/json"
-      }
-     ]
-    },
-    {
-     "kind": "media",
-     "name": "xml-media",
-     "import_ref": "app.codecs:json_cookie",
-     "capabilities": {
-      "record": "ServerMediaCodecCapabilities",
-      "media_types": [
-       "application/xml"
-      ]
-     },
-     "uses": [
-      {
-       "schema": {
-        "pointer": "/components/schemas/Pet"
-       },
-       "direction": "request"
       }
      ]
     },
@@ -484,7 +466,7 @@
   "adapters": [
    {
     "kind": "model",
-    "name": "client-only",
+    "name": "pet-response",
     "import_ref": "app.codecs:pet_model",
     "capabilities": {
      "record": "CodecCapabilities",
@@ -493,9 +475,6 @@
      ],
      "native_kinds": [
       "model"
-     ],
-     "surfaces": [
-      "client"
      ]
     },
     "uses": [
@@ -618,25 +597,6 @@
      {
       "schema": {
        "pointer": "/components/schemas/Flags"
-      },
-      "direction": "response"
-     }
-    ]
-   },
-   {
-    "kind": "media",
-    "name": "json-media",
-    "import_ref": "app.codecs:json_cookie",
-    "capabilities": {
-     "record": "ServerMediaCodecCapabilities",
-     "media_types": [
-      "application/json"
-     ]
-    },
-    "uses": [
-     {
-      "schema": {
-       "pointer": "/components/schemas/Owner"
       },
       "direction": "response"
      }
@@ -786,5 +746,11 @@
     ]
    }
   ]
+ },
+ "config": {
+  "validation": {
+   "request": "schema",
+   "response": "schema"
+  }
  }
 }

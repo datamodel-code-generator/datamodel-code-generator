@@ -102,7 +102,6 @@
         }
       ]
     ],
-    "codec_adapters": "none",
     "hooks": [
       {
         "module": "project hooks"

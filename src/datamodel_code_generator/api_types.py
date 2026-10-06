@@ -23,17 +23,14 @@ from datamodel_code_generator._codec_declarations import (
     TypeUseRef,
 )
 from datamodel_code_generator._runtime.model_codecs.capabilities import (
-    ClientMediaCodecCapabilities,
     CodecCapabilities,
     ParameterCodecCapabilities,
     SchemaCodecCapabilities,
-    ServerMediaCodecCapabilities,
 )
 
 __all__ = [
     "APIGenerationError",
     "ArtifactRecord",
-    "ClientMediaCodecCapabilities",
     "CodecAdapterRegistration",
     "CodecCapabilities",
     "Diagnostic",
@@ -47,6 +44,5 @@ __all__ = [
     "SchemaCodecCapabilities",
     "SchemaDirectionalUse",
     "SchemaRef",
-    "ServerMediaCodecCapabilities",
     "TypeUseRef",
 ]

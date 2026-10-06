@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeAlias
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._codec_declarations import CodecAdapterRegistration, OperationRef
+from datamodel_code_generator._codec_declarations import OperationRef
 from datamodel_code_generator._fastapi.context import HookReference
 from datamodel_code_generator._fastapi.naming import explicit
 from datamodel_code_generator._target_config import (
@@ -66,7 +66,6 @@ class FastAPIConfig(TargetConfig):
     operation_names: Mapping[OperationSelector, str] = field(default_factory=lambda: MappingProxyType({}))
     router_names: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
     parameter_names: Mapping[OperationSelector, Mapping[str, str]] = field(default_factory=lambda: MappingProxyType({}))
-    codec_adapters: tuple[CodecAdapterRegistration, ...] = ()
     hooks: tuple[HookReference | FastAPIHook, ...] = ()
     templates: Path | None = None
     update_groups: tuple[str, ...] | None = None
@@ -101,8 +100,6 @@ class FastAPIConfig(TargetConfig):
         yield from _selector_problems(self.parameter_names, "parameter_names", _parameter_names)
         if not _router_names_valid(self.router_names):
             yield _diagnostic("E_CONFIG_VALUE", "router_names", "router_names must map group keys to identifiers")
-        if not _registrations(self.codec_adapters):
-            yield _diagnostic("E_CONFIG_VALUE", "codec_adapters", "codec_adapters must be a tuple of registrations")
         if self.update_groups is not None and not _texts(self.update_groups):
             yield _diagnostic("E_CONFIG_VALUE", "update_groups", "update_groups must be a tuple of group keys")
         if self.templates is not None and not _is_path(self.templates):
@@ -138,10 +135,6 @@ def _identifier(value: object) -> bool:
 
 def _router_names_valid(value: object) -> bool:
     return _is_mapping(value) and all(isinstance(key, str) and _identifier(name) for key, name in value.items())
-
-
-def _registrations(value: object) -> bool:
-    return _is_tuple(value) and all(isinstance(item, CodecAdapterRegistration) for item in value)
 
 
 def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:

@@ -36,7 +36,6 @@ _RUNTIME_NAMES: Final = (
     "AdapterParameterCodec",
     "ArrayNode",
     "BundleSchemaRegistry",
-    "ClientMediaCodecCapabilities",
     "CodecBindingView",
     "CodecCapabilities",
     "CodecContext",
@@ -67,7 +66,6 @@ _RUNTIME_NAMES: Final = (
     "SchemaResource",
     "SchemaResourceLimits",
     "SchemaSource",
-    "ServerMediaCodecCapabilities",
     "StructuralModelCodec",
     "TupleNode",
     "UnionNode",
@@ -150,11 +148,10 @@ _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
 )
 _SURFACE_PUBLIC: Final[dict[Surface, tuple[tuple[str, str], ...]]] = {
     "client": (
-        ("capabilities", "ClientMediaCodecCapabilities"),
         ("selectors", "RequestMedia"),
         ("selectors", "ResponseMedia"),
     ),
-    "server": (("adapters", "ServerMediaCodecAdapterV1"), ("capabilities", "ServerMediaCodecCapabilities")),
+    "server": (),
 }
 
 
@@ -286,7 +283,7 @@ class _Renderer:
             adapter.use: (adapter, adapter.schema) for adapter in plan.adapters if adapter.schema is not None
         }
         self.factories: dict[str, tuple[int, AdapterPlan]] = {}
-        for adapter in (adapter for adapter in plan.adapters if adapter.registration.kind != "media"):
+        for adapter in plan.adapters:
             self.factories.setdefault(adapter.registration.name, (len(self.factories), adapter))
         self.model_bindings = {model.symbol: model for _, binding in plan.bindings for model in binding.models}
         self.model_index = {symbol: index for index, symbol in enumerate(self.model_bindings)}

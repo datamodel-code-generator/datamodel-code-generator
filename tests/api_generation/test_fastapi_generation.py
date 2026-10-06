@@ -28,7 +28,6 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "responses",
         "names",
         "types",
-        "adapters",
         "methods",
         "native",
         "native-settings",
@@ -48,7 +47,6 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "primary-errors",
         "backend-errors",
         "codec-errors",
-        "adapter-collisions",
         "unbound-body",
         "argument-errors",
         "security",
@@ -122,7 +120,7 @@ def test_fastapi_api(tmp_path: Path) -> None:
 
 
 def test_fastapi_scope(tmp_path: Path) -> None:
-    """Stop unsupported settings before generating models, locking, publishing, or importing hooks and adapters."""
+    """Stop unsupported settings before generating models, locking, publishing, or importing hooks."""
     assert_output(fastapi_scope_report(tmp_path), EXPECTED / "acceptance" / "scope.txt")
 
 

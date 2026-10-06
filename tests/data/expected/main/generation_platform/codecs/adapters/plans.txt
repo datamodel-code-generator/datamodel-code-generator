@@ -8,10 +8,10 @@ refused diagnostic BND_MODEL_SCOPE_REQUIRED : The nowhere-schema adapter selects
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/200: The stream adapter selector matches several uses; select a schema direction instead
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/201: The conflict-a and conflict-b adapters both select this use
 refused diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED /paths/~1things/post/parameters/6: The use's final type has no expression a generated module can import
+refused diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/200: The pet-response adapter does not cover this use's backend, native kind, or direction
+refused diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/200: The pet-response adapter does not cover this use's backend, native kind, or direction
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1mixed/post/responses/200: The mixed adapter serves uses of different native types
-refused diagnostic MC_ADAPTER_CONTRACT /paths/~1owners/post/responses/201: The dataclass-only adapter does not cover this use's backend, native kind, media, or direction
-refused diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/requestBody: The xml-media adapter does not cover this use's backend, native kind, media, or direction
-refused diagnostic MC_ADAPTER_CONTRACT /paths/~1mixed/post/requestBody: The xml-media adapter does not cover this use's backend, native kind, media, or direction
+refused diagnostic MC_ADAPTER_CONTRACT /paths/~1owners/post/responses/201: The dataclass-only adapter does not cover this use's backend, native kind, or direction
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/parameters/0: The narrow-cookie adapter does not cover this parameter's location, style, media, or wire kinds
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/parameters/1: The nullable-query adapter does not cover this parameter's location, style, media, or wire kinds
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1mixed/post/responses/200: The body-parameter adapter selects no parameter
@@ -21,28 +21,6 @@ refused diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/206: The n
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1composites/post/responses/200: The nested adapter cannot own a schema whose nested or conditional members its direction excludes
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1composites/post/responses/201: The choosy adapter cannot own a schema whose nested or conditional members its direction excludes
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1composites/post/responses/202: The shared adapter cannot own a schema whose nested or conditional members its direction excludes
-use /paths/~1things/post parameter query maybe: codec_0 None None pydantic_type_adapter native
-use /paths/~1things/post parameter query loose: codec_1 None parameter_1 pydantic_type_adapter native
-adapter loose-query /paths/~1things/post parameter query loose: parameter
-use /paths/~1things/post request_body: codec_2 None None registered_adapter native
-adapter pet-exact /paths/~1things/post request_body: model
-use /paths/~1things/post response_body 201: codec_3 outbound_3 None pydantic_type_adapter native
-adapter conflict-a /paths/~1things/post response_body 201: schema excluded=[]
-use /paths/~1things/post response_body 202: codec_4 outbound_4 None pydantic_type_adapter native
-adapter choice /paths/~1things/post response_body 202: schema excluded=[]
-use /paths/~1things/post response_body 203: codec_5 outbound_5 None pydantic_type_adapter native
-use /paths/~1codes/post request_body: codec_6 None None pydantic_type_adapter native
-adapter code-request /paths/~1codes/post request_body: schema excluded=[]
-use /paths/~1mixed/post request_body: codec_7 None None registered_adapter native
-adapter pet-default /paths/~1mixed/post request_body: model
-use /paths/~1mixed/post response_body 200: codec_8 outbound_8 None pydantic_type_adapter native
-use /paths/~1composites/post request_body: codec_9 None None pydantic_type_adapter native
-adapter composite /paths/~1composites/post request_body: schema excluded=['id']
-use /paths/~1composites/post response_body 200: codec_10 outbound_10 None pydantic_type_adapter native
-use /paths/~1composites/post response_body 201: codec_11 outbound_11 None pydantic_type_adapter native
-use /paths/~1composites/post response_body 202: codec_12 outbound_12 None pydantic_type_adapter native
-use /paths/~1composites/post response_body 203: codec_13 outbound_13 None pydantic_type_adapter native
-adapter twins /paths/~1composites/post response_body 203: schema excluded=['confirmation', 'password']
-use /paths/~1owners/post request_body: codec_14 None None registered_adapter native
-adapter owner-exact /paths/~1owners/post request_body: model
-use /paths/~1owners/post response_body 201: codec_15 outbound_15 None pydantic_type_adapter native
+APIGenerationError
+diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/200: The pet-response adapter does not cover this use's backend, native kind, or direction
+diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/200: The pet-response adapter does not cover this use's backend, native kind, or direction

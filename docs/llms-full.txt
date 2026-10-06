@@ -11156,8 +11156,7 @@ object with the right methods works, and type checkers check it where you pass i
 - The input is one OpenAPI 3.0, 3.1, or 3.2 document, from a file, a URL, or stdin; a directory or a list of
   files is `E_INPUT_ROOT`.
 - `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
-  `E_FASTAPI_BACKEND_UNSUPPORTED`. Custom templates, base classes, types, and codec registrations do not add
-  backends.
+  `E_FASTAPI_BACKEND_UNSUPPORTED`. Custom templates, base classes, and types do not add backends.
 - The server adds `api` to `--openapi-scopes`, keeping the scopes you give, so that the models cover the
   parameters, bodies, and responses of the operations.
 - Custom templates and custom formatters must keep the class and field names of the models: the server binds each
@@ -11245,17 +11244,6 @@ mode = "request"
 module = "project.hooks"
 callable = "rename"
 ```
-
-## Codec adapters
-
-`FastAPIConfig.codec_adapters`, set through the Python API, registers `CodecAdapterRegistration` records. A
-parameter adapter decodes the parameters it selects from their raw path, query, header, and cookie bytes instead of
-the builtin OpenAPI styles, so it also carries declarations no builtin style can, such as a `form` cookie array
-with `explode: false`. The server validates the value the adapter returns against the parameter's schema, answering
-a violation with 422, and answers a `ParameterEncodingError` the adapter raises for malformed input with
-`400 Invalid request`. An adapter that fails, or returns a value its capabilities exclude, such as an empty array or
-object without `supports_empty_containers`, raises `CodecAdapterError`, which FastAPI answers with
-`500 Internal Server Error`; refuse input the adapter cannot represent with `ParameterEncodingError` instead.
 
 ## The generated package
 
