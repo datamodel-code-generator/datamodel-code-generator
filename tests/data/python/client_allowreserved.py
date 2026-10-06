@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import ast
 import importlib
 import json
 import sys
@@ -10,7 +9,6 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import datamodel_code_generator
 from tests.data.python.client_generation import SOURCE, Modules, generate_client, render_client
 from tests.data.python.client_runtime import _CALL_ID, Exchange, arecord, raw_response, record, run
 from tests.data.python.generated_packages import forget_generated, import_generated
@@ -46,51 +44,6 @@ def reserved_version_report(case: str, version: str, backends: Sequence[str], ro
             forget_generated(package)
         reports.append(_CALL_ID.sub("<call>", "\n".join(lines)) + "\n")
     return plans, "".join(reports)
-
-
-def reserved_adapted_report(version: str, root: Path) -> str:
-    """Render and send fixed reserved-path vectors with public parameter adapter registrations."""
-    recipe = json.loads((SOURCE / "allowreserved-path-adapters.json").read_text(encoding="utf-8"))
-    source = root / "allowreserved-path-32.yaml"
-    document = (SOURCE / source.name).read_text(encoding="utf-8")
-    source.write_text(document.replace(document.partition("\n")[0], f"openapi: {version}", 1), encoding="utf-8")
-    diagnostics, modules = render_client(source, root / "render", "pydantic_v2.BaseModel", {}, recipe["config"])
-    lines = [f"# adapted paths OpenAPI {version}", f"  render diagnostics {diagnostics}"]
-    for node in ast.walk(ast.parse(modules["client", "_generated", "model_bindings.py"])):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "ParameterPlanView":
-            values = {
-                item.arg: ast.literal_eval(item.value)
-                for item in node.keywords
-                if item.arg in {"location", "name", "oas_version", "allow_reserved"}
-            }
-            lines.append(f"  rendered adapted plan {values}")
-    package = "reserved_adapted"
-    destination = root / "generated"
-    destination.mkdir()
-    generate_client(source, destination, package, "pydantic_v2.BaseModel", config=recipe["config"])
-    generated_models = (destination / f"{package}_models.py").read_text(encoding="utf-8")
-    lines.append(f"  rendered and generated models equal {modules['models.py',] == generated_models}")
-    paths = [str(destination), str(destination / package / "src")]
-    sys.path[:0] = paths
-    try:
-        api = import_generated(package)
-        models = importlib.import_module(f"{package}_models")
-        runtime = Path(importlib.import_module(f"{package}._runtime").__file__).resolve().parent
-        lines.extend((
-            f"  generated model origin {models.__file__ == str(destination / f'{package}_models.py')}",
-            f"  generated client origin {Path(api.__file__).is_relative_to(destination)}",
-            (
-                f"  active distribution runtime origin "
-                f"{runtime == Path(datamodel_code_generator.__file__).resolve().parent / '_runtime'}"
-            ),
-        ))
-        data = json.loads((SOURCE / "allowreserved-path-vectors.json").read_text(encoding="utf-8"))
-        data["vectors"] = [vector for vector in data["vectors"] if vector["label"] in recipe["labels"]]
-        _paths(api, lines, data)
-    finally:
-        del sys.path[: len(paths)]
-        forget_generated(package)
-    return _CALL_ID.sub("<call>", "\n".join(lines)) + "\n"
 
 
 def _arguments(package: ModuleType, vector: dict[str, Any]) -> dict[str, object]:

@@ -1,22 +1,18 @@
-"""Type-check the model codec samples against the runtime and a package generated from the adapters fixture."""
+"""Type-check the model codec samples against the runtime."""
 
 from __future__ import annotations
 
 import shutil
 from pathlib import Path
 
-from tests.data.python.model_codec_adapters import adapter_codec_report
 from tests.data.python.strict_typing import checked, marked_lines, negative
 
 CODECS = Path(__file__).parents[1] / "generation_platform" / "codecs"
 SAMPLES = CODECS / "typing"
-ADAPTERS = CODECS / "adapters"
 
 
 def codec_typing_report(root: Path) -> str:
-    """Check the positive samples clean, then each negative sample's marked lines, against the generated package."""
-    adapter_codec_report(ADAPTERS / "adapters.yaml", ADAPTERS / "adapters.json", root)
-    root /= "accepted"
+    """Check the positive samples clean, then each negative sample's marked lines."""
     (package := root / "samples").mkdir()
     (package / "__init__.py").write_text("", encoding="utf-8")
     samples = sorted(f"samples/{path.name}" for path in SAMPLES.glob("*.py"))

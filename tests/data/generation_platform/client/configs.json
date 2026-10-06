@@ -106,7 +106,6 @@
   "invalid-shapes": {
     "resource_names": "pets",
     "operations": "all",
-    "codec_adapters": "none",
     "default_base_url": "https://[invalid",
     "server_base_url": 5
   },

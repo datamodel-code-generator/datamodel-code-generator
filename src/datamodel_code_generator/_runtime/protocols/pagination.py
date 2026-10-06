@@ -849,7 +849,7 @@ class _Walk(Generic[T, P]):
             return replace(call, body=replace(body, media=media))
         parameters = list(call.parameters)
         spec = parameters[position]
-        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, adapter=spec.adapter, read=read)
+        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, read=read)
         return replace(call, parameters=tuple(parameters))
 
     def started(self, wire: WireValue) -> None:

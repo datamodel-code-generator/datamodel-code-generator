@@ -22,7 +22,7 @@ generate
   written target server/pyproject.toml (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  26 runtime modules ['written']
+  23 runtime modules ['written']
 tree
   server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
@@ -45,7 +45,7 @@ tree
   server/src/example/server/routers/store.py
   server/src/example/server/routers/untagged.py
   server/src/example/server/services.py
-  26 runtime modules ['present']
+  23 runtime modules ['present']
 show server/pyproject.toml
   | [build-system]
   | requires = ["hatchling>=1.27"]
@@ -87,4 +87,4 @@ generate
   unchanged target server/pyproject.toml (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  26 runtime modules ['unchanged']
+  23 runtime modules ['unchanged']

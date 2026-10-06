@@ -597,37 +597,37 @@ render pydantic_v2.dataclass py312-annotated
   codec_0 -> PydanticModelCodec[models.Model]
 render dataclasses.dataclass py311
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render dataclasses.dataclass py311-annotated
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render dataclasses.dataclass py312
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render dataclasses.dataclass py312-annotated
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render typing.TypedDict py311
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render typing.TypedDict py311-annotated
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render typing.TypedDict py312
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render typing.TypedDict py312-annotated
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render msgspec.Struct py311
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render msgspec.Struct py311-annotated
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render msgspec.Struct py312
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion
 render msgspec.Struct py312-annotated
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/imported_none: The types.NoneType type has no structural conversion

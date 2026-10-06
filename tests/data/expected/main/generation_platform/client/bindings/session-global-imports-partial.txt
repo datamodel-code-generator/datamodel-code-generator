@@ -150,7 +150,7 @@ render dataclasses.dataclass plain
 render dataclasses.dataclass remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion
 render typing.TypedDict plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -181,7 +181,7 @@ render typing.TypedDict plain
 render typing.TypedDict remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion
 render msgspec.Struct plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -213,4 +213,4 @@ render msgspec.Struct plain
 render msgspec.Struct remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion

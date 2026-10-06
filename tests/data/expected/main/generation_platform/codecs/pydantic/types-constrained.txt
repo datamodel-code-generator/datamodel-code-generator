@@ -1,0 +1,32 @@
+use /paths/~1scalars/post parameter query code: native scalar None models=[]
+use /paths/~1scalars/post parameter query count: native scalar None models=[]
+use /paths/~1scalars/post parameter query ratio: native scalar None models=[]
+use /paths/~1scalars/post parameter query when: native scalar None models=[]
+use /paths/~1scalars/post parameter query mode: native scalar None models=[]
+use /paths/~1scalars/post parameter query price: native scalar None models=[]
+use /paths/~1scalars/post parameter query tags: native array None models=[]
+use /paths/~1scalars/post parameter query pet: native union None models=[('models:Cat', 'model', 'ignore', True), ('models:Dog', 'model', 'ignore', True)]
+use /paths/~1scalars/post parameter header X-Counts: native map None models=[]
+use /paths/~1scalars/post request_body: native model models:Holder models=[('models:Cat', 'model', 'ignore', True), ('models:Dog', 'model', 'ignore', True), ('models:Holder', 'model', 'ignore', True)]
+use /paths/~1scalars/post response_body 200: native map None models=[]
+use /paths/~1scalars/post response_body 201: native scalar None models=[]
+code: model 'abc' wire="abc" presence=[''] extras={}
+code-invalid: WireValidationError schema.pattern@
+count: model 2 wire=2 presence=[''] extras={}
+count-invalid: WireValidationError schema.minimum@
+ratio: model 1.25 wire=1.25 presence=[''] extras={}
+when: model datetime.datetime(2026, 9, 25, 10, 0, tzinfo=TzInfo(0)) wire="2026-09-25T10:00:00Z" presence=[''] extras={}
+mode: model 'b' wire="b" presence=[''] extras={}
+mode-invalid: WireValidationError schema.enum@
+price: model Decimal('9.5') wire="9.5" presence=[''] extras={}
+price-invalid: NativeValidationError native.less_than_equal@[]
+tags: model ['x', 'y'] wire=["x","y"] presence=['', '/0', '/1'] extras={}
+pet: model Dog(kind='dog') set=['kind'] wire={"kind":"dog"} presence=['', '/kind'] extras={}
+counts: model {'a': 1, 'b': 2} wire={"a":1,"b":2} presence=['', '/a', '/b'] extras={}
+counts-invalid: WireValidationError schema.type@/a
+words: wire={"ab":1}
+words-invalid: WireValidationError schema.false@/AB
+holder: model Holder(pets=[Cat(kind='cat'), Dog(kind='dog')], label='abcd', mode='a') set=['label', 'mode', 'pets'] wire={"pets":[{"kind":"cat"},{"kind":"dog"}],"label":"abcd","mode":"a"} presence=['', '/pets', '/pets/0', '/pets/0/kind', '/pets/1', '/pets/1/kind', '/label', '/mode'] extras={}
+holder-invalid: WireValidationError schema.oneOf@/pets/0,schema.maxLength@/label,schema.enum@/mode
+name-null: wire=null
+name-text: wire="n"

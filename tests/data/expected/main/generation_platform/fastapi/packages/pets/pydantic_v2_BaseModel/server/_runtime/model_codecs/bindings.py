@@ -20,7 +20,6 @@ ConverterStrategy: TypeAlias = Literal[
     "typeddict_structural",
     "msgspec_convert",
     "msgspec_structural",
-    "registered_adapter",
 ]
 ProjectionMode: TypeAlias = Literal["native", "envelope"]
 ExtraPolicy: TypeAlias = Literal["ignore", "allow", "forbid"]

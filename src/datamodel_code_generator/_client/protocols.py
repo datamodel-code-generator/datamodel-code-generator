@@ -16,9 +16,8 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_manifest import canonical_bytes
-from datamodel_code_generator._api_types import Diagnostic
+from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import folded, helper_name_problem, token
-from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]

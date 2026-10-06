@@ -65,7 +65,6 @@ header X-C application/vnd.api+json scalar/string: X-C: {"a":"\u00e9"} => {"a":"
 querystring qs application/x-www-form-urlencoded scalar/string: ?q=a+b%2Bc%7E*&tags=x&tags=y&n=3 => {"q":"a b+c~*","tags":["x","y"],"n":3}
 querystring qs application/json scalar/string: ?%7B%22a%22%3A%5B1%2C%22x%26y%22%5D%7D => {"a":[1,"x&y"]}
 querystring qs text/plain scalar/string: ?a%20b%2Bc => "a b+c"
-cookie tags form scalar/string: CodecConfigurationError The cookie parameter 'tags' goes through its registered adapter, not a builtin form
 query q form* scalar/string: ParameterEncodingError JSON null cannot be written by a style-based parameter
 query q form* array/string: ParameterEncodingError An empty array or object cannot be distinguished from omission
 query q form* object/string: ParameterEncodingError An empty array or object cannot be distinguished from omission
@@ -109,7 +108,6 @@ invalid {'location': 'query', 'name': 'q', 'content_media_type': 'application/x-
 invalid {'location': 'header', 'name': 'h', 'style': 'form'}: ValueError header parameter style 'form' has no builtin form for scalar values
 invalid {'location': 'path', 'name': 'p'}: ValueError path parameter style None has no builtin form for scalar values
 path text path p simple scalar/string: a.b
-path text path p simple scalar/string: CodecConfigurationError The path parameter 'p' goes through its registered adapter, not a builtin form
 python query i form* scalar/integer: ?i=2 => 2
 python query n form* scalar/number: ?n=1.5 => 1.5
 python query n form* scalar/number: ?n=1e-07 => 1E-7

@@ -10,7 +10,7 @@ import pytest
 pytest.importorskip("httpx2")
 
 from tests.conftest import assert_generated_modules_output, assert_output
-from tests.data.python.client_allowreserved import reserved_adapted_report, reserved_version_report
+from tests.data.python.client_allowreserved import reserved_version_report
 from tests.data.python.client_scenarios import BACKENDS, SCENARIOS, client_runtime_report
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client/runtime"
@@ -36,9 +36,3 @@ def test_client_runtime(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         assert_output(report, EXPECTED / f"{case}.txt")
         return
     assert_output(client_runtime_report(case, tmp_path), EXPECTED / f"{case}.txt")
-
-
-@pytest.mark.parametrize("version", ["3.0.3", "3.1.0", "3.2.0", "3.0", "3.1", "3.10.0"])
-def test_client_runtime_adapted_reserved_paths(version: str, tmp_path: Path) -> None:
-    """Send adapted paths using the root version's effective plan, keeping ordinary and content controls."""
-    assert_output(reserved_adapted_report(version, tmp_path), EXPECTED / f"allowreserved-path-adapted-{version}.txt")

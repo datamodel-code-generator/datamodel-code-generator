@@ -9,8 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
 from typing import Final, Literal, TypeAlias
 
-from datamodel_code_generator._codec_declarations import OperationRef
-
 __all__ = [
     "APIGenerationError",
     "ArtifactAction",
@@ -26,6 +24,7 @@ __all__ = [
     "OperationSelection",
     "OperationSelector",
     "PublicationRollbackError",
+    "SchemaRef",
     "TargetKind",
     "attach_diagnostic",
     "attached_diagnostic",
@@ -40,8 +39,26 @@ ArtifactKind: TypeAlias = Literal[
     "model", "model_metadata", "remote_lock", "target", "model_inventory", "target_manifest"
 ]
 ArtifactAction: TypeAlias = Literal["write", "delete", "unchanged"]
-OperationSelector: TypeAlias = OperationRef | str
 _ATTACHED: Final = "__dcg_diagnostic__"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OperationRef:
+    """Select a root operation use site by RFC 6901 pointer, in the root document unless another is named."""
+
+    pointer: str
+    document: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SchemaRef:
+    """Select a processed schema occurrence by RFC 6901 pointer, in the root document unless another is named."""
+
+    pointer: str
+    document: str | None = None
+
+
+OperationSelector: TypeAlias = OperationRef | str
 
 
 class PublicationRollbackError(Exception):

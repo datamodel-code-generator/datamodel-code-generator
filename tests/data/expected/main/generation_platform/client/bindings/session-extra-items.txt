@@ -107,7 +107,7 @@ change typing.TypedDict standard corrupt-child
   +    bad: int
 render typing.TypedDict remapped
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1imported/post/requestBody: The custom_uuid.UUID type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1imported/post/requestBody: The custom_uuid.UUID type has no structural conversion
 render typing.TypedDict standard-remapped
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1imported/post/requestBody: The custom_uuid.UUID type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1imported/post/requestBody: The custom_uuid.UUID type has no structural conversion

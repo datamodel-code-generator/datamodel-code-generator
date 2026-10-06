@@ -16,6 +16,7 @@ from datamodel_code_generator._api_types import (
     APIGenerationError,
     Diagnostic,
     GeneratedProject,
+    OperationRef,
     OperationSelection,
     attached_diagnostic,
 )
@@ -30,12 +31,10 @@ from datamodel_code_generator._client.config import (
     RuntimeOperationMetadata,
 )
 from datamodel_code_generator._client.target import ClientTarget
-from datamodel_code_generator._codec_declarations import OperationRef
 from datamodel_code_generator._target_config import load_target_config
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.data.python.client_protocol_records import RECORDS
-from tests.data.python.codec_declarations import declaration
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -115,8 +114,6 @@ def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
                 converted[key] = tuple(ResourceName(**item) if isinstance(item, dict) else item for item in value)
             case "operations" if isinstance(value, list):
                 converted[key] = tuple(_operation(item) for item in value)
-            case "codec_adapters" if isinstance(value, list):
-                converted[key] = tuple(declaration("adapters", item) for item in value)
             case "formatters":
                 converted[key] = tuple(value)
             case "protocols":

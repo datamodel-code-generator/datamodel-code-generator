@@ -881,7 +881,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 "text",
                 "\n".join(
                     line.strip()
-                    for name in ("validation-ambiguous.txt", "validation-adapters.txt")
+                    for name in ("validation-ambiguous.txt", "validation-arguments-msgspec.txt")
                     for line in read_text(EXPECTED_CLIENT / name).splitlines()
                     if "E_CONFIG_VALUE" in line
                 ),

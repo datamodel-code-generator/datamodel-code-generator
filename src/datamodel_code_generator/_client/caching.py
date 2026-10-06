@@ -8,9 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._api_types import Diagnostic
+from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.pagination import _Pages
-from datamodel_code_generator._codec_declarations import OperationRef
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
@@ -110,12 +109,7 @@ class _Caches:
             media = response.media
             use = media[0].use if len(media) == 1 and media[0].kind == "json" else None
             binding = None if use is None else self.bindings.get(use.id)
-            if (
-                use is None
-                or binding is None
-                or binding.projection_mode != "native"
-                or binding.converter_strategy == "registered_adapter"
-            ):
+            if use is None or binding is None or binding.projection_mode != "native":
                 message = (
                     f"The cacheable status {status} of {name!r} has a response other than one natively decoded JSON "
                     "body, which is not supported yet"

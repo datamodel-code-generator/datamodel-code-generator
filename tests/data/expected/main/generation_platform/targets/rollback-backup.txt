@@ -21,7 +21,7 @@ generate
   written target server/py.typed (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  26 runtime modules ['written']
+  23 runtime modules ['written']
 generate
   PublicationRollbackError after OSError: unrestored server/_generated/contract.py, server/application.py; 2 backups kept
 tree
@@ -47,4 +47,4 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  26 runtime modules ['present']
+  23 runtime modules ['present']

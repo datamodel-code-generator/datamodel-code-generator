@@ -141,13 +141,13 @@ render pydantic_v2.dataclass default
   codec_1 -> PydanticModelCodec[models.BuiltinTypeFieldNames]
 render dataclasses.dataclass default
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion
 render typing.TypedDict default
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion
 render msgspec.Struct default
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion

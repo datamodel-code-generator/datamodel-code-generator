@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeAlias
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._codec_declarations import OperationRef
+from datamodel_code_generator._api_types import OperationRef
 from datamodel_code_generator._fastapi.context import HookReference
 from datamodel_code_generator._fastapi.naming import explicit
 from datamodel_code_generator._target_config import (

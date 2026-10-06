@@ -134,18 +134,18 @@
 "\\t\\n\\r\\f\\v" "\t\n\r\f\u000b" -> True
 "^[\\x41\\u00e9\\t\\]\\/]+$" "A\u00e9\t]/" -> True
 "^[\\x41\\u00e9\\t\\]\\/]+$" "B" -> False
-"(?=a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
-"(?!a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
-"(?<=a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
-"(?<!a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
-"(?<n>a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
-"(?i:a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
-"\\1" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
-"\\k<n>" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
-"\\p{L}" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
-"\\P{L}" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
-"\\cA" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
-"\\0" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
+"(?=a)" -> PatternDialectError Lookaround, named groups, and flags are not supported at offset 1
+"(?!a)" -> PatternDialectError Lookaround, named groups, and flags are not supported at offset 1
+"(?<=a)" -> PatternDialectError Lookaround, named groups, and flags are not supported at offset 1
+"(?<!a)" -> PatternDialectError Lookaround, named groups, and flags are not supported at offset 1
+"(?<n>a)" -> PatternDialectError Lookaround, named groups, and flags are not supported at offset 1
+"(?i:a)" -> PatternDialectError Lookaround, named groups, and flags are not supported at offset 1
+"\\1" -> PatternDialectError Property, back-reference, control, and NUL escapes are not supported at offset 1
+"\\k<n>" -> PatternDialectError Property, back-reference, control, and NUL escapes are not supported at offset 1
+"\\p{L}" -> PatternDialectError Property, back-reference, control, and NUL escapes are not supported at offset 1
+"\\P{L}" -> PatternDialectError Property, back-reference, control, and NUL escapes are not supported at offset 1
+"\\cA" -> PatternDialectError Property, back-reference, control, and NUL escapes are not supported at offset 1
+"\\0" -> PatternDialectError Property, back-reference, control, and NUL escapes are not supported at offset 1
 "\\e" -> PatternDialectError Unsupported identity escape at offset 1
 "\\uD83D" -> PatternDialectError Lone surrogates are not supported at offset 6
 "\\uDE00" -> PatternDialectError Lone surrogates are not supported at offset 6
@@ -179,7 +179,7 @@
 "$$" -> PatternDialectError '$' is only supported at the end of a top-level branch at offset 1
 "\\b+" -> PatternDialectError An assertion cannot be quantified at offset 2
 "\ud800" -> PatternDialectError Lone surrogates are not supported at offset 1
-"[\\c]" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 2
+"[\\c]" -> PatternDialectError Property, back-reference, control, and NUL escapes are not supported at offset 2
 "[\\e]" -> PatternDialectError Unsupported identity escape at offset 2
 source-4096: ok
 source-4097: PatternResourceError Pattern source exceeds 4096 UTF-8 bytes

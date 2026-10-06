@@ -48,19 +48,19 @@ render pydantic_v2.dataclass default
   codec_3 -> PydanticModelCodec[models.Second]
 render dataclasses.dataclass default
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/requestBody: The recursive First alias has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/responses/200: The recursive First alias has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/requestBody: The recursive Second alias has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/responses/200: The recursive Second alias has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/requestBody: The recursive First alias has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/responses/200: The recursive First alias has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/requestBody: The recursive Second alias has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/responses/200: The recursive Second alias has no structural conversion
 render typing.TypedDict default
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/requestBody: The recursive First alias has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/responses/200: The recursive First alias has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/requestBody: The recursive Second alias has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/responses/200: The recursive Second alias has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/requestBody: The recursive First alias has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/responses/200: The recursive First alias has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/requestBody: The recursive Second alias has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/responses/200: The recursive Second alias has no structural conversion
 render msgspec.Struct default
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/requestBody: The recursive First alias has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/responses/200: The recursive First alias has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/requestBody: The recursive Second alias has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/responses/200: The recursive Second alias has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/requestBody: The recursive First alias has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/responses/200: The recursive First alias has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/requestBody: The recursive Second alias has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~11/post/responses/200: The recursive Second alias has no structural conversion

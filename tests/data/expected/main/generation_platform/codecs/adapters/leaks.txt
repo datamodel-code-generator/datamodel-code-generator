@@ -1,5 +1,0 @@
-use /paths/~1adapted/post request_body: codec_0 outbound_0 None registered_adapter native
-adapter pet-model /paths/~1adapted/post request_body: model
-binding /paths/~1adapted/post request_body: adapted_models:Pet model registered_adapter native
-use /paths/~1plain/post request_body: codec_1 outbound_1 None pydantic_type_adapter native
-binding /paths/~1plain/post request_body: adapted_models:Pet model pydantic_type_adapter native
