@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from datamodel_code_generator import DataModelType, api_types
+from datamodel_code_generator import api_types
 from datamodel_code_generator.api_types import (
-    BuiltinCodecCompatibility,
     CodecAdapterRegistration,
-    ModelExportBinding,
     OperationRef,
     SchemaDirectionalUse,
     SchemaRef,
@@ -40,18 +38,5 @@ def _registration(data: dict[str, object]) -> CodecAdapterRegistration:
 
 
 def declaration(kind: str, data: dict[str, object]) -> object:
-    """Build one declaration record of a kind: compatibility, exports, adapters, or a use selector."""
-    match kind:
-        case "compatibility":
-            return BuiltinCodecCompatibility(**{
-                **_tuples(data),
-                "backend": DataModelType(data["backend"]),
-                "schemas": tuple(SchemaRef(**item) for item in data.get("schemas", ())),
-            })
-        case "exports":
-            return ModelExportBinding(**{**data, "schema": SchemaRef(**data["schema"])})
-        case "adapters":
-            return _registration(data)
-        case _:
-            pass
-    return _selector(data)
+    """Build one declaration record of a kind: an adapter registration, or a use selector."""
+    return _registration(data) if kind == "adapters" else _selector(data)

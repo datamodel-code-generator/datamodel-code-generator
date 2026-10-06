@@ -1,5 +1,3 @@
-refused APIGenerationError
-refused diagnostic MC_ADAPTER_REQUIRED /components/schemas/Pet/properties/owner: The Owner model needs a builtin compatibility declaration or a model adapter
 use /paths/~1adapted/post request_body: codec_0 None None registered_adapter native
 adapter pet-model /paths/~1adapted/post request_body: model
 binding /paths/~1adapted/post request_body: adapted_models:Pet model registered_adapter native

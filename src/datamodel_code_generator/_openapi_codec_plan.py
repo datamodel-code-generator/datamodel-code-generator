@@ -2,24 +2,15 @@
 
 from __future__ import annotations
 
-import tokenize
 from dataclasses import dataclass, replace
 from functools import cached_property
-from io import StringIO
-from keyword import iskeyword
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._codec_declarations import (
-    BuiltinCodecCompatibility,
-    CodecDeclarations,
-    ModelExportBinding,
-    SchemaRef,
-)
+from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import type_reason
 from datamodel_code_generator._openapi_codec_adapters import (
     AdapterPlan,
     AdapterSelection,
-    declared_document,
     plan_adapters,
     select_adapters,
     suppressed,
@@ -62,7 +53,6 @@ from datamodel_code_generator._target_contract import (
     ModelArtifactAddress,
     ModelFieldFacts,
     NoneType,
-    OpaqueBackendValue,
     OperationId,
     SourceLocation,
     SymbolId,
@@ -72,7 +62,7 @@ from datamodel_code_generator._target_contract import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterator
 
     from datamodel_code_generator._openapi_generation import SourceLease
     from datamodel_code_generator._runtime.model_codecs.context import Surface
@@ -124,7 +114,6 @@ _MSGSPEC_UNSUPPORTED: Final = frozenset({
     "pathlib.Path",
 })
 _MAPPINGS: Final = frozenset({"dict", "typing.Mapping", "collections.abc.Mapping"})
-_DYNAMIC: Final = frozenset({"exec", "eval", "globals", "locals", "vars", "setattr", "__builtins__", "__import__"})
 _STRUCTURAL_KEYS: Final = frozenset({"str", "object", "typing.Any"})
 _STRUCTURAL_LEAVES: Final = _STRUCTURAL_KEYS | {
     "bool",
@@ -168,17 +157,6 @@ def _setting(symbol: FinalModelSymbol, name: str, *, parameter: bool = False) ->
                 case value:
                     return value
     return None
-
-
-def _builtin(symbol: FinalModelSymbol) -> bool:
-    return (
-        symbol.facts is not None
-        and not symbol.facts.custom_base
-        and not any(
-            isinstance(setting.value, OpaqueBackendValue) and setting.value.reason == "custom_origin"
-            for setting in (*symbol.facts.parameters, *symbol.facts.configuration)
-        )
-    )
 
 
 def _is_decimal(value: FinalPythonType) -> bool:
@@ -272,55 +250,6 @@ def _symbol_key(symbol: FinalModelSymbol) -> str:
     return f"{artifact_module(symbol.artifact) if symbol.artifact else ''}:{symbol.name}"
 
 
-def _statements(source: str) -> Iterator[tuple[int, list[str]]]:
-    """Yield each logical statement's indentation and its name and operator tokens."""
-    words: list[str] = []
-    indent = 0
-    for token in tokenize.generate_tokens(StringIO(source).readline):
-        if token.type == tokenize.INDENT:
-            indent += 1
-        elif token.type == tokenize.DEDENT:
-            indent -= 1
-        elif token.type in {tokenize.NAME, tokenize.OP}:
-            words.append(token.string)
-        elif token.type == tokenize.NEWLINE and words:
-            yield indent, words
-            words = []
-
-
-def _defined(source: str) -> frozenset[str]:
-    """Return the names a generated module binds at its top level.
-
-    A module that does not tokenize, or that runs dynamic code, defines none.
-    """
-    names: set[str] = set()
-    try:
-        for indent, words in _statements(source):
-            if _DYNAMIC.intersection(words[2:] if words[1:2] in (["="], [":"]) else words):
-                return frozenset()
-            if indent == 0:
-                names.update(_bound(words))
-    except (tokenize.TokenError, SyntaxError):
-        return frozenset()
-    return frozenset(names)
-
-
-def _bound(words: list[str]) -> list[str]:
-    """Return the names one top-level statement binds: a definition, an assignment, or its imports."""
-    head, rest = words[0], words[1:]
-    if head == "import" or (head == "from" and "import" in rest):
-        groups: list[list[str]] = [[]]
-        for word in rest[rest.index("import") + 1 :] if head == "from" else rest:
-            if word == ",":
-                groups.append([])
-            elif word not in {"(", ")"}:
-                groups[-1].append(word)
-        return [group[-1] if "as" in group else group[0] for group in groups if group and group[0] != "*"]
-    if head in {"class", "def"} or (head == "type" and rest[1:2] in (["="], ["["])):
-        return rest[:1]
-    return [head] if (rest[:1] == ["="] or (rest[:1] == [":"] and "=" in rest)) and not iskeyword(head) else []
-
-
 def _accepted(facts: ModelFieldFacts, slot: FieldSlot, wire_name: str, *, generated: bool) -> frozenset[str]:
     if facts.validation_aliases:
         return frozenset(facts.validation_aliases)
@@ -343,7 +272,6 @@ class _CodecPlanner:
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         backend: CodecBackend,
-        declarations: CodecDeclarations,
         adapted: frozenset[TypeUseId],
     ) -> None:
         self.batch = batch
@@ -353,8 +281,9 @@ class _CodecPlanner:
         self.gaps: set[str] = set()
         self.adapted = adapted
         self.quiet = False
-        self.exports: dict[int, str] = {}
-        self.imports: dict[int, str] = {}
+        self.imports: dict[int, str] = {
+            symbol.id: _symbol_key(symbol) for symbol in batch.symbols if symbol.artifact is not None
+        }
         self.symbols = {symbol.id: symbol for symbol in batch.symbols}
         self.schema_ids = dict(wire.schema_ids)
         self.locations: dict[str, SourceLocation] = {}
@@ -380,64 +309,11 @@ class _CodecPlanner:
         self.caches: dict[bool, dict[str, ModelBinding]] = {False: {}, True: {}}
         self.building: set[tuple[bool, str]] = set()
         self.aliases: set[int] = set()
-        self.diagnostics: list[CodecDiagnostic] = []
-        self.compatible = frozenset(
-            symbol
-            for declaration in declarations.compatibility
-            if declaration.backend.value == backend
-            for symbol in self.declared(declaration)
-        )
+        self.diagnostics: dict[CodecDiagnostic, None] = {}
         self.msgspec = _MsgspecTypes(self)
 
-    def declared(self, declaration: BuiltinCodecCompatibility) -> Iterable[int]:
-        if not declaration.schemas:
-            return self.symbols
-        referenced = self.referenced(declaration.schemas)
-        return (symbol for symbol, schema_id in self.symbol_schemas.items() if schema_id in referenced)
-
-    def referenced(self, references: tuple[SchemaRef, ...]) -> frozenset[str]:
-        return frozenset(
-            self.wire.schema_id(SourceLocation(document, reference.pointer, "schema"))
-            for reference in references
-            if (document := declared_document(self.batch, reference.document)) is not None
-        )
-
-    def export(self, binding: ModelExportBinding, sources: Mapping[str, str]) -> None:
-        document = declared_document(self.batch, binding.schema.document)
-        symbols = {
-            use.type.symbol
-            for use in self.batch.type_uses
-            if isinstance(use.type, GeneratedSymbolType)
-            and use.schema is not None
-            and ((resolved := self.wire.schema(use.schema)[0]).document, resolved.pointer)
-            == (document, binding.schema.pointer)
-            and use.id.direction == binding.direction
-            and (binding.direction != "neutral" or use.id.role == "schema")
-        }
-        source = SourceLocation(document or self.batch.documents[0].id, binding.schema.pointer, "schema")
-        if len(symbols) != 1:
-            code: CodecReason = "MC_ADAPTER_CONTRACT" if symbols else "BND_MODEL_SCOPE_REQUIRED"
-            self.report(code, source, "The export binding selects no single generated model variant")
-            return
-        symbol = self.symbols[next(iter(symbols))]
-        package = symbol.artifact.model_package if symbol.artifact else ""
-        if binding.symbol not in _defined(sources.get(binding.module, "")) or not (
-            binding.module == package or binding.module.startswith(f"{package}.")
-        ):
-            self.report(
-                "BND_SYMBOL_NOT_EMITTED", source, f"{binding.module} does not define or export {binding.symbol}"
-            )
-            return
-        self.exports[symbol.id] = f"{binding.module}:{binding.symbol}"
-
     def report(self, code: CodecReason, source: SourceLocation, message: str) -> None:
-        if (diagnostic := CodecDiagnostic(code, source, message)) not in self.diagnostics:
-            self.diagnostics.append(diagnostic)
-
-    def locate(self) -> None:
-        self.imports = {
-            symbol.id: _symbol_key(symbol) for symbol in self.batch.symbols if symbol.artifact is not None
-        } | self.exports
+        self.diagnostics[CodecDiagnostic(code, source, message)] = None
 
     def spelled(self, use: TypeUseBinding, value: FinalPythonType) -> bool:
         types = [value]
@@ -531,17 +407,10 @@ class _CodecPlanner:
             case "model" | "root" | "custom" if self.quiet or (
                 symbol.kind != "custom"
                 and symbol.backend == _SYMBOL_BACKENDS[self.backend]
-                and (_builtin(symbol) or (symbol.facts is not None and symbol.id in self.compatible))
+                and symbol.facts is not None
             ):
                 self.model(symbol, source)
                 return ModelNode(_symbol_key(symbol))
-            case "model" | "root" if symbol.id in self.compatible and symbol.backend == _SYMBOL_BACKENDS[self.backend]:
-                self.report(
-                    "MC_ADAPTER_REQUIRED",
-                    source,
-                    f"The {symbol.name} model has no captured field facts, so its builtin compatibility cannot bind it",
-                )
-                return LeafNode()
             case "alias" if symbol.id not in self.aliases:
                 self.aliases.add(symbol.id)
                 node = next(
@@ -564,11 +433,7 @@ class _CodecPlanner:
             case "enum" | "alias":
                 return LeafNode()
             case _:
-                self.report(
-                    "MC_ADAPTER_REQUIRED",
-                    source,
-                    f"The {symbol.name} model needs a builtin compatibility declaration or a model adapter",
-                )
+                self.report("MC_ADAPTER_REQUIRED", source, f"The {symbol.name} model needs a model adapter")
                 return LeafNode()
 
     @property
@@ -736,7 +601,7 @@ class _CodecPlanner:
             media_type=use.id.media,
             backend=self.backend,
             native_kind=self.native_kind(use.type, node, models),
-            native_export=self.exports.get(use.type.symbol, _symbol_key(self.symbols[use.type.symbol]))
+            native_export=_symbol_key(self.symbols[use.type.symbol])
             if isinstance(use.type, GeneratedSymbolType)
             else None,
             projection_mode="envelope" if envelope else "native",
@@ -911,7 +776,6 @@ def plan_model_codecs(  # noqa: PLR0913
     declarations: CodecDeclarations = _NO_DECLARATIONS,
     surface: Surface = "server",
     lease: SourceLease | None = None,
-    sources: Mapping[str, str] | None = None,
     selection: AdapterSelection | None = None,
 ) -> CodecPlan:
     """Bind every directional use to its native type graph, projection mode, and any registered adapter.
@@ -920,10 +784,7 @@ def plan_model_codecs(  # noqa: PLR0913
     """
     if selection is None:
         selection = select_adapters(batch, wire, declarations, surface)
-    planner = _CodecPlanner(batch, wire, backend, declarations, selection.uses("model"))
-    for export in declarations.exports:
-        planner.export(export, sources or {})
-    planner.locate()
+    planner = _CodecPlanner(batch, wire, backend, selection.uses("model"))
     bindings = tuple((use.id, binding) for use in batch.type_uses if (binding := planner.use(use)) is not None)
     adapters, adapter_diagnostics = plan_adapters(selection, batch, wire, dict(bindings), lease)
     return CodecPlan(

@@ -36,7 +36,6 @@ MODELS = f"{PACKAGE}_models"
 MANIFEST = ".dcg-target-manifest.json"
 ACCESSOR = re.compile(r"(codec|validator|parameter)_(\d+)")
 KINDS = {"codec": "model", "validator": "schema", "parameter": "parameter"}
-SETTINGS = {"codec_adapters": "adapters", "builtin_codec_compatibility": "compatibility", "export_bindings": "exports"}
 _ISOLATED = """
 import json
 import sys
@@ -87,7 +86,7 @@ def _generate(source: Path, fixture: dict[str, Any], root: Path, run: dict[str, 
     declarations = {kind: list(items) for kind, items in fixture.get("declarations", {}).items()}
     for kind, items in run.get("declarations", {}).items():
         declarations.setdefault(kind, []).extend(items)
-    config = {key: declarations[kind] for key, kind in SETTINGS.items() if kind in declarations}
+    config = {"codec_adapters": declarations["adapters"]} if "adapters" in declarations else {}
     config.update(fixture.get("config", {}) | run.get("config", {}))
     root.mkdir(parents=True, exist_ok=True)
     name = run.get("input", source.name)

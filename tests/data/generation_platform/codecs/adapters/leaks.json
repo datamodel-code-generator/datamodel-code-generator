@@ -5,24 +5,6 @@
     }
   },
   "bindings": true,
-  "refusal": {
-    "config": {
-      "builtin_codec_compatibility": []
-    }
-  },
-  "config": {
-    "builtin_codec_compatibility": [
-      {
-        "name": "owners",
-        "backend": "pydantic_v2.BaseModel",
-        "schemas": [
-          {
-            "pointer": "/components/schemas/Owner"
-          }
-        ]
-      }
-    ]
-  },
   "declarations": {
     "adapters": [
       {

@@ -16,9 +16,7 @@ from datamodel_code_generator._api_types import (
     PublicationRollbackError,
 )
 from datamodel_code_generator._codec_declarations import (
-    BuiltinCodecCompatibility,
     CodecAdapterRegistration,
-    ModelExportBinding,
     OperationRef,
     SchemaDirectionalUse,
     SchemaRef,
@@ -35,7 +33,6 @@ from datamodel_code_generator._runtime.model_codecs.capabilities import (
 __all__ = [
     "APIGenerationError",
     "ArtifactRecord",
-    "BuiltinCodecCompatibility",
     "ClientMediaCodecCapabilities",
     "CodecAdapterRegistration",
     "CodecCapabilities",
@@ -43,7 +40,6 @@ __all__ = [
     "GeneratedArtifact",
     "GeneratedProject",
     "GenerationReport",
-    "ModelExportBinding",
     "OperationRef",
     "OperationSelection",
     "ParameterCodecCapabilities",

@@ -115,11 +115,8 @@ def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
                 converted[key] = tuple(ResourceName(**item) if isinstance(item, dict) else item for item in value)
             case "operations" if isinstance(value, list):
                 converted[key] = tuple(_operation(item) for item in value)
-            case "codec_adapters" | "builtin_codec_compatibility" | "export_bindings" if isinstance(value, list):
-                kind = {"codec_adapters": "adapters", "builtin_codec_compatibility": "compatibility"}.get(
-                    key, "exports"
-                )
-                converted[key] = tuple(declaration(kind, item) for item in value)
+            case "codec_adapters" if isinstance(value, list):
+                converted[key] = tuple(declaration("adapters", item) for item in value)
             case "formatters":
                 converted[key] = tuple(value)
             case "protocols":

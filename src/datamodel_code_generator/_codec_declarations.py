@@ -1,4 +1,4 @@
-"""Generator-side codec declarations: builtin compatibility, model exports, and adapter registrations.
+"""Generator-side codec declarations: adapter registrations and the references they select uses with.
 
 The new target entry points will expose these records through `datamodel_code_generator.api_types`.
 """
@@ -22,7 +22,6 @@ from datamodel_code_generator._runtime.model_codecs.context import (  # noqa: TC
 from datamodel_code_generator._runtime.model_codecs.parameters import (  # noqa: TC001 - Public annotations support get_type_hints().
     ParameterLocation,
 )
-from datamodel_code_generator.enums import DataModelType  # noqa: TC001 - Public annotations support get_type_hints().
 
 AdapterKind: TypeAlias = Literal["model", "parameter", "media", "schema"]
 TypeUseRefRole: TypeAlias = Literal[
@@ -118,41 +117,6 @@ class TypeUseRef:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class BuiltinCodecCompatibility:
-    """Assert that custom models of one backend keep the builtin-v1 codec semantics."""
-
-    name: str
-    backend: DataModelType
-    schemas: tuple[SchemaRef, ...] = ()
-    contract: Literal["builtin-v1"] = "builtin-v1"
-    dependencies: tuple[str, ...] = ()
-    python_requires: str = ">=3.11"
-
-    def __post_init__(self) -> None:
-        """Require a name, the builtin-v1 contract, and valid requirements."""
-        if not self.name or self.contract != "builtin-v1":
-            msg = "A builtin codec compatibility declaration needs a name and the builtin-v1 contract"
-            raise ValueError(msg)
-        _requirements(self.dependencies, self.python_requires)
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ModelExportBinding:
-    """Import the model of one schema variant from an explicit module of the model package."""
-
-    schema: SchemaRef
-    module: str
-    symbol: str
-    direction: Direction | Literal["neutral"] = "neutral"
-
-    def __post_init__(self) -> None:
-        """Require an absolute dotted module and one identifier."""
-        if not _dotted(self.module) or not _dotted(self.symbol) or "." in self.symbol:
-            msg = "An export binding needs an absolute dotted module and one identifier"
-            raise ValueError(msg)
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class CodecAdapterRegistration:
     """Register one adapter factory with its dependencies, capabilities, and applicable uses."""
 
@@ -184,6 +148,4 @@ class CodecAdapterRegistration:
 class CodecDeclarations:
     """Collect one target's codec declarations for planning."""
 
-    compatibility: tuple[BuiltinCodecCompatibility, ...] = ()
-    exports: tuple[ModelExportBinding, ...] = ()
     adapters: tuple[CodecAdapterRegistration, ...] = ()

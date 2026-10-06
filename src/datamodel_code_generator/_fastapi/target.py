@@ -136,11 +136,7 @@ class _Stage:
             operations=frozenset(operation.id for operation in request.operations),
             documents=request.documents.pointers,
         )
-        self.declarations = CodecDeclarations(
-            compatibility=config.builtin_codec_compatibility,
-            exports=config.export_bindings,
-            adapters=config.codec_adapters,
-        )
+        self.declarations = CodecDeclarations(adapters=config.codec_adapters)
         self.adapters = select_adapters(request.batch, self.wire, self.declarations, "server")
         self.latest: tuple[Revision, ServerPlan, CodecPlan] | None = None
         self.view: tuple[Revision, FastAPIContext] | None = None
@@ -159,7 +155,6 @@ class _Stage:
             declarations=self.declarations,
             surface="server",
             lease=request.lease,
-            sources=_sources(request),
             selection=self.adapters,
         )
         selected = {operation.contract.id for operation in plan.operations}
@@ -242,15 +237,6 @@ def _codec_uses(plan: ServerPlan) -> frozenset[TypeUseId]:
                 header.use.id for header in response.headers if header.use is not None and header.plan is not None
             )
     return frozenset(uses)
-
-
-def _sources(request: TargetRequest) -> dict[str, str]:
-    contents = {artifact.path: artifact.content.decode(artifact.encoding) for artifact in request.models}
-    return {
-        artifact_module(address): contents[address.relative_path]
-        for address in request.batch.artifacts
-        if address.relative_path in contents
-    }
 
 
 def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:

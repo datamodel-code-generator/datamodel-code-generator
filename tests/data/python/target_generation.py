@@ -12,20 +12,17 @@ from urllib.parse import urlparse
 
 import yaml
 
-from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError
+from datamodel_code_generator import Error, GenerateConfig, InvalidFileFormatError
 from datamodel_code_generator.fastapi import (
     APIGenerationError,
-    BuiltinCodecCompatibility,
     Diagnostic,
     FastAPIConfig,
     GeneratedProject,
     GenerationReport,
-    ModelExportBinding,
     OperationRef,
     OperationSelection,
     PublicationRollbackError,
     ResponseChoice,
-    SchemaRef,
     generate_fastapi,
     render_fastapi,
 )
@@ -58,10 +55,6 @@ def _selector(value: str | dict[str, str]) -> OperationRef | str:
     return OperationRef(**{key: item.replace("{root}", Path.cwd().as_uri()) for key, item in value.items()})
 
 
-def _schema(value: dict[str, str]) -> SchemaRef:
-    return SchemaRef(**value)
-
-
 def _config(values: dict[str, Any]) -> FastAPIConfig:
     values = {"output": "server", "package": "example.server", "model_package": "example.models", **values}
     converted: dict[str, Any] = {}
@@ -74,19 +67,6 @@ def _config(values: dict[str, Any]) -> FastAPIConfig:
                     name: tuple(_selector(item) for item in item_value) if isinstance(item_value, list) else item_value
                     for name, item_value in value.items()
                 })
-            case "builtin_codec_compatibility":
-                converted[key] = tuple(
-                    BuiltinCodecCompatibility(**{
-                        **item,
-                        "backend": DataModelType(item["backend"]),
-                        "schemas": tuple(_schema(schema) for schema in item["schemas"]),
-                    })
-                    for item in value
-                )
-            case "export_bindings":
-                converted[key] = tuple(
-                    ModelExportBinding(**{**item, "schema": _schema(item["schema"])}) for item in value
-                )
             case "primary_responses":
                 converted[key] = {_selector(selector): ResponseChoice(**choice) for selector, choice in value}
             case "operation_names":
