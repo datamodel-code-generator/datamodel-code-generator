@@ -176,6 +176,13 @@ class _Harness:
         """Report what the server saw in each play, once it ended."""
         self.lines.extend(play.report() for play in plays)
 
+    async def areport(self, *plays: Play) -> None:
+        """Report what the server saw in each play once it ended, waiting off the event loop so that the loop can
+        finish closing a connection meanwhile."""
+        for play in plays:
+            await asyncio.to_thread(play.done.wait, 10)
+        self.report(*plays)
+
 
 def sockets(package: ModuleType, lines: list[str]) -> None:
     """Open WebSocket sessions to local servers through the synchronous and asyncio clients of a generated package."""
@@ -372,21 +379,43 @@ def _limits(harness: _Harness, api: Any) -> None:
 
 def _clocked(harness: _Harness) -> None:
     """Time a session's waits on the client's clock: a stepped clock expires an idle wait at once, and a frozen one
-    ends it once as much real time passed.
+    ends it, or the session's deadline, once as much real time passed.
     """
     lines, server, options = harness.lines, harness.server, harness.options
     ticks = itertools.count(step=30.0)
-    for label, clock, idle in (
-        ("idle on a stepped clock", options.Clock(monotonic=lambda: float(next(ticks))), 60.0),
-        ("idle on a frozen clock", options.Clock(monotonic=lambda: 100.0), 0.05),
+    frozen = options.Clock(monotonic=lambda: 100.0)
+    for label, clock, idle, session in (
+        ("idle on a stepped clock", options.Clock(monotonic=lambda: float(next(ticks))), 60.0, None),
+        ("idle on a frozen clock", frozen, 0.05, None),
+        ("session deadline on a frozen clock", frozen, None, options.SessionOptions(total_timeout=0.05)),
     ):
         (play,) = server.play(Play())
         with harness.package.Client(options=harness.client(clock=clock)) as api:
             session = api.protocols.rooms.chat.connect(
-                room=harness.room(), options=options.RequestOptions(total_timeout=None), ws_options=harness.ws(idle_timeout=idle)
+                room=harness.room(),
+                options=options.RequestOptions(total_timeout=None),
+                ws_options=harness.ws(idle_timeout=idle),
+                session_options=session,
             )
             record(lines, label, session.receive)
         harness.report(play)
+    run(lambda: _async_clocked(harness, frozen))
+
+
+async def _async_clocked(harness: _Harness, frozen: Any) -> None:
+    """End an asyncio session's wait at its deadline once as much real time passed on a frozen client clock."""
+    options = harness.options
+    (play,) = harness.server.play(Play())
+    async with harness.package.AsyncClient(options=harness.client(clock=frozen)) as api:
+        session = await api.protocols.rooms.chat.connect(
+            room=harness.room(),
+            options=options.RequestOptions(total_timeout=None),
+            ws_options=harness.ws(idle_timeout=None),
+            session_options=options.SessionOptions(total_timeout=0.05),
+        )
+        await arecord(harness.lines, "async session deadline on a frozen clock", session.receive)
+        await session.aclose()
+    await harness.areport(play)
 
 
 def _closing_sessions(harness: _Harness, api: Any) -> None:
@@ -475,8 +504,7 @@ async def _async_hooked(harness: _Harness) -> None:
             if session is not None:
                 await arecord(lines, "receive", session.receive)
                 await session.aclose()
-            await asyncio.to_thread(play.done.wait, 10)
-            harness.report(play)
+            await harness.areport(play)
 
 
 class _Tokens:
@@ -819,7 +847,7 @@ async def _async_sockets(harness: _Harness) -> None:
                 lines.append(f"    async iterated {_message(message)}")
             await arecord(lines, "async receive after the end", session.receive)
             await arecord(lines, "async send after the end", lambda: session.send(harness.text("late")))
-        harness.report(play)
+        await harness.areport(play)
         (play,) = server.play(Play(talk=_echo))
         session = await api.protocols.feed.text.connect()
         lines.append(f"  async bytes {_message(await session.receive())}")
@@ -828,7 +856,7 @@ async def _async_sockets(harness: _Harness) -> None:
         await session.send("hello")
         lines.append(f"    {_message(await session.receive())}")
         await session.aclose()
-        harness.report(play)
+        await harness.areport(play)
         (play,) = server.play(Play())
         session = await chat.connect(room=harness.room())
         waiting = asyncio.create_task(session.receive())
@@ -839,7 +867,7 @@ async def _async_sockets(harness: _Harness) -> None:
         await arecord(lines, "async receive after closing", session.receive)
         lines.append(f"  async iteration after closing {[message async for message in session]}")
         await arecord(lines, "async invalid close", lambda: session.aclose(1015))
-        harness.report(play)
+        await harness.areport(play)
         for label, play, arguments in (
             ("async refusal", Play(refuse=(404, _PROBLEM, b'{"detail":"no room"}')), {}),
             ("async decode failure", Play(talk=_sending(json_error_body("syntax").decode())), {}),
@@ -860,15 +888,14 @@ async def _async_sockets(harness: _Harness) -> None:
                 else:
                     await arecord(lines, label, session.receive)
                 await session.aclose()
-            harness.report(play)
+            await harness.areport(play)
         for label, step in (
             ("async send once the server closed unread", lambda session: session.send("late")),
             ("async ping once the server closed unread", lambda session: session.ping()),
         ):
             (play,) = server.play(Play(talk=_closing))
             session = await api.protocols.feed.text.connect()
-            await asyncio.to_thread(play.done.wait, 10)
-            harness.report(play)
+            await harness.areport(play)
             await arecord(lines, label, lambda step=step, session=session: step(session))
         (play,) = server.play(Play(talk=_answering))
         session = await api.protocols.feed.text.connect()
@@ -881,7 +908,7 @@ async def _async_sockets(harness: _Harness) -> None:
         await arecord(lines, "async send after the cancelled receives", lambda: session.send("after"))
         lines.append(f"    async received {_message(await session.receive())}")
         await session.aclose()
-        harness.report(play)
+        await harness.areport(play)
     (play,) = server.play(Play(talk=_sending(_JOINED)))
     api = harness.package.AsyncClient(options=harness.client())
     session = await api.protocols.rooms.chat.connect(room=harness.room())
@@ -890,7 +917,7 @@ async def _async_sockets(harness: _Harness) -> None:
     await arecord(lines, "async client close with a receive waiting", api.aclose)
     await arecord(lines, "async receive kept through the client closing", lambda: waiting)
     await session.aclose()
-    harness.report(play)
+    await harness.areport(play)
     peer = RawPeer(b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n")
     try:
         async with harness.package.AsyncClient(options=harness.client(peer.url)) as api:

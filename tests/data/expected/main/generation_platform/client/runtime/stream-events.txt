@@ -18,15 +18,13 @@
   > GET https://api.example.com/events accept=text/event-stream
   idle while waiting for bytes
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
-    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    end
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
   > GET https://api.example.com/events accept=text/event-stream
   idle the call options set
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
-    2 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    end
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
   > GET https://api.example.com/events accept=text/event-stream
   no idle limit before the session total
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -79,12 +77,12 @@
   async idle while waiting for bytes
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] api_timeout_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
   > GET https://api.example.com/events accept=text/event-stream
   async idle the call options set
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] api_timeout_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
   > GET https://api.example.com/events accept=text/event-stream
   async no idle limit before the session total
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
