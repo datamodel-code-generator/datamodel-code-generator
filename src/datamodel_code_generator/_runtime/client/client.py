@@ -37,7 +37,7 @@ from .bodies import (
     FileBody,
     StreamBody,
 )
-from .body_sources import bind_async_body, bind_body, capture_async_body, capture_body
+from .body_sources import RequestCoding, bind_async_body, bind_body, capture_async_body, capture_body
 from .coding import ContentDecoder
 from .errors import (
     APIConnectionError,
@@ -198,11 +198,12 @@ _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ClientDefaults:
-    """The generated defaults of one client package and its helpers' kinds by name."""
+    """The generated defaults of one client package, its helpers' kinds by name, and its request content coding."""
 
     user_agent: str | None = None
     security_schemes: tuple[SecuritySchemeEntry, ...] = ()
     helpers: tuple[tuple[str, str], ...] = ()
+    request_coding: RequestCoding | None = None
 
 
 _DEFAULT_SERVER: Final = ServerSelection()
@@ -736,38 +737,34 @@ def _retry_error(error: BaseException) -> TypeGuard[APIStatusError | APIConnecti
 _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
 
 
-def _compressed(call: _Call, request: httpx2.Request, deferred: object) -> tuple[httpx2.Request, bool]:
-    """Gzip a declared request body unless the client disabled it, replacing its entity framing."""
-    if (
-        call.settings.compression is None
-        or call.operation is None
-        or "gzip" not in call.operation.accepted_content_encodings
-        or (_attempt(request) is None and isinstance(deferred, Unset))
+def _compressed(
+    call: _Call, request: httpx2.Request, deferred: object, coding: RequestCoding | None
+) -> tuple[httpx2.Request, RequestCoding | None]:
+    """Encode a declared request body with the package's coding unless the client disabled it, replacing its framing.
+
+    Return the request and the coding that a body building its own attempts still needs.
+    """
+    if coding is None or call.settings.compression is None or (operation := call.operation) is None:
+        return request, None
+    if coding.token not in operation.accepted_content_encodings or (
+        _attempt(request) is None and isinstance(deferred, Unset)
     ):
-        return request, False
+        return request, None
     if request.headers.get_list("content-encoding"):
         raise ConfigurationError(field_path=("headers", "Content-Encoding"), reason="managed")
-    from .compression import gzipped_attempt  # noqa: PLC0415 - Only a declared body loads the encoder.
-
     attempt = _attempt(request)
-    body = None if attempt is None else gzipped_attempt(attempt, partial(call.check, "encode"))
+    body = None if attempt is None else coding.attempt(attempt, partial(call.check, "encode"))
     headers = HeadersView((
         *(pair for pair in request_fields(request) if pair[0].lower() != "content-length"),
-        ("Content-Encoding", "gzip"),
+        ("Content-Encoding", coding.token),
     ))
-    return _request(method=request.method, url=str(request.url), headers=headers, body=body), True
+    return _request(method=request.method, url=str(request.url), headers=headers, body=body), coding
 
 
-def _gzip_source(source: BodySource) -> BodySource:
-    from .compression import GzipSource  # noqa: PLC0415 - Only a compressed body loads the encoder.
-
-    return GzipSource(source)
-
-
-def _agzip_source(source: AsyncBodySource) -> AsyncBodySource:
-    from .compression import AsyncGzipSource  # noqa: PLC0415 - Only a compressed body loads the encoder.
-
-    return AsyncGzipSource(source)
+def _grant_identity(provider: object) -> tuple[str | None, tuple[str, ...]] | None:
+    """Return the audience and requested scopes an OAuth token provider of the SDK declares, or None for any other."""
+    identity = getattr(provider, "grant_identity", None)
+    return cast("tuple[str | None, tuple[str, ...]]", identity()) if callable(identity) else None
 
 
 def _abandoned(
@@ -1376,6 +1373,7 @@ class _Shared(Generic[AdapterT]):
         self.closed = False
         self.transport = transport
         self.security_schemes = defaults.security_schemes
+        self.request_coding = defaults.request_coding
         self.fixed = (
             (_ACCEPT_ENCODING,)
             if defaults.user_agent is None
@@ -1779,12 +1777,10 @@ class _Core(Generic[AdapterT, HandleT]):
         names, queries = secret_names(self._shared.security_schemes)
         credential: WireValue = None
         if bound is not None:
-            from .grants import grant_identity  # noqa: PLC0415 - Only an authenticated cache fetch keys its credentials.
-
             names = names.union(bound.managed_headers, ("cookie",) if bound.managed_cookies else ())
             credential = (
                 tuple(
-                    (item.scheme.name, item.scheme.kind, item.required_scopes, grant_identity(item.provider))
+                    (item.scheme.name, item.scheme.kind, item.required_scopes, _grant_identity(item.provider))
                     for item in bound.credentials
                 ),
                 tuple(
@@ -2613,11 +2609,11 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             request = call.prepared(request)
             if call.auth is not None:
                 self._auth_prepared(request, call)
-            request, compressing = _compressed(call, request, deferred)
+            request, coding = _compressed(call, request, deferred, self._shared.request_coding)
             call.check("encode")
             if not isinstance(deferred, Unset):
                 source = bind_body(deferred, entry=entry)
-                source, entry = _gzip_source(source) if compressing else source, None
+                source, entry = source if coding is None else coding.source(source), None
             elif entry is not None:
                 abandoned, entry = entry, None
                 _released(abandoned.close, call.operation_id, call.call_id)
@@ -3527,11 +3523,11 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             request = call.prepared(request)
             if call.auth is not None:
                 self._auth_prepared(request, call)
-            request, compressing = _compressed(call, request, deferred)
+            request, coding = _compressed(call, request, deferred, self._shared.request_coding)
             call.check("encode")
             if not isinstance(deferred, Unset):
                 source = await bind_async_body(deferred, entry=entry, cleanup=call.cleanup)
-                source, entry = _agzip_source(source) if compressing else source, None
+                source, entry = source if coding is None else coding.async_source(source), None
             elif entry is not None:
                 abandoned, entry = entry, None
                 await _areleased(abandoned.aclose, call.operation_id, call.call_id)

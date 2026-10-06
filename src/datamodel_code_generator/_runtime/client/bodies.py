@@ -123,10 +123,10 @@ class AsyncBodyAttemptFactory(Protocol):
 
 
 class AsyncBodyCleanup(Protocol):
-    """Retain abnormal body cleanup under the logical call's existing cleanup budget."""
+    """Release a body resource, keeping its failure beside an error that is already propagating."""
 
     async def __call__(self, operation: Callable[[], Awaitable[None]], *, error: BaseException | None = None) -> bool:
-        """Join cleanup or retain it for the owning client's later drain."""
+        """Run the release and return whether it succeeded."""
         ...
 
 

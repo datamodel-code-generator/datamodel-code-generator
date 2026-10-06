@@ -1009,10 +1009,12 @@ class _Resources(_Typing):
         if self.plan.security_schemes:
             entries.append(("security_schemes=", f"{module.local('_generated', 'security')}.ROOT_SCHEMES"))
         name = module.local("_runtime.client.client", "ClientDefaults")
-        helpers = (*self.helpers, *self.streams, *self.sockets)
-        if not helpers:
+        if helpers := (*self.helpers, *self.streams, *self.sockets):
+            entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
+        if any("gzip" in spec.accepted_content_encodings for spec in self.plan.operations):
+            entries.append(("request_coding=", module.local("_runtime.client.compression", "GZIP")))
+        if len(entries) == 1 + bool(self.plan.security_schemes):
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
-        entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
 
     def client(self, *, asynchronous: bool) -> str:

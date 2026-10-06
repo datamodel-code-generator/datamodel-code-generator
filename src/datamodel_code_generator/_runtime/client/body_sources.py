@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
 from .bodies import (
@@ -74,6 +75,16 @@ class AsyncBodySource(Protocol):
     async def aclose(self) -> None:
         """Release the call's inputs exactly once."""
         ...
+
+
+@dataclass(frozen=True, slots=True)
+class RequestCoding:
+    """A request content coding a package declares: its token, and how it encodes whole attempts and body sources."""
+
+    token: str
+    attempt: Callable[[EncodedAttempt, Callable[[], None]], EncodedAttempt]
+    source: Callable[[BodySource], BodySource]
+    async_source: Callable[[AsyncBodySource], AsyncBodySource]
 
 
 def _inputs(body: object) -> Iterator[object]:

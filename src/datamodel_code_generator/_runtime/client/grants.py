@@ -34,7 +34,6 @@ __all__ = (
     "OAuthProviderOptions",
     "RefreshTokenProvider",
     "TokenSet",
-    "grant_identity",
 )
 
 
@@ -78,6 +77,10 @@ class _Tokens:
         """Forget the current token if it is the version a resource rejected; another version stays usable."""
         self._tokens.invalidate(version)
 
+    def grant_identity(self) -> tuple[str | None, tuple[str, ...]]:
+        """Return the audience and the requested scopes, which tell this provider's tokens apart in a cache key."""
+        return self._tokens.identity()
+
     def close(self) -> None:
         """Close the token transport the provider owns; later calls raise the provider_closed AuthError."""
         self._tokens.close()
@@ -111,6 +114,10 @@ class _AsyncTokens:
         """Forget the current token if it is the version a resource rejected; another version stays usable."""
         self._tokens.invalidate(version)
 
+    def grant_identity(self) -> tuple[str | None, tuple[str, ...]]:
+        """Return the audience and the requested scopes, which tell this provider's tokens apart in a cache key."""
+        return self._tokens.identity()
+
     async def aclose(self) -> None:
         """Close the token transport the provider owns; later calls raise the provider_closed AuthError."""
         await self._tokens.aclose()
@@ -122,13 +129,6 @@ class _AsyncTokens:
     async def __aexit__(self, *exc_info: object) -> None:
         """Close the provider."""
         await self.aclose()
-
-
-def grant_identity(provider: object) -> tuple[str | None, tuple[str, ...]] | None:
-    """Return the audience and requested scopes of an OAuth token provider of the SDK, or None for any other."""
-    if isinstance(provider, (_Tokens, _AsyncTokens)):
-        return provider._tokens.identity()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    return None
 
 
 @final
