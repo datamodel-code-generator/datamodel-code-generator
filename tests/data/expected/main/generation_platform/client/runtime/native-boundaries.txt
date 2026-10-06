@@ -5,13 +5,13 @@
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header') [operation_id='getValues', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for Entry
+  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for Entry
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
     For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_header
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header') [operation_id='getValues', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   missing optional JSON header = UNSET
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
@@ -23,13 +23,13 @@
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header') [operation_id='getValues', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for Entry
+  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for Entry
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
     For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_header
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header') [operation_id='getValues', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   missing optional JSON header = UNSET
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
@@ -41,11 +41,11 @@
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header') [operation_id='getValues', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] invalid_header
+  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] invalid_header
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header') [operation_id='getValues', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   missing optional JSON header = UNSET
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
@@ -57,11 +57,11 @@
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header') [operation_id='getValues', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] invalid_header
+  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] invalid_header
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header') [operation_id='getValues', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   missing optional JSON header = UNSET
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
@@ -73,11 +73,11 @@
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header') [operation_id='getValues', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=DecodeError('JSON is malformed: object keys must be strings (byte 1)')] invalid_header
+  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=DecodeError('JSON is malformed: object keys must be strings (byte 1)')] invalid_header
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header') [operation_id='getValues', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   missing optional JSON header = UNSET
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
