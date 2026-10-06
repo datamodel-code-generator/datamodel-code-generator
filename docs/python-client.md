@@ -3115,17 +3115,17 @@ leading or trailing ASCII spaces and tabs are also rejected. Interior spaces, ta
 without trimming or normalization. Invalid keys raise `ConfigurationError` when constructed, before any send.
 
 ```python
-from pets import Client
+from pets import Client, ClientView
 from pets.options import IdempotencyKey, RequestOptions
 
 
-def keyed_view(client: Client, value: str) -> Client:
+def keyed_view(client: Client, value: str) -> ClientView:
     key = IdempotencyKey(value)
     return client.with_options(RequestOptions(idempotency_key=key))
 ```
 
-Use the returned view in a `with` block and call an operation with the matching declaration. The client reuses
-the supplied value across eligible retries.
+Call an operation with the matching declaration through the returned view. The client reuses the supplied value
+across eligible retries.
 
 ## Request compression
 
@@ -3326,7 +3326,7 @@ async def authenticated_get_async(client: AsyncClient, token: str) -> bytes:
 `ApiKeyCredential(value)` uses its declared header, query, or cookie name. `BasicCredential(username, password)` uses
 UTF-8 Basic encoding. HTTP bearer, OAuth2, and OpenID Connect declarations accept explicitly supplied bearer material;
 this layer neither discovers endpoints nor starts an OAuth flow. `CredentialContext` carries the selected scheme,
-canonical requirements, current resource origin, deadline, and cancellation token. Its audience is currently `None`.
+canonical requirements, current resource origin, and deadline. Its audience is currently `None`.
 
 An environment provider reads only when selected and called. It rereads its named variable for each `get`; construction
 and package imports do not read the environment. Choose `kind="bearer"` for an environment token.
@@ -3345,7 +3345,7 @@ def environment_get(client: Client, variable_name: str) -> bytes:
 
 Custom providers implement the public structural Protocol. Callback failures retain their cause in an `AuthError` with
 the reason `provider_failed` and are not transport-retried. The callback must cooperate with its supplied deadline
-and cancellation signal; a synchronous callback cannot be forcibly terminated at the deadline.
+and with native task cancellation; a synchronous callback cannot be forcibly terminated at the deadline.
 
 ```python
 from collections.abc import Callable

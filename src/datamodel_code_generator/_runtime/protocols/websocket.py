@@ -1048,7 +1048,8 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         finally:
             self._queue.release()
         if bound.cancelled_caught:
-            unknown = DeliveryUnknownError(delivery_state=DeliveryState.MAYBE_SENT, cause=self._halted())
+            cause = self._halted() or self._phase_timeout(None, "write", DeliveryState.MAYBE_SENT)
+            unknown = DeliveryUnknownError(delivery_state=DeliveryState.MAYBE_SENT, cause=cause)
             raise await self._failed(self._stamped(unknown))
         self._sent += 1
 

@@ -3631,18 +3631,18 @@ the operation's `APIStatusError`. Each limit comes from the call's options, then
 | close timeout | 5 seconds |
 | session total timeout | None |
 
-The connection and the handshake's limiter permit belong to the session until it closes or fails, and closing the
-client closes it. One `receive` waits at a time, and a second one raises `ConcurrentReceiveError`; sends go one at a
-time in arrival order beside it. Cancelling an asyncio `receive` leaves the session usable; a cancelled send or ping
-fails it. A message is JSON coded by the helper's schema, UTF-8 text, or bytes, in the frame kind the helper declares;
-one that does not decode raises `StreamDecodeError` and closes the connection with 1002, and one over the size limit
-raises `ProtocolSizeError` after the connection closed with 1009. A receive that waits longer than the idle timeout
-raises `APITimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
-reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises `APITimeoutError`
-and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`, closes the session,
-and is never sent again. Messages are written whole: in a `WebSocketSession`, the send timeout is checked before the
-write starts, and a started write runs until it completes or the connection fails. Sessions never reconnect.
-`WSOptions(compression="deflate")` raises `ConfigurationError` for a helper that does not permit compression.
+The connection and the handshake's limiter permit belong to the session until it closes or fails; closing the client
+leaves an open session to its owner. One `receive` waits at a time, and a second one raises `ConcurrentReceiveError`;
+sends go one at a time in arrival order beside it. Cancelling an asyncio `receive` leaves the session usable; a
+cancelled send or ping fails it. A message is JSON coded by the helper's schema, UTF-8 text, or bytes, in the frame kind
+the helper declares; one that does not decode raises `StreamDecodeError` and closes the connection with 1002, and one
+over the size limit raises `ProtocolSizeError` after the connection closed with 1009. A receive that waits longer than
+the idle timeout raises `APITimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError`
+with its code and reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises
+`APITimeoutError` and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`,
+closes the session, and is never sent again. Messages are written whole: in a `WebSocketSession`, the send timeout is
+checked before the write starts, and a started write runs until it completes or the connection fails. Sessions never
+reconnect. `WSOptions(compression="deflate")` raises `ConfigurationError` for a helper that does not permit compression.
 Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or invalidated
 by a refused upgrade. Only a transport failure proven `NOT_SENT` before handover may use the call's existing retry
 policy.

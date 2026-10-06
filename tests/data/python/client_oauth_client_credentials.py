@@ -369,7 +369,7 @@ def _wire(package: ModuleType, auth: ModuleType, options: ModuleType, lines: lis
     exchange.respond(json_reply(200, b"[" * 60000))
     with provider() as nested:
         lines.append(f"  deeply nested success on a small stack = {_small_stack(lambda: nested.get(_context(auth)))}")
-    slow =auth.OAuthProviderOptions(refresh_timeout=1.0, transport=options.TransportOptions(ssl_context=_contexts()[1]))
+    slow = auth.OAuthProviderOptions(refresh_timeout=1.0, transport=options.TransportOptions(ssl_context=_contexts()[1]))
     exchange.respond(delayed(1.5, json_reply(200, _ISSUED)))
     with auth.ClientCredentialsProvider(token_url, client_id="c", client_secret=secret, options=slow) as expiring:
         lines.append(f"  session expires while reading = {_outcome(lambda: expiring.get(_context(auth)))}")
