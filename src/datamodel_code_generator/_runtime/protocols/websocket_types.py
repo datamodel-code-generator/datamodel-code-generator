@@ -13,7 +13,6 @@ from typing_extensions import TypeVar
 from ..client.responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from ssl import SSLContext
 
     from ..client.timing import Deadline
@@ -129,11 +128,10 @@ class WebSocketConnection(Protocol):
         """Return the next whole message."""
         ...
 
-    def ping(self, payload: bytes, *, deadline: Deadline | None, check: Callable[[], None] | None = None) -> float:
+    def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
         """Send a ping and return the seconds until its pong arrived.
 
-        An empty payload asks for a unique one; a payload another ping still waits for raises ProtocolStateError. With
-        a check, the wait for the pong runs it at least every 50 ms and stops with what it raises.
+        An empty payload asks for a unique one; a payload another ping still waits for raises ProtocolStateError.
         """
         ...
 

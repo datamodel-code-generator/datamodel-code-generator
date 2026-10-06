@@ -58,7 +58,6 @@ from .websocket_types import WSFrame
 
 if TYPE_CHECKING:
     import socket
-    from collections.abc import Callable
 
     from websockets.client import ClientProtocol
     from websockets.datastructures import HeadersLike
@@ -255,10 +254,8 @@ def _left(deadline: Deadline | None, end: float | None) -> float | None:
     return None if deadline is None or end is None else wait_left(deadline.remaining(), end)
 
 
-def _wait(left: float | None, *, polled: bool) -> float | None:
-    """Return how long one wait may block: the time left, and at most the token interval when polled."""
-    if polled and (left is None or left > 0.05):  # noqa: PLR2004
-        return 0.05
+def _wait(left: float | None) -> float | None:
+    """Return how long one wait may block: the time left, never negative."""
     return None if left is None else max(0.0, left)
 
 
@@ -419,11 +416,10 @@ class NativeConnection:
             raise self._closed(error) from None
         return _frame(data)
 
-    def ping(self, payload: bytes, *, deadline: Deadline | None, check: Callable[[], None] | None = None) -> float:
+    def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
         """Send a ping and return the seconds until its pong, raising TimeoutError when the deadline passes first.
 
-        An empty payload becomes four random bytes, so pings sent at once never share one. A check runs before each
-        wait of at most the token interval, and stops the wait by raising.
+        An empty payload becomes four random bytes, so pings sent at once never share one.
         """
         connection = self._connection
         try:
@@ -433,11 +429,7 @@ class NativeConnection:
         except ConcurrencyError:
             raise _pinging() from None
         end = None if deadline is None else real_end(deadline.remaining())
-        while True:
-            if check is not None:
-                check()
-            if pong.wait(_wait(_left(deadline, end), polled=check is not None)):
-                break
+        while not pong.wait(_wait(_left(deadline, end))):
             if (left := _left(deadline, end)) is not None and not left > 0:
                 raise TimeoutError
         if (protocol := connection.protocol).state is State.CLOSED:

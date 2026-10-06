@@ -587,15 +587,8 @@ class _Sockets(Generic[SendT, RecvT]):
         return error
 
     def _halted(self) -> Exception | None:
-        """Return what stops the session's call now: cancellation, the client closing, or the deadline.
-
-        A native cancellation propagates as it is.
-        """
-        try:
-            self._call.check("stream", DeliveryState.RESPONSE_STARTED)
-        except Exception as error:  # noqa: BLE001
-            return error
-        return None
+        """Return the session deadline's failure once it passed, or None."""
+        return self._call.expired("stream", DeliveryState.RESPONSE_STARTED)
 
     def _checked(self) -> None:
         self._call.check("stream", DeliveryState.RESPONSE_STARTED)
@@ -798,13 +791,6 @@ def _utf8(value: object) -> bytes | None:
         return None
 
 
-def _slice(left: float | None, polled: bool) -> float | None:  # noqa: FBT001
-    """Return how long to wait next: the time left, and at most the token interval when polling."""
-    if polled and (left is None or left > 0.05):  # noqa: PLR2004
-        return 0.05
-    return left
-
-
 def _left(deadline: Deadline | None, end: float | None) -> float | None:
     """Return the time a wait has left: until its deadline's clock expires it, or real time reaches the wait's end."""
     return None if deadline is None or end is None else wait_left(deadline.remaining(), end)
@@ -829,21 +815,18 @@ class _Queue:
         self._next = 0
         self._serving = 0
 
-    def acquire(self, deadline: Deadline | None, check: Callable[[], None] | None) -> bool:
-        """Wait for the turn until the deadline, running the check at each token interval; False once it passed."""
+    def acquire(self, deadline: Deadline | None) -> bool:
+        """Wait for the turn until the deadline; False once it passed."""
         end = _end(deadline)
         with self._condition:
             ticket = self._next
             self._next += 1
             try:
                 while ticket != self._serving:
-                    wait = _slice(_left(deadline, end), check is not None)
-                    if check is not None:
-                        check()
-                    if wait is not None and not wait > 0:
+                    if (left := _left(deadline, end)) is not None and not left > 0:
                         self._gone.add(ticket)
                         return False
-                    self._condition.wait(wait)
+                    self._condition.wait(left)
             except BaseException:
                 self._gone.add(ticket)
                 raise
@@ -886,16 +869,13 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         self._connection = opened.connection
         self._queue = _Queue()
 
-    def _check(self) -> Callable[[], None] | None:
-        """Return the call's check when a cancel token needs polling while waiting, or None."""
-        return self._checked
-
     def send(self, value: SendT) -> None:
         """Send one message after the earlier sends, within the send timeout; a message that may have gone is final."""
         data, text = self._payload(value)
         self._usable("send")
         cap = self._deadline(self._socket.send_timeout)
-        if not self._queue.acquire(cap, self._check()):
+        if not self._queue.acquire(cap):
+            self._checked()
             raise self._unsent()
         try:
             self._usable("send")
@@ -948,11 +928,9 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         self._usable("ping")
         try:
             self._checked()
-            latency = self._connection.ping(
-                payload, deadline=self._deadline(self._socket.pong_timeout), check=self._check()
-            )
+            latency = self._connection.ping(payload, deadline=self._deadline(self._socket.pong_timeout))
         except TimeoutError:
-            raise self._failed(self._unanswered()) from None
+            raise self._failed(self._halted() or self._unanswered()) from None
         except WebSocketClosedError as closed:
             raise self._ended(closed) from None
         except ProtocolStateError as refused:
