@@ -1034,8 +1034,6 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         deadline = self._call.deadline
         try:
             self._usable("send")
-            if cap is not None and not cap.remaining() > 0:
-                raise TimeoutError  # noqa: TRY301
             left = _left(deadline, _end(deadline))
             with anyio.move_on_after(None if left is None else max(0.0, left)) as bound:
                 await self._connection.send(data, text=text, deadline=cap)
