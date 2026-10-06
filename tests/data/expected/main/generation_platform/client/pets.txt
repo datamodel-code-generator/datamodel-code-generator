@@ -31,33 +31,7 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 25
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  /selection/selected_operations/0 pets.list_pets(query:limit=limit, query:tags=labels, header:X-Trace=x_trace, cookie:session=session)
-    exports client.types.pets.ListPetsResponse
-    exports client.types.pets.decode_list_pets_header
-  /selection/selected_operations/1 pets.create_pet()
-    exports client.types.pets.CreatePetResponse
-    exports None
-  /selection/selected_operations/2 pets.get_pet(path:petId=pet_id)
-    exports client.types.pets.GetPetResponse
-    exports None
-  /selection/selected_operations/3 pets.delete_pets_by_pet_id(path:petId=pet_id)
-    exports client.types.pets.DeletePetsByPetIdResponse
-    exports None
-  /selection/selected_operations/4 pets.head_pet(path:petId=pet_id)
-    exports client.types.pets.HeadPetResponse
-    exports client.types.pets.decode_head_pet_header
-  /selection/selected_operations/5 pets.photos.upload(path:petId=pet_id)
-    exports client.types.pets.photos.UploadResponse
-    exports None
-  /selection/selected_operations/6 pets.attach_files(path:petId=pet_id)
-    exports client.types.pets.AttachFilesResponse
-    exports None
-  /selection/selected_operations/7 pets.read_files(path:petId=pet_id)
-    exports client.types.pets.ReadFilesResponse
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 render pydantic_v2.dataclass
   write models.py
@@ -91,33 +65,7 @@ render pydantic_v2.dataclass
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 25
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  /selection/selected_operations/0 pets.list_pets(query:limit=limit, query:tags=labels, header:X-Trace=x_trace, cookie:session=session)
-    exports client.types.pets.ListPetsResponse
-    exports client.types.pets.decode_list_pets_header
-  /selection/selected_operations/1 pets.create_pet()
-    exports client.types.pets.CreatePetResponse
-    exports None
-  /selection/selected_operations/2 pets.get_pet(path:petId=pet_id)
-    exports client.types.pets.GetPetResponse
-    exports None
-  /selection/selected_operations/3 pets.delete_pets_by_pet_id(path:petId=pet_id)
-    exports client.types.pets.DeletePetsByPetIdResponse
-    exports None
-  /selection/selected_operations/4 pets.head_pet(path:petId=pet_id)
-    exports client.types.pets.HeadPetResponse
-    exports client.types.pets.decode_head_pet_header
-  /selection/selected_operations/5 pets.photos.upload(path:petId=pet_id)
-    exports client.types.pets.photos.UploadResponse
-    exports None
-  /selection/selected_operations/6 pets.attach_files(path:petId=pet_id)
-    exports client.types.pets.AttachFilesResponse
-    exports None
-  /selection/selected_operations/7 pets.read_files(path:petId=pet_id)
-    exports client.types.pets.ReadFilesResponse
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 render dataclasses.dataclass
   write models.py
@@ -151,33 +99,7 @@ render dataclasses.dataclass
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 25
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  /selection/selected_operations/0 pets.list_pets(query:limit=limit, query:tags=labels, header:X-Trace=x_trace, cookie:session=session)
-    exports client.types.pets.ListPetsResponse
-    exports client.types.pets.decode_list_pets_header
-  /selection/selected_operations/1 pets.create_pet()
-    exports client.types.pets.CreatePetResponse
-    exports None
-  /selection/selected_operations/2 pets.get_pet(path:petId=pet_id)
-    exports client.types.pets.GetPetResponse
-    exports None
-  /selection/selected_operations/3 pets.delete_pets_by_pet_id(path:petId=pet_id)
-    exports client.types.pets.DeletePetsByPetIdResponse
-    exports None
-  /selection/selected_operations/4 pets.head_pet(path:petId=pet_id)
-    exports client.types.pets.HeadPetResponse
-    exports client.types.pets.decode_head_pet_header
-  /selection/selected_operations/5 pets.photos.upload(path:petId=pet_id)
-    exports client.types.pets.photos.UploadResponse
-    exports None
-  /selection/selected_operations/6 pets.attach_files(path:petId=pet_id)
-    exports client.types.pets.AttachFilesResponse
-    exports None
-  /selection/selected_operations/7 pets.read_files(path:petId=pet_id)
-    exports client.types.pets.ReadFilesResponse
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
 render typing.TypedDict
   write models.py
@@ -211,33 +133,7 @@ render typing.TypedDict
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 25
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  /selection/selected_operations/0 pets.list_pets(query:limit=limit, query:tags=labels, header:X-Trace=x_trace, cookie:session=session)
-    exports client.types.pets.ListPetsResponse
-    exports client.types.pets.decode_list_pets_header
-  /selection/selected_operations/1 pets.create_pet()
-    exports client.types.pets.CreatePetResponse
-    exports None
-  /selection/selected_operations/2 pets.get_pet(path:petId=pet_id)
-    exports client.types.pets.GetPetResponse
-    exports None
-  /selection/selected_operations/3 pets.delete_pets_by_pet_id(path:petId=pet_id)
-    exports client.types.pets.DeletePetsByPetIdResponse
-    exports None
-  /selection/selected_operations/4 pets.head_pet(path:petId=pet_id)
-    exports client.types.pets.HeadPetResponse
-    exports client.types.pets.decode_head_pet_header
-  /selection/selected_operations/5 pets.photos.upload(path:petId=pet_id)
-    exports client.types.pets.photos.UploadResponse
-    exports None
-  /selection/selected_operations/6 pets.attach_files(path:petId=pet_id)
-    exports client.types.pets.AttachFilesResponse
-    exports None
-  /selection/selected_operations/7 pets.read_files(path:petId=pet_id)
-    exports client.types.pets.ReadFilesResponse
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
 render msgspec.Struct
   write models.py
@@ -271,31 +167,5 @@ render msgspec.Struct
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 25
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  /selection/selected_operations/0 pets.list_pets(query:limit=limit, query:tags=labels, header:X-Trace=x_trace, cookie:session=session)
-    exports client.types.pets.ListPetsResponse
-    exports client.types.pets.decode_list_pets_header
-  /selection/selected_operations/1 pets.create_pet()
-    exports client.types.pets.CreatePetResponse
-    exports None
-  /selection/selected_operations/2 pets.get_pet(path:petId=pet_id)
-    exports client.types.pets.GetPetResponse
-    exports None
-  /selection/selected_operations/3 pets.delete_pets_by_pet_id(path:petId=pet_id)
-    exports client.types.pets.DeletePetsByPetIdResponse
-    exports None
-  /selection/selected_operations/4 pets.head_pet(path:petId=pet_id)
-    exports client.types.pets.HeadPetResponse
-    exports client.types.pets.decode_head_pet_header
-  /selection/selected_operations/5 pets.photos.upload(path:petId=pet_id)
-    exports client.types.pets.photos.UploadResponse
-    exports None
-  /selection/selected_operations/6 pets.attach_files(path:petId=pet_id)
-    exports client.types.pets.AttachFilesResponse
-    exports None
-  /selection/selected_operations/7 pets.read_files(path:petId=pet_id)
-    exports client.types.pets.ReadFilesResponse
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']

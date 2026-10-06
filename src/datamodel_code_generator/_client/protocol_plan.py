@@ -3,26 +3,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any
 
-from datamodel_code_generator._api_manifest import canonical_bytes, document_identity, portable, sha256
+from datamodel_code_generator._api_manifest import document_identity, portable
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
 from datamodel_code_generator._client.plan import fact
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
+    from pathlib import Path
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import DiagnosticStage
     from datamodel_code_generator._client.plan import ClientPlan
     from datamodel_code_generator._client.protocols import Helper, Link, ProtocolConfiguration
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_contract import OperationContract, OperationId
-
-_METADATA: Final = "/inputs/target_config/protocol_metadata/helpers/"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -197,33 +194,8 @@ def _class_problems(helpers: tuple[Helper, ...], protocols: Protocols) -> Iterat
                 break
 
 
-def protocol_helpers(protocols: Protocols | None, fingerprints: Mapping[str, str]) -> list[JSONValue]:
-    """Return the manifest record of each helper in declaration order, disabled ones included.
-
-    A rendered helper's contract digest is its fingerprint; a disabled one's is that of an empty contract closure.
-    """
-    if protocols is None:
-        return []
-    return [
-        {
-            "name": helper.name,
-            "kind": helper.kind,
-            "enabled": helper.enabled,
-            "metadata_ref": _METADATA + helper.name.replace("~", "~0").replace("/", "~1"),
-            "contract_sha256": fingerprints.get(helper.name) or _contract(helper),
-        }
-        for helper in protocols.helpers
-    ]
-
-
-def _contract(helper: Helper) -> str:
-    """Return the digest of a disabled helper's contract closure, which requires nothing."""
-    closure = {"kind": helper.kind, "signatures": [], "operations": [], "schemas": [], "type_uses": [], "adapters": []}
-    return sha256(canonical_bytes(closure))
-
-
 def helper_metadata(protocols: Protocols | None, request: TargetRequest) -> dict[str, JSONValue]:
-    """Return each helper's normalized settings, with references as the manifest's source references.
+    """Return each helper's normalized settings, with references as source references.
 
     Equivalent spellings of a reference, such as an omitted or explicit root document, give equal settings.
     """
@@ -235,9 +207,4 @@ def helper_metadata(protocols: Protocols | None, request: TargetRequest) -> dict
             return {"document": protocols.documents[reference], "pointer": reference.pointer}
         return request.documents.operation(protocols.operations[reference].id)
 
-    return {helper.name: portable(helper.tree, Path.as_posix, refer) for helper in protocols.helpers}
-
-
-def protocol_metadata(metadata: dict[str, JSONValue], protocols: Protocols | None) -> JSONObject:
-    """Return the manifest's helper metadata: every helper's normalized settings, nothing without helper settings."""
-    return {} if protocols is None else {"schema_version": 1, "helpers": metadata}
+    return {helper.name: portable(helper.tree, refer) for helper in protocols.helpers}

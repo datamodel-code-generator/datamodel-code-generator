@@ -3664,6 +3664,15 @@
       ]
     ]
   },
+  "pagination-root": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination-root.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-root.yaml"
+    }
+  },
   "pagination-documents": {
     "input": "pagination.yaml",
     "references": [

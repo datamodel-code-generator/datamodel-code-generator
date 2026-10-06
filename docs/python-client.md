@@ -309,9 +309,9 @@ using it as a model.
 
 Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, and resumable upload helpers of an API are declared
 in a helper configuration, which the client target reads through its `protocols` setting. The helpers are still being
-implemented: generation validates every helper, resolves its references against the selected API, and records it in the
-target manifest. An enabled pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled
-polling helper the [polling helper](#polling-helpers), an enabled `offset` upload helper the
+implemented: generation validates every helper and resolves its references against the selected API. An enabled
+pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled polling helper the
+[polling helper](#polling-helpers), an enabled `offset` upload helper the
 [upload helper](#upload-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled NDJSON
 helper the [NDJSON stream helper](#ndjson-stream-helpers), an enabled WebSocket helper the
 [WebSocket helper](#websocket-helpers), an enabled cache helper the [cache helper](#cache-helpers), and an enabled webhook helper the
@@ -340,7 +340,7 @@ protocols = "client-protocols.yaml"
 
 A setting that is neither a path nor a `ProtocolConfiguration` fails with `E_CONFIG_VALUE`. The helper file is read
 only when the target is generated, so its problems are reported then, with the target's identity. Without
-`protocols`, nothing is read and the manifest records no helpers.
+`protocols`, nothing is read.
 
 ### The helper file
 
@@ -517,7 +517,7 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.protocols.diagnostics -->
 
-### Python records and the manifest
+### Python records
 
 `ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
 `WebSocketHelper`, whose `send` and `receive` are `WebSocketMessage` records, `WebhookHelper`, `CacheHelper`, and
@@ -552,12 +552,8 @@ ClientGenerationConfig(
 )
 ```
 
-The manifest lists every helper in declaration order in `protocol_helpers`, disabled ones included, with its name,
-kind, `enabled`, the pointer of its metadata, and the digest of its contract. A generated helper's digest covers its
-signature and settings, which spell its types, its operation, its item schema, and the schema of its page; a disabled
-helper's contract is empty. `inputs.target_config.protocol_metadata` holds each helper's settings with the defaults filled in and each
-reference replaced by the manifest's reference to the accepted input, so a file and the equal Python records record
-the same metadata. The `protocols` setting itself is not recorded among the public options.
+A file and the equal Python records generate the same package, as do references that name the root input
+explicitly and ones that leave it implied.
 
 ## Pagination helpers
 

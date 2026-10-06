@@ -24,36 +24,7 @@
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 18
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  /selection/selected_operations/0 retry.get_safe()
-    exports client.types.retry.GetSafeResponse
-    exports None
-  /selection/selected_operations/1 retry.post_unsafe()
-    exports client.types.retry.PostUnsafeResponse
-    exports None
-  /selection/selected_operations/2 retry.post_idempotent()
-    exports client.types.retry.PostIdempotentResponse
-    exports None
-  /selection/selected_operations/3 retry.post_keyed()
-    exports client.types.retry.PostKeyedResponse
-    exports None
-  /selection/selected_operations/4 retry.post_key_only()
-    exports client.types.retry.PostKeyOnlyResponse
-    exports None
-  /selection/selected_operations/5 retry.get_never()
-    exports client.types.retry.GetNeverResponse
-    exports None
-  /selection/selected_operations/6 retry.post_never()
-    exports client.types.retry.PostNeverResponse
-    exports None
-  /selection/selected_operations/7 retry.get_vendor()
-    exports client.types.retry.GetVendorResponse
-    exports None
-  /selection/selected_operations/8 retry.get_keyed_safe()
-    exports client.types.retry.GetKeyedSafeResponse
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md

@@ -26,31 +26,5 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 0
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  /selection/selected_operations/0 default.inherited()
-    exports client.types.default.InheritedResponse
-    exports None
-  /selection/selected_operations/1 default.explicit()
-    exports client.types.default.ExplicitResponse
-    exports None
-  /selection/selected_operations/2 default.aliased_query()
-    exports client.types.default.AliasedQueryResponse
-    exports None
-  /selection/selected_operations/3 default.actual_header()
-    exports client.types.default.ActualHeaderResponse
-    exports None
-  /selection/selected_operations/4 default.aliased_header()
-    exports client.types.default.AliasedHeaderResponse
-    exports None
-  /selection/selected_operations/5 default.external_inherited()
-    exports client.types.default.ExternalInheritedResponse
-    exports None
-  /selection/selected_operations/6 default.external_explicit()
-    exports client.types.default.ExternalExplicitResponse
-    exports None
-  /selection/selected_operations/7 default.external_query()
-    exports client.types.default.ExternalQueryResponse
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']

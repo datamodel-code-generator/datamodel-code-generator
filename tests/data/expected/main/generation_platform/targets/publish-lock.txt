@@ -15,13 +15,11 @@ generate
   written target server/README.md (target)
   written target server/py.typed (target)
   written remote_lock locks/remote.lock
-  written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['written']
 tree
   locks/remote.lock
   models.py
-  server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
@@ -52,6 +50,5 @@ generate
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
   unchanged remote_lock locks/remote.lock
-  unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['unchanged']
