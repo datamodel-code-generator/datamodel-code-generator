@@ -9,7 +9,6 @@
   write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
-  write client/transports.py
   write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/types/__init__.py
@@ -80,7 +79,7 @@ Import `Client` and `AsyncClient` from `client` and the records below from
 `UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
 sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
 `timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None` and
-`deadline=None` clear their own limits. `cleanup_timeout` remains positive and finite.
+`deadline=None` clear their own limits.
 
 | Setting | Effective default |
 |---|---|
@@ -92,13 +91,12 @@ sets and tuples replace the inherited collection. `retry=None` and `redirects=No
 | respect Retry-After / retry pool timeout | True / False |
 | redirects / maximum redirects / 303 conversion | False / 5 / False |
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
-| stream idle / stream total / cleanup | 60 seconds / None / 5 seconds |
+| stream idle / stream total | 60 seconds / None |
 | maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
 Zero retries permits only the initial resource attempt. `Deadline.after(seconds)` shares an absolute monotonic expiry
-across calls; the earlier of that expiry and the relative total timeout wins. `CancelToken` is thread-safe and remains
-cancelled once signalled. Sync callbacks, DNS, I/O, and cleanup are cooperative and may return after a deadline. Async
-SDK waits enforce their budgets.
+across calls; the earlier of that expiry and the relative total timeout wins. Each attempt receives its remaining
+phase timeout. Callbacks and cleanup are cooperative and may return after a deadline.
 Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
 `ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
 `OAuthProviderOptions(clock=...)` does so for a provider, and `Deadline.after(seconds, clock=...)` creates a deadline
@@ -107,7 +105,7 @@ on that clock. Waits still pass in real time, so a test clock skips one by advan
 ## Retry decisions and delays
 
 GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PATCH require an explicit idempotent
-declaration or a valid key contract. Proven unsent failures from the SDK-owned native transport may permit an
+declaration or a valid key contract. ConnectError, ConnectTimeout, and PoolTimeout from native send may permit an
 otherwise unsafe retry; `retry_safety="never"` forbids every resend. All candidates still need replayable input.
 Pool timeouts need explicit `retry_on_pool_timeout=True`. TLS/configuration/permanent DNS errors, callback failures,
 decoding failures, cancellation, and logical deadlines are not retry candidates. Phase timeouts can be candidates.
@@ -154,7 +152,7 @@ stripped on an origin change. Invalid/multiple Location, loops, limits, and reje
 with the reason `redirect_refused`, no redirect body, and delivery/response metadata when available.
 
 `TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
-http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
+http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.
 SDK-created HTTP clients honor proxy and CA environment settings with trust_env=True, preserving native system
 trust. With trust_env=False, HTTPX2 environment configuration is disabled while native TLS trust behavior is
 preserved. Caller ssl_context or verify=False controls origin TLS; injected native clients retain their settings and
@@ -165,10 +163,8 @@ view, or request options to bound them; `None` removes an inherited cap. For buf
 `raise_for_status()` applies the error-prefix cap.
 An SSLContext supplies TLS settings and conflicts with any explicit verify override.
 HTTP/2 is explicit and requires its dependency. Injected native clients retain their pool/proxy/TLS construction;
-incompatible construction settings are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter`
-transfers adapter ownership.
-`retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
-contract and disables SDK retries. The default SDK-owned native transport disables native internal retries.
+incompatible construction settings are rejected. Borrowed clients stay caller owned. Root close is idempotent and
+closes only the native client the SDK created. Request views share that root and have no close method.
 
 ## Explicit authentication and signing
 
@@ -195,9 +191,9 @@ its async counterpart has the same explicit selection. Imports and constructors 
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
 Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
-Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
-Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
-Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are
+Provider contexts carry current origin/deadline/requirements, and audience is currently None.
+Providers retain their caller's lifetime. Views share the root's native HTTP client.
+Provider and signer callbacks consume the call deadline; synchronous callbacks are
 cooperative and cannot be forcibly terminated. Wrong callback modes fail before I/O, with no implicit offload.
 
 Anonymous operations and `request_raw` send no credentials by default. Opt in with `send_on_anonymous=True` and
@@ -243,10 +239,10 @@ bounded raw bytes. `AuthError` names its `reason`, `DecodeError` a request argum
 declaration, and `ConfigurationError` a refused setting or call. Safe error representations omit key/body/header
 values.
 
-A limiter permit is acquired before opening a body and released when its response is released. Cleanup has its own
-bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
-possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
-wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
+A limiter permit is acquired before opening a body and released when its response is released. Resource release
+runs in finally; secondary failures stay beside the primary failure. Root close refuses new calls from the root
+and its views, closes a created native client once, and leaves borrowed clients and providers caller owned.
+Native task cancellation propagates unchanged, and user callbacks are not shielded.
 
 ## Request compression
 

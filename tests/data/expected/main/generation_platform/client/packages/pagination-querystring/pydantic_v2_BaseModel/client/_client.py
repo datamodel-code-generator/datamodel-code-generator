@@ -6,18 +6,18 @@ from __future__ import annotations
 from contextlib import AbstractContextManager
 from functools import cached_property
 from types import TracebackType
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import httpx2
 from typing_extensions import Self
 
 from ._runtime.client.client import ClientCore, ClientDefaults
+from ._runtime.client.errors import add_secondary
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import BodyInput
 from .model_codecs import WireValue
 from .options import ClientOptions, RequestOptions
 from .responses import RawResponse
-from .transports import OwnedTransportAdapter, TransportAdapter
 
 if TYPE_CHECKING:
     from .protocols._helpers import ProtocolHelpers
@@ -34,34 +34,20 @@ _DEFAULTS = ClientDefaults(
 )
 
 
-class Client:
-    """Call the operations of this API through HTTPX2."""
+class ClientView:
+    """Typed operations and request option layers sharing the root's native client."""
 
-    def __init__(
-        self,
-        *,
-        options: ClientOptions | None = None,
-        http_client: httpx2.Client | Unset = UNSET,
-        http_client_ownership: Literal["borrowed", "owned"] = "borrowed",
-        transport_adapter: TransportAdapter | OwnedTransportAdapter[TransportAdapter] | Unset = UNSET,
-    ) -> None:
-        """Send through the transport adapter or HTTPX2 client given, borrowed unless its ownership moves.
+    _core: ClientCore
 
-        Without either, the client creates an HTTPX2 client that closing it closes.
-        """
-        self._core = ClientCore.create(
-            _DEFAULTS,
-            options=options,
-            http_client=http_client,
-            http_client_ownership=http_client_ownership,
-            transport_adapter=transport_adapter,
-        )
-
-    def with_options(self, options: RequestOptions) -> Client:
-        """Return a view whose calls layer these options on the client's; it shares the client's transport."""
-        view = Client.__new__(Client)
-        view._core = self._core.view(options)
+    @classmethod
+    def _from_core(cls, core: ClientCore) -> ClientView:
+        view = cls.__new__(cls)
+        view._core = core
         return view
+
+    def with_options(self, options: RequestOptions) -> ClientView:
+        """Return a typed view with these request options layered on the current settings."""
+        return ClientView._from_core(self._core.view(options))
 
     def request_raw(
         self,
@@ -93,8 +79,21 @@ class Client:
 
         return ProtocolHelpers(self._core)
 
+
+class Client(ClientView):
+    """Call the operations of this API through HTTPX2."""
+
+    def __init__(
+        self,
+        *,
+        options: ClientOptions | None = None,
+        http_client: httpx2.Client | Unset | None = UNSET,
+    ) -> None:
+        """Borrow the native HTTP client given, or create one this root owns and closes."""
+        self._core = ClientCore.create(_DEFAULTS, options=options, http_client=http_client)
+
     def close(self) -> None:
-        """Stop new calls, wait for the active ones, and close the owned transport; a view stops only its calls."""
+        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
         self._core.close()
 
     def __enter__(self) -> Self:
@@ -107,8 +106,13 @@ class Client:
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        """Close this client."""
-        self.close()
+        """Close this client, keeping a close failure beside an error that leaves the block."""
+        try:
+            self.close()
+        except Exception as error:
+            if exc is None:
+                raise
+            add_secondary(exc, error)
 
 
 class ClientWithStreamingResponse:

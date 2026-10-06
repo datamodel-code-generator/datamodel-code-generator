@@ -12,8 +12,17 @@ from typing import TYPE_CHECKING, Any
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, aoutcome, arecord, argument, outcome, raw_response, record, run
-from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response, Stop
+from tests.data.python.client_runtime import (
+    Exchange,
+    Stop,
+    aoutcome,
+    arecord,
+    argument,
+    outcome,
+    raw_response,
+    record,
+    run,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
@@ -148,7 +157,9 @@ class Attempt:
         self.close()
 
 
-def attempt_factory(lines: list[str], *chunks: object, length: int | None = None, **options: bool) -> Callable[[Any], Any]:
+def attempt_factory(
+    lines: list[str], *chunks: object, length: int | None = None, **options: bool
+) -> Callable[[Any], Any]:
     def build(context: Any) -> Attempt:
         remaining = context.remaining_timeout
         bounded = None if remaining is None else 0 < remaining <= 60
@@ -158,7 +169,9 @@ def attempt_factory(lines: list[str], *chunks: object, length: int | None = None
     return build
 
 
-def async_attempt_factory(lines: list[str], *chunks: object, length: int | None = None, **options: bool) -> Callable[[Any], Any]:
+def async_attempt_factory(
+    lines: list[str], *chunks: object, length: int | None = None, **options: bool
+) -> Callable[[Any], Any]:
     build = attempt_factory(lines, *chunks, length=length, **options)
 
     async def abuild(context: Any) -> Attempt:
@@ -199,29 +212,25 @@ def bodies(package: ModuleType, lines: list[str]) -> None:
 
 
 def _interrupted_close(package: ModuleType, lines: list[str]) -> None:
-    """Close the response when an interruption stops the body's close after the adapter answered."""
-    transports, responses, bodies_module = (
-        importlib.import_module(f"{package.__name__}.{name}") for name in ("transports", "responses", "bodies")
-    )
-    image = responses.HeadersView([("content-type", "image/png")])
-    adapter = Adapter(transports, lines)
-    adapter.replies.append(lambda request, context: Response(lines, 200, image, (_PNG,)))
-    with package.Client(transport_adapter=adapter) as api:
+    """Preserve a body's close interruption after a real native response."""
+    bodies_module = importlib.import_module(f"{package.__name__}.bodies")
+    exchange = Exchange(lines)
+    exchange.respond(raw_response(200, _PNG, "image/png"))
+    with exchange.client() as native, package.Client(http_client=native) as api:
+        body = bodies_module.BodyFactory(attempt_factory(lines, b"x", interrupt=True))
         try:
-            api.pets.photos.upload(pet_id=_photo(package), body=bodies_module.BodyFactory(attempt_factory(lines, b"x", interrupt=True)))
+            api.pets.photos.upload(pet_id=_photo(package), body=body)
         except Stop:
             lines.append("  interrupted attempt close propagated")
     run(lambda: _async_interrupted_close(package, lines))
 
 
 async def _async_interrupted_close(package: ModuleType, lines: list[str]) -> None:
-    transports, responses, bodies_module = (
-        importlib.import_module(f"{package.__name__}.{name}") for name in ("transports", "responses", "bodies")
-    )
-    image = responses.HeadersView([("content-type", "image/png")])
-    adapter = AsyncAdapter(transports, lines)
-    adapter.replies.append(lambda request, context: AsyncResponse(lines, 200, image, (_PNG,)))
-    async with package.AsyncClient(transport_adapter=adapter) as api:
+    """Preserve a body's close interruption after a real native response."""
+    bodies_module = importlib.import_module(f"{package.__name__}.bodies")
+    exchange = Exchange(lines)
+    exchange.respond(raw_response(200, _PNG, "image/png"))
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:
         body = bodies_module.AsyncBodyFactory(async_attempt_factory(lines, b"x", interrupt=True))
         try:
             await api.pets.photos.upload(pet_id=_photo(package), body=body)
@@ -278,7 +287,11 @@ def _files(package: ModuleType, api: Any, exchange: Exchange, lines: list[str], 
     entered, proceed = threading.Event(), threading.Event()
     exchange.respond(_blocked(entered, proceed))
     first: list[str] = []
-    reader = threading.Thread(target=lambda: record(first, "first reader", lambda: api.pets.photos.upload(pet_id=_photo(package), body=shared)))
+    reader = threading.Thread(
+        target=lambda: record(
+            first, "first reader", lambda: api.pets.photos.upload(pet_id=_photo(package), body=shared)
+        )
+    )
     reader.start()
     entered.wait()
     upload("file another call reads", shared)
@@ -298,7 +311,11 @@ def _files(package: ModuleType, api: Any, exchange: Exchange, lines: list[str], 
     lines.append(f"  missing path: {outcome(lambda: file_body.from_path(directory / 'missing.png'))}")
     upload("async file to the sync client", bodies_module.AsyncFileBody(io.BytesIO(b"x")))
     exchange.respond(raw_response(200, b"ok", "text/plain"))
-    record(lines, "raw file", lambda: api.request_raw("PUT", "https://hooks.example.com/file", body=file_body(io.BytesIO(b"raw"))).body_bytes)
+    record(
+        lines,
+        "raw file",
+        lambda: api.request_raw("PUT", "https://hooks.example.com/file", body=file_body(io.BytesIO(b"raw"))).body_bytes,
+    )
 
 
 def _streams(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -313,7 +330,9 @@ def _streams(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
     upload("failing stream", stream_body(Chunks(lines, (b"x", RuntimeError("stream failed")))))
     upload("stream that is not iterable", stream_body(5))
     try:
-        api.pets.photos.upload(pet_id=_photo(package), body=stream_body(Chunks(lines, (b"x", Stop())), ownership="owned"))
+        api.pets.photos.upload(
+            pet_id=_photo(package), body=stream_body(Chunks(lines, (b"x", Stop())), ownership="owned")
+        )
     except Stop:
         lines.append("  interrupted owned stream propagated")
 
@@ -322,7 +341,9 @@ def _factories(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     """Build a new attempt for each call, within the length the factory declares, and close each attempt."""
     body_factory = importlib.import_module(f"{package.__name__}.bodies").BodyFactory
     upload = _uploader(package, api, exchange, lines)
-    made = body_factory(attempt_factory(lines, b"made", length=4), content_length=4, content_type="image/png", fingerprint=b"f")
+    made = body_factory(
+        attempt_factory(lines, b"made", length=4), content_length=4, content_type="image/png", fingerprint=b"f"
+    )
     lines.append(f"  factory declares {made.content_length} {made.content_type} {made.fingerprint!r}")
     upload("factory", made, answered=True)
     upload("factory again", made, answered=True)
@@ -348,15 +369,19 @@ def _factories(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     upload("attempt that cannot iterate", body_factory(attempt_factory(lines, iter_error=True)))
     exchange.respond(raw_response(200, b"ok", "text/plain"))
     raw = body_factory(attempt_factory(lines, b"raw", length=3), content_type="text/plain")
-    record(lines, "raw factory", lambda: api.request_raw("POST", "https://hooks.example.com/upload", body=raw).body_bytes)
+    record(
+        lines, "raw factory", lambda: api.request_raw("POST", "https://hooks.example.com/upload", body=raw).body_bytes
+    )
     bodies_module = importlib.import_module(f"{package.__name__}.bodies")
-    context = bodies_module.BodyAttemptContext(call_id="own", attempt_index=2, hop_index=1, remaining_timeout=9.5)
+    context = bodies_module.BodyAttemptContext(attempt_index=2, hop_index=1, call_id="own", remaining_timeout=9.5)
     for label, body in (
         ("file", bodies_module.FileBody(io.BytesIO(b"direct"))),
         ("factory", body_factory(attempt_factory(lines, b"direct"))),
     ):
         attempt = body(context)
-        lines.append(f"  {label} attempt built directly {attempt.content_length} {attempt.content_type} {b''.join(attempt.iter_bytes())!r}")
+        lines.append(
+            f"  {label} attempt built directly {attempt.content_length} {attempt.content_type} {b''.join(attempt.iter_bytes())!r}"
+        )
         attempt.close()
         attempt.close()
 
@@ -447,7 +472,9 @@ async def _async_streams(package: ModuleType, api: Any, exchange: Exchange, line
     await upload("stream of text", stream_body(Chunks(lines, ("text",))))
     await upload("failing stream", stream_body(Chunks(lines, (b"x", RuntimeError("stream failed")))))
     await upload("stream that is not async iterable", stream_body(5))
-    made = body_factory(async_attempt_factory(lines, b"made", length=4), content_length=4, content_type="image/png", fingerprint=b"f")
+    made = body_factory(
+        async_attempt_factory(lines, b"made", length=4), content_length=4, content_type="image/png", fingerprint=b"f"
+    )
     lines.append(f"  async factory declares {made.content_length} {made.content_type} {made.fingerprint!r}")
     await upload("factory", made, answered=True)
     constant = Attempt(lines, (b"c",))
@@ -464,8 +491,12 @@ async def _async_streams(package: ModuleType, api: Any, exchange: Exchange, line
         body_factory(async_attempt_factory(lines, b"xy", length=2, close_error=True), content_length=3),
         secondaries=True,
     )
-    await upload("attempt of another length", body_factory(async_attempt_factory(lines, b"xy", length=2), content_length=3))
-    await upload("attempt failing to close", body_factory(async_attempt_factory(lines, b"ok", close_error=True)), answered=True)
+    await upload(
+        "attempt of another length", body_factory(async_attempt_factory(lines, b"xy", length=2), content_length=3)
+    )
+    await upload(
+        "attempt failing to close", body_factory(async_attempt_factory(lines, b"ok", close_error=True)), answered=True
+    )
     await upload(
         "attempt failing to read and to close",
         body_factory(async_attempt_factory(lines, RuntimeError("read failed"), close_error=True)),
@@ -480,10 +511,12 @@ async def _async_streams(package: ModuleType, api: Any, exchange: Exchange, line
 
     await arecord(lines, "async raw factory", raw_call)
     try:
-        await api.pets.photos.upload(pet_id=_photo(package), body=stream_body(Chunks(lines, (b"x", Stop())), ownership="owned"))
+        await api.pets.photos.upload(
+            pet_id=_photo(package), body=stream_body(Chunks(lines, (b"x", Stop())), ownership="owned")
+        )
     except Stop:
         lines.append("  async interrupted owned stream propagated")
-    context = bodies_module.BodyAttemptContext(call_id="own", attempt_index=2, hop_index=1, remaining_timeout=None)
+    context = bodies_module.BodyAttemptContext(attempt_index=2, hop_index=1, call_id="own", remaining_timeout=None)
     direct = bodies_module.AsyncFileBody(io.BytesIO(b"direct"))
     for label, body in (("file", direct), ("factory", body_factory(async_attempt_factory(lines, b"direct")))):
         attempt = await body(context)

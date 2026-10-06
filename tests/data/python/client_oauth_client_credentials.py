@@ -1,4 +1,4 @@
-"""Acquire client credentials tokens over TLS, through generated clients, and from injected transports and secrets."""
+"""Acquire client credentials tokens over TLS, through generated clients, and from scripted transports and secrets."""
 
 from __future__ import annotations
 
@@ -17,14 +17,11 @@ import httpx2
 
 from tests.data.python.client_oauth import (
     LIMIT,
-    Adapter,
-    AsyncAdapter,
-    AsyncResponse,
     AsyncSecret,
     Caller,
     Late,
-    Reported,
     Response,
+    Script,
     Secret,
     closed_port,
     delayed,
@@ -36,7 +33,7 @@ from tests.data.python.client_runtime import Exchange, describe, raw_response, r
 from tests.data.python.fixture_server import _contexts
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable
+    from collections.abc import Callable
     from types import ModuleType
 
 _TOKEN: Final = "https://auth.example.com/token"
@@ -51,7 +48,6 @@ def _context(auth: ModuleType, *, audience: str | None = None, deadline: object 
         audience=audience,
         origin="https://api.example.com",
         deadline=deadline,
-        cancel_token=None,
     )
 
 
@@ -81,12 +77,8 @@ async def _aoutcome(call: Callable[[], Any]) -> str:
     return _material(result) if hasattr(result, "token") else repr(result)
 
 
-def _reply(responses: ModuleType, payload: object) -> Response:
-    return Response(responses, 200, json.dumps(payload).encode())
-
-
-def _areply(responses: ModuleType, payload: object) -> AsyncResponse:
-    return AsyncResponse(responses, 200, json.dumps(payload).encode())
+def _reply(payload: object) -> Response:
+    return Response(200, json.dumps(payload).encode())
 
 
 class _Once(Secret):
@@ -131,41 +123,6 @@ class _AsyncClosing(_Closing):
         return self.material
 
 
-class _Uncapable:
-    """A transport that declares no capabilities."""
-
-    def send(self, request: object, context: object) -> object:
-        del request, context
-        msg = "a transport without capabilities is rejected before it sends"
-        raise RuntimeError(msg)
-
-    def close(self) -> None:
-        pass
-
-
-class _ClosingFailure(Adapter):
-    def close(self) -> None:
-        super().close()
-        raise RuntimeError
-
-
-class _AsyncClosingFailure(AsyncAdapter):
-    async def aclose(self) -> None:
-        await super().aclose()
-        raise RuntimeError
-
-
-class _Blocking(AsyncResponse):
-    """An asyncio token response whose pauses block the event loop, so only the endpoint's own checks see them end."""
-
-    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:  # ty: ignore[invalid-method-override]
-        half = len(self.body) // 2
-        yield self.body[:half]
-        time.sleep(self.pause)
-        yield self.body[half:]
-        time.sleep(self.tail)
-
-
 def _insecure_context(*, keep_certificates: bool = False) -> ssl.SSLContext:
     context = ssl.create_default_context()
     context.check_hostname = False
@@ -179,8 +136,8 @@ def _without_h2(call: Callable[[], object]) -> object:
         return call()
 
 
-def _configuration(auth: ModuleType, options: ModuleType, transports: ModuleType, lines: list[str]) -> None:
-    """Refuse invalid endpoints, client authentication, scopes, audiences, options, and transports without I/O."""
+def _configuration(auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Refuse invalid endpoints, client authentication, scopes, audiences, options, and native clients without I/O."""
     provider, async_provider = auth.ClientCredentialsProvider, auth.AsyncClientCredentialsProvider
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("secret"))
     async_secret = auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("secret"))
@@ -219,33 +176,21 @@ def _configuration(auth: ModuleType, options: ModuleType, transports: ModuleType
         ("secret without get", lambda: provider(_TOKEN, client_id="c", client_secret=object())),
         ("sync secret of an async provider", lambda: async_provider(_TOKEN, client_id="c", client_secret=secret)),
         (
-            "sync transport of an async provider",
-            lambda: async_provider(
-                _TOKEN, client_id="c", client_secret=async_secret, token_transport=Adapter(transports)
-            ),
+            "sync client of an async provider",
+            lambda: async_provider(_TOKEN, client_id="c", client_secret=async_secret, http_client=Script().client()),
         ),
         (
-            "async transport",
-            lambda: provider(_TOKEN, client_id="c", client_secret=secret, token_transport=AsyncAdapter(transports)),
+            "async client",
+            lambda: provider(_TOKEN, client_id="c", client_secret=secret, http_client=Script().async_client()),
         ),
         (
-            "transport without capabilities",
-            lambda: provider(_TOKEN, client_id="c", client_secret=secret, token_transport=_Uncapable()),
-        ),
-        (
-            "transport retrying internally",
-            lambda: provider(
-                _TOKEN, client_id="c", client_secret=secret, token_transport=Adapter(transports, retries=None)
-            ),
-        ),
-        (
-            "settings beside injected transport",
+            "settings beside an injected client",
             lambda: provider(
                 _TOKEN,
                 client_id="c",
                 client_secret=secret,
                 options=auth.OAuthProviderOptions(transport=options.TransportOptions(http2=True)),
-                token_transport=Adapter(transports),
+                http_client=Script().client(),
             ),
         ),
         ("unverified tls", lambda: with_transport(verify=False)),
@@ -255,7 +200,6 @@ def _configuration(auth: ModuleType, options: ModuleType, transports: ModuleType
             lambda: with_transport(ssl_context=_insecure_context(keep_certificates=True)),
         ),
         ("http2 without its extra", lambda: _without_h2(lambda: with_transport(http2=True))),
-        ("transport retries", lambda: with_transport(retry_owner="transport")),
         ("lone scope string", lambda: provider(_TOKEN, client_id="c", client_secret=secret, scopes="read")),
         ("scope with a space", lambda: provider(_TOKEN, client_id="c", client_secret=secret, scopes=("a b",))),
         ("empty audience", lambda: provider(_TOKEN, client_id="c", client_secret=secret, audience="")),
@@ -285,7 +229,8 @@ def _configuration(auth: ModuleType, options: ModuleType, transports: ModuleType
         options=auth.OAuthProviderOptions(allow_insecure_loopback=True),
     )
     lines.append(f"  permitted loopback = {type(loopback).__name__}")
-    with provider(_TOKEN, client_id="c", client_secret=secret, token_transport=Adapter(transports)) as idle:
+    native = Script().client()
+    with provider(_TOKEN, client_id="c", client_secret=secret, http_client=native) as idle:
         for label, call in (
             ("context type", lambda: idle.get(None)),
             ("audience of another resource", lambda: idle.get(_context(auth, audience="api"))),
@@ -300,6 +245,7 @@ def _configuration(auth: ModuleType, options: ModuleType, transports: ModuleType
         ("close again", idle.close),
     ):
         lines.append(f"  {label} = {_outcome(call)}")
+    lines.append(f"    borrowed client closed = {native.is_closed}")
 
 
 _ANSWERS: Final[tuple[tuple[str, Callable[[httpx2.Request], httpx2.Response]], ...]] = (
@@ -467,33 +413,27 @@ def _generated(
             f" narrow_grants={narrow.get(_context(auth)).token.scopes}"
         )
     exchange.respond(json_reply(200, _ISSUED), ok)
-    owned = provider(scopes=("read",))
-    with (
-        exchange.client() as native,
-        package.Client(
-            http_client=native,
-            options=options.ClientOptions(auth=auth.AuthConfig({"oauth": auth.OwnedCredentialProvider(owned)})),
-        ) as api,
-    ):
-        record(lines, "owned provider", api.auth.with_response.oauth_read)
-    lines.append(f"  owned provider once the client closed = {_outcome(lambda: owned.get(_context(auth)))}")
+    with provider(scopes=("read",)) as kept:
+        with (
+            exchange.client() as native,
+            package.Client(
+                http_client=native, options=options.ClientOptions(auth=auth.AuthConfig({"oauth": kept}))
+            ) as api,
+        ):
+            record(lines, "provider of a closed client", api.auth.with_response.oauth_read)
+        lines.append(f"    provider once the client closed = {_outcome(lambda: kept.get(_context(auth)))}")
 
 
-def _expiry(
-    package: ModuleType, auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
+def _expiry(package: ModuleType, auth: ModuleType, lines: list[str]) -> None:
     """Renew a token inline a tenth of its lifetime, at most thirty seconds, before it expires."""
     now = time.monotonic()
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("s"))
     clock = importlib.import_module(f"{package.__name__}.options").Clock(monotonic=lambda: now)
     timed = auth.OAuthProviderOptions(clock=clock)
     for ttl in (3600, 100, 1):
-        adapter = Adapter(
-            transports,
-            *(_reply(responses, {**_ISSUED, "access_token": f"{ttl}-{index}", "expires_in": ttl}) for index in (1, 2)),
-        )
+        script = Script(*(_reply({**_ISSUED, "access_token": f"{ttl}-{index}", "expires_in": ttl}) for index in (1, 2)))
         with auth.ClientCredentialsProvider(
-            _TOKEN, client_id="c", client_secret=secret, options=timed, token_transport=adapter
+            _TOKEN, client_id="c", client_secret=secret, options=timed, http_client=script.client()
         ) as shared:
             start = now
             first = shared.get(_context(auth))
@@ -503,53 +443,56 @@ def _expiry(
             now = start + ttl - margin
             lines.append(
                 f"  lifetime {ttl}s kept for {ttl - margin:g}s = {cached}, then renewed to"
-                f" {_outcome(lambda shared=shared: shared.get(_context(auth)))} sends={adapter.sends}"
+                f" {_outcome(lambda shared=shared: shared.get(_context(auth)))} sends={script.sends}"
             )
-    adapter = Adapter(
-        transports,
-        _reply(responses, {**_ISSUED, "access_token": "kept", "expires_in": 100}),
-        Response(responses, 503, b""),
-        _reply(responses, {**_ISSUED, "access_token": "renewed", "expires_in": 100}),
-        Response(responses, 503, b""),
-        Response(responses, 503, b""),
+    script = Script(
+        _reply({**_ISSUED, "access_token": "kept", "expires_in": 100}),
+        Response(503),
+        _reply({**_ISSUED, "access_token": "renewed", "expires_in": 100}),
+        Response(503),
+        Response(503),
     )
     with auth.ClientCredentialsProvider(
-        _TOKEN, client_id="c", client_secret=secret, options=timed, token_transport=adapter
+        _TOKEN, client_id="c", client_secret=secret, options=timed, http_client=script.client()
     ) as shared:
         start = now
         shared.get(_context(auth))
         now = start + 95
         lines.append(f"  failed renewal before the token expires = {_outcome(lambda: shared.get(_context(auth)))}")
-        lines.append(f"    next call renews = {_outcome(lambda: shared.get(_context(auth)))} sends={adapter.sends}")
+        lines.append(f"    next call renews = {_outcome(lambda: shared.get(_context(auth)))} sends={script.sends}")
         now = start + 190
         renewed = shared.get(_context(auth))
-        lines.append(f"    failed renewal keeps the token = {_material(renewed)} sends={adapter.sends}")
-        lines.append(f"    forced refresh failure = {_outcome(lambda: shared.refresh(_context(auth)))} sends={adapter.sends}")
+        lines.append(f"    failed renewal keeps the token = {_material(renewed)} sends={script.sends}")
+        forced = _outcome(lambda: shared.refresh(_context(auth)))
+        lines.append(f"    forced refresh failure = {forced} sends={script.sends}")
     closing = _Closing(auth)
-    adapter = Adapter(transports, _reply(responses, {**_ISSUED, "access_token": "kept", "expires_in": 100}))
+    script = Script(*(_reply({**_ISSUED, "access_token": token, "expires_in": 100}) for token in ("kept", "renewed")))
     with auth.ClientCredentialsProvider(
-        _TOKEN, client_id="c", client_secret=closing, options=timed, token_transport=adapter
+        _TOKEN, client_id="c", client_secret=closing, options=timed, http_client=script.client()
     ) as shared:
         start = now
         shared.get(_context(auth))
         closing.close = shared.close
         now = start + 95
-        lines.append(f"  closed during an early renewal = {_outcome(lambda: shared.get(_context(auth)))}")
+        lines.append(
+            f"  closed during an early renewal = {_outcome(lambda: shared.get(_context(auth)))} sends={script.sends}"
+        )
+        lines.append(f"    get after close = {_outcome(lambda: shared.get(_context(auth)))}")
 
 
-def _single_flight(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+def _single_flight(auth: ModuleType, lines: list[str]) -> None:
     """Let a caller arriving during an acquisition wait for the lock and use the token it obtained."""
     gate = threading.Event()
-    adapter = Adapter(transports, _reply(responses, _ISSUED), gate=gate)
+    script = Script(_reply(_ISSUED), gate=gate)
     with auth.ClientCredentialsProvider(
         _TOKEN,
         client_id="c",
         client_secret=auth.StaticCredentialProvider(auth.ApiKeyCredential("s")),
-        token_transport=adapter,
+        http_client=script.client(),
     ) as shared:
         first = Caller(lambda: shared.get(_context(auth)), _outcome)
         first.start()
-        adapter.entered.wait(LIMIT)
+        script.entered.wait(LIMIT)
         second = Caller(lambda: shared.get(_context(auth)), _outcome)
         second.start()
         options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
@@ -559,58 +502,42 @@ def _single_flight(auth: ModuleType, transports: ModuleType, responses: ModuleTy
         gate.set()
         for caller in (first, second):
             caller.join(LIMIT)
-        lines.append(f"  concurrent callers = {[caller.line for caller in (first, second)]} sends={adapter.sends}")
+        lines.append(f"  concurrent callers = {[caller.line for caller in (first, second)]} sends={script.sends}")
 
 
-def _faults(
-    auth: ModuleType, transports: ModuleType, responses: ModuleType, errors: ModuleType, lines: list[str]
-) -> None:
-    """Classify transport and secret failures by what they sent, leaving nothing behind for later calls."""
+def _faults(auth: ModuleType, errors: ModuleType, lines: list[str]) -> None:
+    """Classify native transport and secret failures by what they sent, leaving nothing behind for later calls."""
     granted = json.dumps(_ISSUED).encode()
-    connect = errors.APITimeoutError(
-        effective_timeout=5.0, delivery_state=errors.DeliveryState.NOT_SENT, phase="connect"
-    )
-    read = errors.APITimeoutError(
-        effective_timeout=15.0, delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read"
-    )
-    unsent = errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
-    read_failure = errors.APIConnectionError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="read")
-    unknown_phase = errors.APIConnectionError(delivery_state=errors.DeliveryState.MAYBE_SENT)
-    unknown_timeout = errors.APIConnectionError(
-        delivery_state=errors.DeliveryState.MAYBE_SENT, cause=httpx2.ReadTimeout("unclassified")
-    )
-    headers = responses.HeadersView((("content-type", "application/json"),))
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("s"))
 
-    def provider(*replies: object, client_secret: object = secret, total: float = 30.0, evidence: bool = False) -> Any:
+    def provider(*replies: object, client_secret: object = secret, total: float = 30.0) -> Any:
         return auth.ClientCredentialsProvider(
             _TOKEN,
             client_id="c",
             client_secret=client_secret,
             options=auth.OAuthProviderOptions(refresh_timeout=total),
-            token_transport=Adapter(transports, *replies, _reply(responses, _ISSUED), evidence=evidence),
+            http_client=Script(*replies, _reply(_ISSUED)).client(),
         )
 
     for label, shared in (
-        ("phase timeout before sending", provider(connect, evidence=True)),
-        ("unsent timeout within a short session", provider(connect, evidence=True, total=1.0)),
-        ("phase timeout after sending", provider(read)),
-        ("connect failure proven unsent", provider(unsent, evidence=True)),
-        ("unsent claim without delivery evidence", provider(unsent)),
-        ("failure in an unknown phase", provider(unknown_phase)),
-        ("timeout in an unknown phase", provider(unknown_timeout)),
-        ("timeout in an unknown phase after the session", provider(Late(1.0, unknown_timeout), total=0.5)),
-        ("failure after the response started", provider(Reported(RuntimeError("adapter"), headers))),
-        ("adapter failure", provider(RuntimeError("adapter"))),
-        ("invalid response status", provider(Response(responses, "200", granted))),
-        ("body failure", provider(Response(responses, 200, b"{", failure=read_failure))),
-        ("reported body failure", provider(Response(responses, 200, b"{", failure=RuntimeError(), reported=True))),
-        ("body arriving after the session", provider(Response(responses, 200, granted, pause=1.0), total=0.5)),
-        ("body ending after the session", provider(Response(responses, 200, granted, tail=1.0), total=0.5)),
+        ("phase timeout before sending", provider(httpx2.ConnectTimeout("connect"))),
+        ("unsent timeout within a short session", provider(httpx2.ConnectTimeout("connect"), total=1.0)),
+        ("phase timeout after sending", provider(httpx2.ReadTimeout("read"))),
+        ("pool timeout", provider(httpx2.PoolTimeout("pool"))),
+        ("connect failure proven unsent", provider(httpx2.ConnectError("refused"))),
+        ("write failure", provider(httpx2.WriteError("reset"))),
+        ("failure in an unknown phase", provider(httpx2.RemoteProtocolError("malformed"))),
+        ("timeout in an unknown phase", provider(httpx2.TimeoutException("unclassified"))),
         (
-            "close failure after a complete answer",
-            provider(Response(responses, 200, granted, close_failure=RuntimeError())),
+            "timeout in an unknown phase after the session",
+            provider(Late(1.0, httpx2.TimeoutException("unclassified")), total=0.5),
         ),
+        ("transport failure", provider(RuntimeError("transport"))),
+        ("body failure", provider(Response(200, b"{", failure=httpx2.ReadError("reset")))),
+        ("body failure of another kind", provider(Response(200, b"{", failure=RuntimeError()))),
+        ("body arriving after the session", provider(Response(200, granted, pause=1.0), total=0.5)),
+        ("body ending after the session", provider(Response(200, granted, tail=1.0), total=0.5)),
+        ("close failure after a complete answer", provider(Response(200, granted, close_failure=RuntimeError()))),
         ("secret failure", provider(client_secret=_Once(auth.ApiKeyCredential("s"), failure=RuntimeError("secret")))),
         (
             "secret auth failure",
@@ -641,23 +568,17 @@ def _faults(
     with provider() as shared:
         passed = _context(auth, deadline=options.Deadline.after(0))
         lines.append(f"  caller deadline already passed = {_outcome(lambda: shared.get(passed))}")
-    owned = Adapter(transports, _reply(responses, _ISSUED))
-    shared = auth.ClientCredentialsProvider(
-        _TOKEN, client_id="c", client_secret=secret, token_transport=transports.OwnedTransportAdapter(owned)
-    )
+    script = Script(_reply(_ISSUED))
+    native = script.client()
+    shared = auth.ClientCredentialsProvider(_TOKEN, client_id="c", client_secret=secret, http_client=native)
     shared.get(_context(auth))
     shared.close()
     shared.close()
-    lines.append(f"  owned transport closes once = {owned.closes}")
-    failing = _ClosingFailure(transports)
-    shared = auth.ClientCredentialsProvider(
-        _TOKEN, client_id="c", client_secret=secret, token_transport=transports.OwnedTransportAdapter(failing)
-    )
-    lines.append(f"  owned transport close failure = {_outcome(shared.close)}")
-    lines.append(f"    close again = {_outcome(shared.close)} closes={failing.closes}")
+    lines.append(f"  borrowed client after closing twice = closed={native.is_closed} sends={script.sends}")
+    native.close()
     closing = _Closing(auth)
-    racing = Adapter(transports, _reply(responses, _ISSUED))
-    shared = auth.ClientCredentialsProvider(_TOKEN, client_id="c", client_secret=closing, token_transport=racing)
+    racing = Script(_reply(_ISSUED))
+    shared = auth.ClientCredentialsProvider(_TOKEN, client_id="c", client_secret=closing, http_client=racing.client())
     closing.close = shared.close
     lines.append(f"  closed while the secret is fetched = {_outcome(lambda: shared.get(_context(auth)))}")
     lines.append(f"    nothing sent = {racing.sends == 0}")
@@ -707,85 +628,72 @@ async def _async_wire(package: ModuleType, auth: ModuleType, options: ModuleType
     return port
 
 
-async def _async_faults(
-    auth: ModuleType, transports: ModuleType, responses: ModuleType, errors: ModuleType, lines: list[str]
-) -> None:
+async def _async_faults(auth: ModuleType, lines: list[str]) -> None:
     """Classify asyncio token requests by their answers, failures, and the session deadline."""
     granted = json.dumps(_ISSUED).encode()
-    read_timeout = errors.APITimeoutError(
-        effective_timeout=15.0, delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read"
-    )
-    for label, replies, provider, total in (
-        ("async injected answer", (AsyncResponse(responses, 200, granted),), None, 30.0),
-        ("async body failure", (AsyncResponse(responses, 200, b"{", failure=read_timeout),), None, 30.0),
-        ("async oversized body", (AsyncResponse(responses, 200, b"x" * 70000),), None, 30.0),
-        ("async close failure", (AsyncResponse(responses, 200, granted, close_failure=RuntimeError()),), None, 30.0),
-        ("async send failure", (read_timeout,), None, 30.0),
-        ("async secret failure", (), AsyncSecret(failure=RuntimeError("secret")), 30.0),
-        ("async secret outlives the session", (), AsyncSecret(auth.ApiKeyCredential("s"), delay=5), 0.1),
-        ("async body slower than the session", (AsyncResponse(responses, 200, granted, pause=1.0),), None, 0.5),
-        ("async body arriving after the session", (_Blocking(responses, 200, granted, pause=1.0),), None, 0.5),
-        ("async body ending after the session", (_Blocking(responses, 200, granted, tail=1.0),), None, 0.5),
-    ):
-        async with auth.AsyncClientCredentialsProvider(
+    secret = auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s"))
+
+    def provider(script: Script, client_secret: object = secret, total: float = 30.0) -> Any:
+        return auth.AsyncClientCredentialsProvider(
             _TOKEN,
             client_id="c",
-            client_secret=provider or auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
+            client_secret=client_secret,
             options=auth.OAuthProviderOptions(refresh_timeout=total),
-            token_transport=AsyncAdapter(transports, *replies),
-        ) as shared:
+            http_client=script.async_client(),
+        )
+
+    for label, replies, client_secret, total in (
+        ("async scripted answer", (Response(200, granted),), secret, 30.0),
+        ("async body failure", (Response(200, b"{", failure=httpx2.ReadTimeout("read")),), secret, 30.0),
+        ("async oversized body", (Response(200, b"x" * 70000),), secret, 30.0),
+        ("async close failure", (Response(200, granted, close_failure=RuntimeError()),), secret, 30.0),
+        ("async send failure", (httpx2.ReadTimeout("read"),), secret, 30.0),
+        ("async connect failure", (httpx2.ConnectError("refused"),), secret, 30.0),
+        ("async secret failure", (), AsyncSecret(failure=RuntimeError("secret")), 30.0),
+        ("async secret outlives the session", (), AsyncSecret(auth.ApiKeyCredential("s"), delay=5), 0.1),
+        ("async body slower than the session", (Response(200, granted, pause=1.0),), secret, 0.5),
+        ("async body arriving after the session", (Response(200, granted, pause=1.0, blocking=True),), secret, 0.5),
+        ("async body ending after the session", (Response(200, granted, tail=1.0, blocking=True),), secret, 0.5),
+    ):
+        async with provider(Script(*replies), client_secret, total) as shared:
             lines.append(f"  {label} = {await _aoutcome(lambda shared=shared: shared.get(_context(auth)))}")
     options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
-    async with auth.AsyncClientCredentialsProvider(
-        _TOKEN,
-        client_id="c",
-        client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
-        token_transport=AsyncAdapter(transports),
-    ) as shared:
+    async with provider(Script()) as shared:
         passed = _context(auth, deadline=options.Deadline.after(0))
         lines.append(f"  async caller deadline already passed = {await _aoutcome(lambda: shared.get(passed))}")
-    slow = AsyncAdapter(transports, AsyncResponse(responses, 200, granted), hold=asyncio.Event())
-    async with auth.AsyncClientCredentialsProvider(
-        _TOKEN,
-        client_id="c",
-        client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
-        options=auth.OAuthProviderOptions(refresh_timeout=0.1),
-        token_transport=slow,
-    ) as shared:
+    async with provider(Script(Response(200, granted), hold=asyncio.Event()), total=0.1) as shared:
         lines.append(f"  async session expires while sending = {await _aoutcome(lambda: shared.get(_context(auth)))}")
     closing = _AsyncClosing(auth)
-    racing = AsyncAdapter(transports, AsyncResponse(responses, 200, granted))
-    shared = auth.AsyncClientCredentialsProvider(_TOKEN, client_id="c", client_secret=closing, token_transport=racing)
+    racing = Script(Response(200, granted))
+    shared = provider(racing, closing)
     closing.close = shared.aclose
     lines.append(f"  async closed while the secret is fetched = {await _aoutcome(lambda: shared.get(_context(auth)))}")
     lines.append(f"    nothing sent = {racing.sends == 0}")
-    failing = _AsyncClosingFailure(transports)
-    shared = auth.AsyncClientCredentialsProvider(
-        _TOKEN,
-        client_id="c",
-        client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
-        token_transport=transports.OwnedTransportAdapter(failing),
-    )
-    lines.append(f"  async owned transport close failure = {await _aoutcome(shared.aclose)}")
-    lines.append(f"    close again = {await _aoutcome(shared.aclose)} closes={failing.closes}")
+    script = Script(Response(200, granted))
+    async with script.async_client() as native:
+        shared = auth.AsyncClientCredentialsProvider(_TOKEN, client_id="c", client_secret=secret, http_client=native)
+        await shared.get(_context(auth))
+        await shared.aclose()
+        await shared.aclose()
+        lines.append(f"  async borrowed client after closing twice = closed={native.is_closed} sends={script.sends}")
 
 
-async def _async_single_flight(
-    auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
+async def _async_single_flight(auth: ModuleType, lines: list[str]) -> None:
     """Let tasks arriving during an acquisition, forced or not, use the token it obtained; a cancelled one leaves."""
+
+    def provider(script: Script) -> Any:
+        return auth.AsyncClientCredentialsProvider(
+            _TOKEN,
+            client_id="c",
+            client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
+            http_client=script.async_client(),
+        )
+
     hold = asyncio.Event()
-    adapter = AsyncAdapter(
-        transports, _areply(responses, _ISSUED), _areply(responses, {**_ISSUED, "access_token": "access-2"}), hold=hold
-    )
-    async with auth.AsyncClientCredentialsProvider(
-        _TOKEN,
-        client_id="c",
-        client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
-        token_transport=adapter,
-    ) as shared:
+    script = Script(_reply(_ISSUED), _reply({**_ISSUED, "access_token": "access-2"}), hold=hold)
+    async with provider(script) as shared:
         first = asyncio.create_task(_aoutcome(lambda: shared.get(_context(auth))))
-        await asyncio.to_thread(adapter.entered.wait, LIMIT)
+        await asyncio.to_thread(script.entered.wait, LIMIT)
         joiners = [
             asyncio.create_task(_aoutcome(lambda: shared.get(_context(auth)))),
             asyncio.create_task(_aoutcome(lambda: shared.refresh(_context(auth)))),
@@ -798,55 +706,44 @@ async def _async_single_flight(
         except asyncio.CancelledError:
             lines.append("  async waiter cancelled = CancelledError")
         hold.set()
-        lines.append(f"  async concurrent tasks = {[await task for task in (first, *joiners)]} sends={adapter.sends}")
+        lines.append(f"  async concurrent tasks = {[await task for task in (first, *joiners)]} sends={script.sends}")
         lines.append(f"    forced refresh afterwards = {await _aoutcome(lambda: shared.refresh(_context(auth)))}")
     hold = asyncio.Event()
-    adapter = AsyncAdapter(
-        transports, _areply(responses, _ISSUED), _areply(responses, {**_ISSUED, "access_token": "access-2"}), hold=hold
-    )
-    async with auth.AsyncClientCredentialsProvider(
-        _TOKEN,
-        client_id="c",
-        client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
-        token_transport=adapter,
-    ) as shared:
+    script = Script(_reply(_ISSUED), _reply({**_ISSUED, "access_token": "access-2"}), hold=hold)
+    async with provider(script) as shared:
         cancelled = asyncio.create_task(shared.get(_context(auth)))
-        await asyncio.to_thread(adapter.entered.wait, LIMIT)
+        await asyncio.to_thread(script.entered.wait, LIMIT)
         cancelled.cancel()
         try:
             await cancelled
         except asyncio.CancelledError:
             lines.append("  async caller cancelled during its token request = CancelledError")
         hold.set()
-        lines.append(f"    next caller = {await _aoutcome(lambda: shared.get(_context(auth)))} sends={adapter.sends}")
+        lines.append(f"    next caller = {await _aoutcome(lambda: shared.get(_context(auth)))} sends={script.sends}")
 
 
-async def _async_renewal(package: str, auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+async def _async_renewal(package: str, auth: ModuleType, lines: list[str]) -> None:
     """Keep an asyncio token whose early renewal failed until it expires."""
     now = time.monotonic()
     clock = importlib.import_module(f"{package}.options").Clock(monotonic=lambda: now)
-    adapter = AsyncAdapter(
-        transports,
-        _areply(responses, {**_ISSUED, "access_token": "kept", "expires_in": 100}),
-        AsyncResponse(responses, 503, b""),
-        AsyncResponse(responses, 503, b""),
-    )
+    script = Script(_reply({**_ISSUED, "access_token": "kept", "expires_in": 100}), Response(503), Response(503))
     async with auth.AsyncClientCredentialsProvider(
         _TOKEN,
         client_id="c",
         client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
         options=auth.OAuthProviderOptions(clock=clock),
-        token_transport=adapter,
+        http_client=script.async_client(),
     ) as shared:
         start = now
         await shared.get(_context(auth))
         now = start + 95
         lines.append(f"  async failed renewal before the token expires = {await _aoutcome(lambda: shared.get(_context(auth)))}")
         now = start + 101
-        lines.append(f"    once the token expired = {await _aoutcome(lambda: shared.get(_context(auth)))} sends={adapter.sends}")
+        expired = await _aoutcome(lambda: shared.get(_context(auth)))
+        lines.append(f"    once the token expired = {expired} sends={script.sends}")
 
 
-def _loops(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+def _loops(auth: ModuleType, lines: list[str]) -> None:
     """Bind an asyncio provider to its first event loop, and refuse callers outside asyncio."""
 
     def provider() -> Any:
@@ -854,7 +751,7 @@ def _loops(auth: ModuleType, transports: ModuleType, responses: ModuleType, line
             _TOKEN,
             client_id="c",
             client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
-            token_transport=AsyncAdapter(transports, _areply(responses, _ISSUED)),
+            http_client=Script(_reply(_ISSUED)).async_client(),
         )
 
     shared = provider()
@@ -888,24 +785,23 @@ def _loops(auth: ModuleType, transports: ModuleType, responses: ModuleType, line
 
 def oauth_client_credentials(package: ModuleType, lines: list[str]) -> None:
     """Exercise client credentials acquisition, caching, renewal, and failures in both execution modes."""
-    auth, options, transports, responses, errors = (
-        importlib.import_module(f"{package.__name__}.{name}")
-        for name in ("auth", "options", "transports", "responses", "errors")
+    auth, options, errors = (
+        importlib.import_module(f"{package.__name__}.{name}") for name in ("auth", "options", "errors")
     )
-    _configuration(auth, options, transports, lines)
+    _configuration(auth, options, lines)
     ports = [_wire(package, auth, options, lines)]
-    _expiry(package, auth, transports, responses, lines)
-    _single_flight(auth, transports, responses, lines)
-    _faults(auth, transports, responses, errors, lines)
+    _expiry(package, auth, lines)
+    _single_flight(auth, lines)
+    _faults(auth, errors, lines)
 
     async def flows() -> None:
         ports.append(await _async_wire(package, auth, options, lines))
-        await _async_faults(auth, transports, responses, errors, lines)
-        await _async_single_flight(auth, transports, responses, lines)
-        await _async_renewal(package.__name__, auth, transports, responses, lines)
+        await _async_faults(auth, lines)
+        await _async_single_flight(auth, lines)
+        await _async_renewal(package.__name__, auth, lines)
 
     run(flows)
-    _loops(auth, transports, responses, lines)
+    _loops(auth, lines)
     for index, line in enumerate(lines):
         for port in ports:
             line = line.replace(f":{port}", ":<port>")

@@ -19,7 +19,7 @@
   sync h1 wire path=b'/anonymous' body=b'' auth=()
   sync h1 wire path=b'/optional-token-first' body=b'' auth=()
   sync h1 wire path=b'/empty' body=b'' auth=()
-  sync h1 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(1, 0, 1, 0, 1, 1)
+  sync h1 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(0, 0, 0, 0, 0, 0)
   sync h1 total sends=8
   sync h2 root selection = b'ready'
   inherited view = b'ready'
@@ -41,7 +41,7 @@
   sync h2 wire path=b'/anonymous' body=b'' auth=()
   sync h2 wire path=b'/optional-token-first' body=b'' auth=()
   sync h2 wire path=b'/empty' body=b'' auth=()
-  sync h2 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(1, 0, 1, 0, 1, 1)
+  sync h2 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(0, 0, 0, 0, 0, 0)
   sync h2 total sends=8
   async h1 root selection = b'ready'
   inherited view = b'ready'
@@ -63,7 +63,7 @@
   async h1 wire path=b'/anonymous' body=b'' auth=()
   async h1 wire path=b'/optional-token-first' body=b'' auth=()
   async h1 wire path=b'/empty' body=b'' auth=()
-  async h1 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(1, 0, 1, 0, 1, 1)
+  async h1 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(0, 0, 0, 0, 0, 0)
   async h1 total sends=8
   async h2 root selection = b'ready'
   inherited view = b'ready'
@@ -85,5 +85,5 @@
   async h2 wire path=b'/anonymous' body=b'' auth=()
   async h2 wire path=b'/optional-token-first' body=b'' auth=()
   async h2 wire path=b'/empty' body=b'' auth=()
-  async h2 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(1, 0, 1, 0, 1, 1)
+  async h2 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(0, 0, 0, 0, 0, 0)
   async h2 total sends=8

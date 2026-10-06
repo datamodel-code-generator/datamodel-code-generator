@@ -6,6 +6,7 @@ import gzip
 import hashlib
 import importlib
 import io
+from contextlib import asynccontextmanager, contextmanager
 from typing import TYPE_CHECKING, Any
 
 import httpx2
@@ -15,7 +16,7 @@ from tests.data.python.client_runtime import Exchange, arecord, argument, json_r
 from tests.data.python.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Iterator
     from types import ModuleType
 
 
@@ -34,19 +35,23 @@ class _Harness:
         options.setdefault("retry", self.options.RetryOptions(max_retries=1, initial_delay=0))
         return self.options.ClientOptions(**dict(zip(("compression",), compression, strict=False)), **options)
 
-    def client(self, *compression: object, **options: Any) -> Any:
-        return self.package.Client(
-            http_client=self.exchange.client(),
-            http_client_ownership="owned",
-            options=self.settings(*compression, **options),
-        )
+    @contextmanager
+    def client(self, *compression: object, **options: Any) -> Iterator[Any]:
+        """Yield a client that borrows a native client of the exchange, closing both afterwards."""
+        with (
+            self.exchange.client() as native,
+            self.package.Client(http_client=native, options=self.settings(*compression, **options)) as api,
+        ):
+            yield api
 
-    def async_client(self, *compression: object, **options: Any) -> Any:
-        return self.package.AsyncClient(
-            http_client=self.exchange.async_client(),
-            http_client_ownership="owned",
-            options=self.settings(*compression, **options),
-        )
+    @asynccontextmanager
+    async def async_client(self, *compression: object, **options: Any) -> AsyncIterator[Any]:
+        """Yield an async client that borrows a native client of the exchange, closing both afterwards."""
+        async with (
+            self.exchange.async_client() as native,
+            self.package.AsyncClient(http_client=native, options=self.settings(*compression, **options)) as api,
+        ):
+            yield api
 
     def call(self, **options: Any) -> Any:
         """Return request options that inherit the client's compression setting."""

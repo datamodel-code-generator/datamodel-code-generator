@@ -12,8 +12,7 @@ from types import MappingProxyType
 from typing import Literal, Protocol, TypeAlias
 
 from ..model_codecs.wire import JSONScalar  # noqa: TC001 - Public annotations support get_type_hints().
-from .errors import DeadlinePhase, IOPhase  # noqa: TC001 - Public annotations support get_type_hints().
-from .timing import CancelToken  # noqa: TC001 - Public annotations support get_type_hints().
+from .errors import DeadlinePhase, IOPhase  # noqa: TC001
 
 __all__ = (
     "AsyncHook",
@@ -113,7 +112,6 @@ class LimiterContext:
     call_id: str
     parent_session_id: str | None
     remaining_timeout: float | None
-    cancel_token: CancelToken | None
 
 
 class Permit(Protocol):

@@ -9,12 +9,11 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Final, Literal
 
 from ..model_codecs.unset import Unset
-from .errors import ConfigurationError
+from .errors import ConfigurationError, DeliveryState, RetryStopReason
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from .errors import DeliveryState, RetryStopReason
     from .hooks import RetryReason
     from .options import ResolvedRetryOptions
     from .responses import HeadersView
@@ -120,7 +119,6 @@ class RetryState:
     attempt_count: int
     body_replayable: bool
     server_hint: bool | None
-    proven_not_sent: bool = False
 
 
 def replay_safe(
@@ -151,12 +149,9 @@ _NOT_RETRYABLE: Final[dict[str, RetryStopReason]] = {
 def _policy_stop(
     state: RetryState,
     retry: ResolvedRetryOptions,
-    retry_owner: Literal["sdk", "transport"],
 ) -> RetryStopReason | None:
     if state.reason is None or (state.reason == "pool_timeout" and not retry.retry_on_pool_timeout):
         return _NOT_RETRYABLE[state.failure_kind]
-    if retry_owner == "transport":
-        return "retry_owned_by_transport"
     if state.retry_safety == "never":
         return "operation_never"
     if state.server_hint is False:
@@ -170,11 +165,12 @@ def retry_stop(
     state: RetryState,
     retry: ResolvedRetryOptions,
     *,
-    retry_owner: Literal["sdk", "transport"],
     auth_recovery_used: bool = False,
 ) -> RetryStopReason | None:
     """Return the first failed retry gate, after termination precedence has been checked."""
-    if (stop := _policy_stop(state, retry, retry_owner)) is not None:
+    if state.failure_kind == "transport" and state.delivery_state is not DeliveryState.NOT_SENT:
+        return "unknown_delivery"
+    if (stop := _policy_stop(state, retry)) is not None:
         return stop
     if state.attempt_count >= 1 + retry.max_retries:
         return "max_retries_exhausted"
@@ -187,7 +183,10 @@ def _replay_stop(state: RetryState) -> RetryStopReason | None:
     """Return why the request cannot be sent again: its body or its safety."""
     if not state.body_replayable:
         return "body_not_replayable"
-    if not (replay_safe(state.method, state.retry_safety, state.idempotency) or state.proven_not_sent):
+    if not (
+        replay_safe(state.method, state.retry_safety, state.idempotency)
+        or (state.failure_kind == "transport" and state.delivery_state is DeliveryState.NOT_SENT)
+    ):
         return "unsafe_operation"
     return None
 

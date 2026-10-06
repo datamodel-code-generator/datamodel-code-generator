@@ -28,7 +28,7 @@ _SPLIT: Final = ({"radius": 1}, {"side": 2}, {"radius": 1, "id": 4}, {"side": 2,
 def unions(package: ModuleType, lines: list[str]) -> None:
     """Read every member of each selected operation's union natively, as the backend's converter tells them apart."""
     exchange = Exchange(lines)
-    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+    with exchange.client() as http, package.Client(http_client=http) as api:
         for operation, label, payload in _MEMBERS:
             if (method := getattr(api.default, operation, None)) is not None:
                 exchange.respond(json_response(200, payload))
@@ -47,7 +47,7 @@ def split_unions(package: ModuleType, lines: list[str]) -> None:
     Each member is told apart by the schema of its own variant, in both execution modes.
     """
     exchange = Exchange(lines)
-    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+    with exchange.client() as http, package.Client(http_client=http) as api:
         for payload in _SPLIT:
             record(lines, f"split {payload}", _split(exchange, api, package, payload))
     run(lambda: _async_split_unions(package, lines))
@@ -55,6 +55,6 @@ def split_unions(package: ModuleType, lines: list[str]) -> None:
 
 async def _async_split_unions(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
-    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
         for payload in _SPLIT:
             await arecord(lines, f"async split {payload}", _split(exchange, api, package, payload))

@@ -6,21 +6,21 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ._async_client import AsyncClient
-    from ._client import Client
+    from ._async_client import AsyncClient, AsyncClientView
+    from ._client import Client, ClientView
 
-__all__ = ["AsyncClient", "Client"]
+__all__ = ["AsyncClient", "AsyncClientView", "Client", "ClientView"]
 
 
 def __getattr__(name: str) -> object:
     """Import a client on first use, so importing the package loads no HTTP runtime."""
-    if name == "Client":
-        from ._client import Client
+    if name in {"Client", "ClientView"}:
+        from . import _client
 
-        return Client
-    if name == "AsyncClient":
-        from ._async_client import AsyncClient
+        return getattr(_client, name)
+    if name in {"AsyncClient", "AsyncClientView"}:
+        from . import _async_client
 
-        return AsyncClient
+        return getattr(_async_client, name)
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)

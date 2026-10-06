@@ -1,4 +1,4 @@
-"""Keep connections and downloads only as long as their streams: borrowed pools, owned clients, and disk threads."""
+"""Keep connections and downloads only as long as their streams: borrowed pools, passed clients, and disk work."""
 
 from __future__ import annotations
 
@@ -39,7 +39,6 @@ _DATA: Final = bytes(range(256)) * 4096
 _ROUNDS: Final = 20
 _URL: Final = "https://files.example.com/body"
 _PET: Final = {"id": 3, "name": "fox"}
-_WORKER: Final = "AsyncRawResponse"
 
 
 class _Stalled(httpx2.SyncByteStream):
@@ -139,16 +138,8 @@ def _denied(path: Path, *, missing_ok: bool = False) -> None:
     raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), str(path))
 
 
-class _Suspending:
-    """Suspend in the stream's end event, between releasing its connection and its later cleanup."""
-
-    async def on_event(self, event: Any) -> None:
-        if event.name == "stream_end":
-            await asyncio.sleep(0.05)
-
-
 class _Owned(httpx2.Client):
-    """Count how often the client that owns this HTTPX2 client closes it."""
+    """Count how often this HTTPX2 client is closed."""
 
     closes = 0
 
@@ -158,7 +149,7 @@ class _Owned(httpx2.Client):
 
 
 class _AsyncOwned(httpx2.AsyncClient):
-    """Count how often the asyncio client that owns this HTTPX2 client closes it."""
+    """Count how often this asyncio HTTPX2 client is closed."""
 
     closes = 0
 
@@ -182,9 +173,7 @@ def _body(size: int = 3 * _CHUNK) -> Callable[[httpx2.Request], httpx2.Response]
 
 
 def _gzipped() -> Callable[[httpx2.Request], httpx2.Response]:
-    return raw_response(
-        200, gzip.compress(_DATA, mtime=0), "application/octet-stream", **{"content-encoding": "gzip"}
-    )
+    return raw_response(200, gzip.compress(_DATA, mtime=0), "application/octet-stream", **{"content-encoding": "gzip"})
 
 
 def _stalled(gate: threading.Event) -> Callable[[httpx2.Request], httpx2.Response]:
@@ -204,7 +193,7 @@ def _report(lines: list[str], label: str, results: dict[str, list[str]]) -> None
 
 
 def stream_lifetimes(package: ModuleType, lines: list[str]) -> None:
-    """Reuse one borrowed connection after every way a stream ends, close owned clients once, and write files."""
+    """Reuse one borrowed connection after every way a stream ends, never close a passed client, and write files."""
     _borrowed(package, lines)
     _owned(package, lines)
     with tempfile.TemporaryDirectory() as directory:
@@ -230,20 +219,11 @@ def _sync_cases(package: ModuleType, api: Any, exchange: Exchange) -> dict[str, 
         retry = options.RetryOptions(max_retries=1, initial_delay=0, jitter="none")
         return outcome(lambda: api.pets.get_pet(pet_id=pet, options=options.RequestOptions(retry=retry)))
 
-    def token() -> str:
-        cancel = options.CancelToken()
-        exchange.respond(_body())
-        with streaming.request_raw("GET", _URL, options=options.RequestOptions(cancel_token=cancel)) as response:
-            chunks = response.iter_bytes()
-            next(chunks)
-            cancel.cancel()
-            return outcome(lambda: list(chunks))
-
-    def idle() -> str:
+    def read_timeout() -> str:
         gate = threading.Event()
         exchange.respond(_stalled(gate))
         try:
-            with streaming.request_raw("GET", _URL, options=options.RequestOptions(stream_idle_timeout=0.5)) as raw:
+            with streaming.request_raw("GET", _URL, options=_read_timeout(options)) as raw:
                 return outcome(raw.read)
         finally:
             gate.set()
@@ -257,10 +237,14 @@ def _sync_cases(package: ModuleType, api: Any, exchange: Exchange) -> dict[str, 
         "first chunk": first_chunk,
         "typed decode": typed_decode,
         "retried 503": retried,
-        "token": token,
-        "idle": idle,
+        "read timeout": read_timeout,
         "stream limit": limit,
     }
+
+
+def _read_timeout(options: ModuleType) -> object:
+    """Return options whose native read timeout ends a stalled body."""
+    return options.RequestOptions(timeout=options.TimeoutOptions(read=0.5))
 
 
 def _borrowed(package: ModuleType, lines: list[str]) -> None:
@@ -284,12 +268,13 @@ def _borrowed(package: ModuleType, lines: list[str]) -> None:
 def _owned(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange([])
     http = exchange.client(1, kind=_Owned)
-    with package.Client(http_client=http, http_client_ownership="owned") as api:
+    with package.Client(http_client=http) as api:
         exchange.respond(_body())
         with api.with_streaming_response.request_raw("GET", _URL) as response:
             next(response.iter_bytes())
     api.close()
-    lines.append(f"  sync owned closed {http.is_closed} {http.closes}")
+    lines.append(f"  sync passed client kept open {not http.is_closed} closes {http.closes}")
+    http.close()
 
 
 def _files_sync(package: ModuleType, lines: list[str], directory: Path) -> None:
@@ -329,7 +314,9 @@ def _files_sync(package: ModuleType, lines: list[str], directory: Path) -> None:
                 response.stream_to(file)
             end = file.tell()
             file.seek(0)
-            lines.append(f"  sync borrowed file open {not file.closed} at {end} {file.read() == b'head' + _DATA[: _CHUNK + 5]}")
+            lines.append(
+                f"  sync borrowed file open {not file.closed} at {end} {file.read() == b'head' + _DATA[: _CHUNK + 5]}"
+            )
         exchange.respond(_body(), raw_response(200, b"pong", "text/plain"))
         with streaming.request_raw("GET", _URL) as response:
             failed = outcome(lambda: response.stream_to(_Sink()))
@@ -376,22 +363,33 @@ def _async_cases(
         retry = options.RetryOptions(max_retries=1, initial_delay=0, jitter="none")
         return await aoutcome(lambda: api.pets.get_pet(pet_id=pet, options=options.RequestOptions(retry=retry)))
 
-    async def token() -> str:
-        cancel = options.CancelToken()
-        exchange.respond(_body())
-        async with streaming.request_raw("GET", _URL, options=options.RequestOptions(cancel_token=cancel)) as raw:
-            chunks = raw.iter_bytes()
-            await anext(chunks)
-            cancel.cancel()
-            return await aoutcome(lambda: _drained(chunks))
+    async def cancelled() -> str:
+        gate, started = threading.Event(), asyncio.Event()
 
-    async def idle() -> str:
+        async def read() -> int:
+            async with streaming.request_raw("GET", _URL) as raw:
+                chunks = raw.iter_bytes()
+                await anext(chunks)
+                started.set()
+                return await _drained(chunks)
+
+        exchange.respond(_stalled(gate))
+        reader = asyncio.create_task(read())
+        try:
+            await started.wait()
+            reader.cancel("reader cancelled")
+            await reader
+        except asyncio.CancelledError as error:
+            return f"CancelledError {error.args}"
+        finally:
+            gate.set()
+        return "not cancelled"
+
+    async def read_timeout() -> str:
         gate = threading.Event()
         exchange.respond(_stalled(gate))
         try:
-            async with streaming.request_raw(
-                "GET", _URL, options=options.RequestOptions(stream_idle_timeout=0.5)
-            ) as response:
+            async with streaming.request_raw("GET", _URL, options=_read_timeout(options)) as response:
                 return await aoutcome(response.read)
         finally:
             gate.set()
@@ -405,8 +403,8 @@ def _async_cases(
         "first chunk": first_chunk,
         "typed decode": typed_decode,
         "retried 503": retried,
-        "token": token,
-        "idle": idle,
+        "cancelled": cancelled,
+        "read timeout": read_timeout,
         "stream limit": limit,
     }
 
@@ -445,18 +443,15 @@ async def _async_owned(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange([])
     http = exchange.async_client(1, kind=_AsyncOwned)
     async with AsyncExitStack() as iterators:
-        async with package.AsyncClient(http_client=http, http_client_ownership="owned") as api:
+        async with package.AsyncClient(http_client=http) as api:
             exchange.respond(_body())
             async with api.with_streaming_response.request_raw("GET", _URL) as response:
                 chunks = response.iter_bytes()
                 iterators.push_async_callback(chunks.aclose)
                 await anext(chunks)
         await api.aclose()
-        lines.append(f"  async owned closed {http.is_closed} {http.closes}")
-
-
-def _workers() -> list[threading.Thread]:
-    return [thread for thread in threading.enumerate() if thread.name.startswith(_WORKER)]
+        lines.append(f"  async passed client kept open {not http.is_closed} closes {http.closes}")
+    await http.aclose()
 
 
 async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> None:
@@ -468,16 +463,14 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
         streaming = api.with_streaming_response
         exchange.respond(raw_response(200, b"warm", "text/plain"))
         await (await api.request_raw("GET", _URL)).read()
-        before = threading.enumerate()
         held, gate = directory / "held.bin", threading.Event()
         exchange.respond(_stalled(gate))
         async with streaming.request_raw("GET", _URL) as response:
             task = asyncio.create_task(response.stream_to(held))
             await _mid_body(task)
-            writing = [thread.name for thread in _workers()]
             gate.set()
             await task
-        lines.append(f"  async download mid-body disk threads {writing} wrote {held.read_bytes() == _DATA[: 2 * _CHUNK]}")
+        lines.append(f"  async download mid-body wrote {held.read_bytes() == _DATA[: 2 * _CHUNK]}")
         identity, coded = directory / "identity.bin", directory / "coded.bin"
         exchange.respond(_body(len(_DATA)), _gzipped())
         async with streaming.request_raw("GET", _URL) as response:
@@ -487,11 +480,6 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
             await response.stream_to(str(coded))
         lines.append(
             f"  async download identity {identity.read_bytes() == _DATA} gzip {coded.read_bytes() == _DATA} again {again}"
-        )
-        for worker in _workers():
-            worker.join(5)
-        lines.append(
-            f"  async download threads left {[thread.name for thread in threading.enumerate() if thread not in before]}"
         )
         exchange.respond(_gzipped())
         limit = options.RequestOptions(max_stream_bytes=len(_DATA) // 2)
@@ -515,11 +503,6 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
             file.seek(0)
             kept = file.read() == b"head" + _DATA[: _CHUNK + 5]
             lines.append(f"  async borrowed file open {not file.closed} at {end} {kept}")
-        cancel = options.CancelToken()
-        exchange.respond(_body())
-        async with streaming.request_raw("GET", _URL, options=options.RequestOptions(cancel_token=cancel)) as raw:
-            cancel.cancel()
-            lines.append(f"  async cancelled before download {await aoutcome(lambda: raw.stream_to(directory / 'no.bin'))}")
         exchange.respond(_body(), _body())
         async with streaming.request_raw("GET", _URL) as response:
             chunks = response.iter_bytes()
@@ -530,7 +513,7 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
             drained = await _drained(response.iter_bytes())
             failed = await aoutcome(lambda: response.stream_to(identity))
             lines.append(f"  async consumed to existing {drained} {failed} {_files(directory)}")
-        await _opening_faults(api, exchange, lines, directory, options)
+        await _opening_faults(api, exchange, lines, directory)
         await _disk_failures(api, exchange, lines, directory)
     await saved.stream_to(directory / "saved.bin")
     lines.append(
@@ -539,18 +522,20 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
     await http.aclose()
 
 
-async def _opening_faults(
-    api: Any, exchange: Exchange, lines: list[str], directory: Path, options: ModuleType
-) -> None:
+async def _opening_faults(api: Any, exchange: Exchange, lines: list[str], directory: Path) -> None:
     """Stop downloads while or right after the disk thread creates their file, and keep nothing it created."""
     streaming, target = api.with_streaming_response, directory / "opening.bin"
-    cancel = options.CancelToken()
-    opening = _Opening(cancel.cancel)
+    loop, downloads = asyncio.get_running_loop(), []
+    opening = _Opening(lambda: loop.call_soon_threadsafe(downloads[0].cancel, "cancelled once opened"))
     exchange.respond(_body())
-    async with streaming.request_raw("GET", _URL, options=options.RequestOptions(cancel_token=cancel)) as response:
+    async with streaming.request_raw("GET", _URL) as response:
         with pytest.MonkeyPatch.context() as fault:
             fault.setattr(os, "fdopen", opening)
-            failed = await aoutcome(lambda: response.stream_to(target))
+            downloads.append(asyncio.create_task(response.stream_to(target)))
+            try:
+                failed = await aoutcome(lambda: downloads[0])
+            except asyncio.CancelledError as error:
+                failed = f"CancelledError {error.args}"
     closed = [file.closed for file in opening.opened]
     lines.append(f"  async cancelled once opened {failed} closed {closed} {_files(directory)}")
     for label in ("cancelled while opening", "removal denied", "read while opening"):
@@ -582,9 +567,8 @@ async def _opening_faults(
 async def _disk_failures(api: Any, exchange: Exchange, lines: list[str], directory: Path) -> None:
     """Fail disk writes while a borrowed connection is held, ending the stream before the failure propagates."""
     streaming, target = api.with_streaming_response, directory / "full.bin"
-    written = threading.Event()
-    broken = injected(lambda _: httpx2.Response(200, stream=_Broken(written)))
-    for room, responder, slow in ((0, _body(), _free()), (1, broken, written)):
+    broken = injected(lambda _: httpx2.Response(200, stream=_Broken(threading.Event())))
+    for room, responder, slow in ((0, _body(), _free()), (1, broken, _free())):
         exchange.respond(responder, raw_response(200, b"pong", "text/plain"))
         async with streaming.request_raw("GET", _URL) as response:
             with pytest.MonkeyPatch.context() as fault:
@@ -612,7 +596,7 @@ async def _mid_body(task: asyncio.Task[None]) -> None:
 
 
 async def _stopped_downloads(package: ModuleType, lines: list[str], directory: Path) -> None:
-    """Stop downloads mid-body by cancellation, token, limits, and closing; keep the target and remove the rest."""
+    """Stop downloads mid-body by cancellation and timeouts; keep the target and remove the rest."""
     options = _modules(package)[0]
     exchange = Exchange([])
     http = exchange.async_client(1)
@@ -620,10 +604,8 @@ async def _stopped_downloads(package: ModuleType, lines: list[str], directory: P
     target.write_bytes(b"old")
     for label, settings in (
         ("cancelled", None),
-        ("token", options.RequestOptions(cancel_token=options.CancelToken())),
-        ("idle", options.RequestOptions(stream_idle_timeout=0.5)),
-        ("deadline", options.RequestOptions(stream_total_timeout=0.5)),
-        ("closing", options.RequestOptions(hooks=(_Suspending(),))),
+        ("read timeout", _read_timeout(options)),
+        ("deadline", options.RequestOptions(total_timeout=3)),
     ):
         gate = threading.Event()
         exchange.respond(_stalled(gate))
@@ -631,23 +613,15 @@ async def _stopped_downloads(package: ModuleType, lines: list[str], directory: P
         async with api.with_streaming_response.request_raw("GET", _URL, options=settings) as response:
             task = asyncio.create_task(response.stream_to(target, overwrite=True))
             await _mid_body(task)
-            closed = ""
-            match label:
-                case "cancelled":
-                    task.cancel()
-                case "token":
-                    settings.cancel_token.cancel()
-                case "closing":
-                    closed = f" aclose {await aoutcome(api.aclose)} then {_files(directory)}"
-                case _:
-                    pass
+            if label == "cancelled":
+                task.cancel()
             try:
                 result = await aoutcome(lambda: task)
             except asyncio.CancelledError:
                 result = "CancelledError"
             gate.set()
         await api.aclose()
-        lines.append(f"  async stopped {label} {result}{closed} {_files(directory)} {target.read_bytes()!r}")
+        lines.append(f"  async stopped {label} {result} {_files(directory)} {target.read_bytes()!r}")
     exchange.respond(raw_response(200, b"pong", "text/plain"))
     lines.append(f"  async stopped borrowed reused {(await http.get(_URL)).content!r}")
     await http.aclose()

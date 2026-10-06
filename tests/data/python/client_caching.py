@@ -786,10 +786,6 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
                     f"  refused 304 with {label} ! {describe(error)} "
                     f"{[describe(item) for item in error.secondary_errors]}"
                 )
-        cancelled = cache.options.CancelToken()
-        cancelled.cancel()
-        stopped = cache.options.RequestOptions(cancel_token=cancelled)
-        fetched(lines, "cancelled before lookup", lambda: helper.fetch(user_id=twenty, options=stopped))
         for label, method, fault, responses in (
             ("lookup failure", "get", OSError("disk"), ()),
             ("lookup result", "get", "entry", ()),

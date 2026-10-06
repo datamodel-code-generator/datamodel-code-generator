@@ -297,9 +297,8 @@ async def _async_faults(package: ModuleType, bodies: ModuleType, options: Module
         await _async_file_changes(api, bodies, replies, lines)
         await _async_direct_inputs(bodies, lines)
         await _async_file_metadata_errors(package, api, bodies, options, replies, lines)
-    for mode in ("native", "deadline", "cancel_token"):
-        for kind in ("length", "metadata", "multipart"):
-            await _cancel_partial(package, bodies, options, lines, mode=mode, kind=kind)
+    for kind in ("length", "metadata", "multipart"):
+        await _cancel_partial(package, bodies, options, lines, kind)
 
 
 async def _async_partial_capture(api: Any, bodies: ModuleType, lines: list[str]) -> None:
@@ -320,20 +319,15 @@ async def _async_partial_capture(api: Any, bodies: ModuleType, lines: list[str])
 
 
 async def _cancel_partial(
-    package: ModuleType, bodies: ModuleType, options: ModuleType, lines: list[str], *, mode: str, kind: str
+    package: ModuleType, bodies: ModuleType, options: ModuleType, lines: list[str], kind: str
 ) -> None:
+    """Cancel the caller's task while an owned attempt's cleanup awaits, and report what the cancellation left."""
     exchange = Exchange([])
     replies = _Replies(exchange)
     attempt = _Gated(length=8, fail=True, metadata=kind == "metadata")
-    token = options.CancelToken()
-    config = options.ClientOptions(
-        total_timeout=1.0 if mode == "deadline" else None,
-        cleanup_timeout=0.005 if mode == "native" else 0.2,
-        retry=options.RetryOptions(initial_delay=0),
-    )
+    config = options.ClientOptions(total_timeout=None, retry=options.RetryOptions(initial_delay=0))
     failures: list[BaseException] = []
-    async with exchange.async_client() as native:
-        api = package.AsyncClient(http_client=native, options=config)
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
         if kind == "multipart":
 
             async def broken(_context: object) -> _Attempt:  # noqa: RUF029
@@ -352,68 +346,30 @@ async def _cancel_partial(
             body = bodies.AsyncBodyFactory(_Factory((attempt,)).async_call)
             replies.reset(200)
 
-        async def call() -> None:
+        async def call() -> bool:
             try:
-                await api.request_raw(
-                    "PUT",
-                    "https://body.example.com/",
-                    body=body,
-                    options=options.RequestOptions(cancel_token=token, cleanup_timeout=10.0),
-                )
+                await api.request_raw("PUT", "https://body.example.com/", body=body)
             except BaseException as error:  # noqa: BLE001
                 failures.append(error)
+            return bool((task := asyncio.current_task()) and task.cancelling())
 
         caller = asyncio.create_task(call())
-        label = f"{mode} {kind} cleanup"
         try:
             await asyncio.wait_for(attempt.entered.wait(), 5)
-            if mode == "native":
-                caller.cancel("partial cleanup cancellation")
-                await asyncio.sleep(0)
-                caller.cancel("repeated cleanup cancellation")
-            elif mode == "cancel_token":
-                token.cancel()
-            await asyncio.wait_for(caller, 5)
-            lines.append(
-                f"  {label} before release"
-                f" closes={attempt.closes} finished={attempt.finished}"
-                f" sends={len(replies.requests)}"
-                f" failure={type(failures[0]).__name__}"
-            )
-            await arecord(lines, f"{label} drain pending", api.aclose)
-            attempt.proceed.set()
-            await api.aclose()
-
+            caller.cancel("partial cleanup cancellation")
+            await asyncio.sleep(0)
+            caller.cancel("repeated cleanup cancellation")
+            requested = await asyncio.wait_for(caller, 5)
             failure = failures[0]
-            secondary = getattr(failure, "secondary_errors", ())
-            related = (*secondary, *(() if (cause := getattr(failure, "cause", None)) is None else (cause,)))
-            observed = (
-                *related,
-                *(item for primary in related for item in getattr(primary, "secondary_errors", ())),
-            )
-            retained = (
-                None
-                if isinstance(failure, asyncio.CancelledError)
-                else any(item is attempt.late or getattr(item, "cause", None) is attempt.late for item in observed)
-            )
             lines.extend((
-                (
-                    f"    retained_late={retained}"
-                    f" no_cause_cycle={all(getattr(item, 'cause', None) is not failure for item in observed)}"
-                ),
-                (
-                    f"    released"
-                    f" closes={attempt.closes} finished={attempt.finished}"
-                    f" args={failure.args}"
-                    f" notes={tuple(getattr(failure, '__notes__', ()))}"
-                    f" cause={type(getattr(failure, 'cause', None)).__name__}"
-                    f" secondary={[type(item).__name__ for item in getattr(failure, 'secondary_errors', ())]}"
-                ),
+                f"  native {kind} cleanup cancelled closes={attempt.closes} finished={attempt.finished}"
+                f" sends={len(replies.requests)} failure={type(failure).__name__} cancel_requested={requested}",
+                f"    args={failure.args} notes={tuple(getattr(failure, '__notes__', ()))}"
+                f" secondary={[type(item).__name__ for item in getattr(failure, 'secondary_errors', ())]}",
             ))
         finally:
             attempt.proceed.set()
             await asyncio.wait_for(caller, 5)
-            await api.aclose()
 
 
 def _metadata_categories(

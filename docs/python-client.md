@@ -997,9 +997,7 @@ before its `deadline`, could never be waited out, so `start` raises `Configurati
 `field_path` `("poll_options", "interval")` before sending the create request. A wait a server delay makes longer
 than `max_wait`, or not shorter than what remains of the session's deadline or the options' deadline, raises
 `PollWaitLimitError` with the kind `wait` or `deadline`, the `required_wait`, and the `limit` before anything is sent;
-the handle stays as it was. A wait ends early for the options' `CancelToken` and the client's close, raising
-`RequestCancelledError`, or `ConfigurationError` with the reason `client_closed`, with the `operation_id` of the
-operation it waits to call, the poll's or the result fetch's, and the session's `parent_session_id`. Once the client is
+the handle stays as it was. Async waits propagate native task cancellation unchanged. Once the client is
 closed, every later `status` or `wait` that needs a poll or a result fetch raises `ConfigurationError` with the reason
 `client_closed`. `PollWaitLimitError.resume_state` holds a [checkpoint](#checkpoints-and-resume-of-operations) of the
 handle as it stood.
@@ -1532,9 +1530,8 @@ like any call. A stream then reads only the bytes its next event
 needs and owns the response until it ends, fails, or closes: close it with `with`, `async with`, `close()`, or
 `aclose()`, since leaving a loop early releases nothing. One consumer reads a stream at a time: a step, or a close,
 while another step runs raises `ProtocolStateError`, and so does every step after a failure or `close()`; after its end
-every step stops. Closing the client waits up to its `cleanup_timeout` for open streams, then closes them and raises
-`CleanupError` naming them as pending leases; their next step raises `ConfigurationError` with the reason
-`client_closed`.
+every step stops. Streams own their native response until it ends or the caller closes it. Close each stream
+explicitly before closing an owning root; a borrowed native client retains its caller's lifetime.
 
 ### Framing and events
 
@@ -1968,8 +1965,8 @@ the session's end emits `stream_end`.
 | `with`, `async with` | Closes the session on exit |
 | `progress` | The session's `messages_sent` and `messages_received` |
 
-The session owns the connection until it closes or fails, and closing the client closes it after the client's cleanup
-wait. One `receive` waits at a time: another raises `ConcurrentReceiveError`, while one send may run beside it, and
+The session owns the connection until it closes or fails; closing the client leaves an open session to its owner.
+One `receive` waits at a time: another raises `ConcurrentReceiveError`, while one send may run beside it, and
 sends go one at a time in arrival order. Cancelling the task of an asyncio `receive`, as `asyncio.wait_for` does, leaves
 the session usable, since whole messages are read; a cancelled `send` or `ping` fails the session, since a message may
 be half written. A received message of another frame kind, or one that does not decode, raises
@@ -2191,7 +2188,7 @@ Concurrent custom-store writes use last-completing replacement.
     identity changes from call to call needs a client per partition. A view's or a call's own `auth` therefore fails
     an authenticated fetch with `ConfigurationError(field_path=('options', 'auth'),
     reason='security_partition')`; `auth=None` stays allowed for anonymous fetches. Credentials the SDK never sees,
-    such as a client certificate, a borrowed HTTP client's own headers, or a transport adapter that authenticates, make
+    such as a client certificate, or a borrowed HTTP client's own headers or authenticating transport, make
     a call look anonymous: give each such identity its own `credential_partition`, or its own store.
 
 ### Stores
@@ -2611,19 +2608,19 @@ fields, a missing required field, a field of another media type, or fields for a
 
 ```text
 a body and fields ! TypeError: create_pet() takes a body or its field arguments, not both: 'name' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 fields missing a required one ! TypeError: create_pet() missing required field arguments for application/json: 'kind' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 a field of another media ! TypeError: create_pet() takes no such field arguments for application/x-www-form-urlencoded: 'kind' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 fields without a media type ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='missing', field_path='media_type') [operation_id='createPet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 fields for text ! TypeError: log_visit() takes no field arguments for text/plain: 'note' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId}/visits origin=None attempts=0 request_id=None timed=True context={}
 update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', call_id='<call>', reason='without_body', field_path='media_type') [operation_id='updatePet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] without_body
 ```
@@ -2685,7 +2682,7 @@ E_CONFIG_VALUE binding /paths/~1orders~1{orderId}/get/responses/200: The client 
 ## Timeouts and cancellation
 
 The generated package's `options` module provides `ClientOptions`, `RequestOptions`, `TimeoutOptions`, `Deadline`,
-`CancelToken`, and `Clock`. These settings apply to typed operations and `request_raw`, including their response and
+`Clock`, and native task cancellation. These settings apply to typed operations and `request_raw`, including their response and
 streaming views. The following examples use a generated package named `pets` and take the service URL from their
 caller.
 
@@ -2694,10 +2691,8 @@ caller.
 | `timeout` | `TimeoutOptions(connect=5, read=30, write=30, pool=5)` | Native I/O phase limits, in seconds |
 | `total_timeout` | `60` | Relative budget from call entry through encoding, callbacks, sending, reading, and decoding |
 | `deadline` | `None` | An absolute monotonic deadline created by `Deadline.after(seconds)` |
-| `cancel_token` | `None` | An explicit cancellation signal shared with the call |
 | `stream_idle_timeout` | `60` | Read inactivity limit after a streaming response is handed to the caller |
 | `stream_total_timeout` | `None` | Total stream lifetime after handoff |
-| `cleanup_timeout` | `5` | Separate positive, finite budget for releasing resources |
 | `limiter` | `None` | An application-provided `Limiter` or `AsyncLimiter` |
 | `clock` | `Clock()`, the system clock | Client only: the time and jitter sources of every call, described in [Clocks and retry jitter](#clocks-and-retry-jitter) |
 
@@ -2709,11 +2704,11 @@ of `3/5/7/5` seconds; a request that sets only `pool=2` changes them to `3/5/7/2
 `timeout=None` clears all four phase limits; `TimeoutOptions(read=None)` clears just the read limit. Neither clears
 the total budget. `total_timeout=None` clears the inherited relative limit, and `deadline=None` clears the inherited
 absolute deadline. With both present, the earlier deadline applies. `stream_idle_timeout=None` and
-`stream_total_timeout=None` clear only their respective stream limits. `cancel_token=None` and `limiter=None` remove
-those inherited objects.
+`stream_total_timeout=None` clear only their respective stream limits. `limiter=None` removes the inherited
+limiter.
 
 Durations must be finite and nonnegative; booleans are rejected.
-`cleanup_timeout` must be strictly positive and cannot be `None`. Invalid values raise `ConfigurationError` with the
+Invalid timeout values raise `ConfigurationError` with the
 option's `field_path`, such as `("timeout", "read")`. `total_timeout=0` raises `APITimeoutError` with the reason
 `deadline_exceeded` before body factories, limiter acquisition, or sending; hooks still receive `call_start` and
 `call_end` with zero attempts.
@@ -2733,9 +2728,9 @@ from pets.options import Deadline, RequestOptions, TimeoutOptions
 def read_with_budget(client: Client, url: str) -> bytes:
     deadline = Deadline.after(10)
     options = RequestOptions(total_timeout=20, deadline=deadline, timeout=TimeoutOptions(read=3))
-    with client.with_options(options) as view:
-        response = view.request_raw("GET", url, options=RequestOptions(timeout=TimeoutOptions(connect=2)))
-        return response.read()
+    view = client.with_options(options)
+    response = view.request_raw("GET", url, options=RequestOptions(timeout=TimeoutOptions(connect=2)))
+    return response.read()
 ```
 
 This call has at most the remaining portion of the ten-second absolute budget. Its connect and read phases also
@@ -2755,49 +2750,23 @@ deadline; the client then raises `APITimeoutError` with the reason `deadline_exc
 work. Native read caps are latched when acquisition or body reading begins, so a sequence of reads or HTTP/2 stream
 processing can overrun a total deadline. There is no background thread that forcibly interrupts a synchronous call.
 
-Async clients require asyncio. Like `asyncio.timeout`, they stop a call at its deadline, explicit cancellation, or
-client closing by cancelling the task that awaits it, and turn that cancellation into the matching SDK error. Native
-task cancellation propagates as `asyncio.CancelledError`; it is never converted into an SDK error, even when a result
-becomes ready at the same time or a callback suppresses or converts it. A hook, limiter, or body factory that
-suppresses cancellation delays the stop until it returns; the call then ends at the SDK's next boundary.
+Async clients use HTTPX2's native backend and run calls in the caller's task. Native task cancellation propagates
+unchanged. Total deadlines are cooperative around preparation and user callbacks, and each attempt clamps its
+native phase timeouts to the remaining total deadline. An expired deadline never authorizes a later send.
 
-### Explicit cancellation
+### Native cancellation
 
-`CancelToken.cancel()` is thread-safe and idempotent. Its readonly `cancelled` property records whether cancellation
-has been requested; a cancelled token stays cancelled and can stop more than one call. Use a fresh token for later
-work that should proceed.
-
-```python
-from pets import Client
-from pets.errors import RequestCancelledError
-from pets.options import CancelToken, RequestOptions
-
-
-def cancel_before_send(client: Client, url: str) -> int:
-    token = CancelToken()
-    token.cancel()
-    try:
-        client.request_raw("GET", url, options=RequestOptions(cancel_token=token))
-    except RequestCancelledError as error:
-        return error.attempt_count
-    raise RuntimeError("The cancelled call unexpectedly completed")
-```
-
-This example returns `0`. In a running application, another thread or an asyncio task may hold the same token and
-call `cancel()`. Sync calls observe it when control returns to the SDK; async waits check it at intervals of at most
-50 ms. Calls without a token perform no token polling. `RequestCancelledError` carries `source="cancel_token"` and
-the request's `delivery_state`.
-
-When outcomes race, native cancellation or `KeyboardInterrupt` takes precedence, followed by an observed token
-cancellation, client closing, deadline expiry, and the operation result. `SystemExit` also propagates unchanged.
-Cleanup preserves the selected error or native interruption.
+Async calls run in their caller's task. Cancel that task through the native backend; its cancellation exception
+propagates unchanged. The SDK never uncancels the task, selects a competing outcome, or wraps a `BaseException`.
+Responses, permits, and bodies are released in `finally`, and user hook callbacks run in the caller's cancellation
+scope. Synchronous preparation and callbacks remain cooperative.
 
 ### Streaming after handoff
 
 A streaming call uses its ordinary call deadline while acquiring the response. After the context manager yields
 the handle, `stream_idle_timeout` and `stream_total_timeout` apply. The completed acquisition's remaining time is
-not carried into body reads. The ordinary 30-second read default does not apply to this stage; an explicitly
-configured `TimeoutOptions(read=...)` adds a cap alongside the stream limits. The smallest active cap wins.
+not carried into the stream's deadline. Each native read keeps the read timeout its request was sent with, the read
+phase limit capped by the time the call had left, and the idle limit is checked when each read returns.
 
 ```python
 from typing import BinaryIO
@@ -2814,24 +2783,17 @@ def download(client: Client, url: str, destination: BinaryIO) -> None:
 
 Here acquisition has ten seconds, a stalled body read has sixty seconds, and the stream has five minutes after handoff.
 Idle expiry raises a read `APITimeoutError` with the reason `phase_timeout`; stream-total expiry raises
-`APITimeoutError` with the reason `deadline_exceeded` and `phase="stream"`. Sync streams check total expiry at SDK chunk
-boundaries and retain the native read-latching limits described above. Async streams apply the bounds to each
-asynchronous read. Always leave the response's context manager, including when abandoning a download early.
+`APITimeoutError` with the reason `deadline_exceeded` and `phase="stream"`. Sync and async streams check both limits at
+SDK chunk boundaries. Always leave the response's context manager, including when abandoning a download early.
 
 `stream_to(path)` writes the decoded body to a new temporary file beside the target and moves it there only once the
 body is complete. A handle whose body is already being read or is gone raises `ConfigurationError` with the reason
 `response_consumed` before any file work, and an existing target raises `FileExistsError` unless `overwrite=True`. A
-failure while the body streams closes the response, removes the temporary file within `cleanup_timeout` (later, after
-the failure propagates, when removal takes longer), and leaves an existing target unchanged.
-
-An async handle does this file work on a disk thread of its own, started by the download and stopped when it ends, so
-the event loop never blocks on the disk: it gathers the body into writes of about 64 KiB, each running while the next
-bytes are read. Creating the file and waiting for a write count against `stream_total_timeout`, the cancel token, and
-client closing, but not against `stream_idle_timeout` or `TimeoutOptions(read=...)`, which measure only the wait for
-body bytes. Once the whole body has been read and written, the write of its last bytes under 64 KiB, the close, and
-the move run to their end; only native task cancellation interrupts them, and the move may still complete after the
-cancellation. Writing a saved body of a buffered response is not bounded by the call at all. Closing the client waits,
-within `cleanup_timeout`, for a download's file work to finish.
+Failure while the body streams closes the response, removes its temporary file in `finally`, and leaves an
+existing target unchanged. Async file operations run one at a time in a thread, and a cancelled caller still waits for
+the running one, so file work finishes before the file is released, closed or rewound. Creating a file
+and writing streamed bytes count against the stream's total deadline, while idle timeout measures network waits.
+Saved buffered bytes remain usable after the call completes.
 
 `stream_to(file_object)` writes to a borrowed file on the calling thread or event loop and never closes, seeks, or
 truncates it; bytes already written stay there. A failed write closes the response before the failure propagates.
@@ -2899,8 +2861,8 @@ There is no default application limiter. Configure one on a client, view, or req
 Their `release()` methods are respectively synchronous and asynchronous, and must be idempotent. A client refuses a
 limiter of the opposite mode with `ConfigurationError` before I/O. The Protocols are exported from `pets.hooks`.
 
-The immutable `LimiterContext` contains exactly `operation_id`, `origin`, `call_id`, `parent_session_id`,
-`remaining_timeout`, and `cancel_token`. The origin has no path or query, and `remaining_timeout` is a snapshot taken
+The immutable `LimiterContext` contains exactly `operation_id`, `origin`, `call_id`, `parent_session_id`, and
+`remaining_timeout`. The origin has no path or query, and `remaining_timeout` is a snapshot taken
 on entry. Contexts carry no credentials, headers, or bodies. A synchronous limiter must cooperate with these limits
 when it blocks; the SDK cannot forcibly interrupt its callback. Async acquisition is bounded by the call itself.
 
@@ -2940,13 +2902,13 @@ class SemaphoreLimiter:
 
 async def read_limited(client: AsyncClient, urls: tuple[str, ...]) -> tuple[bytes, ...]:
     limiter: AsyncLimiter = SemaphoreLimiter(4)
-    async with client.with_options(RequestOptions(limiter=limiter)) as view:
+    view = client.with_options(RequestOptions(limiter=limiter))
 
-        async def read(url: str) -> bytes:
-            response = await view.request_raw("GET", url)
-            return await response.read()
+    async def read(url: str) -> bytes:
+        response = await view.request_raw("GET", url)
+        return await response.read()
 
-        return tuple(await asyncio.gather(*(read(url) for url in urls)))
+    return tuple(await asyncio.gather(*(read(url) for url in urls)))
 ```
 
 The SDK waits for a permit before opening the request body and retains it until the response is released. A streamed
@@ -2956,8 +2918,7 @@ callback returns after cancellation. The SDK releases permits but does not own t
 
 Hooks observe `limiter_wait` followed by `limiter_acquired` when acquisition succeeds. Acquisition failure raises
 `SDKError` with the reason `limiter_failed` and the callback exception as `cause`. Release failure is recorded as the
-same error: it is the `cause` of a `CleanupError` when no earlier error exists, or a secondary error on the error
-already propagating.
+original release exception when no earlier error exists, or a secondary error on the error already propagating.
 
 ### Counters and cleanup
 
@@ -2966,20 +2927,13 @@ before sending do not increment it. `ResponseInfo` and every `SDKError` expose `
 `request_id`, and terminal call events expose `attempt_count`. Errors expose these measurements even when no response
 arrived: their `info` remains `None` in that case.
 
-Closing a client changes it to `CLOSING` immediately. New work is refused, and active calls or stream reads raise
-`ConfigurationError` with the reason `client_closed` when the SDK observes closing. A view's close affects that view;
-closing the owning client affects its views too. Already-buffered responses remain usable.
+Closing a root refuses new calls from the root and its views. It closes its created native HTTP client once;
+a borrowed native client and borrowed providers retain the caller's lifetime. Buffered responses remain readable,
+and callers close their streaming responses with `with` or `async with`.
 
-`cleanup_timeout` bounds the SDK's wait to release responses, body resources, permits, and owned work. It does not
-extend the original call deadline or authorize another send. Cleanup failures are attached to an SDK error's
-`secondary_errors`, or as safe notes on a native exception when that Python version supports notes. They do not
-replace the primary failure. Unfinished cleanup stays owned and observed; a repeated `close()` or `aclose()` can wait
-again. A close that exhausts its budget raises `CleanupError` with the unfinished counts. Blocking synchronous cleanup
-has the same cooperative limits as other sync callbacks.
-
-Cancelling an async file upload can return before its current disk operation finishes. The SDK retains that work,
-keeps an open-file input claimed until it settles, and closes an owned handle once. Borrowed handles remain open.
-`aclose()` includes this pending work in its cleanup wait.
+Responses, body attempts and limiter permits are released in `finally`. A later release failure is attached to the
+primary error; with no primary error, the release failure propagates. Async file work runs in a thread and settles
+before its file is released, closed or rewound, also when the caller is cancelled.
 
 ## Errors
 
@@ -3037,9 +2991,10 @@ body-factory programming errors, cancellation, and logical deadlines never resta
 | `retry_on_pool_timeout` | `False` | Avoid amplifying pool contention unless explicitly enabled |
 
 GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default. POST, PATCH, and other methods require an explicit
-`retry_safety="idempotent"` declaration or a valid server key contract. Proven unsent connection failures from the
-SDK-owned native transport can permit otherwise unsafe methods; a custom adapter's reported `NOT_SENT` alone
-cannot establish that proof. `retry_safety="never"` prohibits every resend, including a proven unsent request.
+`retry_safety="idempotent"` declaration or a valid server key contract. A native `ConnectError`, `ConnectTimeout`, or
+`PoolTimeout` leaves the request `NOT_SENT` and can permit otherwise unsafe methods; every other failure after the send
+started is `MAYBE_SENT` and is never sent again. `retry_safety="never"` prohibits every resend, including an unsent
+request.
 TLS/certificate and configuration errors, permanent DNS failures, and unclassified failures are not candidates.
 
 A server delay is a minimum: the client never shortens it to fit `max_retry_after` or the remaining deadline. A
@@ -3062,9 +3017,9 @@ def fetch_with_retries(client: Client, url: str) -> bytes:
 ```
 
 Buffered and streaming raw APIs return the final HTTP response when status retries end, including non-2xx statuses.
-Transport, policy, deadline, and cancellation failures still raise. A hook failure, or a response that cannot be
-released within `cleanup_timeout`, stops a planned retry after its response was discarded: the call then raises that
-response's `APIStatusError` with `retry_stop_reason="callback_failure"` and the failure among its secondary errors.
+Transport, policy, deadline, and cancellation failures still raise. A hook failure, or a response release failure,
+stops a planned retry after its response was discarded: the call then raises that response's `APIStatusError` with
+`retry_stop_reason="callback_failure"` and the failure among its secondary errors.
 Typed operations retain final response metadata in their `APIStatusError`. A streaming response can retry during
 acquisition; after handoff, body failures terminate that stream and never issue another request.
 
@@ -3276,7 +3231,7 @@ bodyless: ordinary and `with_response` calls return `None` data for an empty fin
 
 `TransportOptions` belongs only to `ClientOptions`; it cannot be set on a view or request. Its effective defaults are
 `verify=True`, `ssl_context=None`, `proxy=None`, `trust_env=True`, `http2=False`, `max_connections=100`,
-`max_keepalive_connections=20`, `keepalive_expiry=5`, and `retry_owner="sdk"`. Supplying an SSLContext uses its CA,
+`max_keepalive_connections=20`, and `keepalive_expiry=5`. Supplying an SSLContext uses its CA,
 verification, and client certificate settings and rejects any explicit `verify` override. Proxy/environment/TLS
 settings follow HTTPX2 environment handling by default, preserving native system trust. With `trust_env=False`,
 HTTPX2 environment configuration is disabled while native TLS trust behavior is preserved. Caller `ssl_context` or
@@ -3304,9 +3259,10 @@ verification enabled. Omitting `trust_env` keeps its default of `True`, so nativ
 effective. Set `trust_env=False` on `TransportOptions` to opt out explicitly.
 
 An injected native client's pool/proxy/TLS settings remain its own, and incompatible SDK construction settings are
-rejected. Borrowed clients and adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
-The default native transport has no internal retries. `retry_owner="transport"` requires an explicitly injected
-adapter with the internal retry-count, deadline, and body-safety contract and disables SDK retry decisions.
+rejected. The root closes only its created native client, once; a borrowed native client is never closed by the SDK.
+Views share their root's core and its ownership. A borrowed client's auth, cookies, headers and query defaults are
+not merged into SDK requests. Its native event hooks retain HTTPX2 semantics. SDK sends explicitly disable native
+auth and redirect following; the SDK's bounded retry and origin policies govern its calls.
 
 ## Explicit authentication and request signing
 
@@ -3334,8 +3290,8 @@ from pets.options import RequestOptions
 
 def authenticated_get(client: Client, token: str) -> bytes:
     provider = StaticTokenProvider(AccessToken(token, scopes=None))
-    with client.with_options(RequestOptions(auth=AuthConfig({"bearer": provider}))) as view:
-        return view.auth.bearer()
+    view = client.with_options(RequestOptions(auth=AuthConfig({"bearer": provider})))
+    return view.auth.bearer()
 ```
 
 `AccessToken.scopes` records token metadata: `None` means unknown grants and `()` means known empty grants.
@@ -3359,8 +3315,8 @@ def async_credentials(token: str) -> AuthConfig:
 
 
 async def authenticated_get_async(client: AsyncClient, token: str) -> bytes:
-    async with client.with_options(RequestOptions(auth=async_credentials(token))) as view:
-        return await view.auth.bearer()
+    view = client.with_options(RequestOptions(auth=async_credentials(token)))
+    return await view.auth.bearer()
 ```
 
 `ApiKeyCredential(value)` uses its declared header, query, or cookie name. `BasicCredential(username, password)` uses
@@ -3379,8 +3335,8 @@ from pets.options import RequestOptions
 
 def environment_get(client: Client, variable_name: str) -> bytes:
     provider = EnvironmentCredentialProvider(variable_name, kind="api_key")
-    with client.with_options(RequestOptions(auth=AuthConfig({"header_key": provider}))) as view:
-        return view.auth.api_key_header()
+    view = client.with_options(RequestOptions(auth=AuthConfig({"header_key": provider})))
+    return view.auth.api_key_header()
 ```
 
 Custom providers implement the public structural Protocol. Callback failures retain their cause in an `AuthError` with
@@ -3401,11 +3357,8 @@ class ApplicationKeyProvider:
         return ApiKeyCredential(self._resolve())
 ```
 
-Providers are borrowed by default. `OwnedCredentialProvider(provider)` explicitly transfers a closeable provider to
-the root client's scope; the generic wrapper preserves the concrete provider type. Root close drains active calls and
-closes each owned identity once, independently of transport ownership. Closing a `with_options` view does not close
-shared providers. Retained asynchronous cleanup can outlive a cleanup timeout and is drained by a later close.
-Never wrap the same stateful provider in independent roots unless its own lifecycle supports that arrangement.
+Providers retain their caller's lifetime. Close a stateful provider explicitly after every root and view using it has
+finished. Client close never transfers or closes a provider.
 
 ### Anonymous calls, origins, and recovery
 
@@ -3491,8 +3444,8 @@ class PayloadSigner:
 
 def signed_upload(client: Client, origin: str, key: bytes, payload: bytes) -> bytes:
     auth = AuthConfig({}, allowed_origins=(origin,), send_on_anonymous=True, signers=(PayloadSigner(key, origin),))
-    with client.with_options(RequestOptions(auth=auth)) as view:
-        return view.auth.signed_body(body=payload)
+    view = client.with_options(RequestOptions(auth=auth))
+    return view.auth.signed_body(body=payload)
 ```
 
 This example defines its own canonical input; a service's signature protocol must define the same bytes. Signatures
@@ -3523,7 +3476,7 @@ at most thirty seconds, left acquires a new one. A token without `expires_in` is
 
 ```python
 from pets import Client
-from pets.auth import AuthConfig, ClientCredentialsProvider, CredentialProvider, OwnedCredentialProvider
+from pets.auth import AuthConfig, ClientCredentialsProvider, CredentialProvider
 from pets.options import ClientOptions
 
 
@@ -3534,7 +3487,7 @@ def service_client(secret: CredentialProvider) -> Client:
         client_secret=secret,
         scopes=("pets.read",),
     )
-    return Client(options=ClientOptions(auth=AuthConfig({"oauth": OwnedCredentialProvider(provider)})))
+    return Client(options=ClientOptions(auth=AuthConfig({"oauth": provider})))
 ```
 
 The token request sends the configured `scopes` in canonical order, and `audience` when one is configured. The client
@@ -3557,7 +3510,7 @@ unusable response, or a transport failure raises `AuthError` with the reason `oa
 `get` returns the current token, acquiring one when none is usable; `refresh` acquires a new one, unless another caller
 replaced the token while this one waited for the lock; `invalidate(version)` forgets the held token only if it is that
 version. Closing the provider closes an owned token transport, and later calls raise `AuthError` with the reason
-`provider_closed`; a client closes a provider it owns through `OwnedCredentialProvider`. The async provider belongs to
+`provider_closed`; close the provider explicitly when its users have finished. The async provider belongs to
 the event loop it was created on or first used from.
 
 `client_secret_basic` (the default) and `client_secret_post` take a `client_secret` provider returning an
@@ -3565,14 +3518,13 @@ the event loop it was created on or first used from.
 origin and the scheme `oauth_client_secret`. The token endpoint must be HTTPS; plain HTTP to a loopback host requires
 `OAuthProviderOptions(allow_insecure_loopback=True)`.
 
-Token requests use a transport the provider owns, separate from every client: an HTTPX2 client created at the first
-token request from `OAuthProviderOptions.transport`, or an adapter passed as `token_transport`, which is borrowed unless
-wrapped in `OwnedTransportAdapter`. Its settings must verify certificates and host names and leave retries to the SDK,
-and an injected adapter must declare `internal_retry_limit=0`. Token requests never follow redirects or retry, and
-closing the provider, or leaving its `with` block, closes an owned transport. `refresh_timeout` (30 seconds by default)
+Token requests use an HTTPX2 client separate from every API client: one the provider creates at the first token
+request from `OAuthProviderOptions.transport`, or a mode-correct one passed as `http_client`, which stays borrowed.
+Its settings must verify certificates and host names. Token requests never follow redirects or retry, and closing the
+provider, or leaving its `with` block, closes only a client it created. `refresh_timeout` (30 seconds by default)
 bounds each token request, the client secret lookup included; `phase_timeout` caps connecting, reading, writing, and
 pool waits at 5, 15, 15, and 5 seconds unless overridden. Responses are read up to 64 KiB and must be UTF-8 JSON
-objects. Only a transport that declares delivery evidence can prove that a failed request was never sent. Errors keep
+objects. A failed token request is `NOT_SENT` only for a native connect or pool failure. Errors keep
 no response body or error description, but a transport failure's cause is the native exception, which can hold the
 token request and its client authentication, so apply your own policy before logging causes.
 
@@ -3586,7 +3538,7 @@ the provider's lock, as the client credentials provider acquires.
 
 ```python
 from pets import Client
-from pets.auth import AuthConfig, OwnedCredentialProvider, RefreshTokenProvider, TokenSet
+from pets.auth import AuthConfig, RefreshTokenProvider, TokenSet
 from pets.options import ClientOptions
 
 
@@ -3601,7 +3553,7 @@ def user_client(tokens: TokenSet) -> Client:
         on_token_refreshed=save,
         client_auth_method="none",
     )
-    return Client(options=ClientOptions(auth=AuthConfig({"oauth": OwnedCredentialProvider(provider)})))
+    return Client(options=ClientOptions(auth=AuthConfig({"oauth": provider})))
 ```
 
 The refresh request sends the refresh token with the client authentication, never the configured `scopes` or `audience`:
@@ -3929,7 +3881,8 @@ arguments, including that `verifier` has a callable `verify` (or `ConfigurationE
 tuple of pairs in received order, the key set, `now`, and the resolved limits; it never reads the keys. The verifier
 must authenticate the whole body and every fact it returns, honor `max_signatures`, and raise `WebhookVerificationError`
 when verification fails; every error it raises, including cancellation, propagates unchanged. Before decoding, the helper
-raises `AdapterContractError` with `delivery_state=NOT_SENT`, without decoding, when the result is not a
+raises `ConfigurationError` with `field_path=("verifier",)`, reason `invalid_result`, and `delivery_state=NOT_SENT`,
+without decoding, when the result is not a
 `VerifiedSignature` (an awaitable result is closed unawaited), its `matched_key_id` is not a nonempty string, a
 `required` fact is missing, not a nonempty string delivery id, or not an aware datetime, or a `none` fact is not
 `None`. A returned timestamp is then checked against the timestamp window, as for builtin signatures.

@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Final, Literal, Protocol, TypeAlias
 
 from .coding import CHUNK
-from .disk import DiskWorker, carried, raise_late
+from .disk import DiskWorker
 from .errors import ConfigurationError, SDKError, add_secondary, body_failure
 
 _SHA256_BYTES: Final = 32
@@ -123,10 +123,10 @@ class AsyncBodyAttemptFactory(Protocol):
 
 
 class AsyncBodyCleanup(Protocol):
-    """Retain abnormal body cleanup under the logical call's existing cleanup budget."""
+    """Release a body resource, keeping its failure beside an error that is already propagating."""
 
     async def __call__(self, operation: Callable[[], Awaitable[None]], *, error: BaseException | None = None) -> bool:
-        """Join cleanup or retain it for the owning client's later drain."""
+        """Run the release and return whether it succeeded."""
         ...
 
 
@@ -808,10 +808,7 @@ class _AsyncOpenFile:
             raise
         try:
             length = await self.worker.run(_remaining, self.file)
-        except BaseException as error:
-            if isinstance(error, asyncio.CancelledError):
-                self.worker.defer(carried(self.release()), release=True)
-                raise
+        except BaseException as error:  # noqa: BLE001
             failure = _failed(error) if isinstance(error, OSError) else error
             try:
                 await self.release()
@@ -823,16 +820,12 @@ class _AsyncOpenFile:
 
     async def release(self) -> None:
         """End a call's read once its disk work settles: close an owned file, then let the next call read."""
-        late: tuple[BaseException, ...] = ()
         try:
-            late = await self.worker.settled()
             if self.ownership == "owned":
                 self.claim.used = True
                 await self.worker.run(self.file.close, cleanup=True)
         finally:
             self.claim.lock.release()
-            self.worker.release()
-        raise_late(late)
 
 
 class _AsyncPathFile:
@@ -851,42 +844,27 @@ class _AsyncPathFile:
         try:
             file = await self.worker.run(_opened, self.path, self.identity, discard=_close_file)
         except BaseException as error:
-            if isinstance(error, asyncio.CancelledError):
-                self.worker.defer(carried(self._settled_release()), release=True)
-                raise
-            self.worker.release()
             if isinstance(error, OSError):
                 raise _failed(error) from None
             raise
         return _AsyncFileAttempt(file, context, self.identity[2], self.worker, lambda: self.release(file))
 
-    async def _settled_release(self) -> None:
-        late: tuple[BaseException, ...] = ()
-        try:
-            late = await self.worker.settled()
-        finally:
-            self.worker.release()
-        raise_late(late)
-
     async def release(self, file: BinaryIO) -> None:
         """Close the attempt's file before a stopped worker can shut down."""
-        try:
-            await self.worker.run(file.close, cleanup=True)
-        finally:
-            self.worker.release()
+        await self.worker.run(file.close, cleanup=True)
 
 
 class AsyncFileBody:
-    """A file an asyncio client sends as a whole body, read as FileBody reads, on one worker thread of its own.
+    """A file an asyncio client sends as a whole body, read as FileBody reads, one file operation at a time in a thread.
 
-    The worker reads one chunk at a time. Closing the body stops it; closing a client does not.
+    A cancelled read finishes before the file is released. Closing the body stops it; closing a client does not.
     """
 
     __slots__ = ("_source", "_worker")
 
     def __init__(self, file: BinaryIO, *, ownership: Ownership = "borrowed") -> None:
         """Send an open binary file, borrowed unless its ownership moves to the client."""
-        self._worker = DiskWorker("AsyncFileBody")
+        self._worker = DiskWorker()
         self._source: _AsyncOpenFile | _AsyncPathFile = _AsyncOpenFile(file, ownership, self._worker)
 
     @classmethod
@@ -918,7 +896,7 @@ class _AsyncPathFileBody(AsyncFileBody):
     __slots__ = ()
 
     def __init__(self, path: Path) -> None:
-        self._worker = DiskWorker("AsyncFileBody")
+        self._worker = DiskWorker()
         self._source = _AsyncPathFile(path, self._worker)
 
 
@@ -1164,10 +1142,7 @@ class _AsyncFileCall:
     async def capture(self) -> None:
         try:
             self._offset, self._length = await self._source.worker.run(_snapshot, self._source.file)
-        except BaseException as error:
-            if isinstance(error, asyncio.CancelledError):
-                self._source.worker.defer(carried(self.aclose()), release=True)
-                raise
+        except BaseException as error:  # noqa: BLE001
             failure = _failed(error) if isinstance(error, OSError) else error
             try:
                 await self.aclose()

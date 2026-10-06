@@ -11,8 +11,6 @@ from typing import Final, final
 from ..model_codecs.unset import UNSET, Unset
 from .errors import ConfigurationError
 
-TOKEN_INTERVAL: Final = 0.05
-
 
 def finite_number(value: object) -> float | None:
     """Return a number as a finite float, or None for booleans, other types, and values no finite float holds."""
@@ -141,27 +139,6 @@ def wait_left(left: float, end: float) -> float:
     A NaN read from the clock stays NaN, which every wait treats as no time left.
     """
     return min(left, end - _time.monotonic())
-
-
-class CancelToken:
-    """An explicit cancellation signal that can be set safely from any thread."""
-
-    __slots__ = ("_event",)
-
-    def __init__(self) -> None:
-        """Start with no cancellation requested."""
-        from threading import Event  # noqa: PLC0415
-
-        self._event = Event()
-
-    @property
-    def cancelled(self) -> bool:
-        """Return whether cancellation has been requested."""
-        return self._event.is_set()
-
-    def cancel(self) -> None:
-        """Request cancellation; repeated calls leave the same signal set."""
-        self._event.set()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

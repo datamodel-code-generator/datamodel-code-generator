@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 
 from typing_extensions import TypeVar
 
-from ..client.errors import AdapterContractError, DeliveryState
+from ..client.errors import ConfigurationError, DeliveryState
 from .webhook_events import (
     EventPlan,
     Facts,
@@ -87,7 +87,7 @@ def _kept(plan: AdapterPlan[T], signature: object) -> tuple[str | None, datetime
 
 
 def _fenced(plan: AdapterPlan[T], signature: object) -> tuple[str | None, datetime | None, str]:
-    """Return a verifier's facts when it keeps the contract, or raise AdapterContractError with nothing sent.
+    """Return a verifier's facts when it keeps the contract, or raise ConfigurationError with nothing sent.
 
     A coroutine result is closed unawaited. The error is raised outside any handler, so it keeps no context.
     """
@@ -95,7 +95,7 @@ def _fenced(plan: AdapterPlan[T], signature: object) -> tuple[str | None, dateti
         return kept
     if type(signature) is CoroutineType:
         signature.close()
-    raise AdapterContractError(delivery_state=DeliveryState.NOT_SENT)
+    raise ConfigurationError(field_path=("verifier",), reason="invalid_result", delivery_state=DeliveryState.NOT_SENT)
 
 
 def _authenticate(  # ruff: ignore[too-many-arguments]

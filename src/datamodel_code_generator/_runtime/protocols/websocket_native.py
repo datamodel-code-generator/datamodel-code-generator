@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Final, cast
 
+import anyio
 from websockets.asyncio.client import ClientConnection as _AsyncClientConnection
 from websockets.asyncio.client import connect as _aconnect
 from websockets.exceptions import (
@@ -42,8 +43,7 @@ from websockets.uri import parse_uri
 
 from ..client.errors import APIConnectionError, APITimeoutError, ConfigurationError, DeliveryState, ProtocolSizeError
 from ..client.responses import HeadersView
-from ..client.timing import TOKEN_INTERVAL, real_end, wait_left
-from ..client.transports import attempt_trace
+from ..client.timing import real_end, wait_left
 from .errors import (
     MAX_RAW_PREFIX,
     HandshakeCondition,
@@ -58,14 +58,12 @@ from .websocket_types import WSFrame
 
 if TYPE_CHECKING:
     import socket
-    from collections.abc import Callable
 
     from websockets.client import ClientProtocol
     from websockets.datastructures import HeadersLike
     from websockets.http11 import Response
 
     from ..client.timing import Deadline
-    from ..client.transports import AttemptIOContext, TransportTraceSink
     from .websocket_types import ResolvedWebSocketTransportOptions, ResolvedWSOptions, WebSocketOpenRequest
 
 __all__ = ("AsyncNativeConnection", "AsyncNativeConnector", "NativeConnection", "NativeConnector")
@@ -84,14 +82,8 @@ _CONDITIONS: Final[tuple[tuple[type[InvalidHandshake], HandshakeCondition], ...]
 class _Evidence:
     """How far one open got: whether its handshake request started, and whether its response headers arrived."""
 
-    context: AttemptIOContext
     entered: bool = False
     responded: bool = False
-
-    @property
-    def trace(self) -> TransportTraceSink:
-        """Return the sink the open reports to."""
-        return self.context.trace
 
     @property
     def delivery(self) -> DeliveryState:
@@ -178,7 +170,6 @@ class _Connection(ClientConnection):
         """Perform the opening handshake, raising HandshakeResponse for a response other than 101."""
         evidence = _OPENING.get()
         evidence.entered = True
-        evidence.trace.request_headers_started()
         try:
             super().handshake(additional_headers, user_agent_header, timeout)
         except InvalidStatus as error:
@@ -196,7 +187,6 @@ class _AsyncConnection(_AsyncClientConnection):
         """Perform the opening handshake, raising HandshakeResponse for a response other than 101."""
         evidence = _OPENING.get()
         evidence.entered = True
-        evidence.trace.request_headers_started()
         try:
             await super().handshake(additional_headers, user_agent_header)
         except InvalidStatus as error:
@@ -211,8 +201,6 @@ def _failure(error: Exception, evidence: _Evidence, timeout: float | None) -> Ex
     A timeout is the open's cap expiring, unless the open had none and the operating system timed out.
     """
     delivery = evidence.delivery
-    if delivery is DeliveryState.NOT_SENT:
-        attempt_trace(evidence.context).proven_not_sent = True
     failure: Exception = APIConnectionError(delivery_state=delivery, phase="connect", cause=error)
     match error:
         case TimeoutError() if timeout is not None:
@@ -266,10 +254,8 @@ def _left(deadline: Deadline | None, end: float | None) -> float | None:
     return None if deadline is None or end is None else wait_left(deadline.remaining(), end)
 
 
-def _wait(left: float | None, *, polled: bool) -> float | None:
-    """Return how long one wait may block: the time left, and at most the token interval when polled."""
-    if polled and (left is None or left > TOKEN_INTERVAL):
-        return TOKEN_INTERVAL
+def _wait(left: float | None) -> float | None:
+    """Return how long one wait may block: the time left, never negative."""
     return None if left is None else max(0.0, left)
 
 
@@ -336,12 +322,12 @@ class NativeConnector(_Connector):
         self,
         request: WebSocketOpenRequest,
         *,
-        context: AttemptIOContext,
+        deadline: Deadline | None,  # noqa: ARG002
         options: ResolvedWSOptions,
         transport: ResolvedWebSocketTransportOptions,
     ) -> NativeConnection:
         """Open one connection within the open timeout, performing one handshake."""
-        evidence = _Evidence(context)
+        evidence = _Evidence()
         token = _OPENING.set(evidence)
         try:
             connection = _connect(
@@ -364,12 +350,12 @@ class AsyncNativeConnector(_Connector):
         self,
         request: WebSocketOpenRequest,
         *,
-        context: AttemptIOContext,
+        deadline: Deadline | None,  # noqa: ARG002
         options: ResolvedWSOptions,
         transport: ResolvedWebSocketTransportOptions,
     ) -> AsyncNativeConnection:
         """Open one connection within the open timeout, performing one handshake."""
-        evidence = _Evidence(context)
+        evidence = _Evidence()
         token = _OPENING.set(evidence)
         try:
             connection = await _aconnect(
@@ -430,11 +416,10 @@ class NativeConnection:
             raise self._closed(error) from None
         return _frame(data)
 
-    def ping(self, payload: bytes, *, deadline: Deadline | None, check: Callable[[], None] | None = None) -> float:
+    def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
         """Send a ping and return the seconds until its pong, raising TimeoutError when the deadline passes first.
 
-        An empty payload becomes four random bytes, so pings sent at once never share one. A check runs before each
-        wait of at most the token interval, and stops the wait by raising.
+        An empty payload becomes four random bytes, so pings sent at once never share one.
         """
         connection = self._connection
         try:
@@ -444,13 +429,8 @@ class NativeConnection:
         except ConcurrencyError:
             raise _pinging() from None
         end = None if deadline is None else real_end(deadline.remaining())
-        while True:
-            if check is not None:
-                check()
-            if pong.wait(_wait(_left(deadline, end), polled=check is not None)):
-                break
-            if (left := _left(deadline, end)) is not None and not left > 0:
-                raise TimeoutError
+        if not pong.wait(_wait(_left(deadline, end))):
+            raise TimeoutError
         if (protocol := connection.protocol).state is State.CLOSED:
             raise self._closed(protocol.close_exc)
         return connection.latency
@@ -488,17 +468,17 @@ class AsyncNativeConnection:
 
     async def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
         """Send one message; the client bounds the await by the deadline itself."""
-        del deadline
         try:
-            await self._connection.send(data, text=text)
+            with anyio.fail_after(None if deadline is None else max(0.0, deadline.remaining())):
+                await self._connection.send(data, text=text)
         except ConnectionClosed as error:
             raise _undelivered(error, self._closed(error)) from None
 
     async def receive(self, *, deadline: Deadline | None) -> WSFrame:
         """Return the next whole message; the client bounds the await by the deadline itself."""
-        del deadline
         try:
-            data = await self._connection.recv()
+            with anyio.fail_after(None if deadline is None else max(0.0, deadline.remaining())):
+                data = await self._connection.recv()
         except ConnectionClosed as error:
             raise self._closed(error) from None
         return _frame(data)
@@ -508,15 +488,15 @@ class AsyncNativeConnection:
 
         An empty payload becomes four random bytes, so pings sent at once never share one.
         """
-        del deadline
         try:
-            return await (await self._connection.ping(payload or None))
+            with anyio.fail_after(None if deadline is None else max(0.0, deadline.remaining())):
+                return await (await self._connection.ping(payload or None))
         except ConnectionClosed as error:
             raise self._closed(error) from None
         except ConcurrencyError:
             raise _pinging() from None
 
-    async def aclose(self, *, code: int = 1000, reason: str = "", timeout: float = 5) -> None:
+    async def aclose(self, *, code: int = 1000, reason: str = "", timeout: float = 5) -> None:  # noqa: ASYNC109
         """Close with a code and a reason, waiting at most the timeout for the closing handshake."""
         self._connection.close_timeout = timeout
         await self._connection.close(code, reason)

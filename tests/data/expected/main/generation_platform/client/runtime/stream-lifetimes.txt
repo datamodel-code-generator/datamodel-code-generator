@@ -2,12 +2,11 @@
   sync borrowed after rounds b'pong'
   sync borrowed first chunk x4 ['read True']
   sync borrowed typed decode x4 ['DecodeError secondary []']
-  sync borrowed retried 503 x3 ["returned Pet(id=3, name='fox', tag=None)"]
-  sync borrowed token x3 ['RequestCancelledError secondary []']
-  sync borrowed idle x3 ['APITimeoutError secondary []']
-  sync borrowed stream limit x3 ['DecodeError secondary []']
-  sync borrowed kept open True b'pong' sent 25
-  sync owned closed True 1
+  sync borrowed retried 503 x4 ["returned Pet(id=3, name='fox', tag=None)"]
+  sync borrowed read timeout x4 ['APITimeoutError secondary []']
+  sync borrowed stream limit x4 ['DecodeError secondary []']
+  sync borrowed kept open True b'pong' sent 26
+  sync passed client kept open True closes 0
   sync full disk OSError secondary [] then b'pong' []
   sync unopenable OSError secondary [] [] then read 196608
   sync file object while iterating ConfigurationError secondary [] then read 196608
@@ -19,31 +18,27 @@
   async borrowed first chunk x4 ['read True']
   async borrowed typed decode x4 ['DecodeError secondary []']
   async borrowed retried 503 x3 ["returned Pet(id=3, name='fox', tag=None)"]
-  async borrowed token x3 ['RequestCancelledError secondary []']
-  async borrowed idle x3 ['APITimeoutError secondary []']
+  async borrowed cancelled x3 ["CancelledError ('reader cancelled',)"]
+  async borrowed read timeout x3 ['APITimeoutError secondary []']
   async borrowed stream limit x3 ['DecodeError secondary []']
   async borrowed kept open True b'pong' sent 25
-  async owned closed True 1
-  async download mid-body disk threads ['AsyncRawResponse_0'] wrote True
+  async passed client kept open True closes 0
+  async download mid-body wrote True
   async download identity True gzip True again ConfigurationError secondary []
-  async download threads left []
   async download gzip past its decoded limit DecodeError response_too_large 524288 ['coded.bin', 'held.bin', 'identity.bin']
   async borrowed file open True at 65545 True
-  async cancelled before download RequestCancelledError secondary []
   async file object while iterating ConfigurationError secondary [] then read 196608
   async consumed to existing 196608 ConfigurationError secondary [] ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
-  async cancelled once opened RequestCancelledError secondary [] closed [True] ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
+  async cancelled once opened CancelledError ('cancelled once opened',) closed [True] ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
   async cancelled while opening CancelledError notes [] partial files 0
   async removal denied CancelledError notes ['Secondary cleanup failure: PermissionError'] partial files 1
   async read while opening ConfigurationError secondary [] then read 196608 partial files 0
   async full disk room 0 OSError secondary [] then b'pong' ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
-  async full disk room 1 APIConnectionError secondary ['OSError'] then b'pong' ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
+  async full disk room 1 OSError secondary [] then b'pong' ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
   async file object write OSError secondary [] then b'pong'
   async file object broken read APIConnectionError secondary []
   async saved after close True ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin', 'saved.bin']
   async stopped cancelled CancelledError ['target.bin'] b'old'
-  async stopped token RequestCancelledError secondary [] ['target.bin'] b'old'
-  async stopped idle APITimeoutError secondary [] ['target.bin'] b'old'
+  async stopped read timeout APITimeoutError secondary [] ['target.bin'] b'old'
   async stopped deadline APITimeoutError secondary [] ['target.bin'] b'old'
-  async stopped closing ConfigurationError secondary [] aclose returned None then ['target.bin'] ['target.bin'] b'old'
   async stopped borrowed reused b'pong'
