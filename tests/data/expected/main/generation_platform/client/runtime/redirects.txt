@@ -212,6 +212,12 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-encoding: identity, content-language: en, content-type: application/octet-stream, content-length: 8] b'original'
   redirect limit survives retry = ('ConfigurationError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, 'redirect_refused', 303, 2, 'NoneType')
     unused=1
+  > POST https://api.example.com/unsafe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 8] b'original'
+  > GET https://api.example.com/done
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  unsent 303 hop never resends an unsafe POST = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'ConnectError')
+    unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, authorization: original-secret, proxy-authorization: proxy-secret, cookie: private=1] b''
   > GET https://other.example.com/next

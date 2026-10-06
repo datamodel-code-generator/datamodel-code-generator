@@ -7,34 +7,20 @@ from __future__ import annotations
 _DEFAULTS = {{ defaults }}
 
 
-class {{ name }}:
-    """{{ class_docstring }}"""
+class {{ name }}View:
+    """Typed operations and request option layers sharing the root's native client."""
 
-    def __init__(
-        self,
-        *,
-        options: {{ options }} | None = None,
-        http_client: {{ http_client }} | {{ unset }} = {{ unset_value }},
-        http_client_ownership: {{ literal }}["borrowed", "owned"] = "borrowed",
-        transport_adapter: {{ adapter }} | {{ owned_adapter }}[{{ adapter }}] | {{ unset }} = {{ unset_value }},
-    ) -> None:
-        """Send through the transport adapter or HTTPX2 client given, borrowed unless its ownership moves.
+    _core: {{ core }}
 
-        Without either, the client creates an HTTPX2 client that closing it closes.
-        """
-        self._core = {{ core }}.create(
-            _DEFAULTS,
-            options=options,
-            http_client=http_client,
-            http_client_ownership=http_client_ownership,
-            transport_adapter=transport_adapter,
-        )
-
-    def with_options(self, options: {{ request_options }}) -> {{ name }}:
-        """Return a view whose calls layer these options on the client's; it shares the client's transport."""
-        view = {{ name }}.__new__({{ name }})
-        view._core = self._core.view(options)
+    @classmethod
+    def _from_core(cls, core: {{ core }}) -> {{ name }}View:
+        view = cls.__new__(cls)
+        view._core = core
         return view
+
+    def with_options(self, options: {{ request_options }}) -> {{ name }}View:
+        """Return a typed view with these request options layered on the current settings."""
+        return {{ name }}View._from_core(self._core.view(options))
 
     {{ coroutine }}def request_raw(
         self,
@@ -70,6 +56,18 @@ class {{ name }}:
         return {{ protocols }}(self._core)
 {%- endif %}
 
+
+class {{ name }}({{ name }}View):
+    """{{ class_docstring }}"""
+
+    def __init__(
+        self,
+        *,
+        options: {{ options }} | None = None,
+        http_client: {{ http_client }} | {{ unset }} | None = {{ unset_value }},
+    ) -> None:
+        """Borrow the native HTTP client given, or create one this root owns and closes."""
+        self._core = {{ core }}.create(_DEFAULTS, options=options, http_client=http_client)
 
 {{ lifecycle }}
 

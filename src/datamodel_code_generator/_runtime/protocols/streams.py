@@ -1047,7 +1047,6 @@ class _Events(Generic[T]):
         resume = cast("StreamResumePlan", self._resume)
         waiter = self._client.waiting(self._limits.options, self._session, resume.call.operation_id)
         if (remaining := waiter.remaining()) is not None and reconnect.delay >= remaining:
-            waiter.finish()
             failure = reconnect.failure
             failure.resume_state = self._resumable()
             raise failure
@@ -1346,10 +1345,7 @@ class EventStream(_Events[T]):
         """Wait out the delay, then reopen the stream after its cursor as one more child call of its session."""
         if reconnect.delay > 0:
             waiter = self._waiter(reconnect)
-            try:
-                waiter.sleep_until(waiter.started + reconnect.delay)
-            finally:
-                waiter.finish()
+            waiter.sleep_until(waiter.started + reconnect.delay)
         self._reconnects += 1
         resume = cast("StreamResumePlan", self._resume)
         request = _reopen_request(self._client, self._plan, resume, self._position())
@@ -1471,10 +1467,7 @@ class AsyncEventStream(_Events[T]):
         """Wait out the delay, then reopen the stream after its cursor as one more child call of its session."""
         if reconnect.delay > 0:
             waiter = self._waiter(reconnect)
-            try:
-                await waiter.asleep_until(waiter.started + reconnect.delay)
-            finally:
-                waiter.finish()
+            await waiter.asleep_until(waiter.started + reconnect.delay)
         self._reconnects += 1
         resume = cast("StreamResumePlan", self._resume)
         request = _reopen_request(self._client, self._plan, resume, self._position())

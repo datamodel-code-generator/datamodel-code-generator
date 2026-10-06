@@ -12,7 +12,7 @@
   missing secret = ConfigurationError reason=missing_value delivery_state=NOT_SENT field_path=('client_secret',)
   async secret = ConfigurationError reason=invalid_mode delivery_state=NOT_SENT field_path=('client_secret',)
   sync secret of an async provider = ConfigurationError reason=invalid_mode delivery_state=NOT_SENT field_path=('client_secret',)
-  sync transport of an async provider = ConfigurationError reason=invalid_mode delivery_state=NOT_SENT field_path=('token_transport',)
+  sync client of an async provider = ConfigurationError reason=invalid_mode delivery_state=NOT_SENT field_path=('http_client',)
   lone scope string = ConfigurationError reason=invalid_scope delivery_state=NOT_SENT field_path=('scopes',)
   empty audience = ConfigurationError reason=invalid_value delivery_state=NOT_SENT field_path=('audience',)
   options type = ConfigurationError reason=invalid_type delivery_state=NOT_SENT field_path=('options',)
@@ -23,6 +23,7 @@
   sends before close = 0
   get after close = AuthError reason=provider_closed delivery_state=NOT_SENT phase=unknown
   close again = None
+    borrowed client closed = False
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
   basic = access-2 scopes=('read', 'write') expires_in_minutes=60
@@ -113,10 +114,10 @@
   connect failure proven unsent = AuthError reason=oauth_error delivery_state=NOT_SENT phase=connect cause=APIConnectionError
     later get = access-2 scopes=None expires_in_minutes=60
     refresh tokens sent = ['refresh-1', 'refresh-1']
-  phase timeout after sending = AuthError reason=timeout delivery_state=MAYBE_SENT phase=read effective_timeout=15.0 cause=APITimeoutError
+  phase timeout after sending = AuthError reason=timeout delivery_state=MAYBE_SENT phase=read effective_timeout=15.0 cause=APITimeoutError reason=phase_timeout
     later get = access-2 scopes=None expires_in_minutes=60
     refresh tokens sent = ['refresh-1', 'refresh-1']
-  adapter failure = AuthError reason=oauth_error delivery_state=MAYBE_SENT phase=unknown cause=RuntimeError
+  transport failure = AuthError reason=oauth_error delivery_state=MAYBE_SENT phase=unknown cause=APIConnectionError
     later get = access-2 scopes=None expires_in_minutes=60
     refresh tokens sent = ['refresh-1', 'refresh-1']
   secret failure = AuthError reason=provider_failed delivery_state=NOT_SENT phase=unknown cause=RuntimeError

@@ -301,22 +301,57 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 9] b'automatic'
   automatic declared key = (None, None)
     uuid4=True canonical=True attempts=2 retries=1 unused=0
-  unclassified before owner = ('APIConnectionError', 'transport_not_retryable', 1, None, None, None, None, None)
-    sends=1 cause-retained=True
-  owner before never = ('APIConnectionError', 'retry_owned_by_transport', 1, None, None, None, None, None)
-    sends=1 cause-retained=True
-  custom read candidate = ('APIConnectionError', 'max_retries_exhausted', 2, None, None, None, None, None)
-    sends=2 cause-retained=True
-  custom write candidate = ('APIConnectionError', 'max_retries_exhausted', 2, None, None, None, None, None)
-    sends=2 cause-retained=True
-  custom unsent cannot bypass safety = ('APIConnectionError', 'unsafe_operation', 1, None, None, None, None, None)
-    sends=1 cause-retained=True
-  never applies to unsent = ('APIConnectionError', 'operation_never', 1, None, None, None, None, None)
-    sends=1 cause-retained=True
-  pool default excluded = ('APITimeoutError', 'transport_not_retryable', 1, None, None, None, None, None)
-    sends=1 cause-retained=True
-  pool explicitly enabled = ('APITimeoutError', 'max_retries_exhausted', 2, None, None, None, None, None)
-    sends=2 cause-retained=True
+  native ConnectError get_safe = (FieldSafeGetResponse(root='server payload'), 2) unused=0
+  native ConnectError post_keyed = (FieldKeyedPostResponse(root='server payload'), 2) unused=0
+  native ConnectError post_unsafe = (FieldUnsafePostResponse(root='server payload'), 2) unused=0
+  native ConnectError get_never = ('APIConnectionError', None, 'DeliveryState.NOT_SENT', 'connect', 'operation_never', 1, 'ConnectError') unused=1
+  native ConnectTimeout get_safe = (FieldSafeGetResponse(root='server payload'), 2) unused=0
+  native ConnectTimeout post_keyed = (FieldKeyedPostResponse(root='server payload'), 2) unused=0
+  native ConnectTimeout post_unsafe = (FieldUnsafePostResponse(root='server payload'), 2) unused=0
+  native ConnectTimeout get_never = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'connect', 'operation_never', 1, 'ConnectTimeout') unused=1
+  native PoolTimeout get_safe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout') unused=1
+  native PoolTimeout post_keyed = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout') unused=1
+  native PoolTimeout post_unsafe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout') unused=1
+  native PoolTimeout get_never = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout') unused=1
+  native WriteError get_safe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteError') unused=1
+  native WriteError post_keyed = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteError') unused=1
+  native WriteError post_unsafe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteError') unused=1
+  native WriteError get_never = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteError') unused=1
+  native WriteTimeout get_safe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteTimeout') unused=1
+  native WriteTimeout post_keyed = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteTimeout') unused=1
+  native WriteTimeout post_unsafe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteTimeout') unused=1
+  native WriteTimeout get_never = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteTimeout') unused=1
+  native ReadError get_safe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadError') unused=1
+  native ReadError post_keyed = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadError') unused=1
+  native ReadError post_unsafe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadError') unused=1
+  native ReadError get_never = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadError') unused=1
+  native ReadTimeout get_safe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadTimeout') unused=1
+  native ReadTimeout post_keyed = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadTimeout') unused=1
+  native ReadTimeout post_unsafe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadTimeout') unused=1
+  native ReadTimeout get_never = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadTimeout') unused=1
+  native RemoteProtocolError get_safe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError') unused=1
+  native RemoteProtocolError post_keyed = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError') unused=1
+  native RemoteProtocolError post_unsafe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError') unused=1
+  native RemoteProtocolError get_never = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError') unused=1
+  native PoolTimeout enabled get_safe = (FieldSafeGetResponse(root='server payload'), 2) unused=0
+  native PoolTimeout enabled post_keyed = (FieldKeyedPostResponse(root='server payload'), 2) unused=0
+  native PoolTimeout enabled post_unsafe = (FieldUnsafePostResponse(root='server payload'), 2) unused=0
+  native PoolTimeout enabled get_never = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'operation_never', 1, 'PoolTimeout') unused=1
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  server dropped get_safe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError')
+    unused=1
+  > POST https://api.example.com/keyed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: delivery-key, content-length: 7] b'payload'
+  server dropped post_keyed = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError')
+    unused=1
+  body fails mid-send = ('SDKError', 'body_factory_failed', 'DeliveryState.MAYBE_SENT', None, None, 1, 'OSError')
+    opened=[0] unused=1
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  held pool retry_on_pool_timeout=False = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout')
+  held pool retry_on_pool_timeout=True = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'max_retries_exhausted', 2, 'PoolTimeout')
+  held response still readable = b'server payload'
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, transfer-encoding: chunked] b'onetwo'
   body before unsafe = ('InternalServerError', 'body_not_replayable', 1, b'server payload', FieldUnsafePostResponse(root='server payload'), None, False, 503)
@@ -456,3 +491,54 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 9] b'automatic'
   async automatic declared key = None
     uuid4=True canonical=True attempts=2 retries=1 unused=0
+  async native ConnectError get_safe = (FieldSafeGetResponse(root='server payload'), 2) unused=0
+  async native ConnectError post_keyed = (FieldKeyedPostResponse(root='server payload'), 2) unused=0
+  async native ConnectError post_unsafe = (FieldUnsafePostResponse(root='server payload'), 2) unused=0
+  async native ConnectError get_never = ('APIConnectionError', None, 'DeliveryState.NOT_SENT', 'connect', 'operation_never', 1, 'ConnectError') unused=1
+  async native ConnectTimeout get_safe = (FieldSafeGetResponse(root='server payload'), 2) unused=0
+  async native ConnectTimeout post_keyed = (FieldKeyedPostResponse(root='server payload'), 2) unused=0
+  async native ConnectTimeout post_unsafe = (FieldUnsafePostResponse(root='server payload'), 2) unused=0
+  async native ConnectTimeout get_never = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'connect', 'operation_never', 1, 'ConnectTimeout') unused=1
+  async native PoolTimeout get_safe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout') unused=1
+  async native PoolTimeout post_keyed = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout') unused=1
+  async native PoolTimeout post_unsafe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout') unused=1
+  async native PoolTimeout get_never = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout') unused=1
+  async native WriteError get_safe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteError') unused=1
+  async native WriteError post_keyed = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteError') unused=1
+  async native WriteError post_unsafe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteError') unused=1
+  async native WriteError get_never = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteError') unused=1
+  async native WriteTimeout get_safe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteTimeout') unused=1
+  async native WriteTimeout post_keyed = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteTimeout') unused=1
+  async native WriteTimeout post_unsafe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteTimeout') unused=1
+  async native WriteTimeout get_never = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'write', 'unknown_delivery', 1, 'WriteTimeout') unused=1
+  async native ReadError get_safe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadError') unused=1
+  async native ReadError post_keyed = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadError') unused=1
+  async native ReadError post_unsafe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadError') unused=1
+  async native ReadError get_never = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadError') unused=1
+  async native ReadTimeout get_safe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadTimeout') unused=1
+  async native ReadTimeout post_keyed = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadTimeout') unused=1
+  async native ReadTimeout post_unsafe = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadTimeout') unused=1
+  async native ReadTimeout get_never = ('APITimeoutError', 'phase_timeout', 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'ReadTimeout') unused=1
+  async native RemoteProtocolError get_safe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError') unused=1
+  async native RemoteProtocolError post_keyed = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError') unused=1
+  async native RemoteProtocolError post_unsafe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError') unused=1
+  async native RemoteProtocolError get_never = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError') unused=1
+  async native PoolTimeout enabled get_safe = (FieldSafeGetResponse(root='server payload'), 2) unused=0
+  async native PoolTimeout enabled post_keyed = (FieldKeyedPostResponse(root='server payload'), 2) unused=0
+  async native PoolTimeout enabled post_unsafe = (FieldUnsafePostResponse(root='server payload'), 2) unused=0
+  async native PoolTimeout enabled get_never = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'operation_never', 1, 'PoolTimeout') unused=1
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  async server dropped get_safe = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError')
+    unused=1
+  > POST https://api.example.com/keyed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: delivery-key, content-length: 7] b'payload'
+  async server dropped post_keyed = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError')
+    unused=1
+  async body fails mid-send = ('SDKError', 'body_factory_failed', 'DeliveryState.MAYBE_SENT', None, None, 1, 'OSError')
+    opened=[0] unused=1
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  async held pool retry_on_pool_timeout=False = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout')
+  async held pool retry_on_pool_timeout=True = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'max_retries_exhausted', 2, 'PoolTimeout')
+  async held response still readable = b'server payload'

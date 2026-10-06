@@ -36,14 +36,14 @@ class _Signatures:
     def fields(self, request: object) -> object:
         authority = self.origin.partition("://")[2]
         self.inputs.append((
-            getattr(request, "method"),
-            getattr(request, "url").replace(self.origin, "<origin>"),
-            getattr(request, "origin").replace(self.origin, "<origin>"),
-            getattr(request, "query"),
-            tuple((name.lower(), value.replace(authority, "<authority>")) for name, value in getattr(request, "headers")),
-            getattr(request, "body_digest"),
-            getattr(request, "attempt_index"),
-            getattr(request, "hop_index"),
+            request.method,
+            request.url.replace(self.origin, "<origin>"),
+            request.origin.replace(self.origin, "<origin>"),
+            request.query,
+            tuple((name.lower(), value.replace(authority, "<authority>")) for name, value in request.headers),
+            request.body_digest,
+            request.attempt_index,
+            request.hop_index,
             tuple(self.events),
         ))
         return self.auth.SignatureFields(
@@ -106,80 +106,6 @@ class _Factory:
         return self(context)
 
 
-class _ForwardedResponse:
-    def __init__(self, response: httpx2.Response, responses: ModuleType) -> None:
-        self.response = response
-        self.status_code = response.status_code
-        self.headers = responses.HeadersView(response.headers.multi_items())
-
-    def iter_raw_bytes(self) -> Iterator[bytes]:
-        yield from self.response.iter_raw()
-
-    def close(self) -> None:
-        self.response.close()
-
-
-class _AsyncForwardedResponse(_ForwardedResponse):
-    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:
-        async for chunk in self.response.aiter_raw():
-            yield chunk
-
-    async def aclose(self) -> None:
-        await self.response.aclose()
-
-
-class _Forwarding:
-    def __init__(self, transports: ModuleType, responses: ModuleType) -> None:
-        self.capabilities = transports.TransportCapabilities(
-            internal_retry_limit=0, delivery_evidence=False, http_versions=("HTTP/1.1",)
-        )
-        self.responses = responses
-        self.requests: list[object] = []
-
-    def request(
-        self, prepared: object, context: object, content: Iterator[bytes] | AsyncIterator[bytes] | None
-    ) -> httpx2.Request:
-        self.requests.append(prepared)
-        timeout = getattr(context, "timeout")
-        return httpx2.Request(
-            getattr(prepared, "method"),
-            getattr(prepared, "url"),
-            headers=[(name.encode(), value.encode()) for name, value in getattr(prepared, "headers")],
-            content=content,
-            extensions={"timeout": {name: getattr(timeout, name) for name in ("connect", "read", "write", "pool")}},
-        )
-
-
-class _ForwardingAdapter(_Forwarding):
-    def __init__(self, transports: ModuleType, responses: ModuleType, server: NativeFixture) -> None:
-        super().__init__(transports, responses)
-        self.client = httpx2.Client(verify=server.verify, trust_env=False)
-
-    def send(self, prepared: object, context: object) -> _ForwardedResponse:
-        body = getattr(prepared, "body")
-        request = self.request(prepared, context, None if body is None else body.iter_bytes())
-        response = self.client.send(request, stream=True, auth=None, follow_redirects=False)
-        return _ForwardedResponse(response, self.responses)
-
-    def close(self) -> None:
-        self.client.close()
-
-
-class _AsyncForwardingAdapter(_Forwarding):
-    def __init__(self, transports: ModuleType, responses: ModuleType, server: NativeFixture) -> None:
-        super().__init__(transports, responses)
-        self.client = httpx2.AsyncClient(verify=server.verify, trust_env=False)
-
-    async def send(self, prepared: object, context: object) -> _AsyncForwardedResponse:
-        body = getattr(prepared, "body")
-        request = self.request(prepared, context, None if body is None else body.aiter_bytes())
-        response = await self.client.send(request, stream=True, auth=None, follow_redirects=False)
-        return _AsyncForwardedResponse(response, self.responses)
-
-    async def aclose(self) -> None:
-        await self.client.aclose()
-
-
 def _operation(
     api: object,
     bodies: ModuleType,
@@ -189,7 +115,7 @@ def _operation(
     *,
     asynchronous: bool,
 ) -> Callable[[], object]:
-    resource = getattr(api, "auth")
+    resource = api.auth
     if label == "typed-get":
         return resource.anonymous
     if label == "typed-absent":
@@ -206,7 +132,7 @@ def _operation(
             if asynchronous
             else bodies.BodyFactory(factory, content_type="application/octet-stream")
         )
-    return lambda: getattr(api, "request_raw")(
+    return lambda: api.request_raw(
         "PUT", origin + "/raw/%7e/%2F?dup=one&dup=two&blank=&plus=+&space=%20&slash=%2f", body=body
     )
 
@@ -278,12 +204,14 @@ def _framing(package: ModuleType, auth: ModuleType, options: ModuleType, bodies:
 def _isolation(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
     for asynchronous in (False, True):
         mode = "async" if asynchronous else "sync"
-        for ownership in ("borrowed", "owned"):
+        for ownership in ("borrowed",):
             server = NativeFixture(http2=True)
             authority = server.url.partition("://")[2]
             server.content_type = b"application/octet-stream"
             events: list[str] = []
-            signers = tuple((_AsyncSigner if asynchronous else _Signer)(auth, server.url, events, index) for index in (1, 2))
+            signers = tuple(
+                (_AsyncSigner if asynchronous else _Signer)(auth, server.url, events, index) for index in (1, 2)
+            )
             seen: list[tuple[object, ...]] = []
 
             def native_request(request: httpx2.Request, authority: str = authority) -> None:
@@ -299,9 +227,9 @@ def _isolation(package: ModuleType, auth: ModuleType, options: ModuleType, lines
                 base_url=server.url,
                 auth=auth.AuthConfig(
                     {
-                        "header_key": (auth.AsyncStaticCredentialProvider if asynchronous else auth.StaticCredentialProvider)(
-                            auth.ApiKeyCredential("café-鍵")
-                        )
+                        "header_key": (
+                            auth.AsyncStaticCredentialProvider if asynchronous else auth.StaticCredentialProvider
+                        )(auth.ApiKeyCredential("café-鍵"))
                     },
                     signers=signers,
                     allowed_origins=(server.url,),
@@ -326,10 +254,10 @@ def _isolation(package: ModuleType, auth: ModuleType, options: ModuleType, lines
                         async def async_request(request: httpx2.Request) -> None:
                             native_request(request)
 
-                        async with httpx2.AsyncClient(**native_options, event_hooks={"request": [async_request]}) as native:
-                            async with package.AsyncClient(
-                                options=settings, http_client=native, http_client_ownership=ownership
-                            ) as api:
+                        async with httpx2.AsyncClient(
+                            **native_options, event_hooks={"request": [async_request]}
+                        ) as native:
+                            async with package.AsyncClient(options=settings, http_client=native) as api:
                                 await arecord(lines, f"{mode} {ownership} typed", api.auth.anonymous)
 
                                 async def raw() -> bytes:
@@ -342,12 +270,14 @@ def _isolation(package: ModuleType, auth: ModuleType, options: ModuleType, lines
                     run(calls)
                 else:
                     with httpx2.Client(**native_options, event_hooks={"request": [native_request]}) as native:
-                        with package.Client(options=settings, http_client=native, http_client_ownership=ownership) as api:
+                        with package.Client(options=settings, http_client=native) as api:
                             record(lines, f"{mode} {ownership} typed", api.auth.anonymous)
                             record(
                                 lines,
                                 f"{mode} {ownership} raw",
-                                lambda: api.request_raw("PUT", server.url + "/raw?original=%2f", body=b"raw").body_bytes,
+                                lambda: (
+                                    api.request_raw("PUT", server.url + "/raw?original=%2f", body=b"raw").body_bytes
+                                ),
                             )
                         lines.append(f"    native closed={native.is_closed}")
                 lines.append(f"    signer1={signers[0].inputs} signer2={signers[1].inputs}")
@@ -393,57 +323,6 @@ def _proxies(package: ModuleType, auth: ModuleType, options: ModuleType, bodies:
                     server.stop()
 
 
-def _adapters(package: ModuleType, auth: ModuleType, options: ModuleType, bodies: ModuleType, lines: list[str]) -> None:
-    transports = importlib.import_module(f"{package.__name__}.transports")
-    responses = importlib.import_module(f"{package.__name__}.responses")
-    for asynchronous in (False, True):
-        mode = "async" if asynchronous else "sync"
-        server = NativeFixture()
-        authority = server.url.partition("://")[2]
-        server.content_type = b"application/octet-stream"
-        events: list[str] = []
-        signer = (_AsyncSigner if asynchronous else _Signer)(auth, server.url, events)
-        adapter = (_AsyncForwardingAdapter if asynchronous else _ForwardingAdapter)(transports, responses, server)
-        settings = options.ClientOptions(
-            base_url=server.url,
-            auth=auth.AuthConfig({}, signers=(signer,), allowed_origins=(server.url,), send_on_anonymous=True),
-        )
-        try:
-            if asynchronous:
-
-                async def calls() -> None:
-                    async with package.AsyncClient(
-                        options=settings, transport_adapter=transports.OwnedTransportAdapter(adapter)
-                    ) as api:
-                        for label in ("typed-get", "raw-unknown"):
-                            operation = _operation(api, bodies, label, server.url, events, asynchronous=True)
-
-                            async def call() -> object:
-                                result = await operation()
-                                return getattr(result, "body_bytes", result)
-
-                            await arecord(lines, f"{mode} adapter {label}", call)
-                            _observed(lines, server, signer, events)
-
-                run(calls)
-            else:
-                with package.Client(options=settings, transport_adapter=transports.OwnedTransportAdapter(adapter)) as api:
-                    for label in ("typed-get", "raw-unknown"):
-                        operation = _operation(api, bodies, label, server.url, events, asynchronous=False)
-
-                        def call() -> object:
-                            result = operation()
-                            return getattr(result, "body_bytes", result)
-
-                        record(lines, f"{mode} adapter {label}", call)
-                        _observed(lines, server, signer, events)
-            lines.append(
-                f"    adapter requests={tuple((getattr(request, 'method'), getattr(request, 'url').replace(server.url, '<origin>'), tuple((name.lower(), value.replace(authority, '<authority>')) for name, value in getattr(request, 'headers'))) for request in adapter.requests)} closed={adapter.client.is_closed}"
-            )
-        finally:
-            server.stop()
-
-
 def native_signing(package: ModuleType, lines: list[str]) -> None:
     """Exercise signer-visible framing, exact raw queries and native default isolation over real TLS."""
     auth = importlib.import_module(f"{package.__name__}.auth")
@@ -452,4 +331,3 @@ def native_signing(package: ModuleType, lines: list[str]) -> None:
     _framing(package, auth, options, bodies, lines)
     _isolation(package, auth, options, lines)
     _proxies(package, auth, options, bodies, lines)
-    _adapters(package, auth, options, bodies, lines)

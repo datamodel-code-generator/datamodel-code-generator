@@ -8,6 +8,8 @@ import threading
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
+import httpx2
+
 from tests.data.python.client_bodies import _photo
 from tests.data.python.client_runtime import (
     Exchange,
@@ -16,6 +18,7 @@ from tests.data.python.client_runtime import (
     arecord,
     argument,
     broken,
+    failing,
     json_response,
     outcome,
     raw_response,
@@ -58,9 +61,6 @@ class _Context(Protocol):
 
     @property
     def remaining_timeout(self) -> float | None: ...
-
-    @property
-    def cancel_token(self) -> object | None: ...
 
 
 class _Event(Protocol):
@@ -282,7 +282,7 @@ def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType, ModuleType]:
     return options, bodies, types
 
 
-def _contexts(lines: list[str], usage: _Usage, token: object, events: _Events) -> None:
+def _contexts(lines: list[str], usage: _Usage, events: _Events) -> None:
     """Report only safe limiter facts and relationships to the call's public events."""
     for context in usage.contexts:
         remaining = context.remaining_timeout
@@ -290,7 +290,7 @@ def _contexts(lines: list[str], usage: _Usage, token: object, events: _Events) -
         safe = not any(hasattr(context, name) for name in ("headers", "body", "query", "url"))
         lines.append(
             f"  context operation={context.operation_id} origin={context.origin} parent={context.parent_session_id} "
-            f"remaining={bounded} token={context.cancel_token is token} "
+            f"remaining={bounded} "
             f"call={context.call_id in events.ids}/{UUID(context.call_id).version == 4} safe={safe}"
         )
     lines.append(f"  unique limiter calls={len({context.call_id for context in usage.contexts})}")
@@ -312,10 +312,9 @@ def _sync_ownership(package: ModuleType, lines: list[str]) -> None:
     options, _, types = _modules(package)
     limiter = _SemaphoreLimiter()
     events = _Events(limiter.usage)
-    token = options.CancelToken()
     exchange = Exchange(lines)
     http = exchange.client()
-    configured = options.ClientOptions(limiter=limiter, hooks=(events,), cancel_token=token, total_timeout=30)
+    configured = options.ClientOptions(limiter=limiter, hooks=(events,), total_timeout=30)
     pet = argument(package, "getPet", "path", "petId", 3)
     with package.Client(http_client=http, options=configured) as api:
         exchange.respond(json_response(200, _PET))
@@ -363,7 +362,7 @@ def _sync_ownership(package: ModuleType, lines: list[str]) -> None:
         lines.append(f"  view limiter {replacement.usage.report}")
         lines.append(f"  request limiter {request_limiter.usage.report}")
     http.close()
-    _contexts(lines, limiter.usage, token, events)
+    _contexts(lines, limiter.usage, events)
 
 
 def _sync_waiting_body(package: ModuleType, lines: list[str]) -> None:
@@ -404,27 +403,42 @@ def _sync_failures(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     http = exchange.client()
     pet = argument(package, "getPet", "path", "petId", 3)
-    with package.Client(http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))) as api:
-        for label, acquire_failure, release_failure, response, secondary, attempts in (
-            ("acquire failure", RuntimeError("acquire failed"), None, None, False, 1),
-            ("release failure", None, RuntimeError("release failed"), json_response(200, _PET), False, 1),
-            ("status failure", None, None, raw_response(404), False, 1),
-            ("decode failure", None, None, raw_response(200, b"{", "application/json"), False, 1),
-            ("status and release failure", None, RuntimeError("release failed"), raw_response(404), True, 1),
-            ("body read failure", None, None, broken, False, 3),
-            ("body read and release failure", None, RuntimeError("release failed"), broken, True, 1),
+    with package.Client(
+        http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+    ) as api:
+        for label, acquire_failure, release_failure, responses, secondary in (
+            ("acquire failure", RuntimeError("acquire failed"), None, (), False),
+            ("release failure", None, RuntimeError("release failed"), (json_response(200, _PET),), False),
+            ("status failure", None, None, (raw_response(404),), False),
+            ("decode failure", None, None, (raw_response(200, b"{", "application/json"),), False),
+            ("status and release failure", None, RuntimeError("release failed"), (raw_response(404),), True),
+            ("body read failure never resent", None, None, (broken, json_response(200, _PET)), False),
+            ("body read and release failure", None, RuntimeError("release failed"), (broken,), True),
+            (
+                "unsent connect failure resent",
+                None,
+                None,
+                (failing(httpx2.ConnectError), json_response(200, _PET)),
+                False,
+            ),
+            (
+                "sent read failure never resent",
+                None,
+                None,
+                (failing(httpx2.ReadError), json_response(200, _PET)),
+                False,
+            ),
         ):
             limiter = _SemaphoreLimiter(acquire_failure=acquire_failure, release_failure=release_failure)
-            if response is not None:
-                for _ in range(attempts):
-                    exchange.respond(response)
+            exchange.respond(*responses)
             configured = options.RequestOptions(limiter=limiter)
             call = lambda configured=configured: api.pets.get_pet(pet_id=pet, options=configured)
             if secondary:
                 lines.append(f"  {label}: {outcome(call)}")
             else:
                 record(lines, label, call)
-            lines.append(f"    {limiter.usage.report}")
+            lines.append(f"    {limiter.usage.report} queued={len(exchange.responders)}")
+            exchange.responders.clear()
         limiter = _SemaphoreLimiter(release_failure=RuntimeError("release failed"))
         exchange.respond(json_response(200, _PET))
         record(
@@ -539,45 +553,25 @@ def _sync_admission(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     exchange.respond(raw_response(200, _PNG, "image/png"))
     http = exchange.client()
-    token = options.CancelToken()
-    token.cancel()
     with package.Client(http_client=http) as api:
-        for label, value in (
-            ("zero timeout", options.RequestOptions(total_timeout=0)),
-            ("pre-cancelled", options.RequestOptions(cancel_token=token)),
-        ):
+        for label, refused in (("zero timeout", {"total_timeout": 0}), ("closed client admission", {})):
             limiter = _SemaphoreLimiter()
             factory = _Factory(limiter.usage)
             events = _Events(limiter.usage)
-            view = api.with_options(options.RequestOptions(limiter=limiter, hooks=(events,)))
+            request = options.RequestOptions(limiter=limiter, hooks=(events,), **refused)
+            if not refused:
+                api.close()
             record(
                 lines,
                 label,
-                lambda: view.pets.photos.upload(
-                    pet_id=_photo(package), body=bodies.BodyFactory(factory.open), options=value
+                lambda: api.pets.photos.upload(
+                    pet_id=_photo(package), body=bodies.BodyFactory(factory.open), options=request
                 ),
             )
             lines.append(
                 f"    {limiter.usage.report} factory={factory.opened}/{factory.closed} "
                 f"events={' '.join(events.names)} ends={events.ends} queued={len(exchange.responders)}"
             )
-        limiter = _SemaphoreLimiter()
-        factory = _Factory(limiter.usage)
-        events = _Events(limiter.usage)
-        api.close()
-        record(
-            lines,
-            "closed client admission",
-            lambda: api.pets.photos.upload(
-                pet_id=_photo(package),
-                body=bodies.BodyFactory(factory.open),
-                options=options.RequestOptions(limiter=limiter, hooks=(events,)),
-            ),
-        )
-        lines.append(
-            f"    {limiter.usage.report} factory={factory.opened}/{factory.closed} "
-            f"events={' '.join(events.names)} ends={events.ends} queued={len(exchange.responders)}"
-        )
     http.close()
 
 
@@ -594,12 +588,9 @@ async def _async_ownership(package: ModuleType, lines: list[str]) -> None:
     options, _, types = _modules(package)
     limiter = _AsyncSemaphoreLimiter()
     events = _Events(limiter.usage)
-    token = options.CancelToken()
     exchange = Exchange(lines)
     http = exchange.async_client()
-    configured = options.ClientOptions(
-        limiter=limiter, hooks=(_AsyncEvents(events),), cancel_token=token, total_timeout=30
-    )
+    configured = options.ClientOptions(limiter=limiter, hooks=(_AsyncEvents(events),), total_timeout=30)
     pet = argument(package, "getPet", "path", "petId", 3)
     async with package.AsyncClient(http_client=http, options=configured) as api:
         exchange.respond(json_response(200, _PET))
@@ -647,7 +638,7 @@ async def _async_ownership(package: ModuleType, lines: list[str]) -> None:
         lines.append(f"  async view limiter {replacement.usage.report}")
         lines.append(f"  async request limiter {request_limiter.usage.report}")
     await http.aclose()
-    _contexts(lines, limiter.usage, token, events)
+    _contexts(lines, limiter.usage, events)
 
 
 async def _async_waiting_body(package: ModuleType, lines: list[str]) -> None:
@@ -694,26 +685,39 @@ async def _async_failures(package: ModuleType, lines: list[str]) -> None:
     async with package.AsyncClient(
         http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
     ) as api:
-        for label, acquire_failure, release_failure, response, secondary, attempts in (
-            ("async acquire failure", RuntimeError("acquire failed"), None, None, False, 1),
-            ("async release failure", None, RuntimeError("release failed"), json_response(200, _PET), False, 1),
-            ("async status failure", None, None, raw_response(404), False, 1),
-            ("async decode failure", None, None, raw_response(200, b"{", "application/json"), False, 1),
-            ("async status and release failure", None, RuntimeError("release failed"), raw_response(404), True, 1),
-            ("async body read failure", None, None, abroken, False, 3),
-            ("async body read and release failure", None, RuntimeError("release failed"), abroken, True, 1),
+        for label, acquire_failure, release_failure, responses, secondary in (
+            ("async acquire failure", RuntimeError("acquire failed"), None, (), False),
+            ("async release failure", None, RuntimeError("release failed"), (json_response(200, _PET),), False),
+            ("async status failure", None, None, (raw_response(404),), False),
+            ("async decode failure", None, None, (raw_response(200, b"{", "application/json"),), False),
+            ("async status and release failure", None, RuntimeError("release failed"), (raw_response(404),), True),
+            ("async body read failure never resent", None, None, (abroken, json_response(200, _PET)), False),
+            ("async body read and release failure", None, RuntimeError("release failed"), (abroken,), True),
+            (
+                "async unsent connect failure resent",
+                None,
+                None,
+                (failing(httpx2.ConnectError), json_response(200, _PET)),
+                False,
+            ),
+            (
+                "async sent read failure never resent",
+                None,
+                None,
+                (failing(httpx2.ReadError), json_response(200, _PET)),
+                False,
+            ),
         ):
             limiter = _AsyncSemaphoreLimiter(acquire_failure=acquire_failure, release_failure=release_failure)
-            if response is not None:
-                for _ in range(attempts):
-                    exchange.respond(response)
+            exchange.respond(*responses)
             configured = options.RequestOptions(limiter=limiter)
             call = lambda configured=configured: api.pets.get_pet(pet_id=pet, options=configured)
             if secondary:
                 lines.append(f"  {label}: {await aoutcome(call)}")
             else:
                 await arecord(lines, label, call)
-            lines.append(f"    {limiter.usage.report}")
+            lines.append(f"    {limiter.usage.report} queued={len(exchange.responders)}")
+            exchange.responders.clear()
         limiter = _AsyncSemaphoreLimiter(release_failure=RuntimeError("release failed"))
         exchange.respond(json_response(200, _PET))
         await arecord(
@@ -832,43 +836,23 @@ async def _async_admission(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     exchange.respond(raw_response(200, _PNG, "image/png"))
     http = exchange.async_client()
-    token = options.CancelToken()
-    token.cancel()
     async with package.AsyncClient(http_client=http) as api:
-        for label, value in (
-            ("async zero timeout", options.RequestOptions(total_timeout=0)),
-            ("async pre-cancelled", options.RequestOptions(cancel_token=token)),
-        ):
+        for label, refused in (("async zero timeout", {"total_timeout": 0}), ("async closed client admission", {})):
             limiter = _AsyncSemaphoreLimiter()
             factory = _Factory(limiter.usage)
             events = _Events(limiter.usage)
-            view = api.with_options(options.RequestOptions(limiter=limiter, hooks=(_AsyncEvents(events),)))
+            request = options.RequestOptions(limiter=limiter, hooks=(_AsyncEvents(events),), **refused)
+            if not refused:
+                await api.aclose()
             await arecord(
                 lines,
                 label,
-                lambda: view.pets.photos.upload(
-                    pet_id=_photo(package), body=bodies.AsyncBodyFactory(factory.aopen), options=value
+                lambda: api.pets.photos.upload(
+                    pet_id=_photo(package), body=bodies.AsyncBodyFactory(factory.aopen), options=request
                 ),
             )
             lines.append(
                 f"    {limiter.usage.report} factory={factory.opened}/{factory.closed} "
                 f"events={' '.join(events.names)} ends={events.ends} queued={len(exchange.responders)}"
             )
-        limiter = _AsyncSemaphoreLimiter()
-        factory = _Factory(limiter.usage)
-        events = _Events(limiter.usage)
-        await api.aclose()
-        await arecord(
-            lines,
-            "async closed client admission",
-            lambda: api.pets.photos.upload(
-                pet_id=_photo(package),
-                body=bodies.AsyncBodyFactory(factory.aopen),
-                options=options.RequestOptions(limiter=limiter, hooks=(_AsyncEvents(events),)),
-            ),
-        )
-        lines.append(
-            f"    {limiter.usage.report} factory={factory.opened}/{factory.closed} "
-            f"events={' '.join(events.names)} ends={events.ends} queued={len(exchange.responders)}"
-        )
     await http.aclose()

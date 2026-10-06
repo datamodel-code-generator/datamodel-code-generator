@@ -24,7 +24,6 @@ from .errors import ConfigurationError, is_sequence
 from .hooks import AsyncHook, AsyncLimiter, Hook, JSONScalar, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
 from .timing import (
     SYSTEM_CLOCK,
-    CancelToken,
     Clock,
     Deadline,
     ResolvedTimeoutOptions,
@@ -40,7 +39,6 @@ if TYPE_CHECKING:
 
 __all__ = (
     "UNSET",
-    "CancelToken",
     "ClientOptions",
     "Clock",
     "Deadline",
@@ -80,15 +78,9 @@ _RETRY_STATUS_EXCLUDED: Final = frozenset({401, 403, 407})
 _OptionT = TypeVar("_OptionT")
 
 
-def _positive_seconds(value: object, path: tuple[str, ...]) -> None:
-    match value:
-        case bool():
-            pass
-        case int() | float() if 0 < value < math.inf:
-            return
-        case _:
-            pass
-    raise ConfigurationError(field_path=path, reason="out_of_range")
+def _positive_seconds(value: float, path: tuple[str, ...]) -> None:
+    if not 0 < value < math.inf:
+        raise ConfigurationError(field_path=path, reason="out_of_range")
 
 
 def _header_patch(value: object) -> HeaderPatch:
@@ -423,7 +415,6 @@ class TransportOptions:
     max_connections: int = 100
     max_keepalive_connections: int = 20
     keepalive_expiry: float = 5.0
-    retry_owner: Literal["sdk", "transport"] = "sdk"
 
     def __post_init__(self) -> None:
         """Validate construction fields and reject any explicit verify alongside an SSLContext."""
@@ -441,7 +432,6 @@ class TransportOptions:
         ):
             checked_count(count, ("transport", name))
         object.__setattr__(self, "keepalive_expiry", seconds(self.keepalive_expiry, ("transport", "keepalive_expiry")))
-        _choice(self.retry_owner, _RETRY_OWNERS, ("transport", "retry_owner"))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -483,7 +473,6 @@ class ResolvedTransportOptions:
     max_connections: int = 100
     max_keepalive_connections: int = 20
     keepalive_expiry: float = 5.0
-    retry_owner: Literal["sdk", "transport"] = "sdk"
 
 
 DEFAULT_RETRY: Final = ResolvedRetryOptions()
@@ -544,7 +533,6 @@ def resolve_transport_options(options: TransportOptions | Unset) -> ResolvedTran
         max_connections=options.max_connections,
         max_keepalive_connections=options.max_keepalive_connections,
         keepalive_expiry=options.keepalive_expiry,
-        retry_owner=options.retry_owner,
     )
 
 
@@ -578,14 +566,12 @@ class _Options:
     query: QueryPatch = ()
     max_response_bytes: int | Unset | None = UNSET
     max_error_body_bytes: int | Unset = UNSET
-    cleanup_timeout: float | Unset = UNSET
     max_stream_bytes: int | Unset | None = UNSET
     hooks: tuple[Hook | AsyncHook, ...] | Unset = UNSET
     context: Mapping[str, JSONScalar] | Unset = UNSET
     timeout: TimeoutOptions | Unset | None = UNSET
     total_timeout: float | Unset | None = UNSET
     deadline: Deadline | Unset | None = UNSET
-    cancel_token: CancelToken | Unset | None = UNSET
     limiter: Limiter | AsyncLimiter | Unset | None = field(default=UNSET, repr=False)
     stream_idle_timeout: float | Unset | None = UNSET
     stream_total_timeout: float | Unset | None = UNSET
@@ -597,7 +583,6 @@ class _Options:
     def _check_timing(self) -> None:
         checked_instance(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
         checked_instance(self.deadline, (Deadline, Unset, type(None)), ("deadline",))
-        checked_instance(self.cancel_token, (CancelToken, Unset, type(None)), ("cancel_token",))
         if self.limiter is not None and not isinstance(self.limiter, Unset) and not _is_limiter(self.limiter):
             raise ConfigurationError(field_path=("limiter",), reason="invalid_type")
         for name in ("total_timeout", "stream_idle_timeout", "stream_total_timeout"):
@@ -629,8 +614,6 @@ class _Options:
             checked_count(self.max_response_bytes, ("max_response_bytes",))
         if not isinstance(self.max_error_body_bytes, Unset):
             checked_count(self.max_error_body_bytes, ("max_error_body_bytes",), minimum=1, maximum=MAX_ERROR_BODY_LIMIT)
-        if not isinstance(self.cleanup_timeout, Unset):
-            _positive_seconds(self.cleanup_timeout, ("cleanup_timeout",))
         if self.max_stream_bytes is not None and not isinstance(self.max_stream_bytes, Unset):
             checked_count(self.max_stream_bytes, ("max_stream_bytes",))
 
@@ -677,7 +660,6 @@ class Settings:
     server: ServerSelection
     max_response_bytes: int | None
     max_error_body_bytes: int
-    cleanup_timeout: float
     max_stream_bytes: int | None
     headers: tuple[HeaderPatch, ...] = ()
     query: tuple[QueryPatch, ...] = ()
@@ -688,7 +670,6 @@ class Settings:
     stream_read_timeout: float | None = None
     total_timeout: float | None = 60.0
     deadline: Deadline | None = None
-    cancel_token: CancelToken | None = None
     limiter: Limiter | AsyncLimiter | None = field(default=None, repr=False)
     stream_idle_timeout: float | None = 60.0
     stream_total_timeout: float | None = None

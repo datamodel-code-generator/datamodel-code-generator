@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import httpx2
 
 from tests.data.python.client_retry_policy import _response
-from tests.data.python.client_runtime import Exchange, arecord, argument, raw_response, record, run
+from tests.data.python.client_runtime import Exchange, arecord, argument, failing, raw_response, record, run
 from tests.data.python.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
@@ -298,6 +298,15 @@ def _restored(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
                 ),
             )
             lines.append(f"    unused={len(exchange.responders)}")
+        exchange.responders.clear()
+        exchange.respond(_response(303, (("Location", "/done"),)), failing(httpx2.ConnectError), _response(200))
+        request = options.RequestOptions(redirects=options.RedirectOptions(enabled=True, allow_303_to_get=True))
+        record(
+            lines,
+            "unsent 303 hop never resends an unsafe POST",
+            lambda: outcome(lambda: api.retry.with_response.post_unsafe(body=b"original", options=request)),
+        )
+        lines.append(f"    unused={len(exchange.responders)}")
 
 
 def _origins(package: ModuleType, options: ModuleType, lines: list[str]) -> None:

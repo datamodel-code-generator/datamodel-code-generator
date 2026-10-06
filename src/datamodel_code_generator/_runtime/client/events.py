@@ -15,14 +15,13 @@ from urllib.parse import urlsplit
 from ..model_codecs.unset import UNSET, Unset
 from .errors import (
     APIConnectionError,
-    CleanupError,
     ConfigurationError,
     DeliveryState,
-    RequestCancelledError,
     SDKError,
     add_secondary,
     is_hook_failure,
     is_transport,
+    kept_primary,
 )
 from .hooks import CallEvent
 
@@ -36,21 +35,8 @@ if TYPE_CHECKING:
 
 
 def _interrupted(primary: BaseException | None, interruption: BaseException) -> BaseException:
-    """Return the error a terminal hook's interruption leaves.
-
-    An interruption such as KeyboardInterrupt replaces an ordinary failure and keeps it beside itself; a cancellation
-    the hook raised itself stays beside the failure already propagating.
-    """
-    import asyncio  # noqa: PLC0415
-
-    if primary is None:
-        return interruption
-    if isinstance(primary, Exception) and not isinstance(interruption, asyncio.CancelledError):
-        add_secondary(interruption, primary)
-        return interruption
-    if primary is not interruption:
-        add_secondary(primary, interruption)
-    return primary
+    """Return the error a terminal hook's interruption leaves, which replaces an ordinary failure and keeps it."""
+    return interruption if primary is None or primary is interruption else kept_primary(primary, interruption)
 
 
 class CallEvents:
@@ -207,9 +193,7 @@ class CallEvents:
                     raise self.failed(failures)
 
             try:
-                await self.call.cleanup(notify, wrap_errors=False)
-            except CleanupError as cleanup_error:
-                return [*failures, cleanup_error]
+                await notify()
             except SDKError as hook_error:
                 if not is_hook_failure(hook_error):
                     raise
@@ -268,7 +252,6 @@ class CallEvents:
                 "max_response_bytes": settings.max_response_bytes,
                 "max_error_body_bytes": settings.max_error_body_bytes,
                 "max_stream_bytes": settings.max_stream_bytes,
-                "cleanup_timeout": settings.cleanup_timeout,
                 "total_timeout": settings.total_timeout,
                 "stream_idle_timeout": settings.stream_idle_timeout,
                 "stream_total_timeout": settings.stream_total_timeout,
@@ -329,8 +312,6 @@ class CallEvents:
         match error:
             case None:
                 outcome = "handed_off" if handed_off else "success"
-            case RequestCancelledError():
-                pass
             case Exception():
                 outcome = "error"
             case _:
@@ -426,7 +407,7 @@ class CallEvents:
         starting: bool = False,
         intermediate: bool = False,
     ) -> None:
-        """Retain the entire terminal event sequence if its waiting caller is interrupted."""
+        """Deliver terminal events in the caller task without shielding user callbacks."""
         events = self._attempt_ending(error) if intermediate else self.ending(error, handed_off=handed_off)
         if not events:
             return
@@ -458,7 +439,7 @@ class CallEvents:
             if error is None and failed is not None:
                 raise self.failed(failed, completed)
 
-        await self.call.cleanup(notify, error=error, wrap_errors=False)
+        await notify()
 
     def _observed_end(self, event: CallEvent, primary: BaseException | None) -> tuple[CallEvent, BaseException | None]:
         """Report termination observed while earlier terminal hooks were running."""
@@ -468,11 +449,7 @@ class CallEvents:
             primary = stopped if primary is None else self.call.failure(primary)
         outcome = event.outcome
         if primary is not None:
-            outcome = (
-                "cancel"
-                if isinstance(primary, RequestCancelledError) or not isinstance(primary, Exception)
-                else "error"
-            )
+            outcome = "cancel" if not isinstance(primary, Exception) else "error"
         return replace(event, outcome=outcome, duration=self.monotonic() - self.started), primary
 
     def stream_ending(self, error: BaseException | None, *, early: bool) -> CallEvent | None:
@@ -484,8 +461,6 @@ class CallEvents:
         match error:
             case None:
                 outcome = "cancel" if early else "success"
-            case RequestCancelledError():
-                pass
             case Exception():
                 outcome = "error"
             case _:

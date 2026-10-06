@@ -13,11 +13,9 @@ from typing_extensions import TypeVar
 from ..client.responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from ssl import SSLContext
 
     from ..client.timing import Deadline
-    from ..client.transports import AttemptIOContext
 
 __all__ = (
     "AsyncWebSocketConnection",
@@ -124,17 +122,19 @@ class WebSocketConnection(Protocol):
         ...
 
     def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
-        """Send one message as a text frame, whose bytes are UTF-8, or as a binary one."""
+        """Send one message as a text frame, whose bytes are UTF-8, or as a binary one.
+
+        Raise TimeoutError only when nothing was written; any other failure leaves the message's delivery unknown.
+        """
 
     def receive(self, *, deadline: Deadline | None) -> WSFrame:
         """Return the next whole message."""
         ...
 
-    def ping(self, payload: bytes, *, deadline: Deadline | None, check: Callable[[], None] | None = None) -> float:
+    def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
         """Send a ping and return the seconds until its pong arrived.
 
-        An empty payload asks for a unique one; a payload another ping still waits for raises ProtocolStateError. With
-        a check, the wait for the pong runs it at least every 50 ms and stops with what it raises.
+        An empty payload asks for a unique one; a payload another ping still waits for raises ProtocolStateError.
         """
         ...
 
@@ -159,7 +159,10 @@ class AsyncWebSocketConnection(Protocol):
         ...
 
     async def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
-        """Send one message as a text frame, whose bytes are UTF-8, or as a binary one."""
+        """Send one message as a text frame, whose bytes are UTF-8, or as a binary one.
+
+        Raise TimeoutError only when nothing was written; any other failure leaves the message's delivery unknown.
+        """
 
     async def receive(self, *, deadline: Deadline | None) -> WSFrame:
         """Return the next whole message."""
@@ -191,7 +194,7 @@ class WebSocketConnector(Protocol):
         self,
         request: WebSocketOpenRequest,
         *,
-        context: AttemptIOContext,
+        deadline: Deadline | None,
         options: ResolvedWSOptions,
         transport: ResolvedWebSocketTransportOptions,
     ) -> WebSocketConnection:
@@ -206,7 +209,7 @@ class AsyncWebSocketConnector(Protocol):
         self,
         request: WebSocketOpenRequest,
         *,
-        context: AttemptIOContext,
+        deadline: Deadline | None,
         options: ResolvedWSOptions,
         transport: ResolvedWebSocketTransportOptions,
     ) -> AsyncWebSocketConnection:

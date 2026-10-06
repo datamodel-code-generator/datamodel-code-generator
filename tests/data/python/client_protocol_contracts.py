@@ -189,9 +189,11 @@ def _shapes(protocols: ModuleType, options: ModuleType, lines: list[str]) -> Non
         ("origin", origin, "port", 8443),
         ("options", protocols.PollOptions(), "interval", 1),
     ):
-        record(lines, f"{label} frozen", lambda value=value, name=name, replacement=replacement: setattr(
-            value, name, replacement
-        ))
+        record(
+            lines,
+            f"{label} frozen",
+            lambda value=value, name=name, replacement=replacement: setattr(value, name, replacement),
+        )
     for label, create in (
         ("selector positional", lambda: protocols.BodySelector("/next")),
         ("header positional", lambda: protocols.HeaderSelector("X-Cursor")),
@@ -324,7 +326,9 @@ def _continuations(protocols: ModuleType, records: ModuleType, lines: list[str])
     """Keep only canonical JSON, expose only the kind, and compare by identity."""
     canonical = records.continuation_json
     for kind in ("cursor", "offset", "page", "next_url", "link"):
-        record(lines, f"continuation {kind}", lambda kind=kind: protocols.Continuation(kind=kind, value="secret-cursor"))
+        record(
+            lines, f"continuation {kind}", lambda kind=kind: protocols.Continuation(kind=kind, value="secret-cursor")
+        )
     for label, value in (
         ("string", "secret-cursor"),
         ("integer", 20),
@@ -420,9 +424,11 @@ def _snapshots(protocols: ModuleType, responses: ModuleType, lines: list[str]) -
         f"  snapshot state={type(snapshot.state).__name__} {dict(snapshot.state)!r}",
     ))
     record(lines, "snapshot frozen", lambda: setattr(snapshot, "terminal", True))
-    record(lines, "snapshot terminal", lambda: protocols.PollSnapshot(
-        state="done", terminal=True, data=None, response=info
-    ).terminal)
+    record(
+        lines,
+        "snapshot terminal",
+        lambda: protocols.PollSnapshot(state="done", terminal=True, data=None, response=info).terminal,
+    )
     for label, arguments in (
         ("terminal integer", {"terminal": 1}),
         ("terminal string", {"terminal": "yes"}),
@@ -434,7 +440,9 @@ def _snapshots(protocols: ModuleType, responses: ModuleType, lines: list[str]) -
     ):
         values = {"state": "running", "terminal": False, "data": data, "response": info, **arguments}
         record(lines, f"snapshot {label}", lambda values=values: protocols.PollSnapshot(**values))
-    record(lines, "snapshot missing data", lambda: protocols.PollSnapshot(state="running", terminal=False, response=info))
+    record(
+        lines, "snapshot missing data", lambda: protocols.PollSnapshot(state="running", terminal=False, response=info)
+    )
 
 
 def _resume_states(protocols: ModuleType, lines: list[str]) -> None:
@@ -449,7 +457,9 @@ def _resume_states(protocols: ModuleType, lines: list[str]) -> None:
         f"  resume dict={hasattr(state, '__dict__')} public={[name for name in dir(state) if not name.startswith('_')]}",
     ))
     imported = protocols.import_state(exported)
-    lines.append(f"  resume round trip={imported!r} distinct={imported is not state} same={imported.export() == exported}")
+    lines.append(
+        f"  resume round trip={imported!r} distinct={imported is not state} same={imported.export() == exported}"
+    )
     minimal = protocols.ResumeState(helper="", state=None)
     record(lines, "resume minimal export", lambda: minimal.export())
     record(lines, "resume set state", lambda: setattr(state, "_state_json", b"{}"))
@@ -557,9 +567,11 @@ def _security(protocols: ModuleType, lines: list[str]) -> None:
         f"  security repr={context!r} secret={'secret' in repr(context)}",
         f"  security origins={type(context.allowed_origins).__name__} identity={context.allowed_origins[0] is origin}",
     ))
-    record(lines, "security default origins", lambda: protocols.ProtocolSecurityContext(
-        credential_partition="anonymous"
-    ).allowed_origins)
+    record(
+        lines,
+        "security default origins",
+        lambda: protocols.ProtocolSecurityContext(credential_partition="anonymous").allowed_origins,
+    )
     record(lines, "security frozen", lambda: setattr(context, "credential_partition", "other"))
     for label, arguments in (
         ("missing partition", {}),
@@ -611,11 +623,27 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
     record(lines, "protocol options omitted", lambda: options.ProtocolClientOptions())
     record(lines, "protocol options anonymous", lambda: options.ProtocolClientOptions(security=None, defaults={}))
     for name in ("users", "users.all", "_private.x1", "v2.users.list_all", "match.case", "élèves"):
-        record(lines, f"helper name {name!r}", lambda name=name: tuple(options.ProtocolClientOptions(
-            defaults={name: defaults}
-        ).defaults))
-    for name in ("", "users.", ".users", "users..all", "class", "users.class", "1users", "users-all", "users all", 3, None):
-        record(lines, f"helper name {name!r}", lambda name=name: options.ProtocolClientOptions(defaults={name: defaults}))
+        record(
+            lines,
+            f"helper name {name!r}",
+            lambda name=name: tuple(options.ProtocolClientOptions(defaults={name: defaults}).defaults),
+        )
+    for name in (
+        "",
+        "users.",
+        ".users",
+        "users..all",
+        "class",
+        "users.class",
+        "1users",
+        "users-all",
+        "users all",
+        3,
+        None,
+    ):
+        record(
+            lines, f"helper name {name!r}", lambda name=name: options.ProtocolClientOptions(defaults={name: defaults})
+        )
     for label, arguments in (
         ("security string", {"security": "anonymous"}),
         ("security options", {"security": pagination}),
@@ -624,7 +652,9 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
         ("defaults value", {"defaults": {"users": pagination}}),
         ("defaults value None", {"defaults": {"users": None}}),
     ):
-        record(lines, f"protocol options {label}", lambda arguments=arguments: options.ProtocolClientOptions(**arguments))
+        record(
+            lines, f"protocol options {label}", lambda arguments=arguments: options.ProtocolClientOptions(**arguments)
+        )
     client_options = options.ClientOptions(protocols=configured)
     hints = get_type_hints(options.ClientOptions)
     lines.append(
@@ -643,9 +673,15 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
     ):
         record(lines, label, create)
     names = importlib.import_module(f"{package.__name__}._runtime.protocols.names")
-    for label, module in (("options", options), ("errors", importlib.import_module(f"{package.__name__}.errors")), ("names", names)):
+    for label, module in (
+        ("options", options),
+        ("errors", importlib.import_module(f"{package.__name__}.errors")),
+        ("names", names),
+    ):
         record(lines, f"unknown {label} attribute", lambda module=module: getattr(module, "MissingProtocolType"))
-        record(lines, f"{label} dir", lambda module=module: [name for name in dir(module) if name.startswith("Protocol")])
+        record(
+            lines, f"{label} dir", lambda module=module: [name for name in dir(module) if name.startswith("Protocol")]
+        )
     record(lines, "client with defaults of helpers it lacks", lambda: package.Client(options=client_options))
     secured = options.ClientOptions(protocols=options.ProtocolClientOptions(security=security))
     _calls(package, options, secured, lines)
@@ -663,9 +699,9 @@ def _calls(package: ModuleType, options: ModuleType, client_options: Any, lines:
     with exchange.client() as native, package.Client(http_client=native, options=client_options) as api:
         exchange.respond(json_response(200, [{"id": 1, "name": "cat"}], **{"X-Rate": "1"}))
         record(lines, "configured client list", lambda: api.pets.list_pets(x_trace=trace))
-        with api.with_options(options.RequestOptions(total_timeout=2)) as view:
-            exchange.respond(json_response(200, [], **{"X-Rate": "1"}))
-            record(lines, "configured view list", lambda: view.pets.list_pets(x_trace=trace))
+        view = api.with_options(options.RequestOptions(total_timeout=2))
+        exchange.respond(json_response(200, [], **{"X-Rate": "1"}))
+        record(lines, "configured view list", lambda: view.pets.list_pets(x_trace=trace))
     with (
         exchange.client() as native,
         package.Client(http_client=native, options=options.ClientOptions(protocols=None)) as api,

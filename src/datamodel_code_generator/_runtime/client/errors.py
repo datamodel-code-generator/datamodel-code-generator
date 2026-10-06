@@ -13,10 +13,10 @@ from ..protocols.references import OperationRef
 from .responses import HeadersView, Response, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 
 RetryStopReason: TypeAlias = Literal[
+    "unknown_delivery",
     "status_not_retryable",
     "transport_not_retryable",
     "auth_unrefreshable",
-    "retry_owned_by_transport",
     "operation_never",
     "server_forbids_retry",
     "disabled",
@@ -188,6 +188,21 @@ def add_secondary(error: BaseException, *failures: BaseException) -> None:
             notes.append(note)
         else:
             error.__dict__["__notes__"] = [note]
+
+
+def kept_primary(primary: BaseException, failure: BaseException) -> BaseException:
+    """Return what propagates after a cleanup failure.
+
+    An interruption replaces an ordinary error, names it in a note, and links it as its cause unless it has one; any
+    other failure stays beside the error already propagating.
+    """
+    if isinstance(primary, Exception) and not isinstance(failure, Exception):
+        add_secondary(failure, primary)
+        if failure.__cause__ is None:
+            failure.__cause__ = primary
+        return failure
+    add_secondary(primary, failure)
+    return primary
 
 
 def _is_notes(value: object) -> TypeIs[list[object]]:
@@ -370,11 +385,6 @@ def is_http_error(error: object) -> TypeGuard[APIStatusError]:
 def is_client_closed(error: object) -> TypeGuard[ConfigurationError]:
     """Return whether an error refused a call because its client or view is closing or closed."""
     return isinstance(error, ConfigurationError) and error.reason == "client_closed"
-
-
-def is_redirect_refused(error: object) -> TypeGuard[ConfigurationError]:
-    """Return whether an error is a redirect that cannot be followed safely."""
-    return isinstance(error, ConfigurationError) and error.reason == "redirect_refused"
 
 
 _CALL_STATES: Final = frozenset({"client_closed", "redirect_refused", "response_consumed"})
@@ -764,88 +774,3 @@ class DecompressionLimitError(ProtocolSizeError):
         self.layer = layer
         self.encoded_bytes = encoded_bytes
         self.max_ratio = max_ratio
-
-
-class RequestCancelledError(SDKError):
-    """An explicit cancellation token stopped the call; native cancellation keeps its original type."""
-
-    def __init__(
-        self,
-        *,
-        source: Literal["cancel_token", "parent_cancel_token"],
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep the observed token source and request delivery evidence."""
-        error_choice(source, ("cancel_token", "parent_cancel_token"), "source")
-        super().__init__(**metadata)
-        self.source: Literal["cancel_token", "parent_cancel_token"] = source
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("delivery_state", self.delivery_state.value))
-
-
-class _AdapterError(SDKError):
-    def __init__(self, **metadata: Unpack[ErrorMetadata]) -> None:
-        """Keep how far the request got."""
-        _delivery_default(metadata, DeliveryState.MAYBE_SENT)
-        super().__init__(**metadata)
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("delivery_state", self.delivery_state.value))
-
-
-class AdapterContractError(_AdapterError):
-    """A transport that broke its contract, such as handing over a body something already read; nothing is retried."""
-
-
-class AdapterExecutionError(_AdapterError):
-    """A transport adapter that failed outside its classified I/O errors, such as a programming error; no retry."""
-
-
-class CleanupError(SDKError):
-    """A close that ran out of its cleanup time or failed to release something; closing again waits again."""
-
-    def __init__(
-        self,
-        *,
-        pending_calls: int = 0,
-        pending_leases: int = 0,
-        pending_providers: int = 0,
-        timeout: float | None = None,
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep what is still unfinished and the cleanup time that ran out."""
-        super().__init__(**metadata)
-        self.pending_calls = pending_calls
-        self.pending_leases = pending_leases
-        self.pending_providers = pending_providers
-        self.timeout = timeout
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (
-            *super()._details(),
-            ("pending_calls", self.pending_calls),
-            ("pending_leases", self.pending_leases),
-            ("timeout", self.timeout),
-        )
-
-
-class UnsupportedAsyncBackendError(SDKError):
-    """An async client awaited outside asyncio, or on another event loop than its first call's; nothing is sent."""
-
-    def __init__(
-        self,
-        *,
-        detected_backend: str | None = None,
-        expected_backend: Literal["asyncio"] = "asyncio",
-        loop_mismatch: bool = False,
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep the backend found, the one required, and whether only the event loop differs."""
-        super().__init__(**metadata)
-        self.detected_backend = detected_backend
-        self.expected_backend = expected_backend
-        self.loop_mismatch = loop_mismatch
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("loop_mismatch", self.loop_mismatch))

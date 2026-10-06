@@ -40,7 +40,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
   attempt closed
   attempt closed
-  file parts failing to close: CleanupError secondary []
+  file parts failing to close: SDKError secondary []
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":[1,"x"]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n5\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   raw parts = b'ok'
@@ -257,7 +257,7 @@ codes.0
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
   attempt closed
   attempt closed
-  async file parts failing to close: CleanupError secondary []
+  async file parts failing to close: SDKError secondary []
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 296] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":1}\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   async raw parts = b'ok'
@@ -316,7 +316,7 @@ codes.0
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
   attempt closed
   attempt closed
-  file parts failing to close: CleanupError secondary []
+  file parts failing to close: SDKError secondary []
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":[1,"x"]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n5\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   raw parts = b'ok'
@@ -525,7 +525,7 @@ codes.0
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
   attempt closed
   attempt closed
-  async file parts failing to close: CleanupError secondary []
+  async file parts failing to close: SDKError secondary []
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 296] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":1}\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   async raw parts = b'ok'

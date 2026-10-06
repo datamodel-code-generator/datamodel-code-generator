@@ -138,7 +138,7 @@ def hooks(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(json_response(404, {"code": 7, "message": "gone"}))
         record(lines, "get missing", lambda: api.pets.get_pet(pet_id=pet))
         record(lines, "list of a trace its codec refuses", lambda: api.pets.list_pets(x_trace=object()))
-        exchange.respond(_refusing)
+        exchange.respond(_refusing, _refusing, _refusing)
         record(lines, "get of a refused connection", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(_interrupting)
         try:
@@ -207,7 +207,7 @@ def _raw(api: Any, exchange: Exchange, lines: list[str], options: ModuleType, pe
     trace = object()
     record(lines, "raw list of a trace its codec refuses", lambda: api.pets.with_raw_response.list_pets(x_trace=trace))
     record(lines, "raw request to no URL", lambda: api.request_raw("GET", "not a url"))
-    exchange.respond(_refusing)
+    exchange.respond(_refusing, _refusing, _refusing)
     record(lines, "raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
 
 
@@ -283,7 +283,7 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
         await arecord(lines, "async hook failing on headers and every end", lambda: noisy.pets.get_pet(pet_id=pet))
         await arecord(lines, "async raw list of a trace its codec refuses", lambda: api.pets.with_raw_response.list_pets(x_trace=object()))
         await arecord(lines, "async raw request to no URL", lambda: api.request_raw("GET", "not a url"))
-        exchange.respond(_refusing)
+        exchange.respond(_refusing, _refusing, _refusing)
         await arecord(lines, "async raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
         exchange.respond(_cancelling)
         try:

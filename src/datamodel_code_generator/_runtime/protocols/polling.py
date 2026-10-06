@@ -496,7 +496,6 @@ class _Operation(Generic[T, P]):
             raise self._waited(required, allowed, "wait")
         waiter = core.waiting(limits.options, self._session, call.operation_id)
         if (remaining := waiter.remaining()) is not None and required >= remaining:
-            waiter.finish()
             raise self._waited(required, remaining, "deadline")
         return waiter
 
@@ -885,10 +884,7 @@ class LroHandle(_Operation[T, P]):
     def _pause(self, call: OperationPlan[Any]) -> None:
         """Wait until the next poll or result fetch is due."""
         if (waiter := self._due(self._core, call)) is not None:
-            try:
-                waiter.sleep_until(self._not_before)
-            finally:
-                waiter.finish()
+            waiter.sleep_until(self._not_before)
 
     def _poll(self) -> None:
         """Wait until the next poll is due, then poll once and settle what it gives; a sent poll is counted."""
@@ -1033,10 +1029,7 @@ class AsyncLroHandle(_Operation[T, P]):
     async def _pause(self, call: OperationPlan[Any]) -> None:
         """Wait until the next poll or result fetch is due."""
         if (waiter := self._due(self._core, call)) is not None:
-            try:
-                await waiter.asleep_until(self._not_before)
-            finally:
-                waiter.finish()
+            await waiter.asleep_until(self._not_before)
 
     async def _poll(self) -> None:
         """Wait until the next poll is due, then poll once and settle what it gives; a sent poll is counted."""

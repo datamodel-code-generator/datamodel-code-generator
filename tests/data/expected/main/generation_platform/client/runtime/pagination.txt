@@ -248,10 +248,6 @@ data.0.id
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/loose?cursor=t1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/loose?cursor=t1
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/loose?cursor=t1
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   cursor its parameter refuses ['1'] ! APIConnectionError: APIConnectionError(operation_id='listLoose', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='listLoose', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('Server disconnected without sending a response.')] api_connection_error
   > GET https://api.example.com/labels
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''

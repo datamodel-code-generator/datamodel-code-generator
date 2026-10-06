@@ -15,29 +15,30 @@ from enum import Enum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
+import anyio
+import httpx2
 from typing_extensions import Self, TypeVar
 
 from ..client.errors import (
-    AdapterContractError,
-    AdapterExecutionError,
+    APIConnectionError,
     APITimeoutError,
+    AuthError,
     ConfigurationError,
     DecodeError,
     DeliveryState,
     ProtocolError,
-    RequestCancelledError,
     SDKError,
     is_client_closed,
     is_deadline,
     is_phase_timeout,
     is_transport,
 )
+from ..client.native import native_error, request_fields
 from ..client.operations import request_errors
 from ..client.options import RequestOptions
 from ..client.raw import afinished, finished
 from ..client.responses import HeadersView
-from ..client.timing import SYSTEM_CLOCK, TOKEN_INTERVAL, Clock, Deadline, SessionOptions, real_end, wait_left
-from ..client.transports import TransportCapabilities, attempt_trace
+from ..client.timing import SYSTEM_CLOCK, Clock, Deadline, SessionOptions, real_end, wait_left
 from ..model_codecs.errors import (
     CodecResourceLimitError,
     ParameterEncodingError,
@@ -54,21 +55,20 @@ from .errors import (
     StreamDecodeError,
     WebSocketClosedError,
     WebSocketHandshakeError,
+    WebSocketProxyError,
 )
 from .options import WSOptions, resolved_transport
 from .websocket_types import Message, PingReceipt, ResolvedWSOptions, WebSocketOpenRequest
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterator
+    from collections.abc import AsyncIterator, Callable
     from types import TracebackType
 
-    from ..client.bodies import AsyncBodyAttempt, BodyAttempt
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import InboundModelCodec, OperationPlan, OutboundModelCodec
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
-    from ..client.transports import AsyncTransportResponse, AttemptIOContext, PreparedRequest, TransportResponse
     from .records import ProtocolProgress
     from .references import OperationRef
     from .websocket_types import (
@@ -94,9 +94,7 @@ V = TypeVar("V")
 ErrorT = TypeVar("ErrorT", bound=SDKError)
 OpenedT = TypeVar("OpenedT")
 
-_CAPABILITIES: Final = TransportCapabilities(
-    internal_retry_limit=0, delivery_evidence=True, http_versions=("HTTP/1.1",)
-)
+_NATIVE_FRAMING: Final = frozenset({"host", "content-length", "transfer-encoding"})
 _MANAGED: Final = frozenset({
     "connection",
     "content-length",
@@ -288,67 +286,15 @@ def _socket_url(url: str) -> str:
     return f"{_SCHEMES[scheme.lower()]}:{rest}"
 
 
-class _Head:
-    """The status, headers, and body prefix of a handshake's final response; a 101 has no body."""
+class _RejectedBytes(httpx2.AsyncByteStream):
+    def __init__(self, content: bytes) -> None:
+        self.content = content
 
-    __slots__ = ("_body", "_status", "headers")
-
-    def __init__(self, status: int, headers: HeadersView, body: bytes = b"") -> None:
-        self._status = status
-        self.headers = headers
-        self._body = body
-
-    @property
-    def status_code(self) -> int:
-        """Return the final status."""
-        return self._status
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        yield self.content
 
 
-class _Response(_Head):
-    """A final response a synchronous handshake adapter returns."""
-
-    __slots__ = ()
-
-    def iter_raw_bytes(self) -> Iterator[bytes]:
-        """Yield the body prefix."""
-        return iter((self._body,))
-
-
-class _AsyncResponse(_Head):
-    """A final response an asyncio handshake adapter returns."""
-
-    __slots__ = ()
-
-    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:
-        """Yield the body prefix."""
-        yield self._body
-
-
-class _Rejected(_Response):
-    """The response of a handshake a connector got another status than 101 for, with its bounded body prefix."""
-
-    __slots__ = ()
-
-    def __init__(self, response: HandshakeResponse) -> None:
-        super().__init__(response.status_code, response.headers, response.body_prefix)
-
-    def close(self) -> None:
-        """Release nothing: the connector closed the connection."""
-
-
-class _AsyncRejected(_AsyncResponse):
-    """The asyncio form of a refused handshake's response."""
-
-    __slots__ = ()
-
-    def __init__(self, response: HandshakeResponse) -> None:
-        super().__init__(response.status_code, response.headers, response.body_prefix)
-
-    async def aclose(self) -> None:
-        """Release nothing: the connector closed the connection."""
-
-
-class _Upgraded(_Response):
+class _Upgraded(httpx2.SyncByteStream):
     """The 101 of a synchronous handshake, holding its connection until the handle that owns it closes.
 
     Closing sends the code the session chose, going away by default, waiting at most the close timeout; without a code,
@@ -358,7 +304,6 @@ class _Upgraded(_Response):
     __slots__ = ("code", "connection", "reason", "subprotocol", "timeout")
 
     def __init__(self, connection: WebSocketConnection, timeout: float) -> None:
-        super().__init__(_SWITCHING, connection.handshake_headers)
         self.connection = connection
         self.subprotocol = connection.subprotocol
         self.timeout = timeout
@@ -378,13 +323,12 @@ class _Upgraded(_Response):
             raise
 
 
-class _AsyncUpgraded(_AsyncResponse):
+class _AsyncUpgraded(httpx2.AsyncByteStream):
     """The 101 of an asyncio handshake, holding its connection, as the synchronous one does."""
 
     __slots__ = ("code", "connection", "reason", "subprotocol", "timeout")
 
     def __init__(self, connection: AsyncWebSocketConnection, timeout: float) -> None:
-        super().__init__(_SWITCHING, connection.handshake_headers)
         self.connection = connection
         self.subprotocol = connection.subprotocol
         self.timeout = timeout
@@ -404,48 +348,53 @@ class _AsyncUpgraded(_AsyncResponse):
             raise
 
 
+def _retryable(error: APIConnectionError) -> APIConnectionError:
+    """Return a connector's open failure, its proof that nothing was sent as the native connect failure it stands for.
+
+    The shared retry classification retries only the native connect trio, so a failure the connector proved NOT_SENT
+    takes a native connect error, or a connect timeout for a timeout, as its cause, keeping the connector's own cause
+    as that one's. A proxy's refusal and a broken handshake are never retried, so they stay as they are.
+    """
+    if error.delivery_state is not DeliveryState.NOT_SENT or isinstance(
+        error, (WebSocketProxyError, WebSocketHandshakeError)
+    ):
+        return error
+    native = httpx2.ConnectTimeout if isinstance(error, APITimeoutError) else httpx2.ConnectError
+    proof = native(str(cause) if (cause := error.cause) is not None else "the WebSocket connector sent nothing")
+    proof.__cause__ = cause
+    error.cause = proof
+    return error
+
+
 class _Handshakes(Generic[OpenedT]):
     """What the synchronous and asyncio handshake adapters share: the plan, the limits, and the checks of a 101."""
 
-    __slots__ = ("_plan", "_socket", "_transport", "capabilities", "opened")
+    __slots__ = ("_plan", "_socket", "_transport", "opened")
 
     def __init__(self, plan: ChannelPlan[SendT, RecvT], limits: _Limits) -> None:
         self._plan: ChannelPlan[object, object] = cast("ChannelPlan[object, object]", plan)
         self._socket = limits.socket
         self._transport = limits.transport
-        self.capabilities: TransportCapabilities = _CAPABILITIES
         self.opened: OpenedT | None = None
 
-    def _request(
-        self, request: PreparedRequest[BodyAttempt | AsyncBodyAttempt], context: AttemptIOContext
-    ) -> WebSocketOpenRequest:
-        context.trace.phase_started("connect")
+    def _request(self, request: httpx2.Request) -> WebSocketOpenRequest:
         return WebSocketOpenRequest(
-            url=_socket_url(request.url), headers=request.headers, subprotocols=self._plan.subprotocols
+            url=_socket_url(str(request.url)),
+            headers=HeadersView(
+                (name, value) for name, value in request_fields(request) if name.lower() not in _NATIVE_FRAMING
+            ),
+            subprotocols=self._plan.subprotocols,
         )
 
-    def _options(self, context: AttemptIOContext) -> ResolvedWSOptions:
-        return replace(self._socket, open_timeout=context.timeout.connect)
+    def _options(self, call: LogicalCallContext) -> ResolvedWSOptions:
+        return replace(self._socket, open_timeout=call.timeout().connect)
 
-    @staticmethod
-    def _rejected(response: HandshakeResponse, context: AttemptIOContext) -> None:
-        """Record the response a refused handshake got, unless its connector broke its trace or refused with a 1xx."""
-        trace = attempt_trace(context)
-        if trace.broken or response.status_code < _FINAL:
-            raise AdapterContractError(delivery_state=DeliveryState.RESPONSE_STARTED, cause=response)
-        trace.response_headers_received(
-            http_version="HTTP/1.1", status_code=response.status_code, headers=response.headers
-        )
-
-    def _problem(self, headers: object, selected: object, context: AttemptIOContext) -> SDKError | None:
-        """Return why an opened connection is unusable: a broken trace, bad headers, or a subprotocol not offered."""
-        trace = attempt_trace(context)
-        if trace.broken or not isinstance(headers, HeadersView) or not isinstance(selected, (str, type(None))):
-            return AdapterContractError(delivery_state=DeliveryState.RESPONSE_STARTED)
+    def _problem(self, headers: object, selected: object) -> SDKError | None:
+        if not isinstance(headers, HeadersView) or not isinstance(selected, (str, type(None))):
+            return WebSocketHandshakeError(condition="negotiation", delivery_state=DeliveryState.RESPONSE_STARTED)
         offered = self._plan.subprotocols
         if (selected is None and offered) or (selected is not None and selected not in offered):
             return WebSocketHandshakeError(condition="negotiation", delivery_state=DeliveryState.RESPONSE_STARTED)
-        trace.response_headers_received(http_version="HTTP/1.1", status_code=_SWITCHING, headers=headers)
         return None
 
 
@@ -459,21 +408,28 @@ class _Handshake(_Handshakes[_Upgraded]):
         super().__init__(plan, limits)
         self._connector = connector
 
-    def send(self, request: PreparedRequest[BodyAttempt], context: AttemptIOContext) -> TransportResponse:
-        """Open one connection: a 101 holds it, and another status is the response the connector reported."""
-        opening = self._request(request, context)
+    def open(self, request: httpx2.Request, call: LogicalCallContext) -> httpx2.Response:
+        """Open the socket once, returning a native response whose stream owns its close."""
+        opening = self._request(request)
         try:
             connection = self._connector.open(
-                opening, context=context, options=self._options(context), transport=self._transport
+                opening, deadline=call.deadline, options=self._options(call), transport=self._transport
             )
+        except APIConnectionError as error:
+            raise _retryable(error) from None
         except HandshakeResponse as response:
-            self._rejected(response, context)
-            return _Rejected(response)
-        if (problem := self._problem(connection.handshake_headers, connection.subprotocol, context)) is not None:
+            if response.status_code < _FINAL:
+                raise WebSocketHandshakeError(
+                    condition="negotiation", delivery_state=DeliveryState.RESPONSE_STARTED, cause=response
+                ) from None
+            return httpx2.Response(
+                response.status_code, headers=response.headers.items(), stream=httpx2.ByteStream(response.body_prefix)
+            )
+        if (problem := self._problem(connection.handshake_headers, connection.subprotocol)) is not None:
             connection.abort()
             raise problem
         self.opened = opened = _Upgraded(connection, self._socket.close_timeout)
-        return opened
+        return httpx2.Response(_SWITCHING, headers=connection.handshake_headers.items(), stream=opened)
 
     def close(self) -> None:
         """Release nothing: the connector is the client's or borrowed."""
@@ -489,23 +445,28 @@ class _AsyncHandshake(_Handshakes[_AsyncUpgraded]):
         super().__init__(plan, limits)
         self._connector = connector
 
-    async def send(
-        self, request: PreparedRequest[AsyncBodyAttempt], context: AttemptIOContext
-    ) -> AsyncTransportResponse:
-        """Open one connection: a 101 holds it, and another status is the response the connector reported."""
-        opening = self._request(request, context)
+    async def open(self, request: httpx2.Request, call: LogicalCallContext) -> httpx2.Response:
+        """Open the socket once, returning a native response whose stream owns its close."""
+        opening = self._request(request)
         try:
             connection = await self._connector.open(
-                opening, context=context, options=self._options(context), transport=self._transport
+                opening, deadline=call.deadline, options=self._options(call), transport=self._transport
             )
+        except APIConnectionError as error:
+            raise _retryable(error) from None
         except HandshakeResponse as response:
-            self._rejected(response, context)
-            return _AsyncRejected(response)
-        if (problem := self._problem(connection.handshake_headers, connection.subprotocol, context)) is not None:
+            if response.status_code < _FINAL:
+                raise WebSocketHandshakeError(
+                    condition="negotiation", delivery_state=DeliveryState.RESPONSE_STARTED, cause=response
+                ) from None
+            return httpx2.Response(
+                response.status_code, headers=response.headers.items(), stream=_RejectedBytes(response.body_prefix)
+            )
+        if (problem := self._problem(connection.handshake_headers, connection.subprotocol)) is not None:
             connection.abort()
             raise problem
         self.opened = opened = _AsyncUpgraded(connection, self._socket.close_timeout)
-        return opened
+        return httpx2.Response(_SWITCHING, headers=connection.handshake_headers.items(), stream=opened)
 
     async def aclose(self) -> None:
         """Release nothing: the connector is the client's or borrowed."""
@@ -584,35 +545,35 @@ class _Sockets(Generic[SendT, RecvT]):
         return _progress(self._sent, self._received)
 
     def _stamped(self, error: ErrorT) -> ErrorT:
-        """Give a failure of the session the helper's context, the handshake call's identity, and its counters."""
+        """Give a failure of the session the helper's context, the handshake call's identity, and its counters.
+
+        A failure keeps its own delivery evidence; one without any, NOT_SENT, takes how far the handshake call got,
+        unless it is a transport or auth failure, whose NOT_SENT is its proof.
+        """
         if isinstance(error, (ProtocolError, WebSocketHandshakeError)):
             error.helper_id = self._plan.helper_id
             error.operation = self._plan.operation
+        state = error.delivery_state
         failure = self._call.snapshot_error(error)
+        if state is not DeliveryState.NOT_SENT or isinstance(error, (APIConnectionError, AuthError)):
+            failure.delivery_state = state
         failure.info = self._info
         return failure
 
     def _own(self, error: BaseException) -> BaseException:
-        """Return a failure as the session's: stamped, with a connection's unclassified exception as its cause.
+        """Return a failure as the session's: stamped, a connection's unclassified exception classified as the client's.
 
         A native interruption, such as cancellation, stays itself.
         """
         if isinstance(error, SDKError):
             return self._stamped(error)
         if isinstance(error, Exception):
-            return self._stamped(AdapterExecutionError(delivery_state=DeliveryState.RESPONSE_STARTED, cause=error))
+            return self._stamped(native_error(error, send_started=True, response_started=True))
         return error
 
     def _halted(self) -> Exception | None:
-        """Return what stops the session's call now: cancellation, the client closing, or the deadline.
-
-        A native cancellation propagates as it is.
-        """
-        try:
-            self._call.check("stream", DeliveryState.RESPONSE_STARTED)
-        except Exception as error:  # noqa: BLE001
-            return error
-        return None
+        """Return the session deadline's failure once it passed, or None."""
+        return self._call.expired("stream", DeliveryState.RESPONSE_STARTED)
 
     def _checked(self) -> None:
         self._call.check("stream", DeliveryState.RESPONSE_STARTED)
@@ -658,7 +619,7 @@ class _Sockets(Generic[SendT, RecvT]):
         """Return what a closed connection means: this session's own close, or the server's closure, kept."""
         if self._state is _State.CLOSED:
             return self._state_error("receive")
-        self._closed = (closed.code, closed.reason, closed.clean)
+        self._closed = (closed.code, closed.reason or "", closed.clean)
         return self._close_error()
 
     def _payload(self, value: object) -> tuple[bytes, bool]:
@@ -726,10 +687,19 @@ class _Sockets(Generic[SendT, RecvT]):
     def _phase_timeout(
         self, timeout: float | None, phase: Literal["read", "write"], delivery: DeliveryState
     ) -> BaseException:
-        """Return what stops the call when its deadline passed, else the expiry of a phase's own timeout."""
+        """Return what stops the call when its deadline passed, else the expiry of a phase's own timeout.
+
+        A wait without a timeout of its own ended at the deadline: by the client's clock, or by the real time it
+        measured when it began when that clock lags behind.
+        """
         if (halt := self._halted()) is not None:
             return halt
-        assert timeout is not None
+        if timeout is None and (deadline := self._call.deadline) is not None:
+            return self._stamped(
+                APITimeoutError(
+                    reason="deadline_exceeded", deadline_at=deadline.at, phase="stream", delivery_state=delivery
+                )
+            )
         return self._stamped(
             APITimeoutError(
                 reason="phase_timeout",
@@ -800,13 +770,6 @@ def _utf8(value: object) -> bytes | None:
         return None
 
 
-def _slice(left: float | None, polled: bool) -> float | None:  # noqa: FBT001
-    """Return how long to wait next: the time left, and at most the token interval when polling."""
-    if polled and (left is None or left > TOKEN_INTERVAL):
-        return TOKEN_INTERVAL
-    return left
-
-
 def _left(deadline: Deadline | None, end: float | None) -> float | None:
     """Return the time a wait has left: until its deadline's clock expires it, or real time reaches the wait's end."""
     return None if deadline is None or end is None else wait_left(deadline.remaining(), end)
@@ -831,24 +794,22 @@ class _Queue:
         self._next = 0
         self._serving = 0
 
-    def acquire(self, deadline: Deadline | None, check: Callable[[], None] | None) -> bool:
-        """Wait for the turn until the deadline, running the check at each token interval; False once it passed."""
+    def acquire(self, deadline: Deadline | None) -> bool:
+        """Wait for the turn until the deadline; False once it passed."""
         end = _end(deadline)
         with self._condition:
             ticket = self._next
             self._next += 1
+            served = False
             try:
                 while ticket != self._serving:
-                    wait = _slice(_left(deadline, end), check is not None)
-                    if check is not None:
-                        check()
-                    if wait is not None and not wait > 0:
-                        self._gone.add(ticket)
+                    if (left := _left(deadline, end)) is not None and not left > 0:
                         return False
-                    self._condition.wait(wait)
-            except BaseException:
-                self._gone.add(ticket)
-                raise
+                    self._condition.wait(left)
+                served = True
+            finally:
+                if not served:
+                    self._gone.add(ticket)
             return True
 
     def release(self) -> None:
@@ -865,10 +826,10 @@ class _Queue:
 class WebSocketSession(_Sockets[SendT, RecvT]):
     """A synchronous WebSocket session: send typed messages, and receive them or iterate over them.
 
-    The session owns its connection until it closes or fails; closing the client closes it too. One receive runs at a
-    time, beside sends that go one at a time in arrival order. A closure by the server ends iteration when it was
-    normal; `receive` raises WebSocketClosedError either way. After a failure or `close()` every step raises
-    ProtocolStateError, and iteration after `close()` stops.
+    The session owns its connection until it closes or fails; closing the client leaves it open, so close each session
+    itself. One receive runs at a time, beside sends that go one at a time in arrival order. A closure by the server
+    ends iteration when it was normal; `receive` raises WebSocketClosedError either way. After a failure or `close()`
+    every step raises ProtocolStateError, and iteration after `close()` stops.
     """
 
     __slots__ = ("_connection", "_queue", "_response")
@@ -888,16 +849,13 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         self._connection = opened.connection
         self._queue = _Queue()
 
-    def _check(self) -> Callable[[], None] | None:
-        """Return the call's check when a cancel token needs polling while waiting, or None."""
-        return None if self._call.settings.cancel_token is None else self._checked
-
     def send(self, value: SendT) -> None:
         """Send one message after the earlier sends, within the send timeout; a message that may have gone is final."""
         data, text = self._payload(value)
         self._usable("send")
         cap = self._deadline(self._socket.send_timeout)
-        if not self._queue.acquire(cap, self._check()):
+        if not self._queue.acquire(cap):
+            self._checked()
             raise self._unsent()
         try:
             self._usable("send")
@@ -908,11 +866,7 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         except WebSocketClosedError as closed:
             raise self._ended(closed) from None
         except BaseException as error:
-            if (
-                isinstance(error, (ProtocolStateError, RequestCancelledError))
-                or is_deadline(error)
-                or is_client_closed(error)
-            ):
+            if isinstance(error, (ProtocolStateError)) or is_deadline(error) or is_client_closed(error):
                 raise
             raise self._failed(self._undelivered(error)) from None
         finally:
@@ -943,22 +897,10 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
             raise self._failed(error.with_traceback(None)) from None
 
     def _frame(self, deadline: Deadline | None) -> WSFrame:
-        """Wait for a frame until the deadline, checking the call first and, with a cancel token, at its interval.
-
-        The connection waits in real time for as long as the deadline's clock has left when each wait begins.
-        """
-        polled = self._call.settings.cancel_token is not None
-        end = _end(deadline)
-        while True:
-            self._checked()
-            left = _left(deadline, end)
-            sliced = polled and (left is None or left > TOKEN_INTERVAL)
-            span = TOKEN_INTERVAL if sliced else left
-            try:
-                return self._connection.receive(deadline=None if span is None else Deadline.after(max(0.0, span)))
-            except TimeoutError:
-                if not sliced:
-                    raise
+        """Wait once with the remaining absolute socket deadline."""
+        self._checked()
+        left = _left(deadline, _end(deadline))
+        return self._connection.receive(deadline=None if left is None else Deadline.after(max(0.0, left)))
 
     def ping(self, payload: bytes = b"") -> PingReceipt:
         """Send a ping, beside any send, and wait at most the pong timeout for its pong."""
@@ -966,11 +908,9 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         self._usable("ping")
         try:
             self._checked()
-            latency = self._connection.ping(
-                payload, deadline=self._deadline(self._socket.pong_timeout), check=self._check()
-            )
+            latency = self._connection.ping(payload, deadline=self._deadline(self._socket.pong_timeout))
         except TimeoutError:
-            raise self._failed(self._unanswered()) from None
+            raise self._failed(self._halted() or self._unanswered()) from None
         except WebSocketClosedError as closed:
             raise self._ended(closed) from None
         except ProtocolStateError as refused:
@@ -987,10 +927,9 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         return error
 
     def _ended(self, closed: WebSocketClosedError) -> BaseException:
-        """End the session at a closed connection, unless the call stopped: cancelled, its client closing, or expired.
+        """End the session at a closed connection, unless the session's deadline already passed.
 
-        A synchronous wait has no guard, so a connection the client's closing closed reports that first. A closure
-        that was not normal ends the session as failed.
+        A closure that was not normal ends the session as failed.
         """
         if (halt := self._halted()) is not None:
             return self._failed(halt)
@@ -1041,9 +980,9 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
 class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
     """An asyncio WebSocket session, with the synchronous session's contract.
 
-    Each wait runs under the call's guard in a lane of its own, so the cancel token, the client closing, and the
-    deadline stop only the waiting task. A receive or send they stop drops the connection, since a frame may be half
-    read or written; cancelling a receive's task leaves the session usable, as the library reads whole frames.
+    Each wait runs in a lane of its own, so its deadline stops only the waiting task. A receive or send it stops drops
+    the connection, since a frame may be half read or written; cancelling a receive's task leaves the session usable,
+    as the library reads whole frames.
     """
 
     __slots__ = ("_connection", "_queue", "_response")
@@ -1066,23 +1005,29 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         self._queue = asyncio.Lock()
 
     async def send(self, value: SendT) -> None:
-        """Send one message after the earlier sends, within the send timeout; a message that may have gone is final."""
+        """Send one message after the earlier sends, within the send timeout; a message that may have gone is final.
+
+        The send timeout bounds the wait for earlier sends and is checked before the write starts; the session deadline
+        also bounds the write, whose message then may have gone.
+        """
         data, text = self._payload(value)
         self._usable("send")
         cap = self._deadline(self._socket.send_timeout)
         lane = self._call.lane(cap)
+        left = _left(cap, _end(cap))
         try:
-            await lane.bounded(self._queue.acquire, phase="stream", idle=False, cleanup=self._release_turn)
+            with anyio.fail_after(None if left is None else max(0.0, left)):
+                await lane.bounded(self._queue.acquire, phase="stream", idle=False, cleanup=self._release_turn)
+        except TimeoutError:
+            raise self._unsent() from None
         except BaseException as error:  # noqa: BLE001
             raise (self._unsent() if self._capped(error, cap) else self._own(error)) from None
+        deadline = self._call.deadline
         try:
             self._usable("send")
-            await lane.bounded(
-                lambda: self._connection.send(data, text=text, deadline=cap),
-                phase="stream",
-                delivery_state=DeliveryState.MAYBE_SENT,
-                idle=False,
-            )
+            left = _left(deadline, _end(deadline))
+            with anyio.move_on_after(None if left is None else max(0.0, left)) as bound:
+                await self._connection.send(data, text=text, deadline=cap)
         except TimeoutError:
             raise self._unsent() from None
         except WebSocketClosedError as closed:
@@ -1093,6 +1038,10 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             raise await self._failed(self._undelivered(error, cap)) from None
         finally:
             self._queue.release()
+        if bound.cancelled_caught:
+            cause = self._halted() or self._phase_timeout(None, "write", DeliveryState.MAYBE_SENT)
+            unknown = DeliveryUnknownError(delivery_state=DeliveryState.MAYBE_SENT, cause=cause)
+            raise await self._failed(self._stamped(unknown))
         self._sent += 1
 
     async def _release_turn(self, acquired: object) -> None:
@@ -1230,7 +1179,7 @@ def connect_socket(  # noqa: PLR0913
     response, call = core.open_socket(
         plan.call,
         arguments,
-        adapter,
+        adapter.open,
         options=limits.options,
         session=session,
         open_timeout=limits.socket.open_timeout,
@@ -1260,7 +1209,7 @@ async def aconnect_socket(  # noqa: PLR0913
     response, call = await core.open_socket(
         plan.call,
         arguments,
-        adapter,
+        adapter.open,
         options=limits.options,
         session=session,
         open_timeout=limits.socket.open_timeout,

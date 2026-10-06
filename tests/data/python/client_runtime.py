@@ -57,6 +57,10 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
     )
 
 
+class Stop(BaseException):
+    """An interruption that is not an Exception, as KeyboardInterrupt is."""
+
+
 class Exchange:
     """Answer each request through a queue of responders, recording the request line, headers, and body.
 

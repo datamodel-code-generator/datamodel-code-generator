@@ -263,20 +263,16 @@
     callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   async auth_start hook fails = ('SDKError', 'hook_failed', None, 'RuntimeError', (), 0, 'NOT_SENT', 0)
     callbacks=[] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  close with a failing owned provider = ('CleanupError', 0, 0, 'RuntimeError')
-  adopt after close = ('ConfigurationError', 'client_closed', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  close again = ('closed',)
-    closes=(1, 1, 0)
-  adopt through a closed view = ('returned', None)
-  close root = ('closed',)
-    adopted closes=1
-  async aclose with a failing owned provider = ('CleanupError', 0, 0, 'RuntimeError')
-  async aclose outlived by an owned provider = ('CleanupError', 0, 1, 'NoneType')
-  async aclose once the provider closed = ('closed',)
-  async aclose during a call outlasting it = ('CleanupError', 1, 1, 'NoneType')
-  async outlasting call = ('ConfigurationError', 'client_closed', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  async aclose once the call ended = ('closed',)
-    closes=(1, 1, 1)
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
+  root call = ('returned', 200)
+  call after close = ('ConfigurationError', 'client_closed', None, 'NoneType', (), 0, 'NOT_SENT', 0)
+    provider closes=0 borrowed closed=False view close=False
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
+  async root call = ('returned', 200)
+  async call after close = ('ConfigurationError', 'client_closed', None, 'NoneType', (), 0, 'NOT_SENT', 0)
+    provider closes=0 borrowed closed=False view close=False
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
   credentials kept to their origin = ('ConfigurationError', 'origin_denied', None, 'NoneType', (), 1, 'RESPONSE_STARTED', 0)

@@ -177,52 +177,36 @@
   unlimited = 200
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=ConnectError('failed')] api_connection_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=ConnectTimeout('failed')] phase_timeout
+  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='pool', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='pool', cause=PoolTimeout('failed')] phase_timeout
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='pool', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='pool', cause=PoolTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='write') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='write', effective_timeout=30.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteTimeout('failed')] phase_timeout
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='read', effective_timeout=30.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport RemoteProtocolError ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=RemoteProtocolError('failed')] adapter_execution_error
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  transport RemoteProtocolError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport broken ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
@@ -251,17 +235,16 @@
   options server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
   options server variables ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='server.variables') [field_path=('server', 'variables'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
-  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, cleanup_timeout=UNSET, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, deadline=UNSET, cancel_token=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
+  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, deadline=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
   headers get a=1 None ('a=1', 'b=2')
   headers contains True False False
   headers equal True False
   headers hash True
-  error condition ! TypeError: SDKError.__init__() got an unexpected keyword argument 'condition' []
+  error condition = ConfigurationError: ConfigurationError(reason='invalid_value') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   error bare SDKError() sdk_error APIConnectionError(delivery_state='NOT_SENT', phase='unknown')
-  lifecycle borrowed closed False owned closed True
+  lifecycle borrowed closed False
   client http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  client ownership ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='http_client_ownership') [field_path=('http_client_ownership',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   client options ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -271,11 +254,9 @@
   async create = Response(Pet(id=2, name='dog', tag=None), 201, 'application/json', None, [('content-length', '21'), ('content-type', 'application/json')])
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=ConnectError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('Server disconnected without sending a response.')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async broken ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
@@ -290,7 +271,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True] internal_server_error
   async borrowed closed False
-  async owned closed True
+  async borrowed second closed False
   async http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
@@ -474,52 +455,36 @@
   unlimited = 200
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=ConnectError('failed')] api_connection_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=ConnectTimeout('failed')] phase_timeout
+  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='connect', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='pool', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='pool', cause=PoolTimeout('failed')] phase_timeout
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='pool', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='pool', cause=PoolTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='write') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='write', effective_timeout=30.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteTimeout('failed')] phase_timeout
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='read', effective_timeout=30.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport RemoteProtocolError ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=RemoteProtocolError('failed')] adapter_execution_error
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  transport RemoteProtocolError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport broken ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
@@ -548,17 +513,16 @@
   options server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
   options server variables ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='server.variables') [field_path=('server', 'variables'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
-  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, cleanup_timeout=UNSET, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, deadline=UNSET, cancel_token=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
+  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, deadline=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
   headers get a=1 None ('a=1', 'b=2')
   headers contains True False False
   headers equal True False
   headers hash True
-  error condition ! TypeError: SDKError.__init__() got an unexpected keyword argument 'condition' []
+  error condition = ConfigurationError: ConfigurationError(reason='invalid_value') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   error bare SDKError() sdk_error APIConnectionError(delivery_state='NOT_SENT', phase='unknown')
-  lifecycle borrowed closed False owned closed True
+  lifecycle borrowed closed False
   client http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  client ownership ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='http_client_ownership') [field_path=('http_client_ownership',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   client options ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -568,11 +532,9 @@
   async create = Response({'id': 2, 'name': 'dog'}, 201, 'application/json', None, [('content-length', '21'), ('content-type', 'application/json')])
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=ConnectError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('Server disconnected without sending a response.')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async broken ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
@@ -587,7 +549,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True] internal_server_error
   async borrowed closed False
-  async owned closed True
+  async borrowed second closed False
   async http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
