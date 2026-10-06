@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import fields, is_dataclass, replace
+from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING, Final, cast
 
@@ -556,14 +556,9 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
 
 
 def _projection(value: object) -> JSONValue:
-    """Project a contract value into canonical JSON: records become objects of their fields."""
+    """Project a contract value into canonical JSON."""
     if _is_sequence(value):
         return [_projection(item) for item in value]
     if _is_mapping(value):
         return {str(key): _projection(item) for key, item in value.items()}
-    if is_dataclass(value) and not isinstance(value, type):
-        return {
-            "kind": type(value).__name__,
-            **{item.name: _projection(getattr(value, item.name)) for item in fields(value)},
-        }
     return checked_scalar(value)
