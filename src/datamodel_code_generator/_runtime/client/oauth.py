@@ -9,12 +9,13 @@ import base64
 import inspect
 import json
 import re
+import sys
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Final, Generic, Literal, TypeVar, get_args
 from urllib.parse import quote_plus, urlencode, urlsplit
 
-import anyio
 import httpx2
 from typing_extensions import TypeIs
 
@@ -27,7 +28,6 @@ from .errors import (
     DeliveryState,
     IOPhase,
     OAuthErrorCode,
-    add_secondary,
     is_auth_classified,
     is_phase_timeout,
     is_transport,
@@ -38,7 +38,7 @@ from .scopes import scope_tuple
 from .timing import absolute_deadline, finite_number, on_clock
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterator, Mapping
+    from collections.abc import AsyncIterator, Callable, Coroutine, Iterator, Mapping
 
     from .auth import AsyncCredentialProvider, CredentialProvider
     from .options import ResolvedTransportOptions, TimeoutOptions, TransportOptions
@@ -465,7 +465,9 @@ def _ended(body: bytearray, deadline: Deadline) -> bytes:
 
 
 class TokenEndpoint:
-    """A token endpoint borrowing its native client or lazily creating one it owns."""
+    """A synchronous token endpoint reached through one borrowed or lazily created HTTPX2 client."""
+
+    __slots__ = ("_client", "_created", "_lock", "_transport", "authentication", "closed", "endpoint")
 
     def __init__(
         self,
@@ -474,15 +476,17 @@ class TokenEndpoint:
         transport: TransportOptions,
         http_client: object,
     ) -> None:
-        self.endpoint, self.authentication = endpoint, authentication
+        """Validate the transport settings and the client's mode without creating an HTTP client."""
+        import threading  # noqa: PLC0415
+
+        self.endpoint = endpoint
+        self.authentication = authentication
         self._transport = http_client_options(transport, http_client)
         if http_client is not None and not isinstance(http_client, httpx2.Client):
             raise ConfigurationError(field_path=("http_client",), reason="invalid_mode")
-        self._client = http_client
+        self._client: httpx2.Client | None = http_client
         self._created = False
         self.closed = False
-        import threading  # noqa: PLC0415
-
         self._lock = threading.Lock()
 
     def _open(self) -> None:
@@ -490,7 +494,7 @@ class TokenEndpoint:
             raise AuthError(reason="provider_closed", delivery_state=DeliveryState.NOT_SENT)
 
     def prepare(self) -> None:
-        """Create a native token client once before consuming any credential."""
+        """Create the SDK-owned client once, before any exchange consumes its credential, unless already closed."""
         with self._lock:
             self._open()
             if self._client is None:
@@ -498,74 +502,92 @@ class TokenEndpoint:
                 self._created = True
 
     def exchange(self, fields: tuple[tuple[str, str], ...], session: Session) -> Exchanged:
-        """Send one bounded POST without resource credentials, redirects, or SDK retries."""
-        self._open()
+        """Acquire the client secret, then send the form once, without redirects or retries, reading a bounded body.
+
+        The form is never sent once the session ended or the provider closed, and a secret provider's failure
+        propagates.
+        """
+        target = self.endpoint
+        authentication = self.authentication
         secret = None
-        if session.deadline.remaining() <= 0:
-            return expired(session, DeliveryState.NOT_SENT)
-        if (provider := self.authentication.secret) is not None:
+        if (provider := authentication.secret) is not None:
             try:
-                secret = _secret_value(provider.get(_secret_context(self.endpoint.origin, session.deadline)))
+                secret = _secret_value(provider.get(_secret_context(target.origin, session.deadline)))
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
                 raise _provider_failure(error) from None
-        if session.deadline.remaining() <= 0:
-            return expired(session, DeliveryState.NOT_SENT)
         timeout, caps = session.timeout()
         request = token_request(
-            self.endpoint.url,
-            self.authentication.client_id,
-            self.authentication.method,
-            fields,
-            secret,
-            timeout=timeout,
+            target.url, authentication.client_id, authentication.method, fields, secret, timeout=timeout
         )
-        client = self._client
+        with self._lock:
+            self._open()
+            if session.deadline.remaining() <= 0:
+                return expired(session, DeliveryState.NOT_SENT)
+            client = self._client
         assert client is not None
         try:
             response = client.send(request, stream=True, auth=None, follow_redirects=False)
-        except Exception as error:  # noqa: BLE001 - Every adapter failure is classified by its evidence.
+        except Exception as error:  # noqa: BLE001 - Every native failure is classified by its exception type.
             failure = native_error(error, send_started=True)
             return _failed(failure, failure.delivery_state, caps, session)
         status = response.status_code
-        headers = HeadersView(response.headers.multi_items())
-        primary: BaseException | None = None
         try:
             body = _read(response_bytes(response), session.deadline)
             received, received_at = receipt(session.clock)
         except _SessionExpiredError:
             return expired(session, DeliveryState.RESPONSE_STARTED, status)
         except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
-            primary = error
-            return _failed(
-                native_error(error, send_started=True, response_started=True),
-                DeliveryState.RESPONSE_STARTED,
-                caps,
-                session,
-                status,
-            )
-        except BaseException as error:
-            primary = error
-            raise
+            failure = native_error(error, send_started=True, response_started=True)
+            return _failed(failure, DeliveryState.RESPONSE_STARTED, caps, session, status)
         finally:
-            try:
+            with suppress(Exception):
                 response.close()
-            except BaseException as error:
-                if primary is None:
-                    raise
-                add_secondary(primary, error)
-        return _answered(status, headers, body, received, received_at)
+        return _answered(status, HeadersView(response.headers.multi_items()), body, received, received_at)
 
     def close(self) -> None:
-        """Release only the provider's lazily created native client, at most once."""
-        if self.closed:
-            return
-        self.closed = True
-        if self._created and self._client is not None:
-            self._client.close()
+        """Close the client the endpoint created, once; a borrowed one stays open, and none is created afterwards."""
+        with self._lock:
+            if self.closed:
+                return
+            self.closed = True
+            client = self._client if self._created else None
+        if client is not None:
+            client.close()
+
+
+@dataclass(slots=True)
+class Progress:
+    """How far an asyncio exchange got, so the session deadline cutting it short is classified by what was sent."""
+
+    sent: bool = False
+    answered: bool = False
+
+    @property
+    def delivery(self) -> DeliveryState:
+        """Return the delivery the exchange reached."""
+        if self.answered:
+            return DeliveryState.RESPONSE_STARTED
+        return DeliveryState.MAYBE_SENT if self.sent else DeliveryState.NOT_SENT
+
+
+async def within(operation: Coroutine[object, object, T], seconds: float) -> T:
+    """Await the operation for at most the seconds, raising TimeoutError then without swallowing a cancellation."""
+    import asyncio  # noqa: PLC0415
+
+    if sys.version_info >= (3, 11):
+        async with asyncio.timeout(seconds):
+            return await operation
+    else:  # pragma: <3.11 cover
+        try:
+            return await asyncio.wait_for(operation, seconds)
+        except asyncio.TimeoutError as error:
+            raise TimeoutError from error
 
 
 class AsyncTokenEndpoint:
-    """A token endpoint borrowing its native client or lazily creating one it owns."""
+    """An asyncio token endpoint reached through one borrowed or lazily created HTTPX2 client, bound to one loop."""
+
+    __slots__ = ("_client", "_created", "_loop", "_transport", "authentication", "closed", "endpoint")
 
     def __init__(
         self,
@@ -574,34 +596,44 @@ class AsyncTokenEndpoint:
         transport: TransportOptions,
         http_client: object,
     ) -> None:
-        self.endpoint, self.authentication = endpoint, authentication
+        """Validate the transport settings and the client's mode without creating one, binding to a running loop."""
+        import asyncio  # noqa: PLC0415
+
+        self.endpoint = endpoint
+        self.authentication = authentication
         self._transport = http_client_options(transport, http_client)
         if http_client is not None and not isinstance(http_client, httpx2.AsyncClient):
             raise ConfigurationError(field_path=("http_client",), reason="invalid_mode")
-        self._client = http_client
+        self._client: httpx2.AsyncClient | None = http_client
         self._created = False
         self.closed = False
         self._loop: object = None
+        with suppress(RuntimeError):
+            self._loop = asyncio.get_running_loop()
 
     def _open(self) -> None:
         if self.closed:
             raise AuthError(reason="provider_closed", delivery_state=DeliveryState.NOT_SENT)
 
     def bind(self) -> None:
-        """OAuth retains its existing asyncio-only provider loop contract."""
+        """Refuse a caller outside asyncio or on another event loop than the one the endpoint belongs to."""
         import asyncio  # noqa: PLC0415
 
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError as error:
-            raise AuthError(cause=error, reason="provider_failed") from None
+            raise AuthError(reason="provider_failed", delivery_state=DeliveryState.NOT_SENT, cause=error) from None
         if self._loop is None:
             self._loop = loop
         elif self._loop is not loop:
-            raise AuthError(cause=RuntimeError("Provider event loop mismatch"), reason="provider_failed")
+            raise AuthError(
+                reason="provider_failed",
+                delivery_state=DeliveryState.NOT_SENT,
+                cause=RuntimeError("The provider belongs to another event loop"),
+            )
 
     def prepare(self) -> None:
-        """Create a native token client once before consuming any credential."""
+        """Refuse other loops, then create the SDK-owned client once unless already closed."""
         self.bind()
         self._open()
         if self._client is None:
@@ -609,72 +641,59 @@ class AsyncTokenEndpoint:
             self._created = True
 
     async def exchange(self, fields: tuple[tuple[str, str], ...], session: Session) -> Exchanged:
-        """Send one bounded POST without resource credentials, redirects, or SDK retries."""
-        self._open()
+        """Acquire the client secret and send the form once, both within the session deadline."""
+        progress = Progress()
+        try:
+            return await within(self._exchange(fields, session, progress), session.deadline.remaining())
+        except TimeoutError as error:
+            return expired(session, progress.delivery, cause=error)
+
+    async def _exchange(self, fields: tuple[tuple[str, str], ...], session: Session, progress: Progress) -> Exchanged:
+        target = self.endpoint
+        authentication = self.authentication
         secret = None
-        if session.deadline.remaining() <= 0:
-            return expired(session, DeliveryState.NOT_SENT)
-        if (provider := self.authentication.secret) is not None:
+        if (provider := authentication.secret) is not None:
             try:
-                secret = _secret_value(await provider.get(_secret_context(self.endpoint.origin, session.deadline)))
-            except Exception as error:  # noqa: BLE001
+                secret = _secret_value(await provider.get(_secret_context(target.origin, session.deadline)))
+            except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
                 raise _provider_failure(error) from None
-        if session.deadline.remaining() <= 0:
-            return expired(session, DeliveryState.NOT_SENT)
         timeout, caps = session.timeout()
         request = token_request(
-            self.endpoint.url,
-            self.authentication.client_id,
-            self.authentication.method,
-            fields,
-            secret,
-            timeout=timeout,
+            target.url, authentication.client_id, authentication.method, fields, secret, timeout=timeout
         )
+        self._open()
+        if session.deadline.remaining() <= 0:
+            return expired(session, DeliveryState.NOT_SENT)
         client = self._client
         assert client is not None
+        progress.sent = True
         try:
             response = await client.send(request, stream=True, auth=None, follow_redirects=False)
-        except Exception as error:  # noqa: BLE001 - Every adapter failure is classified by its evidence.
+        except Exception as error:  # noqa: BLE001 - Every native failure is classified by its exception type.
             failure = native_error(error, send_started=True)
             return _failed(failure, failure.delivery_state, caps, session)
+        progress.answered = True
         status = response.status_code
-        headers = HeadersView(response.headers.multi_items())
-        primary: BaseException | None = None
         try:
             body = await _aread(async_response_bytes(response), session.deadline)
             received, received_at = receipt(session.clock)
         except _SessionExpiredError:
             return expired(session, DeliveryState.RESPONSE_STARTED, status)
         except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
-            primary = error
-            return _failed(
-                native_error(error, send_started=True, response_started=True),
-                DeliveryState.RESPONSE_STARTED,
-                caps,
-                session,
-                status,
-            )
-        except BaseException as error:
-            primary = error
-            raise
+            failure = native_error(error, send_started=True, response_started=True)
+            return _failed(failure, DeliveryState.RESPONSE_STARTED, caps, session, status)
         finally:
-            try:
-                with anyio.CancelScope(shield=True):
-                    await response.aclose()
-            except BaseException as error:
-                if primary is None:
-                    raise
-                add_secondary(primary, error)
-        return _answered(status, headers, body, received, received_at)
+            with suppress(Exception):
+                await response.aclose()
+        return _answered(status, HeadersView(response.headers.multi_items()), body, received, received_at)
 
     async def aclose(self) -> None:
-        """Release only the provider's lazily created native client, at most once."""
+        """Close the client the endpoint created, once; a borrowed one stays open, and none is created afterwards."""
         if self.closed:
             return
         self.closed = True
-        if self._created and self._client is not None:
-            with anyio.CancelScope(shield=True):
-                await self._client.aclose()
+        if self._created and (client := self._client) is not None:
+            await client.aclose()
 
 
 class InvalidTokenResponseError(ValueError):
