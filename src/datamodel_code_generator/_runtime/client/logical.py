@@ -91,14 +91,16 @@ class LogicalCallContext:
     def snapshot_error(self, error: ErrorT) -> ErrorT:
         """Attach the call's identity and final execution measurements to an error to publish.
 
-        An error without its own delivery evidence, NOT_SENT, takes how far the call got; a transport failure keeps its
-        own classification and an auth failure the evidence of its own exchange.
+        An error without its own delivery evidence, NOT_SENT, takes how far the call got. A transport or auth failure's
+        NOT_SENT holds for its own send only, so it takes how far the call's earlier attempts and hops got.
         """
         error.operation_id = self.operation_id
         error.call_id = self.call_id
         error.parent_session_id = self.parent_session_id
-        if error.delivery_state is DeliveryState.NOT_SENT and not isinstance(error, (APIConnectionError, AuthError)):
-            error.delivery_state = self.furthest()
+        if error.delivery_state is DeliveryState.NOT_SENT:
+            error.delivery_state = (
+                self.earlier if isinstance(error, (APIConnectionError, AuthError)) else self.furthest()
+            )
         if error.info is None:
             error.attempt_count = self.attempt_count
             error.elapsed = max(0.0, self.monotonic() - self.started)
