@@ -243,10 +243,6 @@ class _Raw(Generic[SourceT, HandleT]):
         self._raw = self._body = b""
         self._state: State = "open"
 
-    def _save_status(self, body: bytes, raw: bytes) -> None:
-        self._body = body
-        self._raw = raw
-
     @property
     def info(self) -> ResponseInfo:
         """Return the response metadata."""
@@ -306,10 +302,12 @@ class _Raw(Generic[SourceT, HandleT]):
     def _budget(self, limit: int | None) -> _Budget:
         return _Budget(limit, self._info, self._operation_id)
 
-    def _check(self) -> None:
-        """Observe the active acquisition or stream deadline."""
+    def _check(self, started: float | None = None) -> None:
+        """Observe the active acquisition or stream deadline, and the idle limit of a read that began at `started`."""
         try:
             self._call.check("stream" if self._call.streaming else "send", DeliveryState.RESPONSE_STARTED)
+            if started is not None:
+                self._call.idle(started)
         except SDKError as error:
             error.info = self._info
             raise
@@ -334,11 +332,7 @@ class _Raw(Generic[SourceT, HandleT]):
     def _saved_failure(self) -> BaseException:
         """Return the typed failure of a buffered response from its bounded error prefix."""
         limit, body = self._limits.max_error_body_bytes, self._body
-        error = self._decoder.failure(
-            self._info,
-            body[:limit],
-            truncated=len(body) > limit,
-        )
+        error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit)
         if is_http_error(error):
             error.retry_stop_reason = self._retry_stop_reason
             for secondary in self._status_secondary_errors:
@@ -413,11 +407,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     """A raw response of a synchronous client: buffered, or a streaming handle whose body is read at most once."""
 
     __slots__ = ("_close",)
-
-    def buffered_status(self, body: bytes, raw: bytes) -> None:
-        """Retain a bounded status read and release the native response once."""
-        self._save_status(body, raw)
-        self._end("buffered")
 
     def __init__(  # noqa: PLR0913
         self,
@@ -573,12 +562,13 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         source = self._source()
         while True:
             self._check()
+            started = self._call.monotonic()
             try:
                 chunk = next(source)
             except StopIteration:
                 self._check()
                 return
-            self._check()
+            self._check(started)
             yield chunk
 
     def _recorded(self, parts: list[bytes], limit: int | None) -> Iterator[bytes]:
@@ -645,8 +635,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     def _end(self, state: State, error: BaseException | None = None) -> None:
         """Enter a final state, releasing the native connection once.
 
-        A
-        handed-over stream then reports its end to its call's hooks.
+        A handed-over stream then reports its end to its call's hooks.
         """
         self._state = state
         close, self._close = self._close, None
@@ -667,6 +656,8 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                 add_secondary(error, interruption)
                 self._released(error, early=state == "closed")
                 return
+            if error is not None:
+                add_secondary(interruption, error)
             self._released(interruption, early=state == "closed")
             raise
         self._released(error, early=state == "closed")
@@ -687,11 +678,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     """A raw response of an asyncio client: buffered, or a streaming handle whose body is read at most once."""
 
     __slots__ = ("_close",)
-
-    async def buffered_status(self, body: bytes, raw: bytes) -> None:
-        """Retain a bounded status read and release the native response once."""
-        self._save_status(body, raw)
-        await self._end("buffered")
 
     def __init__(  # noqa: PLR0913
         self,
@@ -970,14 +956,21 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             return
         failed: BaseException | None = None
         try:
-            await self._call.cleanup(close, error=error)
+            await close()
         except Exception as failure:  # noqa: BLE001
-            failed = error = self._failure(failure)
+            if error is None:
+                failed = error = self._call.snapshot_error(SDKError(reason="cleanup_failed", cause=failure))
+                failed.info = self._info
+            else:
+                self._call.retry_blocked = True
+                add_secondary(error, failure)
         except BaseException as interruption:
             if error is not None and not isinstance(error, Exception):
                 add_secondary(error, interruption)
                 await self._released(error, early=state == "closed")
                 return
+            if error is not None:
+                add_secondary(interruption, error)
             await self._released(interruption, early=state == "closed")
             raise
         await self._released(error, early=state == "closed")

@@ -511,10 +511,10 @@ _SYNC_LIFECYCLE: Final = '''    def close(self) -> None:
         exc: BaseException | None,
         traceback: {traceback} | None,
     ) -> None:
-        """Close this client."""
+        """Close this client, keeping a close failure beside an error that leaves the block."""
         try:
             self.close()
-        except BaseException as error:
+        except Exception as error:
             if exc is None:
                 raise
             {secondary}(exc, error)'''
@@ -532,10 +532,10 @@ _ASYNC_LIFECYCLE: Final = '''    async def aclose(self) -> None:
         exc: BaseException | None,
         traceback: {traceback} | None,
     ) -> None:
-        """Close this client."""
+        """Close this client, keeping a close failure beside an error that leaves the block."""
         try:
             await self.aclose()
-        except BaseException as error:
+        except Exception as error:
             if exc is None:
                 raise
             {secondary}(exc, error)'''

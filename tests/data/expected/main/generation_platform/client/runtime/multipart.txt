@@ -22,7 +22,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 41] b'--<boundary>--\r\n'
   no parts = None
   > POST https://media.example.com/api/attachments
-    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: media.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   no body = None
   part header on two lines ! DecodeError: DecodeError(operation_id='submitParts', call_id='<call>', reason='unencodable', location='body.a') [operation_id='submitParts', location=('body', 'a'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] unencodable
   part header naming the media type ! DecodeError: DecodeError(operation_id='submitParts', call_id='<call>', reason='unencodable', location='body.a') [operation_id='submitParts', location=('body', 'a'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] unencodable
@@ -40,7 +40,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
   attempt closed
   attempt closed
-  file parts failing to close: CleanupError secondary []
+  file parts failing to close: SDKError secondary []
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":[1,"x"]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n5\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   raw parts = b'ok'
@@ -249,7 +249,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
   attempt closed
   attempt closed
-  async file parts failing to close: CleanupError secondary []
+  async file parts failing to close: SDKError secondary []
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 296] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":1}\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   async raw parts = b'ok'
@@ -290,7 +290,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 41] b'--<boundary>--\r\n'
   no parts = None
   > POST https://media.example.com/api/attachments
-    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: media.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   no body = None
   part header on two lines ! DecodeError: DecodeError(operation_id='submitParts', call_id='<call>', reason='unencodable', location='body.a') [operation_id='submitParts', location=('body', 'a'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] unencodable
   part header naming the media type ! DecodeError: DecodeError(operation_id='submitParts', call_id='<call>', reason='unencodable', location='body.a') [operation_id='submitParts', location=('body', 'a'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] unencodable
@@ -308,7 +308,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
   attempt closed
   attempt closed
-  file parts failing to close: CleanupError secondary []
+  file parts failing to close: SDKError secondary []
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":[1,"x"]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n5\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   raw parts = b'ok'
@@ -517,7 +517,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
   attempt closed
   attempt closed
-  async file parts failing to close: CleanupError secondary []
+  async file parts failing to close: SDKError secondary []
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 296] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":1}\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   async raw parts = b'ok'

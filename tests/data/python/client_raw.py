@@ -37,12 +37,12 @@ _ERROR: Final = b'{"code":7,"message":"boom"}'
 _JSON: Final = "application/json"
 
 
-def _modules(package: ModuleType) -> tuple[None, ModuleType, ModuleType, ModuleType, ModuleType]:
+def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType, ModuleType, ModuleType]:
     errors, options, responses, types = (
         importlib.import_module(f"{package.__name__}.{name}")
         for name in ("errors", "options", "responses", "types.pets")
     )
-    return None, errors, options, responses, types
+    return errors, options, responses, types
 
 
 def _pet(package: ModuleType) -> object:
@@ -124,7 +124,7 @@ def _large(count: int) -> Callable[[httpx2.Request], httpx2.Response]:
 
 def raw(package: ModuleType, lines: list[str]) -> None:
     """Read raw responses saved and streaming through native HTTPX2 clients."""
-    _, _, options, _, _ = _modules(package)
+    _, options, _, _ = _modules(package)
     exchange = Exchange(lines)
     http = exchange.client()
     with tempfile.TemporaryDirectory() as directory, package.Client(http_client=http) as api:
@@ -141,7 +141,7 @@ def raw(package: ModuleType, lines: list[str]) -> None:
 
 def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Keep the body of a raw response in memory, both decoded and as it arrived, within the buffer limit."""
-    _, _, options, _, types = _modules(package)
+    _, options, _, types = _modules(package)
     pet, raw = _pet(package), api.pets.with_raw_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
     kept = raw.get_pet(pet_id=pet)
@@ -192,7 +192,7 @@ def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: l
             _streamed(200, (_PET[:8],), fail=True),
             options.RequestOptions(retry=options.RetryOptions(max_retries=0)),
         ),
-        ("connect", failing(httpx2.ConnectError), None),
+        ("connect", failing(httpx2.ConnectError), options.RequestOptions(retry=options.RetryOptions(max_retries=0))),
     ):
         exchange.respond(responder)
         record(lines, f"saved {label}", lambda limit=limit: raw.get_pet(pet_id=pet, options=limit))
@@ -201,7 +201,7 @@ def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: l
 
 def _streaming(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Read a streaming body once: by iterating it, or into memory first, and refuse any second reading."""
-    _, errors, options, _, _ = _modules(package)
+    errors, options, _, _ = _modules(package)
     pet, streaming = _pet(package), api.pets.with_streaming_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
     with streaming.get_pet(pet_id=pet) as response:
@@ -258,7 +258,7 @@ def _streaming(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             raise Stop
     except Stop:
         record(lines, "stopped block read", response.read)
-    exchange.respond(failing(httpx2.ConnectError))
+    exchange.respond(*(failing(httpx2.ConnectError) for _ in range(3)))
     record(lines, "streaming connect", lambda: _entered(streaming.get_pet(pet_id=pet)))
     record(lines, "streaming options", lambda: _entered(streaming.get_pet(pet_id=pet, options="fast")))
 
@@ -270,7 +270,7 @@ def _entered(manager: Any) -> object:
 
 def _status(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Raise the typed failure of a streaming response from the prefix of its error body, then close it."""
-    _, errors, options, _, _ = _modules(package)
+    errors, options, _, _ = _modules(package)
     pet, streaming = _pet(package), api.pets.with_streaming_response
     short = api.with_options(options.RequestOptions(max_error_body_bytes=4)).pets.with_streaming_response
     for label, view, responder in (
@@ -343,7 +343,7 @@ def _download(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
 
 def _requests(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Send raw requests to any absolute URL, saved or streaming, and refuse invalid ones before sending."""
-    _, _, options, _, _ = _modules(package)
+    _, options, _, _ = _modules(package)
     exchange.respond(
         _streamed(200, (b"pong",), "text/plain"),
         *(_streamed(503, (b"down",), "text/plain") for _ in range(3)),
@@ -390,7 +390,7 @@ def _requests(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
 
 def _handles(package: ModuleType, lines: list[str]) -> None:
     """A root closes only its created client; a borrowed stream owns its own response."""
-    _, _, options, _, _ = _modules(package)
+    _, options, _, _ = _modules(package)
     exchange = Exchange(lines)
     exchange.respond(_streamed(200, (_PET,), _JSON), _streamed(200, (_PET[:5], _PET[5:]), _JSON))
     with exchange.client() as native, package.Client(http_client=native) as api:
@@ -419,7 +419,7 @@ def _switch_in_block(api: Any, pet: object) -> object:
 
 async def _async_raw(package: ModuleType, lines: list[str]) -> None:
     """Read raw responses of an asyncio client: the same saved, streaming, and closing behaviour."""
-    _, _, options, _, _ = _modules(package)
+    _, options, _, _ = _modules(package)
     exchange = Exchange(lines)
     http = exchange.async_client()
     with tempfile.TemporaryDirectory() as directory:
@@ -432,7 +432,7 @@ async def _async_raw(package: ModuleType, lines: list[str]) -> None:
 
 
 async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    _, _, options, _, _ = _modules(package)
+    _, options, _, _ = _modules(package)
     pet, raw = _pet(package), api.pets.with_raw_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
     kept = await raw.get_pet(pet_id=pet)
@@ -459,7 +459,7 @@ async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines:
             _streamed(200, (_PET[:8],), fail=True),
             options.RequestOptions(retry=options.RetryOptions(max_retries=0)),
         ),
-        ("connect", failing(httpx2.ConnectError), None),
+        ("connect", failing(httpx2.ConnectError), options.RequestOptions(retry=options.RetryOptions(max_retries=0))),
     ):
         exchange.respond(responder)
         await arecord(lines, f"async saved {label}", lambda limit=limit: raw.get_pet(pet_id=pet, options=limit))
@@ -469,7 +469,7 @@ async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines:
 async def _async_streaming(
     package: ModuleType, api: Any, exchange: Exchange, lines: list[str], directory: Path
 ) -> None:
-    _, errors, options, _, _ = _modules(package)
+    errors, options, _, _ = _modules(package)
     pet, streaming = _pet(package), api.pets.with_streaming_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
     async with streaming.get_pet(pet_id=pet) as response:
@@ -583,7 +583,7 @@ async def _aentered(manager: Any) -> object:
 
 async def _async_handles(package: ModuleType, lines: list[str]) -> None:
     """A root closes only its created client; a borrowed stream owns its own response."""
-    _, _, options, _, _ = _modules(package)
+    _, options, _, _ = _modules(package)
     exchange = Exchange(lines)
     exchange.respond(_streamed(200, (_PET,), _JSON), _streamed(200, (_PET[:5], _PET[5:]), _JSON))
     async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:

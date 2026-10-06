@@ -17,7 +17,6 @@ from contextlib import (
 )
 from dataclasses import dataclass, replace
 from functools import partial
-from itertools import chain
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar, cast
 from urllib.parse import quote, unquote_plus, urlsplit
 
@@ -56,6 +55,7 @@ from .errors import (
     is_http_error,
     is_phase_timeout,
     is_transport,
+    kept_primary,
     redirect_refused,
     too_large,
 )
@@ -70,8 +70,10 @@ from .native import (
     native_async_client,
     native_client,
     native_error,
+    request_fields,
     response_bytes,
     transport_retry_reason,
+    wire_fields,
 )
 from .operations import DATA_ERRORS, ResponseDecoder
 from .options import (
@@ -188,6 +190,7 @@ _MIN_STATUS: Final = 200
 _NOT_MODIFIED: Final = 304
 _MAX_STATUS: Final = 599
 _ERROR_STATUS: Final = 400
+_BODY: Final = "datamodel_code_generator.body"
 _SWITCHING: Final = 101
 _UNAUTHORIZED: Final = 401
 _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
@@ -550,14 +553,12 @@ def _pairs(fragments: tuple[ParameterFragment, ...]) -> Iterator[str]:
 
 
 class _Body:
-    __slots__ = ("chunks", "limit", "overflow", "problem", "raw", "remaining", "size", "success", "truncated")
+    __slots__ = ("chunks", "limit", "overflow", "problem", "size", "success", "truncated")
 
     def __init__(self, limit: int | None, *, success: bool) -> None:
         self.limit = limit
         self.success = success
         self.chunks: list[bytes] = []
-        self.raw: list[bytes] = []
-        self.remaining: Iterator[bytes] | AsyncIterator[bytes] | None = None
         self.size = 0
         self.truncated = False
         self.overflow = False
@@ -605,15 +606,18 @@ def _encoded(content: object, media_type: str | None) -> tuple[EncodedAttempt | 
 
 
 def _request(*, method: str, url: str, headers: HeadersView, body: EncodedAttempt | None) -> httpx2.Request:
-    return httpx2.Request(method, url, headers=headers.items(), content=None if body is None else body.content)
+    """Build a prepared request, keeping its body attempt, since HTTPX2 frames an absent body as an empty one."""
+    return httpx2.Request(
+        method,
+        url,
+        headers=wire_fields(headers.items()),
+        content=None if body is None else body.content,
+        extensions={} if body is None else {_BODY: body},
+    )
 
 
 def _attempt(request: httpx2.Request) -> EncodedAttempt | None:
-    return (
-        EncodedAttempt(request.content, request.headers.get("content-type"))
-        if request.content or "content-length" in request.headers
-        else None
-    )
+    return cast("EncodedAttempt | None", request.extensions.get(_BODY))
 
 
 def _context(call: _Call) -> BodyAttemptContext:
@@ -757,7 +761,7 @@ def _compressed(call: _Call, request: httpx2.Request, deferred: object) -> tuple
     attempt = _attempt(request)
     body = None if attempt is None else gzipped_attempt(attempt, partial(call.check, "encode"))
     headers = HeadersView((
-        *(pair for pair in request.headers.multi_items() if pair[0].lower() != "content-length"),
+        *(pair for pair in request_fields(request) if pair[0].lower() != "content-length"),
         ("Content-Encoding", "gzip"),
     ))
     return _request(method=request.method, url=str(request.url), headers=headers, body=body), True
@@ -950,7 +954,6 @@ class _Call(LogicalCallContext):
         "previous_cap",
         "raw_response",
         "received_at",
-        "received_body",
         "received_wall_time",
         "request_id_header",
         "response_transferred",
@@ -975,7 +978,6 @@ class _Call(LogicalCallContext):
         self.key = IdempotencyKey.new() if self.idempotency is not None and isinstance(key, Unset) else key
         self.last_failure: BaseException | None = None
         self.last_info: ResponseInfo | None = None
-        self.received_body: _Body | None = None
         self.raw_response = False
         self.retry_headers = EMPTY_RETRY_HEADERS
         self.allowed_origins = _EMPTY_ORIGINS
@@ -1031,7 +1033,7 @@ class _Call(LogicalCallContext):
             request = _request(
                 method=request.method,
                 url=target.url,
-                headers=HeadersView(request.headers.multi_items()),
+                headers=HeadersView(request_fields(request)),
                 body=_attempt(request),
             )
         elif self.auth is not None:
@@ -1046,7 +1048,7 @@ class _Call(LogicalCallContext):
         return _request(
             method=request.method,
             url=str(request.url),
-            headers=HeadersView((*request.headers.multi_items(), (name, self.key.value))),
+            headers=HeadersView((*request_fields(request), (name, self.key.value))),
             body=_attempt(request),
         )
 
@@ -1211,7 +1213,7 @@ class _Call(LogicalCallContext):
             from .auth_policy import strip_managed_query  # noqa: PLC0415
 
             url = strip_managed_query(url, self.auth.bound)
-        headers: Sequence[tuple[str, str]] = request.headers.multi_items()
+        headers: Sequence[tuple[str, str]] = request_fields(request)
         if target.cross_origin:
             headers, url = _uncredentialed(headers, url, schemes)
         if url != target.url and (target.method, url) in visited:
@@ -1634,7 +1636,7 @@ class _Core(Generic[AdapterT, HandleT]):
         assert call.auth is not None
         validate_ownership(
             call.auth.bound,
-            headers=(name for name, _ in request.headers.multi_items()),
+            headers=(name for name, _ in request_fields(request)),
             query=(
                 unquote_plus(pair.partition("=")[0]) for pair in urlsplit(str(request.url)).query.split("&") if pair
             ),
@@ -1797,7 +1799,7 @@ class _Core(Generic[AdapterT, HandleT]):
                     for capabilities in (signer.capabilities for signer in bound.signers)
                 ),
             )
-        elif any(name.lower() in names for name, _ in request.headers.multi_items()) or any(
+        elif any(name.lower() in names for name, _ in request_fields(request)) or any(
             unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair
         ):
             credential = ((), ())
@@ -1933,7 +1935,7 @@ class _Core(Generic[AdapterT, HandleT]):
             narrowed=False,
             url=url,
         )[0]
-        return str(prepared.url), HeadersView(prepared.headers.multi_items())
+        return str(prepared.url), HeadersView(request_fields(prepared))
 
     def checked_arguments(
         self, operation: OperationPlan[object], given: Mapping[int, WireValue], options: RequestOptions | None
@@ -1977,12 +1979,12 @@ class _Core(Generic[AdapterT, HandleT]):
             url=url,
         )
         if read_request is not None:
-            read_request(str(prepared.url), HeadersView(prepared.headers.multi_items()))
+            read_request(str(prepared.url), HeadersView(request_fields(prepared)))
         if url is None:
             return prepared, deferred
         server = call.server_origin = request_origin(self._base(operation, call.settings))
         url = strip_query(url, call.followed_query(self._shared.security_schemes))
-        headers = HeadersView(prepared.headers.multi_items())
+        headers = HeadersView(request_fields(prepared))
         if request_origin(url) != server:
             items, url = _uncredentialed(headers.items(), url, self._shared.security_schemes)
             headers = HeadersView(items)
@@ -2010,6 +2012,13 @@ def _transport(options: ClientOptions | None, http_client: object) -> ResolvedTr
 def _released(close: Callable[[], None], operation_id: str | None, call_id: str) -> None:
     try:
         close()
+    except Exception as failure:  # noqa: BLE001
+        raise SDKError(reason="cleanup_failed", operation_id=operation_id, call_id=call_id, cause=failure) from None
+
+
+async def _areleased(close: Callable[[], Awaitable[None]], operation_id: str | None, call_id: str) -> None:
+    try:
+        await close()
     except Exception as failure:  # noqa: BLE001
         raise SDKError(reason="cleanup_failed", operation_id=operation_id, call_id=call_id, cause=failure) from None
 
@@ -2145,27 +2154,6 @@ async def _read_async_chunks(chunks: AsyncIterable[bytes], call: LogicalCallCont
         call.check("send")
         yield chunk
     call.check("send")
-
-
-def _status_bytes(chunks: Iterable[bytes], received: _Body, *, raw: bool) -> Iterator[bytes]:
-    """Retain only the bounded wire prefix of an error read, alongside its decoded prefix."""
-    remaining = received.limit
-    for chunk in chunks:
-        if not received.success:
-            assert remaining is not None
-            received.raw.append(chunk if raw else chunk[:remaining])
-            remaining = max(0, remaining - len(chunk))
-        yield chunk
-
-
-async def _async_status_bytes(chunks: AsyncIterable[bytes], received: _Body, *, raw: bool) -> AsyncIterator[bytes]:
-    remaining = received.limit
-    async for chunk in chunks:
-        if not received.success:
-            assert remaining is not None
-            received.raw.append(chunk if raw else chunk[:remaining])
-            remaining = max(0, remaining - len(chunk))
-        yield chunk
 
 
 class ClientCore(_Core["httpx2.Client", "RawResponse"]):
@@ -2650,7 +2638,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 raise
         return result
 
-    def _exchange(  # noqa: PLR0915
+    def _exchange(
         self,
         original: httpx2.Request,
         source: BodySource | None,
@@ -2697,25 +2685,14 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                     call.hop_index += 1
                     call.delivery_state = DeliveryState.NOT_SENT
                     continue
-                planned = None
-                if info.status_code >= _ERROR_STATUS:
-                    received = self._read(response, info, call.decoder, call)
-                    call.check("decode")
-                    failure = call.decoder.failure(
-                        info,
-                        received.content,
-                        truncated=received.truncated or received.problem is not None,
-                        problem=received.problem,
-                    )
-                    planned = self._status_plan(info, source, call)
-                    if planned is None:
-                        call.received_body = received
+                planned = self._status_plan(info, source, call)
                 if planned is None:
                     result = receive(response, info)
                     closing, response = response, None
                     if not call.response_transferred:
                         self._close_response(closing, call)
                     return result
+                failure = call.decoder.failure(info, b"", truncated=True)
                 closing, response = response, None
                 self._close_response(closing, call, failure)
             except BaseException as error:  # noqa: BLE001
@@ -2799,18 +2776,13 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 else (response.close,),
             )
 
-        received, call.received_body = call.received_body, None
-        source: Callable[[], Iterator[bytes]] = partial(response_bytes, response)
-        if received is not None and received.remaining is not None:
-            source = partial(chain, received.raw, cast("Iterator[bytes]", received.remaining))
-
         handle = RawResponse(
             info,
             call.decoder,
             call.settings,
             call.operation_id,
             lambda error: self._failure(error, call, DeliveryState.RESPONSE_STARTED),
-            source=source,
+            source=partial(response_bytes, response),
             close=release,
             events=call.events if stream else None,
             call=call,
@@ -2818,9 +2790,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             status_secondary_errors=() if call.auth is None else call.auth.secondary_errors,
         )
         call.response_transferred = True
-        if received is not None and received.remaining is None:
-            handle.buffered_status(received.content, b"".join(received.raw))
-        elif not stream:
+        if not stream:
             handle.read()
         return handle
 
@@ -2899,7 +2869,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 url=str(request.url),
                 origin=origin_text(call.current_origin),
                 query=signing_query(str(request.url)),
-                headers=HeadersView(request.headers.multi_items()),
+                headers=HeadersView(request_fields(request)),
                 body_digest=digest,
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
@@ -3018,11 +2988,15 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 close()
             except BaseException as failure:  # noqa: BLE001, PERF203
                 call.retry_blocked = True
-                if primary is None:
-                    primary = failure
-                else:
-                    add_secondary(primary, failure)
-        if error is None and primary is not None:
+                released = (
+                    SDKError(
+                        reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failure
+                    )
+                    if isinstance(failure, Exception) and not isinstance(failure, SDKError)
+                    else failure
+                )
+                primary = released if primary is None else kept_primary(primary, released)
+        if primary is not None and primary is not error:
             raise primary
 
     def _close_response(self, response: httpx2.Response, call: _Call, error: BaseException | None = None) -> None:
@@ -3048,7 +3022,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         """Finalize native framing and timeout before credential placement and signing."""
         headers = [
             (name, value)
-            for name, value in request.headers.multi_items()
+            for name, value in request_fields(request)
             if name.lower() not in {"host", "content-length", "transfer-encoding"}
         ]
         if attempt is not None:
@@ -3060,7 +3034,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         outgoing = httpx2.Request(
             request.method,
             request.url,
-            headers=headers,
+            headers=wire_fields(headers),
             content=None if attempt is None else _read_chunks(attempt.iter_bytes(), call, trusted=True),
             extensions={"timeout": attempt_timeout(call.timeout(), call.remaining()).as_dict()},
         )
@@ -3075,21 +3049,13 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         decoder: ResponseDecoder[object],
         call: LogicalCallContext,
     ) -> _Body:
-        if isinstance(call, _Call) and call.received_body is not None:
-            received, call.received_body = call.received_body, None
-            return received
         received = _received(decoder, info.status_code, call.settings)
-        raw = isinstance(call, _Call) and call.raw_response
-        source = response_bytes(response)
-        received.remaining = source if raw else None
-        chunks = ContentDecoder(info, call.operation_id).decoded(_status_bytes(source, received, raw=raw))
+        chunks = ContentDecoder(info, call.operation_id).decoded(response_bytes(response))
         try:
             for chunk in chunks:
                 call.check("send")
                 if not received.add(chunk):
                     break
-            else:
-                received.remaining = None
         except ProtocolError as error:
             received.problem = error
         return received
@@ -3575,7 +3541,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 source, entry = _agzip_source(source) if compressing else source, None
             elif entry is not None:
                 abandoned, entry = entry, None
-                await call.cleanup(abandoned.aclose)
+                await _areleased(abandoned.aclose, call.operation_id, call.call_id)
             call.check("encode")
             result = await self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
@@ -3584,14 +3550,14 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             raise failure from None
         if source is not None:
             try:
-                await call.cleanup(source.aclose)
+                await _areleased(source.aclose, call.operation_id, call.call_id)
             except BaseException as error:
                 if isinstance(result, AsyncRawResponse):
                     await result.discard(error)
                 raise
         return result
 
-    async def _exchange(  # noqa: PLR0915
+    async def _exchange(
         self,
         original: httpx2.Request,
         source: AsyncBodySource | None,
@@ -3638,25 +3604,14 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                     call.hop_index += 1
                     call.delivery_state = DeliveryState.NOT_SENT
                     continue
-                planned = None
-                if info.status_code >= _ERROR_STATUS:
-                    received = await self._read(response, info, call.decoder, call)
-                    call.check("decode")
-                    failure = call.decoder.failure(
-                        info,
-                        received.content,
-                        truncated=received.truncated or received.problem is not None,
-                        problem=received.problem,
-                    )
-                    planned = await self._status_plan(info, source, call)
-                    if planned is None:
-                        call.received_body = received
+                planned = await self._status_plan(info, source, call)
                 if planned is None:
                     result = await receive(response, info)
                     closing, response = response, None
                     if not call.response_transferred:
                         await self._close_response(closing, call)
                     return result
+                failure = call.decoder.failure(info, b"", truncated=True)
                 closing, response = response, None
                 await self._close_response(closing, call, failure)
             except BaseException as error:  # noqa: BLE001
@@ -3742,25 +3697,13 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 else (response.aclose,),
             )
 
-        received, call.received_body = call.received_body, None
-
-        async def chunks() -> AsyncIterator[bytes]:
-            if received is not None and received.remaining is not None:
-                for chunk in received.raw:
-                    yield chunk
-                async for chunk in cast("AsyncIterator[bytes]", received.remaining):
-                    yield chunk
-            else:
-                async for chunk in async_response_bytes(response):
-                    yield chunk
-
         handle = AsyncRawResponse(
             info,
             call.decoder,
             call.settings,
             call.operation_id,
             lambda error: self._failure(error, call, DeliveryState.RESPONSE_STARTED),
-            source=chunks,
+            source=partial(async_response_bytes, response),
             close=release,
             events=call.events if stream else None,
             call=call,
@@ -3768,9 +3711,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             status_secondary_errors=() if call.auth is None else call.auth.secondary_errors,
         )
         call.response_transferred = True
-        if received is not None and received.remaining is None:
-            await handle.buffered_status(received.content, b"".join(received.raw))
-        elif not stream:
+        if not stream:
             await handle.read()
         return handle
 
@@ -3852,7 +3793,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 url=str(request.url),
                 origin=origin_text(call.current_origin),
                 query=signing_query(str(request.url)),
-                headers=HeadersView(request.headers.multi_items()),
+                headers=HeadersView(request_fields(request)),
                 body_digest=digest,
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
@@ -3946,7 +3887,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             call.delivery_state = DeliveryState.RESPONSE_STARTED
             if attempt is not None:
                 released_attempt, attempt = attempt, None
-                await call.cleanup(released_attempt.aclose)
+                await _areleased(released_attempt.aclose, call.operation_id, call.call_id)
             call.permit, permit = permit, None
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
@@ -3971,11 +3912,15 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 await call.cleanup(close)
             except BaseException as failure:  # noqa: BLE001, PERF203
                 call.retry_blocked = True
-                if primary is None:
-                    primary = failure
-                else:
-                    add_secondary(primary, failure)
-        if error is None and primary is not None:
+                released = (
+                    SDKError(
+                        reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failure
+                    )
+                    if isinstance(failure, Exception) and not isinstance(failure, SDKError)
+                    else failure
+                )
+                primary = released if primary is None else kept_primary(primary, released)
+        if primary is not None and primary is not error:
             raise primary
 
     async def _close_response(self, response: httpx2.Response, call: _Call, error: BaseException | None = None) -> None:
@@ -4003,7 +3948,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         """Finalize native framing and timeout before credential placement and signing."""
         headers = [
             (name, value)
-            for name, value in request.headers.multi_items()
+            for name, value in request_fields(request)
             if name.lower() not in {"host", "content-length", "transfer-encoding"}
         ]
         if attempt is not None:
@@ -4015,7 +3960,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         outgoing = httpx2.Request(
             request.method,
             request.url,
-            headers=headers,
+            headers=wire_fields(headers),
             content=None if attempt is None else _read_async_chunks(attempt.aiter_bytes(), call),
             extensions={"timeout": attempt_timeout(call.timeout(), call.remaining()).as_dict()},
         )
@@ -4030,21 +3975,13 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         decoder: ResponseDecoder[object],
         call: LogicalCallContext,
     ) -> _Body:
-        if isinstance(call, _Call) and call.received_body is not None:
-            received, call.received_body = call.received_body, None
-            return received
         received = _received(decoder, info.status_code, call.settings)
-        raw = isinstance(call, _Call) and call.raw_response
-        source = async_response_bytes(response)
-        received.remaining = source if raw else None
-        chunks = ContentDecoder(info, call.operation_id).adecoded(_async_status_bytes(source, received, raw=raw))
+        chunks = ContentDecoder(info, call.operation_id).adecoded(async_response_bytes(response))
         try:
             async for chunk in chunks:
                 call.check("send")
                 if not received.add(chunk):
                     break
-            else:
-                received.remaining = None
         except ProtocolError as error:
             received.problem = error
         return received

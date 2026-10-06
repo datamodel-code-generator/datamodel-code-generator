@@ -20,6 +20,7 @@ from typing_extensions import TypeVar
 from ..client.client import stored_value
 from ..client.errors import ConfigurationError, add_secondary
 from ..client.media import normalized
+from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
@@ -250,7 +251,7 @@ class _Fetch(Generic[T]):
             prepared.credential_headers,
         )
         credentials, partition = prepared.credentials, prepared.partition
-        headers = HeadersView(self.request.headers.multi_items())
+        headers = HeadersView(request_fields(self.request))
         if (refused := next((name for name in _REFUSED if name in headers), None)) is not None:
             raise _invalid(plan, ("headers", refused))
         self.directives = _requested(plan, headers.get_all("cache-control"))
@@ -292,7 +293,7 @@ class _Fetch(Generic[T]):
         self.entry, plan = entry, self.plan
         if entry is None or entry.schema_fingerprint != plan.fingerprint or entry.status_code not in plan.statuses:
             return None
-        headers = HeadersView(self.request.headers.multi_items())
+        headers = HeadersView(request_fields(self.request))
         if entry.vary_values != tuple(headers.get_all(name) for name in entry.vary):
             return None
         for header, stored in _VALIDATORS:
@@ -350,7 +351,7 @@ class _Fetch(Generic[T]):
         return httpx2.Request(
             request.method,
             request.url,
-            headers=[*request.headers.multi_items(), validator],
+            headers=wire_fields((*request_fields(request), validator)),
             content=request.content,
             extensions=dict(request.extensions),
         )

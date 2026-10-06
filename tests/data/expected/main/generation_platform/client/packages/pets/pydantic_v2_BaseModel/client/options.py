@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ._runtime.client.options import (
-    CancelToken,
     ClientOptions,
     Clock,
     Deadline,
@@ -28,7 +27,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "UNSET",
-    "CancelToken",
     "ClientOptions",
     "Clock",
     "Deadline",

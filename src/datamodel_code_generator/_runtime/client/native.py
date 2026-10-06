@@ -9,7 +9,7 @@ import httpx2
 from .errors import APIConnectionError, APITimeoutError, ConfigurationError, DeliveryState, SDKError
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterator
+    from collections.abc import AsyncIterator, Iterable, Iterator
 
     from .errors import IOPhase
     from .options import ResolvedTransportOptions
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 _PHASES: Final[tuple[tuple[tuple[type[httpx2.TransportError], ...], IOPhase], ...]] = (
     ((httpx2.ConnectError, httpx2.ConnectTimeout), "connect"),
     ((httpx2.PoolTimeout,), "pool"),
-    ((httpx2.ReadError, httpx2.ReadTimeout), "read"),
+    ((httpx2.ReadError, httpx2.ReadTimeout, httpx2.RemoteProtocolError), "read"),
     ((httpx2.WriteError, httpx2.WriteTimeout), "write"),
 )
 
@@ -82,14 +82,24 @@ def transport_retry_reason(
     return "connect_error" if isinstance(cause, httpx2.ConnectError) else None
 
 
+def request_fields(request: httpx2.Request) -> list[tuple[str, str]]:
+    """Return a native request's header fields in the case they are sent, decoded as the SDK encoded them."""
+    return [(name.decode(), value.decode()) for name, value in request.headers.raw]
+
+
+def wire_fields(fields: Iterable[tuple[str, str]]) -> list[tuple[bytes, bytes]]:
+    """Encode header fields as UTF-8, so non-ASCII values are sent as they are given."""
+    return [(name.encode(), value.encode()) for name, value in fields]
+
+
 def cloned(
-    request: httpx2.Request, *, url: str | None = None, headers: list[tuple[str, str]] | None = None
+    request: httpx2.Request, *, url: str | None = None, headers: Iterable[tuple[str, str]] | None = None
 ) -> httpx2.Request:
     """Clone one native request while retaining its mode-correct stream and fixed timeout."""
     return httpx2.Request(
         request.method,
         request.url if url is None else url,
-        headers=request.headers.multi_items() if headers is None else headers,
+        headers=request.headers.raw if headers is None else wire_fields(headers),
         stream=request.stream,
         extensions=dict(request.extensions),
     )
