@@ -39,10 +39,10 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['standard.message', 'github.push', 'callbacks.delivered', 'stripe.event'] bindings 5
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper standard.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.message 1782285e59bbf3c9e0f5723ef8adc48a7f4bd3ca5ee300d3195dfbb83432aa65
-  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push 00b0c68b7efb102cb5f32ae5d9c8567e03c455e131a1833e08ccc50be59e9c4f
-  helper callbacks.delivered webhook enabled True /inputs/target_config/protocol_metadata/helpers/callbacks.delivered 194452afecb688c93fdfaef847c9e12b40af2d90eb3b7ad46887e1054cea4ad1
-  helper stripe.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/stripe.event c33fce4c490c87b1ad3f8d77659c712fbfbb96cb92443fc787b1df184bd14abd
+  helper standard.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.message f84be255923be7411ea6edea1859666894a284d3255c1d17e2661afed38d4b76
+  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push 20b48f273efc814fa68f9183fc60e299c6453d1e8fe4cb6fc8fbd7b3cf4e6d78
+  helper callbacks.delivered webhook enabled True /inputs/target_config/protocol_metadata/helpers/callbacks.delivered dfa099f14eceac05a919414411394d9f0711cbad7d5fe0e5efa19ea728d9a6d2
+  helper stripe.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/stripe.event 2a3426969bbace7d44b94defde8031979493d6b8245fb944b879670dd918d323
   {
     "helpers": {
       "callbacks.delivered": {

@@ -5,8 +5,7 @@ use /paths/~1counts/post response_body 200: native typed_dict models:Counts mode
 use /paths/~1shelves/post request_body: native typed_dict models:Shelf models=[('models:Item', 'typed_dict', 'ignore', True), ('models:Shelf', 'typed_dict', 'allow', True)]
 use /paths/~1shelves/post response_body 200: native typed_dict models:Shelf models=[('models:Item', 'typed_dict', 'ignore', True), ('models:Shelf', 'typed_dict', 'allow', True)]
 use /paths/~1pets/post request_body: native alias models:FieldPetsPostRequest models=[('models:Cat', 'typed_dict', 'ignore', True), ('models:Dog', 'typed_dict', 'ignore', True)]
-use /paths/~1pets/post response_body 200: native alias models:FieldPetsPostResponse models=[('models:Cat', 'typed_dict', 'ignore', True), ('models:Dog', 'typed_dict', 'ignore', True)]
 use /paths/~1kittens/post request_body: native typed_dict models:Kitten models=[('models:Kitten', 'typed_dict', 'ignore', True)]
 sealed-server-decode: model {'a': 'x'} wire={"a":"x"} presence=['', '/a'] extras={}
 counts-server-decode: model {'x': 2} wire={"x":2} presence=['', '/x'] extras={}
-pets-server-encode-cat: wire={"meow":true}
+pets-client-encode-cat: wire={"meow":true}

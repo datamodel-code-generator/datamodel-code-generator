@@ -11,12 +11,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Bag"
       responses:
-        "200":
-          description: The stored bag.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Bag"
+        "204":
+          description: Stored.
 components:
   schemas:
     Cat:

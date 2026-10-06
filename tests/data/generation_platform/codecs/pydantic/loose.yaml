@@ -4,6 +4,15 @@ info:
   version: "1"
 paths:
   /loose:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Holder"
+      responses:
+        "204":
+          description: Stored.
     post:
       requestBody:
         content:

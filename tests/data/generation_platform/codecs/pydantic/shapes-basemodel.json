@@ -1,7 +1,6 @@
 {
   "backend": "pydantic_v2.BaseModel",
   "package": "codec_shapes_basemodel",
-  "refusal": {"validation": {"response": "native"}},
   "cases": [
     {"name": "animal-client-cat", "use": "/paths/~1animals/post request_body", "surface": "client", "op": "from_wire",
      "value": {"id": 3, "meow": true}},

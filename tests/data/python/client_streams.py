@@ -202,11 +202,6 @@ class _Harness:
         types = importlib.import_module(f"{self.package.__name__}.types.events")
         return types.StreamEventsRequestCodecs.parameter(location="query", name="topic").from_wire(wire)
 
-    def schema(self) -> Any:
-        """Return call options that validate responses against their schemas."""
-        options = self.options
-        return options.RequestOptions(validation=options.ValidationOptions(response="schema"))
-
 
 def streams(package: ModuleType, lines: list[str]) -> None:
     """Parse, route, decode, end, and limit SSE streams of exact chunks through the synchronous and asyncio clients."""
@@ -306,7 +301,7 @@ def _framing(harness: _Harness, api: Any, adapter: _Feed) -> None:
         harness.reply((b"\xef",)),
         harness.reply(()),
     ))
-    _drained(lines, "byte order mark split", helper.open(options=harness.schema()))
+    _drained(lines, "byte order mark split", helper.open())
     _drained(lines, "partial byte order mark", helper.open())
     _drained(lines, "byte order mark prefix at the end", helper.open())
     _drained(lines, "empty body", helper.open())
@@ -371,7 +366,7 @@ def _routing(harness: _Harness, api: Any, adapter: _Feed) -> None:
         lines.append(f"  body error event {failure.event_type} {_data(failure.data)!r} {failure.sequence}")
     for label in ("missing discriminator", "null discriminator", "number discriminator", "unknown discriminator"):
         _drained(lines, label, tagged.open())
-    _drained(lines, "mapped event failing its schema", tagged.open(options=harness.schema()))
+    _drained(lines, "mapped event failing its type", tagged.open())
 
 
 def _decoding(harness: _Harness, api: Any, adapter: _Feed) -> None:
@@ -385,18 +380,14 @@ def _decoding(harness: _Harness, api: Any, adapter: _Feed) -> None:
         harness.reply((large,)),
         harness.reply((b'data: {"type": "created"}\n\n',)),
     ))
-    for label, options in (
-        ("not JSON", None),
-        ("refused by its schema", harness.schema()),
-        ("refused natively", None),
-    ):
-        _drained(lines, label, helper.open(options=options))
+    for label in ("not JSON", "refused by its type", "refused natively"):
+        _drained(lines, label, helper.open())
     try:
         next(helper.open())
     except harness.errors.StreamDecodeError as failure:
         lines.append(f"  large event raw prefix {len(failure.raw_prefix)} truncated={failure.truncated}")
     try:
-        next(api.protocols.events.tagged.open(options=harness.schema()))
+        next(api.protocols.events.tagged.open())
     except harness.errors.StreamDecodeError as failure:
         lines.append(f"  invalid mapped event cause {type(failure.cause).__name__} prefix {failure.raw_prefix!r}")
 
@@ -893,9 +884,9 @@ def _ndjson_framing(harness: _Harness, api: Any, adapter: _Feed) -> None:
         "invalid UTF-8",
         "byte order mark",
         "CR without LF",
-        "record refused by its schema",
+        "record refused by its type",
     ):
-        _decode_failure(lines, label, helper.open(options=harness.schema() if "schema" in label else None))
+        _decode_failure(lines, label, helper.open())
 
 
 def _ndjson_endings(harness: _Harness, api: Any, adapter: _Feed) -> None:
@@ -953,7 +944,7 @@ def _ndjson_routing(harness: _Harness, api: Any, adapter: _Feed) -> None:
         lines.append(f"  error record {failure.event_type!r} {_data(failure.data)!r} {failure.sequence}")
     record(lines, "after the error", lambda: next(stream))
     _drained(lines, "missing discriminator", helper.open())
-    _drained(lines, "mapped record failing its schema", helper.open(options=harness.schema()))
+    _drained(lines, "mapped record failing its type", helper.open())
 
 
 def _ndjson_limits(harness: _Harness, api: Any, adapter: _Feed) -> None:

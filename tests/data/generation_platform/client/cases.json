@@ -111,11 +111,7 @@
             ]
           }
         }
-      ],
-      "validation": {
-        "request": "schema",
-        "response": "schema"
-      }
+      ]
     },
     "modules": [
       [
@@ -128,12 +124,7 @@
     "model": {
       "read_only_write_only_model_type": "request-response"
     },
-    "config": {
-      "validation": {
-        "request": "schema",
-        "response": "schema"
-      }
-    }
+    "config": {}
   },
   "servers": {
     "input": "servers.yaml",
@@ -294,14 +285,6 @@
       ]
     ]
   },
-  "evolution-schema": {
-    "input": "evolution.yaml",
-    "config": {
-      "validation": {
-        "response": "schema"
-      }
-    }
-  },
   "evolution-forbid": {
     "input": "evolution.yaml",
     "model": {
@@ -340,53 +323,6 @@
     "input": "keywords.yaml",
     "config": {
       "signature_style": "unpack"
-    }
-  },
-  "validation": {
-    "input": "validation.yaml",
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ],
-    "config": {
-      "validation": {
-        "request_overrides": [
-          "native",
-          "schema"
-        ],
-        "response_overrides": [
-          "schema"
-        ]
-      }
-    }
-  },
-  "validation-structural": {
-    "input": "validation.yaml",
-    "config": {
-      "validation": {
-        "request_overrides": [
-          "schema"
-        ],
-        "response_overrides": [
-          "schema"
-        ]
-      }
-    }
-  },
-  "validation-native-structural": {
-    "input": "validation.yaml",
-    "backends": [
-      "dataclasses.dataclass",
-      "typing.TypedDict"
-    ],
-    "config": {
-      "validation": {
-        "request_overrides": [
-          "native"
-        ],
-        "response_overrides": [
-          "schema"
-        ]
-      }
     }
   },
   "validation-ambiguous": {
@@ -435,12 +371,6 @@
           "body_arguments": "body"
         }
       ],
-      "validation": {
-        "request_overrides": [
-          "native",
-          "schema"
-        ]
-      },
       "selection": {
         "exclude_operations": [
           "/paths/~1search/post"
@@ -492,12 +422,7 @@
           "ref": "/paths/~1pets~1{petId}~1owner/put",
           "body_arguments": "body"
         }
-      ],
-      "validation": {
-        "request_overrides": [
-          "schema"
-        ]
-      }
+      ]
     },
     "modules": [
       [
@@ -647,7 +572,7 @@
         "exclude_operations": [
           "/paths/~1search/post"
         ],
-        "reason": "The fields-structural case covers the union body."
+        "reason": "The fields-structural and fields-arguments cases cover the union body."
       }
     }
   },
@@ -1580,12 +1505,7 @@
       "pydantic_v2.BaseModel"
     ],
     "config": {
-      "protocols": "protocols/pagination.yaml",
-      "validation": {
-        "response_overrides": [
-          "schema"
-        ]
-      }
+      "protocols": "protocols/pagination.yaml"
     },
     "modules": [
       [
@@ -1615,12 +1535,7 @@
       "msgspec.Struct"
     ],
     "config": {
-      "protocols": "protocols/pagination.yaml",
-      "validation": {
-        "response_overrides": [
-          "schema"
-        ]
-      }
+      "protocols": "protocols/pagination.yaml"
     },
     "modules": [
       [
@@ -1645,12 +1560,7 @@
       "protocols/pagination-limits.yaml"
     ],
     "config": {
-      "protocols": "protocols/pagination-limits.yaml",
-      "validation": {
-        "request_overrides": [
-          "schema"
-        ]
-      }
+      "protocols": "protocols/pagination-limits.yaml"
     }
   },
   "pagination-querystring": {
@@ -1673,12 +1583,7 @@
       "protocols/pagination-targets.yaml"
     ],
     "config": {
-      "protocols": "protocols/pagination-targets.yaml",
-      "validation": {
-        "request_overrides": [
-          "schema"
-        ]
-      }
+      "protocols": "protocols/pagination-targets.yaml"
     },
     "modules": [
       [
@@ -1845,10 +1750,7 @@
       "protocols/webhook-typing.yaml"
     ],
     "config": {
-      "protocols": "protocols/webhook-typing.yaml",
-      "validation": {
-        "response": "schema"
-      }
+      "protocols": "protocols/webhook-typing.yaml"
     },
     "modules": [
       [
@@ -2019,21 +1921,7 @@
   },
   "unions": {
     "input": "unions.yaml",
-    "config": {
-      "validation": {
-        "response_overrides": [
-          "schema"
-        ]
-      }
-    }
-  },
-  "unions-schema": {
-    "input": "unions.yaml",
-    "config": {
-      "validation": {
-        "response": "schema"
-      }
-    }
+    "config": {}
   },
   "unions-tagged": {
     "input": "unions.yaml",
@@ -2044,49 +1932,19 @@
           "/paths/~1overlaps/get"
         ],
         "reason": "msgspec tells apart only tagged union members natively."
-      },
-      "validation": {
-        "response_overrides": [
-          "schema"
-        ]
       }
     }
   },
   "unions-legacy": {
     "input": "unions-legacy.yaml",
-    "config": {
-      "validation": {
-        "response_overrides": [
-          "schema"
-        ]
-      }
-    }
-  },
-  "unions-legacy-schema": {
-    "input": "unions-legacy.yaml",
-    "config": {
-      "selection": {
-        "exclude_operations": [
-          "/paths/~1inline/get"
-        ],
-        "reason": "Only Pydantic tells apart union members whose schemas the legacy reference drops."
-      },
-      "validation": {
-        "response": "schema"
-      }
-    }
+    "config": {}
   },
   "unions-split": {
     "input": "unions-split.yaml",
     "model": {
       "read_only_write_only_model_type": "request-response"
     },
-    "config": {
-      "validation": {
-        "request": "schema",
-        "response": "schema"
-      }
-    }
+    "config": {}
   },
   "pagination-counts": {
     "input": "pagination-counts.yaml",
@@ -2094,12 +1952,7 @@
       "protocols/pagination-counts.yaml"
     ],
     "config": {
-      "protocols": "protocols/pagination-counts.yaml",
-      "validation": {
-        "request_overrides": [
-          "schema"
-        ]
-      }
+      "protocols": "protocols/pagination-counts.yaml"
     },
     "modules": [
       [
@@ -2159,12 +2012,7 @@
       "protocols/pagination-resume.yaml"
     ],
     "config": {
-      "protocols": "protocols/pagination-resume.yaml",
-      "validation": {
-        "request_overrides": [
-          "schema"
-        ]
-      }
+      "protocols": "protocols/pagination-resume.yaml"
     }
   },
   "protocols-pagination-resume-checks": {
@@ -2327,12 +2175,7 @@
       "protocols/streams.yaml"
     ],
     "config": {
-      "protocols": "protocols/streams.yaml",
-      "validation": {
-        "response_overrides": [
-          "schema"
-        ]
-      }
+      "protocols": "protocols/streams.yaml"
     },
     "modules": [
       [
@@ -2413,12 +2256,7 @@
       "protocols/ndjson.yaml"
     ],
     "config": {
-      "protocols": "protocols/ndjson.yaml",
-      "validation": {
-        "response_overrides": [
-          "schema"
-        ]
-      }
+      "protocols": "protocols/ndjson.yaml"
     },
     "modules": [
       [
@@ -2447,11 +2285,7 @@
       "read_only_write_only_model_type": "request-response"
     },
     "config": {
-      "protocols": "protocols/ndjson-split.yaml",
-      "validation": {
-        "request": "schema",
-        "response": "schema"
-      }
+      "protocols": "protocols/ndjson-split.yaml"
     }
   },
   "protocols-ndjson-checks": {
@@ -2630,12 +2464,7 @@
       "protocols/sockets.yaml"
     ],
     "config": {
-      "protocols": "protocols/sockets.yaml",
-      "validation": {
-        "response_overrides": [
-          "schema"
-        ]
-      }
+      "protocols": "protocols/sockets.yaml"
     },
     "modules": [
       [
@@ -2697,19 +2526,6 @@
     ],
     "config": {
       "protocols": "protocols/unmodeled.yaml"
-    },
-    "modules": false
-  },
-  "sockets-schema": {
-    "input": "sockets.yaml",
-    "references": [
-      "protocols/sockets.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/sockets.yaml",
-      "validation": {
-        "response": "schema"
-      }
     },
     "modules": false
   },

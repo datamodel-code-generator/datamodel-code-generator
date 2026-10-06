@@ -30,7 +30,6 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage, SchemaRef
-    from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
@@ -214,10 +213,7 @@ def webhook_uses(
 
 
 def plan_webhooks(
-    events: tuple[WebhookSpec, ...],
-    codecs: CodecPlan,
-    config: ClientGenerationConfig,
-    problems: dict[str, list[Diagnostic]],
+    events: tuple[WebhookSpec, ...], codecs: CodecPlan, problems: dict[str, list[Diagnostic]]
 ) -> tuple[WebhookSpec, ...]:
     """Plan every webhook helper whose events have native codecs and no other problem, adding the others' problems.
 
@@ -236,8 +232,7 @@ def plan_webhooks(
                     "yet"
                 )
                 problems[helper.name].append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message))
-            validate = config.validation.response == "schema" or needs_schema(binding)
-            planned.append(replace(event, validate=validate))
+            planned.append(replace(event, validate=needs_schema(binding)))
         if not problems[helper.name]:
             specs.append(replace(spec, events=tuple(planned)))
     return tuple(specs)

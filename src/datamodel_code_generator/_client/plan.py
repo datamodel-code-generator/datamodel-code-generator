@@ -92,14 +92,13 @@ _STYLED: Final = ("style", "explode", "allowReserved")
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PartSpec:
-    """One member of a form-data body with file parts: its plan, its values' type use, and its encoding's headers.
+    """One member of a form-data body with file parts: its plan and its values' type use.
 
     A file member has no type use of its values.
     """
 
     plan: PartPlan
     use: TypeUseBinding | None = None
-    headers: tuple[HeaderSpec, ...] = ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -591,7 +590,6 @@ class Planner:
                     use,
                     use.schema,
                     media_of=media_of,
-                    headers_of=headers_of,
                     styles_of=styles_of,
                 )
                 if request
@@ -638,7 +636,7 @@ class Planner:
 
         A member holding no files takes one JSON or text media type; a file member takes any media types and ranges.
         A style, explode, or allowReserved leaves the contentType ignored, and only a member holding no files takes it.
-        A declared header with a schema is checked on the member's parts; one without a schema is not.
+        Only a declared header with a schema is returned; a body sent whole cannot carry a required one.
         """
         members = {} if use is None else {name: member for name, member, _ in _members(use)}
         media_of: dict[str, tuple[str, ...]] = {}
@@ -966,7 +964,6 @@ def _sent(  # noqa: PLR0913
     site: SourceLocation,
     *,
     media_of: Mapping[str, tuple[str, ...]],
-    headers_of: Mapping[str, tuple[HeaderSpec, ...]],
     styles_of: Mapping[str, ParameterPlan],
 ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
     """Return the member plans of a form-data body with file parts, or None when its object is sent whole.
@@ -1008,7 +1005,6 @@ def _sent(  # noqa: PLR0913
             use=None
             if name in files
             else _part_use(use, member, name, TypeUseBinding(use.id, "bound", facts.type, None)),
-            headers=headers_of.get(name, ()),
         )
         for name, member, facts in members
     ), additional
@@ -1249,13 +1245,6 @@ def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
                 media.use.id
                 for media in spec.body.media
                 if media.use is not None and media.kind != "binary" and media.members is None
-            )
-            yield from (
-                header.use.id
-                for media in spec.body.media
-                for part in member_parts(media)
-                for header in part.headers
-                if header.use is not None
             )
         for response in spec.responses:
             if not response.bodyless:

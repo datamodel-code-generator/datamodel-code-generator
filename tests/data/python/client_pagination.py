@@ -305,10 +305,6 @@ def _sizes(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
         raw_response(200, b"\x1f\x8b-broken", "application/json", **{"content-encoding": "gzip"}),
     )
     drained(lines, "broken coding", helper.iterate())
-    schema = options.RequestOptions(validation=options.ValidationOptions(response="schema"))
-    exchange.respond(json_response(200, {"data": [{"id": 1}]}), users("1"))
-    drained(lines, "schema validation", api.protocols.loose.all.iterate(options=schema))
-    drained(lines, "schema validation valid", api.protocols.users.all.iterate(options=schema))
 
 
 def _cycles(api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -444,7 +440,7 @@ async def _async_pagination(harness: Harness, lines: list[str]) -> None:
 def pagination_backends(package: ModuleType, lines: list[str]) -> None:
     """Read the items of every backend's page models, root lists, and optional members through their accessors.
 
-    Items of another type fail response validation in either mode, before the helper reads them.
+    Items of another type fail response validation, before the helper reads them.
     """
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native) as api:
@@ -465,15 +461,12 @@ def pagination_backends(package: ModuleType, lines: list[str]) -> None:
             json_response(200, {"data": [{"id": "1"}], "next": 3}), json_response(200, {"data": [], "next": None})
         )
         drained(lines, "loose", api.protocols.loose.all.iterate())
-        options = importlib.import_module(f"{package.__name__}.options")
-        for mode in ("native", "schema"):
-            settings = options.RequestOptions(validation=options.ValidationOptions(response=mode))
-            for label, helper, payload in (
-                ("users", api.protocols.users.all, {"data": "users"}),
-                ("loose", api.protocols.loose.all, {"data": "users", "next": None}),
-            ):
-                exchange.respond(json_response(200, payload))
-                drained(lines, f"{mode} {label} of another type", helper.iterate(options=settings))
+        for label, helper, payload in (
+            ("users", api.protocols.users.all, {"data": "users"}),
+            ("loose", api.protocols.loose.all, {"data": "users", "next": None}),
+        ):
+            exchange.respond(json_response(200, payload))
+            drained(lines, f"{label} of another type", helper.iterate())
     run(lambda: _async_backends(package, lines))
 
 
@@ -487,17 +480,15 @@ async def _async_backends(package: ModuleType, lines: list[str]) -> None:
 
 
 def pagination_limits(package: ModuleType, lines: list[str]) -> None:
-    """Send a server's cursor as it came, past its parameter's schema, while a caller's start cursor is validated."""
+    """Send a server's cursor and a caller's start cursor as they came, past their parameter's schema."""
     harness = Harness(package)
-    options = harness.options
-    checked = options.RequestOptions(validation=options.ValidationOptions(request="schema"))
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native) as api:
         helper = api.protocols.codes.all
-        for label, settings in (("default", None), ("schema", checked)):
-            exchange.respond(
-                json_response(200, {"data": [{"id": "1"}], "next": "longer"}), json_response(200, {"data": [{"id": "2"}]})
-            )
-            drained(lines, f"{label} validation of a long server cursor", helper.iterate(options=settings))
+        exchange.respond(
+            json_response(200, {"data": [{"id": "1"}], "next": "longer"}), json_response(200, {"data": [{"id": "2"}]})
+        )
+        drained(lines, "a long server cursor", helper.iterate())
         start = type(harness.argument("codes", "ListCodes", "query", "cursor", "ab").value).model_construct("longer")
-        drained(lines, "schema validation of a long start cursor", helper.iterate(cursor=start, options=checked))
+        exchange.respond(json_response(200, {"data": [{"id": "1"}]}))
+        drained(lines, "a long start cursor", helper.iterate(cursor=start))

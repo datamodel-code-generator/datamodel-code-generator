@@ -8,15 +8,30 @@ from typing import TYPE_CHECKING, Any
 
 from tests.data.python.client_hooks import Recorder
 from tests.data.python.client_runtime import Exchange, arecord, json_response, raw_response, record, run
-from tests.data.python.client_validation import _aexchanged, _exchanged
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
     from types import ModuleType
 
 _JSON = "application/json"
 _FORM = "application/x-www-form-urlencoded"
 _TEXT = "text/plain"
 _CREATED = {"id": 1, "name": "Mimi"}
+
+
+def _exchanged(exchange: Exchange, lines: list[str], label: str, call: Callable[[], object], answer: Any) -> None:
+    """Record a call with an answer queued for it; a call refused before sending leaves the answer unused."""
+    exchange.respond(answer)
+    record(lines, label, call)
+    exchange.responders.clear()
+
+
+async def _aexchanged(
+    exchange: Exchange, lines: list[str], label: str, call: Callable[[], Awaitable[object]], answer: Any
+) -> None:
+    exchange.respond(answer)
+    await arecord(lines, label, call)
+    exchange.responders.clear()
 
 
 class _Fields:
@@ -26,10 +41,6 @@ class _Fields:
         self.package = package
         self.models = importlib.import_module(f"{package.__name__}_models")
         self.options = importlib.import_module(f"{package.__name__}.options")
-
-    def call(self, **modes: object) -> Any:
-        """Return call options that select validation modes."""
-        return self.options.RequestOptions(validation=self.options.ValidationOptions(**modes))
 
     def pet_id(self, operation: str) -> Any:
         """Return the pet id of an operation's path, which a Pydantic model wraps and other backends alias."""
@@ -65,7 +76,7 @@ def fields(package: ModuleType, lines: list[str]) -> None:
         _refused(context, api.with_options(context.options.RequestOptions(hooks=(Recorder(lines, "hook"),))), exchange, lines)
         _optional(context, api.default, exchange, lines)
         _views(context, api.default, exchange, lines)
-        _modes(context, api.default, exchange, lines)
+        _constructed(context, api.default, exchange, lines)
     http.close()
     run(lambda: _async_fields(context, lines))
 
@@ -184,31 +195,30 @@ def _views(context: _Fields, pets: Any, exchange: Exchange, lines: list[str]) ->
     exchange.responders.clear()
 
 
-def _modes(context: _Fields, pets: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Construct a body from fields under each request mode: its constructor always, then what the mode checks."""
+def _constructed(context: _Fields, pets: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Construct a body from fields through its constructor, which is all that checks them."""
     kind = context.kind()
-    for mode in ("none", "native", "schema"):
-        _exchanged(
-            exchange,
-            lines,
-            f"create a name too long, request {mode}",
-            lambda: pets.create_pet(name="far too long", kind=kind, media_type=_JSON, options=context.call(request=mode)),
-            json_response(201, _CREATED),
-        )
-        _exchanged(
-            exchange,
-            lines,
-            f"create a numeric name, request {mode}",
-            lambda: pets.create_pet(name=5, kind=kind, media_type=_JSON, options=context.call(request=mode)),
-            json_response(201, _CREATED),
-        )
-        _exchanged(
-            exchange,
-            lines,
-            f"log a visit giving nothing, request {mode}",
-            lambda: pets.log_visit(pet_id=context.pet_id("VisitsPost"), media_type=_JSON, options=context.call(request=mode)),
-            raw_response(204),
-        )
+    _exchanged(
+        exchange,
+        lines,
+        "create a name too long",
+        lambda: pets.create_pet(name="far too long", kind=kind, media_type=_JSON),
+        json_response(201, _CREATED),
+    )
+    _exchanged(
+        exchange,
+        lines,
+        "create a numeric name",
+        lambda: pets.create_pet(name=5, kind=kind, media_type=_JSON),
+        json_response(201, _CREATED),
+    )
+    _exchanged(
+        exchange,
+        lines,
+        "log a visit giving nothing",
+        lambda: pets.log_visit(pet_id=context.pet_id("VisitsPost"), media_type=_JSON),
+        raw_response(204),
+    )
 
 
 async def _async_fields(context: _Fields, lines: list[str]) -> None:
@@ -266,4 +276,3 @@ def optional_models(package: ModuleType, lines: list[str]) -> None:
             json_response(201, _CREATED),
         )
     http.close()
-

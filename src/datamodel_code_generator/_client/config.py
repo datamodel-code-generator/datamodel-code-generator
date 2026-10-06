@@ -11,11 +11,7 @@ from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import OperationRef
 from datamodel_code_generator._client.naming import identifier, namespace_problem, token
-from datamodel_code_generator._runtime.client.options import (
-    RequestValidation,
-    ResponseValidation,
-    is_base_url,
-)
+from datamodel_code_generator._runtime.client.options import is_base_url
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
 from datamodel_code_generator._target_config import (
     Converter,
@@ -47,10 +43,6 @@ RecordT = TypeVar("RecordT")
 _LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie"})
 _SIGNATURE_STYLES: Final = frozenset({"explicit", "unpack"})
 _BODY_ARGUMENTS: Final = frozenset({"body", "both"})
-_VALIDATION_AXES: Final = (
-    ("request", "request_overrides", ("none", "native", "schema")),
-    ("response", "response_overrides", ("native", "schema")),
-)
 _MIN_REDIRECT: Final = 300
 _MAX_REDIRECT: Final = 399
 
@@ -125,20 +117,6 @@ class ClientOperationConfig:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class ClientValidationConfig:
-    """How ordinary calls validate what they send and what they receive.
-
-    Each axis's mode is the generated default, and its overrides are the other modes a client, view, or call may select
-    at runtime; empty overrides fix the mode.
-    """
-
-    request: RequestValidation = "none"
-    response: ResponseValidation = "native"
-    request_overrides: tuple[RequestValidation, ...] = ()
-    response_overrides: tuple[ResponseValidation, ...] = ()
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class ClientGenerationConfig(TargetConfig):
     """Settings of one client target; model settings stay in the model configuration."""
 
@@ -148,7 +126,6 @@ class ClientGenerationConfig(TargetConfig):
     operations: tuple[ClientOperationConfig, ...] = ()
     signature_style: SignatureStyle = "explicit"
     body_arguments: BodyArguments = "body"
-    validation: ClientValidationConfig = field(default_factory=ClientValidationConfig)
     default_base_url: str | None = None
     server_base_url: str | None = None
     protocols: Path | ProtocolConfiguration | None = None
@@ -168,7 +145,6 @@ class ClientGenerationConfig(TargetConfig):
             yield _diagnostic("E_CONFIG_VALUE", "signature_style", "signature_style must be 'explicit' or 'unpack'")
         if self.body_arguments not in _BODY_ARGUMENTS:
             yield _diagnostic("E_CONFIG_VALUE", "body_arguments", "body_arguments must be 'body' or 'both'")
-        yield from _validation_problems(self.validation)
         for name in ("default_base_url", "server_base_url"):
             if (value := getattr(self, name)) is not None and not absolute(value):
                 yield _diagnostic(
@@ -218,29 +194,6 @@ def _tuple_of(value: object, kind: type[RecordT]) -> TypeIs[tuple[RecordT, ...]]
 
 def _text(value: object) -> bool:
     return isinstance(value, str)
-
-
-def _quoted(modes: tuple[str, ...]) -> str:
-    return ", ".join(map(repr, modes[:-1])) + f" or {modes[-1]!r}"
-
-
-def _validation_problems(value: object) -> Iterator[Diagnostic]:
-    if not isinstance(value, ClientValidationConfig):
-        yield _diagnostic("E_CONFIG_VALUE", "validation", "validation must be a ClientValidationConfig record")
-        return
-    for axis, overrides, modes in _VALIDATION_AXES:
-        if getattr(value, axis) not in modes:
-            yield _diagnostic("E_CONFIG_VALUE", f"validation.{axis}", f"validation.{axis} must be {_quoted(modes)}")
-        if not (_is_tuple(listed := getattr(value, overrides)) and all(item in modes for item in listed)):
-            yield _diagnostic(
-                "E_CONFIG_VALUE",
-                f"validation.{overrides}",
-                f"validation.{overrides} must be a tuple whose modes are {_quoted(modes)}",
-            )
-        elif repeated := next((item for index, item in enumerate(listed) if item in listed[:index]), None):
-            yield _diagnostic(
-                "E_CONFIG_VALUE", f"validation.{overrides}", f"validation.{overrides} lists {repeated!r} twice"
-            )
 
 
 def _resource_name_problems(value: object) -> Iterator[Diagnostic]:
@@ -539,29 +492,12 @@ def _operation_config(value: object, base: Path, option_path: str) -> ClientOper
     )
 
 
-_VALIDATION_CONVERTERS: Final[Mapping[str, Converter]] = MappingProxyType({
-    "request": _string,
-    "response": _string,
-    "request_overrides": _strings,
-    "response_overrides": _strings,
-})
-
-
-def _validation(value: object, base: Path, option_path: str) -> ClientValidationConfig:
-    table = _table(value, option_path, frozenset(_VALIDATION_CONVERTERS))
-    values: dict[str, Any] = {
-        key: _VALIDATION_CONVERTERS[key](item, base, f"{option_path}.{key}") for key, item in table.items()
-    }
-    return ClientValidationConfig(**values)
-
-
 ClientGenerationConfig.toml_converters = MappingProxyType({
     "transport": _string,
     "resource_names": _resource_names,
     "operations": _records(_operation_config),
     "signature_style": _string,
     "body_arguments": _string,
-    "validation": _validation,
     "default_base_url": _string,
     "server_base_url": _string,
     "protocols": _path,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, replace
-from functools import cached_property, partial
+from functools import cached_property
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
@@ -17,7 +17,6 @@ from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
 from datamodel_code_generator._client.uploads import UploadSpec
-from datamodel_code_generator._client.validation import allowed
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Doc, Group, layout
@@ -29,7 +28,7 @@ from datamodel_code_generator._target_render import field_plan, items, parameter
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
 
-    from datamodel_code_generator._client.config import ClientGenerationConfig, ClientValidationConfig
+    from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.pagination import ItemStep, PaginationSpec
     from datamodel_code_generator._client.plan import (
         ClientPlan,
@@ -129,7 +128,6 @@ from ._runtime.client.options import (
     SessionOptions,
     TimeoutOptions,
     TransportOptions,
-    ValidationOptions,
 )
 from ._runtime.model_codecs.unset import UNSET, Unset
 
@@ -154,7 +152,6 @@ __all__ = [
     "TimeoutOptions",
     "TransportOptions",
     "Unset",
-    "ValidationOptions",
 ]
 
 
@@ -1054,38 +1051,25 @@ class _Resources(_Typing):
         codecs: CodecPlan,
         accessors: dict[TypeUseId, UseAccessors],
         user_agent: str | None,
-        validation: ClientValidationConfig,
         *,
         unpacked: bool = False,
         helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
     ) -> None:
-        """Keep the typing context, User-Agent, validation, unpacked methods' TypedDicts, and protocol helpers."""
+        """Keep the typing context, User-Agent, unpacked methods' TypedDicts, and protocol helpers."""
         super().__init__(plan, codecs, accessors)
         self.user_agent = user_agent
-        self.validation = validation
         self.records = _Records(self) if unpacked else None
         self.helpers = helpers
         self.streams = streams
         self.sockets = sockets
 
     def defaults(self, module: Module) -> str:
-        """Return the generated defaults of the clients, naming the validation modes that differ from the runtime's."""
-        validation = self.validation
-        modes = (
-            ("request", allowed(validation.request, validation.request_overrides), ("none",)),
-            ("response", allowed(validation.response, validation.response_overrides), ("native",)),
-        )
-        arguments = ", ".join(f"{axis}={selected!r}" for axis, selected, runtime in modes if selected != runtime)
+        """Return the generated defaults of the clients."""
         entries: list[tuple[str, Doc]] = [("user_agent=", repr(self.user_agent))]
         if self.plan.security_schemes:
             entries.append(("security_schemes=", f"{module.local('_generated', 'security')}.ROOT_SCHEMES"))
-        if arguments:
-            entries.append((
-                "validation=",
-                f"{module.local('_runtime.client.options', 'ValidationModes')}({arguments})",
-            ))
         name = module.local("_runtime.client.client", "ClientDefaults")
         helpers = (*self.helpers, *self.streams, *self.sockets)
         if not helpers:
@@ -2047,23 +2031,7 @@ class _Registry(_Typing):
                 *((flag, "True") for flag, value in flags if value),
                 *((("encoder=", self.encoder(module, part.use)),) if part.use is not None else ()),
                 *((("content_types=", _tuple(map(repr, plan.content_types))),) if plan.content_types else ()),
-                *(
-                    (("headers=", _tuple(map(partial(self.part_header, module), part.headers))),)
-                    if part.headers
-                    else ()
-                ),
                 *((("style=", parameter_plan(module.local, plan.style)),) if plan.style is not None else ()),
-            ),
-        )
-
-    def part_header(self, module: Module, header: HeaderSpec) -> Group:
-        """Return the PartHeader constructor of one header an encoding declares for a member's parts."""
-        assert header.use is not None
-        return _call(
-            module.local("_runtime.client.multipart", "PartHeader"),
-            (
-                ("", parameter_plan(module.local, header.plan)),
-                ("", self.codec(module, header.use, facade=True)),
             ),
         )
 
@@ -3966,7 +3934,7 @@ session sends the code and reason given, 1000 by default, and drops the connecti
         return """
 An offset or page-number helper sends the first request as the caller gives it and starts at the position the caller
 passes for the written target, or else at the configured first position; a starting value that is not an integer raises
-`RequestEncodingError` when validation checks it and `ProtocolDataError` otherwise, before sending. Each later page's
+`RequestEncodingError` when its codec refuses it and `ProtocolDataError` otherwise, before sending. Each later page's
 position is the last one advanced by the configured step, or by the last page's item count. A page whose `has_more` is
 false ends the traversal, and so does one after which the items counted before the next position reach its `total`: the
 offsets past the first position for an offset, the items delivered since the start for a page number, which also ends
@@ -3997,7 +3965,6 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.codecs,
             self.accessors,
             user_agent,
-            config.validation,
             unpacked=config.signature_style == "unpack",
             helpers=self.helpers,
             streams=self.streams,

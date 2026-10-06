@@ -22,9 +22,9 @@
     {"name": "kitten-server-decode-missing", "use": "/paths/~1kittens/post request_body", "op": "decode", "value": {"meow": true}},
     {"name": "pets-server-decode-dog", "use": "/paths/~1pets/post request_body", "op": "decode", "value": {"bark": 1, "name": "Rex"}},
     {"name": "pets-server-decode-both", "use": "/paths/~1pets/post request_body", "op": "decode", "value": {"bark": 1, "meow": true}},
-    {"name": "pets-server-encode-dog", "use": "/paths/~1pets/post response_body 200", "op": "encode", "value": {"bark": 2}},
-    {"name": "pets-server-encode-cat", "use": "/paths/~1pets/post response_body 200", "op": "encode", "value": {"meow": false, "name": "Tom"}},
-    {"name": "pets-server-encode-neither", "use": "/paths/~1pets/post response_body 200", "op": "encode", "value": {"name": "Tom"}},
-    {"name": "pets-server-encode-scalar", "use": "/paths/~1pets/post response_body 200", "op": "encode", "value": 3}
+    {"name": "pets-client-encode-dog", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "encode", "value": {"bark": 2}},
+    {"name": "pets-client-encode-cat", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "encode", "value": {"meow": false, "name": "Tom"}},
+    {"name": "pets-client-encode-neither", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "encode", "value": {"name": "Tom"}},
+    {"name": "pets-client-encode-scalar", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "encode", "value": 3}
   ]
 }

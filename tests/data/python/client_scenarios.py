@@ -88,9 +88,8 @@ from tests.data.python.client_stream_resume import stream_resume
 from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_split, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
-from tests.data.python.client_unions import schema_unions, split_unions, unions
+from tests.data.python.client_unions import split_unions, unions
 from tests.data.python.client_uploads import upload_compression, uploads, uploads_oauth
-from tests.data.python.client_validation import validation
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
     webhook_adapters,
@@ -836,14 +835,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "cache-stores": ("caching", ("pydantic_v2.BaseModel",), cache_stores),
     "cache-backends": ("caching-backends", BACKENDS, cache_backends),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
-    "evolution-schema": (
-        "evolution-schema",
-        ("pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"),
-        evolution,
-    ),
     "evolution-forbid": ("evolution-forbid", ("pydantic_v2.BaseModel", "msgspec.Struct"), evolution),
-    "validation": ("validation", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), validation),
-    "validation-structural": ("validation-structural", ("dataclasses.dataclass", "typing.TypedDict"), validation),
     "evolution-allow": ("evolution-allow", ("pydantic_v2.BaseModel",), evolution),
     "fields": ("fields", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), fields),
     "fields-structural": ("fields-structural", ("dataclasses.dataclass", "typing.TypedDict"), fields),
@@ -862,10 +854,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "webhook-adapter-imports": ("webhooks-unsigned", ("pydantic_v2.BaseModel",), webhook_adapter_imports),
     "unions": ("unions", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-tagged": ("unions-tagged", ("msgspec.Struct",), unions),
-    "unions-schema": ("unions-schema", BACKENDS, schema_unions),
     "unions-legacy": ("unions-legacy", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
-    "unions-legacy-schema": ("unions-legacy-schema", BACKENDS, schema_unions),
-    "unions-split": ("unions-split", BACKENDS, split_unions),
+    "unions-split": ("unions-split", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), split_unions),
 }
 
 

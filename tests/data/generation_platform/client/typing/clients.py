@@ -58,7 +58,6 @@ from pets.options import (
     TimeoutOptions,
     TransportOptions,
     Unset,
-    ValidationOptions,
 )
 from pets.responses import AsyncRawResponse, HeadersView, RawResponse, Response, ResponseInfo
 from pets.transports import (
@@ -329,17 +328,6 @@ def hooks(client: Client) -> None:
     except HookExecutionError as error:
         assert_type(error.require_result().info.status_code, int)
         assert_type(error.has_completed_result, bool)
-
-
-def validation(client: Client) -> None:
-    pet = GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(1)
-    strict = Client(options=ClientOptions(validation=ValidationOptions(request="schema", response="schema")))
-    view = strict.with_options(RequestOptions(validation=ValidationOptions(response="native")))
-    view.pets.get_pet(pet_id=pet, options=RequestOptions(validation=ValidationOptions(request="none")))
-    inherited = ValidationOptions()
-    assert_type(inherited.request, Literal["none", "native", "schema"] | Unset)
-    assert_type(inherited.response, Literal["native", "schema"] | Unset)
-    assert_type(ValidationOptions(request=UNSET).request, Literal["none", "native", "schema"] | Unset)
 
 
 def timing_options(client: Client, context: AttemptIOContext) -> None:

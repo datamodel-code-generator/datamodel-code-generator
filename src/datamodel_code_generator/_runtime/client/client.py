@@ -80,7 +80,6 @@ from .native import (
 from .operations import DATA_ERRORS, ResponseDecoder
 from .options import (
     DEFAULT_TRANSPORT,
-    DEFAULT_VALIDATION,
     ClientOptions,
     HeaderPatch,
     IdempotencyKey,
@@ -89,7 +88,6 @@ from .options import (
     ServerSelection,
     Settings,
     TimeoutOptions,
-    ValidationModes,
     awaited,
     checked_base_url,
     context,
@@ -171,7 +169,7 @@ if TYPE_CHECKING:
     from .logical import OperationSession
     from .multipart import AsyncBodyInput, BodyInput
     from .operations import OperationPlan, ParameterSpec, ServerPlan
-    from .options import RequestValidation, ResolvedTransportOptions
+    from .options import ResolvedTransportOptions
     from .retry import RetryDelay
     from .security import SecuritySchemeEntry
     from .timing import Clock, Deadline
@@ -217,10 +215,9 @@ _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ClientDefaults:
-    """The generated defaults of one client package, the validation modes it allows, and its helpers' kinds by name."""
+    """The generated defaults of one client package and its helpers' kinds by name."""
 
     user_agent: str | None = None
-    validation: ValidationModes = DEFAULT_VALIDATION
     security_schemes: tuple[SecuritySchemeEntry, ...] = ()
     helpers: tuple[tuple[str, str], ...] = ()
 
@@ -231,13 +228,9 @@ _DEFAULT_SERVER: Final = ServerSelection()
 def _layered(
     settings: Settings,
     layer: ClientOptions | RequestOptions,
-    modes: ValidationModes,
     operation_id: str | None = None,
 ) -> Settings:
-    """Return the settings with one options layer applied: its set fields replace, UNSET ones inherit.
-
-    A validation mode the package does not allow is refused.
-    """
+    """Return the settings with one options layer applied: its set fields replace, UNSET ones inherit."""
     base_url, server = settings.base_url, settings.server
     if not isinstance(layer.base_url, Unset):
         base_url, server = layer.base_url.rstrip("/"), _DEFAULT_SERVER
@@ -255,9 +248,6 @@ def _layered(
         settings.hooks if isinstance(layer.hooks, Unset) else layer.hooks,
         settings.context if isinstance(layer.context, Unset) else context({**settings.context, **layer.context}),
         settings.async_hooks if isinstance(layer.hooks, Unset) else awaited(layer.hooks),
-        settings.validation
-        if isinstance(layer.validation, Unset)
-        else modes.layered(settings.validation, layer.validation, operation_id),
         retry=layered_retry(settings.retry, layer.retry, operation_id),
         redirects=layered_redirects(settings.redirects, layer.redirects),
         idempotency_key=settings.idempotency_key if isinstance(layer.idempotency_key, Unset) else layer.idempotency_key,
@@ -329,24 +319,15 @@ def _protocol_options(
     return protocols
 
 
-def _client_settings(options: object, defaults: ClientDefaults) -> Settings:
-    modes = defaults.validation
-    settings = Settings(
-        None,
-        _DEFAULT_SERVER,
-        None,
-        MAX_ERROR_BODY_BYTES,
-        CLEANUP_TIMEOUT,
-        None,
-        validation=modes.default(),
-    )
+def _client_settings(options: object) -> Settings:
+    settings = Settings(None, _DEFAULT_SERVER, None, MAX_ERROR_BODY_BYTES, CLEANUP_TIMEOUT, None)
     match options:
         case None:
             return settings
         case ClientOptions():
             if not isinstance(clock := options.clock, Unset):
                 settings = replace(settings, clock=clock)
-            return _layered(settings, options, modes)
+            return _layered(settings, options)
         case _:
             pass
     raise ConfigurationError(field_path=("options",), condition="invalid_type")
@@ -518,9 +499,9 @@ def _coded(operation: OperationPlan[object, object], spec: ParameterSpec, code: 
         raise _encoding_error(operation, (spec.plan.location, spec.plan.name), error) from None
 
 
-def _parameter(spec: ParameterSpec, value: object, mode: RequestValidation) -> object:
+def _parameter(spec: ParameterSpec, value: object) -> object:
     """Return the contribution of one argument to its request, encoded as a call encodes it."""
-    return encode_parameter(spec.plan, spec.encode(value, mode))
+    return encode_parameter(spec.plan, spec.encode(value))
 
 
 def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ProtocolConfigurationError:
@@ -544,10 +525,8 @@ def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
     )
 
 
-def _parameters(
-    operation: OperationPlan[object, object], arguments: tuple[object, ...], mode: RequestValidation
-) -> _Request:
-    """Return a call's request with its parameters encoded as its request validation mode selects."""
+def _parameters(operation: OperationPlan[object, object], arguments: tuple[object, ...]) -> _Request:
+    """Return a call's request with its parameters encoded."""
     request = _Request()
     for spec, value in zip(operation.parameters, arguments, strict=True):
         plan = spec.plan
@@ -556,7 +535,7 @@ def _parameters(
                 raise _encoding_error(operation, (plan.location, plan.name))
             continue
         try:
-            request.add(encode_parameter(plan, spec.encode(value, mode)), plan.name)
+            request.add(encode_parameter(plan, spec.encode(value)), plan.name)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise _encoding_error(operation, (plan.location, plan.name), error) from None
     return request
@@ -730,13 +709,7 @@ def _completed(
         raise problem
     truncated = body.truncated or problem is not None
     try:
-        data = decoder.decode(
-            info,
-            body.content,
-            truncated=truncated,
-            problem=problem,
-            native=settings.validation.response == "native",
-        )
+        data = decoder.decode(info, body.content, truncated=truncated, problem=problem)
     except SDKError as error:
         error.operation_id = error.operation_id or operation_id
         error.call_id = error.call_id or info.call_id
@@ -772,13 +745,7 @@ def _page(  # noqa: PLR0913
     if (problem := body.problem) is not None and body.success:
         raise problem
     content = body.content
-    data, wire = decoder.decode_page(
-        info,
-        content,
-        truncated=body.truncated or problem is not None,
-        problem=problem,
-        native=settings.validation.response == "native",
-    )
+    data, wire = decoder.decode_page(info, content, truncated=body.truncated or problem is not None, problem=problem)
     return data, wire, content
 
 
@@ -1492,7 +1459,6 @@ class _Shared(Generic[AdapterT]):
         "closing_tasks",
         "fixed",
         "loop",
-        "modes",
         "protocols",
         "providers",
         "root_auth",
@@ -1509,7 +1475,6 @@ class _Shared(Generic[AdapterT]):
         self.transport = transport
         self.adapter = adapter
         self.trusted = trusted
-        self.modes = defaults.validation
         self.security_schemes = defaults.security_schemes
         self.providers: OwnedProviders | AsyncOwnedProviders | None = None
         self.fixed = (_ACCEPT_ENCODING,) if agent is None else (("User-Agent", agent), _ACCEPT_ENCODING)
@@ -1521,7 +1486,7 @@ class _Shared(Generic[AdapterT]):
         self.socket_connector: object = None
 
 
-class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call and helper kind.
+class _Core(Generic[AdapterT, HandleT]):
     __slots__ = ("_owned", "_scope", "_settings", "_shared", "_urls")
     _asynchronous: ClassVar[bool] = False
 
@@ -1595,10 +1560,6 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         if (protocols := self._shared.protocols) is None or isinstance(defaults := protocols.defaults, Unset):
             return None
         return defaults.get(name)
-
-    def native_responses(self, options: RequestOptions | None, operation_id: str | None) -> bool:
-        """Return whether a call with these options reads response values through their converters alone."""
-        return self._call_settings(options, operation_id).validation.response == "native"
 
     def protocol_options(self) -> ProtocolClientOptions | None:
         """Return the client's protocol settings, or None."""
@@ -1781,7 +1742,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(options.auth, asynchronous=self._asynchronous)
-        return _layered(self._settings, options, self._shared.modes, operation_id)
+        return _layered(self._settings, options, operation_id)
 
     def _bound(
         self, operation: OperationPlan[object, object] | None, config: AuthConfig | None
@@ -1860,14 +1821,11 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         and the call's last; the body's media type and a narrowed Accept stay as the call chose them. A `url` a server
         gave replaces the one the operation's path and query build, without the query patches.
         """
-        validation = settings.validation
-        request = _parameters(operation, arguments, validation.request)
+        request = _parameters(operation, arguments)
         encoded = (
             None
             if operation.body is None
-            else operation.body.encode(
-                operation.operation_id, body, media_type, operation.codecs, mode=validation.request
-            )
+            else operation.body.encode(operation.operation_id, body, media_type, operation.codecs)
         )
         if url is None:
             base = self._base(operation, settings)
@@ -2067,11 +2025,9 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         also gives the selector's concrete media type. An argument `unsaved_argument` names is never saved, so a call
         giving one cannot be checkpointed.
         """
-        validation = self._call_settings(options, operation.operation_id).validation
+        self._call_settings(options, operation.operation_id)
         saved = tuple(
-            value
-            if isinstance(value, Unset)
-            else _coded(operation, spec, partial(spec.encode, value, validation.request))
+            value if isinstance(value, Unset) else _coded(operation, spec, partial(spec.encode, value))
             for spec, value in zip(operation.parameters, arguments, strict=True)
         )
         if (unsaved := self.unsaved_argument(operation, saved)) is not None:
@@ -2081,7 +2037,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
             return saved, None
         media = request.selected(operation.operation_id, media_type, operation.codecs)[0]
         try:
-            wire = media.wire(body, validation.request)
+            wire = media.wire(body)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation.operation_id, cause=error) from None
         concrete = media_type.concrete_media if isinstance(media_type, MediaSelector) else None
@@ -2148,10 +2104,10 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         Arguments a later response gives are left out, even required ones; one that does not fit raises
         RequestEncodingError.
         """
-        mode = self._call_settings(options, operation.operation_id).validation.request
+        self._call_settings(options, operation.operation_id)
         for position, value in given.items():
             spec = operation.parameters[position]
-            _coded(operation, spec, partial(_parameter, spec, value, mode))
+            _coded(operation, spec, partial(_parameter, spec, value))
 
     def _page_request(
         self,
@@ -2642,7 +2598,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         transport_adapter: TransportAdapter | OwnedTransportAdapter[TransportAdapter] | Unset = UNSET,
     ) -> Self:
         """Send through the adapter or HTTPX2 client given, borrowing it unless ownership moved, or create one."""
-        settings = _client_settings(options, defaults)
+        settings = _client_settings(options)
         if settings.auth is not None:
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
@@ -3608,7 +3564,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
         A client created inside an event loop belongs to it; one created outside belongs to the loop of its first call.
         """
-        settings = _client_settings(options, defaults)
+        settings = _client_settings(options)
         if settings.auth is not None:
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 

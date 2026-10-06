@@ -29,7 +29,6 @@ from pets.options import (
     RetryOptions,
     TimeoutOptions,
     TransportOptions,
-    ValidationOptions,
 )
 from pets.responses import RawResponse, ResponseInfo
 from pets.transports import OwnedTransportAdapter
@@ -134,12 +133,6 @@ def misuse_multipart_data(data: object) -> None:
 def misuse_hooks() -> None:
     RequestOptions(hooks=("trace",))  # error
     RequestOptions(context={"tags": ["a"]})  # error
-
-
-def misuse_validation() -> None:
-    ValidationOptions(request=None)  # error
-    ValidationOptions(response="none")  # error
-    RequestOptions(validation="schema")  # error
 
 
 def misuse_timing(deadline: Deadline, token: CancelToken, phase: TimeoutOptions, context: LimiterContext) -> None:

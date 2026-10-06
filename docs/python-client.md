@@ -617,8 +617,8 @@ A page's items must be a JSON array at the `items` pointer; an empty array does 
 read from the page's body, a response header, or its status, and written to the target of `write`: a path, query, or
 header parameter, a property of the querystring, or a member of the JSON request body, never a position that carries
 credentials. A cursor the server
-returned is sent as it came, without its target's schema checks even under `request="schema"` validation, while a
-start cursor the caller passes is checked like any other argument. The traversal ends at a page whose cursor is missing
+returned is sent as it came, without its target's codec, while a start cursor the caller passes is encoded like any
+other argument. The traversal ends at a page whose cursor is missing
 or null where the helper declares that end, is one of its end values, or is empty with `empty_string: end`. A missing
 or null cursor that no end covers, missing or null items, a header repeated for a single cursor, and a value read for
 a path parameter that makes its segment, encoded in the parameters' styles with the caller's own path arguments and
@@ -632,10 +632,10 @@ returned by an earlier page of the same pager, or an earlier page `next_page` co
 
 An `offset` or `page` continuation counts positions instead of reading them. The first request is sent as the caller
 gives it. The traversal starts at the position the caller passes for the `write` target, read from the first request
-after its usual validation: the parameter's value, or the member at the pointer of the querystring or JSON body. An
+after its usual encoding: the parameter's value, or the member at the pointer of the querystring or JSON body. An
 integral number such as `40.0` on a `number` target starts at its integer. Without one it starts at `first`, the offset
 or page number the server gives a request without one. A starting value that is not an integer fails like any invalid
-argument, with `RequestEncodingError` when validation checks it, and otherwise with `ProtocolDataError` (condition
+argument, with `RequestEncodingError` when its codec refuses it, and otherwise with `ProtocolDataError` (condition
 `type`, location the target) before anything is sent. Each request after a page writes the page's position advanced by
 the `literal` step, or for an offset by the page's item count with `page_items_count`; a page number always advances by
 a literal step, and generation refuses `page_items_count` for it. The position is written to `write` like a cursor, so
@@ -809,8 +809,8 @@ keep `resume_state=None`. Otherwise
 item a limit refused still to come.
 
 A resumed pager continues with the saved continuation, bindings, and request, whose arguments and body are built from
-their wire values as their codecs build a caller's, so the call's request validation applies to them again. A pager
-checkpointed in the middle of a page fetches that page again and skips the items it delivered of it, which count as
+their wire values as their codecs build a caller's. A pager checkpointed in the middle of a page fetches that page again
+and skips the items it delivered of it, which count as
 delivered; when the server's data changed in between, it skips the same number of items of the page it gets now. A
 literal binding sends the plan's value, never a saved one; a pager that skips items iterates items only, so
 `iter_pages()` raises `ProtocolStateError`. Its pages continue with `next_page` as any other. Pages and items count on
@@ -1552,8 +1552,8 @@ The body is read as the WHATWG event-stream interpretation reads it: a leading b
 CRLF end lines, including a CRLF split between reads, lines starting with `:` are comments, `data` lines join with LF,
 `event` names the type, an `id` containing NUL is ignored, `retry` of ASCII digits sets the reconnection time (more than
 18 digits are ignored), and a blank line dispatches an event that has data. Invalid UTF-8 decodes to replacement
-characters. Each event's data is JSON decoded by its schema, through its converter alone or by the schema as the call's
-response validation selects; data that is not JSON, or that the schema or type refuses, raises `StreamDecodeError`
+characters. Each event's data is JSON converted to its schema's type through its converter; data that is not JSON, or
+that the type refuses, raises `StreamDecodeError`
 with at most the event limit or 64 KiB of the data as `raw_prefix`.
 
 An event schema mapping is chosen by the event's SSE type with `discriminator: {from: event_type}`, or by the string a
@@ -2651,8 +2651,7 @@ update naming only a media type ! ConfigurationError: ConfigurationError(operati
 - A required body whose fields are all optional is sent as `{}` when a call gives none of them. An optional body is
   omitted, and naming only its media type still raises `ConfigurationError`.
 - The model is built from the fields by its constructor, which validates Pydantic models and dataclasses, while stdlib
-  dataclasses, TypedDicts, and msgspec Structs take the values as given. Under `native`, msgspec builds it through its
-  converter instead, which validates it once; under `schema`, the serialized object is validated against its schema.
+  dataclasses, TypedDicts, and msgspec Structs take the values as given.
 
 ### Cost
 
@@ -2661,26 +2660,19 @@ noise of a 57–64 µs `create_pet` call over a mock transport. Giving fields in
 adds 2.4–4.1 µs: 1.6 µs to bind them and select the media type, which the call then does not select again, and about
 0.7 µs to build the model and keep only the given fields (CPython 3.13, macOS arm64, every backend).
 
-## Validation
+## Model codecs
 
-`validation` chooses what ordinary calls check beyond sending and reading their values. It is a
-`ClientValidationConfig` with one mode for each axis, the one every client, view, and call uses unless it selects
-another, and the other modes the package lets them select at runtime.
+Generated clients send and read model values through their model backend, with no validation layer of their own:
 
-| Axis | Modes | Default | What the mode adds |
-|---|---|---|---|
-| `request` | `none`, `native`, `schema` | `none` | `none` sends the native value as it serializes; `native` first passes it through its model backend's own validation; `schema` validates the serialized value against its OpenAPI schema |
-| `response` | `native`, `schema` | `native` | `native` constructs the declared type through the backend's converter; `schema` validates the received value against its OpenAPI schema before constructing it |
-
-What every mode still does:
-
+- **Requests.** Arguments and bodies are serialized from the model values as given. Aliases, presence, and the
+  conversion of dates, decimals, enums, and media follow the models, and a read-only member is left out. A value is
+  checked only as far as its model's constructor already checked it, and what the serializer cannot represent fails
+  with `RequestEncodingError` before anything is sent.
+- **Responses.** Bodies, parts, stream events, and socket messages are converted by the model backend into the declared
+  types, which check what those types declare and coerce as the backend does; a value the type refuses raises
+  `ResponseValidationError`, and a write-only member is refused.
 - **Binding.** A missing required argument, an unknown keyword, or a media type the operation does not declare fails
   before anything is sent.
-- **Serialization and direction.** Aliases, presence, and the conversion of dates, decimals, enums, and media stay the
-  same in every mode, a read-only member is left out of a request, and a write-only member is refused in a response.
-  A form-data member that its direction excludes takes no part in either.
-- **Native behavior.** `none` does not undo validation a model's constructor already did, and it cannot send what the
-  serializer cannot represent.
 - **Path segments.** Path arguments that make their segment `.` or `..` once encoded in their parameters' styles and
   put into the path template, `%2E` in either case counting as `.`, such as `..` in the simple style, the empty string
   in the label style, or `%2e` with `allowReserved`, fail with `RequestEncodingError` at the segment's first parameter
@@ -2688,136 +2680,22 @@ What every mode still does:
   clients, proxies, and servers would remove the segment and send the call to another resource, and encoding the dots
   does not prevent it. `...` and `.a` are sent as they are, and a dot segment the path template spells is not refused.
 - **Strict records.** A `ModelValue` or `ModelInput` passed as an argument, the `RequestCodecs` factories, the header
-  decoders, and a response the package returns as `DecodedValue` keep their strict schema validation in every mode.
-  Read a body without any model with `with_raw_response` or `with_streaming_response` instead.
+  decoders, and a response the package returns as `DecodedValue` keep their strict schema validation. Read a body
+  without any model with `with_raw_response` or `with_streaming_response` instead.
 
-### Configuration
+A response whose union members only their schemas tell apart, such as two object models read by a stdlib dataclass or
+TypedDict converter, cannot be converted, so generation fails with `E_CONFIG_VALUE` naming the use, unless the union's
+use returns `DecodedValue`:
 
-Python and the flat target file take the same fields:
-
-```python
-ClientGenerationConfig(
-    output=Path("client"),
-    package="client",
-    model_package="models",
-    validation=ClientValidationConfig(request_overrides=("schema",), response_overrides=("schema",)),
-)
-```
-
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.validation.toml -->
-<!-- fmt: off -->
-
-```toml
-schema_version = 1
-output = "client"
-package = "client"
-model_package = "models"
-
-[validation]
-request = "none"
-response = "native"
-request_overrides = ["schema"]
-response_overrides = ["schema"]
-```
-
-<!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.toml -->
-
-The default of each axis and its overrides are every mode a package allows on it: empty overrides fix the mode, and
-a package allows no mode it was not generated with. The generated clients record the allowed modes when they differ
-from the defaults above:
-
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.validation.defaults -->
-<!-- fmt: off -->
-
-```python
-_DEFAULTS = ClientDefaults(user_agent=None, validation=ValidationModes(request=('schema',), response=('schema',)))
-```
-
-<!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.defaults -->
-
-### Selecting a mode at runtime
-
-`pkg.options.ValidationOptions` has the two axes, each left `UNSET` to inherit. A call's `RequestOptions`, a
-`with_options` view, the client's `ClientOptions`, and the generated default are layered in that order, axis by axis:
-
-```python
-from pkg.options import ClientOptions, RequestOptions, ValidationOptions
-
-client = Client(options=ClientOptions(validation=ValidationOptions(response="schema")))
-checked = client.with_options(RequestOptions(validation=ValidationOptions(request="schema")))
-client.pets.list_pets(options=RequestOptions(validation=ValidationOptions(response="native")))
-```
-
-A mode the package does not allow raises `ConfigurationError` with condition `not_allowed`: from the client or view
-that selects it, or from a call before any hook, request, or stream, and a value that is no mode raises it with
-`invalid_value`. The tests record, for a stdlib dataclass package that allows `none` and `schema` requests:
-
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.validation.options -->
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.model-codecs.diagnostics -->
 <!-- fmt: off -->
 
 ```text
-view selecting native requests ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='not_allowed') [field_path=('validation', 'request'), condition='not_allowed'] configuration_error
-request mode None ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='invalid_value') [field_path=('validation', 'request'), condition='invalid_value'] configuration_error
-response mode none ! ConfigurationError: ConfigurationError(field_path='validation.response', condition='invalid_value') [field_path=('validation', 'response'), condition='invalid_value'] configuration_error
-call selecting native requests ! ConfigurationError: ConfigurationError(operation_id='listPets', field_path='validation.request', condition='not_allowed') [operation_id='listPets', field_path=('validation', 'request'), condition='not_allowed'] configuration_error
+E_CONFIG_VALUE binding /paths/~1orders~1{orderId}/get/responses/200: The client cannot convert the response body 200 application/json of GET /orders/{orderId}, which tells its union members apart only by their schemas
 ```
 
 <!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.options -->
-
-### What each mode checks
-
-The native converters check the declared Python types, which do not carry every constraint of the source schema, and
-coerce as their backend does. The tests send and read these values through each backend, with the models of
-`--output-model-type` and no model options:
-
-| Value | `native` with Pydantic models or dataclasses | `native` with msgspec | `native` with stdlib dataclasses or TypedDict | `schema` |
-|---|---|---|---|---|
-| An `int32` member beyond its range | accepted | accepted | accepted | refused |
-| A string longer than its `maxLength` | refused | accepted | accepted | refused |
-| `"1"` for an integer | converted to `1` | refused | refused | refused |
-| A member `additionalProperties: false` forbids | refused | ignored | ignored (dataclass), refused (TypedDict) | refused |
-| A write-only member in a response | refused | refused | refused | refused |
-| A required member missing | refused | refused | refused | refused |
-
-On requests, `none` sends a model instance changed after construction, and `native` sends it too, since the backends
-trust an instance they built; `native` validates a mapping that stands for the model. `schema` refuses both.
-
-A form-data part sends the headers its encoding declares as the call gives them. `none` checks none of them, `native`
-checks that each required one is present and reads as its declared type, and `schema` also validates each against its
-schema, such as its `pattern` or `minimum`.
-
-### When a mode is not available
-
-A package must be able to take every mode it allows for every use, or generation fails with `E_CONFIG_VALUE` naming the
-use and the mode to select instead:
-
-- `request = "native"` needs a backend validation entry: Pydantic models and dataclasses and msgspec Structs have one,
-  stdlib dataclasses and TypedDicts do not. A form-data part's headers need none.
-- `response = "native"` is refused for a union whose members only their schemas tell apart, such as two object models
-  read by a stdlib dataclass or TypedDict converter, unless the union's use returns `DecodedValue`.
-
-<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.validation.diagnostics -->
-<!-- fmt: off -->
-
-```text
-E_CONFIG_VALUE binding validation.response /paths/~1orders~1{orderId}/get/responses/200: The 'native' response validation cannot take the response body 200 application/json of GET /orders/{orderId}, which tells its union members apart only by their schemas; select 'schema'
-```
-
-<!-- fmt: on -->
-<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.diagnostics -->
-
-### Cost
-
-`none` and `native` never build the package's schema bundle or import `jsonschema`, which the strict factories still
-need, so the package keeps it as a dependency. The first `list_pets` call of a fresh process takes 3.9 ms with the
-default modes and 349 ms with `schema`, most of it importing `jsonschema` with its format checkers. A `create_pet`
-call over a mock transport takes 64 µs with `none` and `native` responses, 66 µs with `native` requests, and 107 µs with
-`schema` for both; listing 20 pets takes 189 µs natively and 388 µs with `schema` (CPython 3.13, macOS arm64, Pydantic
-v2 models). msgspec lists them in 132 µs and stdlib dataclasses in 135 µs natively, and both in about 380 µs with
-`schema`.
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.model-codecs.diagnostics -->
 
 ## Timeouts, cancellation, and send limits
 

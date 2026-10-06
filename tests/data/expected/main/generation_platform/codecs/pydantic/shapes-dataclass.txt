@@ -1,5 +1,7 @@
 use /paths/~1animals/post request_body: envelope alias models:FieldAnimalsPostRequest models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
 use /paths/~1animals/post response_body 200: native alias models:FieldAnimalsPostResponse models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
+use /paths/~1animals~1any/put request_body: envelope alias models:FieldAnimalsAnyPutRequest models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
+use /paths/~1kin/put request_body: envelope alias models:FieldKinPutRequest models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'forbid', False)]
 use /paths/~1kin/get response_body 200: native alias models:FieldKinGetResponse models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'forbid', False)]
 use /paths/~1tree/put request_body: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
 use /paths/~1tree/put response_body 200: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]

@@ -192,6 +192,12 @@ def _uploads_read(api: Any, exchange: Exchange, lines: list[str]) -> None:
         ("upload read of an extra that is no integer", 200, (title, photo, (_NAMED % b"bonus", b"x"))),
         ("upload read of broken JSON", 200, (title, photo, (_NAMED % b"meta" + _JSON, b"{"))),
         ("upload read of an address with other codes", 200, (title, photo, (_NAMED % b"meta" + _JSON, b'{"codes":["a"]}'))),
+        ("upload read of its write-only secret", 200, (title, photo, (_NAMED % b"secret", b"s"))),
+        (
+            "upload read of a draft with its write-only secret",
+            200,
+            (title, photo, (_NAMED % b"draft" + _JSON, b'{"id":1,"title":"t","secret":"s"}')),
+        ),
         ("upload read of a part without a name", 200, (title, photo, (b"Content-Type: text/plain", b"x"))),
         ("upload read of a photo and another part", 203, (photo, (_NAMED % b"x", b"1"))),
     ):
@@ -207,19 +213,10 @@ def _profiles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
         ("profile", _PROFILE),
         ("profile with its name only", {"name": "Bo"}),
         ("profile with no tags", {"name": "Bo", "tags": []}),
-        ("profile without a name", {"age": 3}),
     ):
         if label in {"profile", "profile with its name only"}:
             exchange.respond(raw_response(204))
-        record(
-            lines,
-            label,
-            lambda value=value: (
-                api.forms.submit_profile(body=codec.from_wire(value))
-                if "name" in value
-                else api.forms.submit_profile(body=value)
-            ),
-        )
+        record(lines, label, lambda value=value: api.forms.submit_profile(body=codec.from_wire(value)))
     anything = types.SubmitAnythingRequestCodecs.body()
     exchange.respond(raw_response(204))
     record(lines, "free-form object", lambda: api.forms.submit_anything(body=anything.from_wire({"k": [1]})))
@@ -307,8 +304,6 @@ def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
         ("upload of a title as a file", (file("title", b"x"), photo)),
         ("upload of a title twice", (title, title, photo)),
         ("upload of a photo twice", (title, photo, photo)),
-        ("upload of a count that is no integer", (title, photo, field("count", "x"))),
-        ("upload of an extra that is no integer", (title, photo, field("bonus", "x"))),
         ("upload of no tags", (title, photo, field("tags", []))),
         ("upload of a part without a name", (title, photo, field(1, "x"))),
         ("upload of a read-only id", (title, photo, field("id", 1))),
@@ -383,12 +378,7 @@ def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
     for label, parts in (
         ("cover of a note in JSON", (field("note", "hi", content_type="application/json"), cover)),
         ("cover in text", (file("cover", b"x", content_type="text/plain", headers=limit),)),
-        ("cover without its rate limit", (file("cover", b"x"),)),
-        ("cover of a rate limit that is no integer", (file("cover", b"x", headers=(("X-Rate-Limit", "x"),)),)),
-        ("cover of a note traced out of pattern", (cover, field("note", "hi", headers=(("X-Trace", "u"),)))),
         ("cover of a scan without its media type", (cover, file("scans", b"s"))),
-        ("cover of a scan without its filename", (cover, file("scans", b"s", content_type="image/gif"))),
-        ("cover of a meta header that is no JSON integer", (cover, field("meta", meta, headers=(("X-Meta", '"1"'),)))),
         ("cover of an object as text", (cover, field("extra", {"k": 1}))),
         ("cover of a note its charset cannot represent", (cover, field("note", "h\xe9llo", content_type="text/plain; charset=us-ascii"))),
     ):
@@ -454,7 +444,6 @@ def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
     for label, parts in (
         ("album of bounds whose extra is named as another member", (photo, clash, field("title", "t"))),
         ("album of another member named as a bound's extra", (photo, field("title", "t"), clash)),
-        ("album of a bound's extra its disposition pattern refuses", (photo, field("bounds", bounds.from_wire({"b2": 1})))),
         ("album of a tag holding its delimiter", (photo, field("tags", ["a b"]))),
         ("album of tags their named charset cannot represent", (photo, field("tags", ["\xe9"], content_type="text/plain; charset=us-ascii"))),
     ):

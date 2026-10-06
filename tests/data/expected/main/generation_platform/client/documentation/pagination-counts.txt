@@ -719,7 +719,7 @@ options must not patch a header or a query parameter the helper writes.
 
 An offset or page-number helper sends the first request as the caller gives it and starts at the position the caller
 passes for the written target, or else at the configured first position; a starting value that is not an integer raises
-`RequestEncodingError` when validation checks it and `ProtocolDataError` otherwise, before sending. Each later page's
+`RequestEncodingError` when its codec refuses it and `ProtocolDataError` otherwise, before sending. Each later page's
 position is the last one advanced by the configured step, or by the last page's item count. A page whose `has_more` is
 false ends the traversal, and so does one after which the items counted before the next position reach its `total`: the
 offsets past the first position for an offset, the items delivered since the start for a page number, which also ends

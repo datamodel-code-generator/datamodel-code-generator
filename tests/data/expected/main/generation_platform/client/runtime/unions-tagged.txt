@@ -1,13 +1,7 @@
 # unions-tagged msgspec.Struct
   > GET https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  cat native = Cat(lives=9)
+  cat = Cat(lives=9)
   > GET https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  dog native = Dog(good=True)
-  > GET https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  cat schema = Cat(lives=9)
-  > GET https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  dog schema = Dog(good=True)
+  dog = Dog(good=True)

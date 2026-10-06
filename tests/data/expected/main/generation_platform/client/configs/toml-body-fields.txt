@@ -20,7 +20,6 @@ resource_names=()
 operations=(ClientOperationConfig(ref='/paths/~1pets~1{petId}/put', resource=None, name=None, parameter_names=(), request_media_type=None, response_media_type=None, runtime=RuntimeOperationMetadata(request_id_header=None, success_statuses=(), retry_safety='method_default', idempotency=None, retry_after_ms_header=None, should_retry_header=None, auth_challenge_less_401=False, accepted_content_encodings=()), description=None, body_arguments='body', body_field_names=()), ClientOperationConfig(ref='/paths/~1pets/post', resource=None, name=None, parameter_names=(), request_media_type=None, response_media_type=None, runtime=RuntimeOperationMetadata(request_id_header=None, success_statuses=(), retry_safety='method_default', idempotency=None, retry_after_ms_header=None, should_retry_header=None, auth_challenge_less_401=False, accepted_content_encodings=()), description=None, body_arguments=None, body_field_names=(BodyFieldName(media_type='application/json', name='tag', python_name='pet_tag'),)))
 signature_style='explicit'
 body_arguments='both'
-validation=ClientValidationConfig(request='none', response='native', request_overrides=(), response_overrides=())
 default_base_url=None
 server_base_url=None
 protocols=None

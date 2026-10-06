@@ -129,22 +129,13 @@ def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     body is checked as in any call.
     """
     helper = api.protocols.searches.all
-    options = harness.options
     exchange.respond(_found("1", next="n1", last="1"), _found("2", next="n2", last=None), _found("3"))
     drained(lines, "body writes", helper.iterate(body=_search_body(harness, {"query": "a"})))
     exchange.respond(_found("1", next="n1", last="1"), _found("2"))
     beside = _search_body(harness, {"query": "a", "page": {"mode": "m"}, "range": {"to": "z"}})
     drained(lines, "body writes beside members", helper.iterate(body=beside))
-    checked = options.RequestOptions(validation=options.ValidationOptions(request="schema"))
     exchange.respond(_found("1", next="longer", last="1"), _found("2"))
-    drained(
-        lines,
-        "schema validation of a long server cursor",
-        helper.iterate(body=_search_body(harness, {"query": "a"}), options=checked),
-    )
-    model = _search_body(harness, {"query": "a", "page": {"cursor": "abc"}}).value
-    started = model.model_copy(update={"page": type(model.page).model_construct(cursor="longer")})
-    drained(lines, "schema validation of a long body cursor", helper.iterate(body=started, options=checked))
+    drained(lines, "a long server cursor", helper.iterate(body=_search_body(harness, {"query": "a"})))
 
 
 async def _async_targets(harness: Harness, lines: list[str]) -> None:

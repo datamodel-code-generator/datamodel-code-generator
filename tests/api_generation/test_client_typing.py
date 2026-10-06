@@ -256,44 +256,32 @@ def test_client_typing_ndjson(backend: DataModelType, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("backend", "case"),
-    [
-        (DataModelType.PydanticV2BaseModel, "sockets"),
-        (DataModelType.PydanticV2Dataclass, "sockets"),
-        (DataModelType.DataclassesDataclass, "sockets-schema"),
-        (DataModelType.TypingTypedDict, "sockets-schema"),
-        (DataModelType.MsgspecStruct, "sockets"),
-    ],
+    "backend",
+    [DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass, DataModelType.MsgspecStruct],
 )
-def test_client_typing_sockets(backend: DataModelType, case: str, tmp_path: Path) -> None:
+def test_client_typing_sockets(backend: DataModelType, tmp_path: Path) -> None:
     """Check WebSocket helpers: typed sessions, messages, and receipts, sync and asyncio, and misuses of each.
 
-    Dataclasses and TypedDict decode the received union by its schemas, so their package validates responses so.
+    Stdlib dataclasses and TypedDicts cannot convert the received union, whose members only their schemas tell apart.
     """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(
-        client_typing_report(tmp_path, backend, case, ("sockets",)),
+        client_typing_report(tmp_path, backend, "sockets", ("sockets",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-sockets.txt",
     )
 
 
-@pytest.mark.parametrize(
-    "backend",
-    [
-        DataModelType.PydanticV2BaseModel,
-        DataModelType.PydanticV2Dataclass,
-        DataModelType.DataclassesDataclass,
-        DataModelType.TypingTypedDict,
-        DataModelType.MsgspecStruct,
-    ],
-)
+@pytest.mark.parametrize("backend", [DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass])
 def test_client_typing_unions(backend: DataModelType, tmp_path: Path) -> None:
-    """Check a package whose responses are unions of models, with each union's codec typed for its members."""
+    """Check a package whose responses are unions of models, with each union's codec typed for its members.
+
+    Only Pydantic converts every union of the package, whose members other backends tell apart only by their schemas.
+    """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(
-        client_typing_report(tmp_path, backend, "unions-schema", ("unions",)),
+        client_typing_report(tmp_path, backend, "unions", ("unions",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-unions.txt",
     )
 

@@ -336,8 +336,8 @@ def _body(harness: Harness, resource: str, operation: str, wire: object) -> obje
 
 
 def _requests(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Save encoded arguments and selected media, and refuse cookies and arguments their schemas refuse."""
-    options, protocols = harness.options, harness.protocols
+    """Save encoded arguments and selected media, and refuse cookies."""
+    protocols = harness.protocols
     helper = api.protocols.users.all
     limit = harness.argument("users", "ListUsers", "query", "limit", 2)
     _saved(lines, "arguments", helper.iterate(limit=limit).checkpoint())
@@ -348,10 +348,8 @@ def _requests(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
         lambda: list(helper.iterate(session=session, pagination_options=protocols.PaginationOptions(max_pages=1)))
     )
     lines.append(f"  cookie limit ! {describe(error)} {_resume_state(error)}")
-    schema = options.RequestOptions(validation=options.ValidationOptions(request="schema"))
-    record(lines, "argument its schema refuses", helper.iterate(cursor="too-long-cursor", options=schema).checkpoint)
     searches = api.protocols.searches.all
-    record(lines, "body its schema refuses", searches.iterate(body={"query": 1}, options=schema).checkpoint)
+    record(lines, "body its codec refuses", searches.iterate(body=5).checkpoint)
     types = importlib.import_module(f"{harness.package.__name__}.types.searches")
     selector = types.SearchRequestCodecs.select_request_media(
         declared_media="application/json", concrete_media="application/json; charset=utf-8"

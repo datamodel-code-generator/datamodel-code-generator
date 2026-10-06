@@ -191,8 +191,8 @@
   invalid elapsed negative ! ValueError: elapsed must be a finite number in its permitted range []
   invalid elapsed infinity ! ValueError: elapsed must be a finite number in its permitted range []
   hints TimeoutOptions ('connect', 'read', 'write', 'pool', 'return')
-  hints ClientOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'protocols', 'clock', 'return')
-  hints RequestOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'return')
+  hints ClientOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'protocols', 'clock', 'return')
+  hints RequestOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'return')
   hints Deadline ('return',)
   hints Clock ('monotonic', 'time', 'random', 'return')
   hints CancelToken ('return',)

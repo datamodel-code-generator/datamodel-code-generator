@@ -1,2 +1,0 @@
-APIGenerationError
-  E_CONFIG_VALUE config validation: validation must be a ClientValidationConfig record

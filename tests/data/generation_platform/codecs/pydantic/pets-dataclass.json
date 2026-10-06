@@ -1,7 +1,6 @@
 {
   "backend": "pydantic_v2.dataclass",
   "package": "codec_pets_dataclass",
-  "refusal": {"validation": {"response": "native"}},
   "options": {"use_unique_items_as_set": true},
   "cases": [
     {"name": "create-server-decode", "use": "/paths/~1pets/post request_body", "op": "decode",
@@ -42,13 +41,8 @@
     {"name": "limit-server-decode", "use": "/paths/~1pets/get parameter query limit", "op": "decode", "value": 5},
     {"name": "create-client-serialize", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "serialize", "value": {"call": "Pet", "args": {"id": 1, "name": "Mimi", "status": "new", "password": "pw"}}},
     {"name": "created-server-serialize-snapshot", "use": "/paths/~1pets/post response_body 201", "op": "serialize", "value": {"result": "created-client-decode"}},
-    {"name": "create-client-check", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "check", "value": {"call": "Pet", "args": {"id": 1, "name": "Mimi", "status": "new", "password": "pw"}}},
     {"name": "created-client-convert", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "convert", "value": {"id": 1, "name": "Mimi", "status": "new", "kind": "cat", "visits": 0}},
     {"name": "created-client-convert-long", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "convert", "value": {"id": 1, "name": "far too long a name", "status": "new", "kind": "cat", "visits": 0}},
-    {"name": "created-client-convert-type", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "convert", "value": {"id": "one", "name": "Mimi", "status": "new", "kind": "cat", "visits": 0}},
-    {"name": "create-client-check-dict", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "check",
-     "value": {"py": "dict", "items": [["id", 1], ["name", "Mimi"], ["status", "new"], ["labels", ["a"]]]}},
-    {"name": "create-client-check-invalid", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "check",
-     "value": {"py": "dict", "items": [["id", 1], ["name", "Mimi"], ["status", "new"], ["labels", ["a", 1]]]}}
+    {"name": "created-client-convert-type", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "convert", "value": {"id": "one", "name": "Mimi", "status": "new", "kind": "cat", "visits": 0}}
   ]
 }

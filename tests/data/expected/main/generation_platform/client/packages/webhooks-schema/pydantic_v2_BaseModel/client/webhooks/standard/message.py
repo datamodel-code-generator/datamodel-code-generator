@@ -33,7 +33,11 @@ _PLAN: Final[WebhookPlan[_dcg_type_0, HmacKey]] = WebhookPlan(
     header='webhook-signature',
     encoding='base64',
     prefix='v1,',
-    event=EventDecoder(model_bindings.codec_3, model_bindings.CONTEXT_3, validate=True),
+    event=EventDecoder(
+        model_bindings.codec_3,
+        model_bindings.CONTEXT_3,
+        validate=False,
+    ),
 )
 
 

@@ -388,14 +388,10 @@ class _Raw(Generic[SourceT, HandleT]):
             info=self._info, body_bytes=body, operation_id=self._operation_id, call_id=self._info.call_id, cause=cause
         )
 
-    def _native(self) -> bool:
-        """Return whether the call reads model bodies through their converters alone."""
-        return self._limits.validation.response == "native"
-
     def _saved_failure(self) -> BaseException:
         """Return the typed failure of a buffered response from its bounded error prefix."""
         limit, body = self._limits.max_error_body_bytes, self._body
-        error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit, native=self._native())
+        error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit)
         if _status_error(error):
             error.retry_stop_reason = self._retry_stop_reason
             for secondary in self._status_secondary_errors:
@@ -694,11 +690,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             self._end("failed", error)
             raise
         truncated = size > self._limits.max_error_body_bytes or problem is not None
-        return self._failure(
-            self._decoder.failure(
-                self._info, b"".join(parts), truncated=truncated, problem=problem, native=self._native()
-            )
-        )
+        return self._failure(self._decoder.failure(self._info, b"".join(parts), truncated=truncated, problem=problem))
 
     def _end(self, state: State, error: BaseException | None = None) -> None:
         """Enter a final state, releasing the connection and the handle's place in its scope once.
@@ -1030,11 +1022,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             await self._end("failed", error)
             raise
         truncated = size > self._limits.max_error_body_bytes or problem is not None
-        return self._failure(
-            self._decoder.failure(
-                self._info, b"".join(parts), truncated=truncated, problem=problem, native=self._native()
-            )
-        )
+        return self._failure(self._decoder.failure(self._info, b"".join(parts), truncated=truncated, problem=problem))
 
     async def _end(self, state: State, error: BaseException | None = None) -> None:
         """Enter a final state, releasing the connection and the handle's place in its scope once.

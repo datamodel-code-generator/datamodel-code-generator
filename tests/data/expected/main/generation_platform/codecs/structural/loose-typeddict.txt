@@ -1,7 +1,4 @@
-refused APIGenerationError
-refused diagnostic E_CONFIG_VALUE /paths/~1loose/post/responses/200: The 'native' response validation cannot take the response body 200 application/json of POST /loose, which tells its union members apart only by their schemas; select 'schema'
-use /paths/~1loose/post request_body: native typed_dict models:Holder models=[('models:Holder', 'typed_dict', 'ignore', True), ('models:Tag', 'typed_dict', 'forbid', False)]
-use /paths/~1loose/post response_body 200: native typed_dict models:Holder models=[('models:Holder', 'typed_dict', 'ignore', True), ('models:Tag', 'typed_dict', 'forbid', False)]
-holder-client-decode-tag: model {'value': {'label': 'x'}} wire={"value":{"label":"x"}} presence=['', '/value', '/value/label'] extras={}
-holder-client-decode-other: model {'value': {'other': 1}} wire={"value":{"other":1}} presence=['', '/value', '/value/other'] extras={}
-holder-client-convert-other: CodecConfigurationError The use chooses a union member by its schema, so only its schema can convert it
+use /paths/~1loose/put request_body: native typed_dict models:Holder models=[('models:Holder', 'typed_dict', 'ignore', True), ('models:Tag', 'typed_dict', 'forbid', False)]
+holder-server-decode-tag: model {'value': {'label': 'x'}} wire={"value":{"label":"x"}} presence=['', '/value', '/value/label'] extras={}
+holder-server-decode-other: model {'value': {'other': 1}} wire={"value":{"other":1}} presence=['', '/value', '/value/other'] extras={}
+holder-server-convert-other: CodecConfigurationError The use chooses a union member by its schema, so only its schema can convert it

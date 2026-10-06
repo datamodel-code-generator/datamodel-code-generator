@@ -714,7 +714,7 @@ def _dotted(resume: StreamResumePlan, bound: tuple[WireValue, ...], given: _Give
     def callers() -> dict[str, str]:
         arguments = () if given is None else given[0]
         return {
-            name: parameters[position].path_text(parameters[position].encode(arguments[position], "none"))
+            name: parameters[position].path_text(parameters[position].encode(arguments[position]))
             for _, parts in resume.dotted
             for name, index, _, position in parts
             if index is None
@@ -926,7 +926,6 @@ class _Events(Generic[T]):
         "_info",
         "_limits",
         "_lock",
-        "_native",
         "_operation",
         "_operation_id",
         "_plan",
@@ -947,7 +946,6 @@ class _Events(Generic[T]):
         session: OperationSession,
         info: ResponseInfo,
         *,
-        native: bool,
         position: _Position,
         reopened: bool,
     ) -> None:
@@ -958,7 +956,6 @@ class _Events(Generic[T]):
         self._limits = limits
         self._session = session
         self._info = info
-        self._native = native
         self._prefix = min(limits.max_event_bytes, MAX_RAW_PREFIX)
         self._routes: Mapping[str, NativeValue[T]] = dict(plan.routes)
         self._errors: Mapping[str, NativeValue[object]] = dict(plan.errors)
@@ -1352,11 +1349,11 @@ class _Events(Generic[T]):
             raise self._stamped(self._decode_error(data, "malformed", cause=error)) from None
 
     def _decoded(self, decoder: NativeValue[U], frame: _Frame, wire: WireValue | None) -> U:
-        """Return an event's data decoded, by its schema or through its converter alone as the call validates."""
+        """Return an event's data converted through its converter."""
         if wire is None:
             wire = self._wire(frame)
         try:
-            return decoder.convert(wire) if self._native else decoder(wire)
+            return decoder.convert(wire)
         except _DATA_ERRORS as error:
             raise self._stamped(self._decode_error(frame.body, "value", cause=error)) from None
 
@@ -1399,14 +1396,11 @@ class EventStream(_Events[T]):
         session: OperationSession,
         response: RawResponse,
         *,
-        native: bool,
         position: _Position = _START,
         reopened: bool = False,
     ) -> None:
         """Take the open response, whose body is read only as the events need it."""
-        super().__init__(
-            core, plan, limits, session, response.info, native=native, position=position, reopened=reopened
-        )
+        super().__init__(core, plan, limits, session, response.info, position=position, reopened=reopened)
         self._core = core
         self._response = response
         self._chunks = held(response)
@@ -1529,14 +1523,11 @@ class AsyncEventStream(_Events[T]):
         session: OperationSession,
         response: AsyncRawResponse,
         *,
-        native: bool,
         position: _Position = _START,
         reopened: bool = False,
     ) -> None:
         """Take the open response, whose body is read only as the events need it."""
-        super().__init__(
-            core, plan, limits, session, response.info, native=native, position=position, reopened=reopened
-        )
+        super().__init__(core, plan, limits, session, response.info, position=position, reopened=reopened)
         self._core = core
         self._response = response
         self._chunks = aheld(response)
@@ -1844,7 +1835,6 @@ def open_events(  # noqa: PLR0913
     A helper declaring resumption first reads the bindings' values and the server's expiry from the response.
     """
     limits = _limits(core, plan, stream_options, options, session_options)
-    native = core.native_responses(limits.options, plan.call.operation_id)
     session = _session(plan, limits, plan.operation, plan.call.operation_id)
     given = (arguments, body, media_type)
     try:
@@ -1858,7 +1848,7 @@ def open_events(  # noqa: PLR0913
         if (resume := plan.resume) is None
         else _accepted(response, partial(_opened, plan, resume, given, limits.clock))
     )
-    return EventStream(core, plan, limits, session, response, native=native, position=position)
+    return EventStream(core, plan, limits, session, response, position=position)
 
 
 async def aopen_events(  # noqa: PLR0913
@@ -1874,7 +1864,6 @@ async def aopen_events(  # noqa: PLR0913
 ) -> AsyncEventStream[T]:
     """Open a helper's stream with asyncio, returning once its response is a declared success, as `open_events` does."""
     limits = _limits(core, plan, stream_options, options, session_options)
-    native = core.native_responses(limits.options, plan.call.operation_id)
     session = _session(plan, limits, plan.operation, plan.call.operation_id)
     given = (arguments, body, media_type)
     try:
@@ -1888,7 +1877,7 @@ async def aopen_events(  # noqa: PLR0913
         if (resume := plan.resume) is None
         else await _aaccepted(response, partial(_opened, plan, resume, given, limits.clock))
     )
-    return AsyncEventStream(core, plan, limits, session, response, native=native, position=position)
+    return AsyncEventStream(core, plan, limits, session, response, position=position)
 
 
 def resume_events(  # noqa: PLR0913
@@ -1908,7 +1897,6 @@ def resume_events(  # noqa: PLR0913
     limits = _limits(core, plan, stream_options, options, session_options)
     resume, position = _restored(core, plan, state, limits)
     request = _reopen_request(core, plan, resume, position)
-    native = core.native_responses(limits.options, plan.call.operation_id)
     session = _session(plan, limits, resume.operation, resume.call.operation_id)
     try:
         response = _sent(core, resume.reopened, request, limits, session, resume.media)
@@ -1917,7 +1905,7 @@ def resume_events(  # noqa: PLR0913
             raise
         raise _refused(plan, resume.operation, _progress(session, position.reconnects), error) from None
     position = _accepted(response, partial(_resumed, plan, resume, position))
-    return EventStream(core, plan, limits, session, response, native=native, position=position, reopened=True)
+    return EventStream(core, plan, limits, session, response, position=position, reopened=True)
 
 
 async def aresume_events(  # noqa: PLR0913
@@ -1933,7 +1921,6 @@ async def aresume_events(  # noqa: PLR0913
     limits = _limits(core, plan, stream_options, options, session_options)
     resume, position = _restored(core, plan, state, limits)
     request = _reopen_request(core, plan, resume, position)
-    native = core.native_responses(limits.options, plan.call.operation_id)
     session = _session(plan, limits, resume.operation, resume.call.operation_id)
     try:
         response = await _asent(core, resume.reopened, request, limits, session, resume.media)
@@ -1942,4 +1929,4 @@ async def aresume_events(  # noqa: PLR0913
             raise
         raise _refused(plan, resume.operation, _progress(session, position.reconnects), error) from None
     position = await _aaccepted(response, partial(_resumed, plan, resume, position))
-    return AsyncEventStream(core, plan, limits, session, response, native=native, position=position, reopened=True)
+    return AsyncEventStream(core, plan, limits, session, response, position=position, reopened=True)

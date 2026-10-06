@@ -346,18 +346,16 @@ class BuiltinModelCodec(ABC, Generic[T]):
             value=value, binding_id=self._binding.binding_id, wire=wire, presence=snapshot_presence(wire), extras=EMPTY
         )
 
-    def serialize(self, value: object, context: CodecContext, *, validate: bool = False) -> WireValue:
+    def serialize(self, value: object, context: CodecContext) -> WireValue:
         """Return the wire value to send for a native value without its schema; a snapshot is encoded as it is.
 
-        With validate, the value first passes its backend's own validation entry, which returns a value the backend
-        trusts, such as a model instance its configuration does not revalidate, as it is. The members its direction
-        excludes are left out while the native value is read.
+        The members its direction excludes are left out while the native value is read.
         """
         if _captured(value):
             return self.encode(value, context)
         self._require(context, inbound=False)
         try:
-            return self._native_wire(self._validated(value) if validate else value, None)
+            return self._native_wire(value, None)
         except RecursionError:
             raise self._nesting() from None
 
@@ -394,21 +392,17 @@ class BuiltinModelCodec(ABC, Generic[T]):
         except RecursionError:
             raise self._nesting() from None
 
-    def assemble(
-        self, fields: Mapping[str, object], context: CodecContext, *, validate: bool = False, strict: bool = False
-    ) -> WireValue:
+    def assemble(self, fields: Mapping[str, object], context: CodecContext) -> WireValue:
         """Construct the model of an object use from the fields a call gives by wire name, and return its wire value.
 
-        The backend's constructor builds the model, through its validation entry with validate, and only the given
-        fields are present in the wire value, whatever defaults the model fills in; strict validates it against its
-        schema.
+        The backend's constructor builds the model, and only the given fields are present in the wire value, whatever
+        defaults the model fills in.
         """
         self._require(context, inbound=False)
         try:
-            wire = self._native_wire(self._constructed(self._object(), fields, validate=validate), None)
+            wire = self._native_wire(self._constructed(self._object(), fields), None)
             assert isinstance(wire, Mapping)
-            present: WireValue = MappingProxyType({name: value for name, value in wire.items() if name in fields})
-            return self._outbound(present, MatchBudget(), context) if strict else present
+            return MappingProxyType({name: value for name, value in wire.items() if name in fields})
         except RecursionError:
             raise self._nesting() from None
 
@@ -423,8 +417,8 @@ class BuiltinModelCodec(ABC, Generic[T]):
         return self._models[node.symbol]
 
     @abstractmethod
-    def _constructed(self, model: ModelBinding, fields: Mapping[str, object], *, validate: bool) -> object:
-        """Construct a model from the fields a call gives by wire name, through its constructor or validation entry."""
+    def _constructed(self, model: ModelBinding, fields: Mapping[str, object]) -> object:
+        """Construct a model from the fields a call gives by wire name, through its constructor."""
 
     @abstractmethod
     def _project(self, wire: WireValue, budget: MatchBudget) -> DecodedValue[T]:
@@ -433,10 +427,6 @@ class BuiltinModelCodec(ABC, Generic[T]):
     @abstractmethod
     def _native_wire(self, value: object, presence: PresenceTree | None) -> WireValue:
         """Read a native value into its wire form without the members its direction excludes, before validation."""
-
-    @abstractmethod
-    def _validated(self, value: object) -> object:
-        """Validate a native value to send through the backend's validation entry."""
 
     @abstractmethod
     def _converted(self, wire: WireValue, budget: MatchBudget) -> T:

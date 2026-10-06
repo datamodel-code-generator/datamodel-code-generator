@@ -231,7 +231,7 @@
   options server index ! ConfigurationError: ConfigurationError(field_path='server.index', condition='out_of_range') [field_path=('server', 'index'), condition='out_of_range'] configuration_error
   options server variables ! ConfigurationError: ConfigurationError(field_path='server.variables', condition='invalid_value') [field_path=('server', 'variables'), condition='invalid_value'] configuration_error
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
-  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, cleanup_timeout=UNSET, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, validation=UNSET, timeout=UNSET, total_timeout=UNSET, deadline=UNSET, cancel_token=UNSET, max_network_sends=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
+  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, cleanup_timeout=UNSET, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, deadline=UNSET, cancel_token=UNSET, max_network_sends=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
   headers get a=1 None ('a=1', 'b=2')
   headers contains True False False
@@ -505,7 +505,7 @@
   options server index ! ConfigurationError: ConfigurationError(field_path='server.index', condition='out_of_range') [field_path=('server', 'index'), condition='out_of_range'] configuration_error
   options server variables ! ConfigurationError: ConfigurationError(field_path='server.variables', condition='invalid_value') [field_path=('server', 'variables'), condition='invalid_value'] configuration_error
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
-  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, cleanup_timeout=UNSET, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, validation=UNSET, timeout=UNSET, total_timeout=UNSET, deadline=UNSET, cancel_token=UNSET, max_network_sends=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
+  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, cleanup_timeout=UNSET, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, deadline=UNSET, cancel_token=UNSET, max_network_sends=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
   headers get a=1 None ('a=1', 'b=2')
   headers contains True False False
