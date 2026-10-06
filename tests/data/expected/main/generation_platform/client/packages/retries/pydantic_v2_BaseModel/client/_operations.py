@@ -198,12 +198,7 @@ OPERATION_3: Final[OperationPlan[PostKeyedResponse, PostKeyedErrorData]] = Opera
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
         default='application/octet-stream',
     ),
-    idempotency=IdempotencyPlan(
-        header_name='Idempotency-Key',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
     codecs=PostKeyedRequestCodecs,
 )
 
@@ -241,12 +236,7 @@ OPERATION_4: Final[OperationPlan[PostKeyOnlyResponse, PostKeyOnlyErrorData]] = O
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
         default='application/octet-stream',
     ),
-    idempotency=IdempotencyPlan(
-        header_name='Idempotency-Key',
-        replay_safe_with_key=False,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
     codecs=PostKeyOnlyRequestCodecs,
 )
 
@@ -387,11 +377,6 @@ OPERATION_8: Final[OperationPlan[GetKeyedSafeResponse, GetKeyedSafeErrorData]] =
         ),
         GetKeyedSafeHTTPError,
     ),
-    idempotency=IdempotencyPlan(
-        header_name='Idempotency-Key',
-        replay_safe_with_key=True,
-        retention_seconds=86400.0,
-        scope='orders-v1',
-    ),
+    idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
     codecs=GetKeyedSafeRequestCodecs,
 )
