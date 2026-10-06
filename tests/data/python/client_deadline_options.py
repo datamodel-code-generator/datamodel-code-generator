@@ -1,9 +1,8 @@
-"""Exercise generated deadline, cancellation, limiter, and error surfaces through public package modules."""
+"""Exercise generated deadline, limiter, and error surfaces through public package modules."""
 
 from __future__ import annotations
 
 import importlib
-import threading
 from dataclasses import fields
 from typing import TYPE_CHECKING, get_type_hints
 
@@ -41,7 +40,6 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
     for field, value in (
         ("timeout", False),
         ("deadline", 0),
-        ("cancel_token", object()),
         ("limiter", object()),
         ("clock", object()),
     ):
@@ -63,20 +61,10 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
     else:
         rejected = False
     lines.append(f"  deadline readonly rejected={rejected} unchanged={future.at == deadline_at}")
-    token = options.CancelToken()
-    lines.append(f"  cancellation initial={token.cancelled}")
-    worker = threading.Thread(target=token.cancel)
-    worker.start()
-    worker.join()
-    token.cancel()
-    lines.append(
-        f"  cancellation after-thread={token.cancelled} readonly={outcome(lambda: setattr(token, 'cancelled', False))}"
-    )
     options.ClientOptions(
         timeout=None,
         total_timeout=None,
         deadline=None,
-        cancel_token=None,
         limiter=None,
         stream_idle_timeout=None,
         stream_total_timeout=None,
@@ -86,24 +74,20 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
         stream_idle_timeout=1,
         stream_total_timeout=2.5,
         deadline=future,
-        cancel_token=token,
     )
-    lines.append(
-        f"  seconds {values.total_timeout}/{values.stream_idle_timeout}/{values.stream_total_timeout}"
-    )
+    lines.append(f"  seconds {values.total_timeout}/{values.stream_idle_timeout}/{values.stream_total_timeout}")
     context = hooks.LimiterContext(
         operation_id=None,
         origin="https://example.com",
         call_id="safe-call",
         parent_session_id=None,
         remaining_timeout=None,
-        cancel_token=None,
     )
     lines.append(
         f"  limiter context fields={tuple(item.name for item in fields(context))} readonly={outcome(lambda: setattr(context, 'origin', 'changed'))}"
     )
     lines.append(
-        f"  slotted {tuple(hasattr(value, '__dict__') for value in (future, token, values, context, options.TimeoutOptions()))}"
+        f"  slotted {tuple(hasattr(value, '__dict__') for value in (future, values, context, options.TimeoutOptions()))}"
     )
 
 
@@ -117,8 +101,6 @@ def _errors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None
         errors.SDKError(attempt_count=1, elapsed=2),
         errors.APITimeoutError(reason="phase_timeout", effective_timeout=1, phase="connect", delivery_state=state),
         errors.APITimeoutError(reason="deadline_exceeded", deadline_at=-1, phase="encode", delivery_state=state),
-        errors.RequestCancelledError(source="cancel_token", delivery_state=state, attempt_count=1),
-        errors.RequestCancelledError(source="parent_cancel_token", delivery_state=state),
     ):
         lines.append(
             f"  error {error} code={error.reason_code} attempts={error.attempt_count} elapsed={error.elapsed}"
@@ -139,8 +121,6 @@ def _errors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None
         value = errors.APITimeoutError(effective_timeout=2.5, phase=phase_name, delivery_state=state)
         lines.append(f"  phase {value.phase} cap={value.effective_timeout}")
     for label, constructor, values in (
-        ("cancel source", errors.RequestCancelledError, {"source": "task", "delivery_state": state}),
-        ("delivery", errors.RequestCancelledError, {"source": "cancel_token", "delivery_state": "NOT_SENT"}),
         ("attempt count", errors.SDKError, {"attempt_count": -1}),
         ("attempt bool", errors.SDKError, {"attempt_count": True}),
         ("deadline without its expiry", errors.APITimeoutError, {"reason": "deadline_exceeded"}),
@@ -164,23 +144,17 @@ def _errors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None
         record(lines, f"invalid elapsed {label}", lambda value=value: errors.SDKError(elapsed=value))
 
 
-def _hints(
-    options: ModuleType, errors: ModuleType, hooks: ModuleType, transports: ModuleType, lines: list[str]
-) -> None:
+def _hints(options: ModuleType, errors: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
     for owner in (
         options.TimeoutOptions,
         options.ClientOptions,
         options.RequestOptions,
         options.Deadline,
         options.Clock,
-        options.CancelToken,
         hooks.LimiterContext,
-        transports.AttemptIOContext,
-        transports.ResolvedTimeoutOptions,
         errors.SDKError,
         errors.APIConnectionError,
         errors.APITimeoutError,
-        errors.RequestCancelledError,
     ):
         lines.append(f"  hints {owner.__name__} {tuple(get_type_hints(owner.__init__))}")
     for method in (
@@ -188,19 +162,10 @@ def _hints(
         options.Deadline.remaining,
         options.Deadline.at.fget,
         options.Deadline.clock.fget,
-        options.CancelToken.cancel,
-        options.CancelToken.cancelled.fget,
         hooks.Limiter.acquire,
         hooks.AsyncLimiter.acquire,
         hooks.Permit.release,
         hooks.AsyncPermit.release,
-        transports.TransportAdapter.send,
-        transports.AsyncTransportAdapter.send,
-        transports.TransportResponse.iter_raw_bytes,
-        transports.AsyncTransportResponse.iter_raw_bytes,
-        transports.TransportTraceSink.response_headers_received,
-        transports.AttemptIOContext.deadline.fget,
-        transports.AttemptIOContext.cancel_token.fget,
     ):
         lines.append(f"  hints {method.__qualname__} {tuple(get_type_hints(method))}")
 
@@ -219,9 +184,7 @@ def _live_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> N
             )
         client = options.ClientOptions(timeout=options.TimeoutOptions(connect=3, read=5), total_timeout=None)
         with package.Client(http_client=native, options=client) as api:
-            view = api.with_options(
-                options.RequestOptions(timeout=options.TimeoutOptions(write=7))
-            )
+            view = api.with_options(options.RequestOptions(timeout=options.TimeoutOptions(write=7)))
             exchange.respond(raw_response(200, b"layered"))
             call = options.RequestOptions(timeout=options.TimeoutOptions(pool=2))
             record(
@@ -231,7 +194,7 @@ def _live_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> N
             )
             cleared = view.with_options(options.RequestOptions(timeout=None))
             exchange.respond(raw_response(200, b"cleared"))
-            call = options.RequestOptions(timeout=options.TimeoutOptions(read=8), deadline=None, cancel_token=None)
+            call = options.RequestOptions(timeout=options.TimeoutOptions(read=8), deadline=None)
             record(
                 lines,
                 "nested timeout clear",
@@ -239,38 +202,37 @@ def _live_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> N
             )
 
 
-def _adapter_failure(
-    package: ModuleType, options: ModuleType, errors: ModuleType, transports: ModuleType, lines: list[str]
-) -> None:
-    deadline = options.Deadline.after(3600)
-    token = options.CancelToken()
+class _Refusing(httpx2.BaseTransport):
+    """Record the phase timeouts each attempt is given, then refuse the connection."""
 
-    class FailingAdapter:
-        capabilities = transports.TransportCapabilities(
-            internal_retry_limit=0, delivery_evidence=True, http_versions=("HTTP/1.1",)
-        )
+    def __init__(self) -> None:
+        self.timeouts: list[dict[str, float | None]] = []
 
-        def send(self, request: object, context: object) -> object:
-            del request
-            absolute = getattr(context, "deadline")
-            lines.append(
-                f"  attempt context deadline={absolute.at == deadline.at} remaining={0 < absolute.remaining() <= 3600} token={getattr(context, 'cancel_token') is token} phase={getattr(context, 'phase')} slotted={not hasattr(context, '__dict__')}"
-            )
-            raise errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
-
-        def close(self) -> None:
-            pass
-
-    with package.Client(
-        transport_adapter=FailingAdapter(),
-        options=options.ClientOptions(total_timeout=None, deadline=deadline, cancel_token=token),
-    ) as api:
-        record(lines, "adapter failure keeps context", lambda: api.request_raw("GET", "https://example.com/failure"))
+    def handle_request(self, request: httpx2.Request) -> httpx2.Response:
+        self.timeouts.append(request.extensions["timeout"])
+        msg = "refused"
+        raise httpx2.ConnectError(msg, request=request)
 
 
-def _clocks(
-    package: ModuleType, options: ModuleType, errors: ModuleType, transports: ModuleType, lines: list[str]
-) -> None:
+def _attempt_timeout(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Hand each attempt the time left until the absolute deadline as every unlimited phase's timeout."""
+    refusing = _Refusing()
+    settings = options.ClientOptions(
+        total_timeout=None,
+        deadline=options.Deadline.after(3600),
+        timeout=options.TimeoutOptions(connect=None, read=None, write=None, pool=None),
+        retry=options.RetryOptions(max_retries=1, initial_delay=0, jitter="none"),
+    )
+    with httpx2.Client(transport=refusing) as native, package.Client(http_client=native, options=settings) as api:
+        record(lines, "refused attempts", lambda: api.request_raw("GET", "https://example.com/failure"))
+    first, second = refusing.timeouts
+    lines.append(
+        f"  attempts={len(refusing.timeouts)} phases share the remaining time={len({*first.values()}) == 1}"
+        f" within the deadline={0 < first['read'] <= 3600} shrinking={second['read'] <= first['read']}"
+    )
+
+
+def _clocks(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     """Keep deadlines on the clock they were made on, and move a deadline from another clock onto a call's clock."""
     for name in ("monotonic", "time", "random"):
         record(lines, f"clock {name} type", lambda name=name: options.Clock(**{name: 1.0}))
@@ -291,25 +253,15 @@ def _clocks(
     odd = options.Clock(monotonic=Unhashable())
     held = options.RequestOptions(deadline=options.Deadline.after(5, clock=odd))
     lines.append(f"  hashing ignores sources clock={hash(odd) == hash(fake)} request={hash(held) == hash(held)}")
-    seen: list[object] = []
-
-    class ContextAdapter:
-        capabilities = transports.TransportCapabilities(
-            internal_retry_limit=0, delivery_evidence=True, http_versions=("HTTP/1.1",)
-        )
-
-        def send(self, request: object, context: object) -> object:
-            del request
-            seen.append(getattr(context, "deadline"))
-            raise errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
-
-        def close(self) -> None:
-            pass
-
+    refusing = _Refusing()
     system = options.Deadline.after(3600)
-    with package.Client(
-        transport_adapter=ContextAdapter(), options=options.ClientOptions(total_timeout=None, clock=fake)
-    ) as api:
+    settings = options.ClientOptions(
+        total_timeout=None,
+        clock=fake,
+        timeout=options.TimeoutOptions(connect=None, read=None, write=None, pool=None),
+        retry=options.RetryOptions(max_retries=0),
+    )
+    with httpx2.Client(transport=refusing) as native, package.Client(http_client=native, options=settings) as api:
         for label, given in (("same clock", deadline), ("system clock", system)):
             record(
                 lines,
@@ -318,22 +270,20 @@ def _clocks(
                     "GET", "https://example.com/clock", options=options.RequestOptions(deadline=given)
                 ),
             )
-    same, moved = seen
+    same, moved = refusing.timeouts
     lines.append(
-        f"  kept={same is deadline} moved onto the call's clock={moved.clock is fake}"
-        f" by its remaining time={system.remaining() <= moved.at - 100 <= 3600}"
+        f"  kept={same} moved onto the call's clock by its remaining time={system.remaining() <= moved['read'] <= 3600}"
     )
 
 
 def deadline_options(package: ModuleType, lines: list[str]) -> None:
     """Report public option validation, error shape, annotations, and timeout inheritance over real TLS."""
-    options, errors, hooks, transports, responses = (
-        importlib.import_module(f"{package.__name__}.{name}")
-        for name in ("options", "errors", "hooks", "transports", "responses")
+    options, errors, hooks, responses = (
+        importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "errors", "hooks", "responses")
     )
     _values(options, hooks, lines)
     _errors(errors, responses, lines)
-    _hints(options, errors, hooks, transports, lines)
+    _hints(options, errors, hooks, lines)
     _live_calls(package, options, lines)
-    _adapter_failure(package, options, errors, transports, lines)
-    _clocks(package, options, errors, transports, lines)
+    _attempt_timeout(package, options, lines)
+    _clocks(package, options, lines)

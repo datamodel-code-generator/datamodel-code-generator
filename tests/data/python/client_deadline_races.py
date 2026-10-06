@@ -1,4 +1,4 @@
-"""Report generated-client deadline, cancellation, closing, and late-cleanup fault races."""
+"""Report generated-client deadline, task cancellation, closing, and late-cleanup races over native transports."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import httpx2
 from tests.data.python.client_runtime import arecord, record, run
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine, Iterator
+    from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
     from types import ModuleType
 
 
@@ -28,11 +28,8 @@ def _snapshot(error: BaseException) -> tuple[object, ...]:
         type(error).__name__,
         getattr(error, "attempt_count", None),
         getattr(error, "phase", None),
-        getattr(error, "source", None),
         type(getattr(error, "cause", None)).__name__,
         tuple(type(failure).__name__ for failure in getattr(error, "secondary_errors", ())),
-        getattr(error, "pending_calls", None),
-        getattr(error, "pending_leases", None),
     )
 
 
@@ -56,25 +53,28 @@ async def _acaptured(
     return ("returned",)
 
 
-class _ResponseState:
-    status_code = 200
+class _Body(httpx2.SyncByteStream, httpx2.AsyncByteStream):
+    """A response body that counts its closes."""
 
-    def __init__(self, responses: ModuleType) -> None:
-        self.headers = responses.HeadersView((("content-type", "application/octet-stream"),))
+    def __init__(self) -> None:
         self.closed = 0
+
+    def __iter__(self) -> Iterator[bytes]:
+        yield b"response"
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        yield b"response"
 
     def close(self) -> None:
         self.closed += 1
 
-
-class _Response(_ResponseState):
-    def iter_raw_bytes(self) -> Iterator[bytes]:
-        yield b"response"
+    async def aclose(self) -> None:
+        self.close()
 
 
-class _FailedCloseResponse(_Response):
-    def __init__(self, responses: ModuleType, failure: BaseException) -> None:
-        super().__init__(responses)
+class _FailedClose(_Body):
+    def __init__(self, failure: BaseException) -> None:
+        super().__init__()
         self.failure = failure
 
     def close(self) -> None:
@@ -82,38 +82,11 @@ class _FailedCloseResponse(_Response):
         raise self.failure
 
 
-class _AsyncResponse(_ResponseState):
-    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:
-        yield b"response"
+class _ExpiringClose(_Body):
+    """A body whose close moves the call's clock past its deadline."""
 
-    async def aclose(self) -> None:
-        self.close()
-
-
-class _UnwindingStream(_AsyncResponse):
-    def __init__(self, responses: ModuleType) -> None:
-        super().__init__(responses)
-        self.unwinding = asyncio.Event()
-        self.release = asyncio.Event()
-        self.proceed = asyncio.Event()
-
-    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:
-        yield b"first"
-        try:
-            await asyncio.Event().wait()
-        except asyncio.CancelledError:
-            self.unwinding.set()
-            await self.release.wait()
-            raise
-
-    async def aclose(self) -> None:
-        self.close()
-        await self.proceed.wait()
-
-
-class _ExpiringResponse(_AsyncResponse):
-    def __init__(self, responses: ModuleType, clock: _Clock) -> None:
-        super().__init__(responses)
+    def __init__(self, clock: _Clock) -> None:
+        super().__init__()
         self.clock = clock
 
     async def aclose(self) -> None:
@@ -121,40 +94,63 @@ class _ExpiringResponse(_AsyncResponse):
         self.clock.value = 200.0
 
 
-class _Fault:
-    def __init__(self, transports: ModuleType, responses: ModuleType, action: Callable[[], None]) -> None:
-        self.capabilities = transports.TransportCapabilities(
-            internal_retry_limit=0, delivery_evidence=False, http_versions=("HTTP/1.1",)
-        )
-        self.response = _Response(responses)
-        self.action = action
-        self.sent = 0
+class _GatedClose(_Body):
+    """A body whose close waits until released, then notes its completion and optionally fails."""
 
-    def send(self, request: object, context: object) -> _Response:
-        self.sent += 1
-        self.action()
-        return self.response
-
-    def close(self) -> None:
-        pass
-
-
-class _AsyncFault:
-    def __init__(self, transports: ModuleType, responses: ModuleType, action: Callable[[], Awaitable[None]]) -> None:
-        self.capabilities = transports.TransportCapabilities(
-            internal_retry_limit=0, delivery_evidence=False, http_versions=("HTTP/1.1",)
-        )
-        self.response = _AsyncResponse(responses)
-        self.action = action
-        self.sent = 0
-
-    async def send(self, request: object, context: object) -> _AsyncResponse:
-        self.sent += 1
-        await self.action()
-        return self.response
+    def __init__(self, *, failure: bool) -> None:
+        super().__init__()
+        self.entered = asyncio.Event()
+        self.proceed = asyncio.Event()
+        self.failure = failure
+        self.completed = False
 
     async def aclose(self) -> None:
-        pass
+        self.closed += 1
+        self.entered.set()
+        await self.proceed.wait()
+        self.completed = True
+        if self.failure:
+            msg = "late response close failed"
+            raise RuntimeError(msg)
+
+
+def _answer(body: _Body) -> httpx2.Response:
+    return httpx2.Response(200, headers={"content-type": "application/octet-stream"}, stream=body)
+
+
+class _Fault(httpx2.BaseTransport):
+    """Run an action at each send, then answer with the body."""
+
+    def __init__(self, action: Callable[[], None], body: _Body | None = None) -> None:
+        self.action = action
+        self.body = _Body() if body is None else body
+        self.sent = 0
+
+    def handle_request(self, request: httpx2.Request) -> httpx2.Response:
+        del request
+        self.sent += 1
+        self.action()
+        return _answer(self.body)
+
+
+class _AsyncFault(httpx2.AsyncBaseTransport):
+    """Await an action at each send, then answer with the body."""
+
+    def __init__(self, action: Callable[[], Awaitable[None]], body: _Body | None = None) -> None:
+        self.action = action
+        self.body = _Body() if body is None else body
+        self.sent = 0
+
+    async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
+        del request
+        self.sent += 1
+        await self.action()
+        return _answer(self.body)
+
+
+async def _unexpected_send() -> None:
+    msg = "a stopped call reached the transport"
+    raise RuntimeError(msg)
 
 
 def _phase_sources(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -206,9 +202,7 @@ def _phase_sources(package: ModuleType, options: ModuleType, lines: list[str]) -
             )
 
 
-def _admission_race(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
+def _admission_race(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     ticks = 0
 
     def at() -> float:
@@ -218,215 +212,105 @@ def _admission_race(
             api.close()
         return 100.0
 
-    adapter = _Fault(transports, responses, lambda: None)
-    api = package.Client(transport_adapter=adapter, options=options.ClientOptions(clock=options.Clock(monotonic=at)))
-    record(
-        lines,
-        "closing during admission",
-        lambda: _captured(lambda: api.request_raw("GET", "https://race.example/admit")),
-    )
-    record(lines, "closing during admission sends", lambda: adapter.sent)
-    api.close()
-
-
-def _sync_races(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    for interrupt in (None, KeyboardInterrupt, SystemExit):
-        clock, token = _Clock(), options.CancelToken()
-
-        def action() -> None:
-            token.cancel()
-            clock.value = 102.0
-            if interrupt is not None:
-                raise interrupt()
-
-        adapter = _Fault(transports, responses, action)
-        with package.Client(
-            transport_adapter=adapter,
-            options=options.ClientOptions(total_timeout=1.0, cancel_token=token, clock=options.Clock(monotonic=clock)),
-        ) as api:
-            record(
-                lines,
-                f"sync native/token/deadline {None if interrupt is None else interrupt.__name__}",
-                lambda: _captured(lambda: api.request_raw("GET", "https://race.example/precedence")),
-            )
-        record(lines, "sync race resources", lambda: (adapter.sent, adapter.response.closed))
-
-
-def _compound_cleanup(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    errors = importlib.import_module(f"{package.__name__}.errors")
-    token = options.CancelToken()
-    adapter = _Fault(transports, responses, token.cancel)
-    adapter.response = _FailedCloseResponse(
-        responses,
-        errors.CleanupError(cause=RuntimeError(), secondary_errors=(ValueError(), KeyboardInterrupt())),
-    )
-    with package.Client(
-        transport_adapter=adapter,
-        options=options.ClientOptions(cancel_token=token),
-    ) as api:
+    transport = _Fault(lambda: None)
+    with httpx2.Client(transport=transport) as native:
+        api = package.Client(http_client=native, options=options.ClientOptions(clock=options.Clock(monotonic=at)))
         record(
             lines,
-            "compound sync cleanup",
-            lambda: _captured(lambda: api.request_raw("GET", "https://race.example/compound")),
+            "closing during admission",
+            lambda: _captured(lambda: api.request_raw("GET", "https://race.example/admit")),
         )
-    record(lines, "compound sync cleanup resources", lambda: (adapter.sent, adapter.response.closed))
+        record(lines, "closing during admission sends", lambda: transport.sent)
+        api.close()
 
 
-async def _async_races(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    for label, cancelled, closing, expired, native in (
-        ("token/result", True, False, False, False),
-        ("closing/result", False, True, False, False),
-        ("deadline/result", False, False, True, False),
-        ("token/closing/deadline/result", True, True, True, False),
-        ("native/token/closing/deadline/result", True, True, True, True),
+def _sync_races(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Expire the deadline during a send, which may also be interrupted or end in a failing response close."""
+    for label, interrupt, failure in (
+        ("deadline", None, None),
+        ("deadline KeyboardInterrupt", KeyboardInterrupt, None),
+        ("deadline SystemExit", SystemExit, None),
+        ("deadline close failure", None, RuntimeError("response close failed")),
     ):
-        clock, token = _Clock(), options.CancelToken()
+        clock = _Clock()
+
+        def action(interrupt: type[BaseException] | None = interrupt, clock: _Clock = clock) -> None:
+            clock.value = 102.0
+            if interrupt is not None:
+                raise interrupt
+
+        transport = _Fault(action, None if failure is None else _FailedClose(failure))
+        with (
+            httpx2.Client(transport=transport) as native,
+            package.Client(
+                http_client=native,
+                options=options.ClientOptions(total_timeout=1.0, clock=options.Clock(monotonic=clock)),
+            ) as api,
+        ):
+            record(
+                lines,
+                f"sync {label}",
+                lambda api=api: _captured(lambda: api.request_raw("GET", "https://race.example/precedence")),
+            )
+        record(lines, f"sync {label} resources", lambda transport=transport: (transport.sent, transport.body.closed))
+
+
+async def _async_races(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Close the client, expire the deadline, or cancel the caller's task while its request is being sent."""
+    for label, closing, expired, cancelled in (
+        ("closing/result", True, False, False),
+        ("deadline/result", False, True, False),
+        ("closing/deadline/result", True, True, False),
+        ("native/closing/deadline/result", True, True, True),
+    ):
+        clock = _Clock()
         closers: list[asyncio.Task[None]] = []
 
-        async def action() -> None:
-            if cancelled:
-                token.cancel()
+        async def action(
+            closing: bool = closing, expired: bool = expired, cancelled: bool = cancelled, clock: _Clock = clock
+        ) -> None:
             if closing:
                 closers.append(asyncio.create_task(api.aclose()))
             if expired:
                 clock.value = 102.0
-            if native:
+            if cancelled:
                 caller.cancel()
+                await asyncio.sleep(0)
 
-        adapter = _AsyncFault(transports, responses, action)
-        api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(
-                total_timeout=1.0,
-                cancel_token=token if cancelled else None,
-                clock=options.Clock(monotonic=clock),
-            ),
-        )
-        caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/race")))
-        await arecord(lines, f"async {label}", lambda: caller)
-        for closer in closers:
-            await closer
-        await api.aclose()
-        record(lines, "async race resources", lambda: (adapter.sent, adapter.response.closed))
+        transport = _AsyncFault(action)
+        async with httpx2.AsyncClient(transport=transport) as native:
+            api = package.AsyncClient(
+                http_client=native,
+                options=options.ClientOptions(total_timeout=1.0, clock=options.Clock(monotonic=clock)),
+            )
+            caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/race")))
+            await arecord(lines, f"async {label}", lambda: caller)
+            for closer in closers:
+                await closer
+            await api.aclose()
+        record(lines, f"async {label} resources", lambda: (transport.sent, transport.body.closed))
 
 
-async def _capped_timeout(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
-    errors = importlib.import_module(f"{package.__name__}.errors")
-    clock = _Clock()
-
-    async def timed_out() -> None:
-        raise errors.APIConnectionError(
-            delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read", cause=httpx2.ReadTimeout("capped read")
-        )
-
-    adapter = _AsyncFault(transports, responses, timed_out)
-    attempt = _GatedBody()
-    api = package.AsyncClient(
-        transport_adapter=adapter,
-        options=options.ClientOptions(total_timeout=0.05, cleanup_timeout=1.0, clock=options.Clock(monotonic=clock)),
-    )
-    body = attempt.factory(bodies)
-    await arecord(
-        lines,
-        "deadline timer during the release of a capped timeout",
-        lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/capped", body=body)),
-    )
-    attempt.proceed.set()
-    await api.aclose()
-
-
-async def _foreign_cancellation(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    async def sent() -> None:
-        pass
-
-    adapter = _AsyncFault(transports, responses, sent)
-    stream = _UnwindingStream(responses)
-    adapter.response = stream
-    api = package.AsyncClient(
-        transport_adapter=adapter,
-        options=options.ClientOptions(total_timeout=None, stream_idle_timeout=0.05, cleanup_timeout=1.0),
-    )
-    async with api.with_streaming_response.request_raw("GET", "https://race.example/stream") as handle:
-
-        async def read() -> None:
-            async for _chunk in handle.iter_raw_bytes():
-                pass
-
-        reader = asyncio.create_task(_acaptured(read))
-        await stream.unwinding.wait()
-        closer = asyncio.create_task(_acaptured(handle.aclose))
-        await asyncio.sleep(0)
-        closer.cancel("closer cancelled")
-        await arecord(lines, "idle stop of another task's read leaves a native close cancellation", lambda: closer)
-        stream.release.set()
-        stream.proceed.set()
-        await arecord(lines, "idle stop of another task's read", lambda: reader)
-    await api.aclose()
-    record(lines, "idle stop of another task's read resources", lambda: (adapter.sent, stream.closed))
-
-
-async def _early_timer(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    clock = _Clock()
-
-    async def blocked() -> None:
-        await asyncio.Event().wait()
-
-    adapter = _AsyncFault(transports, responses, blocked)
-    async with package.AsyncClient(
-        transport_adapter=adapter,
-        options=options.ClientOptions(total_timeout=0.05, clock=options.Clock(monotonic=clock)),
-    ) as api:
-        await arecord(
-            lines,
-            "deadline timer ahead of the clock",
-            lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/early")),
-        )
-
-
-async def _expired_read(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
+async def _expired_read(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     clock = _Clock()
 
     async def sent() -> None:
         pass
 
-    adapter = _AsyncFault(transports, responses, sent)
-    adapter.response = _ExpiringResponse(responses, clock)
-    async with package.AsyncClient(
-        transport_adapter=adapter,
-        options=options.ClientOptions(total_timeout=60.0, clock=options.Clock(monotonic=clock)),
-    ) as api:
+    transport = _AsyncFault(sent, _ExpiringClose(clock))
+    async with (
+        httpx2.AsyncClient(transport=transport) as native,
+        package.AsyncClient(
+            http_client=native,
+            options=options.ClientOptions(total_timeout=60.0, clock=options.Clock(monotonic=clock)),
+        ) as api,
+    ):
         await arecord(
             lines,
             "deadline after buffered read",
             lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/expired")),
         )
-    record(lines, "deadline after buffered read resources", lambda: (adapter.sent, adapter.response.closed))
-
-
-class _LatePermit:
-    def __init__(self, *, failure: bool = False) -> None:
-        self.released = 0
-        self.failure = failure
-
-    async def release(self) -> None:
-        self.released += 1
-        if self.failure:
-            raise RuntimeError("late permit release failed")
+    record(lines, "deadline after buffered read resources", lambda: (transport.sent, transport.body.closed))
 
 
 class _WaitingHook:
@@ -439,167 +323,120 @@ class _WaitingHook:
             await asyncio.Event().wait()
 
 
-async def _nested_waits(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    for reason in ("deadline", "token", "closing", "native"):
-        token, hook = options.CancelToken(), _WaitingHook()
-
-        async def unexpected_send() -> None:
-            raise RuntimeError("send after a stopped hook")
-
-        adapter = _AsyncFault(transports, responses, unexpected_send)
+async def _nested_wait(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Cancel the caller's task while a hook waits before the send; nothing is sent."""
+    hook = _WaitingHook()
+    transport = _AsyncFault(_unexpected_send)
+    async with httpx2.AsyncClient(transport=transport) as native:
         api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(
-                hooks=(hook,),
-                total_timeout=0.2 if reason == "deadline" else None,
-                cancel_token=token if reason == "token" else None,
-                clock=options.Clock(monotonic=_Clock()),
-            ),
+            http_client=native, options=options.ClientOptions(hooks=(hook,), clock=options.Clock(monotonic=_Clock()))
         )
         caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/nested")))
         await hook.entered.wait()
-        closer: asyncio.Task[None] | None = None
-        if reason == "token":
-            token.cancel()
-        elif reason == "closing":
-            closer = asyncio.create_task(api.aclose())
-        elif reason == "native":
-            caller.cancel()
-        await arecord(lines, f"nested hook {reason}", lambda: caller)
-        if closer is not None:
-            await closer
+        caller.cancel()
+        await arecord(lines, "nested hook native", lambda: caller)
         await api.aclose()
-        record(lines, f"nested hook {reason} sends", lambda: adapter.sent)
+    record(lines, "nested hook native sends", lambda: transport.sent)
 
 
-class _GatedResponse(_AsyncResponse):
-    def __init__(self, responses: ModuleType, *, failure: bool | BaseException) -> None:
-        super().__init__(responses)
-        self.entered = asyncio.Event()
-        self.proceed = asyncio.Event()
+class _LatePermit:
+    def __init__(self, *, failure: bool = False) -> None:
+        self.released = 0
         self.failure = failure
 
-    async def aclose(self) -> None:
-        self.closed += 1
-        self.entered.set()
-        await self.proceed.wait()
-        if isinstance(self.failure, BaseException):
-            raise self.failure
+    async def release(self) -> None:
+        self.released += 1
         if self.failure:
-            raise RuntimeError("late response close failed")
+            msg = "late permit release failed"
+            raise RuntimeError(msg)
 
 
-async def _retained_responses(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    public_errors = importlib.import_module(f"{package.__name__}.errors")
-    for native, failure in ((False, False), (False, True), (True, False), (True, True), (True, "compound")):
+class _LateLimiter:
+    def __init__(self, *, deferred: bool) -> None:
+        self.started = asyncio.Event()
+        self.cancelled = asyncio.Event()
+        self.proceed = asyncio.Event()
+        self.permit = _LatePermit()
+        self.deferred = deferred
+
+    async def acquire(self, context: object) -> _LatePermit:
+        del context
+        self.started.set()
+        try:
+            await self.proceed.wait()
+        except asyncio.CancelledError:
+            self.cancelled.set()
+            if not self.deferred:
+                raise
+            await self.proceed.wait()
+        return self.permit
+
+
+async def _late_permits(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Cancel the caller's task while a limiter acquires; a limiter that swallows it hands back a released permit."""
+    for label, deferred in (("cancelled acquire", False), ("acquire swallowing the cancellation", True)):
+        limiter = _LateLimiter(deferred=deferred)
+        transport = _AsyncFault(_unexpected_send)
+        async with httpx2.AsyncClient(transport=transport) as native:
+            api = package.AsyncClient(
+                http_client=native, options=options.ClientOptions(total_timeout=None, limiter=limiter)
+            )
+            errors: list[BaseException] = []
+            caller = asyncio.create_task(
+                _acaptured(lambda api=api: api.request_raw("GET", "https://race.example/permit"), errors)
+            )
+            await limiter.started.wait()
+            caller.cancel()
+            if deferred:
+                await limiter.cancelled.wait()
+                limiter.proceed.set()
+            await arecord(lines, label, lambda caller=caller: caller)
+            await api.aclose()
+        record(
+            lines,
+            f"{label} resources",
+            lambda limiter=limiter, transport=transport, errors=errors: (
+                transport.sent,
+                limiter.cancelled.is_set(),
+                limiter.permit.released,
+                tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
+            ),
+        )
+
+
+async def _released_responses(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Cancel the caller's task while its response closes: the cancellation reaches the close and propagates."""
+    for cancelled, failure in ((False, False), (False, True), (True, False), (True, True)):
 
         async def sent() -> None:
             pass
 
-        adapter = _AsyncFault(transports, responses, sent)
-        close_failure = (
-            public_errors.CleanupError(cause=RuntimeError(), secondary_errors=(ValueError(), KeyboardInterrupt()))
-            if failure == "compound"
-            else bool(failure)
-        )
-        response = _GatedResponse(responses, failure=close_failure)
-        adapter.response = response
-        api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(total_timeout=None, cleanup_timeout=0.01),
-        )
+        body = _GatedClose(failure=failure)
+        transport = _AsyncFault(sent, body)
         errors: list[BaseException] = []
-        caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/cleanup"), errors))
-        await response.entered.wait()
-        if native:
-            caller.cancel()
-        label = f"retained response native={native} failure={failure}"
-        await arecord(lines, label, lambda: caller)
-        await arecord(lines, f"{label} first close", lambda: _acaptured(api.aclose))
-        response.proceed.set()
-        await api.aclose()
+        label = f"released response cancelled={cancelled} failure={failure}"
+        async with httpx2.AsyncClient(transport=transport) as native:
+            api = package.AsyncClient(http_client=native, options=options.ClientOptions(total_timeout=None))
+            caller = asyncio.create_task(
+                _acaptured(lambda api=api: api.request_raw("GET", "https://race.example/cleanup"), errors)
+            )
+            await body.entered.wait()
+            if cancelled:
+                caller.cancel()
+                await asyncio.sleep(0)
+            body.proceed.set()
+            await arecord(lines, label, lambda caller=caller: caller)
+            await api.aclose()
         record(
             lines,
             f"{label} resources",
-            lambda: (
-                adapter.sent,
-                response.closed,
-                tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
-                not native
-                or not failure
-                or not hasattr(errors[0], "add_note")
-                or bool(getattr(errors[0], "__notes__", ())),
+            lambda transport=transport, body=body, errors=errors: (
+                transport.sent,
+                body.closed,
+                body.completed,
+                tuple(type(error).__name__ for error in getattr(next(iter(errors), None), "secondary_errors", ())),
+                tuple(getattr(next(iter(errors), None), "__notes__", ())),
             ),
-        )
-        if failure == "compound":
-            record(lines, f"{label} notes", lambda: tuple(getattr(errors[0], "__notes__", ())))
-
-
-async def _acompound_cleanup(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    errors = importlib.import_module(f"{package.__name__}.errors")
-    token = options.CancelToken()
-
-    async def cancel() -> None:
-        token.cancel()
-
-    adapter = _AsyncFault(transports, responses, cancel)
-    response = _GatedResponse(
-        responses,
-        failure=errors.CleanupError(cause=RuntimeError(), secondary_errors=(ValueError(), KeyboardInterrupt())),
-    )
-    response.proceed.set()
-    adapter.response = response
-    async with package.AsyncClient(
-        transport_adapter=adapter,
-        options=options.ClientOptions(cancel_token=token),
-    ) as api:
-        await arecord(
-            lines,
-            "compound async cleanup",
-            lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/compound")),
-        )
-    record(lines, "compound async cleanup resources", lambda: (adapter.sent, adapter.response.closed))
-
-
-async def _stopped_releases(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    for reason in ("token", "deadline"):
-        token = options.CancelToken()
-
-        async def sent() -> None:
-            if reason == "token":
-                token.cancel()
-
-        adapter = _AsyncFault(transports, responses, sent)
-        response = _GatedResponse(responses, failure=True)
-        adapter.response = response
-        api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(
-                total_timeout=0.1 if reason == "deadline" else None,
-                cancel_token=token if reason == "token" else None,
-                cleanup_timeout=1.0,
-                clock=options.Clock(monotonic=_Clock()),
-            ),
-        )
-        errors: list[BaseException] = []
-        label = f"{reason} stops response release"
-        await arecord(
-            lines, label, lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/release"), errors)
-        )
-        response.proceed.set()
-        await arecord(lines, f"{label} close", lambda: _acaptured(api.aclose))
-        record(
-            lines,
-            f"{label} late failure",
-            lambda: (response.closed, tuple(type(error).__name__ for error in errors[0].secondary_errors)),
         )
 
 
@@ -608,10 +445,13 @@ class _Interrupted(BaseException):
 
 
 class _GatedBody:
+    """A request body whose close waits until released, then optionally fails."""
+
     content_length = None
     content_type = None
 
     def __init__(self, *, failure: bool = False) -> None:
+        self.entered = asyncio.Event()
         self.proceed = asyncio.Event()
         self.closing = False
         self.closed = False
@@ -627,10 +467,12 @@ class _GatedBody:
         if self.closing:
             return
         self.closing = True
+        self.entered.set()
         await self.proceed.wait()
         self.closed = True
         if self.failure:
-            raise RuntimeError("late body close failed")
+            msg = "late body close failed"
+            raise RuntimeError(msg)
 
     def factory(self, bodies: ModuleType) -> object:
         """Return a factory body whose only attempt is this one, so its release is the call's first cleanup."""
@@ -639,6 +481,101 @@ class _GatedBody:
             return self
 
         return bodies.AsyncBodyFactory(opened)
+
+
+class _Limiter:
+    def __init__(self) -> None:
+        self.permit = _LatePermit()
+
+    async def acquire(self, context: object) -> _LatePermit:
+        del context
+        return self.permit
+
+
+async def _failed_attempts(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Fail or interrupt a send: the call waits for its body's release, then releases its permit."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    for failure, late in (
+        (RuntimeError("send failed"), False),
+        (RuntimeError("send failed"), True),
+        (_Interrupted("send interrupted"), False),
+    ):
+
+        async def failed(failure: BaseException = failure) -> None:
+            raise failure
+
+        transport = _AsyncFault(failed)
+        attempt, limiter = _GatedBody(failure=late), _Limiter()
+        label = f"body release after {type(failure).__name__}{' and a late close failure' * late}"
+        body = attempt.factory(bodies)
+        errors: list[BaseException] = []
+        async with httpx2.AsyncClient(transport=transport) as native:
+            api = package.AsyncClient(
+                http_client=native,
+                options=options.ClientOptions(
+                    limiter=limiter, retry=options.RetryOptions(max_retries=0), clock=options.Clock(monotonic=_Clock())
+                ),
+            )
+            caller = asyncio.create_task(
+                _acaptured(
+                    lambda api=api, body=body: api.request_raw("POST", "https://race.example/body", body=body), errors
+                )
+            )
+            await attempt.entered.wait()
+            record(lines, f"{label} permit while the body closes", lambda limiter=limiter: limiter.permit.released)
+            attempt.proceed.set()
+            await arecord(lines, label, lambda caller=caller: caller)
+            await api.aclose()
+        record(
+            lines,
+            f"{label} resources",
+            lambda transport=transport, limiter=limiter, attempt=attempt, errors=errors: (
+                transport.sent,
+                limiter.permit.released,
+                attempt.closed,
+                tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
+            ),
+        )
+
+
+class _FailedLimiter:
+    async def acquire(self, context: object) -> _LatePermit:
+        del context
+        msg = "acquire failed"
+        raise RuntimeError(msg)
+
+
+async def _owned_release(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Fail a limiter's acquire: the call waits for its owned stream body's release before it fails."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    for late in (False, True):
+        transport, chunks = _AsyncFault(_unexpected_send), _GatedBody(failure=late)
+        label = f"owned stream release after a limiter failure{' and a late close failure' * late}"
+        body = bodies.AsyncStreamBody(chunks, ownership="owned")
+        errors: list[BaseException] = []
+        async with httpx2.AsyncClient(transport=transport) as native:
+            api = package.AsyncClient(
+                http_client=native,
+                options=options.ClientOptions(limiter=_FailedLimiter(), clock=options.Clock(monotonic=_Clock())),
+            )
+            caller = asyncio.create_task(
+                _acaptured(
+                    lambda api=api, body=body: api.request_raw("POST", "https://race.example/owned", body=body), errors
+                )
+            )
+            await chunks.entered.wait()
+            chunks.proceed.set()
+            await arecord(lines, label, lambda caller=caller: caller)
+            await api.aclose()
+        record(
+            lines,
+            f"{label} resources",
+            lambda transport=transport, chunks=chunks, errors=errors: (
+                transport.sent,
+                chunks.closed,
+                tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
+            ),
+        )
 
 
 class _PartAttempt:
@@ -653,310 +590,63 @@ class _PartAttempt:
 
     async def aclose(self) -> None:
         if self.failure:
-            raise RuntimeError("first part close failed")
+            msg = "first part close failed"
+            raise RuntimeError(msg)
 
 
-async def _stopped_binding(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
+async def _cancelled_binding(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Cancel the caller's task while a multipart part opens: the opened part is closed and nothing is sent."""
     bodies = importlib.import_module(f"{package.__name__}.bodies")
-    for reason in ("deadline", "token"):
-        token, opening = options.CancelToken(), asyncio.Event()
+    opening = asyncio.Event()
 
-        async def first(_context: object) -> _PartAttempt:  # noqa: RUF029
-            return _PartAttempt(failure=True)
+    async def first(_context: object) -> _PartAttempt:  # noqa: RUF029
+        return _PartAttempt(failure=True)
 
-        async def second(_context: object) -> _PartAttempt:
-            opening.set()
-            await asyncio.Event().wait()
-            return _PartAttempt(failure=False)
+    async def second(_context: object) -> _PartAttempt:
+        opening.set()
+        await asyncio.Event().wait()
+        return _PartAttempt(failure=False)
 
-        async def unexpected_send() -> None:
-            raise RuntimeError("send after a stopped binding")
-
-        adapter = _AsyncFault(transports, responses, unexpected_send)
+    transport = _AsyncFault(_unexpected_send)
+    body = bodies.AsyncMultipartBody((
+        bodies.FilePart("a", bodies.AsyncBodyFactory(first, content_length=3)),
+        bodies.FilePart("b", bodies.AsyncBodyFactory(second, content_length=3)),
+    ))
+    errors: list[BaseException] = []
+    async with httpx2.AsyncClient(transport=transport) as native:
         api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(
-                total_timeout=0.1 if reason == "deadline" else None,
-                cancel_token=token if reason == "token" else None,
-                retry=options.RetryOptions(max_retries=0),
-                cleanup_timeout=1.0,
-                clock=options.Clock(monotonic=_Clock()),
-            ),
+            http_client=native,
+            options=options.ClientOptions(retry=options.RetryOptions(max_retries=0), total_timeout=None),
         )
-        body = bodies.AsyncMultipartBody((
-            bodies.FilePart("a", bodies.AsyncBodyFactory(first, content_length=3)),
-            bodies.FilePart("b", bodies.AsyncBodyFactory(second, content_length=3)),
-        ))
-        errors: list[BaseException] = []
         caller = asyncio.create_task(
             _acaptured(lambda: api.request_raw("POST", "https://race.example/upload", body=body), errors)
         )
         await opening.wait()
-        if reason == "token":
-            token.cancel()
-        await arecord(lines, f"{reason} stops multipart binding", lambda: caller)
+        caller.cancel("binding cancelled")
+        await arecord(lines, "cancellation stops multipart binding", lambda: caller)
         await api.aclose()
-        record(
-            lines,
-            f"{reason} stops multipart binding late failure",
-            lambda: (adapter.sent, tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ()))),
-        )
+    record(
+        lines,
+        "cancellation stops multipart binding late failure",
+        lambda: (transport.sent, errors[0].args, tuple(getattr(errors[0], "__notes__", ()))),
+    )
 
 
-class _Limiter:
-    def __init__(self) -> None:
-        self.permit = _LatePermit()
-
-    async def acquire(self, context: object) -> _LatePermit:
-        return self.permit
-
-
-async def _stopped_attempts(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
-    for failure, late in (
-        (RuntimeError("send failed"), False),
-        (RuntimeError("send failed"), True),
-        (_Interrupted("send interrupted"), False),
-    ):
-
-        async def failed() -> None:
-            raise failure
-
-        adapter = _AsyncFault(transports, responses, failed)
-        attempt, limiter = _GatedBody(failure=late), _Limiter()
-        label = f"deadline stops body release after {type(failure).__name__}{' and a late close failure' * late}"
-        body = attempt.factory(bodies)
-        errors: list[BaseException] = []
-        api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(
-                total_timeout=0.1, limiter=limiter, cleanup_timeout=1.0, clock=options.Clock(monotonic=_Clock())
-            ),
-        )
-        await arecord(
-            lines,
-            label,
-            lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/body", body=body), errors),
-        )
-        record(lines, f"{label} permit", lambda: (limiter.permit.released, attempt.closed))
-        attempt.proceed.set()
-        await api.aclose()
-        record(
-            lines,
-            f"{label} resources",
-            lambda: (
-                adapter.sent,
-                limiter.permit.released,
-                attempt.closed,
-                tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
-            ),
-        )
-
-
-class _FailedLimiter:
-    async def acquire(self, context: object) -> _LatePermit:
-        raise RuntimeError("acquire failed")
-
-
-async def _stopped_owned_release(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
-    for late in (False, True):
-
-        async def unexpected_send() -> None:
-            raise RuntimeError("send after a failed acquire")
-
-        adapter, chunks = _AsyncFault(transports, responses, unexpected_send), _GatedBody(failure=late)
-        label = f"deadline stops owned stream release after a limiter failure{' and a late close failure' * late}"
-        body = bodies.AsyncStreamBody(chunks, ownership="owned")
-        errors: list[BaseException] = []
-        api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(
-                total_timeout=0.1,
-                limiter=_FailedLimiter(),
-                cleanup_timeout=1.0,
-                clock=options.Clock(monotonic=_Clock()),
-            ),
-        )
-        await arecord(
-            lines,
-            label,
-            lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/owned", body=body), errors),
-        )
-        record(lines, f"{label} closed", lambda: chunks.closed)
-        chunks.proceed.set()
-        await api.aclose()
-        record(
-            lines,
-            f"{label} resources",
-            lambda: (
-                adapter.sent,
-                chunks.closed,
-                tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
-            ),
-        )
-
-
-class _LateLimiter:
-    def __init__(self, *, deferred: bool, failure: bool, release_failure: bool) -> None:
-        self.started = asyncio.Event()
-        self.cancelled = asyncio.Event()
-        self.proceed = asyncio.Event()
-        self.permit = _LatePermit(failure=release_failure)
-        self.deferred = deferred
-        self.failure = failure
-
-    async def acquire(self, context: object) -> _LatePermit:
-        self.started.set()
-        try:
-            await self.proceed.wait()
-        except asyncio.CancelledError:
-            self.cancelled.set()
-            if self.deferred:
-                await self.proceed.wait()
-        if self.failure:
-            raise RuntimeError("late acquire failed")
-        return self.permit
-
-
-async def _late_permits(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    for label, deferred, failure, release_failure, native in (
-        ("late permit", False, False, False, False),
-        ("late release failure", False, False, True, False),
-        ("retained permit", True, False, False, False),
-        ("retained acquire failure", True, True, False, False),
-        ("retained release failure", True, False, True, False),
-        ("late native permit", False, False, False, True),
-        ("retained native permit", True, False, False, True),
-    ):
-        token = options.CancelToken()
-        limiter = _LateLimiter(deferred=deferred, failure=failure, release_failure=release_failure)
-
-        async def unexpected_send() -> None:
-            raise RuntimeError("send after cancellation")
-
-        adapter = _AsyncFault(transports, responses, unexpected_send)
-        api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(
-                total_timeout=None,
-                cancel_token=None if native else token,
-                limiter=limiter,
-                cleanup_timeout=1.0 if native else 0.01,
-            ),
-        )
-        errors: list[BaseException] = []
-        caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/permit"), errors))
-        await limiter.started.wait()
-        if native:
-            caller.cancel()
-        else:
-            token.cancel()
-        if deferred:
-            await limiter.cancelled.wait()
-            await arecord(lines, f"{label} first close", lambda: _acaptured(api.aclose))
-            limiter.proceed.set()
-        await arecord(lines, label, lambda: caller)
-        await api.aclose()
-        record(
-            lines,
-            f"{label} resources",
-            lambda: (
-                adapter.sent,
-                limiter.cancelled.is_set(),
-                limiter.permit.released,
-                tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
-            ),
-        )
-
-
-async def _startup_cancellation(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    loop = asyncio.get_running_loop()
-    for label in ("rejected cleanup", "client close"):
-        rejected = label == "rejected cleanup"
-        created = 0
-
-        def cancelled_before_start(
-            loop: asyncio.AbstractEventLoop,
-            coroutine: Coroutine[object, object, object],
-            **kwargs: object,
-        ) -> asyncio.Task[object]:
-            nonlocal created
-            del kwargs
-            task = asyncio.Task(coroutine, loop=loop)
-            created += 1
-            if created == 1:
-                task.cancel("cancelled before owned coroutine starts")
-            return task
-
-        async def unexpected_send() -> None:
-            raise RuntimeError("send after startup cancellation")
-
-        adapter = _AsyncFault(transports, responses, unexpected_send)
-        api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(
-                total_timeout=0.0 if rejected else None,
-                hooks=(_WaitingHook(),) if rejected else (),
-            ),
-        )
-        previous = loop.get_task_factory()
-        loop.set_task_factory(cancelled_before_start)
-        operation = (
-            api.aclose if label == "client close" else lambda: api.request_raw("GET", "https://race.example/startup")
-        )
-        try:
-            await arecord(
-                lines,
-                f"startup cancellation {label}",
-                lambda: _acaptured(operation),
-            )
-        finally:
-            loop.set_task_factory(previous)
-        await api.aclose()
-        record(
-            lines,
-            f"startup cancellation {label} resources",
-            lambda: (created, adapter.sent, adapter.response.closed),
-        )
-
-
-async def _async(
-    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
-    await _async_races(package, options, transports, responses, lines)
-    await _early_timer(package, options, transports, responses, lines)
-    await _capped_timeout(package, options, transports, responses, lines)
-    await _foreign_cancellation(package, options, transports, responses, lines)
-    await _expired_read(package, options, transports, responses, lines)
-    await _nested_waits(package, options, transports, responses, lines)
-    await _late_permits(package, options, transports, responses, lines)
-    await _retained_responses(package, options, transports, responses, lines)
-    await _acompound_cleanup(package, options, transports, responses, lines)
-    await _stopped_releases(package, options, transports, responses, lines)
-    await _stopped_attempts(package, options, transports, responses, lines)
-    await _stopped_owned_release(package, options, transports, responses, lines)
-    await _stopped_binding(package, options, transports, responses, lines)
-    await _startup_cancellation(package, options, transports, responses, lines)
+async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    await _async_races(package, options, lines)
+    await _expired_read(package, options, lines)
+    await _nested_wait(package, options, lines)
+    await _late_permits(package, options, lines)
+    await _released_responses(package, options, lines)
+    await _failed_attempts(package, options, lines)
+    await _owned_release(package, options, lines)
+    await _cancelled_binding(package, options, lines)
 
 
 def deadline_races(package: ModuleType, lines: list[str]) -> None:
     """Inject only failures and deterministic races, exercising public generated client calls throughout."""
-    options, transports, responses = (
-        importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "transports", "responses")
-    )
+    options = importlib.import_module(f"{package.__name__}.options")
     _phase_sources(package, options, lines)
-    _admission_race(package, options, transports, responses, lines)
-    _sync_races(package, options, transports, responses, lines)
-    _compound_cleanup(package, options, transports, responses, lines)
-    run(lambda: _async(package, options, transports, responses, lines))
+    _admission_race(package, options, lines)
+    _sync_races(package, options, lines)
+    run(lambda: _async(package, options, lines))
