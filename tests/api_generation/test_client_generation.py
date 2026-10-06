@@ -98,6 +98,9 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "sockets",
         "caching",
         "compression",
+        "templates",
+        "templates-missing",
+        "templates-invalid",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -249,6 +252,11 @@ def test_client_helper_spellings(first: str, second: str, expected: str, tmp_pat
         "sockets",
         "caching",
         "compression",
+        "fields-both",
+        "pets-unpack",
+        "media",
+        "templates",
+        "standalone-bundled",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:
@@ -306,6 +314,10 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
         "protocols-records-shape",
         "toml-protocols",
         "toml-protocols-type",
+        "templates-values",
+        "templates-type",
+        "toml-templates",
+        "toml-templates-type",
     ],
 )
 def test_client_config(case: str, tmp_path: Path) -> None:

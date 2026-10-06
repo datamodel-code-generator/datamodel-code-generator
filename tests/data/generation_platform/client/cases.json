@@ -5012,5 +5012,54 @@
     "config": {
       "body_arguments": "both"
     }
+  },
+  "templates": {
+    "input": "pets.yaml",
+    "references": [
+      "templates/custom/resource.jinja2",
+      "templates/custom/readme.jinja2"
+    ],
+    "modules": [
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ]
+    ],
+    "config": {
+      "templates": "templates/custom"
+    }
+  },
+  "templates-missing": {
+    "input": "pets.yaml",
+    "publish": true,
+    "config": {
+      "templates": "templates/missing"
+    }
+  },
+  "templates-invalid": {
+    "input": "pets.yaml",
+    "references": [
+      "templates/invalid/resource.jinja2"
+    ],
+    "publish": true,
+    "config": {
+      "templates": "templates/invalid"
+    }
+  },
+  "standalone-bundled": {
+    "input": "pets.yaml",
+    "cwd": true,
+    "model": {
+      "output": "client/src/pets_models.py"
+    },
+    "config": {
+      "package": "pets_client",
+      "model_package": "pets_models",
+      "package_mode": "standalone",
+      "package_version": "1.2.3",
+      "distribution_name": "pets-client"
+    }
   }
 }

@@ -1,0 +1,26 @@
+output=PurePosixPath('config/client')
+package='client'
+model_package='models'
+model_mode='generate'
+selection=OperationSelection(include_operations=(), include_tags=(), exclude_operations=(), exclude_tags=(), reason=None)
+formatters=(<Formatter.BUILTIN: 'builtin'>,)
+formatter_settings=PurePosixPath('config')
+custom_formatters=()
+custom_formatter_kwargs=mappingproxy({})
+encoding='utf-8'
+header=None
+include_timestamp=False
+package_mode='embedded'
+package_version=None
+distribution_name=None
+model_dependency=None
+schema_version=1
+transport='httpx2'
+resource_names=()
+operations=()
+signature_style='explicit'
+body_arguments='body'
+default_base_url=None
+server_base_url=None
+protocols=None
+templates=PurePosixPath('config/client-templates')

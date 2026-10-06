@@ -4,27 +4,20 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from functools import cached_property
 from io import BytesIO
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._api_types import APIGenerationError
+from datamodel_code_generator._target_templates import TemplateOverlay
 
 if TYPE_CHECKING:
-    from jinja2 import Environment
+    from datamodel_code_generator._api_types import Diagnostic
 
 
 MANIFEST: Final = "fastapi-templates.toml"
-BUILTIN: Final = Path(__file__).parent / "templates"
-ROLES: Final = frozenset({
-    "application.jinja2",
-    "router.jinja2",
-    "services.jinja2",
-    "readme.jinja2",
-})
 
 Scope: TypeAlias = Literal["project", "router", "operation"]
 Format: TypeAlias = Literal["python", "markdown", "json", "toml", "yaml", "html", "xml", "text"]
@@ -58,12 +51,6 @@ _TOKENS: Final[dict[Scope, str | None]] = {"project": None, "router": ROUTER, "o
 _KEYS: Final = frozenset({"template", "path", "scope", "format", "header"})
 
 
-class _Renderable(Protocol):
-    def render(self, **values: object) -> str:
-        """Return the template rendered with the values."""
-        raise NotImplementedError
-
-
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ExtraFile:
     """One extra file a template manifest declares: its template, path, scope, format, and header."""
@@ -75,37 +62,18 @@ class ExtraFile:
     header: bool
 
 
-class TemplateSet:
+class TemplateSet(TemplateOverlay):
     """A template directory: the builtin roles it overrides, and the extra files its manifest declares."""
+
+    BUILTIN = Path(__file__).parent / "templates"
+    ROLES = frozenset({"application.jinja2", "router.jinja2", "services.jinja2", "readme.jinja2"})
+    MISSING = ("F_TEMPLATE_INVALID", "target")
+    INVALID = "F_TEMPLATE_INVALID"
 
     def __init__(self, directory: Path, target_id: str) -> None:
         """Find the overridden roles and read the manifest, rejecting a missing directory or an invalid manifest."""
-        self.directory = directory
-        self.target_id = target_id
-        if not directory.is_dir():
-            raise APIGenerationError((self.problem("The template directory does not exist"),))
-        self.roles = frozenset(role for role in ROLES if (directory / role).is_file())
+        super().__init__(directory, target_id)
         self.extras = self.manifest()
-
-    @cached_property
-    def environment(self) -> Environment:
-        """Return the Jinja environment of the model templates, loading this directory before the builtin roles."""
-        from jinja2 import ChoiceLoader, FileSystemLoader  # noqa: PLC0415
-
-        from datamodel_code_generator.model.base import (  # noqa: PLC0415
-            _build_environment,  # pyright: ignore[reportPrivateUsage]
-        )
-
-        loader = ChoiceLoader([FileSystemLoader(str(self.directory)), FileSystemLoader(str(BUILTIN))])
-        return _build_environment(loader, auto_reload=False)
-
-    def render(self, template: str, values: Mapping[str, object]) -> str:
-        """Render one template of the directory, or a builtin role it extends or includes."""
-        return self.template(template).render(**values)
-
-    def template(self, name: str) -> _Renderable:
-        """Return one template of the directory, or the builtin role of that name."""
-        return self.environment.get_template(name)
 
     def manifest(self) -> tuple[ExtraFile, ...]:
         """Return the extra files of the manifest in declaration order; the directory may have no manifest."""
@@ -135,24 +103,9 @@ class TemplateSet:
             raise APIGenerationError(tuple(self.problem(problem) for problem in problems))
         return tuple(extras)
 
-    def problem(self, message: str) -> Diagnostic:
-        """Return a template diagnostic of this target."""
-        return self.diagnostic("F_TEMPLATE_INVALID", message)
-
     def conflict(self, message: str) -> Diagnostic:
         """Return a diagnostic of two generated files that take one path."""
         return self.diagnostic("F_NAME_CONFLICT", message)
-
-    def diagnostic(self, code: str, message: str) -> Diagnostic:
-        """Return a diagnostic of this target's templates."""
-        return Diagnostic(
-            code=code,
-            severity="error",
-            stage="target",
-            message=message,
-            option_path="templates",
-            target_id=self.target_id,
-        )
 
 
 def _extra(entry: object, directory: Path) -> ExtraFile | str:  # noqa: PLR0911

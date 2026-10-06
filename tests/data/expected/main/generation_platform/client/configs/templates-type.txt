@@ -1,0 +1,2 @@
+APIGenerationError
+  E_CONFIG_VALUE config templates: templates must be the path of a template directory

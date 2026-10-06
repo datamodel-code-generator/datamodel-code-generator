@@ -23,3 +23,4 @@ body_arguments='body'
 default_base_url='https://api.example.com/v1'
 server_base_url='http://localhost:8080'
 protocols=None
+templates=None

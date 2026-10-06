@@ -68,37 +68,37 @@ class _Fields:
         self.wire = wire
         self.problems: list[Diagnostic] = []
 
-    def model(self, media: MediaSpec) -> tuple[tuple[ModelField, ...], set[str]] | None:
+    def model(self, media: MediaSpec) -> tuple[tuple[ModelField, ...], set[str]] | str:
         """Return the fields of the object model a media's body with a codec stands for, and the names it requires.
 
-        Any other body is None, as is one whose schema requires a name that only extra properties could hold.
+        Any other body returns why it has no field arguments, as does one whose schema requires a name that only extra
+        properties could hold.
         """
         use = media.use
+        if media.kind not in _KINDS or media.members is not None:
+            return "only JSON and URL-encoded form bodies have field arguments"
         if (
-            media.kind not in _KINDS
-            or media.members is not None
-            or use is None
+            use is None
             or (value := use.type) is None
             or use.id not in self.codecs
+            or (model := self.facts.model(value)) is None
+            or use.schema is None
         ):
-            return None
-        model = self.facts.model(value)
-        if model is None or use.schema is None:
-            return None
+            return "its schema is not an object model"
         fields = self.facts.fields(model.id)
         if not (required := _required(self.wire, use.schema, set())) <= {field.wire_name for field in fields}:
-            return None
+            return "its schema requires a property that no field of the model holds"
         return fields, required
 
-    def branch(self, media: MediaSpec, names: Mapping[str, str]) -> FieldBranch | None:
-        """Return the field branch of one media type, or None when its body cannot be given as fields.
+    def branch(self, media: MediaSpec, names: Mapping[str, str]) -> FieldBranch | str:
+        """Return the field branch of one media type, or why its body cannot be given as fields.
 
         A native projection constructs every field its direction does not exclude, and no required field is excluded,
         so a call gives every field but the read-only ones, those the body's schema requires first of all, whatever
         requiredness the model gives them.
         """
-        if (found := self.model(media)) is None:
-            return None
+        if isinstance(found := self.model(media), str):
+            return found
         declared, required = found
         fields = [
             FieldArgument(
@@ -110,17 +110,27 @@ class _Fields:
             for item in declared
             if not item.read_only
         ]
-        return FieldBranch(media_type=media.media_type, fields=tuple(fields)) if fields else None
+        return (
+            FieldBranch(media_type=media.media_type, fields=tuple(fields))
+            if fields
+            else "its model has no writable field"
+        )
 
-    def operation(self, spec: OperationSpec) -> tuple[FieldBranch, ...]:
-        """Plan an operation's field branches, and refuse names that are invalid, taken, or name no field."""
+    def operation(self, spec: OperationSpec) -> OperationSpec:
+        """Plan an operation's field branches and why other media have none, refusing names that name no field.
+
+        Names that are invalid or taken are refused too.
+        """
         if spec.body is None or spec.body_arguments != "both":
-            return ()
+            return spec
         names = {(normalize_media_type(item.media_type), item.name): item.python_name for item in spec.body_field_names}
         branches: list[FieldBranch] = []
+        body_only: list[tuple[str, str]] = []
         for media in spec.body.media:
             mapped = {name: python for (media_type, name), python in names.items() if media_type == media.media_type}
-            if (branch := self.branch(media, mapped)) is not None:
+            if isinstance(branch := self.branch(media, mapped), str):
+                body_only.append((media.media_type, branch))
+            else:
                 branches.append(branch)
                 for field in branch.fields:
                     names.pop((media.media_type, field.wire_name), None)
@@ -143,7 +153,7 @@ class _Fields:
                         spec,
                     )
                 )
-        return tuple(branches)
+        return replace(spec, fields=tuple(branches), body_only=tuple(body_only))
 
 
 def _taken(spec: OperationSpec, branch: FieldBranch) -> list[str]:
@@ -165,7 +175,7 @@ def plan_fields(
 ) -> tuple[ClientPlan, tuple[Diagnostic, ...]]:
     """Return the plan with each operation's field branches, and the problems of naming them."""
     fields = _Fields(facts, codecs, wire)
-    operations = tuple(replace(spec, fields=fields.operation(spec)) for spec in plan.operations)
+    operations = tuple(fields.operation(spec) for spec in plan.operations)
     resources = tuple(
         replace(resource, operations=tuple(operations[spec.index] for spec in resource.operations))
         for resource in plan.resources

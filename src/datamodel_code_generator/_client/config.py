@@ -129,6 +129,7 @@ class ClientGenerationConfig(TargetConfig):
     default_base_url: str | None = None
     server_base_url: str | None = None
     protocols: Path | ProtocolConfiguration | None = None
+    templates: Path | None = None
 
     toml_converters: ClassVar[Mapping[str, Converter]]
 
@@ -153,6 +154,8 @@ class ClientGenerationConfig(TargetConfig):
                 )
         if self.protocols is not None and not isinstance(self.protocols, Path):
             yield from _protocol_problems(self.protocols)
+        if self.templates is not None and not isinstance(self.templates, Path):
+            yield _diagnostic("E_CONFIG_VALUE", "templates", "templates must be the path of a template directory")
 
 
 def _protocol_problems(value: object) -> Iterator[Diagnostic]:
@@ -500,4 +503,5 @@ ClientGenerationConfig.toml_converters = MappingProxyType({
     "default_base_url": _string,
     "server_base_url": _string,
     "protocols": _path,
+    "templates": _path,
 })

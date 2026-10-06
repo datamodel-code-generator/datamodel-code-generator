@@ -1,0 +1,78 @@
+# generate v1
+  write pets_models.py
+  write pets/__init__.py
+  write pets/_client.py
+  write pets/_async_client.py
+  write pets/options.py
+  write pets/hooks.py
+  write pets/errors.py
+  write pets/responses.py
+  write pets/auth.py
+  write pets/bodies.py
+  write pets/model_codecs.py
+  write pets/protocols/__init__.py
+  write pets/resources/__init__.py
+  write pets/resources/pets/__init__.py
+  write pets/resources/pets/_sync.py
+  write pets/resources/pets/_async.py
+  write pets/resources/archive/__init__.py
+  write pets/resources/archive/_sync.py
+  write pets/resources/archive/_async.py
+  write pets/types/__init__.py
+  write pets/types/pets/__init__.py
+  write pets/types/pets/_operations.py
+  write pets/types/archive/__init__.py
+  write pets/types/archive/_operations.py
+  write pets/_generated/__init__.py
+  write pets/_generated/model_bindings.py
+  write pets/_operations.py
+  write pets/_generated_docs/README.md
+  write pets/_generated_docs/runtime.md
+  write pets/py.typed
+  write pets/.dcg-target-manifest.json
+  runtime files 47
+# add pets/extensions.py, edit pets/_client.py, and write pets/resources/orders/__init__.py
+# generate v2
+  APIGenerationError
+  E_OUTPUT_CONFLICT resources/orders/__init__.py: An unmanaged file occupies a path the target owns
+  pets/_client.py edited True
+# move pets/resources/orders/__init__.py away and generate v2
+  write pets_models.py
+  write pets/_client.py
+  write pets/_async_client.py
+  write pets/resources/pets/_sync.py
+  write pets/resources/pets/_async.py
+  write pets/resources/orders/__init__.py
+  write pets/resources/orders/_sync.py
+  write pets/resources/orders/_async.py
+  write pets/types/orders/__init__.py
+  write pets/types/orders/_operations.py
+  write pets/_generated/model_bindings.py
+  write pets/_operations.py
+  write pets/_generated_docs/README.md
+  write pets/.dcg-target-manifest.json
+  unchanged pets/__init__.py
+  unchanged pets/options.py
+  unchanged pets/hooks.py
+  unchanged pets/errors.py
+  unchanged pets/responses.py
+  unchanged pets/auth.py
+  unchanged pets/bodies.py
+  unchanged pets/model_codecs.py
+  unchanged pets/protocols/__init__.py
+  unchanged pets/resources/__init__.py
+  unchanged pets/resources/pets/__init__.py
+  unchanged pets/types/__init__.py
+  unchanged pets/types/pets/__init__.py
+  unchanged pets/types/pets/_operations.py
+  unchanged pets/_generated/__init__.py
+  unchanged pets/_generated_docs/runtime.md
+  unchanged pets/py.typed
+  delete pets/resources/archive/__init__.py
+  delete pets/resources/archive/_async.py
+  delete pets/resources/archive/_sync.py
+  delete pets/types/archive/__init__.py
+  delete pets/types/archive/_operations.py
+  runtime files 47
+  pets/extensions.py unchanged True
+  pets/_client.py edited False

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._client._compiled_templates import client as client_template
+from datamodel_code_generator._client._compiled_templates import readme as readme_template
 from datamodel_code_generator._client._compiled_templates import resource as resource_template
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.caching import CacheSpec
@@ -31,11 +32,12 @@ from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_render import field_plan, items, parameter_plan, runtime_sources
+from datamodel_code_generator._target_templates import builtin_role
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
-    from datamodel_code_generator._client.codec_plan import ClientCodecs
+    from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecBackend
     from datamodel_code_generator._client.codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.model_facts import ItemStep
@@ -63,6 +65,7 @@ if TYPE_CHECKING:
         TypeUseBinding,
         TypeUseId,
     )
+    from datamodel_code_generator._target_templates import Role, TemplateOverlay
 
 WIDTH: Final = 88
 _RUNTIME: Final = "_runtime.client.operations"
@@ -786,6 +789,60 @@ def _summary(spec: OperationSpec) -> str:
     return _docstring(f"Call {spec.contract.method.upper()} {spec.contract.path}.")
 
 
+def _operation_summary(spec: OperationSpec) -> dict[str, object]:
+    """Return how a README lists one operation: its route, body arguments, and the fields or reason of each media."""
+    reasons = dict(spec.body_only)
+    fields = {branch.media_type: branch.fields for branch in spec.fields}
+    return {
+        "name": f"{spec.resource}.{spec.name}",
+        "method": spec.contract.method.upper(),
+        "path": spec.contract.path,
+        "body_arguments": spec.body_arguments,
+        "media": [
+            {
+                "media_type": media.media_type,
+                "fields": [
+                    {"name": field.python_name, "required": field.required}
+                    for field in fields.get(media.media_type, ())
+                ],
+                "reason": reasons.get(media.media_type),
+            }
+            for media in (() if spec.body is None else spec.body.media)
+        ],
+    }
+
+
+def _contract(spec: OperationSpec) -> dict[str, object]:
+    """Return the runtime metadata a README declares for one operation."""
+    return {
+        "operation": f"{spec.resource}.{spec.name}",
+        "method": spec.contract.method.upper(),
+        "path": spec.contract.path,
+        "retry_safety": spec.retry_safety,
+        "idempotency": None if (item := spec.idempotency) is None else {"header_name": item.header_name},
+        "retry_after_ms_header": spec.retry_after_ms_header,
+        "should_retry_header": spec.should_retry_header,
+        "security": None
+        if spec.security is None
+        else [
+            {item.scheme.name: list(item.required_scopes) for item in alternative}
+            for alternative in spec.security.alternatives
+        ],
+        "auth_challenge_less_401": spec.auth_challenge_less_401,
+    }
+
+
+def _helper(spec: PaginationSpec | PollingSpec | CacheSpec | UploadSpec | StreamSpec | SocketSpec) -> dict[str, str]:
+    """Return how a README lists one protocol helper: its name, kind, and operation."""
+    return {
+        "helper": spec.helper.name,
+        "kind": spec.helper.kind,
+        "operation": f"{spec.operation.resource}.{spec.operation.name}",
+        "method": spec.operation.contract.method.upper(),
+        "path": spec.operation.contract.path,
+    }
+
+
 def exports(spec: OperationSpec) -> tuple[str, ...]:
     """Return the public names the types module of a resource defines for one operation."""
     headers = (f"decode_{spec.name}_header",) if any(response.headers for response in spec.responses) else ()
@@ -957,11 +1014,18 @@ class Module:
 class _Typing:
     """Spell the payload types of a planned client: model types, or schema-less surfaces."""
 
-    def __init__(self, plan: ClientPlan, codecs: ClientCodecs, accessors: dict[TypeUseId, UseAccessors]) -> None:
-        """Keep the plan, the imports of the codec plan, and the codec accessors of every bound use."""
+    def __init__(
+        self,
+        plan: ClientPlan,
+        codecs: ClientCodecs,
+        accessors: dict[TypeUseId, UseAccessors],
+        role: Role = builtin_role,
+    ) -> None:
+        """Keep the plan, the imports of the codec plan, the codec accessors of every bound use, and the roles."""
         self.plan = plan
         self.symbols = dict(codecs.imports)
         self.accessors = accessors
+        self.role = role
 
     @staticmethod
     def key(kind: str, use: TypeUseBinding | None) -> _Key:
@@ -1072,9 +1136,10 @@ class _Resources(_Typing):
         helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
+        role: Role = builtin_role,
     ) -> None:
         """Keep the typing context, User-Agent, unpacked methods' TypedDicts, and protocol helpers."""
-        super().__init__(plan, codecs, accessors)
+        super().__init__(plan, codecs, accessors, role)
         self.user_agent = user_agent
         self.records = _Records(self) if unpacked else None
         self.helpers = helpers
@@ -1141,7 +1206,7 @@ class _Resources(_Typing):
             checking = module.name("typing", "TYPE_CHECKING")
             listed = "\n".join(f"    from {path} import {name}" for name, path in lazy)
             imports = f"{module.imports()}\n\nif {checking}:\n{listed}"
-        return client_template.render(
+        return self.role("client.jinja2", client_template.render)(
             docstring=f"The {'asyncio' if asynchronous else 'synchronous'} client of this package.",
             imports=imports,
             name=f"{prefix}Client",
@@ -1197,7 +1262,7 @@ class _Resources(_Typing):
         )
         core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         kind = "asyncio" if asynchronous else "synchronous"
-        return resource_template.render(
+        return self.role("resource.jinja2", resource_template.render)(
             docstring=f"The {kind} operations of the {resource.namespace} resource.",
             imports=module.imports(),
             core=core,
@@ -1478,6 +1543,7 @@ class _Records:
     def __init__(self, resources: _Resources) -> None:
         """Spell the arguments of every signature of every operation in the module that defines the TypedDicts."""
         self.module = module = Module((), resources.symbols, level=2)
+        self.role = resources.role
         self.names: dict[_Branch, str] = {}
         self.definitions: list[tuple[str, str, tuple[_Argument, ...]]] = []
         self.keywords: list[tuple[int, str, tuple[_Argument, ...]]] = []
@@ -1525,7 +1591,7 @@ class _Records:
             )
             for index, method, arguments in self.keywords
         )
-        return types_template.render(
+        return self.role("types.jinja2", types_template.render)(
             docstring="The keyword arguments that unpacked operation methods take, with how each binds them.",
             imports=module.imports(),
             sections=sections,
@@ -1541,7 +1607,7 @@ class _Types(_Typing):
         reserved.update(f"_{spec.name.upper()}_HEADERS" for spec in resource.operations)
         module = Module(reserved, self.symbols, level=len(resource.parts) + 2)
         sections = [section for spec in resource.operations for section in self.sections(module, spec)]
-        return types_template.render(
+        return self.role("types.jinja2", types_template.render)(
             docstring=f"The result types and header accessors of the {resource.namespace} operations.",
             imports=module.imports(),
             sections=sections,
@@ -1610,9 +1676,10 @@ class _Types(_Typing):
 class _Security:
     """Render immutable security declarations without importing codecs or models."""
 
-    def __init__(self, plan: ClientPlan) -> None:
+    def __init__(self, plan: ClientPlan, role: Role) -> None:
         """Share structurally equal schemes across root and operation catalogues."""
         self.plan = plan
+        self.role = role
         self.schemes = dict.fromkeys((
             *plan.security_schemes,
             *(scheme for spec in plan.operations if spec.security is not None for scheme in spec.security.schemes),
@@ -1664,7 +1731,7 @@ class _Security:
             )
             head = f"OPERATION_{spec.index}: {final} = "
             sections.append(head + layout(value, 0, len(head), WIDTH))
-        return types_template.render(
+        return self.role("types.jinja2", types_template.render)(
             docstring="Immutable security catalogues and ordered operation requirements.",
             imports=module.imports(),
             sections=sections,
@@ -1991,8 +2058,6 @@ _POLLING: Final = "_runtime.protocols.polling"
 _UPLOADS: Final = "_runtime.protocols.uploads"
 _UPLOAD_OPTIONS: Final = (("upload_options", ".", "UploadOptions"), *_HELPER_OPTIONS[1:])
 _STREAMS: Final = "_runtime.protocols.streams"
-_RESUMES: Final = """ A helper that declares `resume` also has `resume`, which reopens a stream after its
-`checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`."""
 _RECONNECT_LIMITS: Final = """| reconnections, counted across resumes | 5; None removes the limit, and 0 allows none |
 | reconnection wait | 60 seconds; None removes it |
 """
@@ -2081,7 +2146,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *(("stream",) if streams else ()),
             *(("WebSocket",) if sockets else ()),
         })
-        return types_template.render(
+        return self.resources.role("types.jinja2", types_template.render)(
             docstring=(
                 f"The plans of this package's {kinds[0] if len(kinds) == 1 else 'protocol'} helpers; regenerate them "
                 "instead of editing."
@@ -2415,7 +2480,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             for index, (name, spec) in enumerate(sockets.items())
         )
         kind = "asyncio" if asynchronous else "synchronous"
-        return types_template.render(
+        return self.resources.role("types.jinja2", types_template.render)(
             docstring=f"The {kind} protocol helpers of this package, by their dotted names.",
             imports=module.imports(),
             sections=sections,
@@ -2999,12 +3064,16 @@ class ClientRenderer:
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
-        webhooks: Callable[[Mapping[TypeUseId, UseAccessors]], tuple[tuple[PurePosixPath, str], ...]],
+        webhooks: Callable[[Mapping[TypeUseId, UseAccessors], Role], tuple[tuple[PurePosixPath, str], ...]],
         signatures: frozenset[str] = frozenset(),
+        backend: CodecBackend,
+        dependencies: tuple[str, ...] = (),
+        templates: TemplateOverlay | None = None,
     ) -> None:
         """Keep the plans and helpers; the model bindings module and its accessors are rendered when first used.
 
-        The webhook modules are rendered from the use accessors; `signatures` holds the webhook signature kinds.
+        The webhook modules are rendered from the use accessors; `signatures` holds the webhook signature kinds. The
+        README names the model backend and the runtime dependencies, and a template directory overrides builtin roles.
         """
         self.config = config
         self.package = package
@@ -3018,6 +3087,9 @@ class ClientRenderer:
         self.fingerprints = fingerprints or {}
         self.webhooks = webhooks
         self.signatures = signatures
+        self.backend = backend
+        self.dependencies = dependencies
+        self.role: Role = builtin_role if templates is None else templates.role
 
     @cached_property
     def bindings(self) -> RenderedBindings:
@@ -3033,84 +3105,39 @@ class ClientRenderer:
         """Return one owned file of the package."""
         return RenderedFile(path=self.package / path, kind=kind, text=text, verbatim=verbatim)
 
-    def readme(self) -> str:
-        """Describe the finalized package, its operation metadata, and explicit retry-policy overrides."""
+    def readme(self, capabilities: Capabilities, runtime: tuple[PurePosixPath, ...]) -> str:
+        """Describe the finalized package: its profile, operations, contracts, helpers, dependencies, and capabilities.
+
+        The runtime holds the paths of the copied runtime modules.
+        """
         config = self.config
-        reference = "docs/runtime.md" if config.package_mode == "standalone" else "runtime.md"
-        metadata = [
-            {
-                "operation": f"{spec.resource}.{spec.name}",
-                "method": spec.contract.method.upper(),
-                "path": spec.contract.path,
-                "retry_safety": spec.retry_safety,
-                "idempotency": None
-                if (item := spec.idempotency) is None
-                else {
-                    "header_name": item.header_name,
-                },
-                "retry_after_ms_header": spec.retry_after_ms_header,
-                "should_retry_header": spec.should_retry_header,
-                "security": None
-                if spec.security is None
-                else [
-                    {item.scheme.name: list(item.required_scopes) for item in alternative}
-                    for alternative in spec.security.alternatives
-                ],
-                "auth_challenge_less_401": spec.auth_challenge_less_401,
-            }
-            for spec in self.plan.operations
-        ]
-        return f"""# {config.package}
-
-This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
-its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
-explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
-
-```python
-from {config.package} import Client
-from {config.package}.options import ClientOptions, RetryOptions
-
-with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
-    response = client.request_raw("GET", "https://api.example.com/health")
-    status = response.info.status_code
-```
-
-Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
-The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
-The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
-
-See the [runtime reference]({reference}) for defaults, ownership, cancellation, replay, redirects, and transport costs.
-
-## Selected operation contracts
-
-These declarations come from the finalized operation selection and generation configuration. A key contract does
-not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
-No vendor retry-header name is inferred. Security requirements preserve ordered OR
-alternatives and their AND members; `[]` and `[{{}}]` remain distinct declared anonymous choices. Missing required
-credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
-`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
-
-```json
-{json.dumps(metadata, indent=2, ensure_ascii=True)}
-```
-{self.helper_readme()}{self._compression_readme()}"""
-
-    def _compression_readme(self) -> str:
-        """List the operations that accept compressed request bodies, or nothing when none declares a coding."""
-        if not (accepted := self._accepted_encodings()):
-            return ""
-        return f"""
-## Request compression
-
-These operations declare request compression. Their bodies are gzipped by default;
-`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
-
-```json
-{json.dumps(accepted, indent=2, ensure_ascii=True)}
-```
-"""
+        helpers = (*self.helpers, *self.streams, *self.sockets)
+        groups: dict[str, list[str]] = {}
+        for path in runtime:
+            groups.setdefault(path.parent.as_posix(), []).append(path.name)
+        return self.role("readme.jinja2", readme_template.render)(
+            package=config.package,
+            reference="docs/runtime.md" if config.package_mode == "standalone" else "runtime.md",
+            signature_style=config.signature_style,
+            body_arguments=config.body_arguments,
+            backend=self.backend,
+            model_package=config.model_package,
+            operations=[_operation_summary(spec) for spec in self.plan.operations],
+            contracts=json.dumps([_contract(spec) for spec in self.plan.operations], indent=2, ensure_ascii=True),
+            helpers=json.dumps([_helper(spec) for spec in helpers], indent=2, ensure_ascii=True) if helpers else "",
+            stream_label=self.stream_label if self.streams else "",
+            resumes=any(spec.reopen is not None for spec in self.streams),
+            sockets=bool(self.sockets),
+            kinds=sorted({spec.helper.kind for spec in self.helpers}),
+            compression=json.dumps(accepted, indent=2, ensure_ascii=True)
+            if (accepted := self._accepted_encodings())
+            else "",
+            dependencies=self.dependencies,
+            standalone=config.package_mode == "standalone",
+            security=sorted(capabilities.security),
+            capabilities=sorted(capabilities.helpers),
+            runtime=[{"package": package, "modules": modules} for package, modules in groups.items()],
+        )
 
     def _accepted_encodings(self) -> dict[str, list[str]]:
         """Return the request codings each operation accepts, by its resource and method name."""
@@ -3119,84 +3146,6 @@ These operations declare request compression. Their bodies are gzipped by defaul
             for spec in self.plan.operations
             if spec.accepted_content_encodings
         }
-
-    def helper_readme(self) -> str:
-        """Describe the package's protocol helpers, or nothing when it has none."""
-        if not (self.helpers or self.streams or self.sockets):
-            return ""
-        helpers = [
-            {
-                "helper": spec.helper.name,
-                "kind": spec.helper.kind,
-                "operation": f"{spec.operation.resource}.{spec.operation.name}",
-                "method": spec.operation.contract.method.upper(),
-                "path": spec.operation.contract.path,
-            }
-            for spec in (*self.helpers, *self.streams, *self.sockets)
-        ]
-        kinds = {spec.helper.kind for spec in self.helpers}
-        streams = (
-            f"""
-An {self.stream_label} helper's `open` sends its operation in a session of its own and returns an event stream once the
-response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
-the response.{_RESUMES if any(spec.reopen is not None for spec in self.streams) else ""}"""
-            if self.streams
-            else ""
-        )
-        sockets = (
-            """
-A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
-server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection."""
-            if self.sockets
-            else ""
-        )
-        pagination = (
-            """
-A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
-session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
-once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime
-reference for their limits and checkpoints."""
-            if "pagination" in kinds
-            else ""
-        )
-        polling = (
-            """
-A polling helper's `start` creates the operation and returns a handle: `status` polls it once and `wait` polls until
-it settles and returns its result, each poll after the wait the last response requires; `close()` or `aclose()`
-stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
-operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
-the runtime reference for their limits and checkpoints."""
-            if "polling" in kinds
-            else ""
-        )
-        uploads = (
-            """
-An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
-`run` appends the rest and completes it, and `resume` continues a handle's `checkpoint()` from the offset the server
-holds. `close()` or `aclose()` stops only local uploading. See the runtime reference for their limits."""
-            if "resumable_upload" in kinds
-            else ""
-        )
-        caching = (
-            """
-A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry. See the runtime
-reference for their limits."""
-            if "cache" in kinds
-            else ""
-        )
-        closing = "" if kinds else "\nSee the runtime reference for their limits."
-        return f"""
-## Protocol helpers
-
-`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.{
-            streams
-        }{sockets}{pagination}{polling}{caching}{uploads}{closing}
-
-```json
-{json.dumps(helpers, indent=2, ensure_ascii=True)}
-```
-"""
 
     def _credentials_runtime(self, capabilities: Capabilities) -> str:
         """Show how to pass a credential of the first declared scheme kind, and name each declared kind's values."""
@@ -3807,10 +3756,11 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             helpers=self.helpers,
             streams=self.streams,
             sockets=self.sockets,
+            role=self.role,
         )
-        types = _Types(self.plan, self.codecs, self.accessors)
-        registry = _Registry(self.plan, self.codecs, self.accessors)
-        webhooks = tuple(self.file(path, "webhooks", text) for path, text in self.webhooks(self.accessors))
+        types = _Types(self.plan, self.codecs, self.accessors, self.role)
+        registry = _Registry(self.plan, self.codecs, self.accessors, self.role)
+        webhooks = tuple(self.file(path, "webhooks", text) for path, text in self.webhooks(self.accessors, self.role))
         capabilities = Capabilities(
             security=declared_security(self.plan, self.batch),
             helpers=declared_helpers(
@@ -3862,17 +3812,20 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             files.append(self.file(PurePosixPath("_generated", "client_arguments.py"), "arguments", records.source()))
         if self.plan.security_schemes or any(spec.security is not None for spec in self.plan.operations):
             files.append(
-                self.file(PurePosixPath("_generated", "security.py"), "security", _Security(self.plan).source())
+                self.file(
+                    PurePosixPath("_generated", "security.py"), "security", _Security(self.plan, self.role).source()
+                )
             )
         files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
         helpers = (*self.helper_files(resources), *webhooks)
-        runtime = runtime_sources(capabilities.modules())
+        runtime = tuple(runtime_sources(capabilities.modules()))
         documentation = PurePosixPath() if config.package_mode == "standalone" else PurePosixPath("_generated_docs")
         reference = documentation / ("docs/runtime.md" if config.package_mode == "standalone" else "runtime.md")
+        readme = self.readme(capabilities, tuple(path for path, _ in runtime))
         return (
             *files,
             *(self.file(path, "runtime", text, verbatim=True) for path, text in runtime),
             *helpers,
-            RenderedFile(path=documentation / "README.md", kind="readme", text=self.readme()),
+            RenderedFile(path=documentation / "README.md", kind="readme", text=readme),
             RenderedFile(path=reference, kind="documentation", text=self.runtime_documentation(capabilities)),
         )

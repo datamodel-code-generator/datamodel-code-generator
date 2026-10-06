@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
@@ -95,12 +96,17 @@ def _protocols(value: object, root: Path) -> object:
 
 
 def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
-    """Build a client configuration from JSON fixture values; `protocols` names a file, record, or raw value."""
+    """Build a client configuration from JSON fixture values; `protocols` names a file, record, or raw value.
+
+    A `templates` string names a directory under the root.
+    """
     values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", "formatter_settings": ".", **values}
     converted: dict[str, Any] = {}
     for key, value in values.items():
         match key:
             case "output" | "formatter_settings":
+                converted[key] = root / value
+            case "templates" if isinstance(value, str):
                 converted[key] = root / value
             case "selection":
                 converted[key] = OperationSelection(**{
@@ -185,21 +191,26 @@ def _render(
                 config = load_target_config(path, ClientGenerationConfig, output=root / PACKAGE)
             else:
                 config = client_config(case.get("config", {}), root)
-            project = render_target(
+            project = (generate_target if case.get("publish") else render_target)(
                 source,
                 model_config=model_config(root / "models.py", backend, case.get("model", {})),
                 config=config,
                 generator=ClientTarget(),
             )
     except APIGenerationError as error:
-        return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
+        lines = ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
+        if case.get("publish"):
+            kept = {case["input"], *case.get("references", ())}
+            files = sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
+            lines.append(f"  files {[path for path in files if path not in kept]}")
+        return lines
     except Error as error:
         if (diagnostic := attached_diagnostic(error)) is None:
             raise
         return ["  Error", _diagnostic(diagnostic)]
     lines: list[str] = []
     for artifact in project.artifacts:
-        path, content = artifact.path.relative_to(root), artifact.content or b""
+        path, content = (root / artifact.path).relative_to(root), artifact.content or b""
         if documents is not None and path.suffix in {".md", ".toml"}:
             documents[path.as_posix()] = content.decode("utf-8")
         match path.suffix, path.parts:
@@ -581,3 +592,62 @@ def client_metadata_cycle_diagnostic_report(backend: str, root: Path, *, externa
         )
         lines.append(f"files {files}")
     return "\n".join(lines) + "\n"
+
+
+def _regenerate(source: Path, root: Path) -> list[str]:
+    """Generate the regeneration fixture's package from one version, reporting each file's action or the refusal."""
+    shutil.copy2(source, root / "api.yaml")
+    try:
+        report = generate_target(
+            root / "api.yaml",
+            model_config=model_config(root / "pets_models.py", "pydantic_v2.BaseModel", {}),
+            config=client_config({"output": "pets", "package": "pets", "model_package": "pets_models"}, root),
+            generator=ClientTarget(),
+        )
+    except APIGenerationError as error:
+        return ["  APIGenerationError", *(f"  {item.code} {item.artifact_path}: {item.message}" for item in error.diagnostics)]
+    actions = (("write", report.written_files), ("unchanged", report.unchanged_files), ("delete", report.deleted_files))
+    lines = [
+        f"  {action} {path.as_posix()}"
+        for action, records in actions
+        for record in records
+        if "_runtime" not in (path := record.path.relative_to(root)).parts
+    ]
+    runtime = sum("_runtime" in record.path.parts for _, records in actions for record in records)
+    return [*lines, f"  runtime files {runtime}"]
+
+
+def client_regeneration_report(root: Path) -> str:
+    """Regenerate a package from a changed API next to user code, an edited owned file, and an unmanaged file.
+
+    The second version adds an operation in a new resource, removes the only operation of another, and renames a
+    parameter. The unmanaged file takes a path of the new resource, so that generation refuses to write anything until
+    it is moved away.
+    """
+    source = SOURCE / "regeneration"
+    extensions, owned, unmanaged = (
+        root / "pets" / "extensions.py",
+        root / "pets" / "_client.py",
+        root / "pets" / "resources" / "orders" / "__init__.py",
+    )
+    lines = ["# generate v1", *_regenerate(source / "v1.yaml", root)]
+    shutil.copy2(source / "extensions.py", extensions)
+    digest = hashlib.sha256(extensions.read_bytes()).hexdigest()
+    generated = owned.read_text(encoding="utf-8")
+    owned.write_text(edited := f"{generated}# Edited by hand.\n", encoding="utf-8")
+    unmanaged.parent.mkdir(parents=True)
+    unmanaged.write_text("# Someone else's module.\n", encoding="utf-8")
+    lines.extend((
+        "# add pets/extensions.py, edit pets/_client.py, and write pets/resources/orders/__init__.py",
+        "# generate v2",
+        *_regenerate(source / "v2.yaml", root),
+        f"  pets/_client.py edited {owned.read_text(encoding='utf-8') == edited}",
+        "# move pets/resources/orders/__init__.py away and generate v2",
+    ))
+    unmanaged.unlink()
+    lines.extend((
+        *_regenerate(source / "v2.yaml", root),
+        f"  pets/extensions.py unchanged {hashlib.sha256(extensions.read_bytes()).hexdigest() == digest}",
+        f"  pets/_client.py edited {owned.read_text(encoding='utf-8') == edited}",
+    ))
+    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"
