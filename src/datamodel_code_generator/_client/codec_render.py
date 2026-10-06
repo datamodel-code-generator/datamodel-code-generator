@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from itertools import starmap
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client.codec_plan import Choice, Class, Fixed, Items, Values
@@ -83,7 +84,7 @@ class _Renderer:
             return self.call("Choice", kinds, *((repr(shape.tag), tags) if shape.tag is not None else ()))
         return "None"
 
-    def render(self) -> RenderedBindings:  # ruff: ignore[too-many-locals] - Static backend declarations and stdlib field maps.
+    def render(self) -> RenderedBindings:
         sections = []
         codecs = sorted({_CODECS[use.kind] for use in self.plan.uses if use.kind != "stdlib"})
         stdlib = any(use.kind == "stdlib" for use in self.plan.uses)
@@ -183,7 +184,7 @@ def render_model_codecs() -> str:
     return "\n".join([
         '"""Public JSON values, lexical codec errors, and parameter records."""',
         "",
-        *(_import(module, group) for module, group in exports),
+        *starmap(_import, exports),
         "",
         "__all__ = [",
         *(f"    {name!r}," for name in names),

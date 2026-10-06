@@ -2659,12 +2659,26 @@ adds 2.4–4.1 µs: 1.6 µs to bind them and select the media type, which the ca
 
 Generated clients send and read model values through their model backend, with no validation layer of their own:
 
+| Backend | Sends | Receives |
+|---|---|---|
+| Pydantic v2 `BaseModel` | `model_dump_json(by_alias=True, exclude_unset=True)`; other types through a cached `TypeAdapter` | `TypeAdapter(T).validate_json` |
+| Pydantic v2 dataclass | `TypeAdapter(T).dump_json(by_alias=True)` | `TypeAdapter(T).validate_json` |
+| `msgspec.Struct` | `msgspec.json.encode` | `msgspec.json.Decoder(T).decode` |
+| dataclasses, `TypedDict` | `json.dumps` of the renamed fields | `json.loads`, then the renamed fields |
+
+Adapters and decoders are built on a type's first use and cached for the process. dataclasses and `TypedDict` have no
+validation of their own: the generated converter renames wire names to fields and builds nested models, lists, sets,
+tuples, dicts, and optionals, and converts only `datetime`, `date`, and `time` (with `fromisoformat`), `UUID`,
+`Decimal` (sent as a string), an `Enum` by value (an unknown value fails), and `bytes` as base64. A `TypedDict` keeps
+unknown keys and leaves out absent ones; a dataclass drops unknown keys and leaves out a field whose value is its
+`None` default.
+
 - **Requests.** Arguments and bodies are serialized from the model values as given. Aliases, presence, and the
-  conversion of dates, decimals, enums, and media follow the models. A value is
-  checked only as far as its model's constructor already checked it, and what the serializer cannot represent fails
-  with `RequestEncodingError` before anything is sent. An empty array or object in a style-encoded parameter or a form
-  member is left out as an omitted value is: it writes no query pair, header, cookie, or part. A path segment cannot be
-  left out, so an empty array or object in a path parameter fails with `RequestEncodingError` before anything is sent.
+  conversion of dates, decimals, enums, and media follow the models. A value is checked only as far as its model's
+  constructor already checked it, and what the serializer cannot represent fails with `RequestEncodingError` before
+  anything is sent. An empty array or object in a style-encoded parameter or a form member is left out as an omitted
+  value is: it writes no query pair, header, cookie, or part. A path segment cannot be left out, so an empty array or
+  object in a path parameter fails with `RequestEncodingError` before anything is sent.
 - **Responses.** Bodies, parts, stream events, and socket messages are converted by the model backend into the declared
   types, which check what those types declare and coerce as the backend does; a value the type refuses raises
   `ResponseValidationError`. Read-only and write-only behavior follows the generated model options.

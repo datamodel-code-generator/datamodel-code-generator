@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from tests.conftest import assert_output
 from tests.data.python.model_codec_reports import (
@@ -16,9 +15,6 @@ from tests.data.python.model_codec_reports import (
     runtime_import_report,
     wire_value_report,
 )
-
-if TYPE_CHECKING:
-    pass
 
 DATA = Path(__file__).parents[1] / "data"
 CODECS = DATA / "generation_platform/codecs"
@@ -41,8 +37,6 @@ def test_ecma_patterns_through_re2() -> None:
     assert_output(pattern_report(CODECS / "patterns.json"), EXPECTED / "patterns.txt")
 
 
-
-
 def test_parameter_style_encoding() -> None:
     """Encode official OpenAPI style examples and boundary values, then decode them again."""
     assert_output(parameter_encoding_report(CODECS / "parameter-encoding.json"), EXPECTED / "parameter-encoding.txt")
@@ -56,8 +50,6 @@ def test_parameter_raw_decoding() -> None:
 def test_media_types_and_error_records() -> None:
     """Normalize media identities and keep issue records finite, value-free, and identifier-coded."""
     assert_output(media_report(CODECS / "media-types.json"), EXPECTED / "media-types.txt")
-
-
 
 
 def test_wire_alias_hints() -> None:

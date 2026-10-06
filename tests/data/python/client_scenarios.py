@@ -943,17 +943,17 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
 
 
 def client_runtime_report(name: str, root: Path) -> str:
-    """Generate one scenario's package for each backend, run its calls, and report every exchange and outcome."""
+    """Generate one scenario's package for each backend, run its calls, and report every exchange and outcome.
+
+    A backend whose models the client cannot convert reports the generation refusal instead of the calls.
+    """
     case, backends, scenario = SCENARIOS[name]
     reports = []
     for backend in backends:
         try:
             reports.append(generated(case, backend, root / backend.replace(".", "_"), scenario))
         except Exception as error:
-            if name not in {"fields-structural", "webhook-backends"} or backend not in {
-                "dataclasses.dataclass", "typing.TypedDict"
-            } or not str(error).startswith("MC_CODEC_UNSUPPORTED:"):
+            if not str(error).startswith("MC_CODEC_UNSUPPORTED:"):
                 raise
-            reports.append(f"# {case} {backend}\n")
-            reports.append(f"  generation {error}\n")
+            reports.append(f"# {case} {backend}\n  generation {error}\n")
     return "".join(reports)

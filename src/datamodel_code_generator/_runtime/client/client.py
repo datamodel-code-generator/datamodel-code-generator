@@ -2883,7 +2883,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | Unset = UNSET,
+        body: BodyInput[WireValue] | Unset = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> RawResponse:
@@ -2932,7 +2932,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | Unset = UNSET,
+        body: BodyInput[WireValue] | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
@@ -3869,7 +3869,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
+        body: AsyncBodyInput[WireValue] | Unset = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> AsyncRawResponse:
@@ -3921,7 +3921,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
+        body: AsyncBodyInput[WireValue] | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""

@@ -23,7 +23,8 @@ def _adapter(type_: object) -> TypeAdapter[Any]:
     if (cached := _ADAPTERS.get(id(type_))) is None:
         from pydantic import TypeAdapter  # ruff: ignore[import-outside-top-level] - Only the selected backend is installed.
 
-        _ADAPTERS[id(type_)] = cached = (type_, TypeAdapter(type_))
+        adapter: TypeAdapter[Any] = TypeAdapter(type_)
+        _ADAPTERS[id(type_)] = cached = (type_, adapter)
     return cached[1]
 
 
@@ -32,7 +33,8 @@ def _decoder(type_: object) -> Decoder[Any]:
     if (cached := _DECODERS.get(id(type_))) is None:
         from msgspec.json import Decoder  # ruff: ignore[import-outside-top-level] - Only the selected backend is installed.
 
-        _DECODERS[id(type_)] = cached = (type_, Decoder(type_))
+        decoder: Decoder[Any] = Decoder(type_)
+        _DECODERS[id(type_)] = cached = (type_, decoder)
     return cached[1]
 
 
@@ -47,11 +49,11 @@ class PydanticCodec(Generic[T]):
 
     def decode(self, content: bytes) -> T:
         """Validate JSON directly with the acquired model type."""
-        return _adapter(self.type).validate_json(content)
+        return cast("T", _adapter(self.type).validate_json(content))
 
     def convert(self, value: object) -> T:
         """Construct from a parsed parameter or non-JSON body through Pydantic."""
-        return _adapter(self.type).validate_python(value)
+        return cast("T", _adapter(self.type).validate_python(value))
 
     def assemble(self, fields: Mapping[str, object]) -> T:
         """Construct the native model from field arguments addressed by their wire aliases."""
