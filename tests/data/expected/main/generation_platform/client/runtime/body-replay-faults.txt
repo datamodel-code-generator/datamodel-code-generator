@@ -10,7 +10,7 @@
     offset=2 closes=0
   partial capture SDKError secondary=['OSError', 'OSError'] closes=(1, 1)
   changed length DecodeError secondary=['SDKError'] closes=(1, 1)
-  changed fingerprint ! DecodeError: DecodeError(call_id='<call>', reason='body_changed', location='body') [location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
+  changed fingerprint ! DecodeError: DecodeError(call_id='<call>', reason='body_changed', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_changed
     sends=1 closes=[1, 1]
   SDK metadata error SDKError cause=True callbacks=1 closes=1 sends=0
   partial open SDKError secondary=['SDKError'] closes=1 sends=0
@@ -23,9 +23,9 @@
   native final source cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: OSError',)
   native capture source cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: OSError',)
   native metadata cleanup identity=True closes=1 sends=0
-  file replay length changed ! DecodeError: DecodeError(call_id='<call>', reason='body_changed', location='body') [location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
+  file replay length changed ! DecodeError: DecodeError(call_id='<call>', reason='body_changed', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_changed
     sends=1 borrowed_open=True
-  file replay seek changed ! SDKError: SDKError(call_id='<call>', reason='body_factory_failed') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('replay seek failed')] body_factory_failed
+  file replay seek changed ! SDKError: SDKError(call_id='<call>', reason='body_factory_failed') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('replay seek failed')] body_factory_failed
     sends=1 borrowed_open=True
   owned stream without close = b'ok'
     wire=[('PUT', b'/', b'tuple')] pending=0
@@ -48,12 +48,12 @@
   nested owned file failed_close=False repeated=True SDKError inner=DecodeError closed=True closes=1 secondary=False sends=0
   nested owned file failed_close=True repeated=False SDKError inner=SDKError closed=True closes=1 secondary=True sends=0
   nested owned file failed_close=True repeated=True SDKError inner=DecodeError closed=True closes=1 secondary=False sends=0
-  async file preparation SDKError cause=True secondary=True closes=1 sends=0
+  async file preparation DecodeError cause=True secondary=True closes=1 sends=0
   async factory metadata SDKError cause=True secondary=['OSError'] closes=1 sends=0
   async past EOF replays empty = b'ok'
     wire=[('PUT', b'/', b''), ('PUT', b'/', b'')] pending=0
     offset=2 closes=0
-  async partial capture SDKError secondary=['OSError', 'OSError'] closes=(1, 1)
+  async partial capture DecodeError secondary=['OSError', 'OSError'] closes=(1, 1)
   async SDK metadata error SDKError cause=True callbacks=1 closes=1 sends=0
   direct async metadata SDKError cause=True secondary=[] closes=1
   direct async metadata SDKError cause=True secondary=['OSError'] closes=1
@@ -66,9 +66,9 @@
   async native final source cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: OSError',)
   async native capture source cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: OSError',)
   async native metadata cleanup identity=False closes=1 sends=0
-  async file replay length changed ! DecodeError: DecodeError(call_id='<call>', reason='body_changed', location='body') [location=('body',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] body_changed
+  async file replay length changed ! DecodeError: DecodeError(call_id='<call>', reason='body_changed', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_changed
     sends=1 borrowed_open=True
-  async file replay seek changed ! SDKError: SDKError(call_id='<call>', reason='body_factory_failed') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('replay seek failed')] body_factory_failed
+  async file replay seek changed ! SDKError: SDKError(call_id='<call>', reason='body_factory_failed') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('replay seek failed')] body_factory_failed
     sends=1 borrowed_open=True
   async owned stream without close = b'ok'
     sends=1 payload=b'iterable'
@@ -78,39 +78,9 @@
   direct async owned stream payload=b'one-shot' begins=1 closes=1
   async SDK file rewind SDKError cause=True failed_calls=1 closes=1 sends=0
   async SDK file capture SDKError cause=True failed_calls=1 closes=1 sends=0
-  native length cleanup before release closes=1 finished=0 sends=1 failure=CancelledError
-  native length cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.005) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
-    retained_late=None no_cause_cycle=True
-    released closes=1 finished=1 args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: SDKError',) cause=NoneType secondary=[]
-  native metadata cleanup before release closes=1 finished=0 sends=0 failure=CancelledError
-  native metadata cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.005) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
-    retained_late=None no_cause_cycle=True
-    released closes=1 finished=1 args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: OSError',) cause=NoneType secondary=[]
-  native multipart cleanup before release closes=1 finished=0 sends=0 failure=CancelledError
-  native multipart cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.005) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
-    retained_late=None no_cause_cycle=True
-    released closes=1 finished=1 args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: SDKError',) cause=NoneType secondary=[]
-  deadline length cleanup before release closes=1 finished=0 sends=1 failure=APITimeoutError
-  deadline length cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
-    retained_late=True no_cause_cycle=True
-    released closes=1 finished=1 args=() notes=() cause=DecodeError secondary=['SDKError']
-  deadline metadata cleanup before release closes=1 finished=0 sends=0 failure=APITimeoutError
-  deadline metadata cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
-    retained_late=True no_cause_cycle=True
-    released closes=1 finished=1 args=() notes=() cause=SDKError secondary=['OSError']
-  deadline multipart cleanup before release closes=1 finished=0 sends=0 failure=APITimeoutError
-  deadline multipart cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
-    retained_late=True no_cause_cycle=True
-    released closes=1 finished=1 args=() notes=() cause=SDKError secondary=['SDKError']
-  cancel_token length cleanup before release closes=1 finished=0 sends=1 failure=RequestCancelledError
-  cancel_token length cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
-    retained_late=True no_cause_cycle=True
-    released closes=1 finished=1 args=() notes=() cause=DecodeError secondary=['SDKError']
-  cancel_token metadata cleanup before release closes=1 finished=0 sends=0 failure=RequestCancelledError
-  cancel_token metadata cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
-    retained_late=True no_cause_cycle=True
-    released closes=1 finished=1 args=() notes=() cause=SDKError secondary=['OSError']
-  cancel_token multipart cleanup before release closes=1 finished=0 sends=0 failure=RequestCancelledError
-  cancel_token multipart cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
-    retained_late=True no_cause_cycle=True
-    released closes=1 finished=1 args=() notes=() cause=SDKError secondary=['SDKError']
+  native length cleanup cancelled closes=1 finished=0 sends=1 failure=DecodeError cancel_requested=True
+    args=() notes=() secondary=['CancelledError']
+  native metadata cleanup cancelled closes=1 finished=0 sends=0 failure=SDKError cancel_requested=True
+    args=() notes=() secondary=['CancelledError']
+  native multipart cleanup cancelled closes=1 finished=0 sends=0 failure=SDKError cancel_requested=True
+    args=() notes=() secondary=['CancelledError']

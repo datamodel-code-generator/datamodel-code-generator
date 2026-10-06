@@ -5,11 +5,10 @@
     events=[('call_start', None, None, False, 0, None, None), ('transport_failure', 0, None, False, 0, None, None), ('attempt_end', 0, None, False, 0, None, None), ('call_end', 0, None, False, 0, None, 'error')] one-call=True queued=2
   pre-send descriptor retry_scheduled = (('APITimeoutError', None, 1, 'read', ()), True, 1)
     events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('transport_failure', 1, None, False, 1, None, None), ('attempt_end', 1, None, False, 1, None, None), ('call_end', 1, None, True, 1, None, 'error')] one-call=True queued=1
-  uncapped classified timeout read = ('APIConnectionError', 'disabled', 1, 'read', ())
-  uncapped classified timeout unknown = ('APIConnectionError', 'disabled', 1, 'unknown', ())
-  close wins immediately before wait = ('ConfigurationError', None, 1, None, ())
-  close race cleanup = ['CleanupError']
-    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('call_end', 0, 503, True, 1, None, 'error')] one-call=True queued=1
+  uncapped native ReadTimeout = ('APITimeoutError', 'unknown_delivery', 1, 'read', ())
+    queued=1
+  uncapped native WriteTimeout = ('APITimeoutError', 'unknown_delivery', 1, 'write', ())
+    queued=1
   terminal native drain attempt_end = ('KeyboardInterrupt', True, ('first native terminal interruption',), ['Secondary cleanup failure: SystemExit', 'Secondary cleanup failure: _Stop', 'Secondary cleanup failure: RuntimeError'])
   terminal hook order = ([('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')])
   terminal native drain call_end = ('KeyboardInterrupt', True, ('first native terminal interruption',), ['Secondary cleanup failure: SystemExit', 'Secondary cleanup failure: RuntimeError'])
@@ -20,18 +19,16 @@
   terminal hook order = ([('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'success')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'success')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'success')])
   terminal native drain body = ('KeyboardInterrupt', True, ('first native terminal interruption',), ['Secondary cleanup failure: SystemExit', 'Secondary cleanup failure: RuntimeError'])
   terminal hook order = ([('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')])
-  raw terminal cancellation retains hook failure = ('RequestCancelledError', None, 1, None, ('RuntimeError',))
-    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 200, True, 1, None, None), ('attempt_end', 0, 200, True, 1, None, None), ('call_end', 0, 200, True, 1, None, 'cancel')] one-call=True queued=0
-  stream_end interruption after a failed body = ('KeyboardInterrupt', True, ['Secondary cleanup failure: APIConnectionError'])
-  stream_end interruption after a failed block = ('KeyboardInterrupt', True, ['Secondary cleanup failure: ValueError'])
-  intermediate hook interruption = ('_Stop', True, ['Secondary cleanup failure: InternalServerError'])
-  intermediate hook interruption events = [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')]
+  stream_end interruption after a failed body = ('APIConnectionError', False, (), ['KeyboardInterrupt'])
+  stream_end interruption after a failed block = ('ValueError', False, ['Secondary cleanup failure: KeyboardInterrupt'], [])
+  intermediate hook interruption = ('InternalServerError', False, (), ['_Stop'])
+  intermediate hook interruption events = [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'error')]
   async pre-send descriptor call_start = (('APITimeoutError', None, 0, 'read', ()), True, 1)
     events=[('call_start', None, None, False, 0, None, None), ('transport_failure', 0, None, False, 0, None, None), ('attempt_end', 0, None, False, 0, None, None), ('call_end', 0, None, False, 0, None, 'error')] one-call=True queued=2
   async pre-send descriptor retry_scheduled = (('APITimeoutError', None, 1, 'read', ()), True, 1)
     events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('transport_failure', 1, None, False, 1, None, None), ('attempt_end', 1, None, False, 1, None, None), ('call_end', 1, None, True, 1, None, 'error')] one-call=True queued=1
-  late cleanup preserves caller interruption = ('CancelledError', (), ['Secondary cleanup failure: _Stop'])
-  late resources released = (1, ['  < closed'], 0)
+  send cancellation with a failing body cleanup = ('CancelledError', ('original caller interruption',), ['Secondary cleanup failure: _Stop'])
+  cancelled send resources released = (1, 1, 0)
   async terminal native drain attempt_end = ('CancelledError', True, ('first native terminal interruption',), ['Secondary cleanup failure: _Stop', 'Secondary cleanup failure: _Stop', 'Secondary cleanup failure: RuntimeError'])
   async terminal hook order = ([('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')])
   async terminal native drain call_end = ('CancelledError', True, ('first native terminal interruption',), ['Secondary cleanup failure: _Stop', 'Secondary cleanup failure: RuntimeError'])
@@ -42,9 +39,9 @@
   async terminal hook order = ([('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'success')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'success')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'success')])
   async terminal native drain body = ('CancelledError', True, ('first native terminal interruption',), ['Secondary cleanup failure: _Stop', 'Secondary cleanup failure: RuntimeError'])
   async terminal hook order = ([('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')])
-  async stream_end interruption after a failed body = ('_Stop', True, ['Secondary cleanup failure: APIConnectionError'])
-  async stream_end interruption after a failed block = ('_Stop', True, ['Secondary cleanup failure: ValueError'])
-  async intermediate hook interruption = ('_Stop', True, ['Secondary cleanup failure: InternalServerError'])
-  async intermediate hook interruption events = [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')]
+  async stream_end interruption after a failed body = ('APIConnectionError', False, (), ['_Stop'])
+  async stream_end interruption after a failed block = ('ValueError', False, ['Secondary cleanup failure: _Stop'], [])
+  async intermediate hook interruption = ('InternalServerError', False, (), ['_Stop'])
+  async intermediate hook interruption events = [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'error')]
   stream reuses its deadline through EOF = b'bounded stream'
   async missing optional HTTP2 dependency ! ConfigurationError: ConfigurationError(reason='unavailable', field_path='transport.http2') [field_path=('transport', 'http2'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=ImportError("Using http2=True, but the 'h2' package is not installed. Make sure to install httpx using `pip install httpx[http2]`.")] unavailable
