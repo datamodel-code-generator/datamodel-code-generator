@@ -1,4 +1,0 @@
-# webhooks-public-keys and webhooks-public-keys-python
-  rfc8032.ed25519 same True
-  wycheproof.rsa same True
-  github.push same True

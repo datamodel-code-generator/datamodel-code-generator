@@ -15,11 +15,9 @@ generate
   written target server/README.md (target)
   written target server/src/example/server/py.typed (target)
   written target server/pyproject.toml (target)
-  written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['written']
 tree
-  server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
   server/README.md
   server/pyproject.toml
@@ -70,6 +68,5 @@ generate
   unchanged target server/README.md (target)
   unchanged target server/src/example/server/py.typed (target)
   unchanged target server/pyproject.toml (target)
-  unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['unchanged']

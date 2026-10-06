@@ -15,7 +15,6 @@ generate
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
-  written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
   13 runtime modules ['written']
 mode models.py: 0640
@@ -30,7 +29,6 @@ generate
   written target server/_generated/contract.py (target)
   written target server/services.py (target)
   written target server/README.md (target)
-  written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
   unchanged target server/__init__.py (target)
   unchanged target server/routers/__init__.py (target)

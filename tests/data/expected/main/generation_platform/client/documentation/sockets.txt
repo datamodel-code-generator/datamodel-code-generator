@@ -38,91 +38,7 @@
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['rooms.chat', 'feed.text', 'secure.chat'] bindings 6
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper rooms.chat websocket enabled True /inputs/target_config/protocol_metadata/helpers/rooms.chat eb202098c6264f2a3c2f2602885dba2b9653862ef831738c97b848024a1018d2
-  helper feed.text websocket enabled True /inputs/target_config/protocol_metadata/helpers/feed.text 5f27732c942fd28d386b84339da9f1152f1a555950adeaa7a262ef485d8c7a3b
-  helper secure.chat websocket enabled True /inputs/target_config/protocol_metadata/helpers/secure.chat 7072fb3d0f918fc42250649d4e2d6c264f4ea0768a8fb5c77f560f654238e94e
-  {
-    "helpers": {
-      "feed.text": {
-        "compression": false,
-        "enabled": true,
-        "kind": "websocket",
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1feed~1socket/get"
-        },
-        "receive": {
-          "codec": "bytes",
-          "frame": "binary"
-        },
-        "send": {
-          "codec": "utf8",
-          "frame": "text"
-        },
-        "subprotocols": []
-      },
-      "rooms.chat": {
-        "compression": true,
-        "enabled": true,
-        "kind": "websocket",
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1rooms~1{room}~1socket/get"
-        },
-        "receive": {
-          "codec": "json",
-          "frame": "text",
-          "schema": {
-            "document": "/inputs/root",
-            "pointer": "/components/schemas/ServerMessage"
-          }
-        },
-        "send": {
-          "codec": "json",
-          "frame": "text",
-          "schema": {
-            "document": "/inputs/root",
-            "pointer": "/components/schemas/ClientMessage"
-          }
-        },
-        "subprotocols": [
-          "chat.v2",
-          "chat.v1"
-        ]
-      },
-      "secure.chat": {
-        "compression": false,
-        "enabled": true,
-        "kind": "websocket",
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1secure~1socket/get"
-        },
-        "receive": {
-          "codec": "utf8",
-          "frame": "text"
-        },
-        "send": {
-          "codec": "bytes",
-          "frame": "binary"
-        },
-        "subprotocols": []
-      }
-    },
-    "schema_version": 1
-  }
-  /selection/selected_operations/0 rooms.room_socket(path:room=room, query:since=since)
-    exports client.types.rooms.RoomSocketResponse
-    exports None
-  /selection/selected_operations/1 feed.feed_socket()
-    exports client.types.feed.FeedSocketResponse
-    exports None
-  /selection/selected_operations/2 secure.secure_socket(header:X-Trace=x_trace)
-    exports client.types.secure.SecureSocketResponse
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'websockets>=17.1', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md
@@ -417,7 +333,7 @@ wait for retained cleanup; it does not authorize another send or restore an expi
 
 A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
 initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises
-the operation's `APIStatusError`. Each limit comes from the call's options, then
+the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the call's options, then
 `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
 
 - `client.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,

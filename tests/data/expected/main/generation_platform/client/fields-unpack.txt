@@ -27,32 +27,6 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 17
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  /selection/selected_operations/0 default.create_pet(query:tag=tag)
-    exports client.types.default.CreatePetResponse
-    exports None
-  /selection/selected_operations/1 default.update_pet(path:petId=pet_id)
-    exports client.types.default.UpdatePetResponse
-    exports None
-  /selection/selected_operations/2 default.log_visit(path:petId=pet_id)
-    exports client.types.default.LogVisitResponse
-    exports None
-  /selection/selected_operations/3 default.set_owner(path:petId=pet_id)
-    exports client.types.default.SetOwnerResponse
-    exports None
-  /selection/selected_operations/4 default.create_owner()
-    exports client.types.default.CreateOwnerResponse
-    exports None
-  /selection/selected_operations/5 default.put_labels(path:petId=pet_id)
-    exports client.types.default.PutLabelsResponse
-    exports None
-  /selection/selected_operations/6 default.put_photo(path:petId=pet_id)
-    exports client.types.default.PutPhotoResponse
-    exports None
-  /selection/selected_operations/7 default.replace_pet(path:petId=pet_id)
-    exports client.types.default.ReplacePetResponse
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1search/post: POST /search is excluded by exclude_operations: The fields-structural case covers the union body.

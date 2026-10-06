@@ -42,7 +42,6 @@ render pydantic_v2.BaseModel
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
-  write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
   file server/README.md
     | # Hooked pets
@@ -96,5 +95,3 @@ render pydantic_v2.BaseModel
   file server/NOTES
     | 3 routers
   file server/py.typed
-  file server/.dcg-state/model-artifacts.json
-    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"<sha256>","size":"<size>"}],"fingerprint":"<sha256>","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
