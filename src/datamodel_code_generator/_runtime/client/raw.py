@@ -176,7 +176,7 @@ class _Download:
         self.size = 0
 
     async def create(self, path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # noqa: FBT001
-        self.created = created = await self.worker.run(_created, path, overwrite)
+        self.created = created = await self.worker.run(_created, path, overwrite, discard=_discarded)
         return created
 
     def add(self, chunk: bytes) -> bytes | None:

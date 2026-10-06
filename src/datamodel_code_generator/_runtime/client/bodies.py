@@ -309,6 +309,10 @@ def _opened(path: Path, identity: _Identity) -> BinaryIO:
     return file
 
 
+def _close_file(file: BinaryIO) -> None:
+    file.close()
+
+
 def _digest_declaration(value: object) -> bytes | None:
     if value is None:
         return None
@@ -838,7 +842,7 @@ class _AsyncPathFile:
         """Open the file on the worker, refusing one that changed since it was first found."""
         self.worker.acquire()
         try:
-            file = await self.worker.run(_opened, self.path, self.identity)
+            file = await self.worker.run(_opened, self.path, self.identity, discard=_close_file)
         except BaseException as error:
             if isinstance(error, OSError):
                 raise _failed(error) from None
