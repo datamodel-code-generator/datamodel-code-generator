@@ -69,8 +69,10 @@ from .native import (
     native_async_client,
     native_client,
     native_error,
+    request_fields,
     response_bytes,
     transport_retry_reason,
+    wire_fields,
 )
 from .operations import DATA_ERRORS, ResponseDecoder
 from .options import (
@@ -602,7 +604,9 @@ def _encoded(content: object, media_type: str | None) -> tuple[EncodedAttempt | 
 
 
 def _request(*, method: str, url: str, headers: HeadersView, body: EncodedAttempt | None) -> httpx2.Request:
-    return httpx2.Request(method, url, headers=headers.items(), content=None if body is None else body.content)
+    return httpx2.Request(
+        method, url, headers=wire_fields(headers.items()), content=None if body is None else body.content
+    )
 
 
 def _attempt(request: httpx2.Request) -> EncodedAttempt | None:
@@ -754,7 +758,7 @@ def _compressed(call: _Call, request: httpx2.Request, deferred: object) -> tuple
     attempt = _attempt(request)
     body = None if attempt is None else gzipped_attempt(attempt, partial(call.check, "encode"))
     headers = HeadersView((
-        *(pair for pair in request.headers.multi_items() if pair[0].lower() != "content-length"),
+        *(pair for pair in request_fields(request) if pair[0].lower() != "content-length"),
         ("Content-Encoding", "gzip"),
     ))
     return _request(method=request.method, url=str(request.url), headers=headers, body=body), True
@@ -1026,7 +1030,7 @@ class _Call(LogicalCallContext):
             request = _request(
                 method=request.method,
                 url=target.url,
-                headers=HeadersView(request.headers.multi_items()),
+                headers=HeadersView(request_fields(request)),
                 body=_attempt(request),
             )
         elif self.auth is not None:
@@ -1041,7 +1045,7 @@ class _Call(LogicalCallContext):
         return _request(
             method=request.method,
             url=str(request.url),
-            headers=HeadersView((*request.headers.multi_items(), (name, self.key.value))),
+            headers=HeadersView((*request_fields(request), (name, self.key.value))),
             body=_attempt(request),
         )
 
@@ -1206,7 +1210,7 @@ class _Call(LogicalCallContext):
             from .auth_policy import strip_managed_query  # noqa: PLC0415
 
             url = strip_managed_query(url, self.auth.bound)
-        headers: Sequence[tuple[str, str]] = request.headers.multi_items()
+        headers: Sequence[tuple[str, str]] = request_fields(request)
         if target.cross_origin:
             headers, url = _uncredentialed(headers, url, schemes)
         if url != target.url and (target.method, url) in visited:
@@ -1629,7 +1633,7 @@ class _Core(Generic[AdapterT, HandleT]):
         assert call.auth is not None
         validate_ownership(
             call.auth.bound,
-            headers=(name for name, _ in request.headers.multi_items()),
+            headers=(name for name, _ in request_fields(request)),
             query=(
                 unquote_plus(pair.partition("=")[0]) for pair in urlsplit(str(request.url)).query.split("&") if pair
             ),
@@ -1792,7 +1796,7 @@ class _Core(Generic[AdapterT, HandleT]):
                     for capabilities in (signer.capabilities for signer in bound.signers)
                 ),
             )
-        elif any(name.lower() in names for name, _ in request.headers.multi_items()) or any(
+        elif any(name.lower() in names for name, _ in request_fields(request)) or any(
             unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair
         ):
             credential = ((), ())
@@ -1928,7 +1932,7 @@ class _Core(Generic[AdapterT, HandleT]):
             narrowed=False,
             url=url,
         )[0]
-        return str(prepared.url), HeadersView(prepared.headers.multi_items())
+        return str(prepared.url), HeadersView(request_fields(prepared))
 
     def checked_arguments(
         self, operation: OperationPlan[object], given: Mapping[int, WireValue], options: RequestOptions | None
@@ -1972,12 +1976,12 @@ class _Core(Generic[AdapterT, HandleT]):
             url=url,
         )
         if read_request is not None:
-            read_request(str(prepared.url), HeadersView(prepared.headers.multi_items()))
+            read_request(str(prepared.url), HeadersView(request_fields(prepared)))
         if url is None:
             return prepared, deferred
         server = call.server_origin = request_origin(self._base(operation, call.settings))
         url = strip_query(url, call.followed_query(self._shared.security_schemes))
-        headers = HeadersView(prepared.headers.multi_items())
+        headers = HeadersView(request_fields(prepared))
         if request_origin(url) != server:
             items, url = _uncredentialed(headers.items(), url, self._shared.security_schemes)
             headers = HeadersView(items)
@@ -2862,7 +2866,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 url=str(request.url),
                 origin=origin_text(call.current_origin),
                 query=signing_query(str(request.url)),
-                headers=HeadersView(request.headers.multi_items()),
+                headers=HeadersView(request_fields(request)),
                 body_digest=digest,
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
@@ -3011,7 +3015,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         """Finalize native framing and timeout before credential placement and signing."""
         headers = [
             (name, value)
-            for name, value in request.headers.multi_items()
+            for name, value in request_fields(request)
             if name.lower() not in {"host", "content-length", "transfer-encoding"}
         ]
         if attempt is not None:
@@ -3023,7 +3027,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         outgoing = httpx2.Request(
             request.method,
             request.url,
-            headers=headers,
+            headers=wire_fields(headers),
             content=None if attempt is None else _read_chunks(attempt.iter_bytes(), call, trusted=True),
             extensions={"timeout": attempt_timeout(call.timeout(), call.remaining()).as_dict()},
         )
@@ -3782,7 +3786,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 url=str(request.url),
                 origin=origin_text(call.current_origin),
                 query=signing_query(str(request.url)),
-                headers=HeadersView(request.headers.multi_items()),
+                headers=HeadersView(request_fields(request)),
                 body_digest=digest,
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
@@ -3933,7 +3937,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         """Finalize native framing and timeout before credential placement and signing."""
         headers = [
             (name, value)
-            for name, value in request.headers.multi_items()
+            for name, value in request_fields(request)
             if name.lower() not in {"host", "content-length", "transfer-encoding"}
         ]
         if attempt is not None:
@@ -3945,7 +3949,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         outgoing = httpx2.Request(
             request.method,
             request.url,
-            headers=headers,
+            headers=wire_fields(headers),
             content=None if attempt is None else _read_async_chunks(attempt.aiter_bytes(), call),
             extensions={"timeout": attempt_timeout(call.timeout(), call.remaining()).as_dict()},
         )

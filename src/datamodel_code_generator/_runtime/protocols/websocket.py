@@ -30,6 +30,7 @@ from ..client.errors import (
     is_phase_timeout,
     is_transport,
 )
+from ..client.native import request_fields
 from ..client.options import RequestOptions
 from ..client.raw import afinished, finished
 from ..client.responses import HeadersView
@@ -371,7 +372,7 @@ class _Handshakes(Generic[OpenedT]):
     def _request(self, request: httpx2.Request) -> WebSocketOpenRequest:
         return WebSocketOpenRequest(
             url=_socket_url(str(request.url)),
-            headers=HeadersView(request.headers.multi_items()),
+            headers=HeadersView(request_fields(request)),
             subprotocols=self._plan.subprotocols,
         )
 

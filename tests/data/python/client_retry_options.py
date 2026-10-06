@@ -259,7 +259,6 @@ def _records(options: ModuleType, lines: list[str]) -> None:
             max_connections=0,
             max_keepalive_connections=0,
             keepalive_expiry=0,
-            retry_owner="transport",
         ),
     )
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)

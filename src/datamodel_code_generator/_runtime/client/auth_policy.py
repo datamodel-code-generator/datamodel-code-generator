@@ -23,7 +23,7 @@ from .auth import (
 )
 from .auth_challenges import invalid_token
 from .errors import AuthError, ConfigurationError, DeliveryState, is_auth_classified
-from .native import cloned
+from .native import cloned, request_fields
 from .security import SecurityRequirement, SecurityScheme, UnavailableSecurityScheme
 from .urls import URLValidationError, canonical_origin, strip_query
 
@@ -609,7 +609,7 @@ def place_credentials(
     request: httpx2.Request, bound: BoundAuth | AsyncBoundAuth, acquired: HopCredentials | AsyncHopCredentials
 ) -> httpx2.Request:
     """Place validated material only at the compiled scheme's exact outgoing position."""
-    headers = list(request.headers.multi_items())
+    headers = request_fields(request)
     query: list[tuple[str, str]] = []
     cookies: list[tuple[str, str]] = []
     for scheme, value in zip((binding.scheme for binding in bound.credentials), acquired.values, strict=True):
@@ -669,4 +669,4 @@ def apply_signature(
         url = _query_url(str(request.url), fields.query)
     except UnicodeEncodeError as cause:
         raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_query", cause=cause) from None
-    return cloned(request, url=url, headers=[*request.headers.multi_items(), *fields.headers])
+    return cloned(request, url=url, headers=[*request_fields(request), *fields.headers])
