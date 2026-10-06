@@ -26,13 +26,5 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 5
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  /selection/selected_operations/0 default.search(querystring:criteria=criteria)
-    exports client.types.default.SearchResponse client.types.default.SearchErrorData client.types.default.SearchHTTPError
-    exports client.types.default.decode_search_header
-  /selection/selected_operations/1 default.lookup(querystring:filter=filter)
-    exports client.types.default.LookupResponse client.types.default.LookupErrorData client.types.default.LookupHTTPError
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

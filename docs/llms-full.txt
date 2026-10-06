@@ -11256,7 +11256,7 @@ callable = "rename"
 | `errors.py`, `security.py` | generator | Errors, and one FastAPI security dependency for each scheme |
 | `_generated/`, `_runtime/` | generator | Plans and the runtime the package imports |
 | `README.md`, `py.typed` | generator | Documentation and typing marker |
-| `.dcg-target-manifest.json`, `.dcg-state/` | generator | What the last generation wrote, to regenerate and check safely |
+| `.dcg-target-manifest.json` | generator | What the last generation wrote, to regenerate and check safely |
 
 The generator owns every file of the package and rewrites them on every generation, as it does the models,
 restoring any you edited or deleted. Keep the service implementations, the `authorize` callback, and the application in your
@@ -11270,6 +11270,12 @@ to your project instead.
 Generation stages file changes and rolls back earlier changes if publication fails.
 Before publishing, it rechecks planned file hashes and reports `E_STATE_CHANGED`
 when they differ. Run generators that share output files one at a time.
+
+The manifest records the generator version, the target kind and package, the model output and one hash of the model
+files, and the hash of every file the target owns. Generation overwrites the owned files, deletes the ones it no longer
+plans, and warns with `W_TARGET_EDITED` about an owned file edited since the last generation; `--check` reports it as a
+difference. A manifest of an older or unknown format owns nothing: generation warns with `W_STATE_UNOWNED` and deletes
+no file.
 
 Run the same command again after the OpenAPI document changes. The service Protocols change with the operations, so
 type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that

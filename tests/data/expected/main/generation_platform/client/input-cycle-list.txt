@@ -1,51 +1,41 @@
 # input-cycle-list
 render pydantic_v2.BaseModel
-  cyclic YAML input rejected
-  source ../input-cycle-list.yaml
+  accepted
   files []
   runtime files 0
 generate pydantic_v2.BaseModel
-  cyclic YAML input rejected
-  source ../input-cycle-list.yaml
-  files []
-  runtime files 0
+  accepted
+  files ['client/.dcg-target-manifest.json', 'client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/transports.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
+  runtime files 66
 render pydantic_v2.dataclass
-  cyclic YAML input rejected
-  source ../input-cycle-list.yaml
+  accepted
   files []
   runtime files 0
 generate pydantic_v2.dataclass
-  cyclic YAML input rejected
-  source ../input-cycle-list.yaml
-  files []
-  runtime files 0
+  accepted
+  files ['client/.dcg-target-manifest.json', 'client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/transports.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
+  runtime files 66
 render dataclasses.dataclass
-  cyclic YAML input rejected
-  source ../input-cycle-list.yaml
+  accepted
   files []
   runtime files 0
 generate dataclasses.dataclass
-  cyclic YAML input rejected
-  source ../input-cycle-list.yaml
-  files []
-  runtime files 0
+  accepted
+  files ['client/.dcg-target-manifest.json', 'client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/transports.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
+  runtime files 66
 render typing.TypedDict
-  cyclic YAML input rejected
-  source ../input-cycle-list.yaml
+  accepted
   files []
   runtime files 0
 generate typing.TypedDict
-  cyclic YAML input rejected
-  source ../input-cycle-list.yaml
-  files []
-  runtime files 0
+  accepted
+  files ['client/.dcg-target-manifest.json', 'client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/transports.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
+  runtime files 66
 render msgspec.Struct
-  cyclic YAML input rejected
-  source ../input-cycle-list.yaml
+  accepted
   files []
   runtime files 0
 generate msgspec.Struct
-  cyclic YAML input rejected
-  source ../input-cycle-list.yaml
-  files []
-  runtime files 0
+  accepted
+  files ['client/.dcg-target-manifest.json', 'client/__init__.py', 'client/_async_client.py', 'client/_client.py', 'client/_generated/__init__.py', 'client/_generated/model_bindings.py', 'client/_generated_docs/README.md', 'client/_generated_docs/runtime.md', 'client/_operations.py', 'client/auth.py', 'client/bodies.py', 'client/errors.py', 'client/hooks.py', 'client/model_codecs.py', 'client/options.py', 'client/protocols/__init__.py', 'client/py.typed', 'client/resources/__init__.py', 'client/resources/default/__init__.py', 'client/resources/default/_async.py', 'client/resources/default/_sync.py', 'client/responses.py', 'client/transports.py', 'client/types/__init__.py', 'client/types/default/__init__.py', 'client/types/default/_operations.py']
+  runtime files 66
