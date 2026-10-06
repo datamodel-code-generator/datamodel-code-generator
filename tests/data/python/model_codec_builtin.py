@@ -508,13 +508,13 @@ def builtin_codec_report(source: Path, cases: Path, root: Path, *, server: bool 
         return _text([*lines, *diagnostics], package)
     if server:
         return _text([*lines, *_native_server_report(accepted, package, fixture)], package)
-    try:
-        with imported(accepted, package) as generated:
-            codecs = _codecs(generated, lines, strategies=bool(fixture.get("strategies")))
-            runner = _Runner(generated, codecs)
-            lines.extend(f"{case['name']}: {runner.run(case)}" for case in _native_cases(generated.load(cases)))
-    except TypeError:
-        lines.append("native startup TypeError")
+    with imported(accepted, package) as generated:
+        try:
+            runner = _Runner(generated, _codecs(generated, lines, strategies=bool(fixture.get("strategies"))))
+        except TypeError:
+            lines.append("native startup TypeError")
+            return _text(lines, package)
+        lines.extend(f"{case['name']}: {runner.run(case)}" for case in _native_cases(generated.load(cases)))
     return _text(lines, package)
 
 
@@ -530,14 +530,15 @@ def backend_comparison_report(source: Path, cases: Path, root: Path) -> str:
             for results in outcomes.values():
                 results[backend] = " ".join(diagnostics)
             continue
-        try:
-            with imported(directory, package) as generated:
+        with imported(directory, package) as generated:
+            try:
                 runner = _Runner(generated, _codecs(generated), wire_only=True)
-                for case in _native_cases(generated.load(cases)):
-                    outcomes[case["name"]][backend] = runner.run(case).replace(f"{package}_models", "models")
-        except TypeError:
-            for results in outcomes.values():
-                results[backend] = "native startup TypeError"
+            except TypeError:
+                for results in outcomes.values():
+                    results[backend] = "native startup TypeError"
+                continue
+            for case in _native_cases(generated.load(cases)):
+                outcomes[case["name"]][backend] = runner.run(case).replace(f"{package}_models", "models")
     lines = []
     for name, results in outcomes.items():
         groups: dict[str, list[str]] = {}

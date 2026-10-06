@@ -133,9 +133,8 @@ def _copies(value: object) -> str:
 
 
 def wire_value_report() -> str:
-    """Freeze, thaw, and trace presence for in-memory JSON-domain values and rejected objects."""
+    """Freeze and thaw in-memory JSON-domain values and rejected objects."""
     lines = [f"{name}: {attempt(lambda factory=factory: _copies(factory()))}" for name, factory in _python_values()]
-    lines.extend(())
     return "\n".join(lines) + "\n"
 
 
