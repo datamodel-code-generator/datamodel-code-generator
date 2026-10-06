@@ -4,18 +4,15 @@ from __future__ import annotations
 
 from dataclasses import replace
 from time import sleep
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Final, TypeVar
 from uuid import uuid4
 
 import anyio
 
 from .errors import (
-    APIConnectionError,
     APITimeoutError,
-    AuthError,
     DeadlinePhase,
     DeliveryState,
-    IOPhase,
     SDKError,
     kept_primary,
 )
@@ -29,6 +26,8 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 ErrorT = TypeVar("ErrorT", bound=SDKError)
+
+_REACHED: Final = (DeliveryState.NOT_SENT, DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED)
 
 
 class OperationSession:
@@ -61,7 +60,7 @@ class LogicalCallContext:
             if deadline is None or at < deadline.at:
                 deadline = absolute_deadline(at, clock=settings.clock)
         self.deadline: Deadline | None = deadline
-        self.delivery_state = DeliveryState.NOT_SENT
+        self.delivery_state = self.earlier = DeliveryState.NOT_SENT
         self.finished = self.streaming = self.retry_blocked = False
         self.attempt_count = self.sends = 0
         self.redirects_followed = 0
@@ -75,18 +74,46 @@ class LogicalCallContext:
         """Return seconds until the absolute deadline, or None for an unlimited call."""
         return None if self.deadline is None else self.deadline.remaining()
 
+    def furthest(self) -> DeliveryState:
+        """Return how far the call got over all its attempts and hops, never forgetting an earlier send or response."""
+        current, earlier = self.delivery_state, self.earlier
+        return current if _REACHED.index(current) >= _REACHED.index(earlier) else earlier
+
+    def next_send(self) -> None:
+        """Begin another attempt or hop, which has sent nothing yet, keeping how far the earlier ones got."""
+        self.earlier = self.furthest()
+        self.delivery_state = DeliveryState.NOT_SENT
+
     def snapshot_error(self, error: ErrorT) -> ErrorT:
-        """Attach the call's identity and final execution measurements."""
-        error.delivery_state = self.delivery_state
+        """Attach the call's identity, how far it got, and its final execution measurements."""
+        error.delivery_state = self.furthest()
         error.operation_id = self.operation_id
         error.call_id = self.call_id
         error.parent_session_id = self.parent_session_id
-        if error.delivery_state is DeliveryState.NOT_SENT and not isinstance(error, (APIConnectionError, AuthError)):
-            error.delivery_state = self.delivery_state
         if error.info is None:
             error.attempt_count = self.attempt_count
             error.elapsed = max(0.0, self.monotonic() - self.started)
         return error
+
+    def expired(
+        self,
+        phase: DeadlinePhase = "unknown",
+        delivery_state: DeliveryState | None = None,
+        cause: BaseException | None = None,
+    ) -> APITimeoutError | None:
+        """Return the failure of a total deadline that has passed, or None while time remains."""
+        if self.deadline is None or self.monotonic() < self.deadline.at:
+            return None
+        return self.snapshot_error(
+            APITimeoutError(
+                deadline_at=self.deadline.at,
+                elapsed=self.monotonic() - self.started,
+                phase=phase,
+                delivery_state=self.delivery_state if delivery_state is None else delivery_state,
+                cause=cause,
+                reason="deadline_exceeded",
+            )
+        )
 
     def check(
         self,
@@ -95,17 +122,8 @@ class LogicalCallContext:
         cause: BaseException | None = None,
     ) -> None:
         """Check the total deadline at an SDK boundary without replacing a primary failure."""
-        if self.deadline is not None and self.monotonic() >= self.deadline.at:
-            raise self.snapshot_error(
-                APITimeoutError(
-                    deadline_at=self.deadline.at,
-                    elapsed=self.monotonic() - self.started,
-                    phase=phase,
-                    delivery_state=self.delivery_state if delivery_state is None else delivery_state,
-                    cause=cause,
-                    reason="deadline_exceeded",
-                )
-            )
+        if (error := self.expired(phase, delivery_state, cause)) is not None:
+            raise error
 
     def failure(self, error: BaseException) -> BaseException:
         """Preserve native interruptions and the failure that occurred before cleanup."""
@@ -162,10 +180,6 @@ class LogicalCallContext:
             connect=cap(phases.connect), read=cap(phases.read), write=cap(phases.write), pool=cap(phases.pool)
         )
 
-    def timeout_failure(self, error: BaseException, phase: IOPhase, delivery_state: DeliveryState) -> SDKError:
-        """Keep native timeout classification without reconstructing deadline provenance."""
-        return self.snapshot_error(APIConnectionError(delivery_state=delivery_state, phase=phase, cause=error))
-
     def handoff(self) -> None:
         """Begin stream boundary limits without mutating the native request's timeout."""
         self.streaming = True
@@ -204,6 +218,7 @@ class LogicalCallContext:
         lane = LogicalCallContext(replace(self.settings, total_timeout=None, deadline=None), self.operation_id)
         lane.call_id, lane.session, lane.started = self.call_id, self.session, self.started
         lane.deadline, lane.streaming, lane.delivery_state = deadline, True, self.delivery_state
+        lane.earlier = self.earlier
         return lane
 
     async def bounded(  # noqa: PLR0913

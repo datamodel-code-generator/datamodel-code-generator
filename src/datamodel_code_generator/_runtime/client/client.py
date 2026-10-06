@@ -643,7 +643,7 @@ def _checked_raw(method: object, url: object) -> tuple[str, str]:
 
 
 def _delivery(call: _Call) -> DeliveryState:
-    return call.delivery_state
+    return call.furthest()
 
 
 def _raw(chunks: Iterable[object]) -> Iterator[bytes]:
@@ -1140,7 +1140,7 @@ class _Call(LogicalCallContext):
     def stopped(self, error: BaseException) -> BaseException:
         """Attach the last policy decision without changing termination precedence."""
         failure = self.failure(error)
-        if isinstance(failure, APIConnectionError) and failure.delivery_state is not DeliveryState.NOT_SENT:
+        if isinstance(failure, APIConnectionError) and self.delivery_state is not DeliveryState.NOT_SENT:
             self.stop_reason = "unknown_delivery"
         if _retry_error(failure):
             failure.retry_stop_reason = self.stop_reason
@@ -1506,18 +1506,26 @@ class _Core(Generic[AdapterT, HandleT]):
 
     @staticmethod
     def _failure(error: BaseException, call: LogicalCallContext, delivery: DeliveryState) -> BaseException:
-        """Preserve cancellation and classify ordinary failure by its public send boundary."""
+        """Preserve cancellation and classify ordinary failure by its public send boundary.
+
+        A phase timeout whose cap was the call's remaining time is the call's deadline expiring.
+        """
         if not isinstance(error, Exception):
             return error
-        if isinstance(error, SDKError):
-            return call.snapshot_error(error)
-        return call.snapshot_error(
-            native_error(
+        failure = (
+            error
+            if isinstance(error, SDKError)
+            else native_error(
                 error,
                 send_started=call.delivery_state is not DeliveryState.NOT_SENT,
                 response_started=delivery is DeliveryState.RESPONSE_STARTED,
             )
         )
+        if is_phase_timeout(failure) and (
+            expired := call.expired("stream" if call.streaming else "send", cause=failure.cause)
+        ):
+            return expired
+        return call.snapshot_error(failure)
 
     @staticmethod
     def _response_info(
@@ -2683,7 +2691,6 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                     request = redirected
                     visited |= {(str(request.method), str(request.url))}
                     call.hop_index += 1
-                    call.delivery_state = DeliveryState.NOT_SENT
                     continue
                 planned = self._status_plan(info, source, call)
                 if planned is None:
@@ -2700,7 +2707,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 if (
                     not isinstance(failure, APIConnectionError)
                     or call.sends == sends_before
-                    or failure.delivery_state is not DeliveryState.NOT_SENT
+                    or call.delivery_state is not DeliveryState.NOT_SENT
                 ):
                     raise call.stopped(failure) from None
                 planned = call.retry(None, failure, replayable=source is None or source.replayable)
@@ -2917,7 +2924,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         permit: Permit | None = None
         response: httpx2.Response | None = None
         try:
-            call.delivery_state = DeliveryState.NOT_SENT
+            call.next_send()
             call.check("encode")
             self._authorize(source, call)
             renewed = False
@@ -3602,7 +3609,6 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                     request = redirected
                     visited |= {(str(request.method), str(request.url))}
                     call.hop_index += 1
-                    call.delivery_state = DeliveryState.NOT_SENT
                     continue
                 planned = await self._status_plan(info, source, call)
                 if planned is None:
@@ -3619,7 +3625,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 if (
                     not isinstance(failure, APIConnectionError)
                     or call.sends == sends_before
-                    or failure.delivery_state is not DeliveryState.NOT_SENT
+                    or call.delivery_state is not DeliveryState.NOT_SENT
                 ):
                     raise call.stopped(failure) from None
                 planned = call.retry(None, failure, replayable=source is None or source.replayable)
@@ -3841,7 +3847,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         permit: AsyncPermit | None = None
         response: httpx2.Response | None = None
         try:
-            call.delivery_state = DeliveryState.NOT_SENT
+            call.next_send()
             call.check("encode")
             await self._authorize(source, call)
             renewed = False

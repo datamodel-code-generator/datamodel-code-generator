@@ -6,7 +6,7 @@ import asyncio
 from functools import partial
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from .errors import body_failure
+from .errors import add_secondary, body_failure
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -46,7 +46,8 @@ class DiskWorker:
     ) -> T:
         """Run one operation; a cancelled caller still waits for it, then the cancellation propagates unchanged.
 
-        A result the cancelled operation still returned, such as an opened file, is given to `discard` first.
+        A result the cancelled operation still returned, such as an opened file, is given to `discard` first; a failure
+        of either stays beside the cancellation.
         """
         if self.closed and not cleanup:
             raise body_failure(reason="body_not_replayable")
@@ -54,10 +55,15 @@ class DiskWorker:
         work = loop.run_in_executor(None, partial(function, *arguments))
         try:
             return await asyncio.shield(work)
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as cancelled:
             await _settled(work)
-            if discard is not None and not work.cancelled() and work.exception() is None:
-                await _settled(loop.run_in_executor(None, discard, work.result()))
+            if (failure := work.exception()) is not None:
+                add_secondary(cancelled, failure)
+            elif discard is not None:
+                discarded = loop.run_in_executor(None, discard, work.result())
+                await _settled(discarded)
+                if (failure := discarded.exception()) is not None:
+                    add_secondary(cancelled, failure)
             raise
 
     def close(self) -> None:
