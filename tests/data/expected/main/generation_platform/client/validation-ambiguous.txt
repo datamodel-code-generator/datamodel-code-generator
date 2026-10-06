@@ -26,10 +26,5 @@ render dataclasses.dataclass
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 4
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  /selection/selected_operations/0 orders.get_order(path:orderId=order_id, query:view=view)
-    exports client.types.orders.GetOrderResponse client.types.orders.GetOrderErrorData client.types.orders.GetOrderHTTPError
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']

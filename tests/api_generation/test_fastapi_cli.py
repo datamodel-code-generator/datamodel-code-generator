@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import shutil
 from pathlib import Path
 
@@ -564,9 +563,11 @@ def test_fastapi_cli_config_values(tmp_path: Path, monkeypatch: pytest.MonkeyPat
         extra_args=_server(),
         copy_files=_inputs(tmp_path, "configured.toml"),
     )
-    manifest = json.loads((tmp_path / "server" / ".dcg-target-manifest.json").read_text(encoding="utf-8"))
+    sources = sorted(
+        path for path in (tmp_path / "server").rglob("*.py") if not {"_runtime", "_generated"} & set(path.parts)
+    )
     assert_output(
-        json.dumps(manifest["inputs"]["target_config"], indent=2, sort_keys=True) + "\n",
+        "".join(f"# {path.relative_to(tmp_path).as_posix()}\n{path.read_text(encoding='utf-8')}" for path in sources),
         EXPECTED / "cli" / "configured.txt",
     )
 

@@ -51,42 +51,6 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 26
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  {
-    "helpers": {},
-    "schema_version": 1
-  }
-  /selection/selected_operations/0 users.list_users(query:cursor=cursor, query:offset=offset, query:page=page, header:Snapshot=snapshot)
-    exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
-    exports client.types.users.decode_list_users_header
-  /selection/selected_operations/1 users.search_users()
-    exports client.types.users.SearchUsersResponse client.types.users.SearchUsersErrorData client.types.users.SearchUsersHTTPError
-    exports None
-  /selection/selected_operations/2 tags.list_tags(query:items=items, query:cursor=cursor)
-    exports client.types.tags.ListTagsResponse client.types.tags.ListTagsErrorData client.types.tags.ListTagsHTTPError
-    exports None
-  /selection/selected_operations/3 labels.list_labels(query:items=items)
-    exports client.types.labels.ListLabelsResponse client.types.labels.ListLabelsErrorData client.types.labels.ListLabelsHTTPError
-    exports None
-  /selection/selected_operations/4 jobs.run_job()
-    exports client.types.jobs.RunJobResponse client.types.jobs.RunJobErrorData client.types.jobs.RunJobHTTPError
-    exports None
-  /selection/selected_operations/5 jobs.get_job(path:jobId=job_id)
-    exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
-    exports client.types.jobs.decode_get_job_header
-  /selection/selected_operations/6 jobs.cancel_job(path:jobId=job_id)
-    exports client.types.jobs.CancelJobResponse client.types.jobs.CancelJobErrorData client.types.jobs.CancelJobHTTPError
-    exports None
-  /selection/selected_operations/7 jobs.get_job_result(path:jobId=job_id)
-    exports client.types.jobs.GetJobResultResponse client.types.jobs.GetJobResultErrorData client.types.jobs.GetJobResultHTTPError
-    exports None
-  /selection/selected_operations/8 events.stream_events(header:Last-Event-ID=last_event_id)
-    exports client.types.events.StreamEventsResponse client.types.events.StreamEventsErrorData client.types.events.StreamEventsHTTPError
-    exports None
-  /selection/selected_operations/9 records.stream_records(query:after=after)
-    exports client.types.records.StreamRecordsResponse client.types.records.StreamRecordsErrorData client.types.records.StreamRecordsHTTPError
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1admin~1audit/get: GET /admin/audit is excluded by exclude_tags 'admin': Administration stays internal

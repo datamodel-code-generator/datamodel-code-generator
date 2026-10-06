@@ -19,13 +19,11 @@ generate
   written target server/README.md (target)
   written target server/py.typed (target)
   written remote_lock remote.lock
-  written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  14 runtime modules ['written']
+  13 runtime modules ['written']
 tree
   models.py
   remote.lock
-  server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
@@ -38,4 +36,4 @@ tree
   server/routers/pets.py
   server/routers/untagged.py
   server/services.py
-  14 runtime modules ['present']
+  13 runtime modules ['present']

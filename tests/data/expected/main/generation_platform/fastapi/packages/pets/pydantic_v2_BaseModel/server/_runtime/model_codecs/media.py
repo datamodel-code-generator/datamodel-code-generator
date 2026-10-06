@@ -9,16 +9,18 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from json.encoder import encode_basestring, encode_basestring_ascii
-from typing import TYPE_CHECKING, Final, Literal, NoReturn, cast, overload
+from typing import Final, Literal, NoReturn, cast, overload
 from urllib.parse import quote, unquote_to_bytes
+
+from typing_extensions import TypeAliasType
 
 from .errors import CodecResourceLimitError, ParameterEncodingError, WireIssue, WireValidationError
 from .wire import JSONScalar as WireScalar
 from .wire import JSONValue as WireJSON
 from .wire import WireValue, checked_key, checked_scalar, enter, freeze_wire
 
-if TYPE_CHECKING:
-    from .plain import JSONValue
+JSONValue = TypeAliasType("JSONValue", "bool | int | float | str | list[JSONValue] | dict[str, JSONValue] | None")
+JSONScalar = TypeAliasType("JSONScalar", "bool | int | float | str | None")
 
 LexicalKind = Literal["string", "integer", "number", "boolean"]
 MediaKind = Literal["json", "text", "form", "multipart", "binary"]

@@ -8,6 +8,7 @@ from ._runtime.model_codecs.errors import (
     WireIssue,
     WireValidationError,
 )
+from ._runtime.model_codecs.media import JSONValue
 from ._runtime.model_codecs.parameters import (
     EncodedParameterContribution,
     FragmentContribution,
@@ -16,7 +17,6 @@ from ._runtime.model_codecs.parameters import (
     QueryStringContribution,
     RawParameter,
 )
-from ._runtime.model_codecs.plain import JSONValue
 from ._runtime.model_codecs.unset import UNSET, Unset
 from ._runtime.model_codecs.wire import WireValue
 

@@ -11,196 +11,34 @@ render
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
-  write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  12 runtime modules ['write']
+  11 runtime modules ['write']
 {
-  "bindings": [],
-  "diagnostics": [],
-  "extensions": {
-    "formatters": [],
-    "hooks": [],
-    "templates": []
+  "files": {
+    "README.md": "sha256:5b0190dcc6f47c4a5551ea277e262acf508c2ee0dedf21018528ff6eb601bde0",
+    "__init__.py": "sha256:fa3a4edd4eedf761a5a21315681c8f9a17cda023e3ece80dd61043a24864892b",
+    "_generated/__init__.py": "sha256:41b0f77c872513da0026ab0b281e7cdba021c0c940f3f113dae177b0f7fe8881",
+    "_generated/contract.py": "sha256:68066fa2ca65e48247e051a613fde6ab1ae2e363e6f6a409a193ad15a11801af",
+    "application.py": "sha256:4feb6f1e1e24088af1f3b7d08405b59dd40e2d522118599c47b9b0acea6e5a22",
+    "errors.py": "sha256:3871856272b5dbcbdfd0f1e8567a063e972621320f7ec42b481519570a1692b0",
+    "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "routers/__init__.py": "sha256:2351ea2590b5b524515d25bef2cc4727a889b3724209c156ab83bb55635cee52",
+    "routers/untagged.py": "sha256:fa35418ea02940f46aeef0ff68a99a015b18dff83926f5645a13d193cb49ac81",
+    "services.py": "sha256:7897b2596dabdfb931f234d7865f1daaa1ee68d669bdbbb3c01995e914a5db34"
   },
-  "files": [
-    {
-      "group": null,
-      "kind": "package",
-      "path": "__init__.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "application",
-      "path": "application.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "package",
-      "path": "routers/__init__.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "router",
-      "path": "routers/untagged.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "package",
-      "path": "_generated/__init__.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "contract",
-      "path": "_generated/contract.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "errors",
-      "path": "errors.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "services",
-      "path": "services.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "readme",
-      "path": "README.md",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "typing",
-      "path": "py.typed",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    }
-  ],
+  "format": 1,
   "generator": {
     "name": "datamodel-code-generator",
-    "runtime_revision": "<masked>",
     "version": "<masked>"
   },
-  "inputs": {
-    "documents": [],
-    "provenance": [
-      {
-        "digest": "<sha256>",
-        "identity": null,
-        "opaque": false,
-        "option_path": "model_config.target_python_version"
-      },
-      {
-        "digest": "<sha256>",
-        "identity": null,
-        "opaque": false,
-        "option_path": "model_config.disable_timestamp"
-      },
-      {
-        "digest": "<sha256>",
-        "identity": null,
-        "opaque": false,
-        "option_path": "model_config.formatters"
-      },
-      {
-        "digest": "<sha256>",
-        "identity": null,
-        "opaque": false,
-        "option_path": "model_config.openapi_scopes"
-      }
-    ],
-    "root": {
-      "digest": "<sha256>",
-      "kind": "file",
-      "uri": "../spec/input-aliases.yaml"
-    },
-    "target_config": {
-      "opaque_options": [],
-      "protocol_metadata": {},
-      "public_options": {
-        "body_mode": "typed",
-        "body_modes": {},
-        "custom_formatter_kwargs": {},
-        "custom_formatters": [],
-        "distribution_name": null,
-        "encoding": "utf-8",
-        "formatter_settings": null,
-        "formatters": [
-          "builtin"
-        ],
-        "handler_mode": "sync",
-        "handler_modes": {},
-        "header": null,
-        "hooks": [],
-        "include_request": false,
-        "include_timestamp": false,
-        "layout": "routers",
-        "model_dependency": null,
-        "model_mode": "generate",
-        "model_package": "example.models",
-        "operation_names": {},
-        "output": ".",
-        "package": "example.server",
-        "package_mode": "embedded",
-        "package_version": null,
-        "parameter_names": {},
-        "primary_responses": {},
-        "router_names": {},
-        "templates": null
-      },
-      "runtime_defaults": {}
-    }
-  },
   "model": {
-    "artifacts": [],
-    "fingerprint": "<sha256>",
-    "mode": "generate",
-    "output_uri": "../models.py",
-    "package": "example.models"
-  },
-  "schema_version": 1,
-  "selection": {
-    "excluded_operations": [],
-    "reason": null,
-    "rules": {
-      "exclude_operations": [],
-      "exclude_tags": [],
-      "include_operations": [],
-      "include_tags": [],
-      "reason": null
-    },
-    "selected_operations": [
-      {
-        "document": "/inputs/root",
-        "pointer": "/paths/~1items/get"
-      }
-    ]
+    "output": "../models.py",
+    "sha256": "<sha256>"
   },
   "target": {
-    "id": "<sha256>",
     "kind": "fastapi",
-    "package": "example.server",
-    "root_uri": "."
-  },
-  "target_data": "<fastapi>"
+    "package": "example.server"
+  }
 }
 generate
   target=fastapi schema_version=1
@@ -214,11 +52,9 @@ generate
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
-  written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  12 runtime modules ['written']
+  11 runtime modules ['written']
 tree
-  server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
@@ -230,4 +66,4 @@ tree
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  12 runtime modules ['present']
+  11 runtime modules ['present']

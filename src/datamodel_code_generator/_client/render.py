@@ -690,9 +690,9 @@ def _call(head: str, entries: Iterable[tuple[str, Doc]]) -> Group:
 
 
 def _wire(value: object) -> object:
-    """Keep helper literals as ordinary JSON arrays and objects."""
+    """Return a JSON value as a wire value, whose arrays are tuples."""
     if isinstance(value, list):
-        return list(map(_wire, value))
+        return tuple(map(_wire, value))
     return {key: _wire(item) for key, item in value.items()} if isinstance(value, dict) else value
 
 
@@ -2969,7 +2969,7 @@ class ClientRenderer:
     ) -> None:
         """Keep the plans and helpers; the model bindings module and its accessors are rendered when first used.
 
-        The webhook modules are rendered from the native codec accessors.
+        The webhook modules are rendered from the use accessors.
         """
         self.config = config
         self.package = package
@@ -3164,43 +3164,10 @@ reference for their limits."""
 
     def runtime_documentation(self) -> str:
         """Render public runtime settings and their resource and delivery obligations."""
-        descriptions = {
-            "pydantic_v2.BaseModel": (
-                "Pydantic validates received JSON with the acquired model type and serializes sent models "
-                "with aliases in JSON mode. Only explicitly set model fields are sent. "
-                "The model's validators, serializers and constraints apply."
-            ),
-            "pydantic_v2.dataclass": (
-                "Pydantic validates received JSON and serializes sent dataclasses with the acquired type's "
-                "aliases and JSON conversion. Serialization includes default fields. "
-                "The dataclass's validators, serializers and constraints apply."
-            ),
-            "msgspec.Struct": (
-                "msgspec decodes received JSON to the acquired type and encodes sent values with the Struct's "
-                "renames, tags and default rules. Native msgspec constraints apply."
-            ),
-            "dataclasses.dataclass": (
-                "Model field maps rename JSON keys and construct nested dataclasses and containers. "
-                "Datetime, date, time, UUID, Decimal, Enum and base64 bytes use their native conversion. "
-                "Dataclass fields with a None default are omitted when their value is None. "
-                "Unknown object keys are ignored. Schema constraints are not checked. "
-                "Object-model unions require a declared discriminator."
-            ),
-            "typing.TypedDict": (
-                "Model field maps rename JSON keys and construct nested dicts and containers. "
-                "Datetime, date, time, UUID, Decimal, Enum and base64 bytes use their native conversion. "
-                "Absent keys stay absent and unknown keys are kept. Schema constraints are not checked. "
-                "Object-model unions require a declared discriminator."
-            ),
-        }
         return f"""# Runtime reference
 
 Import `Client` and `AsyncClient` from `{self.config.package}` and the records below from
 `{self.config.package}.options`. Async calls require asyncio.
-
-## Model values
-
-{descriptions[self.codecs.backend]}
 
 ## Layered options and budgets
 

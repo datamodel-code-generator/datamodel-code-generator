@@ -1,4 +1,4 @@
-another checkout: 28 files, identical
-absolute paths from another directory: 28 files, identical
+another checkout: 26 files, identical
+absolute paths from another directory: 26 files, identical
 the same checkout from inside it writes 0 files
 a moved checkout renders ['unchanged']

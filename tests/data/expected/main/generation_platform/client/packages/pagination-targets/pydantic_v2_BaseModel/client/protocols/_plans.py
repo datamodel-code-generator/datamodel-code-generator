@@ -110,7 +110,10 @@ PLAN_2: Final[PaginationPlan[_dcg_type_0, SearchResponse]] = PaginationPlan(
             selector=BodySelector(pointer='/last'),
         ),
         PageBinding(target=BodyTarget(pointer='/size'), literal=10),
-        PageBinding(target=BodyTarget(pointer='/filter'), literal={'states': ['open']}),
+        PageBinding(
+            target=BodyTarget(pointer='/filter'),
+            literal={'states': ('open',)},
+        ),
         PageBinding(target=BodyTarget(pointer='/range/from'), literal='a'),
     ),
 )

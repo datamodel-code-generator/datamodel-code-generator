@@ -1,3 +1,3 @@
 APIGenerationError
-diagnostic MC_CODEC_UNSUPPORTED /paths/~1files/post/requestBody: The dataclasses.dataclass converter has no conversion for the BoundType(binding=BoundPythonType(expression=PythonTypeSubscript(base=PythonTypeBoundName(value='deque', import_from='collections', import_name='deque'), arguments=(PythonTypeName(value='int'),)), imports=(Import(import_='deque', from_='collections', alias=None, reference_path=None, keep_unaliased=False),))) type
-diagnostic MC_CODEC_UNSUPPORTED /paths/~1files/post/requestBody: The None key type has no dataclasses.dataclass conversion
+diagnostic MC_CODEC_UNSUPPORTED /components/schemas/File/properties/queue: The dataclasses.dataclass converter has no conversion for the deque[int] type
+diagnostic MC_CODEC_UNSUPPORTED /components/schemas/File/properties/by_id: The Id key type has no dataclasses.dataclass conversion
