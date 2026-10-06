@@ -49,7 +49,7 @@ def native_error(error: Exception, *, send_started: bool, response_started: bool
     if isinstance(error, SDKError):
         error.delivery_state = state
         return error
-    phase: IOPhase = next((phase for kinds, phase in _PHASES if isinstance(error, kinds)), "unknown")
+    phase = _phase(error)
     if isinstance(error, httpx2.TimeoutException):
         return APITimeoutError(
             phase=phase,
@@ -59,6 +59,13 @@ def native_error(error: Exception, *, send_started: bool, response_started: bool
             cause=error,
         )
     return APIConnectionError(phase=phase, delivery_state=state, cause=error)
+
+
+def _phase(error: Exception) -> IOPhase:
+    for kinds, phase in _PHASES:
+        if isinstance(error, kinds):
+            return phase
+    return "unknown"
 
 
 def _expired_cap(error: httpx2.TimeoutException, phase: IOPhase) -> float | None:
