@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from .errors import body_failure
 
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-async def _settled(work: asyncio.Future[object]) -> None:
+async def _settled(work: asyncio.Future[Any]) -> None:
     """Wait for work running in a thread through any further cancellation, leaving its outcome on the future."""
     while not work.done():
         try:
