@@ -35,11 +35,6 @@
   next page in an expired session ! APITimeoutError: APITimeoutError(operation_id='listUsers', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item before cancelling = '1'
-  item after cancelling ! RequestCancelledError: RequestCancelledError(operation_id='listUsers', call_id='<call>', delivery_state='NOT_SENT') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
-  item after the cancelled page ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   interrupted page: KeyboardInterrupt
   item after the interruption ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
     progress {'pages': 0, 'items': 0}

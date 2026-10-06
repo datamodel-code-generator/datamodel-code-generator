@@ -73,20 +73,19 @@ def _values(auth: ModuleType, options: ModuleType, responses: ModuleType, lines:
         f"  scopes unknown={unknown.scopes!r} empty={empty.scopes!r} canonical={token.scopes!r}"
         f" equal={token == equivalent} unknown differs={unknown != empty}"
     )
-    deadline, cancel_token = options.Deadline.after(30), options.CancelToken()
+    deadline = options.Deadline.after(30)
     context = auth.CredentialContext(
         scheme="oauth",
         required_scopes=["write", "read", "read"],
         audience=None,
         origin="https://example.com",
         deadline=deadline,
-        cancel_token=cancel_token,
     )
     lines.append(
         f"  context scopes={context.required_scopes} deadline identity={context.deadline is deadline}"
-        f" cancellation identity={context.cancel_token is cancel_token} audience={context.audience!r}"
+        f" audience={context.audience!r}"
     )
-    record(lines, "context requires keywords", lambda: auth.CredentialContext("scheme", (), None, "origin", None, None))
+    record(lines, "context requires keywords", lambda: auth.CredentialContext("scheme", (), None, "origin", None))
     headers = responses.HeadersView((("X-Input", "input-secret"),))
     signing = auth.SigningInput(
         "POST",
@@ -161,9 +160,8 @@ def _values(auth: ModuleType, options: ModuleType, responses: ModuleType, lines:
         "audience": None,
         "origin": "https://example.com",
         "deadline": None,
-        "cancel_token": None,
     }
-    for name, value in (("scheme", None), ("audience", 1), ("origin", False), ("deadline", 30), ("cancel_token", True)):
+    for name, value in (("scheme", None), ("audience", 1), ("origin", False), ("deadline", 30)):
         record(
             lines,
             f"context invalid {name}",
@@ -194,7 +192,6 @@ def _scope_values(auth: ModuleType, lines: list[str]) -> None:
         "audience": None,
         "origin": "https://example.com",
         "deadline": None,
-        "cancel_token": None,
     }
     invalid = (
         "read",
@@ -230,8 +227,7 @@ def _scope_values(auth: ModuleType, lines: list[str]) -> None:
 def _configuration(auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
     provider = _Provider(auth.ApiKeyCredential("secret"))
     signer = _Signer(auth.SignerCapabilities((), ("X-Signature",), (), False), auth.SignatureFields((), ()))
-    wrapper = auth.OwnedCredentialProvider(provider)
-    credentials = {"first": wrapper, "same-provider": auth.OwnedCredentialProvider(provider), "borrowed": provider}
+    credentials = {"first": provider, "same-provider": provider, "borrowed": provider}
     signers, origins, schemes = [signer], ["https://example.com"], ["first"]
     config = auth.AuthConfig(credentials, allowed_origins=origins, anonymous_schemes=schemes, signers=signers)
     credentials.clear()
@@ -242,11 +238,11 @@ def _configuration(auth: ModuleType, options: ModuleType, lines: list[str]) -> N
         f"  auth copied names={tuple(config.credentials)} origins={config.allowed_origins} anonymous={config.anonymous_schemes}"
     )
     lines.append(
-        f"  provider identities={config.credentials['first'] is wrapper, config.credentials['borrowed'] is provider} signer identity={config.signers[0] is signer} callbacks={(provider.calls, provider.closes, signer.calls)}"
+        f"  provider identities={config.credentials['first'] is provider, config.credentials['borrowed'] is provider} signer identity={config.signers[0] is signer} callbacks={(provider.calls, provider.closes, signer.calls)}"
     )
-    record(lines, "auth safe repr", lambda: (repr(config), repr(wrapper)))
+    record(lines, "auth safe repr", lambda: repr(config))
     record(lines, "auth immutable mapping", lambda: config.credentials.__setitem__("changed", provider))
-    for value, name, replacement in ((config, "selection", 0), (wrapper, "provider", None)):
+    for value, name, replacement in ((config, "selection", 0), (config, "credentials", {})):
         previous = getattr(value, name)
         try:
             setattr(value, name, replacement)
@@ -285,7 +281,6 @@ def _providers(auth: ModuleType, lines: list[str]) -> None:
         audience=None,
         origin="https://example.com",
         deadline=None,
-        cancel_token=None,
     )
     materials = (
         auth.ApiKeyCredential("api-secret"),
@@ -396,7 +391,7 @@ import sys
 from typing import get_type_hints
 
 sys.path.insert(0, sys.argv[1])
-blocked = {"httpx2", "httpcore2", "anyio", "asyncio", "pydantic", "msgspec", "datamodel_code_generator"}
+blocked = {"httpcore2", "anyio", "asyncio", "pydantic", "msgspec", "datamodel_code_generator"}
 blocked.add(sys.argv[2] + "_models")
 execution = {
     sys.argv[2] + "._runtime.client." + name
@@ -422,6 +417,7 @@ for name in ("ClientOptions", "RequestOptions"):
     get_type_hints(getattr(options, name), include_extras=True)
 print("  isolated auth imports=" + str(not any(name in sys.modules for name in blocked)))
 print("  auth execution remains unloaded=" + str(not any(name in sys.modules for name in execution)))
+print("  auth annotations load httpx2=" + str("httpx2" in sys.modules))
 """
     result = subprocess.run(
         [sys.executable, "-I", "-c", script, str(Path(inspect.getfile(package)).parent.parent), package.__name__],
