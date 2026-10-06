@@ -1,15 +1,15 @@
-use /paths/~1choices/post request_body: native dataclass models:Choice models=[('models:Choice', 'dataclass', 'ignore', True)]
-use /paths/~1choices/post response_body 200: native dataclass models:Choice models=[('models:Choice', 'dataclass', 'ignore', True)]
-choice-server-decode: model Choice(color_or_count=<Color.red: 'red'>, word_or_list='w', maybe_or_flag=None, word_or_text=None, word_or_wide=None) wire={"color_or_count":"red","word_or_list":"w","maybe_or_flag":null} presence=['', '/color_or_count', '/word_or_list', '/maybe_or_flag'] extras={}
-choice-server-decode-numbers: model Choice(color_or_count=3, word_or_list=[1, 2], maybe_or_flag=True, word_or_text=None, word_or_wide=None) wire={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true} presence=['', '/color_or_count', '/word_or_list', '/word_or_list/0', '/word_or_list/1', '/maybe_or_flag'] extras={}
-choice-server-decode-dated: model Choice(color_or_count=None, word_or_list=5, maybe_or_flag='2020-01-02', word_or_text=None, word_or_wide=None) wire={"word_or_list":5,"maybe_or_flag":"2020-01-02"} presence=['', '/word_or_list', '/maybe_or_flag'] extras={}
-choice-server-decode-bad: WireValidationError schema.anyOf@/word_or_list
-choice-server-decode-text: model Choice(color_or_count=None, word_or_list=None, maybe_or_flag=None, word_or_text='x', word_or_wide=None) wire={"word_or_text":"x"} presence=['', '/word_or_text'] extras={}
-choice-server-decode-number: model Choice(color_or_count=None, word_or_list=None, maybe_or_flag=None, word_or_text=2, word_or_wide=None) wire={"word_or_text":2} presence=['', '/word_or_text'] extras={}
-choice-server-decode-wide: model Choice(color_or_count=None, word_or_list=None, maybe_or_flag=None, word_or_text=None, word_or_wide=1.5) wire={"word_or_wide":1.5} presence=['', '/word_or_wide'] extras={}
-choice-server-response-wide: wire={"maybe_or_flag":null,"word_or_wide":1.5}
-choice-server-response-text: wire={"maybe_or_flag":null,"word_or_text":"x"}
-choice-server-response-number: wire={"maybe_or_flag":null,"word_or_text":2}
-choice-server-response: wire={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true}
-choice-server-response-dated: wire={"word_or_list":5,"maybe_or_flag":"2020-01-02"}
-choice-server-response-null: wire={"color_or_count":"red","word_or_list":"w","maybe_or_flag":null}
+use /paths/~1choices/post request_body: StdlibCodec
+use /paths/~1choices/post response_body 200: StdlibCodec
+choice-server-decode: native Choice(color_or_count=<Color.red: 'red'>, word_or_list='w', maybe_or_flag=None, word_or_text=None, word_or_wide=None) json={"color_or_count":"red","word_or_list":"w"}
+choice-server-decode-numbers: native Choice(color_or_count=3, word_or_list=[1, 2], maybe_or_flag=True, word_or_text=None, word_or_wide=None) json={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true}
+choice-server-decode-dated: native Choice(color_or_count=None, word_or_list=5, maybe_or_flag='2020-01-02', word_or_text=None, word_or_wide=None) json={"word_or_list":5,"maybe_or_flag":"2020-01-02"}
+choice-server-decode-bad: native Choice(color_or_count=None, word_or_list=1.5, maybe_or_flag=None, word_or_text=None, word_or_wide=None) json={"word_or_list":1.5}
+choice-server-decode-text: native Choice(color_or_count=None, word_or_list=None, maybe_or_flag=None, word_or_text='x', word_or_wide=None) json={"word_or_text":"x"}
+choice-server-decode-number: native Choice(color_or_count=None, word_or_list=None, maybe_or_flag=None, word_or_text=2, word_or_wide=None) json={"word_or_text":2}
+choice-server-decode-wide: native Choice(color_or_count=None, word_or_list=None, maybe_or_flag=None, word_or_text=None, word_or_wide=1.5) json={"word_or_wide":1.5}
+choice-server-response-wide: json={"word_or_wide":1.5}
+choice-server-response-text: json={"word_or_text":"x"}
+choice-server-response-number: json={"word_or_text":2}
+choice-server-response: json={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true}
+choice-server-response-dated: json={"word_or_list":5,"maybe_or_flag":"2020-01-02"}
+choice-server-response-null: json={"color_or_count":"red","word_or_list":"w"}

@@ -17,8 +17,8 @@ from datamodel_code_generator._target_contract import LiteralMapping, LiteralSca
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from datamodel_code_generator._client.codec_plan import ClientCodecs
     from datamodel_code_generator._client.plan import ClientPlan
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._target_contract import GeneratedTypeContractBatch
 
 Security: TypeAlias = Literal["api_key", "basic", "bearer", "client_credentials", "refresh_token"]
@@ -62,16 +62,10 @@ _CORE: Final = (
     "client/timing.py",
     "client/transports.py",
     "client/urls.py",
-    "model_codecs/bindings.py",
-    "model_codecs/codec.py",
-    "model_codecs/context.py",
     "model_codecs/errors.py",
     "model_codecs/media.py",
     "model_codecs/parameters.py",
-    "model_codecs/patterns.py",
-    "model_codecs/schema.py",
     "model_codecs/unset.py",
-    "model_codecs/values.py",
     "model_codecs/wire.py",
     "protocols/caches.py",
     "protocols/errors.py",
@@ -112,18 +106,17 @@ _KINDS: Final[dict[str, Helper]] = {
     "resumable_upload": "uploads",
     "webhook": "webhooks",
 }
-_BACKENDS: Final = {
-    "pydantic_v2.BaseModel": "model_codecs/pydantic_v2.py",
-    "pydantic_v2.dataclass": "model_codecs/pydantic_v2.py",
-    "dataclasses.dataclass": "model_codecs/structural.py",
-    "typing.TypedDict": "model_codecs/structural.py",
-    "msgspec.Struct": "model_codecs/structural.py",
+_BACKENDS: Final[dict[str, tuple[str, ...]]] = {
+    "pydantic": ("model_codecs/native.py",),
+    "pydantic_dataclass": ("model_codecs/native.py",),
+    "msgspec": ("model_codecs/native.py",),
+    "stdlib": ("model_codecs/native.py", "model_codecs/stdlib.py"),
 }
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Capabilities:
-    """What a client package declares: its usable security schemes, its helpers, and its model backends.
+    """What a client package declares: its usable security schemes, its helpers, and its model codec kinds.
 
     `signatures` holds the signature kinds of the webhook helpers; `keywords` marks a package whose generated keyword
     records name the runtime's unpacked-argument types.
@@ -147,7 +140,7 @@ class Capabilities:
 
     def modules(self) -> tuple[str, ...]:
         """Return the runtime modules the declared capabilities need, in ascending path order."""
-        modules = {*_CORE, *(_BACKENDS[backend] for backend in self.backends)}
+        modules = {*_CORE, *(module for kind in self.backends for module in _BACKENDS[kind])}
         modules.update(module for helper in self.helpers for module in _HELPERS[helper])
         modules.update(module for kind in self.signatures for module in _SIGNATURES.get(kind, _VERIFIED))
         if self.keywords:
@@ -198,6 +191,6 @@ def declared_helpers(kinds: Iterable[str], plan: ClientPlan) -> frozenset[Helper
     return frozenset(found)
 
 
-def declared_backends(codecs: CodecPlan) -> frozenset[str]:
-    """Return the model backends whose codecs the package's bindings name."""
-    return frozenset(binding.backend for _, binding in codecs.bindings)
+def declared_backends(codecs: ClientCodecs) -> frozenset[str]:
+    """Return the codec kinds of the package's model uses."""
+    return frozenset(use.kind for use in codecs.uses)

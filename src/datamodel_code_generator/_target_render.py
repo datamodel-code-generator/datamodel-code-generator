@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
@@ -12,14 +11,11 @@ from datamodel_code_generator._python_layout import Doc, Group
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
 
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
-    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
     from datamodel_code_generator._target_contract import ModelArtifact
 
 RUNTIME: Final = Path(__file__).parent / "_runtime"
-PATTERNS: Final = "google-re2>=1.1.20251105"
 MODEL_DEPENDENCIES: Final = (
     ("pydantic.EmailStr", "email-validator>=2.3"),
     ("pydantic.NameEmail", "email-validator>=2.3"),
@@ -28,7 +24,6 @@ MODEL_DEPENDENCIES: Final = (
     ("ulid", "python-ulid>=3.2.1"),
     ("pendulum", "pendulum>=3.2"),
 )
-_PATTERN_KEYWORDS: Final = frozenset({"pattern", "patternProperties"})
 _IMPORT: Final = re.compile(
     r"^(?:from[ \t]+([\w.]+)[ \t]+import[ \t]+(\([^)]*\)|[^\n]*)|import[ \t]+([^\n]*))", re.MULTILINE
 )
@@ -105,16 +100,3 @@ def model_dependencies(models: tuple[ModelArtifact, ...]) -> tuple[str, ...]:
             if any(item == name or item.startswith(f"{name}.") for item in imported)
         )
     )
-
-
-def _patterned(value: WireValue) -> bool:
-    if isinstance(value, tuple):
-        return any(_patterned(item) for item in value)
-    if isinstance(value, Mapping):
-        return any(key in _PATTERN_KEYWORDS or _patterned(item) for key, item in value.items())
-    return False
-
-
-def patterned(wire: WirePlan) -> bool:
-    """Return whether a schema the wire plan bundles declares a pattern, which the runtime matches with RE2."""
-    return any(_patterned(resource.contents) for resource in wire.resources)

@@ -1,4 +1,30 @@
 # validation-ambiguous
 render dataclasses.dataclass
-  APIGenerationError
-  E_CONFIG_VALUE binding /paths/~1orders~1{orderId}/get/responses/200: The client cannot convert the response body 200 application/json of GET /orders/{orderId}, which tells its union members apart only by their schemas
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/orders/__init__.py
+  write client/resources/orders/_sync.py
+  write client/resources/orders/_async.py
+  write client/types/__init__.py
+  write client/types/orders/__init__.py
+  write client/types/orders/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-target-manifest.json
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']

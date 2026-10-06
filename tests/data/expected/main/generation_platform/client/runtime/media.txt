@@ -18,7 +18,7 @@
   search of an extra named as another member ! RequestEncodingError: RequestEncodingError(operation_id='submitSearch', call_id='<call>', location='body') [operation_id='submitSearch', location=('body',), cause=ParameterEncodingError('Two URL-encoded form members write the same name')] request_encoding_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 11] b'{"x":[1,2]}'
-  store = mappingproxy({'stored': True})
+  store = {'stored': True}
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: text/plain; charset=utf-16, content-length: 10] b'\xff\xfen\x00o\x00t\x00e\x00'
   store text = 'café'
@@ -27,10 +27,22 @@
   store text of a charset named in capitals = 'café'
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store moved ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=ModelProjectionError('The native use has an unplanned projection gap at /secret')] response_validation_error
+  store moved ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=1 validation error for Draft
+secret
+  Field required [type=missing, input_value={'id': 1, 'title': 't'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] response_validation_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store moved invalid ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"title":5}', truncated=False, cause=ModelProjectionError('The native use has an unplanned projection gap at /secret')] response_validation_error
+  store moved invalid ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"title":5}', truncated=False, cause=3 validation errors for Draft
+id
+  Field required [type=missing, input_value={'title': 5}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing
+title
+  Input should be a valid string [type=string_type, input_value=5, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/string_type
+secret
+  Field required [type=missing, input_value={'title': 5}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] response_validation_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
   store failed ! StoreDocumentHTTPError: StoreDocumentHTTPError(status_code=500, operation_id='storeDocument', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='storeDocument', status_code=500, error_decoded=True, error_data='down', body_bytes=b'down', truncated=False] store_document_http_error
@@ -40,13 +52,19 @@
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/json, content-length: 1] b'1'
   store narrowed ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, actual_media_type='application/json'] unexpected_media_type_error
-  store value ! RequestEncodingError: RequestEncodingError(operation_id='storeDocument', call_id='<call>', location='body') [operation_id='storeDocument', location=('body',), cause=TypeError('set is not a JSON value')] request_encoding_error
+  store value ! RequestEncodingError: RequestEncodingError(operation_id='storeDocument', call_id='<call>', location='body') [operation_id='storeDocument', location=('body',), cause=TypeError('Object of type set is not JSON serializable')] request_encoding_error
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
-  read ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=ModelProjectionError('The native use has an unplanned projection gap at /secret')] response_validation_error
+  read ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=1 validation error for Draft
+secret
+  Field required [type=missing, input_value={'id': 1, 'title': 't'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] response_validation_error
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
-  read header ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /secret')] response_header_decode_error
+  read header ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'', truncated=False, cause=1 validation error for Draft
+secret
+  Field required [type=missing, input_value={'id': 1, 'title': 'h'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] response_header_decode_error
   > POST https://media.example.com/api/notes
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 3] b'[1]'
   note = None
@@ -129,7 +147,7 @@
   search of an extra named as another member ! RequestEncodingError: RequestEncodingError(operation_id='submitSearch', call_id='<call>', location='body') [operation_id='submitSearch', location=('body',), cause=ParameterEncodingError('Two URL-encoded form members write the same name')] request_encoding_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 11] b'{"x":[1,2]}'
-  store = mappingproxy({'stored': True})
+  store = {'stored': True}
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: text/plain; charset=utf-16, content-length: 10] b'\xff\xfen\x00o\x00t\x00e\x00'
   store text = 'café'
@@ -138,10 +156,10 @@
   store text of a charset named in capitals = 'café'
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store moved ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=ModelProjectionError('The native use has an unplanned projection gap at /secret')] response_validation_error
+  store moved ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] response_validation_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store moved invalid ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"title":5}', truncated=False, cause=ModelProjectionError('The native use has an unplanned projection gap at /secret')] response_validation_error
+  store moved invalid ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"title":5}', truncated=False, cause=TypeError("Draft.__init__() missing 2 required positional arguments: 'id' and 'secret'")] response_validation_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
   store failed ! StoreDocumentHTTPError: StoreDocumentHTTPError(status_code=500, operation_id='storeDocument', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='storeDocument', status_code=500, error_decoded=True, error_data='down', body_bytes=b'down', truncated=False] store_document_http_error
@@ -151,13 +169,13 @@
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/json, content-length: 1] b'1'
   store narrowed ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, actual_media_type='application/json'] unexpected_media_type_error
-  store value ! RequestEncodingError: RequestEncodingError(operation_id='storeDocument', call_id='<call>', location='body') [operation_id='storeDocument', location=('body',), cause=TypeError('set is not a JSON value')] request_encoding_error
+  store value ! RequestEncodingError: RequestEncodingError(operation_id='storeDocument', call_id='<call>', location='body') [operation_id='storeDocument', location=('body',), cause=TypeError('Object of type set is not JSON serializable')] request_encoding_error
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
-  read ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=ModelProjectionError('The native use has an unplanned projection gap at /secret')] response_validation_error
+  read ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] response_validation_error
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
-  read header ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'', truncated=False, cause=ModelProjectionError('The native use has an unplanned projection gap at /secret')] response_header_decode_error
+  read header ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] response_header_decode_error
   > POST https://media.example.com/api/notes
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 3] b'[1]'
   note = None

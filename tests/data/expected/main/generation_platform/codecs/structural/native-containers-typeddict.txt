@@ -1,0 +1,6 @@
+use /paths/~1containers/post request_body: StdlibCodec
+use /paths/~1containers/post response_body 200: StdlibCodec
+native-pair: native {'pair': (datetime.date(2024, 1, 2), datetime.date(2024, 1, 3)), 'entry': {'wire-name': 'kept'}} json={"pair":["2024-01-02","2024-01-03"],"entry":{"wire-name":"kept"}}
+native-pair-wire: json={"pair":["2024-01-02","2024-01-03"],"entry":{"wire-name":"kept"}}
+pair-with-extra-item: native {'pair': (datetime.date(2024, 1, 2), datetime.date(2024, 1, 3), True), 'entry': 'plain'} json={"pair":["2024-01-02","2024-01-03",true],"entry":"plain"}
+pair-with-extra-item-wire: json={"pair":["2024-01-02","2024-01-03",true],"entry":"plain"}

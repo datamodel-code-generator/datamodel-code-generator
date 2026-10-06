@@ -37,10 +37,10 @@
   options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('ws_options',), condition='invalid_value'] protocol_configuration_error
   request options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   session options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('session_options',), condition='invalid_value'] protocol_configuration_error
-  not JSON ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='roomSocket', condition='malformed', truncated=False, cause=WireValidationError] stream_decode_error sequence=1 prefix=7 truncated=False cause=WireValidationError retained=False
+  not JSON ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='roomSocket', condition='malformed', truncated=False, cause=ValidationError] stream_decode_error sequence=1 prefix=7 truncated=False cause=ValidationError retained=False
   after the decode failure ! ProtocolStateError: ProtocolStateError(operation_id='roomSocket', call_id='<call>', state='failed', action='receive') [operation_id='roomSocket'] protocol_state_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1002 ''
-  refused by its schema ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='roomSocket', condition='value', truncated=False, cause=NativeValidationError] stream_decode_error sequence=1 prefix=16 truncated=False cause=NativeValidationError retained=False
+  refused by its schema ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='roomSocket', condition='value', truncated=False, cause=ValidationError] stream_decode_error sequence=1 prefix=16 truncated=False cause=ValidationError retained=False
   after the decode failure ! ProtocolStateError: ProtocolStateError(operation_id='roomSocket', call_id='<call>', state='failed', action='receive') [operation_id='roomSocket'] protocol_state_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1002 ''
   binary frame for text ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='type', sequence=1, truncated=False) [operation_id='roomSocket', condition='type', truncated=False] stream_decode_error sequence=1 prefix=33 truncated=False cause=NoneType retained=False
@@ -49,10 +49,11 @@
   text frame for bytes ! StreamDecodeError: StreamDecodeError(operation_id='feedSocket', call_id='<call>', condition='type', sequence=1, truncated=False) [operation_id='feedSocket', condition='type', truncated=False] stream_decode_error sequence=1 prefix=4 truncated=False cause=NoneType retained=False
   after the decode failure ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='receive') [operation_id='feedSocket'] protocol_state_error
     server GET /feed/socket [] | closed 1002 ''
-  large undecodable ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=True) [operation_id='roomSocket', condition='malformed', truncated=True, cause=WireValidationError] stream_decode_error sequence=1 prefix=65536 truncated=True cause=WireValidationError retained=False
+  large undecodable ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=True) [operation_id='roomSocket', condition='malformed', truncated=True, cause=ValidationError] stream_decode_error sequence=1 prefix=65536 truncated=True cause=ValidationError retained=False
   after the decode failure ! ProtocolStateError: ProtocolStateError(operation_id='roomSocket', call_id='<call>', state='failed', action='receive') [operation_id='roomSocket'] protocol_state_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1002 ''
-  message of another type ! RequestEncodingError: RequestEncodingError(operation_id='roomSocket', call_id='<call>', location='message') [operation_id='roomSocket', location=('message',), cause=ModelProjectionError] request_encoding_error
+  message of another type ! UserWarning: Pydantic serializer warnings:
+  PydanticSerializationUnexpectedValue(Expected `ClientMessage` - serialized value may not be as expected [input_value=42, input_type=int]) []
   bytes for text ! RequestEncodingError: RequestEncodingError(operation_id='feedSocket', call_id='<call>', location='message') [operation_id='feedSocket', location=('message',), cause=TypeError] request_encoding_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
     server GET /feed/socket [] | closed 1000 ''
@@ -127,7 +128,7 @@
     hook call_end outcome=handed_off status=101
   connect = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
     hook stream_end outcome=error status=101
-  receive ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='roomSocket', condition='malformed', truncated=False, cause=WireValidationError] stream_decode_error
+  receive ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='roomSocket', condition='malformed', truncated=False, cause=ValidationError] stream_decode_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1002 ''
   hooked refusal
     hook call_start outcome=None status=None
@@ -205,10 +206,10 @@
   async refusal connect ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, error_decoded=True, error_data=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] room_socket_http_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
   async decode failure connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
-  async decode failure ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='roomSocket', condition='malformed', truncated=False, cause=WireValidationError] stream_decode_error sequence=1 prefix=10 truncated=False cause=WireValidationError retained=False
+  async decode failure ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='roomSocket', condition='malformed', truncated=False, cause=ValidationError] stream_decode_error sequence=1 prefix=10 truncated=False cause=ValidationError retained=False
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1002 ''
   async large decode failure connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
-  async large decode failure ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=True) [operation_id='roomSocket', condition='malformed', truncated=True, cause=WireValidationError] stream_decode_error sequence=1 prefix=65536 truncated=True cause=WireValidationError retained=False
+  async large decode failure ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=True) [operation_id='roomSocket', condition='malformed', truncated=True, cause=ValidationError] stream_decode_error sequence=1 prefix=65536 truncated=True cause=ValidationError retained=False
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1002 ''
   async idle connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
   async idle ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.05) [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error

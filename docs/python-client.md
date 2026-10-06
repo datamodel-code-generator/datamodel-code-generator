@@ -132,11 +132,11 @@ host is in the rule's own form; for example, an IPv6 address has no brackets, as
 below, and exposes only `kind`. Its representation is `Continuation(kind='cursor')`. Each continuation equals only
 itself, and it cannot be modified.
 
-`PollSnapshot[P]` is an immutable poll result with `state: WireValue`, `terminal: bool`, `data: P`, and
-`response: ResponseInfo`. The state is frozen, and the state and data are excluded from the representation. `P` is
-covariant, so a `PollSnapshot[Pet]` is also a `PollSnapshot[object]`. `CancelReceipt[C]` is the immutable response of
-a remote cancel request, with `data: C` and `response: ResponseInfo`; the data is excluded from the representation, and
-`C` is covariant too.
+`PollSnapshot[P]` is an immutable poll result with `state: JSONValue`, `terminal: bool`, `data: P`, and
+`response: ResponseInfo`. The state is a copy of the given value, and the state and data are excluded from the
+representation. `P` is covariant, so a `PollSnapshot[Pet]` is also a `PollSnapshot[object]`. `CancelReceipt[C]` is the
+immutable response of a remote cancel request, with `data: C` and `response: ResponseInfo`; the data is excluded from
+the representation, and `C` is covariant too.
 
 `ProgressKey` is `Literal['pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'network_send_count',
 'network_send_budget_used', 'messages_sent', 'messages_received']`, and `ProtocolProgress` is
@@ -144,14 +144,11 @@ a remote cancel request, with `data: C` and `response: ResponseInfo`; the data i
 
 Continuations and resume state encode their values as the same canonical JSON: UTF-8 without whitespace, object
 members sorted by the code points of their names, and strings escaped as Python's `json.dumps` escapes them with
-`ensure_ascii=False`, so only `"`, `\`, and U+0000–U+001F are escaped. An integer is written in plain decimal.
-A float is first converted to the decimal of its shortest round-trip representation, so `1e16` becomes `1E+16`. A
-decimal is written as its scientific string: no exponent when the exponent is at most 0 and the adjusted exponent is at
-least -6, and otherwise one digit before the point and an `E` exponent with a sign. For example, `1.50`, `-0.0`,
-`1E+2`, and `1E-7` keep those spellings. A decimal whose string has neither a point nor an exponent is written as an
-integer, so `Decimal("-0")` becomes `0`. Decoding the result and encoding it again gives the same bytes. A value
-nested beyond the interpreter recursion limit, and an integer beyond the interpreter's decimal conversion limit,
-raise `ValueError`.
+`ensure_ascii=False`, so only `"`, `\`, and U+0000–U+001F are escaped. Numbers are written as `json.dumps` writes
+them: an integer in plain decimal and a float as its shortest round-trip representation, so `1e16` stays `1e+16`.
+Decoding the result with `json.loads` and encoding it again gives the same bytes. A value `json.dumps` cannot encode
+raises `TypeError`; a non-finite number, a lone surrogate, a value nested beyond the interpreter recursion limit, and an
+integer beyond the interpreter's decimal conversion limit raise `ValueError`.
 
 ### Upload records and sources
 
@@ -161,7 +158,7 @@ upload reads; see [upload helpers](#upload-helpers). The handles are loaded only
 
 ### Resume state
 
-`ResumeState(*, helper: str, state: WireValue)` is a small, opaque token: the identity of the helper it belongs to and
+`ResumeState(*, helper: str, state: JSONValue)` is a small, opaque token: the identity of the helper it belongs to and
 the state that helper continues from, such as a cursor, a next URL, an operation's poll values, or a Last-Event-ID. The
 helper's identity must be a string without lone surrogates. The representation is `ResumeState(version=1)`, each
 instance equals only itself, and nothing is written to disk automatically: the caller saves the token where it likes.
@@ -2657,15 +2654,29 @@ adds 2.4–4.1 µs: 1.6 µs to bind them and select the media type, which the ca
 
 Generated clients send and read model values through their model backend, with no validation layer of their own:
 
+| Backend | Sends | Receives |
+|---|---|---|
+| Pydantic v2 `BaseModel` | `model_dump_json(by_alias=True, exclude_unset=True)`; other types through a cached `TypeAdapter` | `TypeAdapter(T).validate_json` |
+| Pydantic v2 dataclass | `TypeAdapter(T).dump_json(by_alias=True)` | `TypeAdapter(T).validate_json` |
+| `msgspec.Struct` | `msgspec.json.encode` | `msgspec.json.Decoder(T).decode` |
+| dataclasses, `TypedDict` | `json.dumps` of the renamed fields | `json.loads`, then the renamed fields |
+
+Adapters and decoders are built on a type's first use and cached for the process. dataclasses and `TypedDict` have no
+validation of their own: the generated converter renames wire names to fields and builds nested models, lists, sets,
+tuples, dicts, and optionals, and converts only `datetime`, `date`, and `time` (with `fromisoformat`), `UUID`,
+`Decimal` (sent as a string), an `Enum` by value (an unknown value fails), and `bytes` as base64. A `TypedDict` keeps
+unknown keys and leaves out absent ones; a dataclass drops unknown keys and leaves out a field whose value is its
+`None` default.
+
 - **Requests.** Arguments and bodies are serialized from the model values as given. Aliases, presence, and the
-  conversion of dates, decimals, enums, and media follow the models, and a read-only member is left out. A value is
-  checked only as far as its model's constructor already checked it, and what the serializer cannot represent fails
-  with `RequestEncodingError` before anything is sent. An empty array or object in a style-encoded parameter or a form
-  member is left out as an omitted value is: it writes no query pair, header, cookie, or part. A path segment cannot be
-  left out, so an empty array or object in a path parameter fails with `RequestEncodingError` before anything is sent.
+  conversion of dates, decimals, enums, and media follow the models. A value is checked only as far as its model's
+  constructor already checked it, and what the serializer cannot represent fails with `RequestEncodingError` before
+  anything is sent. An empty array or object in a style-encoded parameter or a form member is left out as an omitted
+  value is: it writes no query pair, header, cookie, or part. A path segment cannot be left out, so an empty array or
+  object in a path parameter fails with `RequestEncodingError` before anything is sent.
 - **Responses.** Bodies, parts, stream events, and socket messages are converted by the model backend into the declared
   types, which check what those types declare and coerce as the backend does; a value the type refuses raises
-  `ResponseValidationError`, and a write-only member is refused.
+  `ResponseValidationError`. Read-only and write-only behavior follows the generated model options.
 - **Binding.** A missing required argument, an unknown keyword, or a media type the operation does not declare fails
   before anything is sent.
 - **Path segments.** Path arguments that make their segment `.` or `..` once encoded in their parameters' styles and
@@ -2674,17 +2685,18 @@ Generated clients send and read model values through their model backend, with n
   whose encoded text is non-empty, with a `ParameterEncodingError` cause, before anything is sent: URL normalization in
   clients, proxies, and servers would remove the segment and send the call to another resource, and encoding the dots
   does not prevent it. `...` and `.a` are sent as they are, and a dot segment the path template spells is not refused.
-- **Headers.** The header decoders check a header's value against its schema before converting it. Read a body
-  without any model with `with_raw_response` or `with_streaming_response` instead.
+- **Headers.** Header values are converted through their native types. Read a body without any model with
+  `with_raw_response` or `with_streaming_response` instead.
 
-A response whose union members only their schemas tell apart, such as two object models read by a stdlib dataclass or
-TypedDict converter, cannot be converted, so generation fails with `E_CONFIG_VALUE` naming the use:
+A union of object models read by a stdlib dataclass or TypedDict converter needs a declared discriminator. Without
+one, generation fails with `MC_CODEC_UNSUPPORTED` naming the use:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.model-codecs.diagnostics -->
 <!-- fmt: off -->
 
 ```text
-E_CONFIG_VALUE binding /paths/~1orders~1{orderId}/get/responses/200: The client cannot convert the response body 200 application/json of GET /orders/{orderId}, which tells its union members apart only by their schemas
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1animals~1any/put/requestBody: The union of Cat and Dog needs a declared discriminator for the dataclasses.dataclass converter
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1kin/put/requestBody: The union of Animal and Cat needs a declared discriminator for the dataclasses.dataclass converter
 ```
 
 <!-- fmt: on -->

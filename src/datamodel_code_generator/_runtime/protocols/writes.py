@@ -14,6 +14,7 @@ from typing_extensions import TypeVar
 from ..client.operations import BodyMedia, ParameterSpec
 from ..client.paths import dot_segment, path_segments
 from ..model_codecs.errors import ParameterEncodingError
+from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.unset import UNSET
 from .records import BodyTarget, ParameterTarget, QuerystringTarget
 from .values import Patch, written
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from ..client.operations import OperationPlan
-    from ..model_codecs.wire import WireValue
+    from ..model_codecs.media import JSONValue
     from .records import RequestTarget, Selector
 
 __all__ = (
@@ -52,31 +53,35 @@ ReadPaths: TypeAlias = "tuple[tuple[str, tuple[PathPart, ...]], ...]"
 class PatchedParameter(ParameterSpec):
     """A parameter whose argument is always a Patch of the caller's argument, such as a querystring's properties."""
 
-    def encode(self, value: object) -> WireValue:
+    def dump(self, value: object) -> JSONValue:
         """Return the wire value of the caller's argument with the patch's writes."""
         assert isinstance(value, Patch)
-        return value.applied(lambda given: ParameterSpec.encode(self, given))
+        return value.applied(lambda given: ParameterSpec.dump(self, given))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PatchedMedia(BodyMedia):
     """A JSON request media whose body is always a Patch of the caller's body."""
 
-    def wire(self, value: object) -> WireValue:
+    def json(self, value: object) -> bytes:
+        """Return the JSON bytes of the caller's body with the patch's writes."""
+        return _json_bytes(self.dump(value))
+
+    def dump(self, value: object) -> JSONValue:
         """Return the wire value of the caller's body with the patch's writes."""
         assert isinstance(value, Patch)
-        return value.applied(lambda given: BodyMedia.wire(self, given))
+        return value.applied(lambda given: BodyMedia.dump(self, given))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ReadParameter(ParameterSpec):
     """A parameter whose encoded argument a helper reads before it is sent, as validated as any argument's."""
 
-    read: Callable[[WireValue], None]
+    read: Callable[[JSONValue], None]
 
-    def encode(self, value: object) -> WireValue:
+    def dump(self, value: object) -> JSONValue:
         """Return the wire value of the caller's argument once the helper has read it."""
-        wire = ParameterSpec.encode(self, value)
+        wire = ParameterSpec.dump(self, value)
         self.read(wire)
         return wire
 
@@ -85,11 +90,15 @@ class ReadParameter(ParameterSpec):
 class ReadMedia(BodyMedia):
     """A JSON request media whose encoded body a helper reads before it is sent, as validated as any body's."""
 
-    read: Callable[[WireValue], None]
+    read: Callable[[JSONValue], None]
 
-    def wire(self, value: object) -> WireValue:
+    def json(self, value: object) -> bytes:
+        """Return the JSON bytes of the caller's body once the helper has read it."""
+        return _json_bytes(self.dump(value))
+
+    def dump(self, value: object) -> JSONValue:
         """Return the wire value of the caller's body once the helper has read it."""
-        wire = BodyMedia.wire(self, value)
+        wire = BodyMedia.dump(self, value)
         self.read(wire)
         return wire
 
@@ -138,7 +147,7 @@ def targeted(
                 queries.add(target.name)
         spec = parameters[index]
         parameters[index] = (
-            replace(spec, encoder=None) if pointer is None else PatchedParameter(plan=spec.plan, encoder=spec.encoder)
+            replace(spec, codec=None) if pointer is None else PatchedParameter(plan=spec.plan, codec=spec.codec)
         )
         writes.append((index, pointer))
     body = call.body
@@ -147,8 +156,7 @@ def targeted(
         body = replace(
             body,
             media=tuple(
-                PatchedMedia(media_type=media.media_type, kind=media.kind, encoder=media.encoder)
-                for media in body.media
+                PatchedMedia(media_type=media.media_type, kind=media.kind, codec=media.codec) for media in body.media
             ),
         )
     called = replace(call, parameters=tuple(parameters), body=body)
@@ -201,7 +209,7 @@ def dotted_read(
     parameters: Sequence[ParameterSpec],
     segment: str,
     parts: tuple[PathPart, ...],
-    written: tuple[WireValue, ...],
+    written: tuple[JSONValue, ...],
     callers: Callable[[], Mapping[str, str]],
 ) -> Selector | None:
     """Return the selector of a read value written to a path segment that encodes to a dot segment, or None.
@@ -239,7 +247,7 @@ class Targeted(Generic[T]):
     queries: frozenset[str]
     dotted: ReadPaths
 
-    def request(self, values: tuple[WireValue, ...]) -> tuple[tuple[object, ...], object]:
+    def request(self, values: tuple[JSONValue, ...]) -> tuple[tuple[object, ...], object]:
         """Return the arguments and body of a request writing each value in order, every other argument omitted.
 
         A parameter's value replaces its argument, and the values for a querystring or the body are patched into an
@@ -262,7 +270,7 @@ def targeted_writes(
     return Targeted(*targeted(call, (target for target, _ in sources)), read_paths(call, sources))
 
 
-def dotted_write(targeted: Targeted[Any], written: tuple[WireValue, ...]) -> Selector | None:
+def dotted_write(targeted: Targeted[Any], written: tuple[JSONValue, ...]) -> Selector | None:
     """Return the selector of a read value that makes a path segment a dot segment once encoded, or None."""
     parameters = targeted.call.parameters
     return next(

@@ -13,6 +13,7 @@ from datamodel_code_generator._api_generation import TargetRender
 from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.caching import plan_caches
+from datamodel_code_generator._client.codec_plan import plan_client_codecs
 from datamodel_code_generator._client.config import ClientGenerationConfig
 from datamodel_code_generator._client.fields import plan_fields
 from datamodel_code_generator._client.model_facts import ModelFacts
@@ -45,20 +46,16 @@ from datamodel_code_generator._client.webhooks import (
     webhook_uses,
 )
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
-from datamodel_code_generator._openapi_codec_plan import plan_model_codecs
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
-from datamodel_code_generator._runtime.model_codecs.codec import needs_schema
 from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
-from datamodel_code_generator._target_contract import OperationId
-from datamodel_code_generator._target_render import PATTERNS, model_dependencies, patterned
+from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
+    from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecBackend
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import OperationSpec
     from datamodel_code_generator._client.polling import PollingSpec
@@ -66,7 +63,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.uploads import UploadSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
-    from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_contract import (
@@ -77,14 +73,12 @@ if TYPE_CHECKING:
     )
 
 DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
-VALIDATION: Final = ("jsonschema[format-nongpl]>=4.26", "referencing>=0.37")
 PYDANTIC: Final = "pydantic>=2.13.5"
 BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
     "pydantic_v2.BaseModel": (PYDANTIC,),
     "pydantic_v2.dataclass": (PYDANTIC,),
     "msgspec.Struct": ("msgspec>=0.18",),
 }
-_RESPONSE_ROLES: Final = {"response_body": "response body", "response_encoding_header": "part header"}
 _BACKENDS: Final[dict[DataModelType, CodecBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
     DataModelType.PydanticV2Dataclass: "pydantic_v2.dataclass",
@@ -124,16 +118,12 @@ class ClientTarget:
             batch = replace(batch, type_uses=(*batch.type_uses, *parts))
         if parts or events:
             wire = _wire(request, batch, parts, received)
-        codecs = plan_model_codecs(
-            batch,
-            replace(wire, schema_ids=tuple(item for item in wire.schema_ids if item[0] in uses)),
-            backend,
-            envelopes=False,
-        )
+        facts = ModelFacts(batch)
+        codecs = plan_client_codecs(batch, wire, backend, uses, facts)
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
-        facts, coded = ModelFacts(batch), frozenset(use for use, _ in codecs.bindings)
+        coded = frozenset(item.use for item in codecs.uses)
         plan, named = plan_fields(plan, facts, coded, wire)
         pages, checked = plan_pagination(protocols, plan, facts, coded, wire, request)
         polls, polled = plan_polling(protocols, plan, facts, coded, wire, request)
@@ -144,10 +134,8 @@ class ClientTarget:
         streams = plan_streams(streamed, protocols, plan, facts, coded, wire, request, stream_problems)
         sockets = plan_sockets(opened, socket_problems)
         webhooks = plan_webhooks(events, codecs, hooked)
-        ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
             *named,
-            *_inseparable(ordinary),
             *helper_problems(
                 protocols,
                 plan,
@@ -196,9 +184,7 @@ class ClientTarget:
             dependencies=(
                 *DEPENDENCIES,
                 *((WEBSOCKETS,) if sockets else ()),
-                *(VALIDATION if codecs.bindings else ()),
                 *BACKEND_DEPENDENCIES.get(backend, ()),
-                *((PATTERNS,) if patterned(wire) else ()),
                 *webhook_dependencies(webhooks),
                 *model_dependencies(request.models),
             ),
@@ -231,35 +217,6 @@ def _wire(
     )
 
 
-def _label(use: TypeUseId) -> str:
-    """Return how a message names a response use: its role, name, status, media, and operation's method and path."""
-    owner = use.owner
-    assert isinstance(owner, OperationId)
-    *_, path, method = (token.replace("~1", "/").replace("~0", "~") for token in owner.use_site.pointer.split("/"))
-    part = "part" if use.name is not None and use.role.endswith("_body") else None
-    described = (_RESPONSE_ROLES[use.role], part, use.name, use.status, use.media)
-    return f"{' '.join(word for word in described if word)} of {method.upper()} {path}"
-
-
-def _inseparable(codecs: CodecPlan) -> Iterator[Diagnostic]:
-    """Yield a diagnostic for each received use whose union members only their schemas tell apart.
-
-    Responses are converted natively, which cannot choose among such members.
-    """
-    for use, binding in codecs.bindings:
-        if use.role in _RESPONSE_ROLES and needs_schema(binding):
-            yield Diagnostic(
-                code="E_CONFIG_VALUE",
-                severity="error",
-                stage="binding",
-                message=(
-                    f"The client cannot convert the {_label(use)}, which tells its union members apart only by their "
-                    "schemas"
-                ),
-                source_pointer=use.use_site.pointer,
-            )
-
-
 def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
     return Diagnostic(
         code=item.code,
@@ -275,7 +232,7 @@ def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
 class _HelperDigests:
     """Digest each rendered helper's contract closure."""
 
-    def __init__(self, request: TargetRequest, codecs: CodecPlan, wire: WirePlan) -> None:
+    def __init__(self, request: TargetRequest, codecs: ClientCodecs, wire: WirePlan) -> None:
         """Index the import locations of the generated symbols."""
         self.request = request
         self.wire = wire
@@ -413,7 +370,6 @@ class _HelperDigests:
             "name": spec.helper.name,
             "event": {event.name: self.type(event.use) for event in events} if mapped else self.type(events[0].use),
             "key": key_class(spec.helper.tree["signature"]["kind"]),
-            "validate": {event.name: event.validate for event in events} if mapped else events[0].validate,
             "settings": settings,
         }
         return _digest({
@@ -496,7 +452,7 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
 
 
 def _projection(value: object) -> JSONValue:
-    """Project a contract value into canonical JSON."""
+    """Project normalized contract mappings, sequences, and scalar values into canonical JSON."""
     if _is_sequence(value):
         return [_projection(item) for item in value]
     if _is_mapping(value):

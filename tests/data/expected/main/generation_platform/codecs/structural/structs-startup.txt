@@ -1,20 +1,6 @@
-matching: built
-not-struct: CodecConfigurationError The native type of models:Limits does not match its binding
-renamed: CodecConfigurationError The native type of models:Limits does not match its binding
-required-disagrees: CodecConfigurationError The native type of models:Limits does not match its binding
-tag-disagrees: CodecConfigurationError The native type of models:Small does not match its binding
-convert-refused: CodecConfigurationError The native type of models:Holder does not match its binding
-structural-tz: NativeValidationError native.tz@/when['when']
-unreadable-pattern: CodecConfigurationError The native type of models:Stamped.when does not match its binding
-constrained-tuple: CodecConfigurationError The native type of models:Stamped.pair does not match its binding
-native-gap: ModelProjectionError The native use has an unplanned projection gap at /id
-native-gap-convert: ModelProjectionError The native use has an unplanned projection gap at /id
-relaxed-tag: NativeValidationError native.tag@/pet/size['pet', 'size']
-relaxed-pattern: NativeValidationError native.pattern@/code['code']
-relaxed-ge: NativeValidationError native.ge@/low['low']
-relaxed-lt: NativeValidationError native.lt@/high['high']
-relaxed-gt: NativeValidationError native.gt@/ratio['ratio']
-relaxed-le: NativeValidationError native.le@/ratio['ratio']
-relaxed-multiple: NativeValidationError native.multiple_of@/ratio['ratio']
-relaxed-min-length: NativeValidationError native.min_length@/name['name']
-relaxed-max-length: NativeValidationError native.max_length@/name['name']
+not-struct: ValidationError
+renamed: ValidationError
+required-disagrees: ValidationError
+tag-disagrees: ValidationError
+unreadable-pattern: TypeError
+constrained-tuple: TypeError

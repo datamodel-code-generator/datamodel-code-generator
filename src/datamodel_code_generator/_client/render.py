@@ -14,6 +14,7 @@ from datamodel_code_generator._client._compiled_templates import client as clien
 from datamodel_code_generator._client._compiled_templates import resource as resource_template
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.caching import CacheSpec
+from datamodel_code_generator._client.codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
@@ -25,7 +26,6 @@ from datamodel_code_generator._client.runtime import (
 )
 from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
-from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Doc, Group, layout
 from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
@@ -35,6 +35,8 @@ from datamodel_code_generator._target_render import field_plan, items, parameter
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
+    from datamodel_code_generator._client.codec_plan import ClientCodecs
+    from datamodel_code_generator._client.codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.model_facts import ItemStep
     from datamodel_code_generator._client.pagination import PaginationSpec
@@ -53,8 +55,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.runtime import Helper, Security
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
-    from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.client.multipart import PartPlan
     from datamodel_code_generator._target_contract import (
@@ -685,7 +685,7 @@ _Key: TypeAlias = _Model | _Parts | str
 _SURFACES: Final = {
     "form": ("bodies", "FormData", ""),
     "multipart": ("bodies", "MultipartData", "[bytes]"),
-    "wire": ("model_codecs", "WireValue", ""),
+    "wire": ("model_codecs", "JSONValue", ""),
 }
 _Headers: TypeAlias = "dict[str, tuple[str, list[tuple[ResponseSpec, HeaderSpec]]]]"
 
@@ -775,9 +775,9 @@ def _call(head: str, entries: Iterable[tuple[str, Doc]]) -> Group:
 
 
 def _wire(value: object) -> object:
-    """Return a JSON value as a wire value, whose arrays are tuples."""
+    """Keep helper literals as ordinary JSON arrays and objects."""
     if isinstance(value, list):
-        return tuple(map(_wire, value))
+        return list(map(_wire, value))
     return {key: _wire(item) for key, item in value.items()} if isinstance(value, dict) else value
 
 
@@ -1003,7 +1003,7 @@ class Module:
 class _Typing:
     """Spell the payload types of a planned client: model types, or schema-less surfaces."""
 
-    def __init__(self, plan: ClientPlan, codecs: CodecPlan, accessors: dict[TypeUseId, UseAccessors]) -> None:
+    def __init__(self, plan: ClientPlan, codecs: ClientCodecs, accessors: dict[TypeUseId, UseAccessors]) -> None:
         """Keep the plan, the imports of the codec plan, and the codec accessors of every bound use."""
         self.plan = plan
         self.symbols = dict(codecs.imports)
@@ -1095,15 +1095,13 @@ class _Typing:
         return f"{module.local('bodies', f'{prefix}MultipartBody')}[{values}]"
 
     def part_values(self, module: Module, media: MediaSpec) -> str:
-        """Return the values the field parts of a body sent as parts take: each member's, WireValue for any extra."""
+        """Return the values the field parts of a body sent as parts take: each member's, JSONValue for any extra."""
         keys = (self.key("json", part.use) for part in member_parts(media) if not part.plan.file)
         return self.union(module, keys, "") or module.name("typing_extensions", "Never")
 
     def codec(self, module: Module, use: TypeUseBinding) -> str:
-        """Return the model bindings accessor of a use: its codec and context."""
-        accessor = self.accessors[use.id]
-        bindings = module.local("_generated", "model_bindings")
-        return f"{bindings}.{accessor.codec}, {bindings}.{accessor.context}"
+        """Return the model bindings codec of a use."""
+        return f"{module.local('_generated', 'model_bindings')}.{self.accessors[use.id].codec}"
 
 
 class _Resources(_Typing):
@@ -1112,7 +1110,7 @@ class _Resources(_Typing):
     def __init__(  # noqa: PLR0913
         self,
         plan: ClientPlan,
-        codecs: CodecPlan,
+        codecs: ClientCodecs,
         accessors: dict[TypeUseId, UseAccessors],
         user_agent: str | None,
         *,
@@ -1169,7 +1167,7 @@ class _Resources(_Typing):
             "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
             "raw": module.local("responses", f"{prefix}RawResponse"),
-            "binary": f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('model_codecs', 'WireValue')}]",
+            "binary": f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('model_codecs', 'JSONValue')}]",
             "manager": module.name("contextlib", f"Abstract{prefix}ContextManager"),
             "coroutine": "async " if asynchronous else "",
             "wait": "await " if asynchronous else "",
@@ -1650,7 +1648,7 @@ class _Types(_Typing):
             module.local(_CODECS, "HeaderBranch"),
             (
                 ("plan=", parameter_plan(module.local, header.plan)),
-                ("decode=", f"{module.local(_CODECS, 'native_value')}({self.codec(module, header.use)})"),
+                ("codec=", self.codec(module, header.use)),
                 ("missing=", module.local(_CODECS, missing)),
             ),
         )
@@ -1857,15 +1855,11 @@ class _Registry(_Typing):
             (("method=", repr(spec.name)), ("names=", _tuple(map(repr, names))), ("media=", _tuple(media))),
         )
 
-    def encoder(self, module: Module, use: TypeUseBinding) -> str:
-        """Return the Encoder of a sent use."""
-        return f"{module.local(_RUNTIME, 'Encoder')}({self.codec(module, use)})"
-
     def parameter(self, module: Module, parameter: ParameterSpec) -> Group:
         """Return the ParameterSpec constructor of one parameter."""
         entries: list[tuple[str, Doc]] = [("plan=", parameter_plan(module.local, parameter.plan))]
         if (use := parameter.use) is not None and use.id in self.accessors:
-            entries.append(("encoder=", self.encoder(module, use)))
+            entries.append(("codec=", self.codec(module, use)))
         return _call(module.local(_RUNTIME, "ParameterSpec"), entries)
 
     def media(self, module: Module, media: MediaSpec) -> Group:
@@ -1877,7 +1871,7 @@ class _Registry(_Typing):
             if media.extra is not None:
                 entries.append(("additional_part=", self.sent_plan(module, media.extra)))
         elif kind != "binary" and media.use is not None and media.use.id in self.accessors:
-            entries.append(("encoder=", self.encoder(module, media.use)))
+            entries.append(("codec=", self.codec(module, media.use)))
             entries.extend(self.form(module, media))
         return _call(module.local(_RUNTIME, "BodyMedia"), entries)
 
@@ -1895,7 +1889,7 @@ class _Registry(_Typing):
             (
                 ("", repr(plan.name)),
                 *((flag, "True") for flag, value in flags if value),
-                *((("encoder=", self.encoder(module, part.use)),) if part.use is not None else ()),
+                *((("codec=", self.codec(module, part.use)),) if part.use is not None else ()),
                 *((("content_types=", _tuple(map(repr, plan.content_types))),) if plan.content_types else ()),
                 *((("style=", parameter_plan(module.local, plan.style)),) if plan.style is not None else ()),
             ),
@@ -1988,9 +1982,9 @@ class _Registry(_Typing):
         multipart = "_runtime.client.multipart"
         if part.use is None:
             return _call(module.local(multipart, "file_part"), (("", repr(plan.name)), *flags))
-        value = f"{module.local(_CODECS, 'native_value')}({self.codec(module, part.use)})"
+        codec = self.codec(module, part.use)
         return _call(
-            module.local(multipart, "value_part"), (("", repr(plan.name)), ("", repr(plan.kind)), ("", value), *flags)
+            module.local(multipart, "value_part"), (("", repr(plan.name)), ("", repr(plan.kind)), ("", codec), *flags)
         )
 
 
@@ -2812,9 +2806,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         )
         return _union((_merged(module, types), *unknown))
 
-    def decoder(self, module: Module, use: TypeUseBinding) -> str:
-        """Return the decoder of an event or error schema's data, by its use's codec."""
-        return f"{module.local(_CODECS, 'native_value')}({self.resources.codec(module, use)})"
+    def codec(self, module: Module, use: TypeUseBinding) -> str:
+        """Return the codec of an event, error, or message schema's data."""
+        return self.resources.codec(module, use)
 
     def stream_plan(self, module: Module, index: int, spec: StreamSpec) -> str:
         """Return a stream helper's plan: its identity, operation, media type, event and error decoders, and end.
@@ -2840,11 +2834,11 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ("fingerprint=", repr(self.fingerprints[helper.name])),
         ]
         if not isinstance(schema := tree["event_schema"], dict):
-            entries.append(("event=", self.decoder(module, spec.events[0][1])))
+            entries.append(("event=", self.codec(module, spec.events[0][1])))
         else:
             entries.append((
                 "routes=",
-                _tuple(_tuple((repr(key), self.decoder(module, use))) for key, use in spec.events),
+                _tuple(_tuple((repr(key), self.codec(module, use))) for key, use in spec.events),
             ))
             if (selector := schema["discriminator"])["from"] == "body":
                 body = module.local("_runtime.protocols.records", "BodySelector")
@@ -2854,7 +2848,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         if spec.errors:
             entries.append((
                 "errors=",
-                _tuple(_tuple((repr(key), self.decoder(module, use))) for key, use in spec.errors),
+                _tuple(_tuple((repr(key), self.codec(module, use))) for key, use in spec.errors),
             ))
         if (completion := tree["completion"])["kind"] != "eof":
             entries.extend((("completion=", repr(completion["kind"])), ("terminal=", repr(completion["value"]))))
@@ -3002,13 +2996,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 entries.append((f"{direction}_codec=", repr(message["codec"])))
             if message["frame"] != "text":
                 entries.append((f"{direction}_frame=", repr(message["frame"])))
-            if use is not None and direction == "send":
-                entries.append((
-                    "encoder=",
-                    f"{module.local(_RUNTIME, 'Encoder')}({self.resources.codec(module, use)})",
-                ))
-            elif use is not None:
-                entries.append(("decoder=", self.decoder(module, use)))
+            if use is not None:
+                entries.append(("encoder=" if direction == "send" else "decoder=", self.codec(module, use)))
         if subprotocols := tree["subprotocols"]:
             entries.append(("subprotocols=", _tuple(map(repr, subprotocols))))
         if tree["compression"]:
@@ -3056,7 +3045,7 @@ class ClientRenderer:
         plan: ClientPlan,
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
-        codecs: CodecPlan,
+        codecs: ClientCodecs,
         helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
@@ -3084,7 +3073,7 @@ class ClientRenderer:
     @cached_property
     def bindings(self) -> RenderedBindings:
         """Return the model bindings module of every bound use, rendered once."""
-        return render_model_bindings(self.codecs, self.wire, self.batch, surface="client")
+        return render_model_bindings(self.codecs)
 
     @cached_property
     def accessors(self) -> dict[TypeUseId, UseAccessors]:

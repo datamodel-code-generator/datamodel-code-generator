@@ -27,8 +27,7 @@ from .hooks import CallEvent
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from ..model_codecs.wire import JSONScalar
-    from .hooks import AsyncHook, CallOutcome, EventName, Hook, RetryReason
+    from .hooks import AsyncHook, CallOutcome, EventName, Hook, JSONScalar, RetryReason
     from .logical import LogicalCallContext
     from .options import Settings
     from .responses import Response, ResponseInfo

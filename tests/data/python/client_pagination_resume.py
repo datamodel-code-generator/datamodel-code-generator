@@ -349,6 +349,9 @@ def _requests(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     lines.append(f"  cookie limit ! {describe(error)} {_resume_state(error)}")
     searches = api.protocols.searches.all
     record(lines, "body its codec refuses", searches.iterate(body=5).checkpoint)
+    unserializable = _body(harness, "search", {"query": "a"})
+    unserializable.query = object()
+    record(lines, "body native serialization refuses", searches.iterate(body=unserializable).checkpoint)
     exchange.respond(user_page("1", next_cursor="c1"), user_page("2"))
     concrete = searches.iterate(
         body=_body(harness, "search", {"query": "a"}), media_type="application/json; charset=utf-8"

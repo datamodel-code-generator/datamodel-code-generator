@@ -7,7 +7,6 @@ from typing import Final
 
 from ._generated import model_bindings
 from ._runtime.client.operations import (
-    Encoder,
     OperationPlan,
     ParameterSpec,
     ResponseDecoder,
@@ -26,27 +25,10 @@ OPERATION_0: Final[OperationPlan[GetOrderResponse, GetOrderErrorData]] = Operati
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_2, model_bindings.CONTEXT_2,
-            ),
-            model_branch(
-                'default',
-                'application/json',
-                'json',
-                model_bindings.codec_3, model_bindings.CONTEXT_3,
-            ),
+            model_branch('200', 'application/json', 'json', model_bindings.codec_2),
+            model_branch('default', 'application/json', 'json', model_bindings.codec_3),
         ),
-        (
-            model_branch(
-                'default',
-                'application/json',
-                'json',
-                model_bindings.codec_3, model_bindings.CONTEXT_3,
-            ),
-        ),
+        (model_branch('default', 'application/json', 'json', model_bindings.codec_3),),
         GetOrderHTTPError,
     ),
     parameters=(
@@ -58,7 +40,7 @@ OPERATION_0: Final[OperationPlan[GetOrderResponse, GetOrderErrorData]] = Operati
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            codec=model_bindings.codec_0,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -67,7 +49,7 @@ OPERATION_0: Final[OperationPlan[GetOrderResponse, GetOrderErrorData]] = Operati
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
+            codec=model_bindings.codec_1,
         ),
     ),
 )

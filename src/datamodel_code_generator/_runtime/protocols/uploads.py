@@ -29,7 +29,7 @@ from ..client.errors import (
 from ..client.options import RequestOptions
 from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
 from ..model_codecs.errors import CodecError
-from ..model_codecs.media import decode_json
+from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET
 from .errors import (
     NonResumableSourceError,
@@ -68,7 +68,7 @@ if TYPE_CHECKING:
     from ..client.operations import OperationPlan
     from ..client.responses import ResponseInfo
     from ..client.timing import Deadline
-    from ..model_codecs.wire import WireValue
+    from ..model_codecs.media import JSONValue
     from .pagination import PageBinding
     from .records import ParameterTarget, ProtocolProgress, Selector
     from .references import OperationRef
@@ -478,7 +478,7 @@ class _Upload(Generic[T]):
         self._high: int | None = 0
         self._closed = False
         self._changed = False
-        self._bound: tuple[tuple[WireValue, ...], tuple[WireValue, ...], tuple[WireValue, ...]] = ((), (), ())
+        self._bound: tuple[tuple[JSONValue, ...], tuple[JSONValue, ...], tuple[JSONValue, ...]] = ((), (), ())
         self._expires_at: datetime | None = None
         self._result: T | None = None
 
@@ -634,7 +634,7 @@ class _Upload(Generic[T]):
             condition=condition, location=at, helper_id=plan.helper_id, operation=plan.operation, info=info
         )
 
-    def _read(self, read: Selector, wire: WireValue, info: ResponseInfo) -> WireValue:
+    def _read(self, read: Selector, wire: JSONValue, info: ResponseInfo) -> JSONValue:
         """Return what a selector reads from a response, refusing a missing value and a header repeated once."""
         try:
             value = selected(read, wire, info)
@@ -645,8 +645,8 @@ class _Upload(Generic[T]):
         return value
 
     def _values(
-        self, targeted: Targeted[Any], bindings: tuple[PageBinding, ...], wire: WireValue, info: ResponseInfo
-    ) -> tuple[WireValue, ...]:
+        self, targeted: Targeted[Any], bindings: tuple[PageBinding, ...], wire: JSONValue, info: ResponseInfo
+    ) -> tuple[JSONValue, ...]:
         """Return what bindings write: their literals and what the create response gives, refusing dot segments."""
         written = tuple(
             binding.literal if binding.selector is None else self._read(binding.selector, wire, info)
@@ -656,8 +656,8 @@ class _Upload(Generic[T]):
         return written
 
     def _created(
-        self, _data: object, wire: WireValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
-    ) -> tuple[tuple[tuple[WireValue, ...], tuple[WireValue, ...], tuple[WireValue, ...]], datetime | None]:
+        self, _data: object, wire: JSONValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
+    ) -> tuple[tuple[tuple[JSONValue, ...], tuple[JSONValue, ...], tuple[JSONValue, ...]], datetime | None]:
         """Read what each later call writes from the create response, and the server's expiry."""
         plan = self._plan
         bound = (
@@ -674,7 +674,7 @@ class _Upload(Generic[T]):
         return bound, expires_at
 
     def _offered(
-        self, _data: object, wire: WireValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
+        self, _data: object, wire: JSONValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
     ) -> tuple[int, ResponseInfo]:
         """Return the offset a probe response gives: a JSON integer, or a header of ASCII digits."""
         read = self._plan.remote_offset
@@ -761,7 +761,7 @@ class _Upload(Generic[T]):
         return (*completed.request(self._bound[2]), None)
 
     def _completed(
-        self, data: T, _wire: WireValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]
+        self, data: T, _wire: JSONValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]
     ) -> T:
         """Keep the completion's result."""
         with self._guard:
@@ -807,20 +807,20 @@ class _Upload(Generic[T]):
 
     def _checkpoint(self) -> ResumeState:
         delivery = self._delivery
-        state: WireValue = {
+        state: JSONValue = {
             "size": self._size,
             "chunk": self._chunk,
             "confirmed": self._confirmed,
             "phase": self._phase.value,
             "delivery": None if delivery is None else delivery.value,
-            "bound": self._bound,
+            "bound": [list(group) for group in self._bound],
             "expires_at": saved_expiry(self._expires_at),
         }
         return ResumeState(helper=self._plan.fingerprint, state=state)
 
 
 def _dotted(
-    plan: UploadPlan[Any, Any], targeted: Targeted[Any], written: tuple[WireValue, ...], info: ResponseInfo | None
+    plan: UploadPlan[Any, Any], targeted: Targeted[Any], written: tuple[JSONValue, ...], info: ResponseInfo | None
 ) -> None:
     """Refuse read values that make a path segment a dot segment once encoded, as data a server gave."""
     from .writes import dotted_write  # noqa: PLC0415 - A plan loaded the operation runtime.
@@ -831,9 +831,9 @@ def _dotted(
         )
 
 
-def _written(plan: UploadPlan[Any, Any], offset: int, data: memoryview | bytes) -> tuple[WireValue, ...]:
+def _written(plan: UploadPlan[Any, Any], offset: int, data: memoryview | bytes) -> tuple[JSONValue, ...]:
     """Return what an append writes after its bindings: its offset, and the length and checksum of what it sends."""
-    values: list[WireValue] = [offset]
+    values: list[JSONValue] = [offset]
     if plan.length is not None:
         values.append(len(data))
     if plan.checksum is not None:
@@ -1240,7 +1240,7 @@ class AsyncUploadHandle(_Upload[T]):
 
 
 def _ignored(
-    _data: object, _wire: WireValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]
+    _data: object, _wire: JSONValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]
 ) -> None:
     """Confirm an append by its success response alone."""
 
@@ -1308,7 +1308,7 @@ class _Saved:
     confirmed: int
     phase: _Phase
     delivery: DeliveryState | None
-    bound: tuple[tuple[WireValue, ...], tuple[WireValue, ...], tuple[WireValue, ...]]
+    bound: tuple[tuple[JSONValue, ...], tuple[JSONValue, ...], tuple[JSONValue, ...]]
     expires_at: datetime | None
 
 
@@ -1316,7 +1316,7 @@ def _resume_error(plan: UploadPlan[Any, Any], condition: Literal["fingerprint", 
     return ResumeStateError(condition=condition, helper_id=plan.helper_id, operation=plan.operation)
 
 
-def _bound(plan: UploadPlan[Any, Any], saved: WireValue) -> tuple[tuple[WireValue, ...], ...]:
+def _bound(plan: UploadPlan[Any, Any], saved: JSONValue) -> tuple[tuple[JSONValue, ...], ...]:
     """Return the values each later call writes, as saved, a literal binding taking the plan's value."""
     groups = tuple(map(state_array, state_array(saved)))
     bindings = (plan.probe_bindings, plan.append_bindings, plan.completion_bindings)
@@ -1331,7 +1331,7 @@ def _bound(plan: UploadPlan[Any, Any], saved: WireValue) -> tuple[tuple[WireValu
     )
 
 
-def _decoded(plan: UploadPlan[Any, Any], state: WireValue) -> _Saved:
+def _decoded(plan: UploadPlan[Any, Any], state: JSONValue) -> _Saved:
     """Return a checkpoint's state, refusing one whose form does not fit the helper.
 
     Only an upload in progress or one whose completion's outcome is unknown is saved.
@@ -1339,7 +1339,7 @@ def _decoded(plan: UploadPlan[Any, Any], state: WireValue) -> _Saved:
     from collections.abc import Mapping  # noqa: PLC0415
 
     require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
-    fields = cast("Mapping[str, WireValue]", state)
+    fields = cast("Mapping[str, JSONValue]", state)
     size, chunk, confirmed = (state_count(fields[name]) for name in ("size", "chunk", "confirmed"))
     phase, delivery = (state_text(fields[name]) for name in ("phase", "delivery"))
     require_state(0 < chunk <= plan.max_chunk_bytes and confirmed <= size and phase in _PHASES)
@@ -1351,7 +1351,7 @@ def _decoded(plan: UploadPlan[Any, Any], state: WireValue) -> _Saved:
         and (resolved is _Phase.UPLOADING or (confirmed == size and plan.completion is not None))
     )
     bound = cast(
-        "tuple[tuple[WireValue, ...], tuple[WireValue, ...], tuple[WireValue, ...]]", _bound(plan, fields["bound"])
+        "tuple[tuple[JSONValue, ...], tuple[JSONValue, ...], tuple[JSONValue, ...]]", _bound(plan, fields["bound"])
     )
     return _Saved(
         size=size,
@@ -1372,7 +1372,7 @@ def _restored(plan: UploadPlan[T, C], state: object, limits: _Limits) -> _Saved:
     if helper != plan.fingerprint:
         raise _resume_error(plan, "fingerprint")
     try:
-        saved = _decoded(plan, decode_json(state_json))
+        saved = _decoded(plan, json_value(state_json))
     except MalformedStateError:
         raise _resume_error(plan, "malformed") from None
     if (expires_at := saved.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
@@ -1392,7 +1392,7 @@ def _checked(
 
     probe, append, completion = saved.bound
     offsets = _written(plan, 0, b"")
-    requests: list[tuple[Targeted[Any], tuple[WireValue, ...], tuple[WireValue, ...], object]] = [
+    requests: list[tuple[Targeted[Any], tuple[JSONValue, ...], tuple[JSONValue, ...], object]] = [
         (plan.probed, probe, (), None),
         (plan.appended, append, offsets, b""),
     ]

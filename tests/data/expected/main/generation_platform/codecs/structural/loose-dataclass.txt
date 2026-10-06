@@ -1,4 +1,2 @@
-use /paths/~1loose/put request_body: native dataclass models:Holder models=[('models:Holder', 'dataclass', 'ignore', True), ('models:Tag', 'dataclass', 'ignore', False)]
-holder-server-decode-tag: model Holder(value=Tag(label='x')) wire={"value":{"label":"x"}} presence=['', '/value', '/value/label'] extras={}
-holder-server-decode-other: model Holder(value={'other': 1}) wire={"value":{"other":1}} presence=['', '/value', '/value/other'] extras={}
-holder-server-convert-other: CodecConfigurationError The use chooses a union member by its schema, so only its schema can convert it
+APIGenerationError
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1loose/put/requestBody: The union members are both JSON objects, which the dataclasses.dataclass converter cannot tell apart
