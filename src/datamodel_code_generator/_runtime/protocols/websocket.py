@@ -64,7 +64,7 @@ from .options import WSOptions, resolved_transport
 from .websocket_types import Message, PingReceipt, ResolvedWSOptions, WebSocketOpenRequest
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterator
+    from collections.abc import AsyncIterator, Callable
     from types import TracebackType
 
     from ..client.client import AsyncClientCore, ClientCore
@@ -317,9 +317,6 @@ class _Upgraded(httpx2.SyncByteStream):
         self.code: int | None = _GOING_AWAY
         self.reason = ""
 
-    def __iter__(self) -> Iterator[bytes]:
-        return iter(())
-
     def close(self) -> None:
         """Close the connection with the chosen code, or drop it."""
         connection = self.connection
@@ -344,11 +341,6 @@ class _AsyncUpgraded(httpx2.AsyncByteStream):
         self.timeout = timeout
         self.code: int | None = _GOING_AWAY
         self.reason = ""
-
-    async def __aiter__(self) -> AsyncIterator[bytes]:
-        chunk: bytes
-        for chunk in ():
-            yield chunk
 
     async def aclose(self) -> None:
         """Close the connection with the chosen code, or drop it."""
@@ -821,15 +813,16 @@ class _Queue:
         with self._condition:
             ticket = self._next
             self._next += 1
+            served = False
             try:
                 while ticket != self._serving:
                     if (left := _left(deadline, end)) is not None and not left > 0:
-                        self._gone.add(ticket)
                         return False
                     self._condition.wait(left)
-            except BaseException:
-                self._gone.add(ticket)
-                raise
+                served = True
+            finally:
+                if not served:
+                    self._gone.add(ticket)
             return True
 
     def release(self) -> None:

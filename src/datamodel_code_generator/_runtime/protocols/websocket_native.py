@@ -429,9 +429,8 @@ class NativeConnection:
         except ConcurrencyError:
             raise _pinging() from None
         end = None if deadline is None else real_end(deadline.remaining())
-        while not pong.wait(_wait(_left(deadline, end))):
-            if (left := _left(deadline, end)) is not None and not left > 0:
-                raise TimeoutError
+        if not pong.wait(_wait(_left(deadline, end))):
+            raise TimeoutError
         if (protocol := connection.protocol).state is State.CLOSED:
             raise self._closed(protocol.close_exc)
         return connection.latency
