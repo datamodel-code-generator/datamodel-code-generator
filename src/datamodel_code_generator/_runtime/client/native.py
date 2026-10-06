@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, Literal
+from typing import TYPE_CHECKING, Final, Literal, cast
 
 import httpx2
 
@@ -49,7 +49,7 @@ def native_error(error: Exception, *, send_started: bool, response_started: bool
     if isinstance(error, SDKError):
         error.delivery_state = state
         return error
-    phase = next((phase for kinds, phase in _PHASES if isinstance(error, kinds)), "unknown")
+    phase: IOPhase = next((phase for kinds, phase in _PHASES if isinstance(error, kinds)), "unknown")
     if isinstance(error, httpx2.TimeoutException):
         return APITimeoutError(
             phase=phase,
@@ -64,10 +64,11 @@ def native_error(error: Exception, *, send_started: bool, response_started: bool
 def _expired_cap(error: httpx2.TimeoutException, phase: IOPhase) -> float | None:
     """Return the phase timeout the failed request carried, when the native error kept its request."""
     try:
-        caps = error.request.extensions.get("timeout")
+        caps: object = error.request.extensions.get("timeout")
     except RuntimeError:
         return None
-    return caps.get(phase) if isinstance(caps, dict) else None
+    cap = cast("dict[str, object]", caps).get(phase) if isinstance(caps, dict) else None
+    return float(cap) if isinstance(cap, (int, float)) else None
 
 
 def transport_retry_reason(
