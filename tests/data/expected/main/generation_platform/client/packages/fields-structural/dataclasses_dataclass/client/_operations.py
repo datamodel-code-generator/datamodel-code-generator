@@ -389,4 +389,14 @@ OPERATION_8: Final[OperationPlan[ReplacePetResponse, ReplacePetErrorData]] = Ope
         default='application/json',
         required=True,
     ),
+    fields=FieldArguments(
+        method='replace_pet',
+        names=('name', 'tag'),
+        media=(
+            BodyFields(
+                media_type='application/json',
+                fields=((0, 'name', True), (1, 'tag', False)),
+            ),
+        ),
+    ),
 )

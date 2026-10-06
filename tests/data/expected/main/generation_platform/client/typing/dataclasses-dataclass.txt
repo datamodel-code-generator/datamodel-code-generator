@@ -268,14 +268,14 @@ ty clients_negative.py: 86/86 marked lines with one error, 0 elsewhere, 0 in oth
   191 invalid-assignment
 signatures_negative.py 2 marked lines
 mypy signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
-  42 misc
-  43 assignment
+  41 misc
+  42 assignment
 pyright signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
-  42 reportCallIssue
-  43 reportAssignmentType
+  41 reportCallIssue
+  42 reportAssignmentType
 ty signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
-  42 unknown-argument
-  43 invalid-assignment
+  41 unknown-argument
+  42 invalid-assignment
 webhooks_negative.py 13 marked lines
 mypy webhooks_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
   18 assignment

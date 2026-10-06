@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
-    """Return a service that records its keywords, reading uploads and raw requests to their bytes."""
+    """Return a service that records its keywords, reading raw requests to their bytes."""
 
     def record(name: str, arguments: dict[str, object]) -> None:
         calls.append(f"{name}({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
@@ -45,8 +45,8 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def post_check(self, **arguments: object) -> None:
             record("post_check", arguments)
 
-        def upload(self, *, file: object, note: object) -> None:
-            calls.append(f"upload(file={file.filename!r}:{file.file.read()!r}, note={note!r})")
+        def upload(self, **arguments: object) -> None:
+            record("upload", arguments)
 
         async def post_raw(self, *, request: object) -> None:
             body = await request.body()

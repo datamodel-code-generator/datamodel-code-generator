@@ -2,25 +2,17 @@
 """Build the router and the application of every selected operation from the services that implement them."""
 
 from collections.abc import Sequence
-from typing import Final
+from typing import Any, Final
 
 from fastapi import APIRouter, FastAPI
 
-from ._generated import contract, openapi
-from ._generated.contract import OperationDependencies, OperationKey, SchemeKey
-from ._runtime.server.application import (
-    Dependency,
-    FastAPIOptions,
-    application_options,
-    build,
-)
-from ._runtime.server.openapi import install
-from .auth_types import (
-    AsyncAuthorizer,
-    AsyncCredentialExtractor,
-    Authorizer,
-    CredentialExtractor,
-    CredentialExtractors,
+from ._generated.contract import OperationDependencies, OperationKey
+from ._runtime.server.application import Dependency, build
+from ._runtime.server.security import (
+    AsyncAuthorize,
+    Authorize,
+    Credentials,
+    RequirementSets,
 )
 from .routers import pets, store
 from .services import PetsService, StoreService
@@ -31,7 +23,7 @@ ROUTES: Final = (
     *pets.TEMPLATED_ROUTES,
     *store.TEMPLATED_ROUTES,
 )
-INFO: Final[FastAPIOptions] = {'title': 'Pets', 'version': '1.0'}
+INFO: Final[dict[str, Any]] = {'title': 'Pets', 'version': '1.0'}
 
 
 def build_router(
@@ -45,7 +37,6 @@ def build_router(
     """Check the services and settings, then register every operation, literal paths first."""
     return build(
         ROUTES,
-        contract.SCHEMES,
         services={'pets': pets, 'store': store},
         dependencies=dependencies,
         operation_dependencies=operation_dependencies,
@@ -53,60 +44,35 @@ def build_router(
     )
 
 
-def install_openapi(
-    app: FastAPI,
-    *,
-    operation_keys: tuple[OperationKey, ...] | None = None,
-) -> None:
-    """Add this package's OpenAPI fragments to an application that includes its routes.
-
-    operation_keys names the operations it includes, all of them by default. The
-    application composes its document when it first serves or checks it.
-    """
-    install(app, openapi.PLAN, operation_keys)
-
-
 def create_app(
     *,
     pets: PetsService,
     store: StoreService,
-    dependencies: Sequence[Dependency] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
-    fastapi_options: FastAPIOptions | None = None,
+    **fastapi_kwargs: Any,
 ) -> FastAPI:
-    """Create the application with every operation, then check its OpenAPI document.
-
-    The check keeps no document, so the one the application serves also covers routes added afterwards.
-    """
-    app = FastAPI(**application_options(fastapi_options, INFO))
+    """Create the application with every operation, passing the other keyword arguments to FastAPI."""
+    app = FastAPI(**{**INFO, **fastapi_kwargs})
     app.include_router(
         build_router(
             pets=pets,
             store=store,
-            dependencies=dependencies,
             operation_dependencies=operation_dependencies,
             prefix=prefix,
         )
     )
-    install_openapi(app)
-    app.openapi()
-    app.openapi_schema = None
     return app
 
 
 __all__ = [
-    'AsyncAuthorizer',
-    'AsyncCredentialExtractor',
-    'Authorizer',
-    'CredentialExtractor',
-    'CredentialExtractors',
+    'AsyncAuthorize',
+    'Authorize',
+    'Credentials',
     'Dependency',
-    'FastAPIOptions',
     'OperationDependencies',
     'OperationKey',
-    'SchemeKey',
+    'RequirementSets',
     'build_router',
     'create_app',
-    'install_openapi',
 ]

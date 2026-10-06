@@ -73,7 +73,6 @@ _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
             "WireValidationError",
         ),
     ),
-    ("outbound", ("EnvelopeOutboundCodec", "ModelCodec", "NativeOutboundCodec", "OutboundCodec")),
     (
         "parameters",
         (
@@ -86,13 +85,8 @@ _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
         ),
     ),
     ("unset", ("UNSET", "Unset")),
-    ("values", ("DecodedValue", "ModelInput", "ModelValue", "ProjectionIssue")),
-    ("wire", ("JSONValue", "PresenceTree", "WireValue", "freeze_wire", "presence_of", "thaw_wire")),
+    ("wire", ("JSONValue", "WireValue")),
 )
-_SURFACE_PUBLIC: Final[dict[Surface, tuple[tuple[str, str], ...]]] = {
-    "client": (),
-    "server": (("errors", "CodecSelectionError"),),
-}
 
 
 def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
@@ -183,7 +177,6 @@ class UseAccessors:
     use: TypeUseId
     codec: str
     context: str
-    outbound: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -248,15 +241,7 @@ class _Renderer:
         sections.append(f"CONTEXT_{index}: Final = {layout(self.records.doc(context), 0, 18, _WIDTH)}\n")
         codec, body = self.codec(binding, runtime)
         sections.append(_function(f"codec_{index}", f"{codec}[{static}]", body, _description(use)))
-        outbound = None
-        if not context.inbound:
-            outbound = f"outbound_{index}"
-            facade = self.records.name(
-                "outbound", "EnvelopeOutboundCodec" if binding.projection_mode == "envelope" else "NativeOutboundCodec"
-            )
-            body = Group(f"{facade}(", (("", f"codec_{index}()"), ("", f"CONTEXT_{index}")), ")")
-            sections.append(_function(outbound, f"{facade}[{static}]", body))
-        return UseAccessors(use, f"codec_{index}", f"CONTEXT_{index}", outbound)
+        return UseAccessors(use, f"codec_{index}", f"CONTEXT_{index}")
 
     def codec(self, binding: UseBinding, runtime: str) -> tuple[str, Group]:
         codec = self.records.name(*_CODECS[binding.backend])
@@ -346,11 +331,9 @@ def render_model_bindings(
     return _Renderer(plan, wire, batch, surface).render()
 
 
-def render_model_codecs(surface: Surface) -> str:
-    """Render the public `model_codecs` module that re-exports one surface's codec types and protocols."""
+def render_model_codecs() -> str:
+    """Render the public `model_codecs` module that re-exports the codec types and protocols."""
     names: dict[str, list[str]] = {module: list(items) for module, items in _PUBLIC}
-    for module, name in _SURFACE_PUBLIC[surface]:
-        names.setdefault(module, []).append(name)
     lines = [
         '"""Public model codec values, errors, and records of this generated package."""',
         "",

@@ -276,10 +276,13 @@ class _CodecPlanner:
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         backend: CodecBackend,
+        *,
+        envelopes: bool,
     ) -> None:
         self.batch = batch
         self.wire = wire
         self.backend: CodecBackend = backend
+        self.envelopes = envelopes
         self.structural = _STRATEGIES[backend] != "pydantic_type_adapter"
         self.gaps: set[str] = set()
         self.imports: dict[int, str] = {
@@ -560,7 +563,7 @@ class _CodecPlanner:
         node = self.node(use.type, use.schema, source)
         models = self.reachable(node)
         excluded = "read_only" if direction == "request" else "write_only"
-        envelope = any(
+        envelope = self.envelopes and any(
             (field.required and (getattr(field, excluded) or field.field_id in self.gaps))
             or (not field.constructible and not getattr(field, excluded))
             for model in models
@@ -741,8 +744,14 @@ class _MsgspecTypes:
         return self.enums.get(symbol, frozenset())
 
 
-def plan_model_codecs(batch: GeneratedTypeContractBatch, wire: WirePlan, backend: CodecBackend) -> CodecPlan:
-    """Bind every directional use to its native type graph and projection mode."""
-    planner = _CodecPlanner(batch, wire, backend)
+def plan_model_codecs(
+    batch: GeneratedTypeContractBatch, wire: WirePlan, backend: CodecBackend, *, envelopes: bool = True
+) -> CodecPlan:
+    """Bind every directional use to its native type graph and projection mode.
+
+    Without envelopes, every use projects natively: a model that requires a member its direction excludes decodes and
+    encodes as the model does.
+    """
+    planner = _CodecPlanner(batch, wire, backend, envelopes=envelopes)
     bindings = tuple((use.id, binding) for use in batch.type_uses if (binding := planner.use(use)) is not None)
     return CodecPlan(bindings, (*wire.diagnostics, *planner.diagnostics), tuple(planner.imports.items()))

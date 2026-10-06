@@ -12,7 +12,6 @@ from models import FieldSearchGetQuerystringCriteriaParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.default import LookupResponse, SearchResponse
@@ -43,7 +42,7 @@ class DefaultResource:
     def search(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        criteria: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchResponse:
@@ -58,7 +57,7 @@ class DefaultResource:
     def lookup(
         self,
         *,
-        filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        filter: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> LookupResponse:
@@ -81,7 +80,7 @@ class DefaultWithResponse:
     def search(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        criteria: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchResponse]:
@@ -96,7 +95,7 @@ class DefaultWithResponse:
     def lookup(
         self,
         *,
-        filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        filter: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[LookupResponse]:
@@ -119,7 +118,7 @@ class DefaultWithRawResponse:
     def search(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        criteria: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -134,7 +133,7 @@ class DefaultWithRawResponse:
     def lookup(
         self,
         *,
-        filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        filter: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -157,7 +156,7 @@ class DefaultWithStreamingResponse:
     def search(
         self,
         *,
-        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        criteria: _dcg_type_0 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -172,7 +171,7 @@ class DefaultWithStreamingResponse:
     def lookup(
         self,
         *,
-        filter: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        filter: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

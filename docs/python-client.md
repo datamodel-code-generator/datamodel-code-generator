@@ -574,9 +574,9 @@ body as keywords, never field arguments, then `pagination_options`, `options`, a
     def page(
         self,
         *,
-        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        limit: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        x_snapshot: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        cursor: _dcg_type_0 | Unset = UNSET,
+        limit: _dcg_type_1 | Unset = UNSET,
+        x_snapshot: _dcg_type_2 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -858,8 +858,8 @@ position of a declared security scheme: credentials are never written from what 
 cookie counts, declared as a scheme or not, because cookies commonly carry session state; this removes the cookie
 cursors and cookie bindings earlier versions of the helpers wrote.
 Helper names whose classes collide, such as `users.all_items` and `users_all.items`, fail with `E_NAME_COLLISION`.
-Bindings that read the helper's input, request bodies other than JSON, envelope-projected responses, and items or
-selector pointers that read through a union or a map are not supported yet:
+Bindings that read the helper's input, request bodies other than JSON, and items or selector pointers that read
+through a union or a map are not supported yet:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.pagination.diagnostics -->
 <!-- fmt: off -->
@@ -890,7 +890,7 @@ E_CONFIG_VALUE config protocols.helpers['write.optional_body'].continuation.writ
 E_CONFIG_VALUE config protocols.helpers['write.body_type'].continuation.write /paths/~1bodies/post: The cursor of 'write.body_type' reads string values, which the property '/count' of the request body of POST /bodies does not accept
 E_CLIENT_UNSUPPORTED target protocols.helpers['body.form'] /paths/~1forms/post: The pagination helper 'body.form' sends a request body other than JSON, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['responses.twice'].operation /paths/~1twice/get: GET /twice must declare exactly one JSON success response for the pagination helper 'responses.twice'
-E_CLIENT_UNSUPPORTED target protocols.helpers['responses.hidden'] /paths/~1hidden/get: The pagination helper 'responses.hidden' reads an envelope-projected response, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['responses.hidden'].continuation.write /paths/~1hidden/get: The cursor of 'responses.hidden' reads array values, which the query parameter 'cursor' of GET /hidden does not accept
 E_CLIENT_UNSUPPORTED target protocols.helpers['items.union'].items /paths/~1users/get: The items pointer '/either/data' of 'items.union' reads through a union or map, which is not supported yet
 E_CLIENT_UNSUPPORTED target protocols.helpers['items.map'].items /paths/~1users/get: The items pointer '/grouped/admins' of 'items.map' reads through a union or map, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['items.absent'].items /paths/~1users/get: The items pointer '/data/id' of 'items.absent' names no property of the GET /users response
@@ -924,7 +924,7 @@ takes the `create` operation's parameters and its body as keywords, never field 
     def start(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -1264,8 +1264,8 @@ keywords, never field arguments, without the parameter the helper writes the con
         self,
         source: UploadSource,
         *,
-        tus_resumable: _dcg_type_0 | ModelValue[_dcg_type_0],
-        x_name: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        tus_resumable: _dcg_type_0,
+        x_name: _dcg_type_1 | Unset = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1503,8 +1503,8 @@ one `await` an `AsyncEventStream[T]`, once the response is a declared success of
     def open(
         self,
         *,
-        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        last_event_id: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        topic: _dcg_type_0 | Unset = UNSET,
+        last_event_id: _dcg_type_1 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1740,9 +1740,9 @@ writes or fix an idempotency key.
 
 The helper's `media` must be `text/event-stream`, compared without case and with any parameters allowed, and a success
 response of its operation must declare an event stream media type, which the helper then requests as declared. Each
-event and error schema must exist and decode natively, without an envelope. A body discriminator must name a declared
-property of each mapped and error schema whose values can be strings, and an `event_type` completion cannot be a key of
-the event type mapping or the error events:
+event and error schema must exist. A body discriminator must name a declared property of each mapped and error schema
+whose values can be strings, and an `event_type` completion cannot be a key of the event type mapping or the error
+events:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.diagnostics -->
 <!-- fmt: off -->
@@ -1753,7 +1753,6 @@ E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1st
 E_CONFIG_VALUE config protocols.helpers['checks.schema'].event_schema /paths/~1events/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
 E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_event'].completion.value /paths/~1events/get: The completion event type 'done' of 'checks.terminal_event' is also a key of its event_schema.mapping
 E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_error'].completion.value /paths/~1events/get: The completion event type 'stop' of 'checks.terminal_error' is also a key of its error_events
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].event_schema /paths/~1events/get: The SSE helper 'checks.envelope' decodes an envelope-projected event, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
 E_CONFIG_VALUE config protocols.helpers['checks.discriminator_type'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator of 'checks.discriminator_type' reads integer values from '/components/schemas/Counted', where only string values fit
 ```
@@ -1808,7 +1807,7 @@ method and returns the same `EventStream[T]`, or `AsyncEventStream[T]`, so every
     def open(
         self,
         *,
-        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        topic: _dcg_type_0 | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1880,7 +1879,6 @@ and resumption checks are those of SSE helpers, and an NDJSON cursor is always a
 E_CONFIG_VALUE config protocols.helpers['checks.media'].media /paths/~1records/get: The media type 'application/json' of 'checks.media' is not one of application/jsonl, application/jsonlines, application/ndjson, application/x-jsonl, application/x-jsonlines, or application/x-ndjson
 E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1status/get: GET /status declares no application/x-ndjson success response for the NDJSON helper 'checks.response'
 E_CONFIG_VALUE config protocols.helpers['checks.other_media'].operation /paths/~1search/post: POST /search declares no application/x-ndjson success response for the NDJSON helper 'checks.other_media'
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].event_schema /paths/~1records/get: The NDJSON helper 'checks.envelope' decodes an envelope-projected event, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1records/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
 ```
 
@@ -1902,12 +1900,12 @@ URL, the parameters, the servers, and the security. `connect` takes the operatio
     def connect(
         self,
         *,
-        room: _dcg_type_0 | ModelValue[_dcg_type_0],
-        since: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        room: _dcg_type_0,
+        since: _dcg_type_1 | Unset = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> WebSocketSession[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_3]:
+    ) -> WebSocketSession[_dcg_type_2, _dcg_type_3]:
         """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
         return connect_socket(
             self._core,
@@ -1943,7 +1941,7 @@ helpers:
 `send` and `receive` declare how the messages of each direction are coded: `codec: json` with a `schema`, whose value
 is sent as compact UTF-8 JSON and received through the schema's codec, `codec: utf8` for `str` text, or
 `codec: bytes`. `frame` is `text` or `binary`; it defaults to `text` for JSON and UTF-8 messages and to `binary` for
-bytes, and only JSON messages may choose. `S` is the send schema's argument type, `T | ModelValue[T]`, or `str` or
+bytes, and only JSON messages may choose. `S` is the send schema's argument type, its model type `T`, or `str` or
 `bytes`, and `R` the received type; a union schema carries several message types. `subprotocols` lists the offered
 subprotocols in order (`[]` by default), and `compression` (`false` by default) permits
 `WSOptions(compression="deflate")`.
@@ -2040,8 +2038,7 @@ not supported.
 
 ### WebSocket generation checks
 
-The operation must be a GET without a request body, and each JSON message's schema must exist and code natively,
-without an envelope. Message definitions, frames, and subprotocol tokens are checked as the helper file is read:
+The operation must be a GET without a request body, and each JSON message's schema must exist. Message definitions, frames, and subprotocol tokens are checked as the helper file is read:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.websocket.diagnostics -->
 <!-- fmt: off -->
@@ -2050,7 +2047,6 @@ without an envelope. Message definitions, frames, and subprotocol tokens are che
 E_CONFIG_VALUE config protocols.helpers['checks.method'].operation /paths/~1chat/post: The WebSocket helper 'checks.method' opens POST /chat, which is not a GET operation
 E_CONFIG_VALUE config protocols.helpers['checks.body'].operation /paths/~1upload/get: The WebSocket helper 'checks.body' opens GET /upload, which takes a request body
 E_CONFIG_VALUE config protocols.helpers['checks.schema'].send.schema /paths/~1chat/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].receive.schema /paths/~1chat/get: The WebSocket helper 'checks.envelope' codes an envelope-projected message, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['codec.unknown'].send.codec: protocols.helpers['codec.unknown'].send.codec must be 'json', 'utf8' or 'bytes'
 E_CONFIG_VALUE config protocols.helpers['codec.schema_missing'].send.schema: protocols.helpers['codec.schema_missing'].send needs 'schema' for JSON messages
 E_CONFIG_CONFLICT config protocols.helpers['codec.schema_extra'].send.schema: protocols.helpers['codec.schema_extra'].send.schema applies only to JSON messages
@@ -2110,9 +2106,9 @@ With asyncio, `fetch` is a coroutine:
     def fetch(
         self,
         *,
-        fields: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        accept_language: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        fields: _dcg_type_0 | Unset = UNSET,
+        accept_language: _dcg_type_1 | Unset = UNSET,
+        user_id: _dcg_type_2,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -2280,7 +2276,7 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> _dcg_type_7: ...
@@ -2288,7 +2284,7 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_7: ...
@@ -2296,14 +2292,14 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_8: ...
     def get_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
@@ -2359,7 +2355,7 @@ TypedDict with the keys you forward. The module also holds the list of keywords 
 class Operation2Arguments(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
+    pet_id: _dcg_type_6
     response_media_type: NotRequired[None]
     options: NotRequired[RequestOptions | None]
 
@@ -2367,7 +2363,7 @@ class Operation2Arguments(TypedDict):
 class Operation2Arguments1(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
+    pet_id: _dcg_type_6
     response_media_type: Literal['application/json']
     options: NotRequired[RequestOptions | None]
 
@@ -2375,7 +2371,7 @@ class Operation2Arguments1(TypedDict):
 class Operation2Arguments2(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
+    pet_id: _dcg_type_6
     response_media_type: Literal['text/plain']
     options: NotRequired[RequestOptions | None]
 
@@ -2383,7 +2379,7 @@ class Operation2Arguments2(TypedDict):
 class Operation2Arguments3(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
+    pet_id: _dcg_type_6
     response_media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -2527,7 +2523,6 @@ E_NAME_COLLISION target /paths/~1pets/post: The application/json body fields of 
 E_NAME_COLLISION target /paths/~1pets/post: The application/x-www-form-urlencoded body fields of POST /pets cannot take the argument names 'tag'; name them with body_field_names
 E_NAME_COLLISION target /paths/~1pets~1{petId}~1visits/post: The application/json body fields of POST /pets/{petId}/visits cannot take the argument names 'options'; name them with body_field_names
 E_CONFIG_VALUE config operations /paths/~1search/post: The body field name of the text/plain property 'q' of POST /search names no field argument
-E_CONFIG_VALUE config operations /paths/~1pets~1{petId}~1records/put: The body field name of the application/json property 'name' of PUT /pets/{petId}/records names no field argument
 ```
 
 <!-- fmt: on -->
@@ -2548,8 +2543,8 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        pet_id: _dcg_type_6,
+        body: _dcg_type_7,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -2559,7 +2554,7 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -2570,7 +2565,7 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
@@ -2581,7 +2576,7 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        pet_id: _dcg_type_6,
         body: Unset = UNSET,
         name: Unset = UNSET,
         tag: Unset = UNSET,
@@ -2591,8 +2586,8 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        body: _dcg_type_7 | ModelValue[_dcg_type_7] | Unset = UNSET,
+        pet_id: _dcg_type_6,
+        body: _dcg_type_7 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -2667,7 +2662,9 @@ Generated clients send and read model values through their model backend, with n
 - **Requests.** Arguments and bodies are serialized from the model values as given. Aliases, presence, and the
   conversion of dates, decimals, enums, and media follow the models, and a read-only member is left out. A value is
   checked only as far as its model's constructor already checked it, and what the serializer cannot represent fails
-  with `RequestEncodingError` before anything is sent.
+  with `RequestEncodingError` before anything is sent. An empty array or object in a style-encoded parameter or a form
+  member is left out as an omitted value is: it writes no query pair, header, cookie, or part. A path segment cannot be
+  left out, so an empty array or object in a path parameter fails with `RequestEncodingError` before anything is sent.
 - **Responses.** Bodies, parts, stream events, and socket messages are converted by the model backend into the declared
   types, which check what those types declare and coerce as the backend does; a value the type refuses raises
   `ResponseValidationError`, and a write-only member is refused.
@@ -2679,13 +2676,11 @@ Generated clients send and read model values through their model backend, with n
   whose encoded text is non-empty, with a `ParameterEncodingError` cause, before anything is sent: URL normalization in
   clients, proxies, and servers would remove the segment and send the call to another resource, and encoding the dots
   does not prevent it. `...` and `.a` are sent as they are, and a dot segment the path template spells is not refused.
-- **Strict records.** A `ModelValue` or `ModelInput` passed as an argument, the header decoders, and a response the
-  package returns as `DecodedValue` keep their strict schema validation. Read a body without any model with
-  `with_raw_response` or `with_streaming_response` instead.
+- **Headers.** The header decoders check a header's value against its schema before converting it. Read a body
+  without any model with `with_raw_response` or `with_streaming_response` instead.
 
 A response whose union members only their schemas tell apart, such as two object models read by a stdlib dataclass or
-TypedDict converter, cannot be converted, so generation fails with `E_CONFIG_VALUE` naming the use, unless the union's
-use returns `DecodedValue`:
+TypedDict converter, cannot be converted, so generation fails with `E_CONFIG_VALUE` naming the use:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.model-codecs.diagnostics -->
 <!-- fmt: off -->
@@ -3782,8 +3777,7 @@ E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.prefix: prot
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.diagnostics -->
 
-An event whose model needs an envelope fails with `E_CLIENT_UNSUPPORTED` when the helper is enabled. A header value is
-read as ASCII; a scheme that signs in any way the presets cannot describe needs an
+A header value is read as ASCII; a scheme that signs in any way the presets cannot describe needs an
 [adapter signature](#adapter-signatures).
 
 ### Event mappings

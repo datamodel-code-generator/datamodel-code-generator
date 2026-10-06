@@ -50,7 +50,7 @@ def test_fastapi_openapi(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPa
 
 
 def test_fastapi_upstream(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Close uploaded files and end parse errors, disconnects, and cancellations as FastAPI and Starlette do."""
+    """Close uploaded files and end parse errors and anyio cancellations as FastAPI and Starlette do."""
     assert_output(fastapi_upstream_report(tmp_path, monkeypatch), EXPECTED / "uploads.txt")
 
 

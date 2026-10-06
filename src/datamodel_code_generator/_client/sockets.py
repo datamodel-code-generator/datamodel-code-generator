@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import SourceLocation
 
@@ -136,23 +135,6 @@ def socket_uses(
     return tuple(specs), tuple(uses.values()), problems
 
 
-def plan_sockets(
-    specs: tuple[SocketSpec, ...], codecs: CodecPlan, problems: dict[str, list[Diagnostic]]
-) -> tuple[SocketSpec, ...]:
-    """Plan every WebSocket helper whose messages have native codecs, adding the problems found to each helper's."""
-    bindings = dict(codecs.bindings)
-    planned: list[SocketSpec] = []
-    for spec in specs:
-        helper = spec.helper
-        found = problems[helper.name]
-        for (_, where, _), use in zip(_references(helper), spec.uses, strict=True):
-            binding = bindings[use.id]
-            if binding.projection_mode != "native":
-                message = (
-                    f"The WebSocket helper {helper.name!r} codes an envelope-projected message, which is not supported "
-                    "yet"
-                )
-                found.append(_problem("E_CLIENT_UNSUPPORTED", "target", where, message, spec.operation))
-        if not found:
-            planned.append(spec)
-    return tuple(planned)
+def plan_sockets(specs: tuple[SocketSpec, ...], problems: dict[str, list[Diagnostic]]) -> tuple[SocketSpec, ...]:
+    """Plan every WebSocket helper without a problem."""
+    return tuple(spec for spec in specs if not problems[spec.helper.name])

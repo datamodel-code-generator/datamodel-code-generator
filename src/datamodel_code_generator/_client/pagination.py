@@ -370,10 +370,6 @@ class _Pages:
             message = f"{label} must declare exactly one JSON success response for the pagination helper {name!r}"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
             return None, problems
-        if binding.projection_mode != "native":
-            message = f"The pagination helper {name!r} reads an envelope-projected response, which is not supported yet"
-            problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec))
-            return None, problems
         planned = self.items(helper, spec, binding, page, problems)
         headers = successes[0].headers
         check = {"cursor": self.cursor, "next_url": self.next_url, "link": self.link}.get(

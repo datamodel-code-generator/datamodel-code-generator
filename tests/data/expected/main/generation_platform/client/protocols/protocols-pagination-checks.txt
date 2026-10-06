@@ -26,7 +26,7 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['write.body_type'].continuation.write /paths/~1bodies/post: The cursor of 'write.body_type' reads string values, which the property '/count' of the request body of POST /bodies does not accept
   E_CLIENT_UNSUPPORTED target protocols.helpers['body.form'] /paths/~1forms/post: The pagination helper 'body.form' sends a request body other than JSON, which is not supported yet
   E_CONFIG_VALUE config protocols.helpers['responses.twice'].operation /paths/~1twice/get: GET /twice must declare exactly one JSON success response for the pagination helper 'responses.twice'
-  E_CLIENT_UNSUPPORTED target protocols.helpers['responses.hidden'] /paths/~1hidden/get: The pagination helper 'responses.hidden' reads an envelope-projected response, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['responses.hidden'].continuation.write /paths/~1hidden/get: The cursor of 'responses.hidden' reads array values, which the query parameter 'cursor' of GET /hidden does not accept
   E_CLIENT_UNSUPPORTED target protocols.helpers['items.union'].items /paths/~1users/get: The items pointer '/either/data' of 'items.union' reads through a union or map, which is not supported yet
   E_CLIENT_UNSUPPORTED target protocols.helpers['items.map'].items /paths/~1users/get: The items pointer '/grouped/admins' of 'items.map' reads through a union or map, which is not supported yet
   E_CONFIG_VALUE config protocols.helpers['items.absent'].items /paths/~1users/get: The items pointer '/data/id' of 'items.absent' names no property of the GET /users response

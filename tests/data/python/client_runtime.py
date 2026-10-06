@@ -144,21 +144,15 @@ def _operation(package: ModuleType, operation: str) -> Any:
     )
 
 
-def _native(value: Any) -> object:
-    """Return the native value of the snapshot a codec restores, or a value without a codec as it is."""
-    return value.require_model() if hasattr(value, "require_model") else value
-
-
 def argument(package: ModuleType, operation_id: str, location: str, name: str, wire: object) -> object:
     """Return the native argument a parameter's wire value builds, as a resumed call builds a saved one."""
     specs = _operation(package, operation_id).parameters
-    spec = next(spec for spec in specs if (spec.plan.location, spec.plan.name) == (location, name))
-    return _native(spec.restored(wire))
+    return next(spec for spec in specs if (spec.plan.location, spec.plan.name) == (location, name)).restored(wire)
 
 
 def request_body(package: ModuleType, operation_id: str, media_type: str | None, wire: object) -> object:
     """Return the native body a declared media type's wire value builds, as a resumed call builds a saved one."""
-    return _native(_operation(package, operation_id).body.select(operation_id, media_type).restored(wire))
+    return _operation(package, operation_id).body.select(operation_id, media_type).restored(wire)
 
 
 def form_part(
@@ -166,8 +160,7 @@ def form_part(
 ) -> object:
     """Return the native value a form-data member's wire value builds: a declared member's, or another part's."""
     media = _operation(package, operation_id).body.select(operation_id, media_type)
-    plan = next((plan for plan in media.parts if plan.name == name), media.additional_part)
-    return _native(plan.encoder.restored(wire))
+    return next((plan for plan in media.parts if plan.name == name), media.additional_part).encoder.restored(wire)
 
 
 def describe(value: object) -> str:

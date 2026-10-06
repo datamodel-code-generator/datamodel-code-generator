@@ -63,10 +63,7 @@
     "router_names": {
       "tag:pets": "animals"
     },
-    "templates": "../templates",
-    "update_groups": [
-      "tag:pets"
-    ]
+    "templates": "../templates"
   },
   "runtime_defaults": {}
 }

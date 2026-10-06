@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from itertools import starmap
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, Literal
 
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.context import (
@@ -29,7 +29,7 @@ from datamodel_code_generator._fastapi.context import (
     RouterView,
     SourceView,
 )
-from datamodel_code_generator._fastapi.openapi import documentation
+from datamodel_code_generator._fastapi.documentation import documentation
 from datamodel_code_generator._fastapi.plan import Default
 from datamodel_code_generator._fastapi.render import Module
 from datamodel_code_generator._fastapi.routes import tags
@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._fastapi.render import ServerRenderer
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
-    from datamodel_code_generator._target_contract import FrozenLiteral, SourceLocation, TypeUseBinding, TypeUseId
+    from datamodel_code_generator._target_contract import FrozenLiteral, SourceLocation, TypeUseBinding
 
 _PRINCIPAL: Final = ("_runtime.server.security", "PrincipalT")
 
@@ -152,7 +152,6 @@ class ContextBuilder:
         contract = spec.contract
         facts = dict(contract.facts)
         primary = spec.primary
-        payload = f"{spec.pascal}ResponsePayload"
         return OperationView(
             key=spec.key,
             source=self.source(contract.id.use_site),
@@ -179,14 +178,7 @@ class ContextBuilder:
             registration_status=spec.registration_status,
             primary_return_type=None
             if primary is None
-            else self.render_type(
-                lambda module: " | ".join(self.renderer.bare(module, spec)),
-                "result",
-                None if primary.media is None or primary.media.use is None else primary.media.use.id,
-            ),
-            response_payload_type=self.render_type(lambda module: module.local("responses", payload), "result"),
-            response_payload_alias=payload,
-            response_codecs_name=f"{spec.pascal}ResponseCodecs",
+            else self.render_type(lambda module: " | ".join(self.renderer.bare(module, spec)), "result"),
             handler_return_type=self.render_type(
                 lambda module: " | ".join(self.renderer.results(module, spec)), "result"
             ),
@@ -202,7 +194,6 @@ class ContextBuilder:
 
     def argument(self, spec: OperationSpec, argument: Argument) -> ArgumentView:
         """Return the view of one keyword the handler receives."""
-        parameter = argument.parameter
         body = spec.body
         use = _argument_use(argument, body)
         native = argument.native
@@ -220,15 +211,10 @@ class ContextBuilder:
                     module, spec, argument, module.local(*_PRINCIPAL) if argument.kind == "principal" else ""
                 ),
                 _kind(argument),
-                None if argument.kind == "native" or use is None else use.id,
             ),
             source_pointer=_source_pointer(spec, argument),
             is_request=argument.kind == "request",
             is_principal=argument.kind == "principal",
-            is_file=native is not None and native.api == "File",
-            parameter_codec_id=self.binding_id(parameter.use)
-            if parameter is not None and native is None and parameter.use is not None
-            else None,
             bound_type=None if use is None else self.bound(use),
             projection=self.argument_projection(argument, body),
             native_declaration=None if native is None else _native(native),
@@ -300,35 +286,22 @@ class ContextBuilder:
         """Return the final type the model generator bound to a type use."""
         value = use.type
         assert value is not None
-        return self.render_type(lambda module: module.static(value), "surface", use.id)
+        return self.render_type(lambda module: module.static(value), "surface")
 
-    def render_type(self, spell: Callable[[Module], str], kind: RenderKind, use: TypeUseId | None = None) -> RenderType:
-        """Spell a type in a fresh module and return it with its binding identity and absolute imports."""
+    def render_type(self, spell: Callable[[Module], str], kind: RenderKind) -> RenderType:
+        """Spell a type in a fresh module and return it with its absolute imports."""
         module = Module((), self.renderer.symbols, level=2)
         value = spell(module)
-        binding = None if use is None else self.renderer.use_bindings.get(use)
-        return RenderType(
-            binding_id=None if binding is None else binding.binding_id,
-            schema_id=None if binding is None else binding.schema_id,
-            kind=kind if binding is None else binding.native_kind,
-            value=value,
-            imports=tuple(starmap(self.import_spec, module.namespace.entries())),
-        )
+        return RenderType(kind=kind, value=value, imports=tuple(starmap(self.import_spec, module.namespace.entries())))
 
     def import_spec(self, module: str, name: str | None, alias: str) -> ImportSpec:
         """Return one import with the package's relative modules made absolute."""
         absolute = f"{self.package}.{module.lstrip('.')}" if module.startswith(".") else module
         return ImportSpec(module=absolute, name=name, alias=None if alias == (name or module) else alias)
 
-    def binding_id(self, use: TypeUseBinding) -> str | None:
-        """Return the codec binding of a type use, when the server binds one."""
-        binding = self.renderer.use_bindings.get(use.id)
-        return None if binding is None else binding.binding_id
-
     def schema_id(self, use: TypeUseBinding) -> str | None:
-        """Return the schema identity of a type use's codec binding, when the server binds one."""
-        binding = self.renderer.use_bindings.get(use.id)
-        return None if binding is None else binding.schema_id
+        """Return the identity of a type use's schema in the bundled documents, when it has one."""
+        return None if use.schema is None else self.renderer.wire.schema_id(use.schema)
 
     def source(self, location: SourceLocation) -> SourceView:
         """Return a source location as its document's persistent URI and the pointer into it."""
@@ -390,27 +363,33 @@ def _kind(argument: Argument) -> RenderKind:
             return "principal"
         case "media_type":
             return "media_type"
-        case "native" if argument.native is not None and argument.native.api == "File":
-            return "upload"
         case _:
             pass
     return "surface"
 
 
 def _default(argument: Argument) -> WireValue | Unset:
-    if (native := argument.native) is not None:
-        return UNSET if isinstance(native.default, Default) else checked_wire(native.default)
-    if (parameter := argument.parameter) is not None:
-        return parameter.default
-    return UNSET
+    holder = argument.native or argument.parameter
+    if holder is None or isinstance(default := holder.default, Default):
+        return UNSET
+    return checked_wire(
+        default.value
+        if isinstance(default, LiteralScalar)
+        else tuple(item.value for item in default.items if isinstance(item, LiteralScalar))
+    )
 
 
 def _native(native: NativeField) -> NativeDeclarationView:
+    kind: Literal["required", "literal", "factory"] = "literal"
+    if native.default is Default.REQUIRED:
+        kind = "required"
+    elif native.default is Default.ABSENT:
+        kind = "factory"
     return NativeDeclarationView(
         api=native.api,
         alias=native.alias,
         required=native.default is Default.REQUIRED,
-        default_kind="required" if native.default is Default.REQUIRED else "literal",
+        default_kind=kind,
         kwargs=MappingProxyType({key: checked_wire(value) for key, value in native.keywords}),
     )
 

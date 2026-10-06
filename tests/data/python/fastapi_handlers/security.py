@@ -1,11 +1,11 @@
-"""Services, authorizers, credential extractors, and settings of the secured server: they report what they receive."""
+"""Services, authorize callbacks, dependency overrides, and settings of the secured server: they report what they get."""
 
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
@@ -22,9 +22,8 @@ class _Pending:
         yield
 
 
-def _secret(payload: Any) -> str:  # noqa: ANN401
-    value = getattr(payload, "value", None) or getattr(payload, "token", None) or getattr(payload, "username", "")
-    return f"{payload!r}={value}"
+def _secret(credential: Any) -> str:  # noqa: ANN401
+    return str(getattr(credential, "credentials", None) or getattr(credential, "username", None) or credential)
 
 
 class _Variant:
@@ -78,38 +77,22 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
 
 
 def settings(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
-    """Return the builder settings of each application: authorizers, extractors, dependencies, and options."""
-    auth = server.auth_types
+    """Return the builder settings of each application: authorize callbacks, overrides, dependencies, and options."""
 
-    def authorize(context: Any) -> str:  # noqa: ANN401
-        calls.append(f"authorize {context!r}")
-        credentials = [credential for candidate in context.candidates for credential in candidate.credentials.values()]
-        calls.append(f"  secrets {[_secret(credential.payload) for credential in credentials]}")
-        if any(getattr(credential.payload, "value", None) == "denied" for credential in credentials):
+    def authorize(requirement_sets: tuple[Any, ...], credentials: dict[str, Any]) -> str:
+        calls.append(f"authorize {list(requirement_sets)}")
+        calls.append(f"  credentials {[f'{name}={_secret(value)}' for name, value in sorted(credentials.items())]}")
+        if "denied" in credentials.values():
             raise HTTPException(status_code=403, detail="Forbidden")
-        return f"user-{context.candidates[0].requirement_index}"
+        return "user-" + "+".join(name for name, _ in requirement_sets[0])
 
     class AsyncAuthorize:
-        async def __call__(self, context: Any) -> str:  # noqa: ANN401
-            calls.append(f"async authorize {context.operation_key} {[c.requirement_index for c in context.candidates]}")
+        async def __call__(self, requirement_sets: tuple[Any, ...], credentials: dict[str, Any]) -> str:
+            calls.append(f"async authorize {list(requirement_sets)} {sorted(credentials)}")
             return "async-user"
 
-    def digest(request: Request) -> object:
-        match request.headers.get("x-digest"):
-            case None:
-                return None
-            case "wrong-type":
-                return "not a credential"
-            case "wrong-scheme":
-                return auth.Credential(scheme_name="mtls", payload=auth.CustomSecret(value="digest"))
-            case value:
-                return auth.Credential(scheme_name="digest", payload=auth.CustomSecret(value=value))
-
-    class Certificate:
-        async def __call__(self, request: Request) -> object:
-            if (subject := request.headers.get("x-client-cert")) is None:
-                return None
-            return auth.Credential(scheme_name="mtls", payload=auth.CustomSecret(value=subject))
+    def certificate(x_client_cert: Annotated[str | None, Header()] = None) -> str | None:
+        return x_client_cert
 
     def dependency(label: str) -> Callable[..., None]:
         def record(request: Request) -> None:
@@ -120,57 +103,46 @@ def settings(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
     def teapot() -> None:
         raise HTTPException(status_code=418, detail="I'm a teapot")
 
-    extractors = {"digest": digest, "mtls": Certificate()}
     return {
         "default": {
-            "authorizer": authorize,
-            "credential_extractors": extractors,
+            "authorize": authorize,
             "dependencies": [Depends(dependency("global"))],
             "operation_dependencies": {"/paths/~1public/get": [Depends(dependency("public"))]},
+            "dependency_overrides": {server.security.mtls: certificate},
         },
         "async": {
-            "authorizer": AsyncAuthorize(),
-            "credential_extractors": extractors,
+            "authorize": AsyncAuthorize(),
             "operation_dependencies": {"/paths/~1public/get": (Depends(teapot),)},
             "prefix": "/api",
-            "fastapi_options": {
-                "debug": False,
-                "title": "Renamed pets",
-                "summary": None,
-                "openapi_tags": [{"name": "pets", "description": "Renamed."}],
-                "servers": None,
-                "swagger_ui_parameters": {"deepLinking": False},
-                "contact": {"name": "Other team"},
-                "responses": {418: {"description": "Teapot."}, "default": {"description": "Anything."}},
-                "dependencies": [Depends(dependency("app"))],
-                "middleware": [Middleware(GZipMiddleware)],
-                "routes": [],
-                "callbacks": None,
-                "webhooks": APIRouter(),
-                "default_response_class": JSONResponse,
-                "deprecated": None,
-                "generate_unique_id_function": lambda route: f"{route.name}-id",
-            },
+            "debug": False,
+            "title": "Renamed pets",
+            "summary": None,
+            "openapi_tags": [{"name": "pets", "description": "Renamed."}],
+            "servers": None,
+            "swagger_ui_parameters": {"deepLinking": False},
+            "contact": {"name": "Other team"},
+            "responses": {418: {"description": "Teapot."}, "default": {"description": "Anything."}},
+            "dependencies": [Depends(dependency("app"))],
+            "middleware": [Middleware(GZipMiddleware)],
+            "routes": [],
+            "callbacks": None,
+            "webhooks": APIRouter(),
+            "default_response_class": JSONResponse,
+            "deprecated": None,
+            "generate_unique_id_function": lambda route: f"{route.name}-id",
         },
-        "awaitables": {"authorizer": authorize, "credential_extractors": extractors},
+        "awaitables": {"authorize": authorize},
     }
 
 
 def builds(server: ModuleType, models: ModuleType, calls: list[str]) -> Iterator[tuple[str, Callable[[], object]]]:
-    """Yield builders and record constructors that the generated package must reject or accept."""
-    auth = server.auth_types
+    """Yield builders that the generated package must reject or accept."""
     default = services(server, models, calls)["default"]
-    configured = settings(server, models, calls)["default"]
-    authorize, extractors = configured["authorizer"], configured["credential_extractors"]
-    secured = {"authorizer": authorize, "credential_extractors": extractors}
+    secured = {"authorize": settings(server, models, calls)["default"]["authorize"]}
     build = partial(server.build_router, **default)
     create = partial(server.create_app, **default, **secured)
     untagged = default["untagged"]
-    yield "no-authorizer", partial(build, authorizer=None)
-    yield "no-extractors", partial(build, authorizer=authorize)
-    yield "unknown-extractor", partial(build, authorizer=authorize, credential_extractors={**extractors, "nope": print})
-    yield "extractor-list", partial(build, authorizer=authorize, credential_extractors=[print])
-    yield "extractor-value", partial(build, authorizer=authorize, credential_extractors={**extractors, "digest": "d"})
+    yield "no-authorize", partial(build, authorize=None)
     for label, methods in (
         ("missing-method", {"put_pet": None}),
         ("sync-in-async", {"get_maybe": untagged.put_pet}),
@@ -191,26 +163,6 @@ def builds(server: ModuleType, models: ModuleType, calls: list[str]) -> Iterator
     routers = server.routers
     yield "group public", partial(routers.public.build_router, public=default["public"])
     yield "group pets", partial(routers.pets.build_router, pets=default["pets"], **secured)
-    for label, options in (
-        ("options-list", [("title", "x")]),
-        ("options-unknown", {"lifespan": None}),
-        ("options-flag", {"debug": "yes"}),
-        ("options-text", {"title": None}),
-        ("options-json", {"contact": {"weight": float("nan")}}),
-        ("options-object", {"license_info": ["MIT"]}),
-        ("options-objects", {"servers": {"url": "https://example.com"}}),
-        ("options-object-items", {"openapi_tags": ["pets"]}),
-        ("options-responses", {"responses": [418]}),
-        ("options-response-code", {"responses": {True: {}}}),
-        ("options-dependencies", {"dependencies": [object()]}),
-        ("options-response-class", {"default_response_class": dict}),
-        ("options-unique-id-type", {"generate_unique_id_function": "route"}),
-    ):
-        yield label, partial(create, fastapi_options=options)
     for label, generate in (("unique-id", lambda route: f"{route.name}-id"), ("unique-id-result", lambda route: 7)):
-        app = create(fastapi_options={"generate_unique_id_function": generate})
+        app = create(generate_unique_id_function=generate)
         yield f"options-{label}", partial(app.add_api_route, "/extra", lambda: None)
-    yield "candidate-index", partial(auth.RequirementCandidate, requirement_index=True, credentials={})
-    credential = auth.Credential(scheme_name="digest", payload=auth.CustomSecret(value="x"))
-    yield "candidate-names", partial(auth.RequirementCandidate, requirement_index=0, credentials={"mtls": credential})
-    yield "candidate", partial(auth.RequirementCandidate, requirement_index=0, credentials={"digest": credential})

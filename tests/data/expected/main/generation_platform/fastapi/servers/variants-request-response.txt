@@ -6,9 +6,10 @@ service UntaggedService without its methods: TypeError
   create_pet(body=PetRequest{'name': "Name{'root': 'Rex'}", 'secret': 's', 'owner': "Owner{'name': 'Ann', 'email': 'a@example.com'}"})
 < 201 application/json {"id":1,"name":"Rex"}
 > POST /pets
-< 422 application/json [{"type": "value_error", "loc": ["body"]}]
+  create_pet(body=PetRequest{'name': "Name{'root': 'Rex'}", 'secret': None, 'owner': None})
+< 201 application/json {"id":1,"name":"Rex"}
 > POST /pets
-< 422 application/json [{"type": "value_error", "loc": ["body", "name"]}]
+< 422 application/json [{"type": "string_too_short", "loc": ["body", "name"]}]
 > GET /pets/1
   get_pet(id=1)
 < 200 application/json {"id":1,"name":"Mimi","owner":{"name":"Ann"}}
@@ -22,16 +23,17 @@ service UntaggedService: create_pet, get_pet, list_owners
 service UntaggedService without its methods: TypeError
 > POST /pets
   create_pet(body=PetRequest{'name': 'Rex', 'secret': 's', 'owner': "Owner{'name': 'Ann', 'email': 'a@example.com'}"})
-< 201 application/json {"id":1,"name":"Rex"}
+< 201 application/json {"name":"Rex","id":1,"owner":null}
 > POST /pets
-< 422 application/json [{"type": "value_error", "loc": ["body"]}]
+  create_pet(body=PetRequest{'name': 'Rex', 'secret': None, 'owner': None})
+< 201 application/json {"name":"Rex","id":1,"owner":null}
 > POST /pets
-< 422 application/json [{"type": "value_error", "loc": ["body", "name"]}]
+< 422 application/json [{"type": "string_too_short", "loc": ["body", "name"]}]
 > GET /pets/1
   get_pet(id=1)
-< 200 application/json {"id":1,"name":"Mimi","owner":{"name":"Ann"}}
+< 200 application/json {"name":"Mimi","id":1,"owner":{"name":"Ann","email":null}}
 > GET /pets/0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "id"]}]
 > GET /owners
   list_owners()
-< 200 application/json [{"name":"Ann"}]
+< 200 application/json [{"name":"Ann","email":null}]

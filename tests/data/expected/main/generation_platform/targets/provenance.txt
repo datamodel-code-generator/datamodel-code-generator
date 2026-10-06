@@ -10,115 +10,16 @@ render
   write target server/routers/untagged.py (target)
   write target server/_generated/__init__.py (target)
   write target server/_generated/contract.py (target)
-  write target server/_generated/model_bindings.py (target)
-  write target server/_generated/openapi.py (target)
-  write target server/model_codecs.py (target)
-  write target server/responses.py (target)
   write target server/errors.py (target)
-  write target server/auth_types.py (target)
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
   write remote_lock locks/remote.lock
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  23 runtime modules ['write']
+  13 runtime modules ['write']
 {
-  "bindings": [
-    {
-      "adapter_identity": null,
-      "backend": "pydantic_v2.BaseModel",
-      "converter_strategy": "pydantic_type_adapter",
-      "strategy": "native",
-      "use_id": {
-        "declaration": null,
-        "direction": "response",
-        "location": null,
-        "media": "application/json",
-        "name": null,
-        "owner": {
-          "kind": "operation",
-          "source": {
-            "document": "/inputs/root",
-            "pointer": "/paths/~1pets/get"
-          }
-        },
-        "projection": "value",
-        "role": "response_body",
-        "schema": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1pets/get/responses/200/content/application~1json/schema"
-        },
-        "status": "200",
-        "use_site": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1pets/get/responses/200"
-        }
-      }
-    },
-    {
-      "adapter_identity": null,
-      "backend": "pydantic_v2.BaseModel",
-      "converter_strategy": "pydantic_type_adapter",
-      "strategy": "native",
-      "use_id": {
-        "declaration": null,
-        "direction": "request",
-        "location": null,
-        "media": "application/json",
-        "name": null,
-        "owner": {
-          "kind": "operation",
-          "source": {
-            "document": "/inputs/root",
-            "pointer": "/paths/~1pets/post"
-          }
-        },
-        "projection": "value",
-        "role": "request_body",
-        "schema": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1pets/post/requestBody/content/application~1json/schema"
-        },
-        "status": null,
-        "use_site": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1pets/post/requestBody"
-        }
-      }
-    },
-    {
-      "adapter_identity": null,
-      "backend": "pydantic_v2.BaseModel",
-      "converter_strategy": "pydantic_type_adapter",
-      "strategy": "native",
-      "use_id": {
-        "declaration": null,
-        "direction": "response",
-        "location": null,
-        "media": "application/json",
-        "name": null,
-        "owner": {
-          "kind": "operation",
-          "source": {
-            "document": "/inputs/root",
-            "pointer": "/paths/~1store~1orders/get"
-          }
-        },
-        "projection": "value",
-        "role": "response_body",
-        "schema": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1store~1orders/get/responses/200/content/application~1json/schema"
-        },
-        "status": "200",
-        "use_site": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1store~1orders/get/responses/200"
-        }
-      }
-    }
-  ],
+  "bindings": [],
   "diagnostics": [],
   "extensions": {
     "formatters": [
@@ -161,21 +62,21 @@ render
       "size": "<masked>"
     },
     {
-      "group": "tag:pets",
+      "group": null,
       "kind": "router",
       "path": "routers/pets.py",
       "sha256": "<sha256>",
       "size": "<masked>"
     },
     {
-      "group": "tag:store",
+      "group": null,
       "kind": "router",
       "path": "routers/store.py",
       "sha256": "<sha256>",
       "size": "<masked>"
     },
     {
-      "group": "untagged",
+      "group": null,
       "kind": "router",
       "path": "routers/untagged.py",
       "sha256": "<sha256>",
@@ -197,43 +98,8 @@ render
     },
     {
       "group": null,
-      "kind": "model_bindings",
-      "path": "_generated/model_bindings.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "openapi",
-      "path": "_generated/openapi.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "model_codecs",
-      "path": "model_codecs.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "responses",
-      "path": "responses.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
       "kind": "errors",
       "path": "errors.py",
-      "sha256": "<sha256>",
-      "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "auth_types",
-      "path": "auth_types.py",
       "sha256": "<sha256>",
       "size": "<masked>"
     },
@@ -389,8 +255,7 @@ render
           }
         },
         "router_names": {},
-        "templates": null,
-        "update_groups": null
+        "templates": null
       },
       "runtime_defaults": {}
     }

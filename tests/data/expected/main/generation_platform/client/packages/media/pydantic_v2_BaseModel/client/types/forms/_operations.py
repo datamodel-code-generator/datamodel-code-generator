@@ -13,7 +13,6 @@ from models import FieldProfilesGetResponse as _dcg_type_1
 
 from ...bodies import FormData, MultipartData
 from ...errors import HTTPStatusError
-from ...model_codecs import DecodedValue
 
 SubmitFormResponse: TypeAlias = _dcg_type_0
 SubmitFormErrorData: TypeAlias = None
@@ -79,7 +78,7 @@ class SubmitUploadHTTPError(HTTPStatusError[SubmitUploadErrorData]):
     """An error response of submit_upload, with its decoded payload when one is declared."""
 
 
-ReadUploadResponse: TypeAlias = MultipartData[str | int | _dcg_type_3 | DecodedValue[_dcg_type_4] | bytes] | MultipartData[str | bytes] | MultipartData[bytes]
+ReadUploadResponse: TypeAlias = MultipartData[str | int | _dcg_type_3 | _dcg_type_4 | bytes] | MultipartData[str | bytes] | MultipartData[bytes]
 ReadUploadErrorData: TypeAlias = None
 
 

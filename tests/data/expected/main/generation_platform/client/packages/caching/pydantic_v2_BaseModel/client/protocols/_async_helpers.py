@@ -16,7 +16,6 @@ from models import FieldUsersUserIdGetQueryFieldsParameter as _dcg_type_0
 from .._runtime.client.client import AsyncClientCore
 from .._runtime.protocols.cache import afetch
 from .._runtime.protocols.caches import CacheResult
-from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, Unset
 from ..types.carts import GetCurrentCartResponse
 from ..types.secure import GetSecureUserResponse
@@ -106,9 +105,9 @@ class AsyncUsersProfileCache:
     async def fetch(
         self,
         *,
-        fields: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        accept_language: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        fields: _dcg_type_0 | Unset = UNSET,
+        accept_language: _dcg_type_1 | Unset = UNSET,
+        user_id: _dcg_type_2,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -132,9 +131,9 @@ class AsyncUsersDatedCache:
     async def fetch(
         self,
         *,
-        fields: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        accept_language: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        fields: _dcg_type_0 | Unset = UNSET,
+        accept_language: _dcg_type_1 | Unset = UNSET,
+        user_id: _dcg_type_2,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -158,8 +157,8 @@ class AsyncUsersListingCache:
     async def fetch(
         self,
         *,
-        page: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
-        role: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
+        page: _dcg_type_3 | Unset = UNSET,
+        role: _dcg_type_4 | Unset = UNSET,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[ListUsersResponse]:
@@ -183,7 +182,7 @@ class AsyncCartsCurrentCache:
     async def fetch(
         self,
         *,
-        cart: _dcg_type_5 | ModelValue[_dcg_type_5],
+        cart: _dcg_type_5,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetCurrentCartResponse]:
@@ -207,7 +206,7 @@ class AsyncSecureProfileCache:
     async def fetch(
         self,
         *,
-        user_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        user_id: _dcg_type_6,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetSecureUserResponse]:

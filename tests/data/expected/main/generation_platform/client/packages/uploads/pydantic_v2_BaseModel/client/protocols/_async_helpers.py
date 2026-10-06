@@ -16,7 +16,6 @@ from .._runtime.protocols.uploads import (
     aresume_upload,
     astart_upload,
 )
-from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.files import CompleteFileResponse
 from . import UploadOptions, UploadSource, _plans
@@ -69,8 +68,8 @@ class AsyncFilesUploadResumableUpload:
         self,
         source: UploadSource,
         *,
-        tus_resumable: _dcg_type_0 | ModelValue[_dcg_type_0],
-        x_name: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        tus_resumable: _dcg_type_0,
+        x_name: _dcg_type_1 | Unset = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -118,8 +117,8 @@ class AsyncFilesFinishResumableUpload:
         self,
         source: UploadSource,
         *,
-        tus_resumable: _dcg_type_0 | ModelValue[_dcg_type_0],
-        x_name: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        tus_resumable: _dcg_type_0,
+        x_name: _dcg_type_1 | Unset = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -167,9 +166,9 @@ class AsyncFilesPutResumableUpload:
         self,
         source: UploadSource,
         *,
-        upload_length: _dcg_type_2 | ModelValue[_dcg_type_2],
-        tus_resumable: _dcg_type_0 | ModelValue[_dcg_type_0],
-        x_name: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        upload_length: _dcg_type_2,
+        tus_resumable: _dcg_type_0,
+        x_name: _dcg_type_1 | Unset = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

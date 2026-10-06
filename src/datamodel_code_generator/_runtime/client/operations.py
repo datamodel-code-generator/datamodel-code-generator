@@ -60,7 +60,6 @@ if TYPE_CHECKING:
     from ..model_codecs.context import CodecContext
     from ..model_codecs.media import FieldPlan
     from ..model_codecs.parameters import ParameterPlan
-    from ..model_codecs.values import DecodedValue
     from ..model_codecs.wire import WireValue
     from .multipart import PartDecoder
     from .responses import ResponseInfo
@@ -102,8 +101,8 @@ class OutboundModelCodec(Protocol):
         """Construct a model from fields given by wire name and return its wire value with only those fields."""
         ...
 
-    def from_wire(self, wire: WireValue, context: CodecContext) -> object:
-        """Validate a wire value to send and build the value that sends it."""
+    def from_wire(self, wire: WireValue, context: CodecContext) -> Projected[object]:
+        """Validate a wire value to send and project it."""
         ...
 
 
@@ -119,19 +118,11 @@ class InboundModelCodec(Protocol[T_co]):
     """The receiving half of a model codec whose native value a call returns."""
 
     def decode(self, wire: WireValue, context: CodecContext) -> Projected[T_co]:
-        """Validate a received wire value and construct its native value or envelope."""
+        """Validate a received wire value and project it."""
         ...
 
     def convert(self, wire: WireValue, context: CodecContext) -> T_co:
         """Construct the native value of a received wire value through the backend's converter alone."""
-        ...
-
-
-class InboundEnvelopeCodec(Protocol[T]):
-    """The receiving half of a model codec whose model value or envelope a call returns."""
-
-    def decode(self, wire: WireValue, context: CodecContext) -> DecodedValue[T]:
-        """Validate a received wire value and construct its native value or envelope."""
         ...
 
 
@@ -143,7 +134,7 @@ class Encoder:
     context: CodecContext
 
     def encode(self, value: object) -> WireValue:
-        """Return the wire value of a native value as it serializes, or of a snapshot as it was captured."""
+        """Return the wire value of a native value as it serializes."""
         return self.codec().serialize(value, self.context)
 
     def assemble(self, fields: Mapping[str, object]) -> WireValue:
@@ -151,8 +142,8 @@ class Encoder:
         return self.codec().assemble(fields, self.context)
 
     def restored(self, wire: WireValue) -> object:
-        """Return the value that sends a wire value, validated and built as a caller's wire value is."""
-        return self.codec().from_wire(wire, self.context)
+        """Return the native value that sends a saved wire value, validated against its schema first."""
+        return self.codec().from_wire(wire, self.context).require_model()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -618,22 +609,6 @@ class _Native(Generic[T_co]):
             raise _BodyValueError(error) from None
 
 
-class _Envelope(Generic[T]):
-    __slots__ = ("_codec", "_context", "_reader")
-
-    def __init__(self, reader: _Reader, codec: Callable[[], InboundEnvelopeCodec[T]], context: CodecContext) -> None:
-        self._reader = reader
-        self._codec = codec
-        self._context = context
-
-    def __call__(self, body: bytes, info: ResponseInfo) -> DecodedValue[T]:
-        wire = self._reader.read(body, info)
-        try:
-            return self._codec().decode(wire, self._context)
-        except DATA_ERRORS as error:
-            raise _BodyValueError(error) from None
-
-
 def model_branch(  # noqa: PLR0913
     status: str,
     media_type: str,
@@ -649,23 +624,6 @@ def model_branch(  # noqa: PLR0913
     """Return a branch that converts its body through a model codec into the native value."""
     native = _Native(_Reader(kind, fields, additional, parts, additional_part), codec, context)
     return Branch(status, media_type, native, native.paged)
-
-
-def envelope_branch(  # noqa: PLR0913
-    status: str,
-    media_type: str,
-    kind: ReadKind,
-    codec: Callable[[], InboundEnvelopeCodec[T]],
-    context: CodecContext,
-    *,
-    fields: tuple[FieldPlan, ...] = (),
-    additional: FieldPlan | None = None,
-    parts: tuple[PartPlan, ...] = (),
-    additional_part: PartPlan | None = None,
-) -> Branch[DecodedValue[T]]:
-    """Return a branch that decodes its body through a model codec into a model value or envelope."""
-    reader = _Reader(kind, fields, additional, parts, additional_part)
-    return Branch(status, media_type, _Envelope(reader, codec, context))
 
 
 def wire_branch(status: str, media_type: str) -> Branch[WireValue]:

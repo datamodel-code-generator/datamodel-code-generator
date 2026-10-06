@@ -1128,6 +1128,30 @@
     },
     {
       "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "simple",
+        "shape": "array"
+      },
+      "value": []
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "label",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "a"
+          }
+        ]
+      },
+      "value": {}
+    },
+    {
+      "plan": {
         "location": "query",
         "name": "q",
         "style": "form",
@@ -1512,6 +1536,15 @@
         "style": "simple"
       },
       "value": "a.b"
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "matrix",
+        "shape": "array"
+      },
+      "value": []
     }
   ]
 }

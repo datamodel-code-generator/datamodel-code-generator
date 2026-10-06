@@ -13,7 +13,7 @@ from ._runtime.client.operations import (
     RequestBody,
     ResponseDecoder,
     ServerPlan,
-    envelope_branch,
+    model_branch,
 )
 from .types.default import PostItemsErrorData, PostItemsHTTPError, PostItemsResponse
 
@@ -26,7 +26,7 @@ OPERATION_0: Final[OperationPlan[PostItemsResponse, PostItemsErrorData]] = Opera
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            envelope_branch(
+            model_branch(
                 '200',
                 'application/json',
                 'json',

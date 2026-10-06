@@ -108,8 +108,7 @@ class _Caches:
                 continue
             media = response.media
             use = media[0].use if len(media) == 1 and media[0].kind == "json" else None
-            binding = None if use is None else self.bindings.get(use.id)
-            if use is None or binding is None or binding.projection_mode != "native":
+            if use is None or use.id not in self.bindings:
                 message = (
                     f"The cacheable status {status} of {name!r} has a response other than one natively decoded JSON "
                     "body, which is not supported yet"

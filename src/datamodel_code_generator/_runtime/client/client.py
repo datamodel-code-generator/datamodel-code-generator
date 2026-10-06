@@ -2033,7 +2033,7 @@ class _Core(Generic[AdapterT, HandleT]):
     ) -> tuple[tuple[object, ...], object, str | None]:
         """Return the arguments, body, and media type of a request a checkpoint saved, built from their wire values.
 
-        Each value is validated and built as its codec builds a caller's wire value, and a concrete media type is
+        Each value is validated against its schema and built into its native value, and a concrete media type is
         selected as a call's is; a value that does not fit, or a concrete type that selects another declared media,
         raises RequestEncodingError.
         """

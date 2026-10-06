@@ -583,11 +583,9 @@ _ASYNC_LIFECYCLE: Final = '''    async def aclose(self) -> None:
 
 @dataclass(frozen=True, slots=True)
 class _Model:
-    """A payload of a model type: its final type, whether it is an envelope, and whether it is sent."""
+    """A payload of a model type: its final type."""
 
     type: FinalPythonType
-    envelope: bool
-    sent: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -917,37 +915,29 @@ class Module:
 
 
 class _Typing:
-    """Spell the payload types of a planned client: model types with their projection, or schema-less surfaces."""
+    """Spell the payload types of a planned client: model types, or schema-less surfaces."""
 
     def __init__(self, plan: ClientPlan, codecs: CodecPlan, accessors: dict[TypeUseId, UseAccessors]) -> None:
-        """Keep the plan, the use bindings of the codec plan, and the codec accessors of every bound use."""
+        """Keep the plan, the imports of the codec plan, and the codec accessors of every bound use."""
         self.plan = plan
         self.symbols = dict(codecs.imports)
-        self.projections = {use: binding.projection_mode for use, binding in codecs.bindings}
         self.accessors = accessors
 
-    def envelope(self, use: TypeUseBinding) -> bool:
-        """Return whether a use's codec projects into an envelope."""
-        return self.projections.get(use.id) == "envelope"
-
-    def key(self, kind: str, use: TypeUseBinding | None, *, sent: bool) -> _Key:
-        """Return the identity of one payload type: its model type and projection, or a schema-less surface."""
+    @staticmethod
+    def key(kind: str, use: TypeUseBinding | None) -> _Key:
+        """Return the identity of one payload type: its model type, or a schema-less surface."""
         if kind == "binary":
             return "bytes"
         if use is None or use.type is None:
             return {"text": "str", "form": "form", "multipart": "multipart"}.get(kind, "wire")
-        return _Model(use.type, self.envelope(use), sent)
+        return _Model(use.type)
 
     @staticmethod
     def spell(module: Module, key: _Key) -> str:
         """Return the spelling of one payload type in a module."""
         match key:
             case _Model():
-                static = module.types.static(key.type)
-                if key.sent:
-                    values = module.local("model_codecs", "DecodedValue" if key.envelope else "ModelValue")
-                    return f"{static} | {values}[{static}]"
-                return f"{module.local('model_codecs', 'DecodedValue')}[{static}]" if key.envelope else static
+                return module.types.static(key.type)
             case _Parts():
                 return f"{module.local('bodies', 'MultipartData')}[{_Typing.values(module, key)}]"
             case str() if (surface := _SURFACES.get(key)) is not None:
@@ -965,12 +955,12 @@ class _Typing:
     def argument(self, module: Module, parameter: ParameterSpec) -> str:
         """Return the type of one parameter's keyword argument, with Unset when the parameter is optional."""
         kind = media_kind(parameter.plan.content_media_type) if parameter.plan.content_media_type else "json"
-        surface = self.surface(module, "json" if kind == "form" else kind, parameter.use, sent=True)
+        surface = self.surface(module, "json" if kind == "form" else kind, parameter.use)
         return surface if parameter.required else f"{surface} | {module.local('options', 'Unset')}"
 
-    def surface(self, module: Module, kind: str, use: TypeUseBinding | None, *, sent: bool) -> str:
-        """Return the payload type of one media or parameter: its model type, envelope, or schema-less surface."""
-        return self.spell(module, self.key(kind, use, sent=sent))
+    def surface(self, module: Module, kind: str, use: TypeUseBinding | None) -> str:
+        """Return the payload type of one media or parameter: its model type, or schema-less surface."""
+        return self.spell(module, self.key(kind, use))
 
     def payloads(self, response: ResponseSpec, media_type: str | None = None) -> list[_Key]:
         """Return the value types one response yields, restricted to those a media type or range dispatches to."""
@@ -980,7 +970,7 @@ class _Typing:
             None if media_type is None else reachable(media_type, tuple(item.media_type for item in response.media))
         )
         return [
-            self.key(media.kind, media.use, sent=False) if media.members is None else self.parts(media)
+            self.key(media.kind, media.use) if media.members is None else self.parts(media)
             for media in response.media
             if chosen is None or media.media_type in chosen
         ]
@@ -990,8 +980,7 @@ class _Typing:
         return _Parts(
             tuple(
                 dict.fromkeys(
-                    "bytes" if part.use is None else self.key("json", part.use, sent=False)
-                    for part in member_parts(media)
+                    "bytes" if part.use is None else self.key("json", part.use) for part in member_parts(media)
                 )
             )
         )
@@ -1016,12 +1005,12 @@ class _Typing:
             case "multipart", _ if media.members is not None:
                 values = self.part_values(module, media)
             case _:
-                return self.surface(module, media.kind, media.use, sent=True)
+                return self.surface(module, media.kind, media.use)
         return f"{module.local('bodies', f'{prefix}MultipartBody')}[{values}]"
 
     def part_values(self, module: Module, media: MediaSpec) -> str:
         """Return the values the field parts of a body sent as parts take: each member's, WireValue for any extra."""
-        keys = (self.key("json", part.use, sent=True) for part in member_parts(media) if not part.plan.file)
+        keys = (self.key("json", part.use) for part in member_parts(media) if not part.plan.file)
         return self.union(module, keys, "") or module.name("typing_extensions", "Never")
 
     def codec(self, module: Module, use: TypeUseBinding) -> str:
@@ -1556,7 +1545,7 @@ class _Types(_Typing):
         every: list[str] = []
         entries: list[Doc] = []
         for spelling, branches in headers.values():
-            kinds = [self.surface(module, "json", header.use, sent=False) for _, header in branches]
+            kinds = [self.surface(module, "json", header.use) for _, header in branches]
             optional = not all(header.required for _, header in branches)
             every.extend(kinds)
             results[spelling] = _union((*kinds, *((unset,) if optional else ())))
@@ -1570,13 +1559,12 @@ class _Types(_Typing):
     def header_branch(self, module: Module, header: HeaderSpec) -> Group:
         """Return the HeaderBranch constructor of one status's declaration of a header."""
         assert header.use is not None
-        decoder = "envelope_value" if self.envelope(header.use) else "native_value"
         missing = "required_header" if header.required else "optional_header"
         return _call(
             module.local(_CODECS, "HeaderBranch"),
             (
                 ("plan=", parameter_plan(module.local, header.plan)),
-                ("decode=", f"{module.local(_CODECS, decoder)}({self.codec(module, header.use)})"),
+                ("decode=", f"{module.local(_CODECS, 'native_value')}({self.codec(module, header.use)})"),
                 ("missing=", module.local(_CODECS, missing)),
             ),
         )
@@ -1878,7 +1866,6 @@ class _Registry(_Typing):
                 )
                 branches.append(f"{module.local(_RUNTIME, name)}({status}, {media_type})")
             else:
-                name = "envelope_branch" if self.envelope(media.use) else "model_branch"
                 entries: list[tuple[str, Doc]] = [
                     ("", status),
                     ("", media_type),
@@ -1886,7 +1873,7 @@ class _Registry(_Typing):
                     ("", self.codec(module, media.use)),
                     *self.form(module, media),
                 ]
-                branches.append(_call(module.local(_RUNTIME, name), entries))
+                branches.append(_call(module.local(_RUNTIME, "model_branch"), entries))
         return branches
 
     def parts_branch(self, module: Module, status: str, media: MediaSpec) -> Group:
@@ -1915,8 +1902,7 @@ class _Registry(_Typing):
         multipart = "_runtime.client.multipart"
         if part.use is None:
             return _call(module.local(multipart, "file_part"), (("", repr(plan.name)), *flags))
-        decoder = "envelope_value" if self.envelope(part.use) else "native_value"
-        value = f"{module.local(_CODECS, decoder)}({self.codec(module, part.use)})"
+        value = f"{module.local(_CODECS, 'native_value')}({self.codec(module, part.use)})"
         return _call(
             module.local(multipart, "value_part"), (("", repr(plan.name)), ("", repr(plan.kind)), ("", value), *flags)
         )
@@ -2896,8 +2882,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         tree, resources = spec.helper.tree, self.resources
         kinds = {"json": "json", "utf8": "text", "bytes": "binary"}
         return (
-            resources.surface(module, kinds[tree["send"]["codec"]], spec.send, sent=True),
-            resources.surface(module, kinds[tree["receive"]["codec"]], spec.receive, sent=False),
+            resources.surface(module, kinds[tree["send"]["codec"]], spec.send),
+            resources.surface(module, kinds[tree["receive"]["codec"]], spec.receive),
         )
 
     def socket_plan(self, module: Module, index: int, spec: SocketSpec) -> str:
@@ -3774,7 +3760,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
             self.file(PurePosixPath("auth.py"), "auth", _AUTH),
             self.file(PurePosixPath("bodies.py"), "bodies", _BODIES),
-            self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs("client")),
+            self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs()),
             self.file(PurePosixPath("transports.py"), "transports", _TRANSPORTS),
             self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _PROTOCOLS),
             self.file(PurePosixPath("resources", "__init__.py"), "package", '"""The resources of the clients."""\n'),

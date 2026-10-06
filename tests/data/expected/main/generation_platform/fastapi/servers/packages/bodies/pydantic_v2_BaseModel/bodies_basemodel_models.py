@@ -56,6 +56,10 @@ class FieldVariantsPostRequest1(BaseModel):
     c: bool | None = None
 
 
+class FieldVariantsPostRequest2(BaseModel):
+    tags: list[str] | None = None
+
+
 class FieldDocumentsPutRequest(RootModel[constr(max_length=5)]):
     root: constr(max_length=5)
 

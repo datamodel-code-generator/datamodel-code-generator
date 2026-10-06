@@ -12,7 +12,6 @@ from tests.data.python.fastapi_generation import (
     fastapi_api_report,
     fastapi_config_report,
     fastapi_render,
-    fastapi_scenario_report,
 )
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi"
@@ -84,25 +83,6 @@ def test_fastapi_render(case: str, tmp_path: Path) -> None:
     assert_output(report, EXPECTED / f"{case}.txt")
     for backend, modules in rendered.items():
         assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
-
-
-@pytest.mark.parametrize(
-    "case",
-    [
-        "update-initial",
-        "update-invalid",
-        "update-groups",
-        "update-docs",
-        "update-shared",
-        "update-layout",
-        "update-templates",
-        "update-selection",
-        "update-runtime",
-    ],
-)
-def test_fastapi_regeneration(case: str, tmp_path: Path) -> None:
-    """Regenerate after spec, setting, and runtime changes, updating only the groups a partial update names."""
-    assert_output(fastapi_scenario_report(case, tmp_path), EXPECTED / "scenarios" / f"{case}.txt")
 
 
 @pytest.mark.parametrize(

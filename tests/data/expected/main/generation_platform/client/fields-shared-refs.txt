@@ -15,7 +15,6 @@ from models import D as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.default import CreateSharedResponse
@@ -47,7 +46,7 @@ class AsyncDefaultResource:
     async def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         a: Unset = UNSET,
         c: Unset = UNSET,
         b: Unset = UNSET,
@@ -70,7 +69,7 @@ class AsyncDefaultResource:
     async def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        body: _dcg_type_0 | Unset = UNSET,
         a: str | Unset = UNSET,
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
@@ -100,7 +99,7 @@ class AsyncDefaultWithResponse:
     async def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         a: Unset = UNSET,
         c: Unset = UNSET,
         b: Unset = UNSET,
@@ -123,7 +122,7 @@ class AsyncDefaultWithResponse:
     async def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        body: _dcg_type_0 | Unset = UNSET,
         a: str | Unset = UNSET,
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
@@ -153,7 +152,7 @@ class AsyncDefaultWithRawResponse:
     async def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         a: Unset = UNSET,
         c: Unset = UNSET,
         b: Unset = UNSET,
@@ -176,7 +175,7 @@ class AsyncDefaultWithRawResponse:
     async def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        body: _dcg_type_0 | Unset = UNSET,
         a: str | Unset = UNSET,
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
@@ -206,7 +205,7 @@ class AsyncDefaultWithStreamingResponse:
     def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         a: Unset = UNSET,
         c: Unset = UNSET,
         b: Unset = UNSET,
@@ -229,7 +228,7 @@ class AsyncDefaultWithStreamingResponse:
     def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        body: _dcg_type_0 | Unset = UNSET,
         a: str | Unset = UNSET,
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
@@ -260,7 +259,6 @@ from models import D as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.default import CreateSharedResponse
@@ -292,7 +290,7 @@ class DefaultResource:
     def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         a: Unset = UNSET,
         c: Unset = UNSET,
         b: Unset = UNSET,
@@ -315,7 +313,7 @@ class DefaultResource:
     def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        body: _dcg_type_0 | Unset = UNSET,
         a: str | Unset = UNSET,
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
@@ -345,7 +343,7 @@ class DefaultWithResponse:
     def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         a: Unset = UNSET,
         c: Unset = UNSET,
         b: Unset = UNSET,
@@ -368,7 +366,7 @@ class DefaultWithResponse:
     def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        body: _dcg_type_0 | Unset = UNSET,
         a: str | Unset = UNSET,
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
@@ -398,7 +396,7 @@ class DefaultWithRawResponse:
     def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         a: Unset = UNSET,
         c: Unset = UNSET,
         b: Unset = UNSET,
@@ -421,7 +419,7 @@ class DefaultWithRawResponse:
     def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        body: _dcg_type_0 | Unset = UNSET,
         a: str | Unset = UNSET,
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,
@@ -451,7 +449,7 @@ class DefaultWithStreamingResponse:
     def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         a: Unset = UNSET,
         c: Unset = UNSET,
         b: Unset = UNSET,
@@ -474,7 +472,7 @@ class DefaultWithStreamingResponse:
     def create_shared(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        body: _dcg_type_0 | Unset = UNSET,
         a: str | Unset = UNSET,
         c: str | Unset = UNSET,
         b: str | Unset = UNSET,

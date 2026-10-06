@@ -18,7 +18,6 @@ from .._runtime.model_codecs.bindings import (
     UseBinding,
 )
 from .._runtime.model_codecs.context import CodecContext
-from .._runtime.model_codecs.outbound import NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from .._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
 from .._runtime.model_codecs.wire import freeze_wire
@@ -763,11 +762,6 @@ def codec_0() -> PydanticModelCodec[models.FieldUsersGetQueryCursorParameter]:
     )
 
 
-@cache
-def outbound_0() -> NativeOutboundCodec[models.FieldUsersGetQueryCursorParameter]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
-
-
 CONTEXT_1: Final = CodecContext(
     surface='client',
     direction='request',
@@ -800,11 +794,6 @@ def codec_1() -> PydanticModelCodec[models.FieldUsersGetQueryLimitParameter]:
     )
 
 
-@cache
-def outbound_1() -> NativeOutboundCodec[models.FieldUsersGetQueryLimitParameter]:
-    return NativeOutboundCodec(codec_1(), CONTEXT_1)
-
-
 CONTEXT_2: Final = CodecContext(
     surface='client',
     direction='request',
@@ -835,11 +824,6 @@ def codec_2() -> PydanticModelCodec[models.FieldUsersGetHeaderXSnapshotParameter
         {'models:FieldUsersGetHeaderXSnapshotParameter': models.FieldUsersGetHeaderXSnapshotParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_2() -> NativeOutboundCodec[models.FieldUsersGetHeaderXSnapshotParameter]:
-    return NativeOutboundCodec(codec_2(), CONTEXT_2)
 
 
 CONTEXT_3: Final = CodecContext(
@@ -972,11 +956,6 @@ def codec_6() -> PydanticModelCodec[models.FieldUsersSearchPostQueryCursorParame
     )
 
 
-@cache
-def outbound_6() -> NativeOutboundCodec[models.FieldUsersSearchPostQueryCursorParameter]:
-    return NativeOutboundCodec(codec_6(), CONTEXT_6)
-
-
 CONTEXT_7: Final = CodecContext(
     surface='client',
     direction='request',
@@ -1008,11 +987,6 @@ def codec_7() -> PydanticModelCodec[models.UserQuery]:
         {'models:UserQuery': models.UserQuery},
         request_bundle,
     )
-
-
-@cache
-def outbound_7() -> NativeOutboundCodec[models.UserQuery]:
-    return NativeOutboundCodec(codec_7(), CONTEXT_7)
 
 
 CONTEXT_8: Final = CodecContext(
@@ -1080,11 +1054,6 @@ def codec_9() -> PydanticModelCodec[models.FieldLooseGetQueryCursorParameter]:
     )
 
 
-@cache
-def outbound_9() -> NativeOutboundCodec[models.FieldLooseGetQueryCursorParameter]:
-    return NativeOutboundCodec(codec_9(), CONTEXT_9)
-
-
 CONTEXT_10: Final = CodecContext(
     surface='client',
     direction='response',
@@ -1148,11 +1117,6 @@ def codec_11() -> PydanticModelCodec[models.FieldNestedGetQueryCursorParameter]:
         {'models:FieldNestedGetQueryCursorParameter': models.FieldNestedGetQueryCursorParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_11() -> NativeOutboundCodec[models.FieldNestedGetQueryCursorParameter]:
-    return NativeOutboundCodec(codec_11(), CONTEXT_11)
 
 
 CONTEXT_12: Final = CodecContext(
@@ -1222,11 +1186,6 @@ def codec_13() -> PydanticModelCodec[models.FieldLabelsGetQueryAfterParameter]:
         {'models:FieldLabelsGetQueryAfterParameter': models.FieldLabelsGetQueryAfterParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_13() -> NativeOutboundCodec[models.FieldLabelsGetQueryAfterParameter]:
-    return NativeOutboundCodec(codec_13(), CONTEXT_13)
 
 
 CONTEXT_14: Final = CodecContext(
@@ -1326,11 +1285,6 @@ def codec_16() -> PydanticModelCodec[models.FieldLabelSetsGetQueryAfterParameter
     )
 
 
-@cache
-def outbound_16() -> NativeOutboundCodec[models.FieldLabelSetsGetQueryAfterParameter]:
-    return NativeOutboundCodec(codec_16(), CONTEXT_16)
-
-
 CONTEXT_17: Final = CodecContext(
     surface='client',
     direction='response',
@@ -1428,11 +1382,6 @@ def codec_19() -> PydanticModelCodec[models.FieldArchiveCursorGetPathCursorParam
     )
 
 
-@cache
-def outbound_19() -> NativeOutboundCodec[models.FieldArchiveCursorGetPathCursorParameter]:
-    return NativeOutboundCodec(codec_19(), CONTEXT_19)
-
-
 CONTEXT_20: Final = CodecContext(
     surface='client',
     direction='response',
@@ -1498,11 +1447,6 @@ def codec_21() -> PydanticModelCodec[models.FieldStatusesGetQueryCodeParameter]:
     )
 
 
-@cache
-def outbound_21() -> NativeOutboundCodec[models.FieldStatusesGetQueryCodeParameter]:
-    return NativeOutboundCodec(codec_21(), CONTEXT_21)
-
-
 CONTEXT_22: Final = CodecContext(
     surface='client',
     direction='response',
@@ -1566,11 +1510,6 @@ def codec_23() -> PydanticModelCodec[models.FieldSecureUsersGetQueryCursorParame
         {'models:FieldSecureUsersGetQueryCursorParameter': models.FieldSecureUsersGetQueryCursorParameter},
         request_bundle,
     )
-
-
-@cache
-def outbound_23() -> NativeOutboundCodec[models.FieldSecureUsersGetQueryCursorParameter]:
-    return NativeOutboundCodec(codec_23(), CONTEXT_23)
 
 
 CONTEXT_24: Final = CodecContext(

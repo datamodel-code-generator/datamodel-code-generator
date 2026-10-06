@@ -12,7 +12,6 @@ from models import FieldOrdersOrderIdGetQueryViewParameter as _dcg_type_1
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.orders import GetOrderResponse
@@ -43,8 +42,8 @@ class AsyncOrdersResource:
     async def get_order(
         self,
         *,
-        order_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        view: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        order_id: _dcg_type_0,
+        view: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetOrderResponse:
@@ -67,8 +66,8 @@ class AsyncOrdersWithResponse:
     async def get_order(
         self,
         *,
-        order_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        view: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        order_id: _dcg_type_0,
+        view: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetOrderResponse]:
@@ -91,8 +90,8 @@ class AsyncOrdersWithRawResponse:
     async def get_order(
         self,
         *,
-        order_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        view: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        order_id: _dcg_type_0,
+        view: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -115,8 +114,8 @@ class AsyncOrdersWithStreamingResponse:
     def get_order(
         self,
         *,
-        order_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        view: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        order_id: _dcg_type_0,
+        view: _dcg_type_1 | Unset = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

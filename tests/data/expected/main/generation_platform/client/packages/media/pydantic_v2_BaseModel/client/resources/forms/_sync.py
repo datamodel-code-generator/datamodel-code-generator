@@ -22,7 +22,7 @@ from typing_extensions import Never
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import FormData, MultipartBody, MultipartData
-from ...model_codecs import ModelValue, WireValue
+from ...model_codecs import WireValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.forms import (
@@ -72,7 +72,7 @@ class FormsResource:
     def submit_form(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -90,7 +90,7 @@ class FormsResource:
     def submit_profile(
         self,
         *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
+        body: _dcg_type_1,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitProfileResponse:
@@ -120,7 +120,7 @@ class FormsResource:
     def submit_anything(
         self,
         *,
-        body: _dcg_type_2 | ModelValue[_dcg_type_2],
+        body: _dcg_type_2,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAnythingResponse:
@@ -205,7 +205,7 @@ class FormsResource:
     def submit_upload(
         self,
         *,
-        body: MultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
+        body: MultipartBody[int | str | list[str] | _dcg_type_4],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitUploadResponse:
@@ -236,7 +236,7 @@ class FormsResource:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | WireValue],
+        body: MultipartBody[str | WireValue],
         media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse: ...
@@ -244,7 +244,7 @@ class FormsResource:
     def submit_avatar(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse: ...
@@ -259,7 +259,7 @@ class FormsResource:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
+        body: MultipartBody[str | WireValue] | _dcg_type_4 | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse:
@@ -275,7 +275,7 @@ class FormsResource:
     def submit_scans(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str]] | Unset = UNSET,
+        body: MultipartBody[str] | Unset = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitScansResponse:
@@ -307,7 +307,7 @@ class FormsResource:
     def submit_labels(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str]],
+        body: MultipartBody[str],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitLabelsResponse:
@@ -323,7 +323,7 @@ class FormsResource:
     def submit_search(
         self,
         *,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_5,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitSearchResponse:
@@ -339,7 +339,7 @@ class FormsResource:
     def submit_cover(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
+        body: MultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitCoverResponse:
@@ -355,7 +355,7 @@ class FormsResource:
     def submit_card(
         self,
         *,
-        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        body: _dcg_type_7,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitCardResponse:
@@ -371,7 +371,7 @@ class FormsResource:
     def submit_stickers(
         self,
         *,
-        body: _dcg_type_8 | ModelValue[_dcg_type_8],
+        body: _dcg_type_8,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitStickersResponse:
@@ -387,7 +387,7 @@ class FormsResource:
     def submit_album(
         self,
         *,
-        body: MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
+        body: MultipartBody[_dcg_type_9 | str | list[str] | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAlbumResponse:
@@ -411,7 +411,7 @@ class FormsWithResponse:
     def submit_form(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -429,7 +429,7 @@ class FormsWithResponse:
     def submit_profile(
         self,
         *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
+        body: _dcg_type_1,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitProfileResponse]:
@@ -459,7 +459,7 @@ class FormsWithResponse:
     def submit_anything(
         self,
         *,
-        body: _dcg_type_2 | ModelValue[_dcg_type_2],
+        body: _dcg_type_2,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAnythingResponse]:
@@ -544,7 +544,7 @@ class FormsWithResponse:
     def submit_upload(
         self,
         *,
-        body: MultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
+        body: MultipartBody[int | str | list[str] | _dcg_type_4],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitUploadResponse]:
@@ -575,7 +575,7 @@ class FormsWithResponse:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | WireValue],
+        body: MultipartBody[str | WireValue],
         media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]: ...
@@ -583,7 +583,7 @@ class FormsWithResponse:
     def submit_avatar(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]: ...
@@ -598,7 +598,7 @@ class FormsWithResponse:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
+        body: MultipartBody[str | WireValue] | _dcg_type_4 | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]:
@@ -614,7 +614,7 @@ class FormsWithResponse:
     def submit_scans(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str]] | Unset = UNSET,
+        body: MultipartBody[str] | Unset = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitScansResponse]:
@@ -646,7 +646,7 @@ class FormsWithResponse:
     def submit_labels(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str]],
+        body: MultipartBody[str],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitLabelsResponse]:
@@ -662,7 +662,7 @@ class FormsWithResponse:
     def submit_search(
         self,
         *,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_5,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitSearchResponse]:
@@ -678,7 +678,7 @@ class FormsWithResponse:
     def submit_cover(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
+        body: MultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitCoverResponse]:
@@ -694,7 +694,7 @@ class FormsWithResponse:
     def submit_card(
         self,
         *,
-        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        body: _dcg_type_7,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitCardResponse]:
@@ -710,7 +710,7 @@ class FormsWithResponse:
     def submit_stickers(
         self,
         *,
-        body: _dcg_type_8 | ModelValue[_dcg_type_8],
+        body: _dcg_type_8,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitStickersResponse]:
@@ -726,7 +726,7 @@ class FormsWithResponse:
     def submit_album(
         self,
         *,
-        body: MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
+        body: MultipartBody[_dcg_type_9 | str | list[str] | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAlbumResponse]:
@@ -750,7 +750,7 @@ class FormsWithRawResponse:
     def submit_form(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -768,7 +768,7 @@ class FormsWithRawResponse:
     def submit_profile(
         self,
         *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
+        body: _dcg_type_1,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -798,7 +798,7 @@ class FormsWithRawResponse:
     def submit_anything(
         self,
         *,
-        body: _dcg_type_2 | ModelValue[_dcg_type_2],
+        body: _dcg_type_2,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -862,7 +862,7 @@ class FormsWithRawResponse:
     def submit_upload(
         self,
         *,
-        body: MultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
+        body: MultipartBody[int | str | list[str] | _dcg_type_4],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -893,7 +893,7 @@ class FormsWithRawResponse:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | WireValue],
+        body: MultipartBody[str | WireValue],
         media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
@@ -901,7 +901,7 @@ class FormsWithRawResponse:
     def submit_avatar(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
@@ -916,7 +916,7 @@ class FormsWithRawResponse:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
+        body: MultipartBody[str | WireValue] | _dcg_type_4 | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -932,7 +932,7 @@ class FormsWithRawResponse:
     def submit_scans(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str]] | Unset = UNSET,
+        body: MultipartBody[str] | Unset = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -964,7 +964,7 @@ class FormsWithRawResponse:
     def submit_labels(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str]],
+        body: MultipartBody[str],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -980,7 +980,7 @@ class FormsWithRawResponse:
     def submit_search(
         self,
         *,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_5,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -996,7 +996,7 @@ class FormsWithRawResponse:
     def submit_cover(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
+        body: MultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1012,7 +1012,7 @@ class FormsWithRawResponse:
     def submit_card(
         self,
         *,
-        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        body: _dcg_type_7,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1028,7 +1028,7 @@ class FormsWithRawResponse:
     def submit_stickers(
         self,
         *,
-        body: _dcg_type_8 | ModelValue[_dcg_type_8],
+        body: _dcg_type_8,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1044,7 +1044,7 @@ class FormsWithRawResponse:
     def submit_album(
         self,
         *,
-        body: MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
+        body: MultipartBody[_dcg_type_9 | str | list[str] | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1068,7 +1068,7 @@ class FormsWithStreamingResponse:
     def submit_form(
         self,
         *,
-        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: _dcg_type_0,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -1086,7 +1086,7 @@ class FormsWithStreamingResponse:
     def submit_profile(
         self,
         *,
-        body: _dcg_type_1 | ModelValue[_dcg_type_1],
+        body: _dcg_type_1,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1116,7 +1116,7 @@ class FormsWithStreamingResponse:
     def submit_anything(
         self,
         *,
-        body: _dcg_type_2 | ModelValue[_dcg_type_2],
+        body: _dcg_type_2,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1180,7 +1180,7 @@ class FormsWithStreamingResponse:
     def submit_upload(
         self,
         *,
-        body: MultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
+        body: MultipartBody[int | str | list[str] | _dcg_type_4],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1211,7 +1211,7 @@ class FormsWithStreamingResponse:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | WireValue],
+        body: MultipartBody[str | WireValue],
         media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
@@ -1219,7 +1219,7 @@ class FormsWithStreamingResponse:
     def submit_avatar(
         self,
         *,
-        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        body: _dcg_type_4,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
@@ -1234,7 +1234,7 @@ class FormsWithStreamingResponse:
     def submit_avatar(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
+        body: MultipartBody[str | WireValue] | _dcg_type_4 | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1250,7 +1250,7 @@ class FormsWithStreamingResponse:
     def submit_scans(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str]] | Unset = UNSET,
+        body: MultipartBody[str] | Unset = UNSET,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1282,7 +1282,7 @@ class FormsWithStreamingResponse:
     def submit_labels(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str]],
+        body: MultipartBody[str],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1298,7 +1298,7 @@ class FormsWithStreamingResponse:
     def submit_search(
         self,
         *,
-        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        body: _dcg_type_5,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1314,7 +1314,7 @@ class FormsWithStreamingResponse:
     def submit_cover(
         self,
         *,
-        body: MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
+        body: MultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1330,7 +1330,7 @@ class FormsWithStreamingResponse:
     def submit_card(
         self,
         *,
-        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        body: _dcg_type_7,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1346,7 +1346,7 @@ class FormsWithStreamingResponse:
     def submit_stickers(
         self,
         *,
-        body: _dcg_type_8 | ModelValue[_dcg_type_8],
+        body: _dcg_type_8,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1362,7 +1362,7 @@ class FormsWithStreamingResponse:
     def submit_album(
         self,
         *,
-        body: MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
+        body: MultipartBody[_dcg_type_9 | str | list[str] | WireValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

@@ -7,56 +7,28 @@ render pydantic_v2.BaseModel
   write server/routers/untagged.py
   write server/_generated/__init__.py
   write server/_generated/contract.py
-  write server/_generated/model_bindings.py
-  write server/_generated/openapi.py
-  write server/model_codecs.py
-  write server/responses.py
   write server/errors.py
-  write server/auth_types.py
+  write server/security.py
   write server/services.py
   write server/README.md
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/model_codecs/__init__.py (copied runtime)
-  write server/_runtime/model_codecs/bindings.py (copied runtime)
-  write server/_runtime/model_codecs/codec.py (copied runtime)
-  write server/_runtime/model_codecs/context.py (copied runtime)
   write server/_runtime/model_codecs/errors.py (copied runtime)
   write server/_runtime/model_codecs/media.py (copied runtime)
-  write server/_runtime/model_codecs/outbound.py (copied runtime)
   write server/_runtime/model_codecs/parameters.py (copied runtime)
-  write server/_runtime/model_codecs/patterns.py (copied runtime)
-  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
-  write server/_runtime/model_codecs/schema.py (copied runtime)
   write server/_runtime/model_codecs/unset.py (copied runtime)
-  write server/_runtime/model_codecs/values.py (copied runtime)
   write server/_runtime/model_codecs/wire.py (copied runtime)
   write server/_runtime/server/__init__.py (copied runtime)
   write server/_runtime/server/application.py (copied runtime)
-  write server/_runtime/server/codecs.py (copied runtime)
   write server/_runtime/server/errors.py (copied runtime)
-  write server/_runtime/server/openapi.py (copied runtime)
   write server/_runtime/server/requests.py (copied runtime)
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
-  layout routers
-  subscribe: POST /subscriptions -> /subscriptions [untagged] status 201 primary 201 None body typed handler sync
-    body /paths/~1subscriptions/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Subscription/properties/callbackUrl
-    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1subscriptions/post/responses/201
-  list_events: GET /events -> /events [untagged] status 200 primary 200 application/json body typed handler sync
-    primary_response /paths/~1events/get/responses/200: codec_adapter native_nullable_mismatch at /components/schemas/Event/properties/kind
-  get_secure: GET /secure -> /secure [untagged] status 200 primary 200 application/json body typed handler sync
-    parameter /paths/~1secure/get/parameters/0: codec_adapter unsupported_wire_shape
-    primary_response /paths/~1secure/get/responses/200: codec_adapter native_shape_mismatch at /components/schemas/Animal
-  ping: GET /ping -> /ping [untagged] status 200 primary - body typed handler sync
-  echo: GET /echo -> /echo [untagged] status 200 primary 200 application/json body typed handler sync
-    primary_response /paths/~1echo/get/responses/200: codec_adapter native_nullable_mismatch at /components/schemas/Event/properties/kind
-  group untagged -> untagged (5)
-  W_DOCUMENTATION_ANNOTATION target /paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}/post/callbacks/onReceipt/{$request.body#~1receiptUrl}/post: The served document leaves out callback security that names no declared scheme
-  W_DOCUMENTATION_ANNOTATION target /paths/~1subscriptions/post/callbacks/onStatus/{$request.query.hook}/put: The served document leaves out callback security that names no declared scheme
   W_DOCUMENTATION_ANNOTATION target /paths/~1events/get/responses/200/headers/X-Map: The served document leaves out example, which has no JSON form
+  W_DOCUMENTATION_ANNOTATION target /paths/~1events/get: The served document leaves out servers, which has no JSON form
   context
     | {
     |   "info": {
@@ -100,9 +72,7 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Subscription|ModelNode(symbol='models:Subscription')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
-    |             "kind": "model",
+    |             "kind": "surface",
     |             "value": "models.Subscription",
     |             "imports": [
     |               {
@@ -116,12 +86,8 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1subscriptions/post/requestBody",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Subscription|ModelNode(symbol='models:Subscription')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
-    |             "kind": "model",
+    |             "kind": "surface",
     |             "value": "models.Subscription",
     |             "imports": [
     |               {
@@ -161,12 +127,9 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "body",
-    |             "transport": "codec_adapter",
-    |             "reason": "opaque_native_semantics",
-    |             "source": {
-    |               "uri": "../callbacks.yaml",
-    |               "pointer": "/components/schemas/Subscription/properties/callbackUrl"
-    |             }
+    |             "transport": "fastapi_native",
+    |             "reason": "native_supported",
+    |             "source": null
     |           },
     |           "native_declaration": null
     |         }
@@ -178,9 +141,7 @@ render pydantic_v2.BaseModel
     |             "media_type": "application/json",
     |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
     |             "type": {
-    |               "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Subscription|ModelNode(symbol='models:Subscription')",
-    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
-    |               "kind": "model",
+    |               "kind": "surface",
     |               "value": "models.Subscription",
     |               "imports": [
     |                 {
@@ -224,12 +185,9 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "codec_adapter",
-    |           "reason": "opaque_native_semantics",
-    |           "source": {
-    |             "uri": "../callbacks.yaml",
-    |             "pointer": "/components/schemas/Subscription/properties/callbackUrl"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         },
     |         "source_pointer": "/paths/~1subscriptions/post/requestBody"
     |       },
@@ -255,43 +213,17 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 201,
     |       "primary_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
     |         "value": "None",
     |         "imports": []
     |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
-    |         "kind": "result",
-    |         "value": "SubscribeResponsePayload",
-    |         "imports": [
-    |           {
-    |             "module": "server.responses",
-    |             "name": "SubscribeResponsePayload",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
-    |       },
-    |       "response_payload_alias": "SubscribeResponsePayload",
-    |       "response_codecs_name": "SubscribeResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "None | HTTPResult[SubscribeResponsePayload] | Response",
+    |         "value": "None | HTTPResult[None] | Response",
     |         "imports": [
     |           {
     |             "module": "server._runtime.server.responses",
     |             "name": "HTTPResult",
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server.responses",
-    |             "name": "SubscribeResponsePayload",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -344,18 +276,15 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "body",
-    |           "transport": "codec_adapter",
-    |           "reason": "opaque_native_semantics",
-    |           "source": {
-    |             "uri": "../callbacks.yaml",
-    |             "pointer": "/components/schemas/Subscription/properties/callbackUrl"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         },
     |         {
     |           "use_ids": [],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
-    |           "reason": "unsupported_wire_shape",
+    |           "transport": "adapter",
+    |           "reason": "response_empty",
     |           "source": {
     |             "uri": "../callbacks.yaml",
     |             "pointer": "/paths/~1subscriptions/post/responses/201"
@@ -397,9 +326,7 @@ render pydantic_v2.BaseModel
     |               "media_type": "application/json",
     |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema",
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema|ModelNode(symbol='models:FieldEventsGetResponse')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema",
-    |                 "kind": "root",
+    |                 "kind": "surface",
     |                 "value": "models.FieldEventsGetResponse",
     |                 "imports": [
     |                   {
@@ -418,9 +345,7 @@ render pydantic_v2.BaseModel
     |               "name": "X-Map",
     |               "required": false,
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/headers/X-Map/schema|ModelNode(symbol='models:FieldEventsGetResponse200XMapHeader')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/headers/X-Map/schema",
-    |                 "kind": "model",
+    |                 "kind": "surface",
     |                 "value": "models.FieldEventsGetResponse200XMapHeader",
     |                 "imports": [
     |                   {
@@ -443,9 +368,7 @@ render pydantic_v2.BaseModel
     |               "media_type": "application/json",
     |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/500/content/application~1json/schema",
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Event|ModelNode(symbol='models:Event')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/500/content/application~1json/schema",
-    |                 "kind": "model",
+    |                 "kind": "surface",
     |                 "value": "models.Event",
     |                 "imports": [
     |                   {
@@ -457,6 +380,23 @@ render pydantic_v2.BaseModel
     |                 ]
     |               },
     |               "source_pointer": "/paths/~1events/get/responses/500/content/application~1json"
+    |             },
+    |             {
+    |               "media_type": "application/xml",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/500/content/application~1xml/schema",
+    |               "type": {
+    |                 "kind": "surface",
+    |                 "value": "models.Tree",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               },
+    |               "source_pointer": "/paths/~1events/get/responses/500/content/application~1xml"
     |             }
     |           ],
     |           "headers": [],
@@ -469,68 +409,30 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 200,
     |       "primary_return_type": {
-    |         "binding_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema|ModelNode(symbol='models:FieldEventsGetResponse')",
-    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema",
-    |         "kind": "root",
-    |         "value": "models.FieldEventsGetResponse | ModelValue[models.FieldEventsGetResponse]",
+    |         "kind": "result",
+    |         "value": "models.FieldEventsGetResponse",
     |         "imports": [
     |           {
     |             "module": "models",
     |             "name": null,
     |             "alias": null,
     |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
-    |             "alias": null,
-    |             "type_checking": false
     |           }
     |         ]
     |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
-    |         "kind": "result",
-    |         "value": "ListEventsResponsePayload",
-    |         "imports": [
-    |           {
-    |             "module": "server.responses",
-    |             "name": "ListEventsResponsePayload",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
-    |       },
-    |       "response_payload_alias": "ListEventsResponsePayload",
-    |       "response_codecs_name": "ListEventsResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "models.FieldEventsGetResponse | ModelValue[models.FieldEventsGetResponse] | HTTPResult[ListEventsResponsePayload] | Response",
+    |         "value": "models.FieldEventsGetResponse | HTTPResult[models.FieldEventsGetResponse | models.Event] | Response",
     |         "imports": [
     |           {
     |             "module": "models",
     |             "name": null,
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
     |             "alias": null,
     |             "type_checking": false
     |           },
     |           {
     |             "module": "server._runtime.server.responses",
     |             "name": "HTTPResult",
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server.responses",
-    |             "name": "ListEventsResponsePayload",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -543,11 +445,7 @@ render pydantic_v2.BaseModel
     |         ]
     |       },
     |       "security": null,
-    |       "servers": [
-    |         {
-    |           "url": "https://events.example.com"
-    |         }
-    |       ],
+    |       "servers": [],
     |       "callbacks": [
     |         "/paths/~1events/get/callbacks/onStatus/{$request.query.hook}"
     |       ],
@@ -581,12 +479,9 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
-    |           "reason": "native_nullable_mismatch",
-    |           "source": {
-    |             "uri": "../callbacks.yaml",
-    |             "pointer": "/components/schemas/Event/properties/kind"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         }
     |       ],
     |       "path_slots": [],
@@ -623,8 +518,6 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": null,
-    |             "schema_id": null,
     |             "kind": "principal",
     |             "value": "PrincipalT",
     |             "imports": [
@@ -639,8 +532,6 @@ render pydantic_v2.BaseModel
     |           "source_pointer": null,
     |           "is_request": false,
     |           "is_principal": true,
-    |           "is_file": false,
-    |           "parameter_codec_id": null,
     |           "bound_type": null,
     |           "projection": null,
     |           "native_declaration": null
@@ -654,17 +545,9 @@ render pydantic_v2.BaseModel
     |           "default_value": null,
     |           "nullable": false,
     |           "type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema|ModelNode(symbol='models:FieldSecureGetCookieTokenParameter')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema",
-    |             "kind": "root",
-    |             "value": "models.FieldSecureGetCookieTokenParameter | Unset",
+    |             "kind": "surface",
+    |             "value": "str | Unset",
     |             "imports": [
-    |               {
-    |                 "module": "models",
-    |                 "name": null,
-    |                 "alias": null,
-    |                 "type_checking": false
-    |               },
     |               {
     |                 "module": "server._runtime.model_codecs.unset",
     |                 "name": "Unset",
@@ -676,12 +559,8 @@ render pydantic_v2.BaseModel
     |           "source_pointer": "/paths/~1secure/get/parameters/0",
     |           "is_request": false,
     |           "is_principal": false,
-    |           "is_file": false,
-    |           "parameter_codec_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema|ModelNode(symbol='models:FieldSecureGetCookieTokenParameter')",
     |           "bound_type": {
-    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema|ModelNode(symbol='models:FieldSecureGetCookieTokenParameter')",
-    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema",
-    |             "kind": "root",
+    |             "kind": "surface",
     |             "value": "models.FieldSecureGetCookieTokenParameter",
     |             "imports": [
     |               {
@@ -724,8 +603,8 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "parameter",
-    |             "transport": "codec_adapter",
-    |             "reason": "unsupported_wire_shape",
+    |             "transport": "adapter",
+    |             "reason": "parameter_style",
     |             "source": null
     |           },
     |           "native_declaration": null
@@ -741,9 +620,7 @@ render pydantic_v2.BaseModel
     |               "media_type": "application/json",
     |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/200/content/application~1json/schema",
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Animal|ModelNode(symbol='models:Animal')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/200/content/application~1json/schema",
-    |                 "kind": "root",
+    |                 "kind": "surface",
     |                 "value": "models.Animal",
     |                 "imports": [
     |                   {
@@ -783,9 +660,7 @@ render pydantic_v2.BaseModel
     |               "name": "www-authenticate",
     |               "required": false,
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/401/headers/www-authenticate/schema|ModelNode(symbol='models:FieldSecureGetResponse401wwwAuthenticateHeader')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/401/headers/www-authenticate/schema",
-    |                 "kind": "root",
+    |                 "kind": "surface",
     |                 "value": "models.FieldSecureGetResponse401wwwAuthenticateHeader",
     |                 "imports": [
     |                   {
@@ -815,9 +690,7 @@ render pydantic_v2.BaseModel
     |               "media_type": "application/json",
     |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/422/content/application~1json/schema",
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/422/content/application~1json/schema|ModelNode(symbol='models:FieldSecureGetResponse')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/422/content/application~1json/schema",
-    |                 "kind": "root",
+    |                 "kind": "surface",
     |                 "value": "models.FieldSecureGetResponse",
     |                 "imports": [
     |                   {
@@ -841,56 +714,24 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 200,
     |       "primary_return_type": {
-    |         "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Animal|ModelNode(symbol='models:Animal')",
-    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/200/content/application~1json/schema",
-    |         "kind": "root",
-    |         "value": "models.Animal | ModelValue[models.Animal]",
+    |         "kind": "result",
+    |         "value": "models.Animal",
     |         "imports": [
     |           {
     |             "module": "models",
     |             "name": null,
     |             "alias": null,
     |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
-    |             "alias": null,
-    |             "type_checking": false
     |           }
     |         ]
     |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
-    |         "kind": "result",
-    |         "value": "GetSecureResponsePayload",
-    |         "imports": [
-    |           {
-    |             "module": "server.responses",
-    |             "name": "GetSecureResponsePayload",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
-    |       },
-    |       "response_payload_alias": "GetSecureResponsePayload",
-    |       "response_codecs_name": "GetSecureResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "models.Animal | ModelValue[models.Animal] | HTTPResult[GetSecureResponsePayload] | Response",
+    |         "value": "models.Animal | HTTPResult[models.Animal | Any | models.FieldSecureGetResponse] | Response",
     |         "imports": [
     |           {
     |             "module": "models",
     |             "name": null,
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -901,14 +742,14 @@ render pydantic_v2.BaseModel
     |             "type_checking": false
     |           },
     |           {
-    |             "module": "server.responses",
-    |             "name": "GetSecureResponsePayload",
+    |             "module": "fastapi.responses",
+    |             "name": "Response",
     |             "alias": null,
     |             "type_checking": false
     |           },
     |           {
-    |             "module": "fastapi.responses",
-    |             "name": "Response",
+    |             "module": "typing",
+    |             "name": "Any",
     |             "alias": null,
     |             "type_checking": false
     |           }
@@ -961,8 +802,8 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "parameter",
-    |           "transport": "codec_adapter",
-    |           "reason": "unsupported_wire_shape",
+    |           "transport": "adapter",
+    |           "reason": "parameter_style",
     |           "source": null
     |         },
     |         {
@@ -994,12 +835,9 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
-    |           "reason": "native_shape_mismatch",
-    |           "source": {
-    |             "uri": "../callbacks.yaml",
-    |             "pointer": "/components/schemas/Animal"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         }
     |       ],
     |       "path_slots": [],
@@ -1032,37 +870,13 @@ render pydantic_v2.BaseModel
     |       "primary_response": null,
     |       "registration_status": 200,
     |       "primary_return_type": null,
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
-    |         "kind": "result",
-    |         "value": "PingResponsePayload",
-    |         "imports": [
-    |           {
-    |             "module": "server.responses",
-    |             "name": "PingResponsePayload",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
-    |       },
-    |       "response_payload_alias": "PingResponsePayload",
-    |       "response_codecs_name": "PingResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "HTTPResult[PingResponsePayload] | Response",
+    |         "value": "HTTPResult[None] | Response",
     |         "imports": [
     |           {
     |             "module": "server._runtime.server.responses",
     |             "name": "HTTPResult",
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server.responses",
-    |             "name": "PingResponsePayload",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -1117,9 +931,7 @@ render pydantic_v2.BaseModel
     |               "media_type": "application/json",
     |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1echo/get/responses/200/content/application~1json/schema",
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema|ModelNode(symbol='models:FieldEventsGetResponse')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1echo/get/responses/200/content/application~1json/schema",
-    |                 "kind": "root",
+    |                 "kind": "surface",
     |                 "value": "models.FieldEventsGetResponse",
     |                 "imports": [
     |                   {
@@ -1136,9 +948,7 @@ render pydantic_v2.BaseModel
     |               "media_type": "text/plain",
     |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1echo/get/responses/200/content/text~1plain/schema",
     |               "type": {
-    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/N%C3%A4me|ModelNode(symbol='models:N\u00e4me')",
-    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1echo/get/responses/200/content/text~1plain/schema",
-    |                 "kind": "root",
+    |                 "kind": "surface",
     |                 "value": "models.N\u00e4me",
     |                 "imports": [
     |                   {
@@ -1162,68 +972,30 @@ render pydantic_v2.BaseModel
     |       },
     |       "registration_status": 200,
     |       "primary_return_type": {
-    |         "binding_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema|ModelNode(symbol='models:FieldEventsGetResponse')",
-    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1echo/get/responses/200/content/application~1json/schema",
-    |         "kind": "root",
-    |         "value": "models.FieldEventsGetResponse | ModelValue[models.FieldEventsGetResponse]",
+    |         "kind": "result",
+    |         "value": "models.FieldEventsGetResponse",
     |         "imports": [
     |           {
     |             "module": "models",
     |             "name": null,
     |             "alias": null,
     |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
-    |             "alias": null,
-    |             "type_checking": false
     |           }
     |         ]
     |       },
-    |       "response_payload_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
-    |         "kind": "result",
-    |         "value": "EchoResponsePayload",
-    |         "imports": [
-    |           {
-    |             "module": "server.responses",
-    |             "name": "EchoResponsePayload",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
-    |       },
-    |       "response_payload_alias": "EchoResponsePayload",
-    |       "response_codecs_name": "EchoResponseCodecs",
     |       "handler_return_type": {
-    |         "binding_id": null,
-    |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "models.FieldEventsGetResponse | ModelValue[models.FieldEventsGetResponse] | HTTPResult[EchoResponsePayload] | Response",
+    |         "value": "models.FieldEventsGetResponse | HTTPResult[models.FieldEventsGetResponse] | Response",
     |         "imports": [
     |           {
     |             "module": "models",
     |             "name": null,
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
     |             "alias": null,
     |             "type_checking": false
     |           },
     |           {
     |             "module": "server._runtime.server.responses",
     |             "name": "HTTPResult",
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server.responses",
-    |             "name": "EchoResponsePayload",
     |             "alias": null,
     |             "type_checking": false
     |           },
@@ -1272,12 +1044,9 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "primary_response",
-    |           "transport": "codec_adapter",
-    |           "reason": "native_nullable_mismatch",
-    |           "source": {
-    |             "uri": "../callbacks.yaml",
-    |             "pointer": "/components/schemas/Event/properties/kind"
-    |           }
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
     |         }
     |       ],
     |       "path_slots": [],
@@ -1441,6 +1210,13 @@ render pydantic_v2.BaseModel
     |   ],
     |   "models": [
     |     {
+    |       "binding_id": "models:Tree",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "Tree",
+    |       "path": "models.py"
+    |     },
+    |     {
     |       "binding_id": "models:Subscription",
     |       "kind": "model",
     |       "module": "models",
@@ -1578,21 +1354,18 @@ render pydantic_v2.BaseModel
     | | `UntaggedService` | `ping` | GET | `/ping` | `/paths/~1ping/get` |
     | | `UntaggedService` | `echo` | GET | `/echo` | `/paths/~1echo/get` |
     |
-    | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
     |
     | ## Implementing the services
     |
     | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
-    | A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+    | A method takes the operation's arguments as keywords and returns the value to send, an `HTTPResult` with another declared status, headers, or both, or a `Response` sent as it is.
     | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
     | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
-    | The Protocols of groups with secured operations take the type of the principal your authorizer returns.
+    | The Protocols of groups with secured operations take the type of the principal your `authorize` callback returns.
     |
     | ```python
-    | from typing import Never
-    |
-    | from server import create_app
-    | from server.auth_types import AuthContext
+    | from server import Credentials, RequirementSets, create_app
     | from server.services import UntaggedService
     |
     |
@@ -1600,25 +1373,24 @@ render pydantic_v2.BaseModel
     |     """Implement `subscribe`, `list_events`, `get_secure`, `ping`, and `echo`."""
     |
     |
-    | def authorize(context: AuthContext[Never]) -> Principal:
+    | def authorize(requirement_sets: RequirementSets, credentials: Credentials) -> Principal:
     |     ...
     |
     |
-    | app = create_app(untagged=Untagged(), authorizer=authorize)
+    | app = create_app(untagged=Untagged(), authorize=authorize)
     | ```
     |
     | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
-    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router and install the package's OpenAPI document:
+    | `create_app` passes its other keyword arguments, such as `lifespan`, `middleware`, or `dependencies`, to `FastAPI`, over the title, version, and other metadata of the source document.
+    | To keep your own `FastAPI` application, include the router:
     |
     | ```python
     | from fastapi import FastAPI
     |
-    | from server import build_router, install_openapi
+    | from server import build_router
     |
     | app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
-    | app.include_router(build_router(untagged=Untagged(), authorizer=authorize))
-    | install_openapi(app)
-    | app.openapi()  # Check the document once every router is included.
+    | app.include_router(build_router(untagged=Untagged(), authorize=authorize))
     | ```
     |
     | ## Authentication
@@ -1627,26 +1399,23 @@ render pydantic_v2.BaseModel
     |
     | - `signature`: an API key in the `X-Signature` header
     |
-    | Each secured operation receives the principal the authorizer returns.
-    | The authorizer reads the credentials of each security alternative from `AuthContext` and rejects a request by raising `HTTPException`, such as `403`.
-    | A request that presents no complete alternative answers `401`, and missing authentication settings never fall back to anonymous access.
-    | `credential_extractors` replace the builtin credential of a scheme, or read a scheme that has none.
-    | An extractor may return any payload, such as a `BasicSecret` it decodes as UTF-8 or a `CustomSecret` of its own type, so the authorizer checks each credential's `kind` instead of assuming its scheme's builtin credential.
-    | `SecretT` is `Never` while no extractor returns a `CustomSecret`, and otherwise the union of their value types.
-    | Bearer credentials, including OAuth2 and OpenID Connect tokens, reach the authorizer as they are: the package never contacts a token endpoint, and the authorizer checks tokens and scopes.
+    | `security.py` declares one FastAPI dependency for each scheme; replace one with `app.dependency_overrides`, for example to read a scheme no FastAPI class reads.
+    | Each secured operation calls `authorize` once with its requirement sets whose every scheme presented a credential, in declaration order, and the credentials by scheme name, and receives the principal it returns.
+    | `authorize` checks the credentials, tokens, and scopes, and rejects a request by raising `HTTPException`, such as `403`; it may be a coroutine function.
+    | A request that presents no complete requirement set answers `401`, unless the operation also accepts no credentials, in which case it receives `None`.
+    | The package never contacts a token endpoint.
     |
     | ## Served OpenAPI document
     |
-    | `create_app` and `install_openapi(app)` make the application serve the source document's operations, schemas, and metadata, composed with its other routes when it first serves or checks the document.
-    | Pass `operation_keys` when the application includes only some of the operations.
-    | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
-    | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
+    | The application serves FastAPI's own document, built from the routes and the models they declare.
+    | Each route adds what FastAPI cannot derive from it, taken from the source document when the package is generated: the declared responses, and the parameters, request bodies, and callbacks that adapters read, with their schemas' references resolved in place.
     |
-    | ## Validation boundaries
+    | ## Validation
     |
-    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
-    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
-    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | The models are the contract: FastAPI validates parameters, bodies, and responses with the generated model types, so the model generation settings decide how strictly a value follows the OpenAPI document.
+    | Parameter styles and media types that FastAPI cannot read, such as deepObject or form-style cookie parameters, text and binary bodies, and multipart forms, pass through generated adapters.
+    | An adapter parses the HTTP syntax, then validates the value with the model's `TypeAdapter`; it answers `400` for malformed syntax, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through adapters reject both with `400`.
     |
     | ## Regenerating
     |
