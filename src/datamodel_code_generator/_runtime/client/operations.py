@@ -54,7 +54,6 @@ if TYPE_CHECKING:
     from ..model_codecs.media import FieldPlan
     from ..model_codecs.parameters import ParameterPlan
     from ..model_codecs.plain import JSONValue
-    from ..model_codecs.wire import WireValue
     from .multipart import PartDecoder
     from .responses import ResponseInfo
     from .retry import IdempotencyPlan
@@ -157,11 +156,11 @@ class ParameterSpec:
         """Return the wire value of a present argument."""
         return cast("JSONValue", value if self.codec is None else self.codec.dump(value))
 
-    def restored(self, wire: (JSONValue | WireValue)) -> object:
+    def restored(self, wire: JSONValue) -> object:
         """Return the argument that sends a saved wire value, decoded as its codec decodes JSON."""
-        return wire if self.codec is None else self.codec.decode(_json_bytes(plain(wire)))
+        return wire if self.codec is None else self.codec.decode(_json_bytes(wire))
 
-    def path_text(self, wire: (JSONValue | WireValue)) -> str:
+    def path_text(self, wire: JSONValue) -> str:
         """Return the text a path parameter's wire value substitutes for its placeholder."""
         return path_text(self.plan, wire)
 
@@ -275,9 +274,9 @@ class BodyMedia:
             return cast("JSONValue", value)
         return cast("JSONValue", codec.dump(codec.assemble(value.fields()) if isinstance(value, FieldBody) else value))
 
-    def restored(self, wire: (JSONValue | WireValue)) -> object:
+    def restored(self, wire: JSONValue) -> object:
         """Return the body that sends a saved wire value, decoded as its codec decodes JSON."""
-        return wire if self.codec is None else self.codec.decode(_json_bytes(plain(wire)))
+        return wire if self.codec is None else self.codec.decode(_json_bytes(wire))
 
     def multipart(self, value: object, boundary: str) -> object:
         """Return a form-data body: an object's members as parts, or the parts a call gives, checked by any plans."""

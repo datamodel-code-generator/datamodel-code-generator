@@ -52,13 +52,13 @@
   total b'9007199254740993.00000000000000000001' = [1] continuation=Continuation(kind='page') status=200 sends=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  offset Decimal('40.0') ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
+  offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
+  position 40 = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('40.0') next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
+  position 40 next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   position 40.0 = [41,42] continuation=None status=200 sends=1
@@ -66,10 +66,10 @@
   position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='position')] protocol_data_error
   > GET https://api.example.com/users?position=9007199254740992.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('9007199254740993.0') = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
+  position 9007199254740993 = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('9007199254740993.0') next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
+  position 9007199254740993 next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None)
@@ -123,13 +123,13 @@
   async total b'9007199254740993.00000000000000000001' = [1] continuation=Continuation(kind='page') status=200 sends=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async offset Decimal('40.0') ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
+  async offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
+  async position 40 = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('40.0') next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
+  async position 40 next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async position 40.0 = [41,42] continuation=None status=200 sends=1
@@ -137,10 +137,10 @@
   async position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='position')] protocol_data_error
   > GET https://api.example.com/users?position=9007199254740992.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('9007199254740993.0') = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
+  async position 9007199254740993 = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('9007199254740993.0') next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
+  async position 9007199254740993 next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
 # pagination-counts pydantic_v2.dataclass
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -195,13 +195,13 @@
   total b'9007199254740993.00000000000000000001' = [1] continuation=Continuation(kind='page') status=200 sends=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  offset Decimal('40.0') ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
+  offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
+  position 40 = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('40.0') next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
+  position 40 next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   position 40.0 = [41,42] continuation=None status=200 sends=1
@@ -209,10 +209,10 @@
   position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='position')] protocol_data_error
   > GET https://api.example.com/users?position=9007199254740992.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('9007199254740993.0') = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
+  position 9007199254740993 = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('9007199254740993.0') next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
+  position 9007199254740993 next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None)
@@ -266,13 +266,13 @@
   async total b'9007199254740993.00000000000000000001' = [1] continuation=Continuation(kind='page') status=200 sends=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async offset Decimal('40.0') ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
+  async offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
+  async position 40 = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('40.0') next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
+  async position 40 next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async position 40.0 = [41,42] continuation=None status=200 sends=1
@@ -280,10 +280,10 @@
   async position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='position')] protocol_data_error
   > GET https://api.example.com/users?position=9007199254740992.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('9007199254740993.0') = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
+  async position 9007199254740993 = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('9007199254740993.0') next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
+  async position 9007199254740993 next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
 # pagination-counts dataclasses.dataclass
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -338,24 +338,24 @@
   total b'9007199254740993.00000000000000000001' = [1] continuation=Continuation(kind='page') status=200 sends=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  offset Decimal('40.0') ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
-  > GET https://api.example.com/users?position=40.0
+  offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
+  > GET https://api.example.com/users?position=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
+  position 40 = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('40.0') next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
+  position 40 next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   position 40.0 = [41,42] continuation=None status=200 sends=1
   position 40.0 next = None
   position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='position')] protocol_data_error
-  > GET https://api.example.com/users?position=9007199254740992.0
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('9007199254740993.0') = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('9007199254740993.0') next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
+  position 9007199254740993 = [9007199254740994,9007199254740995] continuation=Continuation(kind='offset') status=200 sends=1
+  > GET https://api.example.com/users?position=9007199254740994
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  position 9007199254740993 next = [9007199254740995,9007199254740996] continuation=None status=200 sends=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1.0, more=None, count=None, maybe_total=None)
@@ -409,24 +409,24 @@
   async total b'9007199254740993.00000000000000000001' = [1] continuation=Continuation(kind='page') status=200 sends=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async offset Decimal('40.0') ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
-  > GET https://api.example.com/users?position=40.0
+  async offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
+  > GET https://api.example.com/users?position=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
+  async position 40 = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('40.0') next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
+  async position 40 next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async position 40.0 = [41,42] continuation=None status=200 sends=1
   async position 40.0 next = None
   async position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='position')] protocol_data_error
-  > GET https://api.example.com/users?position=9007199254740992.0
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('9007199254740993.0') = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('9007199254740993.0') next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
+  async position 9007199254740993 = [9007199254740994,9007199254740995] continuation=Continuation(kind='offset') status=200 sends=1
+  > GET https://api.example.com/users?position=9007199254740994
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async position 9007199254740993 next = [9007199254740995,9007199254740996] continuation=None status=200 sends=1
 # pagination-counts typing.TypedDict
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -481,24 +481,24 @@
   total b'9007199254740993.00000000000000000001' = [1] continuation=Continuation(kind='page') status=200 sends=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  offset Decimal('40.0') ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
-  > GET https://api.example.com/users?position=40.0
+  offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
+  > GET https://api.example.com/users?position=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
+  position 40 = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('40.0') next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
+  position 40 next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   position 40.0 = [41,42] continuation=None status=200 sends=1
   position 40.0 next = None
   position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='position')] protocol_data_error
-  > GET https://api.example.com/users?position=9007199254740992.0
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('9007199254740993.0') = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position Decimal('9007199254740993.0') next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
+  position 9007199254740993 = [9007199254740994,9007199254740995] continuation=Continuation(kind='offset') status=200 sends=1
+  > GET https://api.example.com/users?position=9007199254740994
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  position 9007199254740993 next = [9007199254740995,9007199254740996] continuation=None status=200 sends=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async ordinary total b'1.0' = {'data': [{'id': '1'}], 'total': 1.0}
@@ -552,21 +552,21 @@
   async total b'9007199254740993.00000000000000000001' = [1] continuation=Continuation(kind='page') status=200 sends=1
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async offset Decimal('40.0') ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
-  > GET https://api.example.com/users?position=40.0
+  async offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
+  > GET https://api.example.com/users?position=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('40.0') = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
+  async position 40 = [41,42] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('40.0') next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
+  async position 40 next = [42,43] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async position 40.0 = [41,42] continuation=None status=200 sends=1
   async position 40.0 next = None
   async position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='position')] protocol_data_error
-  > GET https://api.example.com/users?position=9007199254740992.0
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('9007199254740993.0') = [9007199254740993,9007199254740994] continuation=Continuation(kind='offset') status=200 sends=1
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position Decimal('9007199254740993.0') next = [9007199254740994,9007199254740995] continuation=None status=200 sends=1
+  async position 9007199254740993 = [9007199254740994,9007199254740995] continuation=Continuation(kind='offset') status=200 sends=1
+  > GET https://api.example.com/users?position=9007199254740994
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async position 9007199254740993 next = [9007199254740995,9007199254740996] continuation=None status=200 sends=1

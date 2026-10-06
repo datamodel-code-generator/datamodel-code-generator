@@ -600,7 +600,7 @@ _Key: TypeAlias = _Model | _Parts | str
 _SURFACES: Final = {
     "form": ("bodies", "FormData", ""),
     "multipart": ("bodies", "MultipartData", "[bytes]"),
-    "wire": ("model_codecs", "WireValue", ""),
+    "wire": ("model_codecs", "JSONValue", ""),
 }
 _Headers: TypeAlias = "dict[str, tuple[str, list[tuple[ResponseSpec, HeaderSpec]]]]"
 
@@ -1010,7 +1010,7 @@ class _Typing:
         return f"{module.local('bodies', f'{prefix}MultipartBody')}[{values}]"
 
     def part_values(self, module: Module, media: MediaSpec) -> str:
-        """Return the values the field parts of a body sent as parts take: each member's, WireValue for any extra."""
+        """Return the values the field parts of a body sent as parts take: each member's, JSONValue for any extra."""
         keys = (self.key("json", part.use) for part in member_parts(media) if not part.plan.file)
         return self.union(module, keys, "") or module.name("typing_extensions", "Never")
 
@@ -1082,7 +1082,7 @@ class _Resources(_Typing):
             "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
             "raw": module.local("responses", f"{prefix}RawResponse"),
-            "binary": f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('model_codecs', 'WireValue')}]",
+            "binary": f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('model_codecs', 'JSONValue')}]",
             "manager": module.name("contextlib", f"Abstract{prefix}ContextManager"),
             "coroutine": "async " if asynchronous else "",
             "wait": "await " if asynchronous else "",

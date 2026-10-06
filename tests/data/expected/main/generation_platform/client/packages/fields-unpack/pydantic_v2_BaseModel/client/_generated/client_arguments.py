@@ -26,7 +26,7 @@ from typing_extensions import NotRequired, TypedDict
 
 from .._runtime.client.arguments import Keywords
 from ..bodies import AsyncMultipartBody, MultipartBody
-from ..model_codecs import WireValue
+from ..model_codecs import JSONValue
 from ..options import RequestOptions, Unset
 
 
@@ -261,7 +261,7 @@ class Operation6Arguments(TypedDict):
     """The keyword arguments of one signature of put_photo."""
 
     pet_id: _dcg_type_14
-    body: MultipartBody[str | WireValue]
+    body: MultipartBody[str | JSONValue]
     media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -270,7 +270,7 @@ class Operation6Arguments1(TypedDict):
     """The keyword arguments of one signature of put_photo."""
 
     pet_id: _dcg_type_14
-    body: AsyncMultipartBody[str | WireValue]
+    body: AsyncMultipartBody[str | JSONValue]
     media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
 

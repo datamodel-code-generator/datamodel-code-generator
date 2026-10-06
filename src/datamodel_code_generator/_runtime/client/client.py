@@ -139,7 +139,6 @@ if TYPE_CHECKING:
 
     from ..model_codecs.parameters import ParameterFragment, ParameterPlan
     from ..model_codecs.plain import JSONValue
-    from ..model_codecs.wire import WireValue
     from ..protocols.options import (
         ProtocolClientOptions,
         ProtocolDefaults,
@@ -452,9 +451,7 @@ def _encoding_error(
     return RequestEncodingError(location=location, operation_id=operation.operation_id, cause=error)
 
 
-def _secret(
-    spec: ParameterSpec, value: JSONValue | WireValue, headers: frozenset[str], queries: frozenset[str]
-) -> bool:
+def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
     """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field.
 
     Exploded form and deepObject query parameters send only their property names or bracketed names, including
@@ -773,7 +770,7 @@ class CacheRequest:
     settings: Settings
     request: PreparedRequest[EncodedAttempt]
     url: str
-    credentials: WireValue
+    credentials: object
     partition: str | None
     foreign_auth: bool
     credential_headers: frozenset[str]
@@ -1921,7 +1918,7 @@ class _Core(Generic[AdapterT, HandleT]):
         from .security import secret_names  # noqa: PLC0415 - Only a cache fetch needs the schemes.
 
         names, queries = secret_names(self._shared.security_schemes)
-        credential: WireValue = None
+        credential: object = None
         if bound is not None:
             from .grants import grant_identity  # noqa: PLC0415 - Only an authenticated cache fetch keys its credentials.
 
@@ -1979,7 +1976,7 @@ class _Core(Generic[AdapterT, HandleT]):
         return headers, query
 
     def unsaved_argument(
-        self, operation: OperationPlan[object, object], saved: Sequence[(JSONValue | WireValue) | Unset]
+        self, operation: OperationPlan[object, object], saved: Sequence[JSONValue | Unset]
     ) -> tuple[str, str] | None:
         """Return the location and name of the first given argument a checkpoint never saves, or None.
 
@@ -2031,8 +2028,8 @@ class _Core(Generic[AdapterT, HandleT]):
     @staticmethod
     def restored_request(
         operation: OperationPlan[object, object],
-        arguments: tuple[(JSONValue | WireValue) | Unset, ...],
-        body: tuple[(JSONValue | WireValue), str, str | None] | None,
+        arguments: tuple[JSONValue | Unset, ...],
+        body: tuple[JSONValue, str, str | None] | None,
     ) -> tuple[tuple[object, ...], object, str | None]:
         """Return the arguments, body, and media type of a request a checkpoint saved, built from their wire values.
 
@@ -2084,7 +2081,7 @@ class _Core(Generic[AdapterT, HandleT]):
     def checked_arguments(
         self,
         operation: OperationPlan[object, object],
-        given: Mapping[int, (JSONValue | WireValue)],
+        given: Mapping[int, JSONValue],
         options: RequestOptions | None,
     ) -> None:
         """Encode some arguments of a helper's request, by position, as its call encodes them, sending nothing.
@@ -2883,7 +2880,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: BodyInput[WireValue] | Unset = UNSET,
+        body: BodyInput[JSONValue] | Unset = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> RawResponse:
@@ -2932,7 +2929,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: BodyInput[WireValue] | Unset = UNSET,
+        body: BodyInput[JSONValue] | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
@@ -3869,7 +3866,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[WireValue] | Unset = UNSET,
+        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> AsyncRawResponse:
@@ -3921,7 +3918,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[WireValue] | Unset = UNSET,
+        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""

@@ -18,7 +18,6 @@ from ._runtime.model_codecs.parameters import (
 )
 from ._runtime.model_codecs.plain import JSONValue
 from ._runtime.model_codecs.unset import UNSET, Unset
-from ._runtime.model_codecs.wire import WireValue
 
 __all__ = [
     'CodecError',
@@ -35,5 +34,4 @@ __all__ = [
     'Unset',
     'WireIssue',
     'WireValidationError',
-    'WireValue',
 ]

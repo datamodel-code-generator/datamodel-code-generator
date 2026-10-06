@@ -16,7 +16,7 @@ from pets.errors import (
     StreamRemoteError,
     StreamResumeExhaustedError,
 )
-from pets.model_codecs import WireValue
+from pets.model_codecs import JSONValue
 from pets.options import UNSET, ClientOptions, ProtocolClientOptions, SessionOptions, Unset
 from pets.protocols import (
     AsyncCacheStore,
@@ -53,7 +53,7 @@ from typing_extensions import assert_type
 def records(snapshot: PollSnapshot[Pet], selector: Selector, target: RequestTarget) -> None:
     """Keep the poll type, the closed selector and target unions, and the continuation kinds."""
     assert_type(snapshot.data, Pet)
-    assert_type(snapshot.state, WireValue)
+    assert_type(snapshot.state, JSONValue)
     assert_type(snapshot.terminal, bool)
     assert_type(snapshot.response, ResponseInfo)
     accepts_snapshot(snapshot)
@@ -114,7 +114,7 @@ def resume(state: ResumeState) -> ResumeState:
     assert_type(exported, bytes)
     restored = import_state(exported)
     assert_type(restored, ResumeState)
-    return ResumeState(helper="helper", state={"page": (1, 2)})
+    return ResumeState(helper="helper", state={"page": [1, 2]})
 
 
 def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:

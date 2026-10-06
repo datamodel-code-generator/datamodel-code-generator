@@ -8,7 +8,6 @@ import re
 from collections.abc import Mapping
 from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
-from decimal import Decimal
 from ssl import SSLContext
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar, final
@@ -17,13 +16,12 @@ from uuid import uuid4
 
 from typing_extensions import TypeIs
 
-from ..model_codecs.media import encode_json
+from ..model_codecs.media import json_bytes
 from ..model_codecs.unset import UNSET, Unset
-from ..model_codecs.wire import JSONScalar  # noqa: TC001 - Public annotations support get_type_hints().
 from ..protocols import names as protocol_names
 from .auth import AuthConfig, checked_type
 from .errors import AuthConfigurationError, ConfigurationError, is_sequence
-from .hooks import AsyncHook, AsyncLimiter, Hook, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
+from .hooks import AsyncHook, AsyncLimiter, Hook, JSONScalar, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
 from .timing import (
     SYSTEM_CLOCK,
     CancelToken,
@@ -158,10 +156,9 @@ def context(value: object) -> Mapping[str, JSONScalar]:
     """
     if not _is_context(value):
         raise ConfigurationError(field_path=("context",), condition="invalid_type")
-    copied: Mapping[str, JSONScalar] = MappingProxyType(dict(value))
-    if len(encode_json(copied)) > MAX_CONTEXT_BYTES:
+    if len(json_bytes(copied := dict(value))) > MAX_CONTEXT_BYTES:
         raise ConfigurationError(field_path=("context",), condition="out_of_range")
-    return copied
+    return MappingProxyType(copied)
 
 
 def _is_context(value: object) -> TypeIs[Mapping[str, JSONScalar]]:
@@ -174,7 +171,7 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
 
 def _scalar(value: object) -> bool:
     match value:
-        case None | bool() | str() | Decimal():
+        case None | bool() | str():
             return True
         case int():
             return True

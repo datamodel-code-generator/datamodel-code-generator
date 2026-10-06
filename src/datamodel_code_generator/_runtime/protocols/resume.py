@@ -8,9 +8,8 @@ from typing import Final, Literal, TypeAlias, cast, final, get_args
 
 from ..client.errors import ProtocolError, error_choice
 from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
-from ..model_codecs.errors import CodecError
-from ..model_codecs.media import decode_json, encode_json
-from ..model_codecs.wire import WireValue  # noqa: TC001 - Public annotations support get_type_hints().
+from ..model_codecs.media import json_value
+from ..model_codecs.plain import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
 from .records import Sealed, canonical_json, wire_string
 from .references import OperationRef  # noqa: TC001 - Public annotations support get_type_hints().
 
@@ -97,14 +96,14 @@ class ResumeState(Sealed):
     _helper: str
     _state_json: bytes
 
-    def __init__(self, *, helper: str, state: WireValue) -> None:
+    def __init__(self, *, helper: str, state: JSONValue) -> None:
         """Keep the identity of the helper and the canonical JSON of its state."""
         wire_string(helper, "helper")
         _assign(self, helper, canonical_json(state))
 
     def export(self) -> bytes:
         """Return the token as canonical JSON with the members `helper`, `state`, and `version`."""
-        return b"".join((b'{"helper":', encode_json(self._helper), b',"state":', self._state_json, b',"version":1}'))
+        return b"".join((b'{"helper":', canonical_json(self._helper), b',"state":', self._state_json, b',"version":1}'))
 
     def __repr__(self) -> str:
         """Name the token's version only, never its helper or state."""
@@ -130,13 +129,16 @@ def import_state(data: bytes) -> ResumeState:
         raise ResumeStateError(condition="version")
     if frozenset(envelope) != _FIELDS or type(version) is not int or not isinstance(helper := envelope["helper"], str):
         raise ResumeStateError(condition="malformed")
-    return _assign(object.__new__(ResumeState), helper, canonical_json(envelope["state"]))
-
-
-def _envelope(data: object) -> WireValue:
     try:
-        return decode_json(data) if isinstance(data, bytes) else None
-    except CodecError:
+        return _assign(object.__new__(ResumeState), wire_string(helper, "helper"), canonical_json(envelope["state"]))
+    except ValueError:
+        raise ResumeStateError(condition="malformed") from None
+
+
+def _envelope(data: object) -> JSONValue:
+    try:
+        return json_value(data) if isinstance(data, bytes) else None
+    except (ValueError, RecursionError):
         return None
 
 
@@ -150,13 +152,13 @@ def require_state(condition: bool) -> None:  # noqa: FBT001
         raise MalformedStateError
 
 
-def state_array(value: WireValue) -> tuple[WireValue, ...]:
+def state_array(value: JSONValue) -> list[JSONValue]:
     """Return a saved array, refusing any other value."""
-    require_state(isinstance(value, tuple))
-    return cast("tuple[WireValue, ...]", value)
+    require_state(isinstance(value, list))
+    return cast("list[JSONValue]", value)
 
 
-def state_count(value: WireValue, limit: int | None = None) -> int:
+def state_count(value: JSONValue, limit: int | None = None) -> int:
     """Return a saved nonnegative integer no larger than any limit, refusing any other value."""
     require_state(
         isinstance(value, int) and not isinstance(value, bool) and value >= 0 and (limit is None or value <= limit)
@@ -164,18 +166,18 @@ def state_count(value: WireValue, limit: int | None = None) -> int:
     return cast("int", value)
 
 
-def state_text(value: WireValue) -> str | None:
+def state_text(value: JSONValue) -> str | None:
     """Return a saved string or null, refusing any other value."""
     require_state(value is None or isinstance(value, str))
     return cast("str | None", value)
 
 
-def saved_expiry(expires_at: datetime | None) -> WireValue:
+def saved_expiry(expires_at: datetime | None) -> JSONValue:
     """Return how a token saves a server's expiry: its ISO 8601 text, or null without one."""
     return None if expires_at is None else expires_at.isoformat()
 
 
-def state_expiry(value: WireValue) -> datetime | None:
+def state_expiry(value: JSONValue) -> datetime | None:
     """Return a saved server expiry, refusing anything but null or the timezone-aware text `saved_expiry` writes."""
     if (text := state_text(value)) is None:
         return None

@@ -10,7 +10,6 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from decimal import Decimal
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
@@ -43,7 +42,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
+    from datamodel_code_generator._runtime.model_codecs.plain import JSONValue
     from datamodel_code_generator._target_contract import FieldUseBinding, FinalPythonType, TypeUseBinding, TypeUseId
 
 _INTEGER: Final = re.compile(r"-?[0-9]+")
@@ -105,7 +104,7 @@ def _dot_literals(spec: OperationSpec, bindings: list[Mapping[str, Any]]) -> fro
     Only a segment whose every parameter a literal writes is judged, each literal encoded in its parameter's style; a
     literal its parameter cannot encode is left to the type check.
     """
-    literals: dict[str, tuple[int, WireValue]] = {}
+    literals: dict[str, tuple[int, JSONValue]] = {}
     for index, item in enumerate(bindings):
         if item["target"]["in"] == "path" and "literal" in (value := item["value"]):
             literals.setdefault(item["target"]["name"], (index, value["literal"]))
@@ -168,7 +167,7 @@ def _json_type(value: object) -> str:
         return "null"
     if isinstance(value, bool):
         return "boolean"
-    if isinstance(value, int | float | Decimal):
+    if isinstance(value, int | float):
         return "integer" if _INTEGER.fullmatch(canonical_json(value).decode()) else "number"
     if isinstance(value, str):
         return "string"

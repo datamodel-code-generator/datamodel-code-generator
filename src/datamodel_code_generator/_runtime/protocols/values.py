@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from ..client.responses import ResponseInfo
-    from ..model_codecs.wire import WireValue
+    from ..model_codecs.plain import JSONValue
     from .records import Selector
 
 __all__ = ("MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected", "server_expiry", "written")
@@ -45,7 +45,7 @@ def _tokens(pointer: str) -> list[str]:
     return [token.replace("~1", "/").replace("~0", "~") for token in pointer.split("/")[1:]]
 
 
-def resolve(value: WireValue, pointer: str) -> WireValue | Missing:
+def resolve(value: JSONValue, pointer: str) -> JSONValue | Missing:
     """Return the member of a decoded JSON value an RFC 6901 pointer names, or MISSING when there is none.
 
     Generated helpers point only through object members, so an absent member and a step into anything but an object,
@@ -62,7 +62,7 @@ class RepeatedValueError(Exception):
     """A header a selector reads once that the response repeats; each helper raises its own data error instead."""
 
 
-def selected(read: Selector, wire: WireValue, info: ResponseInfo) -> WireValue | Missing:
+def selected(read: Selector, wire: JSONValue, info: ResponseInfo) -> JSONValue | Missing:
     """Return what a selector reads from a response, or MISSING; every occurrence of a header is an array of them.
 
     A header selected once that the response repeats raises RepeatedValueError.
@@ -72,15 +72,15 @@ def selected(read: Selector, wire: WireValue, info: ResponseInfo) -> WireValue |
     if isinstance(read, HeaderSelector):
         values = info.headers.get_all(read.name)
         if read.occurrence == "all":
-            return tuple(values) if values else MISSING
+            return list(values) if values else MISSING
         if len(values) > 1:
             raise RepeatedValueError
         return values[0] if values else MISSING
     return info.status_code
 
 
-def _patched(value: WireValue, tokens: list[str], new: WireValue) -> WireValue:
-    """Return a copy of a wire value with the member the tokens name set, the new value itself for none.
+def _patched(value: JSONValue, tokens: list[str], new: JSONValue) -> JSONValue:
+    """Return a copy of a JSON value with the member the tokens name set, the new value itself for none.
 
     Only the objects along the tokens are copied; a missing or null one on the way becomes a new object.
     """
@@ -97,11 +97,11 @@ class Patch:
     """A caller's argument or body, UNSET when omitted, and the wire values to write into it by pointer, in order."""
 
     value: object
-    writes: tuple[tuple[str, WireValue], ...]
+    writes: tuple[tuple[str, JSONValue], ...]
 
-    def applied(self, encode: Callable[[object], WireValue]) -> WireValue:
+    def applied(self, encode: Callable[[object], JSONValue]) -> JSONValue:
         """Return the encoded value, an empty object when omitted, with every write applied."""
-        wire: WireValue = {} if isinstance(self.value, Unset) else encode(self.value)
+        wire: JSONValue = {} if isinstance(self.value, Unset) else encode(self.value)
         for pointer, new in self.writes:
             wire = _patched(wire, _tokens(pointer), new)
         return wire
@@ -133,7 +133,7 @@ def written(
     writes: tuple[tuple[int | None, str | None], ...],
     arguments: tuple[object, ...],
     body: object,
-    values: Iterable[WireValue],
+    values: Iterable[JSONValue],
 ) -> tuple[tuple[object, ...], object]:
     """Return a request's arguments and body with each value written where its write goes, in order.
 
@@ -141,7 +141,7 @@ def written(
     position, or the body without one, so the value is written into its encoded value.
     """
     given = list(arguments)
-    patches: dict[int | None, list[tuple[str, WireValue]]] = {}
+    patches: dict[int | None, list[tuple[str, JSONValue]]] = {}
     for (position, pointer), value in zip(writes, values, strict=True):
         if pointer is None:
             given[cast("int", position)] = value

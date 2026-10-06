@@ -12,11 +12,11 @@ from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_he
 from ..._runtime.model_codecs.media import FieldPlan
 from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...errors import HTTPStatusError
-from ...model_codecs import WireValue
+from ...model_codecs import JSONValue
 from ...options import Unset
 from ...responses import ResponseInfo
 
-StoreDocumentResponse: TypeAlias = WireValue | str | None | _dcg_type_0
+StoreDocumentResponse: TypeAlias = JSONValue | str | None | _dcg_type_0
 StoreDocumentErrorData: TypeAlias = str
 
 

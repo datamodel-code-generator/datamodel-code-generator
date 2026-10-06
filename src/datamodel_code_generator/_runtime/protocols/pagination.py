@@ -31,7 +31,7 @@ from ..client.paths import dot_segment, path_segments
 from ..client.responses import ResponseInfo
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import CodecError
-from ..model_codecs.media import decode_json
+from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, ResumeStateError, SessionLimitError
 from .options import PaginationOptions, layered
@@ -46,7 +46,7 @@ from .records import (
     Selector,
     canonical_json,
     continuation_json,
-    frozen_wire,
+    plain_copy,
     record_instance,
 )
 from .resume import MalformedStateError as _MalformedError
@@ -67,7 +67,7 @@ if TYPE_CHECKING:
     from ..client.responses import HeadersView
     from ..client.timing import Clock, Deadline
     from ..client.urls import Origin
-    from ..model_codecs.wire import WireValue
+    from ..model_codecs.plain import JSONValue
     from .references import OperationRef
     from .writes import ReadPaths
 
@@ -124,7 +124,7 @@ class CursorPlan:
     write: RequestTarget
     end_missing: bool = False
     end_null: bool = False
-    end_values: tuple[WireValue, ...] = ()
+    end_values: tuple[JSONValue, ...] = ()
     empty_string_ends: bool = False
     kind: Literal["cursor"] = field(default="cursor", init=False)
     ends: frozenset[bytes] = field(init=False)
@@ -167,7 +167,7 @@ class NextUrlPlan:
     read: Selector
     end_missing: bool = False
     end_null: bool = False
-    end_values: tuple[WireValue, ...] = ()
+    end_values: tuple[JSONValue, ...] = ()
     repeat_request_body: bool = False
     kind: Literal["next_url"] = field(default="next_url", init=False)
     ends: frozenset[bytes] = field(init=False)
@@ -207,11 +207,11 @@ class PageBinding:
     target: RequestTarget
     source: Literal["initial", "previous"] = "previous"
     selector: Selector | None = None
-    literal: WireValue = None
+    literal: JSONValue = None
 
     def __post_init__(self) -> None:
-        """Freeze the literal."""
-        object.__setattr__(self, "literal", frozen_wire(self.literal))
+        """Copy the literal."""
+        object.__setattr__(self, "literal", plain_copy(self.literal))
 
     @property
     def written(self) -> tuple[RequestTarget, Selector | None]:
@@ -313,8 +313,8 @@ class _Link:
     request: _Request
     index: int
     items: int
-    cursor: WireValue
-    bound: tuple[WireValue, ...]
+    cursor: JSONValue
+    bound: tuple[JSONValue, ...]
     digest: bytes | None
     seen: int | None
     response: ResponseInfo | None
@@ -464,15 +464,15 @@ def _data_error(
     )
 
 
-def _absence(value: WireValue | Missing) -> Literal["missing", "null"]:
+def _absence(value: JSONValue | Missing) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 
-def _unfit(value: WireValue | Missing) -> Literal["missing", "null", "type"]:
+def _unfit(value: JSONValue | Missing) -> Literal["missing", "null", "type"]:
     return "type" if value is not MISSING and value is not None else _absence(value)
 
 
-def _selected(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> WireValue | Missing:
+def _selected(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, info: ResponseInfo) -> JSONValue | Missing:
     """Return what a selector reads from a page, or MISSING; every occurrence of a header is an array of them.
 
     A header selected once that the response repeats is refused.
@@ -498,8 +498,8 @@ def _size_error(
 
 
 def _ended(
-    plan: PaginationPlan[T, P], rule: CursorPlan | NextUrlPlan, wire: WireValue, info: ResponseInfo
-) -> WireValue | Missing:
+    plan: PaginationPlan[T, P], rule: CursorPlan | NextUrlPlan, wire: JSONValue, info: ResponseInfo
+) -> JSONValue | Missing:
     """Return the value a page's cursor or next URL reads, or MISSING when an end condition ends the traversal there."""
     read = rule.read
     value = _selected(plan, read, wire, info)
@@ -515,8 +515,8 @@ def _ended(
 
 
 def _cursor(
-    plan: PaginationPlan[T, P], rule: CursorPlan, wire: WireValue, info: ResponseInfo, limit: int
-) -> WireValue | Missing:
+    plan: PaginationPlan[T, P], rule: CursorPlan, wire: JSONValue, info: ResponseInfo, limit: int
+) -> JSONValue | Missing:
     """Return the cursor a page gives, or MISSING when an end condition ends the traversal at this page.
 
     A cursor over its size limit, in UTF-8 bytes for a string and canonical JSON bytes otherwise, is refused.
@@ -527,7 +527,7 @@ def _cursor(
     return value
 
 
-def _sized(plan: PaginationPlan[T, P], value: WireValue, info: ResponseInfo | None, limit: int) -> None:
+def _sized(plan: PaginationPlan[T, P], value: JSONValue, info: ResponseInfo | None, limit: int) -> None:
     """Refuse a cursor over its size limit, in UTF-8 bytes for a string and canonical JSON bytes otherwise."""
     if (size := len(value.encode()) if isinstance(value, str) else len(canonical_json(value))) > limit:
         raise _size_error(plan, info, "cursor", limit, size)
@@ -586,7 +586,7 @@ def _followed(  # noqa: PLR0913, PLR0917
     return followed
 
 
-def _more(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> bool:
+def _more(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, info: ResponseInfo) -> bool:
     """Return whether a page says more pages follow: a JSON boolean, or a header spelling one."""
     value = _selected(plan, read, wire, info)
     if isinstance(read, HeaderSelector) and isinstance(value, str):
@@ -600,17 +600,19 @@ def _integer(value: object) -> int | None:
     """Return a finite integer value without rounding it or treating a boolean as a count."""
     if isinstance(value, int):
         return None if isinstance(value, bool) else value
-    match value:
-        case float() if value.is_integer():
-            return int(value)
-        case Decimal() if value.is_finite() and value == value.to_integral_value():
-            return int(value)
-        case _:
-            pass
-    return None
+    return int(value) if isinstance(value, float) and value.is_integer() else None
 
 
-def _total(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> int:
+def _numeral(text: str) -> int | str:
+    """Return the integer a header or query value spells as a decimal number, or else the text itself."""
+    try:
+        number = Decimal(text)
+    except InvalidOperation:
+        return text
+    return int(number) if number.is_finite() and number == number.to_integral_value() else text
+
+
+def _total(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, info: ResponseInfo) -> int:
     """Return the total item count a page gives: a nonnegative JSON integer, or a header of signed decimal digits."""
     value = _selected(plan, read, wire, info)
     if (
@@ -704,7 +706,7 @@ class _Walk(Generic[T, P]):
             }
         return texts
 
-    def dotted(self, written: tuple[WireValue, ...], info: ResponseInfo | None) -> None:
+    def dotted(self, written: tuple[JSONValue, ...], info: ResponseInfo | None) -> None:
         """Refuse a read value among those the next request writes that makes a path segment a dot segment."""
         from .writes import dotted_read  # noqa: PLC0415 - A plan loaded the operation runtime.
 
@@ -851,7 +853,7 @@ class _Walk(Generic[T, P]):
         parameters[position] = ReadParameter(plan=spec.plan, codec=spec.codec, read=read)
         return replace(call, parameters=tuple(parameters))
 
-    def started(self, wire: WireValue) -> None:
+    def started(self, wire: JSONValue) -> None:
         """Start at the position the caller's first request sends, refusing one that is not an integer.
 
         The value is read where the position is written; a querystring or body without that member sends none.
@@ -893,15 +895,9 @@ class _Walk(Generic[T, P]):
         self.start = None
         if not values:
             return
-        wire: WireValue = values
-        if len(values) == 1:
-            try:
-                wire = Decimal(values[0])
-            except InvalidOperation:
-                wire = values[0]
-        self.started(wire)
+        self.started(_numeral(values[0]) if len(values) == 1 else list(values))
 
-    def advance(self, rule: CountPlan, count: int, wire: WireValue, info: ResponseInfo) -> int | Missing:
+    def advance(self, rule: CountPlan, count: int, wire: JSONValue, info: ResponseInfo) -> int | Missing:
         """Return the offset or page number the request after a page writes, or MISSING when the page is the last.
 
         The first page is at the walk's start. A page number ends at a page without items once a total counts the
@@ -942,13 +938,13 @@ class _Walk(Generic[T, P]):
         arguments, body = written(plan.writes, request.arguments, request.body, values)
         return arguments, body, cast("str", link.cursor) if follows else None
 
-    def bound(self, wire: WireValue, info: ResponseInfo) -> tuple[WireValue, ...]:
+    def bound(self, wire: JSONValue, info: ResponseInfo) -> tuple[JSONValue, ...]:
         """Return the values of the helper's bindings the request after a page writes, refusing a missing one.
 
         An `initial` binding reads the first page and keeps its value; a `previous` one reads every page.
         """
         plan, link = self.plan, self.link
-        values: list[WireValue] = []
+        values: list[JSONValue] = []
         for index, binding in enumerate(plan.bindings):
             if (selector := binding.selector) is None:
                 values.append(binding.literal)
@@ -961,7 +957,7 @@ class _Walk(Generic[T, P]):
         return tuple(values)
 
     def follow(
-        self, rule: NextUrlPlan | LinkPlan, wire: WireValue, info: ResponseInfo, url: str, stripped: frozenset[str]
+        self, rule: NextUrlPlan | LinkPlan, wire: JSONValue, info: ResponseInfo, url: str, stripped: frozenset[str]
     ) -> str | Missing:
         """Return the absolute URL of the page after a page, or MISSING when the page is the last.
 
@@ -982,8 +978,8 @@ class _Walk(Generic[T, P]):
         return _followed(plan, rule.read, reference, url, info, limit, self.origins, stripped)
 
     def build(
-        self, data: P, wire: WireValue, _content: bytes, info: ResponseInfo, url: str, stripped: frozenset[str]
-    ) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...]]:
+        self, data: P, wire: JSONValue, _content: bytes, info: ResponseInfo, url: str, stripped: frozenset[str]
+    ) -> tuple[Page[T, P], JSONValue | Missing, tuple[JSONValue, ...]]:
         """Return a decoded page, what the next request writes, and its bindings' values.
 
         The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
@@ -1016,7 +1012,7 @@ class _Walk(Generic[T, P]):
         page = Page(items=items, data=data, response=info, continuation=continuation)
         return page, cursor, bound
 
-    def record(self, page: Page[T, P], cursor: WireValue | Missing, bound: tuple[WireValue, ...]) -> Page[T, P]:
+    def record(self, page: Page[T, P], cursor: JSONValue | Missing, bound: tuple[JSONValue, ...]) -> Page[T, P]:
         """Link a fetched page after the last one, noting whether its continuation was seen before on its line.
 
         The line of a walk that follows URLs starts with the first page's own URL, as if the first page continued from
@@ -1074,13 +1070,13 @@ class _Walk(Generic[T, P]):
         arguments, saved_body = core.saved_request(
             plan, plan.call, request.arguments, body, request.media_type, self.limits.options
         )
-        page: WireValue = (
+        page: JSONValue = (
             None
             if link is None
-            else (link.index, link.items, () if link.digest is None else (link.cursor,), link.bound)
+            else [link.index, link.items, [] if link.digest is None else [link.cursor], list(link.bound)]
         )
         kept = saved_request(arguments, saved_body)
-        state: WireValue = {"arguments": kept[0], "body": kept[1], "page": page, "skip": skip}
+        state: JSONValue = {"arguments": kept[0], "body": kept[1], "page": page, "skip": skip}
         return ResumeState(helper=plan.fingerprint, state=state)
 
     def resumable(self, remaining: int = 0) -> ResumeState | None:
@@ -1132,23 +1128,23 @@ def _restored(
     if helper != plan.fingerprint:
         raise _resume_error(plan, "fingerprint")
     try:
-        return _walked(core, plan, decode_json(state_json), limits)
+        return _walked(core, plan, json_value(state_json), limits)
     except _MalformedError:
         raise _resume_error(plan, "malformed") from None
 
 
 def saved_request(
-    arguments: tuple[WireValue | Unset, ...], body: tuple[WireValue, str, str | None] | None
-) -> tuple[WireValue, WireValue]:
+    arguments: tuple[JSONValue | Unset, ...], body: tuple[JSONValue, str, str | None] | None
+) -> tuple[JSONValue, JSONValue]:
     """Return how a checkpoint keeps a request's wire values: each argument in an array, empty when omitted.
 
     The body is kept as its wire value with its declared and concrete media types, or as an empty array without one.
     """
-    return tuple(() if isinstance(value, Unset) else (value,) for value in arguments), () if body is None else body
+    return [[] if isinstance(value, Unset) else [value] for value in arguments], [] if body is None else list(body)
 
 
 def resent(
-    core: ClientCore | AsyncClientCore, call: OperationPlan[object, object], arguments: WireValue, body: WireValue
+    core: ClientCore | AsyncClientCore, call: OperationPlan[object, object], arguments: JSONValue, body: JSONValue
 ) -> _Request:
     """Return the request a checkpoint saved, its arguments and any JSON body built as a caller builds them.
 
@@ -1160,7 +1156,7 @@ def resent(
     wire = tuple(argument[0] if argument else UNSET for argument in saved)
     _require(core.unsaved_argument(call, wire) is None)
     sent = _array(body)
-    given: tuple[WireValue, str, str | None] | None = None
+    given: tuple[JSONValue, str, str | None] | None = None
     if sent:
         _require(len(sent) == _BODY_FIELDS and call.body is not None)
         declared, concrete = _text(sent[1]), _text(sent[2])
@@ -1194,7 +1190,7 @@ def _checked(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> tuple[str
 
 
 def _walked(
-    core: ClientCore | AsyncClientCore, plan: PaginationPlan[T, P], state: WireValue, limits: _Limits
+    core: ClientCore | AsyncClientCore, plan: PaginationPlan[T, P], state: JSONValue, limits: _Limits
 ) -> _Walk[T, P]:
     """Return the walk of a checkpoint's decoded state, with the items of its next page it skips.
 
@@ -1203,7 +1199,7 @@ def _walked(
     checkpoint left out. A walk past its last page skips nothing.
     """
     _require(isinstance(state, Mapping) and frozenset(state) == _STATE)
-    fields = cast("Mapping[str, WireValue]", state)
+    fields = cast("Mapping[str, JSONValue]", state)
     request = resent(core, plan.call, fields["arguments"], fields["body"])
     skip = _count(fields["skip"])
     walk = first = _Walk(plan, request, limits, core)
@@ -1222,7 +1218,7 @@ def _walked(
     return walk
 
 
-def _relinked(plan: PaginationPlan[T, P], request: _Request, saved: tuple[WireValue, ...]) -> _Link:
+def _relinked(plan: PaginationPlan[T, P], request: _Request, saved: list[JSONValue]) -> _Link:
     """Return the link a checkpoint continues after: its position, continuation, and bindings.
 
     A literal binding's value is the plan's, whatever the state saved. Its line starts with its own continuation, so a
@@ -1244,13 +1240,13 @@ def _relinked(plan: PaginationPlan[T, P], request: _Request, saved: tuple[WireVa
             )
         )
     )
-    bound = tuple(
+    values = tuple(
         value if binding.selector is not None else binding.literal
         for binding, value in zip(plan.bindings[: len(bound)], bound, strict=True)
     )
     digest = sha256(continuation_json(Continuation(kind=rule.kind, value=value))).digest() if cursor else None
     history = _History({} if digest is None else {digest: index}, index)
-    return _Link(plan.fingerprint, request, index, items, value, bound, digest, None, None, history)
+    return _Link(plan.fingerprint, request, index, items, value, values, digest, None, None, history)
 
 
 def _continued(core: ClientCore | AsyncClientCore, walk: _Walk[T, P], start: int | None) -> None:
@@ -1578,7 +1574,7 @@ def _origins(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> None:
 
 def _fetch(
     core: ClientCore, walk: _Walk[T, P], session: OperationSession
-) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...]]:
+) -> tuple[Page[T, P], JSONValue | Missing, tuple[JSONValue, ...]]:
     """Fetch the walk's next page as a child call of its session."""
     _origins(core, walk)
     request, limits = walk.request, walk.limits
@@ -1598,7 +1594,7 @@ def _fetch(
 
 async def _afetch(
     core: AsyncClientCore, walk: _Walk[T, P], session: OperationSession
-) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...]]:
+) -> tuple[Page[T, P], JSONValue | Missing, tuple[JSONValue, ...]]:
     """Fetch the walk's next page as an asyncio child call of its session."""
     _origins(core, walk)
     request, limits = walk.request, walk.limits

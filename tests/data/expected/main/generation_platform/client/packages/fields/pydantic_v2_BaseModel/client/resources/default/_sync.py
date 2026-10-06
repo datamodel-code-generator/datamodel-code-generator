@@ -28,7 +28,7 @@ from models import Visit as _dcg_type_9
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import MultipartBody
-from ...model_codecs import WireValue
+from ...model_codecs import JSONValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.default import (
@@ -349,7 +349,7 @@ class DefaultResource:
         self,
         *,
         pet_id: _dcg_type_14,
-        body: MultipartBody[str | WireValue],
+        body: MultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutPhotoResponse:
@@ -696,7 +696,7 @@ class DefaultWithResponse:
         self,
         *,
         pet_id: _dcg_type_14,
-        body: MultipartBody[str | WireValue],
+        body: MultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutPhotoResponse]:
@@ -1043,7 +1043,7 @@ class DefaultWithRawResponse:
         self,
         *,
         pet_id: _dcg_type_14,
-        body: MultipartBody[str | WireValue],
+        body: MultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1390,7 +1390,7 @@ class DefaultWithStreamingResponse:
         self,
         *,
         pet_id: _dcg_type_14,
-        body: MultipartBody[str | WireValue],
+        body: MultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
