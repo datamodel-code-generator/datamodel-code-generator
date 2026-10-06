@@ -51,8 +51,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Mapping, Sequence
     from typing import Any
 
-    from ..model_codecs.media import FieldPlan, JSONValue
+    from ..model_codecs.media import FieldPlan
     from ..model_codecs.parameters import ParameterPlan
+    from ..model_codecs.plain import JSONValue
     from ..model_codecs.wire import WireValue
     from .multipart import PartDecoder
     from .responses import ResponseInfo

@@ -278,7 +278,7 @@ probe responses without a usable offset
   advance with a null offset ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getFileStatus', call_id='<call>') [operation_id='getFileStatus', body_bytes=b'{"offset":null}', truncated=False, cause=1 validation error for Status
 offset
   Input should be a valid integer [type=int_type, input_value=None, input_type=NoneType]
-    For further information visit https://errors.pydantic.dev/2.12/v/int_type] response_validation_error
+    For further information visit https://errors.pydantic.dev/<version>/v/int_type] response_validation_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u24

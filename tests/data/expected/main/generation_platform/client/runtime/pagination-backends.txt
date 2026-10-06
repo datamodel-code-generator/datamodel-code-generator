@@ -35,13 +35,13 @@
   users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=1 validation error for UserPage
 data
   Input should be a valid array [type=list_type, input_value='users', input_type=str]
-    For further information visit https://errors.pydantic.dev/2.12/v/list_type] response_validation_error
+    For further information visit https://errors.pydantic.dev/<version>/v/list_type] response_validation_error
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=1 validation error for LoosePage
 data
   Input should be a valid array [type=list_type, input_value='users', input_type=str]
-    For further information visit https://errors.pydantic.dev/2.12/v/list_type] response_validation_error
+    For further information visit https://errors.pydantic.dev/<version>/v/list_type] response_validation_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
@@ -89,13 +89,13 @@ data
   users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=1 validation error for UserPage
 data
   Input should be a valid array [type=list_type, input_value='users', input_type=str]
-    For further information visit https://errors.pydantic.dev/2.12/v/list_type] response_validation_error
+    For further information visit https://errors.pydantic.dev/<version>/v/list_type] response_validation_error
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=1 validation error for LoosePage
 data
   Input should be a valid array [type=list_type, input_value='users', input_type=str]
-    For further information visit https://errors.pydantic.dev/2.12/v/list_type] response_validation_error
+    For further information visit https://errors.pydantic.dev/<version>/v/list_type] response_validation_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a

@@ -137,8 +137,8 @@ if TYPE_CHECKING:
     )
     from typing import Protocol
 
-    from ..model_codecs.media import JSONValue
     from ..model_codecs.parameters import ParameterFragment, ParameterPlan
+    from ..model_codecs.plain import JSONValue
     from ..model_codecs.wire import WireValue
     from ..protocols.options import (
         ProtocolClientOptions,

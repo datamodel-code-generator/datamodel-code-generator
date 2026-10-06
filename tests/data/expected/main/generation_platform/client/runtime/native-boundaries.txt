@@ -7,7 +7,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   malformed JSON ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False, cause=1 validation error for Entry
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] response_header_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] response_header_decode_error
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
@@ -25,7 +25,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   malformed JSON ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False, cause=1 validation error for Entry
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] response_header_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] response_header_decode_error
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''

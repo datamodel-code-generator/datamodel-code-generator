@@ -39,7 +39,7 @@ checkpoints
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=1 validation error for Message
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] stream_decode_error resume_state=NoneType
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error resume_state=NoneType
   failed saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
   > GET https://api.example.com/events last-event-id=None
   < closed
@@ -118,7 +118,7 @@ failures that never reconnect
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=1 validation error for Message
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] stream_decode_error resume_state=NoneType
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error resume_state=NoneType
   > GET https://api.example.com/events last-event-id=None
   line over its limit
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'

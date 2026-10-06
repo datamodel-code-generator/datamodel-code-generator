@@ -4,23 +4,28 @@ from __future__ import annotations
 
 import base64
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime, time
 from decimal import Decimal, InvalidOperation
 from enum import Enum
-from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, cast
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
+from typing import TYPE_CHECKING, Final, Generic, Literal, TypeAlias, cast
 from uuid import UUID
 
 from typing_extensions import TypeVar
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
 T = TypeVar("T")
 JSONKind: TypeAlias = Literal["object", "array", "string", "number", "boolean"]
 Shape: TypeAlias = "type | Items | Fixed | Values | Choice | None"
+_CONTAINERS: Final[dict[str, Callable[[Iterable[object]], object]]] = {
+    "list": list,
+    "set": set,
+    "frozenset": frozenset,
+    "tuple": tuple,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,13 +154,7 @@ class StdlibCodec(Generic[T]):
                 selected = dict(shape.tags)[cast("str", tag)]
             return self._load(value, selected)
         if isinstance(shape, Items):
-            constructor = cast(
-                "Callable[[Iterable[object]], object]",
-                {"list": list[object], "set": set[object], "frozenset": frozenset[object], "tuple": tuple[object, ...]}[
-                    shape.kind
-                ],
-            )
-            return constructor(self._load(item, shape.item) for item in cast("list[object]", value))
+            return _CONTAINERS[shape.kind](self._load(item, shape.item) for item in cast("list[object]", value))
         if isinstance(shape, Fixed):
             return tuple(
                 self._load(item, shape.items[index] if index < len(shape.items) else None)

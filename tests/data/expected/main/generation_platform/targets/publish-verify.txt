@@ -17,7 +17,7 @@ generate
   written model_metadata meta/models.json
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['written']
+  14 runtime modules ['written']
 generate
   target=fastapi schema_version=1
   written model_inventory server/.dcg-state/model-artifacts.json (target)
@@ -35,7 +35,7 @@ generate
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
-  13 runtime modules ['unchanged']
+  14 runtime modules ['unchanged']
 tree
   meta/models.json
   models.py
@@ -53,4 +53,4 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  14 runtime modules ['present']
