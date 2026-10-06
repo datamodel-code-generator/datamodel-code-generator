@@ -100,4 +100,4 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/1 notes.watch_notes()
     exports client.types.notes.WatchNotesResponse client.types.notes.WatchNotesErrorData client.types.notes.WatchNotesHTTPError
     exports None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']

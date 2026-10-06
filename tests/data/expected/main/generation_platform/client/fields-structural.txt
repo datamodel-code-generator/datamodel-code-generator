@@ -53,7 +53,7 @@ render dataclasses.dataclass
   /selection/selected_operations/7 default.replace_pet(path:petId=pet_id)
     exports client.types.default.ReplacePetResponse client.types.default.ReplacePetErrorData client.types.default.ReplacePetHTTPError
     exports None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
   S_OPERATION_EXCLUDED selection /paths/~1search/post: POST /search is excluded by exclude_operations: Stdlib unions need a declared discriminator; native union conversion is covered separately.
 render typing.TypedDict
   write models.py
@@ -109,5 +109,5 @@ render typing.TypedDict
   /selection/selected_operations/7 default.replace_pet(path:petId=pet_id)
     exports client.types.default.ReplacePetResponse client.types.default.ReplacePetErrorData client.types.default.ReplacePetHTTPError
     exports None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
   S_OPERATION_EXCLUDED selection /paths/~1search/post: POST /search is excluded by exclude_operations: Stdlib unions need a declared discriminator; native union conversion is covered separately.

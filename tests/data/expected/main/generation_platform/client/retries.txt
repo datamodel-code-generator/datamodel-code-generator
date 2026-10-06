@@ -56,4 +56,4 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/8 retry.get_keyed_safe()
     exports client.types.retry.GetKeyedSafeResponse client.types.retry.GetKeyedSafeErrorData client.types.retry.GetKeyedSafeHTTPError
     exports None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']

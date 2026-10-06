@@ -50,7 +50,7 @@ from datamodel_code_generator._client.webhooks import (
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
-from datamodel_code_generator._target_render import PATTERNS, model_dependencies, patterned
+from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
@@ -78,7 +78,6 @@ if TYPE_CHECKING:
     )
 
 DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
-VALIDATION: Final = ("jsonschema[format-nongpl]>=4.26", "referencing>=0.37")
 PYDANTIC: Final = "pydantic>=2.13.5"
 BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
     "pydantic_v2.BaseModel": (PYDANTIC,),
@@ -191,9 +190,7 @@ class ClientTarget:
             dependencies=(
                 *DEPENDENCIES,
                 *((WEBSOCKETS,) if sockets else ()),
-                *(VALIDATION if codecs.uses else ()),
                 *BACKEND_DEPENDENCIES.get(backend, ()),
-                *((PATTERNS,) if patterned(wire) else ()),
                 *webhook_dependencies(webhooks),
                 *model_dependencies(request.models),
             ),

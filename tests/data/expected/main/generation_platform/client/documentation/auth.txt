@@ -106,7 +106,7 @@
   /selection/selected_operations/25 auth.signed_multipart()
     exports client.types.auth.SignedMultipartResponse client.types.auth.SignedMultipartErrorData client.types.auth.SignedMultipartHTTPError
     exports None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md
 # client

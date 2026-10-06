@@ -152,7 +152,7 @@
   /selection/selected_operations/7 secure.get_secure_user(path:userId=user_id)
     exports client.types.secure.GetSecureUserResponse client.types.secure.GetSecureUserErrorData client.types.secure.GetSecureUserHTTPError
     exports None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1items~1{id}/get: GET /items/{id} is excluded by exclude_tags 'items': Checked elsewhere
   S_OPERATION_EXCLUDED selection /paths/~1reports/get: GET /reports is excluded by exclude_tags 'reports': Checked elsewhere
 

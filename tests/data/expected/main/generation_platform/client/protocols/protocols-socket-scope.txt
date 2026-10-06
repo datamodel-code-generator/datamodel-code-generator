@@ -74,4 +74,4 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/2 upload.upload_socket()
     exports client.types.upload.UploadSocketResponse client.types.upload.UploadSocketErrorData client.types.upload.UploadSocketHTTPError
     exports None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'websockets>=17.1', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'websockets>=17.1', 'pydantic>=2.13.5']

@@ -406,7 +406,7 @@
   /selection/selected_operations/3 keyed.list_keyed_users()
     exports client.types.keyed.ListKeyedUsersResponse client.types.keyed.ListKeyedUsersErrorData client.types.keyed.ListKeyedUsersHTTPError
     exports None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md
 # client
