@@ -154,7 +154,7 @@ def build(context: BodyAttemptContext) -> BodyAttempt:
 
 
 async def abuild(context: BodyAttemptContext) -> AsyncBodyAttempt:
-    raise NotImplementedError(context.call_id)
+    raise NotImplementedError(context.attempt_index)
 
 
 def bodies(client: Client, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
@@ -237,8 +237,7 @@ def transports() -> None:
         borrowed = Client(http_client=native)
         assert_type(borrowed.with_options(RequestOptions(total_timeout=1.0)), ClientView)
         borrowed.close()
-    asynchronous = AsyncClient(http_client=httpx2.AsyncClient())
-    assert_type(asynchronous.with_options(RequestOptions()), AsyncClientView)
+    assert_type(AsyncClient(http_client=httpx2.AsyncClient()).with_options(RequestOptions()), AsyncClientView)
 
 
 class Tracer:
@@ -257,8 +256,8 @@ def hooks(client: Client, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
     try:
         client.pets.get_pet(pet_id=pet, options=RequestOptions(hooks=(), context={"retry": 2}))
     except SDKError as error:
-        assert_type(error.cause, BaseException | None)
-        assert_type(error.info, ResponseInfo | None)
+        assert_type(error.completed_result, Response[object] | None)
+        assert_type(error.reason, str | None)
 
 
 def timing_options(client: Client) -> None:

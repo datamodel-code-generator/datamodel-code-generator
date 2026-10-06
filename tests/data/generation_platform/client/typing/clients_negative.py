@@ -7,7 +7,15 @@ from typing import BinaryIO
 
 from pets import AsyncClient, Client
 from pets.auth import OAuthProviderOptions
-from pets.errors import APIConnectionError, APITimeoutError, ConfigurationError, DeliveryState, SDKError
+from pets.errors import (
+    APIStatusError,
+    APITimeoutError,
+    AuthError,
+    ConfigurationError,
+    DecodeError,
+    DeliveryState,
+    SDKError,
+)
 from pets.hooks import AsyncLimiter, AsyncPermit, Limiter, LimiterContext, Permit
 from pets.options import (
     ClientOptions,
@@ -132,12 +140,14 @@ def misuse_limiters(sync: Limiter, asynchronous: AsyncLimiter, permit: Permit, a
     del wrong_sync, wrong_async, wrong_permit, wrong_async_permit
 
 
-def misuse_native_errors(error: SDKError) -> None:
-    APITimeoutError(phase="not-a-phase", delivery_state=DeliveryState.NOT_SENT)  # error
-    APIConnectionError(delivery_state="NOT_SENT")  # error
+def misuse_deadline_errors(error: SDKError) -> None:
+    state = DeliveryState.NOT_SENT
+    APITimeoutError(effective_timeout="1", delivery_state=state)  # error
+    AuthError(reason="expired")  # error
+    DecodeError(direction="request")  # error
+    APIStatusError(body=b"")  # error
     SDKError(attempt_count="one")  # error
-    error.attempt_count = "one"  # error
-    error.elapsed = "soon"  # error
+    error.attempt_count = "zero"  # error
 
 
 def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: ConfigurationError) -> None:
