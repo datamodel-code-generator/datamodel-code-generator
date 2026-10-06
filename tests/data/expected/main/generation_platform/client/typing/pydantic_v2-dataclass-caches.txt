@@ -3,26 +3,26 @@ pyright pets and cache_helpers.py: clean
 ty pets and cache_helpers.py: clean
 cache_helpers_negative.py 7 marked lines
 mypy cache_helpers_negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
-  15 assignment
-  16 arg-type
-  17 arg-type
-  18 call-arg
-  19 call-arg
   20 assignment
-  21 misc
+  21 arg-type
+  22 arg-type
+  23 call-arg
+  24 call-arg
+  25 assignment
+  26 misc
 pyright cache_helpers_negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
-  15 reportAssignmentType
-  16 reportArgumentType
-  17 reportArgumentType
-  18 reportCallIssue
-  19 reportCallIssue
   20 reportAssignmentType
-  21 reportAttributeAccessIssue
+  21 reportArgumentType
+  22 reportArgumentType
+  23 reportCallIssue
+  24 reportCallIssue
+  25 reportAssignmentType
+  26 reportAttributeAccessIssue
 ty cache_helpers_negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
-  15 invalid-assignment
-  16 invalid-argument-type
-  17 invalid-argument-type
-  18 unknown-argument
-  19 missing-argument
   20 invalid-assignment
-  21 invalid-assignment
+  21 invalid-argument-type
+  22 invalid-argument-type
+  23 unknown-argument
+  24 missing-argument
+  25 invalid-assignment
+  26 invalid-assignment

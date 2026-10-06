@@ -5,12 +5,17 @@ from __future__ import annotations
 from pets import AsyncClient, Client
 from pets.options import SessionOptions
 from pets.protocols import CacheResult, PaginationOptions
-from pets.types.users import GetUserRequestCodecs, GetUserResponse, ListUsersResponse
+from pets.types.users import GetUserResponse, ListUsersResponse
+from pets_models import FieldUsersUserIdGetPathUserIdParameter
 
 
-async def wrong_fetches(client: Client, async_client: AsyncClient, result: CacheResult[GetUserResponse]) -> None:
+async def wrong_fetches(
+    client: Client,
+    async_client: AsyncClient,
+    result: CacheResult[GetUserResponse],
+    user: FieldUsersUserIdGetPathUserIdParameter,
+) -> None:
     """Reject each misuse of a cache helper or its results."""
-    user = GetUserRequestCodecs.parameter(location="path", name="userId").from_wire(3)
     helper = client.protocols.users.profile
     unawaited: CacheResult[GetUserResponse] = async_client.protocols.users.profile.fetch(user_id=user)  # error
     helper.fetch(user_id=b"three")  # error

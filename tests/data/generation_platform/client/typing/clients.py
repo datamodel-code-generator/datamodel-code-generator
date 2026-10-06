@@ -71,32 +71,39 @@ from pets.transports import (
 from pets.types.pets.photos import UploadRequestCodecs, UploadResponse
 from pets.types.pets import (
     AttachFilesRequestCodecs,
-    CreatePetRequestCodecs,
     CreatePetResponse,
-    GetPetRequestCodecs,
     ListPetsErrorData,
     ListPetsHTTPError,
-    ListPetsRequestCodecs,
     ListPetsResponse,
-    ReadFilesRequestCodecs,
     decode_list_pets_header,
+)
+from pets_models import (
+    FieldPetsGetHeaderXTraceParameter,
+    FieldPetsPetIdFilesGetPathPetIdParameter,
+    FieldPetsPetIdFilesPostPathPetIdParameter,
+    FieldPetsPetIdGetPathPetIdParameter,
+    FieldPetsPetIdPhotoPutPathPetIdParameter,
+    FieldPetsPostRequest,
+    NewPet,
 )
 
 
-def call(client: Client) -> None:
-    trace = ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t")
-    pet = GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+def call(
+    client: Client,
+    trace: FieldPetsGetHeaderXTraceParameter,
+    pet: FieldPetsPetIdGetPathPetIdParameter,
+    body: NewPet,
+    text: FieldPetsPostRequest,
+    photo: FieldPetsPetIdPhotoPutPathPetIdParameter,
+) -> None:
     assert_type(client.pets.list_pets(x_trace=trace, limit=UNSET), ListPetsResponse)
     response = client.pets.with_response.list_pets(x_trace=trace, options=RequestOptions(max_response_bytes=None))
     assert_type(response, Response[ListPetsResponse])
     decode_list_pets_header(response.info, name="X-Next")
     decode_list_pets_header(response.info, name="X-Rate")
-    body = CreatePetRequestCodecs.body(media_type="application/json").from_wire({"name": "dog"})
     assert_type(client.pets.create_pet(body=body, media_type="application/json"), CreatePetResponse)
-    text = CreatePetRequestCodecs.body(media_type="text/plain").from_wire("dog")
     client.pets.create_pet(body=text, media_type="text/plain")
     client.pets.get_pet(pet_id=pet, response_media_type="text/plain")
-    photo = UploadRequestCodecs.parameter(location="path", name="petId").from_wire(1)
     client.pets.photos.upload(pet_id=photo, body=b"\x00")
     try:
         client.pets.list_pets(x_trace=trace)
@@ -104,8 +111,7 @@ def call(client: Client) -> None:
         assert_type(error.error_data, ListPetsErrorData | None)
 
 
-async def call_async(client: AsyncClient) -> None:
-    trace = ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t")
+async def call_async(client: AsyncClient, trace: FieldPetsGetHeaderXTraceParameter) -> None:
     assert_type(await client.pets.list_pets(x_trace=trace), ListPetsResponse)
     response = await client.pets.with_response.list_pets(x_trace=trace)
     assert_type(response, Response[ListPetsResponse])
@@ -114,9 +120,7 @@ async def call_async(client: AsyncClient) -> None:
     await client.aclose()
 
 
-def raw(client: Client, sink: BinaryIO) -> None:
-    trace = ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t")
-    pet = GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+def raw(client: Client, sink: BinaryIO, trace: FieldPetsGetHeaderXTraceParameter, pet: FieldPetsPetIdGetPathPetIdParameter, body: NewPet) -> None:
     saved = client.pets.with_raw_response.list_pets(x_trace=trace)
     assert_type(saved, RawResponse)
     assert_type(saved.info, ResponseInfo)
@@ -125,7 +129,6 @@ def raw(client: Client, sink: BinaryIO) -> None:
     assert_type(saved.text(), str)
     assert_type(saved.json(), JSONValue)
     saved.raise_for_status()
-    body = CreatePetRequestCodecs.body(media_type="application/json").from_wire({"name": "dog"})
     manager = client.pets.with_streaming_response.create_pet(body=body, media_type="application/json")
     assert_type(manager, AbstractContextManager[RawResponse])
     with client.pets.with_streaming_response.get_pet(pet_id=pet, response_media_type="text/plain") as streamed:
@@ -137,9 +140,7 @@ def raw(client: Client, sink: BinaryIO) -> None:
         download.stream_to("file.bin", overwrite=True)
 
 
-async def raw_async(client: AsyncClient) -> None:
-    trace = ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t")
-    pet = GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+async def raw_async(client: AsyncClient, trace: FieldPetsGetHeaderXTraceParameter, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
     saved = await client.pets.with_raw_response.list_pets(x_trace=trace)
     assert_type(saved, AsyncRawResponse)
     assert_type(await saved.read(), bytes)
@@ -163,8 +164,7 @@ async def abuild(context: BodyAttemptContext) -> AsyncBodyAttempt:
     raise NotImplementedError(context.attempt_index)
 
 
-def bodies(client: Client, file: BinaryIO) -> None:
-    photo = UploadRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+def bodies(client: Client, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
     inputs: tuple[SyncBinaryBody, ...] = (
         b"\x00",
         FileBody(file),
@@ -180,8 +180,7 @@ def bodies(client: Client, file: BinaryIO) -> None:
     client.request_raw("PUT", "https://example.com/file", body=FileBody.from_path("photo.png"))
 
 
-async def bodies_async(client: AsyncClient, file: BinaryIO) -> None:
-    photo = UploadRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+async def bodies_async(client: AsyncClient, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
 
     async def chunks() -> AsyncIterator[bytes]:
         yield b"a"
@@ -212,16 +211,15 @@ def multipart(client: Client, file: BinaryIO) -> None:
     client.request_raw("POST", "https://example.com/forms", body=body)
 
 
-def file_parts(client: Client, file: BinaryIO) -> None:
+def file_parts(client: Client, file: BinaryIO, pet: FieldPetsPetIdFilesPostPathPetIdParameter, read: FieldPetsPetIdFilesGetPathPetIdParameter) -> None:
     note = FieldPart("note", "hello")
-    labels = FieldPart("labels", AttachFilesRequestCodecs.part(name="labels").from_wire(["a", "b"]))
-    assert_type(labels, FieldPart[ModelValue[list[str]]])
-    pet = AttachFilesRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    labels = FieldPart("labels", ["a", "b"])
+    assert_type(labels, FieldPart[list[str]])
     client.pets.attach_files(pet_id=pet, body=MultipartBody((note, labels, FilePart("file", FileBody(file)))))
     codec = AttachFilesRequestCodecs.part(name="note", media_type="multipart/form-data")
     assert_type(codec, NativeOutboundCodec[str])
     assert_type(AttachFilesRequestCodecs.part(name="file"), NativeOutboundCodec[str] | NativeOutboundCodec[list[str]])
-    files = client.pets.read_files(pet_id=ReadFilesRequestCodecs.parameter(location="path", name="petId").from_wire(1))
+    files = client.pets.read_files(pet_id=read)
     assert_type(files, MultipartData[str | bytes])
     for part in files.parts:
         assert_type(part.value, str | bytes)
@@ -319,8 +317,7 @@ class AsyncTracer:
         del event
 
 
-def hooks(client: Client) -> None:
-    pet = GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+def hooks(client: Client, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
     options = ClientOptions(hooks=(Tracer(), AsyncTracer()), context={"tenant": "t", "retry": 1, "user": None})
     Client(options=options)
     try:

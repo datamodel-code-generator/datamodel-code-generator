@@ -230,7 +230,7 @@ class _Uploads(Harness):
     def __init__(self, package: ModuleType) -> None:
         """Import the modules and the create arguments."""
         super().__init__(package)
-        self.tus = self.argument("files", "CreateFile", "header", "Tus-Resumable", "1.0.0")
+        self.tus = self.argument("createFile", "header", "Tus-Resumable", "1.0.0")
 
     @staticmethod
     def source(content: bytes = _CONTENT) -> Any:
@@ -475,7 +475,7 @@ def _runs(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, line
     ))
     exchange.respond(*[server] * 4)
     put = api.protocols.files.put
-    length = harness.argument("files", "CreateFile", "header", "Upload-Length", 10)
+    length = harness.argument("createFile", "header", "Upload-Length", 10)
     trace = harness.options.RequestOptions(headers=(("X-Trace", "kept"),), query=(("trace", "kept"),))
     handle = step(
         lines,
@@ -894,7 +894,7 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
         "start with a patch of the written query offset",
         lambda: api.protocols.files.put.start(
             harness.source(),
-            upload_length=harness.argument("files", "CreateFile", "header", "Upload-Length", 10),
+            upload_length=harness.argument("createFile", "header", "Upload-Length", 10),
             tus_resumable=harness.tus,
             options=options.RequestOptions(query=(("offset", "1"),)),
         ),

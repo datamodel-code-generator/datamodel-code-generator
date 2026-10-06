@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.data.python.client_pagination import item_id
-from tests.data.python.client_runtime import Exchange, describe, json_response, raw_response, record, run
+from tests.data.python.client_runtime import Exchange, argument, describe, json_response, raw_response, record, run
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -151,23 +151,19 @@ class Caching:
 
     def user_id(self, value: int) -> object:
         """Return the userId argument of a wire value, as its request codec builds it."""
-        types = importlib.import_module(f"{self.package.__name__}.types.users")
-        return types.GetUserRequestCodecs.parameter(location="path", name="userId").from_wire(value)
+        return argument(self.package, "getUser", "path", "userId", value)
 
     def language(self, value: str) -> object:
         """Return the Accept-Language argument of a wire value."""
-        types = importlib.import_module(f"{self.package.__name__}.types.users")
-        return types.GetUserRequestCodecs.parameter(location="header", name="Accept-Language").from_wire(value)
+        return argument(self.package, "getUser", "header", "Accept-Language", value)
 
     def cart(self, value: str) -> object:
         """Return the cart cookie argument of a wire value."""
-        types = importlib.import_module(f"{self.package.__name__}.types.carts")
-        return types.GetCurrentCartRequestCodecs.parameter(location="cookie", name="cart").from_wire(value)
+        return argument(self.package, "getCurrentCart", "cookie", "cart", value)
 
     def page(self, value: int) -> object:
         """Return the page argument of a listing."""
-        types = importlib.import_module(f"{self.package.__name__}.types.users")
-        return types.ListUsersRequestCodecs.parameter(location="query", name="page").from_wire(value)
+        return argument(self.package, "listUsers", "query", "page", value)
 
     def stores(self, **stores: object) -> object:
         """Return client options lending the stores by helper name, with dots spelled as double underscores."""
@@ -845,12 +841,11 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         )
         return package.Client(http_client=native, options=options.ClientOptions(auth=config, protocols=protocol))
 
-    secured = importlib.import_module(f"{package.__name__}.types.secure").GetSecureUserRequestCodecs
-    argument = secured.parameter(location="path", name="userId").from_wire(1)
+    secure_user = argument(package, "getSecureUser", "path", "userId", 1)
     with client(None) as anonymous:
-        fetched(lines, "no partition", lambda: anonymous.protocols.secure.profile.fetch(user_id=argument))
+        fetched(lines, "no partition", lambda: anonymous.protocols.secure.profile.fetch(user_id=secure_user))
     with client("tenant-a", None) as unauthenticated:
-        fetched(lines, "no credentials", lambda: unauthenticated.protocols.secure.profile.fetch(user_id=argument))
+        fetched(lines, "no credentials", lambda: unauthenticated.protocols.secure.profile.fetch(user_id=secure_user))
     exchange.respond(
         user(1, etag='"t"', **{"cache-control": "max-age=60"}),
         user(1, "other"),
@@ -858,9 +853,9 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         user(1, "b"),
     )
     with client("tenant-a") as first, client("tenant-a") as same, client("tenant-b") as other:
-        fetched(lines, "tenant a stored", lambda: first.protocols.secure.profile.fetch(user_id=argument))
-        fetched(lines, "tenant a shared", lambda: same.protocols.secure.profile.fetch(user_id=argument))
-        fetched(lines, "tenant b isolated", lambda: other.protocols.secure.profile.fetch(user_id=argument))
+        fetched(lines, "tenant a stored", lambda: first.protocols.secure.profile.fetch(user_id=secure_user))
+        fetched(lines, "tenant a shared", lambda: same.protocols.secure.profile.fetch(user_id=secure_user))
+        fetched(lines, "tenant b isolated", lambda: other.protocols.secure.profile.fetch(user_id=secure_user))
         public = cache.user_id(1)
         fetched(lines, "anonymous helper", lambda: first.protocols.users.profile.fetch(user_id=public))
         bearer = cache.headers(Authorization="Bearer x")
@@ -874,7 +869,7 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
     alice, bob = (
         auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken(name))}) for name in ("alice", "bob")
     )
-    two = secured.parameter(location="path", name="userId").from_wire(2)
+    two = argument(package, "getSecureUser", "path", "userId", 2)
     varying = {"cache-control": "max-age=60", "vary": "Authorization"}
     exchange.respond(user(2, "alice", **varying), user(2, "bob", **varying), user(2, "alice again", **varying))
     with client("tenant-a", alice) as first, client("tenant-a", bob) as second:
@@ -893,7 +888,7 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         anonymous_view = first.with_options(options.RequestOptions(auth=None))
         fetched(lines, "anonymous view", lambda: anonymous_view.protocols.users.profile.fetch(user_id=public))
     fresh = {"cache-control": "max-age=60"}
-    four, five = (secured.parameter(location="path", name="userId").from_wire(value) for value in (4, 5))
+    four, five = (argument(package, "getSecureUser", "path", "userId", value) for value in (4, 5))
     exchange.respond(
         user(4, "u", **fresh), user(4, "service", **fresh), user(5, "service", **fresh), user(5, "u", **fresh)
     )
@@ -915,7 +910,7 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
             fetched(lines, label, lambda cart=cart: carts.fetch(cart=cache.cart(cart)))
     signed_vary = {"cache-control": "max-age=60", "vary": "X-Signature"}
     exchange.respond(user(3, "first", **signed_vary), user(3, "second", **signed_vary))
-    three = secured.parameter(location="path", name="userId").from_wire(3)
+    three = argument(package, "getSecureUser", "path", "userId", 3)
     signing = auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken("alice"))}, signers=(_Signer(auth),))
     with client("tenant-a", signing) as signer:
         fetched(lines, "vary on a signed header", lambda: signer.protocols.secure.profile.fetch(user_id=three))
@@ -928,7 +923,7 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         signed = auth.AuthConfig({"bearer": oauth}, signers=(_Signer(auth),))
         with client("tenant-a", signed, **{"secure.profile": failing}) as granted:
             failing.faults["get"] = OSError("down")
-            fetched(lines, "granted and signed", lambda: granted.protocols.secure.profile.fetch(user_id=argument))
+            fetched(lines, "granted and signed", lambda: granted.protocols.secure.profile.fetch(user_id=secure_user))
 
 
 async def _async_stores(cache: Caching, lines: list[str]) -> None:
@@ -972,8 +967,7 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
         store.faults["delete"] = 1
         await afetched(lines, "async delete result", lambda: helper.fetch(user_id=twenty))
     fresh = {"cache-control": "max-age=60"}
-    secured = importlib.import_module(f"{package.__name__}.types.secure").GetSecureUserRequestCodecs
-    argument = secured.parameter(location="path", name="userId").from_wire(1)
+    secure_user = argument(package, "getSecureUser", "path", "userId", 1)
     token = auth.AuthConfig({"bearer": auth.AsyncStaticTokenProvider(auth.AccessToken("token"))})
     partitioned = options.ProtocolClientOptions(
         security=protocols.ProtocolSecurityContext(credential_partition="tenant"),
@@ -987,9 +981,9 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
         ) as service,
     ):
         delegated = service.with_options(cache.headers(X_On_Behalf_Of="user-u")).protocols.secure.profile
-        await afetched(lines, "async service", lambda: service.protocols.secure.profile.fetch(user_id=argument))
-        await afetched(lines, "async on behalf of u", lambda: delegated.fetch(user_id=argument))
-        await afetched(lines, "async on behalf of u again", lambda: delegated.fetch(user_id=argument))
+        await afetched(lines, "async service", lambda: service.protocols.secure.profile.fetch(user_id=secure_user))
+        await afetched(lines, "async on behalf of u", lambda: delegated.fetch(user_id=secure_user))
+        await afetched(lines, "async on behalf of u again", lambda: delegated.fetch(user_id=secure_user))
     failing = AsyncRecording(protocols.MemoryCacheStore(), lines)
     failing.faults["get"] = OSError("down")
     secret = auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("secret"))
@@ -1000,7 +994,7 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
     )
     config = options.ClientOptions(auth=auth.AuthConfig({"bearer": oauth}), protocols=protocol)
     async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as granted:
-        await afetched(lines, "async granted", lambda: granted.protocols.secure.profile.fetch(user_id=argument))
+        await afetched(lines, "async granted", lambda: granted.protocols.secure.profile.fetch(user_id=secure_user))
     await oauth.aclose()
 
 

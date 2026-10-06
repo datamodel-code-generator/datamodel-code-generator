@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
-from tests.data.python.client_runtime import arecord, describe, record, run
+from tests.data.python.client_runtime import arecord, argument, describe, record, run
 from tests.data.python.client_streams import _AsyncEnds, _Ends, _event, _Harness, _Probed
 from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response, Stop
 
@@ -129,11 +129,9 @@ class _Resumes:
         options = self.harness.options
         return options.RequestOptions(redirects=options.RedirectOptions(enabled=True))
 
-    def argument(self, location: str, name: str, wire: object, operation: str = "events.StreamEvents") -> object:
+    def argument(self, location: str, name: str, wire: object, operation_id: str = "streamEvents") -> object:
         """Return an argument of an operation, the events one unless told otherwise, for a wire value."""
-        resource, codecs = operation.split(".")
-        types = importlib.import_module(f"{self.harness.package.__name__}.types.{resource}")
-        return getattr(types, f"{codecs}RequestCodecs").parameter(location=location, name=name).from_wire(wire)
+        return argument(self.harness.package, operation_id, location, name, wire)
 
     def client_options(self) -> Any:
         """Return client options whose reconnection backoff waits for nothing."""
@@ -489,7 +487,7 @@ def _rooms(resumes: _Resumes, api: Any) -> None:
     lines.append("bound path values")
     resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', harness.interrupted(), headers=(("X-Shard", "1"),))
     resumes.reply(b'id: 2\ndata: {"text": "b"}\n\n', headers=(("X-Shard", "2"),))
-    room, shard = (partial(resumes.argument, "path", name, operation="rooms.StreamRoom") for name in ("room", "shard"))
+    room, shard = (partial(resumes.argument, "path", name, operation_id="streamRoom") for name in ("room", "shard"))
     stream = helper.open(room=room("r"), shard=shard("0"), stream_options=resumes.reconnect)
     _drained(lines, "reopened with the shard", stream)
     _saved(lines, "shard", stream.checkpoint())
@@ -839,7 +837,7 @@ def _write_guards(package: ModuleType, lines: list[str]) -> None:
                 with api.protocols.marks.scoped.open(stream_options=resumes.reconnect) as stream:
                     next(stream)
                     lines.append(f"  delivered sequence={next(stream).sequence}")
-                scope = resumes.argument("query", "scope", {"api_key": "SERVER_KEY"}, "marks.StreamMarks")
+                scope = resumes.argument("query", "scope", {"api_key": "SERVER_KEY"}, "streamMarks")
                 _guarded(lines, "active auth collision on open", partial(api.protocols.marks.scoped.open, scope=scope))
     for name, field, origin, patch in _query_patches(resumes):
         settings = patch if origin == "client" else resumes.client_options()
@@ -896,7 +894,7 @@ def _cleared_guards(resumes: _Resumes, api: Any) -> None:
         helper = getattr(owner.protocols.marks, name)
         cursor = {"after": "5"} if name == "named" else {"after": "5", "page": "dynamic"}
         resumes.reply(f"data: {json.dumps({'scope': cursor})}\n\n".encode())
-        given = {"tag": resumes.argument("query", "tag", "kept", "marks.StreamMarks")} if name == "scoped" else {}
+        given = {"tag": resumes.argument("query", "tag", "kept", "streamMarks")} if name == "scoped" else {}
         stream = helper.open(**given)
         next(stream)
         state = stream.checkpoint()
@@ -963,7 +961,7 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
                 async with await api.protocols.marks.scoped.open(stream_options=resumes.reconnect) as stream:
                     await anext(stream)
                     lines.append(f"  delivered sequence={(await anext(stream)).sequence}")
-                scope = resumes.argument("query", "scope", {"api_key": "SERVER_KEY"}, "marks.StreamMarks")
+                scope = resumes.argument("query", "scope", {"api_key": "SERVER_KEY"}, "streamMarks")
                 await _aguarded(
                     lines, "active auth collision on open", partial(api.protocols.marks.scoped.open, scope=scope)
                 )
@@ -983,7 +981,7 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
             helper = getattr(owner.protocols.marks, name)
             cursor = {"after": "5"} if name == "named" else {"after": "5", "page": "dynamic"}
             resumes.reply(f"data: {json.dumps({'scope': cursor})}\n\n".encode())
-            given = {"tag": resumes.argument("query", "tag", "kept", "marks.StreamMarks")} if name == "scoped" else {}
+            given = {"tag": resumes.argument("query", "tag", "kept", "streamMarks")} if name == "scoped" else {}
             stream = await helper.open(**given)
             await anext(stream)
             state = stream.checkpoint()

@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
 from tests.data.python.client_regressions import json_error_body, retained_body
-from tests.data.python.client_runtime import describe, run
+from tests.data.python.client_runtime import argument, describe, run
 from tests.data.python.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
 
 if TYPE_CHECKING:
@@ -154,18 +154,15 @@ class _Harness:
 
     def room(self, value: str = "r1") -> object:
         """Return the room argument of the chat helper for a wire value."""
-        types = importlib.import_module(f"{self.package.__name__}.types.rooms")
-        return types.RoomSocketRequestCodecs.parameter(location="path", name="room").from_wire(value)
+        return argument(self.package, "roomSocket", "path", "room", value)
 
     def since(self, value: int) -> object:
         """Return the since argument of the chat helper for a wire value."""
-        types = importlib.import_module(f"{self.package.__name__}.types.rooms")
-        return types.RoomSocketRequestCodecs.parameter(location="query", name="since").from_wire(value)
+        return argument(self.package, "roomSocket", "query", "since", value)
 
     def trace(self, value: str) -> object:
         """Return the X-Trace argument of the secure helper for a wire value."""
-        types = importlib.import_module(f"{self.package.__name__}.types.secure")
-        return types.SecureSocketRequestCodecs.parameter(location="header", name="X-Trace").from_wire(value)
+        return argument(self.package, "secureSocket", "header", "X-Trace", value)
 
     def text(self, value: str) -> object:
         """Return a message the chat helper sends."""

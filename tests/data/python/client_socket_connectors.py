@@ -10,7 +10,7 @@ import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.data.python.client_runtime import arecord, record, run
+from tests.data.python.client_runtime import arecord, argument, record, run
 from tests.data.python.client_sockets import arecord as handshake_arecord
 from tests.data.python.client_sockets import record as handshake_record
 
@@ -311,12 +311,7 @@ class _Harness:
             for name in ("options", "protocols", "errors", "responses")
         )
         self.models = importlib.import_module(f"{package.__name__}_models")
-        self.room = (
-            importlib
-            .import_module(f"{package.__name__}.types.rooms")
-            .RoomSocketRequestCodecs.parameter(location="path", name="room")
-            .from_wire("r1")
-        )
+        self.room = argument(package, "roomSocket", "path", "room", "r1")
 
     def frame(self, data: bytes, *, text: bool = True) -> Any:
         return self.protocols.WSFrame(data=data, text=text)

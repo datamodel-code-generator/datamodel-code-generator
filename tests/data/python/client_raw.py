@@ -18,7 +18,17 @@ from typing import TYPE_CHECKING, Any, Final, NoReturn
 import httpx2
 import pytest
 
-from tests.data.python.client_runtime import Exchange, Injected, aoutcome, arecord, failing, outcome, record, run
+from tests.data.python.client_runtime import (
+    Exchange,
+    Injected,
+    aoutcome,
+    arecord,
+    argument,
+    failing,
+    outcome,
+    record,
+    run,
+)
 from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response, Stop
 
 if TYPE_CHECKING:
@@ -39,7 +49,7 @@ def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType, ModuleType, M
 
 
 def _pet(package: ModuleType) -> object:
-    return _modules(package)[4].GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    return argument(package, "getPet", "path", "petId", 3)
 
 
 def _saved(response: Any) -> str:
@@ -146,7 +156,7 @@ def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: l
     exchange.respond(_streamed(200, (bytes(70000),), "application/octet-stream"))
     large = raw.get_pet(pet_id=pet, options=options.RequestOptions(max_response_bytes=None))
     lines.append(f"  saved pieces {[len(piece) for piece in large.iter_bytes()]}")
-    trace = types.ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t")
+    trace = argument(package, "listPets", "header", "X-Trace", "t")
     exchange.respond(_streamed(418, (_ERROR,), headers={"x-request-id": "r-1"}))
     listed = raw.list_pets(x_trace=trace)
     lines.append(f"  saved error {_saved(listed)} {listed.info.request_id}")

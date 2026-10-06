@@ -10,7 +10,17 @@ from typing import TYPE_CHECKING, Any, Final
 import httpx2
 
 from tests.data.python.client_bodies import Chunks, async_attempt_factory, attempt_factory
-from tests.data.python.client_runtime import Exchange, aoutcome, arecord, outcome, raw_response, record, run
+from tests.data.python.client_runtime import (
+    Exchange,
+    aoutcome,
+    arecord,
+    form_part,
+    outcome,
+    raw_response,
+    record,
+    request_body,
+    run,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -207,8 +217,6 @@ def _uploads_read(api: Any, exchange: Exchange, lines: list[str]) -> None:
 
 def _profiles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Send a schema's object as its members' parts: text for scalars, JSON for the rest, repeated for arrays."""
-    _, _, types = _modules(package)
-    codec = types.SubmitProfileRequestCodecs.body()
     for label, value in (
         ("profile", _PROFILE),
         ("profile with its name only", {"name": "Bo"}),
@@ -216,12 +224,21 @@ def _profiles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
     ):
         if label in {"profile", "profile with its name only"}:
             exchange.respond(raw_response(204))
-        record(lines, label, lambda value=value: api.forms.submit_profile(body=codec.from_wire(value)))
-    anything = types.SubmitAnythingRequestCodecs.body()
+        record(
+            lines,
+            label,
+            lambda value=value: api.forms.submit_profile(body=request_body(package, "submitProfile", None, value)),
+        )
     exchange.respond(raw_response(204))
-    record(lines, "free-form object", lambda: api.forms.submit_anything(body=anything.from_wire({"k": [1]})))
     record(
-        lines, "free-form value that is no object", lambda: api.forms.submit_anything(body=anything.from_wire("text"))
+        lines,
+        "free-form object",
+        lambda: api.forms.submit_anything(body=request_body(package, "submitAnything", None, {"k": [1]})),
+    )
+    record(
+        lines,
+        "free-form value that is no object",
+        lambda: api.forms.submit_anything(body=request_body(package, "submitAnything", None, "text")),
     )
 
 
@@ -276,7 +293,7 @@ def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
     bodies, options, types = _modules(package)
     body, field, file = bodies.MultipartBody, bodies.FieldPart, bodies.FilePart
     codecs = types.SubmitUploadRequestCodecs
-    meta = codecs.part(name="meta").from_wire({"city": "Oslo", "codes": [7]})
+    meta = form_part(package, "submitUpload", "meta", {"city": "Oslo", "codes": [7]})
     title, photo = field("title", "Notes"), file("photo", b"\x89PNG", filename="a.png", content_type="image/png")
     for label, parts in (
         (
@@ -317,7 +334,7 @@ def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
     record(lines, "scans", lambda: api.forms.submit_scans(body=body(scans)))
     record(lines, "scans of an extra field", lambda: api.forms.submit_scans(body=body((field("x", "1"),))))
     exchange.respond(raw_response(204))
-    color = types.SubmitLabelsRequestCodecs.part(name="color").from_wire("red")
+    color = form_part(package, "submitLabels", "color", "red")
     record(lines, "labels", lambda: api.forms.submit_labels(body=body((file("sheet", b"s"), field("color", color)))))
     exchange.respond(raw_response(204))
     record(lines, "photos", lambda: api.forms.submit_photos(body=body((photo,))))
@@ -345,9 +362,9 @@ def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
 
 def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Send members in the media types their encodings name, and refuse a part of a media type outside them."""
-    bodies, _, types = _modules(package)
+    bodies, _, _ = _modules(package)
     body, field, file = bodies.MultipartBody, bodies.FieldPart, bodies.FilePart
-    meta = types.SubmitCoverRequestCodecs.part(name="meta").from_wire({"city": "Oslo"})
+    meta = form_part(package, "submitCover", "meta", {"city": "Oslo"})
     limit = (("X-Rate-Limit", "5"),)
     cover = file("cover", b"\x89PNG", headers=limit)
     exchange.respond(raw_response(204), raw_response(204))
@@ -385,18 +402,16 @@ def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         record(lines, label, lambda parts=parts: api.forms.submit_cover(body=body(parts)))
     exchange.respond(raw_response(204))
     record(lines, "cover of an extra in UTF-16 text", lambda: api.forms.submit_cover(body=body((cover, field("extra", 7, content_type="text/plain; charset=utf-16")))))
-    codec = types.SubmitCardRequestCodecs.body()
-    card = codec.from_wire({"title": "h\xe9llo", "count": 2, "tags": ["a", "b"]})
+    card = request_body(package, "submitCard", None, {"title": "h\xe9llo", "count": 2, "tags": ["a", "b"]})
     exchange.respond(raw_response(204))
     record(lines, "card", lambda: api.forms.submit_card(body=card))
-    record(lines, "card of a tag its charset cannot represent", lambda: api.forms.submit_card(body=codec.from_wire({"tags": ["\xe9"]})))
+    record(lines, "card of a tag its charset cannot represent", lambda: api.forms.submit_card(body=request_body(package, "submitCard", None, {"tags": ["\xe9"]})))
 
 
 def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Send members in the parts their query styles give, without percent-encoding, and refuse names two members write."""
-    bodies, options, types = _modules(package)
+    bodies, options, _ = _modules(package)
     body, field, file = bodies.MultipartBody, bodies.FieldPart, bodies.FilePart
-    stickers = types.SubmitStickersRequestCodecs.body()
     sticker = {
         "tags": ["a&b", "c"],
         "words": ["x", "y"],
@@ -407,15 +422,23 @@ def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         "y": 4,
     }
     exchange.respond(raw_response(204))
-    record(lines, "stickers", lambda: api.forms.submit_stickers(body=stickers.from_wire(sticker)))
+    record(
+        lines,
+        "stickers",
+        lambda: api.forms.submit_stickers(body=request_body(package, "submitStickers", None, sticker)),
+    )
     for label, value in (
         ("stickers of a point whose extra is named as another member", {"point": {"y": 1}, "y": 2}),
         ("stickers of another member named as a point's extra", {"y": 2, "point": {"y": 1}}),
+        ("stickers of a point's extra named as a later styled member", {"point": {"label": 3}, "label": "l"}),
         ("stickers of a tag holding its delimiter", {"tags": ["a|b"]}),
     ):
-        record(lines, label, lambda value=value: api.forms.submit_stickers(body=stickers.from_wire(value)))
+        record(
+            lines,
+            label,
+            lambda value=value: api.forms.submit_stickers(body=request_body(package, "submitStickers", None, value)),
+        )
     photo = file("photo", b"p")
-    bounds = types.SubmitAlbumRequestCodecs.part(name="bounds")
     exchange.respond(raw_response(204), raw_response(204))
     record(
         lines,
@@ -429,12 +452,12 @@ def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
             body=body((
                 photo,
                 field("tags", ["a", "b"]),
-                field("bounds", bounds.from_wire({"w": 1, "h": 2})),
+                field("bounds", form_part(package, "submitAlbum", "bounds", {"w": 1, "h": 2})),
                 field("title", "t"),
             ))
         ),
     )
-    clash = field("bounds", bounds.from_wire({"title": 1}))
+    clash = field("bounds", form_part(package, "submitAlbum", "bounds", {"title": 1}))
     exchange.respond(raw_response(204))
     record(
         lines,
@@ -470,7 +493,7 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
         await arecord(
             lines,
             "async profile",
-            lambda: api.forms.submit_profile(body=types.SubmitProfileRequestCodecs.body().from_wire(_PROFILE)),
+            lambda: api.forms.submit_profile(body=request_body(package, "submitProfile", None, _PROFILE)),
         )
         file_body = bodies.AsyncFileBody(io.BytesIO(b"doc"))
         parts = body((
@@ -540,7 +563,6 @@ def split_parts(package: ModuleType, lines: list[str]) -> None:
     A member or extra part sent goes through the request model, and one read through the response model.
     """
     bodies = importlib.import_module(f"{package.__name__}.bodies")
-    codecs = importlib.import_module(f"{package.__name__}.types.default").SendUploadRequestCodecs
     exchange = Exchange(lines)
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         parts = [bodies.FilePart("photo", b"\x89PNG")]
@@ -548,7 +570,7 @@ def split_parts(package: ModuleType, lines: list[str]) -> None:
             value = record(
                 lines,
                 f"split {name} part",
-                lambda name=name: codecs.part(name=name).from_wire({"text": name[0], "secret": "s"}).value,
+                lambda name=name: form_part(package, "sendUpload", name, {"text": name[0], "secret": "s"}),
             )
             parts.append(bodies.FieldPart(name, value))
         exchange.respond(raw_response(204))
