@@ -2595,9 +2595,6 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             if not isinstance(deferred, Unset):
                 source = bind_body(deferred, entry=entry)
                 source, entry = source if coding is None else coding.source(source), None
-            elif entry is not None:
-                abandoned, entry = entry, None
-                _released(abandoned.close, call.operation_id, call.call_id)
             call.check("encode")
             result = self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
@@ -3493,9 +3490,6 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             if not isinstance(deferred, Unset):
                 source = await bind_async_body(deferred, entry=entry, cleanup=call.cleanup)
                 source, entry = source if coding is None else coding.async_source(source), None
-            elif entry is not None:
-                abandoned, entry = entry, None
-                await _areleased(abandoned.aclose, call.operation_id, call.call_id)
             call.check("encode")
             result = await self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001

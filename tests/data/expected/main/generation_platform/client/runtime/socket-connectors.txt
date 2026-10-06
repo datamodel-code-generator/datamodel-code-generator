@@ -187,6 +187,10 @@
     connection abort
     connection send text=True b'first' deadline=True
     connection abort
-  async send holding the turn past its cap ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=APITimeoutError()] delivery_unknown_error
+  async send cut by the session deadline ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=APITimeoutError()] delivery_unknown_error
+    AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
+    connection send text=True b'first' deadline=True
+  async send holding the turn past its cap = None
   async send given the turn past its cap ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='write', effective_timeout=10.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout
-  async send after the stopped turn ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='send') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_state_error
+    connection send text=True b'third' deadline=True
+  async send after the stopped turn = None

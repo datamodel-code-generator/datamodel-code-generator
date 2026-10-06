@@ -1014,7 +1014,11 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         self._queue = asyncio.Lock()
 
     async def send(self, value: SendT) -> None:
-        """Send one message after the earlier sends, within the send timeout; a message that may have gone is final."""
+        """Send one message after the earlier sends, within the send timeout; a message that may have gone is final.
+
+        The send timeout bounds the wait for earlier sends and is checked before the write starts; the session deadline
+        also bounds the write, whose message then may have gone.
+        """
         data, text = self._payload(value)
         self._usable("send")
         cap = self._deadline(self._socket.send_timeout)
@@ -1027,14 +1031,14 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             raise self._unsent() from None
         except BaseException as error:  # noqa: BLE001
             raise (self._unsent() if self._capped(error, cap) else self._own(error)) from None
+        deadline = self._call.deadline
         try:
             self._usable("send")
-            await lane.bounded(
-                lambda: self._connection.send(data, text=text, deadline=cap),
-                phase="stream",
-                delivery_state=DeliveryState.MAYBE_SENT,
-                idle=False,
-            )
+            if cap is not None and not cap.remaining() > 0:
+                raise TimeoutError  # noqa: TRY301
+            left = _left(deadline, _end(deadline))
+            with anyio.move_on_after(None if left is None else max(0.0, left)) as bound:
+                await self._connection.send(data, text=text, deadline=cap)
         except TimeoutError:
             raise self._unsent() from None
         except WebSocketClosedError as closed:
@@ -1045,6 +1049,9 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             raise await self._failed(self._undelivered(error, cap)) from None
         finally:
             self._queue.release()
+        if bound.cancelled_caught:
+            unknown = DeliveryUnknownError(delivery_state=DeliveryState.MAYBE_SENT, cause=self._halted())
+            raise await self._failed(self._stamped(unknown))
         self._sent += 1
 
     async def _release_turn(self, acquired: object) -> None:

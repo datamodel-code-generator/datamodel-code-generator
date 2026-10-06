@@ -2000,9 +2000,10 @@ false. The session deadline bounds every wait and raises `APITimeoutError` with 
 that sent nothing before its timeout raises `APITimeoutError` with the reason `phase_timeout` and the phase `write` and
 keeps the session open; one that may have reached the server raises
 `DeliveryUnknownError` with the delivery state `MAYBE_SENT`, closes the session, and is never sent again. A message is
-written whole: in a `WebSocketSession`, the send timeout bounds the wait for earlier sends and is checked before the
-write starts, and a write that started runs until it completes or the connection fails. A send to a connection the
-server closed raises `WebSocketClosedError`. Sessions never reconnect.
+written whole: in both sessions, the send timeout bounds the wait for earlier sends and is checked before the write
+starts, and a write that started runs until it completes or the connection fails; in an `AsyncWebSocketSession` the
+session deadline also bounds the write, and a write it cuts short raises `DeliveryUnknownError`. A send to a connection
+the server closed raises `WebSocketClosedError`. Sessions never reconnect.
 `WSOptions(compression="deflate")` for a helper that does not permit it raises `ConfigurationError` with the reason
 `invalid_value`. Options of another type raise `ConfigurationError`.
 
