@@ -84,7 +84,6 @@ BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
     "pydantic_v2.dataclass": (PYDANTIC,),
     "msgspec.Struct": ("msgspec>=0.18",),
 }
-_RESPONSE_ROLES: Final = {"response_body": "response body", "response_encoding_header": "part header"}
 _BACKENDS: Final[dict[DataModelType, CodecBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
     DataModelType.PydanticV2Dataclass: "pydantic_v2.dataclass",
