@@ -690,9 +690,9 @@ def _call(head: str, entries: Iterable[tuple[str, Doc]]) -> Group:
 
 
 def _wire(value: object) -> object:
-    """Return a JSON value as a wire value, whose arrays are tuples."""
+    """Keep helper literals as ordinary JSON arrays and objects."""
     if isinstance(value, list):
-        return tuple(map(_wire, value))
+        return list(map(_wire, value))
     return {key: _wire(item) for key, item in value.items()} if isinstance(value, dict) else value
 
 
