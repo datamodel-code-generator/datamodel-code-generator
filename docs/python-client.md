@@ -89,9 +89,11 @@ delivery IDs, namespaces, operation references, entry IDs, and causes; callers m
 
 ## Protocol contracts
 
-Generated packages also expose the shared contracts of pagination, polling, stream, cache, and upload helpers.
-Records, options, cache stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`;
-exceptions come from `pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no
+Generated packages also expose the shared contracts of the pagination, polling, stream, WebSocket, cache, upload, and
+webhook helpers they declare, and copy only the runtime modules those helpers, the declared security schemes, and the
+model backend need. Records, options, cache stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions`
+and `SessionOptions` come from `pkg.options` when a helper is declared; exceptions come from `pkg.errors`, each with the
+helper that raises it. These imports need no HTTP library and start no threads. A client that uses no
 protocol settings
 loads none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
 helpers that use these contracts are still being implemented; constructing a record or option sends nothing.
@@ -3295,8 +3297,11 @@ serves anonymous and single-requirement operations. Selection stays fixed for th
 unknown, unavailable, or of the wrong material kind fail before a provider callback or send. Unused unsupported or
 unresolved scheme declarations do not prevent generation, but configuring one does not make it usable.
 
-The generated `auth` module exports `AuthConfig`, credential values, provider Protocols, static/environment providers,
-and signer Protocols. `ClientOptions.auth` and `RequestOptions.auth` default to `UNSET`; an `AuthConfig` replaces the
+The generated `auth` module exports `AuthConfig`, provider Protocols, static/environment providers, and signer
+Protocols, with the credential values and providers of the schemes the API declares: `ApiKeyCredential` for an API key,
+`BasicCredential` for HTTP basic, `BearerCredential`, `AccessToken`, and the token providers for a bearer, OAuth 2, or
+OpenID Connect scheme, the client credentials providers for an OAuth 2 `clientCredentials` flow, and the refresh-token
+providers for its other flows and for OpenID Connect. `ClientOptions.auth` and `RequestOptions.auth` default to `UNSET`; an `AuthConfig` replaces the
 inherited configuration as a whole and preserves provider identity. `auth=None` disables inherited credentials and
 signers; it cannot make a required operation anonymous. No environment variables or credentials are discovered by default.
 

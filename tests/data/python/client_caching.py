@@ -703,6 +703,11 @@ async def _async_memory(cache: Caching, lines: list[str]) -> None:
     lines.append(f"  async memory deleted {await store.get(b'k')}")
 
 
+def _runtime(package: ModuleType, name: str) -> ModuleType:
+    """Return a runtime module for the types of a kind or flow this package copies but does not export."""
+    return importlib.import_module(f"{package.__name__}._runtime.{name}")
+
+
 def _settings(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:
     """Refuse stores and defaults the package or the client's mode cannot use, and fetches without a store."""
     package, protocols, options = cache.package, cache.protocols, cache.options
@@ -721,7 +726,10 @@ def _settings(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
         )
     for label, defaults in (
         ("session defaults", protocols.ProtocolDefaults(session=options.SessionOptions(max_network_sends=1))),
-        ("pagination defaults", protocols.ProtocolDefaults(options=protocols.PaginationOptions(max_pages=1))),
+        (
+            "pagination defaults",
+            protocols.ProtocolDefaults(options=_runtime(package, "protocols.options").PaginationOptions(max_pages=1)),
+        ),
     ):
         protocol = options.ProtocolClientOptions(defaults={"users.profile": defaults})
         record(
@@ -745,7 +753,9 @@ def _settings(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
     fetched(lines, "call entry limit", lambda: helper.fetch(user_id=three, cache_options=raised))
     fetched(lines, "call entry limit hit", lambda: helper.fetch(user_id=three, cache_options=raised))
     fetched(
-        lines, "pagination options", lambda: helper.fetch(user_id=three, cache_options=protocols.PaginationOptions())
+        lines,
+        "pagination options",
+        lambda: helper.fetch(user_id=three, cache_options=_runtime(package, "protocols.options").PaginationOptions()),
     )
     fetched(lines, "text options", lambda: helper.fetch(user_id=three, options="x"))
     client.close()
@@ -916,8 +926,8 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         fetched(lines, "vary on a signed header", lambda: signer.protocols.secure.profile.fetch(user_id=three))
         fetched(lines, "vary on a signed header again", lambda: signer.protocols.secure.profile.fetch(user_id=three))
     failing = Recording(protocols.MemoryCacheStore(), lines)
-    secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("secret"))
-    with auth.ClientCredentialsProvider(
+    secret = auth.StaticCredentialProvider(_runtime(package, "client.auth").ApiKeyCredential("secret"))
+    with _runtime(package, "client.grants").ClientCredentialsProvider(
         "https://auth.example.com/token", client_id="c", client_secret=secret, audience="api"
     ) as oauth:
         signed = auth.AuthConfig({"bearer": oauth}, signers=(_Signer(auth),))
@@ -986,8 +996,10 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
         await afetched(lines, "async on behalf of u again", lambda: delegated.fetch(user_id=secure_user))
     failing = AsyncRecording(protocols.MemoryCacheStore(), lines)
     failing.faults["get"] = OSError("down")
-    secret = auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("secret"))
-    oauth = auth.AsyncClientCredentialsProvider("https://auth.example.com/token", client_id="c", client_secret=secret)
+    secret = auth.AsyncStaticCredentialProvider(_runtime(package, "client.auth").ApiKeyCredential("secret"))
+    oauth = _runtime(package, "client.grants").AsyncClientCredentialsProvider(
+        "https://auth.example.com/token", client_id="c", client_secret=secret
+    )
     protocol = options.ProtocolClientOptions(
         security=protocols.ProtocolSecurityContext(credential_partition="tenant"),
         cache_stores={"secure.profile": failing},

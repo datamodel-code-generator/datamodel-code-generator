@@ -1,4 +1,4 @@
-# pets pydantic_v2.BaseModel
+# pets-protocols pydantic_v2.BaseModel
   client imports load protocols=['_runtime.protocols.names', '_runtime.protocols.references']
   dir lists lazy names=(True, True, True, True)
   dir loads nothing=True
@@ -10,7 +10,7 @@
   pagination loaded with contracts=False
   pagination types=(True, True, True)
   pagination optional imports=[]
-  client protocols=False
+  client protocols=True
   option identities=(True, True)
   resume round trip=True
   construction threads unchanged=True
@@ -445,11 +445,11 @@
   client protocols security ! ConfigurationError: ConfigurationError(field_path='protocols', condition='invalid_type') [field_path=('protocols',), condition='invalid_type'] configuration_error
   request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
-  unknown options attribute ! AttributeError: module 'pets_pydantic_v2_basemodel.options' has no attribute 'MissingProtocolType' []
+  unknown options attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.options' has no attribute 'MissingProtocolType' []
   options dir = ['ProtocolClientOptions']
-  unknown errors attribute ! AttributeError: module 'pets_pydantic_v2_basemodel.errors' has no attribute 'MissingProtocolType' []
+  unknown errors attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolConfigurationError', 'ProtocolDataError', 'ProtocolError', 'ProtocolSizeError', 'ProtocolStateError', 'ProtocolStoreError']
-  unknown names attribute ! AttributeError: module 'pets_pydantic_v2_basemodel._runtime.protocols.names' has no attribute 'MissingProtocolType' []
+  unknown names attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel._runtime.protocols.names' has no attribute 'MissingProtocolType' []
   names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'defaults', 'users.all'), condition='unknown_field'] protocol_configuration_error
   > GET https://api.example.com/v1/pets
@@ -465,7 +465,7 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = FieldPetsGetResponse(root=[Pet(id=2, name='dog', tag=None)])
-# pets pydantic_v2.dataclass
+# pets-protocols pydantic_v2.dataclass
   client imports load protocols=['_runtime.protocols.names', '_runtime.protocols.references']
   dir lists lazy names=(True, True, True, True)
   dir loads nothing=True
@@ -477,7 +477,7 @@
   pagination loaded with contracts=False
   pagination types=(True, True, True)
   pagination optional imports=[]
-  client protocols=False
+  client protocols=True
   option identities=(True, True)
   resume round trip=True
   construction threads unchanged=True
@@ -912,11 +912,11 @@
   client protocols security ! ConfigurationError: ConfigurationError(field_path='protocols', condition='invalid_type') [field_path=('protocols',), condition='invalid_type'] configuration_error
   request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
-  unknown options attribute ! AttributeError: module 'pets_pydantic_v2_dataclass.options' has no attribute 'MissingProtocolType' []
+  unknown options attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.options' has no attribute 'MissingProtocolType' []
   options dir = ['ProtocolClientOptions']
-  unknown errors attribute ! AttributeError: module 'pets_pydantic_v2_dataclass.errors' has no attribute 'MissingProtocolType' []
+  unknown errors attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolConfigurationError', 'ProtocolDataError', 'ProtocolError', 'ProtocolSizeError', 'ProtocolStateError', 'ProtocolStoreError']
-  unknown names attribute ! AttributeError: module 'pets_pydantic_v2_dataclass._runtime.protocols.names' has no attribute 'MissingProtocolType' []
+  unknown names attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass._runtime.protocols.names' has no attribute 'MissingProtocolType' []
   names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'defaults', 'users.all'), condition='unknown_field'] protocol_configuration_error
   > GET https://api.example.com/v1/pets
@@ -932,7 +932,7 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [Pet(id=2, name='dog', tag=None)]
-# pets dataclasses.dataclass
+# pets-protocols dataclasses.dataclass
   client imports load protocols=['_runtime.protocols.names', '_runtime.protocols.references']
   dir lists lazy names=(True, True, True, True)
   dir loads nothing=True
@@ -944,7 +944,7 @@
   pagination loaded with contracts=False
   pagination types=(True, True, True)
   pagination optional imports=[]
-  client protocols=False
+  client protocols=True
   option identities=(True, True)
   resume round trip=True
   construction threads unchanged=True
@@ -1379,11 +1379,11 @@
   client protocols security ! ConfigurationError: ConfigurationError(field_path='protocols', condition='invalid_type') [field_path=('protocols',), condition='invalid_type'] configuration_error
   request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
-  unknown options attribute ! AttributeError: module 'pets_dataclasses_dataclass.options' has no attribute 'MissingProtocolType' []
+  unknown options attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.options' has no attribute 'MissingProtocolType' []
   options dir = ['ProtocolClientOptions']
-  unknown errors attribute ! AttributeError: module 'pets_dataclasses_dataclass.errors' has no attribute 'MissingProtocolType' []
+  unknown errors attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolConfigurationError', 'ProtocolDataError', 'ProtocolError', 'ProtocolSizeError', 'ProtocolStateError', 'ProtocolStoreError']
-  unknown names attribute ! AttributeError: module 'pets_dataclasses_dataclass._runtime.protocols.names' has no attribute 'MissingProtocolType' []
+  unknown names attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass._runtime.protocols.names' has no attribute 'MissingProtocolType' []
   names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'defaults', 'users.all'), condition='unknown_field'] protocol_configuration_error
   > GET https://api.example.com/v1/pets
@@ -1399,7 +1399,7 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [Pet(id=2, name='dog', tag=None)]
-# pets typing.TypedDict
+# pets-protocols typing.TypedDict
   client imports load protocols=['_runtime.protocols.names', '_runtime.protocols.references']
   dir lists lazy names=(True, True, True, True)
   dir loads nothing=True
@@ -1411,7 +1411,7 @@
   pagination loaded with contracts=False
   pagination types=(True, True, True)
   pagination optional imports=[]
-  client protocols=False
+  client protocols=True
   option identities=(True, True)
   resume round trip=True
   construction threads unchanged=True
@@ -1846,11 +1846,11 @@
   client protocols security ! ConfigurationError: ConfigurationError(field_path='protocols', condition='invalid_type') [field_path=('protocols',), condition='invalid_type'] configuration_error
   request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
-  unknown options attribute ! AttributeError: module 'pets_typing_typeddict.options' has no attribute 'MissingProtocolType' []
+  unknown options attribute ! AttributeError: module 'pets_protocols_typing_typeddict.options' has no attribute 'MissingProtocolType' []
   options dir = ['ProtocolClientOptions']
-  unknown errors attribute ! AttributeError: module 'pets_typing_typeddict.errors' has no attribute 'MissingProtocolType' []
+  unknown errors attribute ! AttributeError: module 'pets_protocols_typing_typeddict.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolConfigurationError', 'ProtocolDataError', 'ProtocolError', 'ProtocolSizeError', 'ProtocolStateError', 'ProtocolStoreError']
-  unknown names attribute ! AttributeError: module 'pets_typing_typeddict._runtime.protocols.names' has no attribute 'MissingProtocolType' []
+  unknown names attribute ! AttributeError: module 'pets_protocols_typing_typeddict._runtime.protocols.names' has no attribute 'MissingProtocolType' []
   names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'defaults', 'users.all'), condition='unknown_field'] protocol_configuration_error
   > GET https://api.example.com/v1/pets
@@ -1866,7 +1866,7 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [{'id': 2, 'name': 'dog'}]
-# pets msgspec.Struct
+# pets-protocols msgspec.Struct
   client imports load protocols=['_runtime.protocols.names', '_runtime.protocols.references']
   dir lists lazy names=(True, True, True, True)
   dir loads nothing=True
@@ -1878,7 +1878,7 @@
   pagination loaded with contracts=False
   pagination types=(True, True, True)
   pagination optional imports=[]
-  client protocols=False
+  client protocols=True
   option identities=(True, True)
   resume round trip=True
   construction threads unchanged=True
@@ -2313,11 +2313,11 @@
   client protocols security ! ConfigurationError: ConfigurationError(field_path='protocols', condition='invalid_type') [field_path=('protocols',), condition='invalid_type'] configuration_error
   request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
-  unknown options attribute ! AttributeError: module 'pets_msgspec_struct.options' has no attribute 'MissingProtocolType' []
+  unknown options attribute ! AttributeError: module 'pets_protocols_msgspec_struct.options' has no attribute 'MissingProtocolType' []
   options dir = ['ProtocolClientOptions']
-  unknown errors attribute ! AttributeError: module 'pets_msgspec_struct.errors' has no attribute 'MissingProtocolType' []
+  unknown errors attribute ! AttributeError: module 'pets_protocols_msgspec_struct.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolConfigurationError', 'ProtocolDataError', 'ProtocolError', 'ProtocolSizeError', 'ProtocolStateError', 'ProtocolStoreError']
-  unknown names attribute ! AttributeError: module 'pets_msgspec_struct._runtime.protocols.names' has no attribute 'MissingProtocolType' []
+  unknown names attribute ! AttributeError: module 'pets_protocols_msgspec_struct._runtime.protocols.names' has no attribute 'MissingProtocolType' []
   names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'defaults', 'users.all'), condition='unknown_field'] protocol_configuration_error
   > GET https://api.example.com/v1/pets
