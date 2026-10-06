@@ -1,2 +1,2 @@
-matching: built
-model-for-dataclass: CodecConfigurationError The native type of models:Pet does not match its binding
+matching: native app routes=4
+model-for-dataclass: native app routes=4 models={'models:Pet': 'AliasPet'}

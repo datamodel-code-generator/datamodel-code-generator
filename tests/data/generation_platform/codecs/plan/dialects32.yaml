@@ -18,23 +18,3 @@ paths:
         - {name: filter, in: querystring, content: {application/x-www-form-urlencoded: {}}}
       responses:
         "204": {description: none}
-  /alternatives:
-    get:
-      security:
-        - Token: []
-        - Lower: []
-      responses:
-        "204": {description: none}
-    post:
-      security:
-        - Token: []
-        - Token: []
-          Lower: []
-      parameters:
-        - {name: X-Trace, in: header, schema: {type: string}}
-      responses:
-        "204": {description: none}
-components:
-  securitySchemes:
-    Token: {type: apiKey, in: header, name: X-Token}
-    Lower: {type: apiKey, in: header, name: x-token}

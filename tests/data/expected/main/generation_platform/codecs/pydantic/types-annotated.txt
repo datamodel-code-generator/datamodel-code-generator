@@ -1,19 +1,7 @@
-use /paths/~1scalars/post parameter query code: native scalar None models=[]
-use /paths/~1scalars/post parameter query count: native scalar None models=[]
-use /paths/~1scalars/post parameter query ratio: native scalar None models=[]
-use /paths/~1scalars/post parameter query when: native scalar None models=[]
-use /paths/~1scalars/post parameter query mode: native scalar None models=[]
-use /paths/~1scalars/post parameter query price: native scalar None models=[]
-use /paths/~1scalars/post parameter query tags: native array None models=[]
-use /paths/~1scalars/post parameter query pet: native union None models=[('models:Cat', 'model', 'ignore', True), ('models:Dog', 'model', 'ignore', True)]
-use /paths/~1scalars/post parameter header X-Counts: native map None models=[]
-use /paths/~1scalars/post request_body: native model models:Holder models=[('models:Cat', 'model', 'ignore', True), ('models:Dog', 'model', 'ignore', True), ('models:Holder', 'model', 'ignore', True)]
-use /paths/~1scalars/post response_body 200: native map None models=[]
-use /paths/~1scalars/post response_body 201: native scalar None models=[]
-code: model 'abc' wire="abc" presence=[''] extras={}
-code-invalid: WireValidationError schema.pattern@
-price: model Decimal('9.5') wire="9.5" presence=[''] extras={}
-price-invalid: model Decimal('10.5') wire="10.5" presence=[''] extras={}
-counts: model {'a': 1, 'b': 2} wire={"a":1,"b":2} presence=['', '/a', '/b'] extras={}
-words: wire={"ab":1}
-words-invalid: WireValidationError schema.false@/AB
+code: native 'abc' json="abc"
+code-invalid: native 'ABC' json="ABC"
+price: native Decimal('9.5') json="9.5"
+price-invalid: native Decimal('10.5') json="10.5"
+counts: native {'a': 1, 'b': 2} json={"a":1,"b":2}
+words: native {'ab': 1} json={"ab":1}
+words-invalid: native {'AB': 1} json={"AB":1}

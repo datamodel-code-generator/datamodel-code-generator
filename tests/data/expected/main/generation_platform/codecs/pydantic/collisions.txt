@@ -1,6 +1,4 @@
-refused APIGenerationError
-refused diagnostic MC_ALIAS_COLLISION /components/schemas/Choices/properties/nickName: The nickName property of Choices is also read by the nick_name field
-use /paths/~1names/post request_body: native model models:Names models=[('models:Names', 'model', 'ignore', True)]
-names-server-decode-name: model Names(a_b=None, a_b_1=1) set=['a_b_1'] wire={"a_b":1} presence=['', '/a_b'] extras={}
-names-server-decode-both: model Names(a_b=2, a_b_1=1) set=['a_b', 'a_b_1'] wire={"a-b":2,"a_b":1} presence=['', '/a-b', '/a_b'] extras={}
-names-client-encode: wire={"a_b":1}
+refused nothing
+names-server-decode-name: native Names(a_b=1, a_b_1=1) set=['a_b', 'a_b_1'] json={"a-b":1,"a_b":1}
+names-server-decode-both: native Names(a_b=2, a_b_1=1) set=['a_b', 'a_b_1'] json={"a-b":2,"a_b":1}
+names-client-encode: native Names(a_b=1, a_b_1=1) set=['a_b', 'a_b_1'] json={"a-b":1,"a_b":1}

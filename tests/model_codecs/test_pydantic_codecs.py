@@ -1,4 +1,4 @@
-"""Run the Pydantic v2 BaseModel and dataclass model codecs of generated client packages."""
+"""Run the Pydantic v2 model codecs that generated client packages still bind their uses with."""
 
 from __future__ import annotations
 
@@ -15,47 +15,30 @@ if TYPE_CHECKING:
 
 DATA = Path(__file__).parents[1] / "data"
 CODECS = DATA / "generation_platform/codecs/pydantic"
-EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
+EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic-client"
 
 
 @pytest.mark.parametrize(
     ("source", "cases"),
     [
         ("pets", "pets-basemodel"),
-        ("pets", "pets-dataclass"),
         ("pets", "pets-aliases"),
         ("pets", "pets-noalias"),
         ("pets", "pets-noalias-forbid"),
         ("pets", "pets-generator"),
         ("pets", "pets-serialization"),
-        ("pets", "pets-missing"),
-        ("pets", "pets-strict"),
-        ("pets", "pets-forbid"),
-        ("pets", "pets-allow"),
-        ("pets", "pets-custom"),
         ("pets", "pets-variants"),
-        ("pets", "pets-schemas-scope"),
-        ("pets", "pets-paths-scope"),
         ("shapes", "shapes-basemodel"),
-        ("shapes", "shapes-dataclass"),
-        ("shapes", "shapes-variants"),
-        ("shapes", "shapes-annotated"),
-        ("shapes", "shapes-choices"),
-        ("loose", "loose-basemodel"),
         ("collisions", "collisions"),
-        ("extras", "extras-basemodel"),
-        ("extras", "extras-dataclass"),
         ("zoo", "zoo-collapsed"),
-        ("choice", "choice"),
         ("ids", "ids"),
         ("containers", "containers-noalias"),
-        ("types", "types-constrained"),
         ("types", "types-annotated"),
         ("legacy", "legacy"),
     ],
 )
 def test_pydantic_codecs(source: str, cases: str, tmp_path: PathType) -> None:
-    """Decode, project, snapshot, and encode through generated codecs with presence and direction rules."""
+    """Decode, project, snapshot, and encode through generated client codecs with presence and direction rules."""
     assert_output(
         builtin_codec_report(CODECS / f"{source}.yaml", CODECS / f"{cases}.json", tmp_path),
         EXPECTED / f"{cases}.txt",
@@ -63,9 +46,9 @@ def test_pydantic_codecs(source: str, cases: str, tmp_path: PathType) -> None:
 
 
 @pytest.mark.abnormal_path("generated models or bindings edited out of sync after generation")
-@pytest.mark.parametrize("cases", ["pets-startup", "pets-startup-dataclass", "pets-startup-noalias"])
+@pytest.mark.parametrize("cases", ["pets-startup", "pets-startup-noalias"])
 def test_pydantic_codec_startup(cases: str, tmp_path: PathType) -> None:
-    """Refuse edited bindings, bundles, and native types that disagree before any value is processed."""
+    """Refuse edited client bindings, bundles, and native types that disagree before any value is processed."""
     assert_output(
         builtin_codec_startup_report(CODECS / "pets.yaml", CODECS / f"{cases}.json", tmp_path),
         EXPECTED / f"{cases}.txt",

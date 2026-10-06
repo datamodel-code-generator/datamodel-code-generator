@@ -1,4 +1,4 @@
-native-gap: ModelProjectionError The native use has an unplanned projection gap at /id
-envelope-gap: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new","nick-name":"Mi"} extras={}
-patch-target: CodecConfigurationError A directional view patches no bundled required keyword in https://dcg.invalid/inputs/root
-native-gap-convert: ModelProjectionError The native use has an unplanned projection gap at /id
+native-gap: native app routes=4 removed codec-sidecar edits=['binding'] HTTP 422 {"detail":[{"type":"missing","loc":["body","id"],"msg":"Field required","input":{"name":"Mimi","status":"new","nick-name":"Mi"}}]}
+envelope-gap: native app routes=4 removed codec-sidecar edits=['binding'] HTTP 422 {"detail":[{"type":"missing","loc":["body","id"],"msg":"Field required","input":{"name":"Mimi","status":"new","nick-name":"Mi"}}]}
+patch-target: native app routes=4 removed codec-sidecar edits=['patch'] HTTP 422 {"detail":[{"type":"missing","loc":["body","id"],"msg":"Field required","input":{"name":"Mimi","status":"new"}}]}
+native-gap-convert: native app routes=4 removed codec-sidecar edits=['binding'] ValidationError missing@['id']
