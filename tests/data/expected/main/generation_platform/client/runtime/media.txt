@@ -80,6 +80,35 @@
   > PUT https://media.example.com/api/files
     [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   replace file without a body = None
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  range store_file FilesResource = b'jpeg'
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  range store_file FilesWithResponse = Response(b'jpeg', 200, 'image/jpeg', None, [('content-type', 'image/jpeg'), ('content-length', '4')])
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  range store_file raw = b'jpeg'
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  range store_file streaming = b'jpeg'
+  response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  range bodyless = None
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  async range store_file AsyncFilesResource = b'jpeg'
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  async range store_file AsyncFilesWithResponse = Response(b'jpeg', 200, 'image/jpeg', None, [('content-type', 'image/jpeg'), ('content-length', '4')])
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  async range store_file raw = b'jpeg'
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  async range store_file streaming = b'jpeg'
+  async response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
 # media dataclasses.dataclass
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
@@ -162,3 +191,32 @@
   > PUT https://media.example.com/api/files
     [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   replace file without a body = None
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  range store_file FilesResource = b'jpeg'
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  range store_file FilesWithResponse = Response(b'jpeg', 200, 'image/jpeg', None, [('content-type', 'image/jpeg'), ('content-length', '4')])
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  range store_file raw = b'jpeg'
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  range store_file streaming = b'jpeg'
+  response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  range bodyless = None
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  async range store_file AsyncFilesResource = b'jpeg'
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  async range store_file AsyncFilesWithResponse = Response(b'jpeg', 200, 'image/jpeg', None, [('content-type', 'image/jpeg'), ('content-length', '4')])
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  async range store_file raw = b'jpeg'
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
+  async range store_file streaming = b'jpeg'
+  async response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
