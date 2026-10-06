@@ -34,44 +34,5 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['scope.inline'] bindings 2
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper scope.inline websocket enabled True /inputs/target_config/protocol_metadata/helpers/scope.inline 976d022c5c84fe4061028039b6875adce2e31fb58b53fbbea6fef11726948e25
-  {
-    "helpers": {
-      "scope.inline": {
-        "compression": false,
-        "enabled": true,
-        "kind": "websocket",
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1chat/get"
-        },
-        "receive": {
-          "codec": "utf8",
-          "frame": "text"
-        },
-        "send": {
-          "codec": "json",
-          "frame": "text",
-          "schema": {
-            "document": "/inputs/root",
-            "pointer": "/paths/~1upload/get/requestBody/content/application~1json/schema"
-          }
-        },
-        "subprotocols": []
-      }
-    },
-    "schema_version": 1
-  }
-  /selection/selected_operations/0 chat.chat_socket()
-    exports client.types.chat.ChatSocketResponse client.types.chat.ChatSocketErrorData client.types.chat.ChatSocketHTTPError
-    exports None
-  /selection/selected_operations/1 chat.post_chat()
-    exports client.types.chat.PostChatResponse client.types.chat.PostChatErrorData client.types.chat.PostChatHTTPError
-    exports None
-  /selection/selected_operations/2 upload.upload_socket()
-    exports client.types.upload.UploadSocketResponse client.types.upload.UploadSocketErrorData client.types.upload.UploadSocketHTTPError
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'websockets>=17.1', 'pydantic>=2.13.5']

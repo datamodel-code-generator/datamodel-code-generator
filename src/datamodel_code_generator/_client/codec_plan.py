@@ -10,7 +10,9 @@ from urllib.parse import unquote, urldefrag, urljoin
 
 from datamodel_code_generator._codec_type_source import type_reason
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
+from datamodel_code_generator._python_type_annotation import render_python_type_expr
 from datamodel_code_generator._target_contract import (
+    BoundType,
     BuiltinType,
     GeneratedEnumMember,
     GeneratedSymbolType,
@@ -68,7 +70,18 @@ _LEAVES: Final = frozenset({
     "decimal.Decimal",
     "uuid.UUID",
 })
-_PLAIN: Final = frozenset({"str", "int", "float", "bool", "object", "typing.Any", "list", "dict"})
+_PLAIN: Final = frozenset({
+    "str",
+    "int",
+    "float",
+    "bool",
+    "object",
+    "typing.Any",
+    "typing_extensions.Any",
+    "types.NoneType",
+    "list",
+    "dict",
+})
 _ALL_KINDS: Final[tuple[JSONKind, ...]] = ("object", "array", "string", "number", "boolean")
 _JSON_KINDS: Final[dict[str | None, tuple[JSONKind, ...]]] = {
     **dict.fromkeys(_MAPPINGS | {"dict"}, ("object",)),
@@ -208,8 +221,17 @@ class _Planner:
             )
         )
 
-    def unsupported(self, value: FinalPythonType) -> None:
-        self.report(f"The {self.backend} converter has no conversion for the {_name(value) or value!s} type")
+    def label(self, value: FinalPythonType) -> str:
+        if isinstance(value, GeneratedSymbolType):
+            return self.symbols[value.symbol].name
+        if isinstance(value, BoundType):
+            return render_python_type_expr(value.binding.expression)
+        if isinstance(value, GenericType):
+            return f"{self.label(value.base)}[{', '.join(map(self.label, value.arguments))}]"
+        return _name(value) or type(value).__name__
+
+    def unsupported(self, value: FinalPythonType, schema: SourceLocation | None) -> None:
+        self.report(f"The {self.backend} converter has no conversion for the {self.label(value)} type", schema)
 
     def shape(self, value: FinalPythonType, schema: SourceLocation | None) -> Shape:  # ruff: ignore[too-many-return-statements, too-many-branches]
         if isinstance(value, NoneType):
@@ -258,13 +280,15 @@ class _Planner:
             name = _name(value.base)
             if name in _MAPPINGS and len(value.arguments) == _PAIR:
                 key, item = value.arguments
-                if _name(key) not in {"str", "object", "typing.Any"}:
-                    self.report(f"The {_name(key)} key type has no {self.backend} conversion")
+                if _name(key) not in {"str", "object", "typing.Any", "typing_extensions.Any"}:
+                    self.report(f"The {self.label(key)} key type has no {self.backend} conversion", schema)
                 nested = self.shape(item, self.child(schema, "additionalProperties"))
                 return None if nested is None else Values(nested)
             if name in _SEQUENCES and len(value.arguments) == 1:
                 item = self.shape(value.arguments[0], self.child(schema, "items"))
                 return None if item is None and _SEQUENCES[name] == "list" else Items(item, _SEQUENCES[name])
+            if not value.arguments and (name in _MAPPINGS or _SEQUENCES.get(name or "") == "list"):
+                return None
         if isinstance(value, LiteralType):
             enums = [item for item in value.values if isinstance(item, GeneratedEnumMember)]
             return Class(GeneratedSymbolType(enums[0].symbol)) if enums else None
@@ -272,7 +296,7 @@ class _Planner:
             return None
         if _name(value) in _LEAVES:
             return Class(value)
-        self.unsupported(value)
+        self.unsupported(value, schema)
         return None
 
     def root(self, symbol: SymbolId) -> FinalPythonType:

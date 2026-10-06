@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from ..client.operations import InboundModelCodec
-    from ..model_codecs.plain import JSONValue
+    from ..model_codecs.media import JSONValue
 
 __all__ = (
     "EventDecoder",

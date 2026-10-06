@@ -1,37 +1,313 @@
 # input-cycles
 render
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  write target server/__init__.py (target)
+  write target server/application.py (target)
+  write target server/routers/__init__.py (target)
+  write target server/routers/untagged.py (target)
+  write target server/_generated/__init__.py (target)
+  write target server/_generated/contract.py (target)
+  write target server/errors.py (target)
+  write target server/services.py (target)
+  write target server/README.md (target)
+  write target server/py.typed (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  11 runtime modules ['write']
 tree
 generate
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  written target server/__init__.py (target)
+  written target server/application.py (target)
+  written target server/routers/__init__.py (target)
+  written target server/routers/untagged.py (target)
+  written target server/_generated/__init__.py (target)
+  written target server/_generated/contract.py (target)
+  written target server/errors.py (target)
+  written target server/services.py (target)
+  written target server/README.md (target)
+  written target server/py.typed (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+  11 runtime modules ['written']
 tree
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
 render
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/services.py (target)
+  write target server/README.md (target)
+  unchanged target server/py.typed (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  11 runtime modules ['unchanged']
 tree
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
 generate
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  written target server/README.md (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/services.py (target)
+  unchanged target server/py.typed (target)
+  11 runtime modules ['unchanged']
 tree
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
 render
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/services.py (target)
+  write target server/README.md (target)
+  unchanged target server/py.typed (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  11 runtime modules ['unchanged']
 tree
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
 generate
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  written target server/README.md (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/services.py (target)
+  unchanged target server/py.typed (target)
+  11 runtime modules ['unchanged']
 tree
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
 render
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/services.py (target)
+  write target server/README.md (target)
+  unchanged target server/py.typed (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  11 runtime modules ['unchanged']
 tree
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
 generate
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  written target server/README.md (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/services.py (target)
+  unchanged target server/py.typed (target)
+  11 runtime modules ['unchanged']
 tree
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
 render
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/services.py (target)
+  write target server/README.md (target)
+  unchanged target server/py.typed (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  11 runtime modules ['unchanged']
 tree
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
 generate
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  written target server/README.md (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/services.py (target)
+  unchanged target server/py.typed (target)
+  11 runtime modules ['unchanged']
 tree
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
 render
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/services.py (target)
+  write target server/README.md (target)
+  unchanged target server/py.typed (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  11 runtime modules ['unchanged']
 tree
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']
 generate
-  cyclic YAML input rejected
+  target=fastapi schema_version=1
+  written target server/README.md (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/services.py (target)
+  unchanged target server/py.typed (target)
+  11 runtime modules ['unchanged']
 tree
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/application.py
+  server/errors.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  11 runtime modules ['present']

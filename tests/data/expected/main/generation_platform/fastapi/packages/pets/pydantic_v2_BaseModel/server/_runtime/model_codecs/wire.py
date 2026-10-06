@@ -15,11 +15,10 @@ from typing_extensions import TypeAliasType, TypeIs
 if TYPE_CHECKING:
     from typing import TypeAlias
 
-    from .plain import JSONValue as NativeJSON
-
     JSONScalar: TypeAlias = bool | str | int | float | Decimal | None
     JSONValue: TypeAlias = JSONScalar | list["JSONValue"] | tuple["JSONValue", ...] | dict[str, "JSONValue"]
-    WireValue: TypeAlias = NativeJSON | JSONScalar | tuple["WireValue", ...] | Mapping[str, "WireValue"]
+    PlainJSON: TypeAlias = bool | int | float | str | list["PlainJSON"] | dict[str, "PlainJSON"] | None
+    WireValue: TypeAlias = PlainJSON | JSONScalar | tuple["WireValue", ...] | Mapping[str, "WireValue"]
 else:
     JSONScalar = TypeAliasType("JSONScalar", "bool | str | int | float | Decimal | None")
     JSONValue = TypeAliasType(

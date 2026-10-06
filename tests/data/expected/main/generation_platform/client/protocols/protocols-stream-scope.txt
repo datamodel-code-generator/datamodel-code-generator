@@ -39,43 +39,5 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['scope.member'] bindings 8
-  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper scope.member sse enabled True /inputs/target_config/protocol_metadata/helpers/scope.member b103ec2c2a6a5025d4667437204d008cb9cec6cd7c3a7f36b7e228821580055e
-  {
-    "helpers": {
-      "scope.member": {
-        "completion": {
-          "kind": "eof"
-        },
-        "enabled": true,
-        "error_events": {},
-        "event_schema": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1events/get/responses/200/content/text~1event-stream/schema"
-        },
-        "kind": "sse",
-        "media": "text/event-stream",
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1events/get"
-        },
-        "resume": {
-          "enabled": false
-        },
-        "unknown": "error"
-      }
-    },
-    "schema_version": 1
-  }
-  /selection/selected_operations/0 events.stream_events(query:topic=topic, header:Last-Event-ID=last_event_id)
-    exports client.types.events.StreamEventsResponse client.types.events.StreamEventsErrorData client.types.events.StreamEventsHTTPError
-    exports None
-  /selection/selected_operations/1 feed.stream_feed()
-    exports client.types.feed.StreamFeedResponse client.types.feed.StreamFeedErrorData client.types.feed.StreamFeedHTTPError
-    exports None
-  /selection/selected_operations/2 status.get_status()
-    exports client.types.status.GetStatusResponse client.types.status.GetStatusErrorData client.types.status.GetStatusHTTPError
-    exports None
+  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']

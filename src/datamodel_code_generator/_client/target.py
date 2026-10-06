@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Final, cast
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_generation import TargetBinding, TargetRender
+from datamodel_code_generator._api_generation import TargetRender
 from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.caching import plan_caches
@@ -32,8 +32,6 @@ from datamodel_code_generator._client.protocol_plan import (
     helper_metadata,
     helper_problems,
     plan_protocols,
-    protocol_helpers,
-    protocol_metadata,
 )
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
@@ -55,20 +53,17 @@ from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
     from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecBackend
     from datamodel_code_generator._client.pagination import PaginationSpec
-    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
+    from datamodel_code_generator._client.plan import OperationSpec
     from datamodel_code_generator._client.polling import PollingSpec
-    from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.uploads import UploadSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
-    from datamodel_code_generator._runtime.model_codecs.bindings import ConverterStrategy
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
@@ -161,7 +156,7 @@ class ClientTarget:
                     for item in refused
                 )
             )
-        data = _TargetData(plan, config, request, codecs, wire)
+        data = _HelperDigests(request, codecs, wire)
         metadata = helper_metadata(protocols, request)
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
         fingerprints.update((spec.helper.name, data.polling(spec, metadata[spec.helper.name])) for spec in polls)
@@ -185,7 +180,6 @@ class ClientTarget:
         )
         return TargetRender(
             files=renderer.files(),
-            target_data=data.data(protocols, fingerprints),
             dependencies=(
                 *DEPENDENCIES,
                 *((WEBSOCKETS,) if sockets else ()),
@@ -193,8 +187,6 @@ class ClientTarget:
                 *webhook_dependencies(webhooks),
                 *model_dependencies(request.models),
             ),
-            bindings=_bindings(codecs, backend),
-            protocol_metadata=protocol_metadata(metadata, protocols),
         )
 
 
@@ -236,51 +228,14 @@ def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
     )
 
 
-def _bindings(codecs: ClientCodecs, backend: str) -> tuple[TargetBinding, ...]:
-    strategies: dict[str, ConverterStrategy] = {
-        "pydantic": "pydantic_type_adapter",
-        "pydantic_dataclass": "pydantic_type_adapter",
-        "msgspec": "msgspec_convert",
-        "stdlib": "typeddict_structural" if backend == "typing.TypedDict" else "dataclass_structural",
-    }
-    return tuple(
-        TargetBinding(use=item.use, backend=backend, strategy="native", converter_strategy=strategies[item.kind])
-        for item in codecs.uses
-    )
+class _HelperDigests:
+    """Digest each rendered helper's contract closure."""
 
-
-class _TargetData:
-    """Record the client's namespace and each public operation."""
-
-    def __init__(
-        self,
-        plan: ClientPlan,
-        config: ClientGenerationConfig,
-        request: TargetRequest,
-        codecs: ClientCodecs,
-        wire: WirePlan,
-    ) -> None:
-        """Index the selected operations and the import locations of the generated symbols."""
-        self.plan = plan
-        self.config = config
+    def __init__(self, request: TargetRequest, codecs: ClientCodecs, wire: WirePlan) -> None:
+        """Index the import locations of the generated symbols."""
         self.request = request
-        self.codecs = codecs
         self.wire = wire
-        self.selected = {operation.id: index for index, operation in enumerate(request.operations)}
         self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
-
-    def data(self, protocols: Protocols | None, fingerprints: Mapping[str, str]) -> JSONObject:
-        """Return the client manifest data with the target's helpers."""
-        extensions = int(self.config.formatter_settings is not None) + len(self.config.custom_formatters)
-        return {
-            "namespace": self.config.package,
-            "public_api": [self.operation(spec) for spec in self.plan.operations],
-            "protocol_helpers": protocol_helpers(protocols, fingerprints),
-            "runtime_defaults_ref": "/inputs/target_config/runtime_defaults",
-            "selection_ref": "/selection",
-            "binding_refs": [f"/bindings/{index}" for index in range(len(self.codecs.uses))],
-            "extension_refs": [f"/extensions/formatters/{index}" for index in range(extensions)],
-        }
 
     def fingerprint(self, spec: PaginationSpec, settings: JSONValue) -> str:
         """Return the digest of a helper's contract closure: its signature and settings, operation, schema, and page.
@@ -473,26 +428,6 @@ class _TargetData:
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in spec.uses],
         })
-
-    def operation(self, spec: OperationSpec) -> JSONValue:
-        """Return the manifest record of one public operation."""
-        types = f"{self.config.package}.types.{spec.resource}"
-        headers = any(response.headers for response in spec.responses)
-        return {
-            "operation_ref": f"/selection/selected_operations/{self.selected[spec.contract.id]}",
-            "resource": spec.resource,
-            "method": spec.name,
-            "parameters": [
-                {"location": parameter.location, "wire_name": parameter.wire_name, "python_name": parameter.python_name}
-                for parameter in spec.parameters
-            ],
-            "exports": {
-                "response": f"{types}.{spec.pascal}Response",
-                "error_data": f"{types}.{spec.pascal}ErrorData",
-                "http_error": f"{types}.{spec.pascal}HTTPError",
-                "header_decoder": f"{types}.decode_{spec.name}_header" if headers else None,
-            },
-        }
 
     def type(self, use: TypeUseBinding | None) -> str | None:
         """Return a use's final type spelled with the import locations of its names, or None without a schema."""

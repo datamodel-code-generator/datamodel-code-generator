@@ -165,6 +165,7 @@ def render_model_codecs() -> str:
             "errors",
             ("CodecError", "CodecResourceLimitError", "ParameterEncodingError", "WireIssue", "WireValidationError"),
         ),
+        ("media", ("JSONValue",)),
         (
             "parameters",
             (
@@ -176,7 +177,6 @@ def render_model_codecs() -> str:
                 "RawParameter",
             ),
         ),
-        ("plain", ("JSONValue",)),
         ("unset", ("UNSET", "Unset")),
         ("wire", ("WireValue",)),
     )
