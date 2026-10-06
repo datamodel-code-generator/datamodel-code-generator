@@ -1,4 +1,4 @@
-# pets pydantic_v2.BaseModel
+# pets-protocols pydantic_v2.BaseModel
   ProtocolDataError: base=ProtocolError sdk=True reason=protocol_data_error
     chain=['ProtocolDataError', 'ProtocolError', 'SDKError']
     fields=attempt_count,call_id,cause,completed_result,condition,delivery_state,elapsed,helper_id,info,location,operation,operation_id,parent_session_id,reason,secondary_errors

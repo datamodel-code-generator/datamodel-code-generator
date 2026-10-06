@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ._runtime.client.options import (
     ClientOptions,
     Clock,
@@ -16,46 +14,24 @@ from ._runtime.client.options import (
     RequestOptions,
     RetryOptions,
     ServerSelection,
-    SessionOptions,
     TimeoutOptions,
     TransportOptions,
 )
 from ._runtime.model_codecs.unset import UNSET, Unset
 
-if TYPE_CHECKING:
-    from ._runtime.protocols.options import ProtocolClientOptions
-
 __all__ = [
-    "UNSET",
     "ClientOptions",
     "Clock",
     "Deadline",
     "HeaderPatch",
     "IdempotencyKey",
-    "ProtocolClientOptions",
     "QueryPatch",
     "RedirectOptions",
     "RequestOptions",
     "RetryOptions",
     "ServerSelection",
-    "SessionOptions",
     "TimeoutOptions",
     "TransportOptions",
+    "UNSET",
     "Unset",
 ]
-
-
-def __getattr__(name: str) -> object:
-    """Load the protocol helper settings only when their class is requested."""
-    if name == "ProtocolClientOptions":
-        from ._runtime.protocols.options import ProtocolClientOptions
-
-        globals()[name] = ProtocolClientOptions
-        return ProtocolClientOptions
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
-
-
-def __dir__() -> list[str]:
-    """List the module's names, including those loaded on first use."""
-    return sorted({*globals(), *__all__})

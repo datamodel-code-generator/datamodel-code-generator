@@ -1,4 +1,4 @@
-# pets pydantic_v2.BaseModel
+# pets-protocols pydantic_v2.BaseModel
   ProtocolError: base=SDKError sdk=True reason=protocol_error
     fields=attempt_count,call_id,cause,completed_result,delivery_state,elapsed,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors
     context=True/True/True/True/True call=webhook/call-1/session-1

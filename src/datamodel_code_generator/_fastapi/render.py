@@ -104,6 +104,31 @@ _SCHEME_FACTS: Final[dict[SchemeKind, tuple[str, ...]]] = {
 }
 
 
+_SERVER_RUNTIME: Final = (
+    "model_codecs/errors.py",
+    "model_codecs/media.py",
+    "model_codecs/unset.py",
+    "model_codecs/wire.py",
+    "server/application.py",
+    "server/errors.py",
+    "server/responses.py",
+    "server/security.py",
+)
+_INPUT_RUNTIME: Final = ("model_codecs/parameters.py", "server/requests.py")
+
+
+def _reads_inputs(spec: OperationSpec) -> bool:
+    """Return whether an operation reads an input through an adapter or receives an absent one."""
+    if (body := spec.body) is not None and (
+        body.decision.transport == "adapter" or (body.decision.transport == "fastapi_native" and not body.required)
+    ):
+        return True
+    return any(
+        argument.kind == "adapter" or (argument.native is not None and argument.native.default is Default.ABSENT)
+        for argument in spec.arguments
+    )
+
+
 def _python(value: object) -> str:
     """Return a Python literal for a finite configuration or schema value."""
     return repr(thaw_wire(checked_wire(value)))
@@ -299,7 +324,7 @@ class ServerRenderer:  # noqa: PLR0904
             RenderedFile(path=PurePosixPath("README.md"), kind="readme", text=self.readme()),
         )
         extras = tuple(self.extras())
-        runtime = tuple(self.runtime((*files, *extras)))
+        runtime = tuple(self.runtime())
         if extras:
             self.placed((*files, *runtime), extras)
         return (*files, *extras, *runtime)
@@ -345,9 +370,10 @@ class ServerRenderer:  # noqa: PLR0904
             standalone=config.package_mode == "standalone",
         )
 
-    def runtime(self, files: tuple[RenderedFile, ...]) -> Iterator[RenderedFile]:
-        """Copy the runtime modules the package imports, with their own imports, in ascending path order."""
-        for path, text in runtime_sources(file.text for file in files):
+    def runtime(self) -> Iterator[RenderedFile]:
+        """Copy the server runtime, with the request adapters when an operation reads or omits an input through them."""
+        inputs = _INPUT_RUNTIME if any(map(_reads_inputs, self.plan.operations)) else ()
+        for path, text in runtime_sources((*_SERVER_RUNTIME, *inputs)):
             yield self.file(path, "runtime", text, verbatim=True)
 
     def application(self) -> str:

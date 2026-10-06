@@ -177,6 +177,7 @@ class ClientTarget:
             sockets=sockets,
             fingerprints=fingerprints,
             webhooks=partial(webhook_files, webhooks, dict(codecs.imports)),
+            signatures=frozenset(spec.helper.tree["signature"]["kind"] for spec in webhooks),
         )
         return TargetRender(
             files=renderer.files(),

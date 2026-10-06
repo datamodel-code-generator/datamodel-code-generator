@@ -24,7 +24,7 @@ def test_client_typing_no_success(backend: DataModelType, case: str, tmp_path: P
     assert_output(client_typing_report(tmp_path, backend, case, ()), EXPECTED / "no-success.txt")
 
 
-@pytest.mark.parametrize("case", ["pets", "pets-unpack"])
+@pytest.mark.parametrize("case", ["pets-protocols", "pets-protocols-unpack"])
 @pytest.mark.parametrize(
     "backend",
     [
@@ -42,7 +42,7 @@ def test_client_typing(backend: DataModelType, case: str, tmp_path: Path) -> Non
     """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    suffix = case.removeprefix("pets")
+    suffix = case.removeprefix("pets-protocols")
     assert_output(
         client_typing_report(tmp_path, backend, case), EXPECTED / f"{backend.value.replace('.', '-')}{suffix}.txt"
     )

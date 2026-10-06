@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass, replace
 from functools import cached_property
 from pathlib import PurePosixPath
+from textwrap import fill
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_generation import RenderedFile
@@ -17,6 +18,12 @@ from datamodel_code_generator._client.codec_render import render_model_bindings,
 from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
+from datamodel_code_generator._client.runtime import (
+    Capabilities,
+    declared_backends,
+    declared_helpers,
+    declared_security,
+)
 from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._python_layout import Doc, Group, layout
@@ -45,6 +52,7 @@ if TYPE_CHECKING:
         ResponseSpec,
         ServerSpec,
     )
+    from datamodel_code_generator._client.runtime import Helper, Security
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._openapi_wire_plan import WirePlan
@@ -106,51 +114,26 @@ __all__ = [
     "Hook", "Limiter", "LimiterContext", "Permit", "RetryReason",
 ]
 '''
-_OPTIONS: Final = '''"""Settings of the clients and of each call: UNSET inherits, and each field defines its None."""
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-from ._runtime.client.options import (
-    ClientOptions,
-    Clock,
-    Deadline,
-    HeaderPatch,
-    IdempotencyKey,
-    QueryPatch,
-    RedirectOptions,
-    RequestOptions,
-    RetryOptions,
-    ServerSelection,
-    SessionOptions,
-    TimeoutOptions,
-    TransportOptions,
-)
-from ._runtime.model_codecs.unset import UNSET, Unset
-
-if TYPE_CHECKING:
-    from ._runtime.protocols.options import ProtocolClientOptions
-
-__all__ = [
-    "UNSET",
+_OPTION_NAMES: Final = (
     "ClientOptions",
     "Clock",
     "Deadline",
     "HeaderPatch",
     "IdempotencyKey",
-    "ProtocolClientOptions",
     "QueryPatch",
     "RedirectOptions",
     "RequestOptions",
     "RetryOptions",
     "ServerSelection",
-    "SessionOptions",
     "TimeoutOptions",
     "TransportOptions",
-    "Unset",
-]
+)
+_PROTOCOL_OPTIONS: Final = """
 
+if TYPE_CHECKING:
+    from ._runtime.protocols.options import ProtocolClientOptions
+"""
+_PROTOCOL_OPTIONS_LOADER: Final = '''
 
 def __getattr__(name: str) -> object:
     """Load the protocol helper settings only when their class is requested."""
@@ -167,50 +150,131 @@ def __dir__() -> list[str]:
     """List the module's names, including those loaded on first use."""
     return sorted({*globals(), *__all__})
 '''
+
+
+def _paragraph(*sentences: str) -> str:
+    """Return sentences as one paragraph of the runtime reference, wrapped at its width."""
+    return fill(" ".join(sentences), 120)
+
+
+def _options(capabilities: Capabilities) -> str:
+    """Return the options module: the client and call settings, and the helper settings a helper declares."""
+    protocols = capabilities.protocols
+    names = (*_OPTION_NAMES, *(("SessionOptions",) if protocols else ()))
+    exported = sorted((*names, "UNSET", "Unset", *(("ProtocolClientOptions",) if protocols else ())))
+    return "".join((
+        '"""Settings of the clients and of each call: UNSET inherits, and each field defines its None."""\n\n',
+        "from __future__ import annotations\n\n",
+        "from typing import TYPE_CHECKING\n\n" if protocols else "",
+        "from ._runtime.client.options import (\n",
+        *(f"    {name},\n" for name in sorted(names)),
+        ")\nfrom ._runtime.model_codecs.unset import UNSET, Unset\n",
+        _PROTOCOL_OPTIONS if protocols else "",
+        "\n__all__ = [\n",
+        *(f'    "{name}",\n' for name in exported),
+        "]\n",
+        _PROTOCOL_OPTIONS_LOADER if protocols else "",
+    ))
+
+
 _AUTH_NAMES: Final = (
-    "AccessToken",
-    "ApiKeyCredential",
     "AsyncCredentialProvider",
     "AsyncEnvironmentCredentialProvider",
-    "AsyncRefreshableTokenProvider",
     "AsyncRequestSigner",
     "AsyncStaticCredentialProvider",
-    "AsyncStaticTokenProvider",
     "AuthConfig",
-    "BasicCredential",
-    "BearerCredential",
     "CredentialContext",
     "CredentialMaterial",
     "CredentialProvider",
     "CredentialProviderInput",
     "EnvironmentCredentialProvider",
-    "RefreshableTokenProvider",
     "RequestSigner",
     "SignatureFields",
     "SignerCapabilities",
     "SigningInput",
     "StaticCredentialProvider",
-    "StaticTokenProvider",
     "TokenVersion",
 )
-_OAUTH_NAMES: Final = (
-    "AsyncClientCredentialsProvider",
-    "AsyncRefreshTokenProvider",
-    "ClientCredentialsProvider",
-    "OAuthProviderOptions",
-    "RefreshTokenProvider",
-    "TokenSet",
+_CREDENTIAL_NAMES: Final[dict[Security, tuple[str, ...]]] = {
+    "api_key": ("ApiKeyCredential",),
+    "basic": ("BasicCredential",),
+    "bearer": (
+        "AccessToken",
+        "AsyncRefreshableTokenProvider",
+        "AsyncStaticTokenProvider",
+        "BearerCredential",
+        "RefreshableTokenProvider",
+        "StaticTokenProvider",
+    ),
+    "client_credentials": ("ApiKeyCredential",),
+    "refresh_token": ("ApiKeyCredential",),
+}
+_SIGNERS_ONLY: Final = "This API declares no security scheme, so an `AuthConfig` carries only signers."
+_SCHEME_NAME: Final = (
+    "Use the API's declared scheme name in place of `{}`, and pass the options to an operation requiring it."
 )
-_AUTH: Final = (
-    '"""Explicit credential providers, request signers, and OAuth flows for this package."""\n\n'
-    "from ._runtime.client.auth import (\n"
-    + "".join(f"    {name},\n" for name in _AUTH_NAMES)
-    + ")\nfrom ._runtime.client.grants import (\n"
-    + "".join(f"    {name},\n" for name in _OAUTH_NAMES)
-    + ")\n\n__all__ = [\n"
-    + "".join(f"    {name!r},\n" for name in sorted((*_AUTH_NAMES, *_OAUTH_NAMES)))
-    + "]\n"
+_ENVIRONMENT: Final = (
+    '`EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called; its async '
+    "counterpart has the same explicit selection. Imports and constructors do not discover environment secrets."
 )
+_UNAVAILABLE: Final = (
+    "Basic charset overrides, resource audience metadata, and generated OAuth factories are not available yet. "
+    "Providers are explicit."
+)
+_CLIENT_CREDENTIALS: Final = (
+    "`ClientCredentialsProvider` and `AsyncClientCredentialsProvider` acquire a client's own token when a call first "
+    "needs it."
+)
+_REFRESH_TOKENS: Final = (
+    "`RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep a `TokenSet` current with its refresh token, and hand "
+    "each refreshed token set to `on_token_refreshed`."
+)
+_AUTH_EXAMPLES: Final[dict[Security, tuple[str, str, str]]] = {
+    "bearer": (
+        "AccessToken, AuthConfig, StaticTokenProvider",
+        "bearer_options(token: str)",
+        "StaticTokenProvider(AccessToken(token, scopes=None))",
+    ),
+    "api_key": (
+        "ApiKeyCredential, AuthConfig, StaticCredentialProvider",
+        "key_options(key: str)",
+        "StaticCredentialProvider(ApiKeyCredential(key))",
+    ),
+    "basic": (
+        "AuthConfig, BasicCredential, StaticCredentialProvider",
+        "basic_options(username: str, password: str)",
+        "StaticCredentialProvider(BasicCredential(username, password))",
+    ),
+}
+_OAUTH_NAMES: Final[dict[Security, tuple[str, ...]]] = {
+    "client_credentials": ("AsyncClientCredentialsProvider", "ClientCredentialsProvider"),
+    "refresh_token": ("AsyncRefreshTokenProvider", "RefreshTokenProvider"),
+}
+
+
+def _auth(capabilities: Capabilities) -> str:
+    """Return the auth module: request signers, and the credentials and OAuth flows of the declared schemes."""
+    security = capabilities.security
+    names = sorted({*_AUTH_NAMES, *(name for kind in security for name in _CREDENTIAL_NAMES[kind])})
+    flows = sorted({
+        *(("OAuthProviderOptions", "TokenSet") if capabilities.oauth else ()),
+        *(name for kind in security for name in _OAUTH_NAMES.get(kind, ())),
+    })
+    grants = ("from ._runtime.client.grants import (\n", *(f"    {name},\n" for name in flows), ")\n")
+    return "".join((
+        '"""Explicit credential providers, request signers, and OAuth flows for this package."""\n\n'
+        if flows
+        else '"""Explicit credential providers and request signers for this package."""\n\n',
+        "from ._runtime.client.auth import (\n",
+        *(f"    {name},\n" for name in names),
+        ")\n",
+        *(grants if flows else ()),
+        "\n__all__ = [\n",
+        *(f"    {name!r},\n" for name in sorted((*names, *flows))),
+        "]\n",
+    ))
+
+
 _ERROR_NAMES: Final = (
     "APIConnectionError",
     "APIStatusError",
@@ -268,31 +332,87 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "WebSocketHandshakeError",
     "WebSocketProxyError",
 )
-_ERRORS: Final = (
-    '"""Exceptions of this package\'s clients: every class derives from SDKError."""\n\n'
-    "from __future__ import annotations\n\n"
-    "from typing import TYPE_CHECKING\n\n"
-    "from ._runtime.client.errors import (\n"
-    + "".join(f"    {name},\n" for name in _ERROR_NAMES)
-    + ")\n\nif TYPE_CHECKING:\n    from ._runtime.protocols.errors import (\n"
-    + "".join(f"        {name},\n" for name in _PROTOCOL_ERROR_NAMES)
-    + "    )\n\n__all__ = [\n"
-    + "".join(f"    {name!r},\n" for name in sorted((*_ERROR_NAMES, *_PROTOCOL_ERROR_NAMES)))
-    + "]\n_PROTOCOL_ERRORS = frozenset({\n"
-    + "".join(f"    {name!r},\n" for name in _PROTOCOL_ERROR_NAMES)
-    + "})\n\n\n"
-    "def __getattr__(name: str) -> object:\n"
-    '    """Load the protocol helper exceptions only when one of their classes is requested."""\n'
-    "    if name in _PROTOCOL_ERRORS:\n"
-    "        from ._runtime.protocols import errors\n\n"
-    "        value = globals()[name] = getattr(errors, name)\n"
-    "        return value\n"
-    '    msg = f"module {__name__!r} has no attribute {name!r}"\n'
-    "    raise AttributeError(msg)\n\n\n"
-    "def __dir__() -> list[str]:\n"
-    '    """List the module\'s names, including the protocol helper exceptions loaded on first use."""\n'
-    "    return sorted({*globals(), *__all__})\n"
-)
+_ERROR_CAPABILITIES: Final = {"WebhookVerificationError": "webhooks"}
+_SESSION_ERRORS: Final = ("ProtocolStateError", "SessionLimitError")
+_PROTOCOL_ERRORS: Final[dict[Helper, tuple[str, ...]]] = {
+    "pagination": ("PaginationCycleError", "ResumeStateError", *_SESSION_ERRORS),
+    "polling": (
+        "OperationCancelledError",
+        "OperationFailedError",
+        "PollWaitLimitError",
+        "PollingStateError",
+        "ResumeStateError",
+        *_SESSION_ERRORS,
+    ),
+    "streams": (
+        "IncompleteFrameError",
+        "ResumeStateError",
+        "StreamDecodeError",
+        "StreamInterruptedError",
+        "StreamRemoteError",
+        "StreamResumeExhaustedError",
+        *_SESSION_ERRORS,
+    ),
+    "uploads": (
+        "DeliveryUnknownError",
+        "NonResumableSourceError",
+        "ResumeStateError",
+        "UploadDeliveryUnknownError",
+        "UploadExpiredError",
+        "UploadOffsetError",
+        "UploadSourceChangedError",
+        *_SESSION_ERRORS,
+    ),
+    "cache": ("CacheProtocolError", "CacheStoreError", "CacheValidatorConflictError"),
+    "websocket": (
+        "ConcurrentReceiveError",
+        "DeliveryUnknownError",
+        "HandshakeResponse",
+        "StreamDecodeError",
+        "WebSocketClosedError",
+        "WebSocketHandshakeError",
+        "WebSocketProxyError",
+        *_SESSION_ERRORS,
+    ),
+}
+
+
+def _errors(capabilities: Capabilities) -> str:
+    """Return the errors module: the client's errors and those of the declared OAuth flows and helpers.
+
+    `ProtocolDataError` is always there, since a malformed compressed response raises it.
+    """
+    declared = {*capabilities.helpers, *(("oauth",) if capabilities.oauth else ())}
+    errors = [name for name in _ERROR_NAMES if _ERROR_CAPABILITIES.get(name, "client") in {"client", *declared}]
+    raised = {name for helper in capabilities.helpers for name in _PROTOCOL_ERRORS.get(helper, ())}
+    protocol = [name for name in _PROTOCOL_ERROR_NAMES if name == "ProtocolDataError" or name in raised]
+    return "".join((
+        '"""Exceptions of this package\'s clients: every class derives from SDKError."""\n\n',
+        "from __future__ import annotations\n\n",
+        "from typing import TYPE_CHECKING\n\n",
+        "from ._runtime.client.errors import (\n",
+        *(f"    {name},\n" for name in errors),
+        ")\n\nif TYPE_CHECKING:\n    from ._runtime.protocols.errors import (\n",
+        *(f"        {name},\n" for name in protocol),
+        "    )\n\n__all__ = [\n",
+        *(f"    {name!r},\n" for name in sorted((*errors, *protocol))),
+        "]\n_PROTOCOL_ERRORS = frozenset({\n",
+        *(f"    {name!r},\n" for name in protocol),
+        "})\n\n\n",
+        "def __getattr__(name: str) -> object:\n",
+        '    """Load the protocol helper exceptions only when one of their classes is requested."""\n',
+        "    if name in _PROTOCOL_ERRORS:\n",
+        "        from ._runtime.protocols import errors\n\n",
+        "        value = globals()[name] = getattr(errors, name)\n",
+        "        return value\n",
+        '    msg = f"module {__name__!r} has no attribute {name!r}"\n',
+        "    raise AttributeError(msg)\n\n\n",
+        "def __dir__() -> list[str]:\n",
+        '    """List the module\'s names, including the protocol helper exceptions loaded on first use."""\n',
+        "    return sorted({*globals(), *__all__})\n",
+    ))
+
+
 _RESPONSES: Final = '''"""Typed results of this package's calls, the metadata of their responses, and raw responses."""
 
 from ._runtime.client.raw import AsyncRawResponse, RawResponse
@@ -300,168 +420,128 @@ from ._runtime.client.responses import HeadersView, Response, ResponseInfo
 
 __all__ = ["AsyncRawResponse", "HeadersView", "RawResponse", "Response", "ResponseInfo"]
 '''
-_PROTOCOLS: Final = '''"""Public protocol contracts: selectors, helper options, records, resume state, and webhooks."""
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-from .._runtime.protocols.caches import AsyncCacheStore, CacheEntry, CacheResult, CacheStore
-from .._runtime.protocols.options import (
-    CacheOptions,
-    PaginationOptions,
-    PollOptions,
-    ProtocolDefaults,
-    ProtocolSecurityContext,
-    StreamOptions,
-    UploadOptions,
-    WebSocketTransportOptions,
-    WSOptions,
-)
-from .._runtime.protocols.origins import Origin
-from .._runtime.protocols.records import (
-    BodySelector,
-    BodyTarget,
-    CancelReceipt,
-    Continuation,
-    HeaderSelector,
-    ParameterTarget,
-    PollSnapshot,
-    ProgressKey,
-    ProtocolProgress,
-    QuerystringTarget,
-    RequestTarget,
-    Selector,
-    StatusSelector,
-)
-from .._runtime.protocols.references import OperationRef
-from .._runtime.protocols.resume import ResumeState, import_state
-from .._runtime.protocols.sources import UploadProgress, UploadSource
-from .._runtime.protocols.webhooks import (
-    KeySet,
-    ResolvedWebhookOptions,
-    VerifiedSignature,
-    VerifiedWebhook,
-    Verifier,
-    WebhookOptions,
-)
-from .._runtime.protocols.websocket_types import (
-    AsyncWebSocketConnection,
-    AsyncWebSocketConnector,
-    Message,
-    PingReceipt,
-    ResolvedWebSocketTransportOptions,
-    ResolvedWSOptions,
-    WebSocketConnection,
-    WebSocketConnector,
-    WebSocketOpenRequest,
-    WSFrame,
-)
-
-if TYPE_CHECKING:
-    from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
-    from .._runtime.protocols.pagination import AsyncPager, Page, Pager
-    from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
-    from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
-    from .._runtime.protocols.uploads import AsyncUploadHandle, UploadHandle
-    from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
-
-__all__ = [
-    "AsyncCacheStore",
-    "AsyncEventStream",
-    "AsyncLroHandle",
-    "AsyncMemoryCacheStore",
-    "AsyncPager",
-    "AsyncUploadHandle",
-    "AsyncWebSocketConnection",
-    "AsyncWebSocketConnector",
-    "AsyncWebSocketSession",
-    "BodySelector",
-    "BodyTarget",
-    "CacheEntry",
-    "CacheOptions",
-    "CacheResult",
-    "CacheStore",
-    "CancelReceipt",
-    "Continuation",
-    "EventStream",
-    "HeaderSelector",
-    "KeySet",
-    "LroHandle",
-    "MemoryCacheStore",
-    "Message",
-    "OperationRef",
-    "Origin",
-    "Page",
-    "Pager",
-    "PaginationOptions",
-    "ParameterTarget",
-    "PingReceipt",
-    "PollOptions",
-    "PollSnapshot",
-    "ProgressKey",
-    "ProtocolDefaults",
-    "ProtocolProgress",
-    "ProtocolSecurityContext",
-    "QuerystringTarget",
-    "RequestTarget",
-    "ResolvedWSOptions",
-    "ResolvedWebSocketTransportOptions",
-    "ResolvedWebhookOptions",
-    "ResumeState",
-    "Selector",
-    "StatusSelector",
-    "StreamEvent",
-    "StreamOptions",
-    "UnknownEvent",
-    "UploadHandle",
-    "UploadOptions",
-    "UploadProgress",
-    "UploadSource",
-    "VerifiedSignature",
-    "VerifiedWebhook",
-    "Verifier",
-    "WSFrame",
-    "WSOptions",
-    "WebSocketConnection",
-    "WebSocketConnector",
-    "WebSocketOpenRequest",
-    "WebSocketSession",
-    "WebSocketTransportOptions",
-    "WebhookOptions",
-    "import_state",
-]
+_PROTOCOL_EXPORTS: Final[dict[str, dict[str, tuple[str, ...]]]] = {
+    "protocols": {
+        "options": ("ProtocolDefaults", "ProtocolSecurityContext"),
+        "origins": ("Origin",),
+        "records": (
+            "BodySelector",
+            "BodyTarget",
+            "Continuation",
+            "HeaderSelector",
+            "ParameterTarget",
+            "ProgressKey",
+            "ProtocolProgress",
+            "QuerystringTarget",
+            "RequestTarget",
+            "Selector",
+            "StatusSelector",
+        ),
+        "references": ("OperationRef",),
+        "resume": ("ResumeState", "import_state"),
+    },
+    "pagination": {"options": ("PaginationOptions",), "pagination": ("AsyncPager", "Page", "Pager")},
+    "polling": {
+        "options": ("PollOptions",),
+        "records": ("CancelReceipt", "PollSnapshot"),
+        "polling": ("AsyncLroHandle", "LroHandle"),
+    },
+    "streams": {
+        "options": ("StreamOptions",),
+        "streams": ("AsyncEventStream", "EventStream", "StreamEvent", "UnknownEvent"),
+    },
+    "uploads": {
+        "options": ("UploadOptions",),
+        "sources": ("UploadProgress", "UploadSource"),
+        "uploads": ("AsyncUploadHandle", "UploadHandle"),
+    },
+    "cache": {
+        "options": ("CacheOptions",),
+        "caches": ("AsyncCacheStore", "CacheEntry", "CacheResult", "CacheStore"),
+        "cache_stores": ("AsyncMemoryCacheStore", "MemoryCacheStore"),
+    },
+    "websocket": {
+        "options": ("WSOptions", "WebSocketTransportOptions"),
+        "websocket_types": (
+            "AsyncWebSocketConnection",
+            "AsyncWebSocketConnector",
+            "Message",
+            "PingReceipt",
+            "ResolvedWSOptions",
+            "ResolvedWebSocketTransportOptions",
+            "WSFrame",
+            "WebSocketConnection",
+            "WebSocketConnector",
+            "WebSocketOpenRequest",
+        ),
+        "websocket": ("AsyncWebSocketSession", "WebSocketSession"),
+    },
+    "webhooks": {
+        "references": ("OperationRef",),
+        "webhooks": (
+            "KeySet",
+            "ResolvedWebhookOptions",
+            "VerifiedSignature",
+            "VerifiedWebhook",
+            "Verifier",
+            "WebhookOptions",
+        ),
+    },
+}
+_LAZY_PROTOCOLS: Final = ("pagination", "polling", "cache_stores", "streams", "uploads", "websocket")
 
 
-def __getattr__(name: str) -> object:
-    """Load a memory store, or a pagination, polling, stream, upload, or session type."""
-    if name in {"AsyncPager", "Page", "Pager"}:
-        from .._runtime.protocols import pagination
+def _from(module: str, names: Iterable[str], *, indent: str = "", wrap: bool = True) -> str:
+    """Return one import statement, wrapped one name a line when it is wider than the package's modules."""
+    line = f"{indent}from {module} import {', '.join(names)}\n"
+    if not wrap or len(line) <= WIDTH + 1:
+        return line
+    return f"{indent}from {module} import (\n" + "".join(f"{indent}    {name},\n" for name in names) + f"{indent})\n"
 
-        return getattr(pagination, name)
-    if name in {"AsyncLroHandle", "LroHandle"}:
-        from .._runtime.protocols import polling
 
-        return getattr(polling, name)
-    if name in {"AsyncMemoryCacheStore", "MemoryCacheStore"}:
-        from .._runtime.protocols import cache_stores
+def _protocols(capabilities: Capabilities) -> str:
+    """Return the public protocol module: the records, options, and types of the declared helpers.
 
-        return getattr(cache_stores, name)
-    if name in {"AsyncEventStream", "EventStream", "StreamEvent", "UnknownEvent"}:
-        from .._runtime.protocols import streams
+    The modules of helper sessions, handles, and memory stores load when one of their names is first requested.
+    """
+    groups: dict[str, set[str]] = {}
+    declared = (*(("protocols",) if capabilities.protocols else ()), *sorted(capabilities.helpers))
+    for helper in declared:
+        for module, names in _PROTOCOL_EXPORTS.get(helper, {}).items():
+            groups.setdefault(module, set()).update(names)
+    lazy = [module for module in _LAZY_PROTOCOLS if module in groups]
+    eager = sorted(module for module in groups if module not in lazy)
+    text = ['"""Public protocol contracts: selectors, helper options, records, resume state, and webhooks."""\n\n']
+    if not groups:
+        return "".join((*text, "__all__: list[str] = []\n"))
+    text.append("from __future__ import annotations\n\n")
+    if lazy:
+        text.append("from typing import TYPE_CHECKING\n\n")
+    text.extend(_from(f".._runtime.protocols.{module}", sorted(groups[module])) for module in eager)
+    if lazy:
+        text.append("\nif TYPE_CHECKING:\n")
+        text.extend(
+            _from(f".._runtime.protocols.{module}", sorted(groups[module]), indent="    ", wrap=False)
+            for module in sorted(lazy)
+        )
+    text.append("\n__all__ = [\n")
+    text.extend(f'    "{name}",\n' for name in sorted(name for names in groups.values() for name in names))
+    text.append("]\n")
+    if lazy:
+        text.append(
+            "\n\ndef __getattr__(name: str) -> object:\n"
+            '    """Load a helper\'s session, handle, or memory store type when its name is first requested."""\n'
+        )
+        text.extend(
+            f"    if name in {{{', '.join(map(repr, sorted(groups[module])))}}}:\n"
+            f"        from .._runtime.protocols import {module}\n\n"
+            f"        return getattr({module}, name)\n"
+            for module in lazy
+        )
+        text.append('    msg = f"module {__name__!r} has no attribute {name!r}"\n    raise AttributeError(msg)\n')
+    return "".join(text)
 
-        return getattr(streams, name)
-    if name in {"AsyncUploadHandle", "UploadHandle"}:
-        from .._runtime.protocols import uploads
 
-        return getattr(uploads, name)
-    if name in {"AsyncWebSocketSession", "WebSocketSession"}:
-        from .._runtime.protocols import websocket
-
-        return getattr(websocket, name)
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
-'''
 _BODY_NAMES: Final = (
     "AsyncBinaryBody",
     "AsyncBodyAttempt",
@@ -2920,10 +3000,11 @@ class ClientRenderer:
         sockets: tuple[SocketSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
         webhooks: Callable[[Mapping[TypeUseId, UseAccessors]], tuple[tuple[PurePosixPath, str], ...]],
+        signatures: frozenset[str] = frozenset(),
     ) -> None:
         """Keep the plans and helpers; the model bindings module and its accessors are rendered when first used.
 
-        The webhook modules are rendered from the use accessors.
+        The webhook modules are rendered from the use accessors; `signatures` holds the webhook signature kinds.
         """
         self.config = config
         self.package = package
@@ -2936,6 +3017,7 @@ class ClientRenderer:
         self.sockets = sockets
         self.fingerprints = fingerprints or {}
         self.webhooks = webhooks
+        self.signatures = signatures
 
     @cached_property
     def bindings(self) -> RenderedBindings:
@@ -3116,8 +3198,68 @@ reference for their limits."""
 ```
 """
 
-    def runtime_documentation(self) -> str:
+    def _credentials_runtime(self, capabilities: Capabilities) -> str:
+        """Show how to pass a credential of the first declared scheme kind, and name each declared kind's values."""
+        security = capabilities.security
+        package = self.config.package
+        sentences = [
+            text
+            for kind, text in (
+                ("bearer", "Async clients use `AsyncStaticTokenProvider` or another async provider."),
+                ("api_key", "API keys use `ApiKeyCredential`."),
+                ("basic", "Basic uses `BasicCredential` with UTF-8."),
+            )
+            if kind in security
+        ]
+        if "bearer" in security:
+            sentences.append(
+                "OAuth2/OpenID Connect declarations accept preobtained bearer material without discovery or token HTTP."
+            )
+        elif security:
+            sentences.insert(0, "Async clients use `AsyncStaticCredentialProvider` or another async provider.")
+        sentences.append(_ENVIRONMENT)
+        if (example := next((kind for kind in _AUTH_EXAMPLES if kind in security), None)) is None:
+            return "\n" + _paragraph(_SIGNERS_ONLY, *sentences)
+        imports, signature, provider = _AUTH_EXAMPLES[example]
+        return f"""
+```python
+from {package}.auth import {imports}
+from {package}.options import RequestOptions
+
+
+def {signature} -> RequestOptions:
+    return RequestOptions(auth=AuthConfig({{"{example}": {provider}}}))
+```
+
+{_paragraph(_SCHEME_NAME.format(example), *sentences)}"""
+
+    @staticmethod
+    def _oauth_runtime(capabilities: Capabilities) -> str:
+        """Describe the token exchanges of the declared OAuth flows, or nothing without one."""
+        security = capabilities.security
+        if not capabilities.oauth:
+            return _paragraph(_UNAVAILABLE)
+        flows = [
+            text
+            for kind, text in (
+                ("client_credentials", _CLIENT_CREDENTIALS),
+                ("refresh_token", _REFRESH_TOKENS),
+            )
+            if kind in security
+        ]
+        return _paragraph(
+            "OAuth providers exchange tokens without redirects or retries, through a token transport of their own that "
+            "must verify TLS; a `TokenSet` omits its tokens from repr.",
+            *flows,
+            "The call needing a new token requests it inline under the provider's lock, which concurrent callers wait "
+            "for, and the SDK persists nothing.",
+            _UNAVAILABLE,
+        )
+
+    def runtime_documentation(self, capabilities: Capabilities) -> str:
         """Render public runtime settings and their resource and delivery obligations."""
+        oauth = capabilities.oauth
+        clock = "`OAuthProviderOptions(clock=...)` does so for a provider, and " if oauth else ""
         return f"""# Runtime reference
 
 Import `Client` and `AsyncClient` from `{self.config.package}` and the records below from
@@ -3149,7 +3291,7 @@ across calls; the earlier of that expiry and the relative total timeout wins. Ea
 phase timeout. Callbacks and cleanup are cooperative and may return after a deadline.
 Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
 `ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
-`OAuthProviderOptions(clock=...)` does so for a provider, and `Deadline.after(seconds, clock=...)` creates a deadline
+{clock}`Deadline.after(seconds, clock=...)` creates a deadline
 on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
 
 ## Retry decisions and delays
@@ -3224,21 +3366,7 @@ Import `AuthConfig`, credential values, providers, and signers from `{self.confi
 Required security cannot become anonymous. AND requires all schemes; OR picks the first fully available declared
 alternative unless `selection` chooses its index, which applies only to operations declaring several alternatives.
 That choice stays fixed through a call and its retries.
-
-```python
-from {self.config.package}.auth import AccessToken, AuthConfig, StaticTokenProvider
-from {self.config.package}.options import RequestOptions
-
-
-def bearer_options(token: str) -> RequestOptions:
-    return RequestOptions(auth=AuthConfig({{"bearer": StaticTokenProvider(AccessToken(token, scopes=None))}}))
-```
-
-Use the API's declared scheme name in place of `bearer`, and pass the options to an operation requiring it.
-Async clients use `AsyncStaticTokenProvider` or another async provider. API keys use `ApiKeyCredential`; Basic uses
-`BasicCredential` with UTF-8. OAuth2/OpenID Connect declarations accept preobtained bearer material without discovery
-or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called;
-its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
+{self._credentials_runtime(capabilities)}
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
 Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
@@ -3271,13 +3399,7 @@ Credential/signature values do not appear in repr or hook events. Query credenti
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
 their potentially sensitive messages.
 
-OAuth providers exchange tokens without redirects or retries, through a token transport of their own that must verify
-TLS; a `TokenSet` omits its tokens from repr. `ClientCredentialsProvider` and `AsyncClientCredentialsProvider` acquire
-a client's own token when a call first needs it, and `RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep a
-`TokenSet` current with its refresh token. The call needing a new token requests it inline under the provider's lock,
-which concurrent callers wait for; a refresh token provider hands each refreshed token set to `on_token_refreshed`, and
-the SDK persists nothing. Basic charset overrides, resource audience metadata, and generated OAuth factories are not
-available yet. Providers are explicit.
+{self._oauth_runtime(capabilities)}
 
 ## Errors and cleanup
 
@@ -3688,18 +3810,32 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
         )
         types = _Types(self.plan, self.codecs, self.accessors)
         registry = _Registry(self.plan, self.codecs, self.accessors)
+        webhooks = tuple(self.file(path, "webhooks", text) for path, text in self.webhooks(self.accessors))
+        capabilities = Capabilities(
+            security=declared_security(self.plan, self.batch),
+            helpers=declared_helpers(
+                (
+                    *(spec.helper.kind for spec in (*self.helpers, *self.streams, *self.sockets)),
+                    *(("webhook",) if self.signatures else ()),
+                ),
+                self.plan,
+            ),
+            signatures=self.signatures,
+            backends=declared_backends(self.codecs),
+            keywords=resources.records is not None,
+        )
         files = [
             self.file(PurePosixPath("__init__.py"), "package", _PACKAGE),
             self.file(PurePosixPath("_client.py"), "client", resources.client(asynchronous=False)),
             self.file(PurePosixPath("_async_client.py"), "client", resources.client(asynchronous=True)),
-            self.file(PurePosixPath("options.py"), "options", _OPTIONS),
+            self.file(PurePosixPath("options.py"), "options", _options(capabilities)),
             self.file(PurePosixPath("hooks.py"), "hooks", _HOOKS),
-            self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
+            self.file(PurePosixPath("errors.py"), "errors", _errors(capabilities)),
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
-            self.file(PurePosixPath("auth.py"), "auth", _AUTH),
+            self.file(PurePosixPath("auth.py"), "auth", _auth(capabilities)),
             self.file(PurePosixPath("bodies.py"), "bodies", _BODIES),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs()),
-            self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _PROTOCOLS),
+            self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _protocols(capabilities)),
             self.file(PurePosixPath("resources", "__init__.py"), "package", '"""The resources of the clients."""\n'),
         ]
         for resource in self.plan.resources:
@@ -3729,9 +3865,8 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
                 self.file(PurePosixPath("_generated", "security.py"), "security", _Security(self.plan).source())
             )
         files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
-        helpers = self.helper_files(resources)
-        helpers += tuple(self.file(path, "webhooks", text) for path, text in self.webhooks(self.accessors))
-        runtime = runtime_sources(file.text for file in (*files, *helpers))
+        helpers = (*self.helper_files(resources), *webhooks)
+        runtime = runtime_sources(capabilities.modules())
         documentation = PurePosixPath() if config.package_mode == "standalone" else PurePosixPath("_generated_docs")
         reference = documentation / ("docs/runtime.md" if config.package_mode == "standalone" else "runtime.md")
         return (
@@ -3739,5 +3874,5 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             *(self.file(path, "runtime", text, verbatim=True) for path, text in runtime),
             *helpers,
             RenderedFile(path=documentation / "README.md", kind="readme", text=self.readme()),
-            RenderedFile(path=reference, kind="documentation", text=self.runtime_documentation()),
+            RenderedFile(path=reference, kind="documentation", text=self.runtime_documentation(capabilities)),
         )
