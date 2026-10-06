@@ -130,11 +130,11 @@ host is in the rule's own form; for example, an IPv6 address has no brackets, as
 below, and exposes only `kind`. Its representation is `Continuation(kind='cursor')`. Each continuation equals only
 itself, and it cannot be modified.
 
-`PollSnapshot[P]` is an immutable poll result with `state: WireValue`, `terminal: bool`, `data: P`, and
-`response: ResponseInfo`. The state is frozen, and the state and data are excluded from the representation. `P` is
-covariant, so a `PollSnapshot[Pet]` is also a `PollSnapshot[object]`. `CancelReceipt[C]` is the immutable response of
-a remote cancel request, with `data: C` and `response: ResponseInfo`; the data is excluded from the representation, and
-`C` is covariant too.
+`PollSnapshot[P]` is an immutable poll result with `state: JSONValue`, `terminal: bool`, `data: P`, and
+`response: ResponseInfo`. The state is a copy of the given value, and the state and data are excluded from the
+representation. `P` is covariant, so a `PollSnapshot[Pet]` is also a `PollSnapshot[object]`. `CancelReceipt[C]` is the
+immutable response of a remote cancel request, with `data: C` and `response: ResponseInfo`; the data is excluded from
+the representation, and `C` is covariant too.
 
 `ProgressKey` is `Literal['pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'network_send_count',
 'network_send_budget_used', 'messages_sent', 'messages_received']`, and `ProtocolProgress` is
@@ -142,14 +142,11 @@ a remote cancel request, with `data: C` and `response: ResponseInfo`; the data i
 
 Continuations and resume state encode their values as the same canonical JSON: UTF-8 without whitespace, object
 members sorted by the code points of their names, and strings escaped as Python's `json.dumps` escapes them with
-`ensure_ascii=False`, so only `"`, `\`, and U+0000–U+001F are escaped. An integer is written in plain decimal.
-A float is first converted to the decimal of its shortest round-trip representation, so `1e16` becomes `1E+16`. A
-decimal is written as its scientific string: no exponent when the exponent is at most 0 and the adjusted exponent is at
-least -6, and otherwise one digit before the point and an `E` exponent with a sign. For example, `1.50`, `-0.0`,
-`1E+2`, and `1E-7` keep those spellings. A decimal whose string has neither a point nor an exponent is written as an
-integer, so `Decimal("-0")` becomes `0`. Decoding the result and encoding it again gives the same bytes. A value
-nested beyond the interpreter recursion limit, and an integer beyond the interpreter's decimal conversion limit,
-raise `ValueError`.
+`ensure_ascii=False`, so only `"`, `\`, and U+0000–U+001F are escaped. Numbers are written as `json.dumps` writes
+them: an integer in plain decimal and a float as its shortest round-trip representation, so `1e16` stays `1e+16`.
+Decoding the result with `json.loads` and encoding it again gives the same bytes. A value `json.dumps` cannot encode
+raises `TypeError`; a non-finite number, a lone surrogate, a value nested beyond the interpreter recursion limit, and an
+integer beyond the interpreter's decimal conversion limit raise `ValueError`.
 
 ### Upload records and sources
 
@@ -159,7 +156,7 @@ upload reads; see [upload helpers](#upload-helpers). The handles are loaded only
 
 ### Resume state
 
-`ResumeState(*, helper: str, state: WireValue)` is a small, opaque token: the identity of the helper it belongs to and
+`ResumeState(*, helper: str, state: JSONValue)` is a small, opaque token: the identity of the helper it belongs to and
 the state that helper continues from, such as a cursor, a next URL, an operation's poll values, or a Last-Event-ID. The
 helper's identity must be a string without lone surrogates. The representation is `ResumeState(version=1)`, each
 instance equals only itself, and nothing is written to disk automatically: the caller saves the token where it likes.

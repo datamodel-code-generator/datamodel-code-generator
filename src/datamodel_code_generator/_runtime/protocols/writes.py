@@ -15,7 +15,6 @@ from ..client.operations import BodyMedia, ParameterSpec
 from ..client.paths import dot_segment, path_segments
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import json_bytes as _json_bytes
-from ..model_codecs.media import plain
 from ..model_codecs.unset import UNSET
 from .records import BodyTarget, ParameterTarget, QuerystringTarget
 from .values import Patch, written
@@ -25,7 +24,6 @@ if TYPE_CHECKING:
 
     from ..client.operations import OperationPlan
     from ..model_codecs.media import JSONValue
-    from ..model_codecs.wire import WireValue
     from .records import RequestTarget, Selector
 
 __all__ = (
@@ -58,7 +56,7 @@ class PatchedParameter(ParameterSpec):
     def dump(self, value: object) -> JSONValue:
         """Return the wire value of the caller's argument with the patch's writes."""
         assert isinstance(value, Patch)
-        return plain(value.applied(lambda given: ParameterSpec.dump(self, given)))
+        return value.applied(lambda given: ParameterSpec.dump(self, given))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -72,7 +70,7 @@ class PatchedMedia(BodyMedia):
     def dump(self, value: object) -> JSONValue:
         """Return the wire value of the caller's body with the patch's writes."""
         assert isinstance(value, Patch)
-        return plain(value.applied(lambda given: BodyMedia.dump(self, given)))
+        return value.applied(lambda given: BodyMedia.dump(self, given))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -211,7 +209,7 @@ def dotted_read(
     parameters: Sequence[ParameterSpec],
     segment: str,
     parts: tuple[PathPart, ...],
-    written: tuple[WireValue, ...],
+    written: tuple[JSONValue, ...],
     callers: Callable[[], Mapping[str, str]],
 ) -> Selector | None:
     """Return the selector of a read value written to a path segment that encodes to a dot segment, or None.
@@ -249,7 +247,7 @@ class Targeted(Generic[T]):
     queries: frozenset[str]
     dotted: ReadPaths
 
-    def request(self, values: tuple[WireValue, ...]) -> tuple[tuple[object, ...], object]:
+    def request(self, values: tuple[JSONValue, ...]) -> tuple[tuple[object, ...], object]:
         """Return the arguments and body of a request writing each value in order, every other argument omitted.
 
         A parameter's value replaces its argument, and the values for a querystring or the body are patched into an
@@ -272,7 +270,7 @@ def targeted_writes(
     return Targeted(*targeted(call, (target for target, _ in sources)), read_paths(call, sources))
 
 
-def dotted_write(targeted: Targeted[Any], written: tuple[WireValue, ...]) -> Selector | None:
+def dotted_write(targeted: Targeted[Any], written: tuple[JSONValue, ...]) -> Selector | None:
     """Return the selector of a read value that makes a path segment a dot segment once encoded, or None."""
     parameters = targeted.call.parameters
     return next(

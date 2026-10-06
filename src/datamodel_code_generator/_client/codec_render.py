@@ -194,7 +194,6 @@ def render_model_codecs() -> str:
             ),
         ),
         ("unset", ("UNSET", "Unset")),
-        ("wire", ("WireValue",)),
     )
     names = sorted(name for _, group in exports for name in group)
     return "\n".join([
