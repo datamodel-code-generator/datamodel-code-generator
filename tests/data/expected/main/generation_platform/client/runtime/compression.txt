@@ -12,7 +12,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"name":"compressed"}'
   declared body = Item(name='n')
   > POST https://api.example.com/items
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-encoding: gzip, content-length: <gzip>] gzip b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
   declared without body = Item(name='n')
   > POST https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'null'
@@ -117,7 +117,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   job = Outcome(value='ok')
   > POST https://api.example.com/checks
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-length: 0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
   > POST https://api.example.com/checks/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"id":"c1"}'
   check = Outcome(value='ok')
@@ -182,7 +182,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async bodyless pages = (Item(name='a'),)
   > POST https://api.example.com/checks
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-length: 0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
   > POST https://api.example.com/checks/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"id":"c1"}'
   async check = Outcome(value='ok')

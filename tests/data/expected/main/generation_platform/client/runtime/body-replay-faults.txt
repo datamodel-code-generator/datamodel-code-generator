@@ -48,12 +48,12 @@
   nested owned file failed_close=False repeated=True SDKError inner=DecodeError closed=True closes=1 secondary=False sends=0
   nested owned file failed_close=True repeated=False SDKError inner=SDKError closed=True closes=1 secondary=True sends=0
   nested owned file failed_close=True repeated=True SDKError inner=DecodeError closed=True closes=1 secondary=False sends=0
-  async file preparation DecodeError cause=True secondary=True closes=1 sends=0
+  async file preparation SDKError cause=True secondary=True closes=1 sends=0
   async factory metadata SDKError cause=True secondary=['OSError'] closes=1 sends=0
   async past EOF replays empty = b'ok'
     wire=[('PUT', b'/', b''), ('PUT', b'/', b'')] pending=0
     offset=2 closes=0
-  async partial capture DecodeError secondary=['OSError', 'OSError'] closes=(1, 1)
+  async partial capture SDKError secondary=['OSError', 'OSError'] closes=(1, 1)
   async SDK metadata error SDKError cause=True callbacks=1 closes=1 sends=0
   direct async metadata SDKError cause=True secondary=[] closes=1
   direct async metadata SDKError cause=True secondary=['OSError'] closes=1
@@ -62,10 +62,10 @@
   async changed parts failed DecodeError secondary=['OSError']
     closes=(1, 1, 1) sends=0
   async native final attempt cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: SDKError',)
-  async native partial attempt cleanup identity=False closes=(1, 1, 1) sends=0 notes=()
+  async native partial attempt cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: SDKError', 'Secondary cleanup failure: SDKError')
   async native final source cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: OSError',)
   async native capture source cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: OSError',)
-  async native metadata cleanup identity=False closes=1 sends=0
+  async native metadata cleanup identity=True closes=1 sends=0
   async file replay length changed ! DecodeError: DecodeError(call_id='<call>', reason='body_changed', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_changed
     sends=1 borrowed_open=True
   async file replay seek changed ! SDKError: SDKError(call_id='<call>', reason='body_factory_failed') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('replay seek failed')] body_factory_failed
@@ -78,9 +78,9 @@
   direct async owned stream payload=b'one-shot' begins=1 closes=1
   async SDK file rewind SDKError cause=True failed_calls=1 closes=1 sends=0
   async SDK file capture SDKError cause=True failed_calls=1 closes=1 sends=0
-  native length cleanup cancelled closes=1 finished=0 sends=1 failure=DecodeError cancel_requested=True
-    args=() notes=() secondary=['CancelledError']
-  native metadata cleanup cancelled closes=1 finished=0 sends=0 failure=SDKError cancel_requested=True
-    args=() notes=() secondary=['CancelledError']
-  native multipart cleanup cancelled closes=1 finished=0 sends=0 failure=SDKError cancel_requested=True
-    args=() notes=() secondary=['CancelledError']
+  native length cleanup cancelled closes=1 finished=0 sends=1 failure=CancelledError cancel_requested=True
+    args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: DecodeError',) secondary=[]
+  native metadata cleanup cancelled closes=1 finished=0 sends=0 failure=CancelledError cancel_requested=True
+    args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: SDKError',) secondary=[]
+  native multipart cleanup cancelled closes=1 finished=0 sends=0 failure=CancelledError cancel_requested=True
+    args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: SDKError',) secondary=[]
