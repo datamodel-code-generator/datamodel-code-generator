@@ -85,7 +85,7 @@ class _Layer:
             raise self._malformed(None)
 
     def _malformed(self, cause: BaseException | None) -> ProtocolDataError:
-        from ..protocols.errors import ProtocolDataError  # ruff: ignore[import-outside-top-level] - Load protocol errors only on this failure.
+        from ..protocols.errors import ProtocolDataError  # noqa: PLC0415 - Load protocol errors only on this failure.
 
         return ProtocolDataError(
             condition="malformed",

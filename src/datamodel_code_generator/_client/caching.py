@@ -118,7 +118,7 @@ class _Caches:
         return found[0] if found else None
 
 
-def plan_caches(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+def plan_caches(  # noqa: PLR0913, PLR0917
     protocols: Protocols | None,
     plan: ClientPlan,
     facts: ModelFacts,

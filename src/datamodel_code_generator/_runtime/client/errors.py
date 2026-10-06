@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
+from datetime import datetime  # noqa: TC003 - Public annotations support get_type_hints().
 from enum import Enum
 from typing import ClassVar, Final, Literal, TypeAlias, TypeGuard, get_args
 
 from typing_extensions import TypedDict, TypeIs, Unpack
 
 from ..protocols.references import OperationRef
-from .responses import HeadersView, Response, ResponseInfo  # ruff: ignore[typing-only-first-party-import] - Public annotations support get_type_hints().
+from .responses import HeadersView, Response, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 
 RetryStopReason: TypeAlias = Literal[
     "unknown_delivery",
@@ -104,7 +104,7 @@ class SDKError(Exception):
 
     _reason_code: ClassVar[str | None] = None
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         *,
         reason: str | None = None,
@@ -239,7 +239,7 @@ def error_count(value: object, field: str) -> int:
 def _error_delivery(value: object) -> DeliveryState:
     if not isinstance(value, DeliveryState):
         msg = "delivery_state must be a DeliveryState"
-        raise ValueError(msg)  # ruff: ignore[type-check-without-type-error] - Exception constructors reject invalid fields with ValueError.
+        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
     return value
 
 
@@ -266,7 +266,7 @@ def _protocol_context(helper_id: object, operation: object) -> None:
 class ConfigurationError(SDKError):
     """A setting, argument, or call the client refused: invalid options, a closed client, or a forbidden redirect."""
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         *,
         field_path: tuple[str | int, ...] = (),
@@ -402,7 +402,7 @@ class APIStatusError(SDKError):
 
     info: ResponseInfo
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         *,
         info: ResponseInfo,
@@ -495,7 +495,7 @@ class AuthError(SDKError):
     and a timeout the cap that fired.
     """
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         *,
         reason: AuthReason,
@@ -538,7 +538,7 @@ class DecodeError(SDKError):
     `location` names the failing argument path or header, never its value; a response keeps its bounded body.
     """
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         *,
         reason: str,
@@ -632,7 +632,7 @@ class ProtocolError(SDKError):
 class ProtocolSizeError(ProtocolError):
     """A received record over the limit of its buffer; the oversized value never reaches the caller."""
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         *,
         kind: Literal[
@@ -733,7 +733,7 @@ class UnsupportedContentCodingError(ProtocolError):
 class DecompressionLimitError(ProtocolSizeError):
     """A content coding that expands beyond max(1 MiB, its encoded bytes times the ratio); the response is closed."""
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         *,
         layer: int,

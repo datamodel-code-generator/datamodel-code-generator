@@ -97,7 +97,7 @@ class CallEvents:
         self.monotonic = call.monotonic
         self.terminal = False
 
-    def event(  # ruff: ignore[too-many-arguments]
+    def event(  # noqa: PLR0913
         self,
         name: EventName,
         *,
@@ -166,7 +166,7 @@ class CallEvents:
                 self.call.check()
             try:
                 hook.on_event(event)
-            except Exception as error:  # ruff: ignore[blind-except] - Every hook sees the event, even after one fails.
+            except Exception as error:  # noqa: BLE001 - Every hook sees the event, even after one fails.
                 failures.append(error)
             except BaseException as error:
                 if not terminal:
@@ -219,7 +219,7 @@ class CallEvents:
                 self.call.check()
             try:
                 await _async_hook(hook, event)
-            except Exception as error:  # ruff: ignore[blind-except] - Every hook sees the event, even after one fails.
+            except Exception as error:  # noqa: BLE001 - Every hook sees the event, even after one fails.
                 failures.append(error)
             except BaseException as error:
                 if not terminal:
@@ -449,7 +449,7 @@ class CallEvents:
         """Report termination observed while earlier terminal hooks were running."""
         try:
             self.call.check()
-        except BaseException as stopped:  # ruff: ignore[blind-except]
+        except BaseException as stopped:  # noqa: BLE001
             primary = stopped if primary is None else self.call.failure(primary)
         outcome = event.outcome
         if primary is not None:

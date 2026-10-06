@@ -267,7 +267,7 @@ class _Polls:
                     message = f"The state {value!r} of {helper.name!r} is {kind}, which its state never reads"
                     yield _problem("E_CONFIG_VALUE", "config", f"{helper.at}.{name}[{index}]", message, polled.spec)
 
-    def bindings(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+    def bindings(  # noqa: PLR0913, PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -367,7 +367,7 @@ class _Polls:
             message = f"{label} requires a request body, which no binding of {helper.name!r} writes"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
-    def reached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+    def reached(  # noqa: PLR0913, PLR0917
         self, helper: Helper, source: _Source, selector: Mapping[str, Any], reference: Any, at: str, what: str
     ) -> _Result | Diagnostic:
         """Return the type and accessor of the property a body pointer names, checked against the declared schema."""
@@ -474,7 +474,7 @@ class _Polls:
         return reached.steps, reached.schema
 
 
-def plan_polling(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+def plan_polling(  # noqa: PLR0913, PLR0917
     protocols: Protocols | None,
     plan: ClientPlan,
     facts: ModelFacts,

@@ -19,11 +19,11 @@ from typing_extensions import TypeIs
 
 from ..model_codecs.media import encode_json
 from ..model_codecs.unset import UNSET, Unset
-from ..model_codecs.wire import JSONScalar  # ruff: ignore[typing-only-first-party-import] - Public annotations support get_type_hints().
+from ..model_codecs.wire import JSONScalar  # noqa: TC001 - Public annotations support get_type_hints().
 from ..protocols import names as protocol_names
 from .auth import AuthConfig, checked_type
 from .errors import ConfigurationError, is_sequence
-from .hooks import AsyncHook, AsyncLimiter, Hook, Limiter  # ruff: ignore[typing-only-first-party-import] - Public annotations support get_type_hints().
+from .hooks import AsyncHook, AsyncLimiter, Hook, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
 from .timing import (
     SYSTEM_CLOCK,
     Clock,
@@ -596,7 +596,7 @@ class _Options:
             raise ConfigurationError(field_path=("limiter",), reason="invalid_type")
         for name in ("total_timeout", "stream_idle_timeout", "stream_total_timeout"):
             if (value := getattr(self, name)) is not None and not isinstance(value, Unset):
-                object.__setattr__(self, name, seconds(value, (name,)))  # ruff: ignore[unnecessary-dunder-call] - Normalize frozen options.
+                object.__setattr__(self, name, seconds(value, (name,)))  # noqa: PLC2801 - Normalize frozen options.
 
     def __post_init__(self) -> None:
         self._check_timing()

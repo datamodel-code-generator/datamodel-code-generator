@@ -330,7 +330,7 @@ class AsyncTokens(_Tokens):
         notify: Callable[[TokenSet], Awaitable[object]] | None = None,
     ) -> None:
         """Keep the grant and its endpoint; nothing is sent until a caller needs a token."""
-        import asyncio  # ruff: ignore[import-outside-top-level]
+        import asyncio  # noqa: PLC0415
 
         super().__init__(options, grant)
         self._endpoint = endpoint

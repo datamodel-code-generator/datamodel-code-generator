@@ -77,7 +77,7 @@ def endpoint_url(value: object, name: str, *, allow_insecure_loopback: bool) -> 
 
     The URL is parsed as requests will parse it, so its origin, port included, is known before any exchange.
     """
-    from .urls import URLValidationError, canonical_origin, origin_text  # ruff: ignore[import-outside-top-level]
+    from .urls import URLValidationError, canonical_origin, origin_text  # noqa: PLC0415
 
     if not isinstance(value, str):
         raise ConfigurationError(field_path=(name,), reason="invalid_type")
@@ -149,10 +149,10 @@ def client_authentication(
 
 def http_client_options(transport: TransportOptions, http_client: object) -> ResolvedTransportOptions:
     """Refuse unverified TLS, transport-owned retries, an unavailable HTTP/2, and settings beside an injection."""
-    import importlib.util  # ruff: ignore[import-outside-top-level]
-    import ssl  # ruff: ignore[import-outside-top-level]
+    import importlib.util  # noqa: PLC0415
+    import ssl  # noqa: PLC0415
 
-    from .options import DEFAULT_TRANSPORT, resolve_transport_options  # ruff: ignore[import-outside-top-level]
+    from .options import DEFAULT_TRANSPORT, resolve_transport_options  # noqa: PLC0415
 
     resolved = resolve_transport_options(transport)
     if not resolved.verify:
@@ -205,7 +205,7 @@ def token_request(  # noqa: PLR0913
     timeout: httpx2.Timeout,
 ) -> httpx2.Request:
     """Encode the form once and authenticate the client as its method prescribes, form-encoding Basic values."""
-    from .bodies import EncodedAttempt  # ruff: ignore[import-outside-top-level]
+    from .bodies import EncodedAttempt  # noqa: PLC0415
 
     form = list(fields)
     headers = [
@@ -392,7 +392,7 @@ def _answered(status: int, headers: HeadersView, body: bytes | None, received: d
 def _timed_out(error: BaseException) -> bool:
     if is_phase_timeout(error):
         return True
-    import httpx2  # ruff: ignore[import-outside-top-level]
+    import httpx2  # noqa: PLC0415
 
     return is_transport(error) and isinstance(error.cause, httpx2.TimeoutException)
 
@@ -506,7 +506,7 @@ class TokenEndpoint:
         if (provider := self.authentication.secret) is not None:
             try:
                 secret = _secret_value(provider.get(_secret_context(self.endpoint.origin, session.deadline)))
-            except Exception as error:  # ruff: ignore[blind-except]
+            except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
                 raise _provider_failure(error) from None
         if session.deadline.remaining() <= 0:
             return expired(session, DeliveryState.NOT_SENT)
@@ -523,7 +523,7 @@ class TokenEndpoint:
         assert client is not None
         try:
             response = client.send(request, stream=True, auth=None, follow_redirects=False)
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001 - Every adapter failure is classified by its evidence.
             failure = native_error(error, send_started=True)
             return _failed(failure, failure.delivery_state, caps, session)
         status = response.status_code
@@ -534,7 +534,7 @@ class TokenEndpoint:
             received, received_at = receipt(session.clock)
         except _SessionExpiredError:
             return expired(session, DeliveryState.RESPONSE_STARTED, status)
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
             primary = error
             return _failed(
                 native_error(error, send_started=True, response_started=True),
@@ -634,7 +634,7 @@ class AsyncTokenEndpoint:
         assert client is not None
         try:
             response = await client.send(request, stream=True, auth=None, follow_redirects=False)
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001 - Every adapter failure is classified by its evidence.
             failure = native_error(error, send_started=True)
             return _failed(failure, failure.delivery_state, caps, session)
         status = response.status_code
@@ -645,7 +645,7 @@ class AsyncTokenEndpoint:
             received, received_at = receipt(session.clock)
         except _SessionExpiredError:
             return expired(session, DeliveryState.RESPONSE_STARTED, status)
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
             primary = error
             return _failed(
                 native_error(error, send_started=True, response_started=True),
@@ -738,6 +738,6 @@ def token_material(
         msg = "The token response refresh token is not a nonempty string."
         raise _invalid(msg)
     return (
-        AccessToken(access, token_type="Bearer", expires_at=expires_at, scopes=scopes),  # ruff: ignore[hardcoded-password-func-arg]
+        AccessToken(access, token_type="Bearer", expires_at=expires_at, scopes=scopes),  # noqa: S106
         refresh if isinstance(refresh, str) else None,
     )

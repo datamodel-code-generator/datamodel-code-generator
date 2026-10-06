@@ -7,7 +7,6 @@ import io
 import re
 from typing import TYPE_CHECKING, Any, Final
 
-import httpx2
 
 from tests.data.python.client_bodies import Chunks, async_attempt_factory, attempt_factory
 from tests.data.python.client_runtime import (

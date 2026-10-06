@@ -266,7 +266,7 @@ def stream_uses(
     return tuple(specs), tuple(uses.values()), problems
 
 
-def plan_streams(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+def plan_streams(  # noqa: PLR0913, PLR0917
     specs: tuple[StreamSpec, ...],
     protocols: Protocols | None,
     plan: ClientPlan,

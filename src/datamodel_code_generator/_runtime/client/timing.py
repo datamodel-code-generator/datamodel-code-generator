@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import time as _time
-from collections.abc import Callable  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
+from collections.abc import Callable  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
 from typing import Final, final
 
@@ -47,7 +47,7 @@ def checked_instance(value: object, kinds: tuple[type, ...], path: tuple[str, ..
 
 def _random() -> float:
     """Return a uniform float in [0, 1), loading the random source only once a full jitter needs a value."""
-    from secrets import randbits  # ruff: ignore[import-outside-top-level]
+    from secrets import randbits  # noqa: PLC0415
 
     return randbits(53) / (1 << 53)
 
@@ -116,8 +116,8 @@ class Deadline:
 def absolute_deadline(at: float, *, clock: Clock) -> Deadline:
     """Build the private absolute deadline on a clock's scale used when a call or stream resolves its budget."""
     value = object.__new__(Deadline)
-    object.__setattr__(value, "_at", at)  # ruff: ignore[unnecessary-dunder-call] - Initialize the frozen value without a public constructor.
-    object.__setattr__(value, "_clock", clock)  # ruff: ignore[unnecessary-dunder-call]
+    object.__setattr__(value, "_at", at)  # noqa: PLC2801 - Initialize the frozen value without a public constructor.
+    object.__setattr__(value, "_clock", clock)  # noqa: PLC2801
     return value
 
 

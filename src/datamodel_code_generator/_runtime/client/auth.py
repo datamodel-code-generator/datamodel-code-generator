@@ -13,7 +13,7 @@ from typing_extensions import TypeIs
 
 from ..model_codecs.unset import UNSET, Unset
 from .errors import ConfigurationError
-from .responses import HeadersView  # ruff: ignore[typing-only-first-party-import] - Public annotations support get_type_hints().
+from .responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
 from .scopes import scope_tuple
 from .timing import Deadline
 

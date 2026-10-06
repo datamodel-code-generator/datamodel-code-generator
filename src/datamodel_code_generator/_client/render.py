@@ -983,7 +983,7 @@ class _Typing:
 class _Resources(_Typing):
     """Render the root clients and the resource modules with their typed operation methods."""
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         plan: ClientPlan,
         codecs: CodecPlan,
@@ -1288,7 +1288,7 @@ class _Resources(_Typing):
             variants.append(((_Argument("response_media_type", "str"),), self.successes(spec)))
         return variants, (parameters, self.successes(spec))
 
-    def branches(  # ruff: ignore[too-many-arguments]
+    def branches(  # noqa: PLR0913
         self,
         module: Module,
         spec: OperationSpec,
@@ -1947,7 +1947,7 @@ _CACHE_OPTIONS: Final = (("cache_options", ".", "CacheOptions"), _HELPER_OPTIONS
 _DEFAULT_STATUSES: Final = [200]
 
 
-class _Helpers:  # ruff: ignore[too-many-public-methods] - It renders every helper kind of a package.
+class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     """Render the protocol helpers of a client package: their plans and their sync and asyncio namespaces."""
 
     def __init__(self, resources: _Resources, fingerprints: Mapping[str, str]) -> None:
@@ -2042,7 +2042,7 @@ class _Helpers:  # ruff: ignore[too-many-public-methods] - It renders every help
         return self.accessor(module, f"_items_{index}", self.page(module, spec), returns, what, spec.steps)
 
     @staticmethod
-    def accessor(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+    def accessor(  # noqa: PLR0913, PLR0917
         module: Module, name: str, data: str, returns: str, what: str, steps: tuple[ItemStep, ...]
     ) -> str:
         """Return a typed accessor reading a value through its steps, returning None where an optional step is None."""
@@ -2189,7 +2189,7 @@ class _Helpers:  # ruff: ignore[too-many-public-methods] - It renders every help
             f"(pointer={operation.contract.id.use_site.pointer!r})"
         )
 
-    def polling(self, module: Module, index: int, spec: PollingSpec) -> list[str]:  # ruff: ignore[too-many-locals]
+    def polling(self, module: Module, index: int, spec: PollingSpec) -> list[str]:  # noqa: PLR0914
         """Return a polling helper's result accessors and its plan.
 
         The plan names the create, poll, and result operations, the states, the bindings, the interval, and the
@@ -2269,7 +2269,7 @@ class _Helpers:  # ruff: ignore[too-many-public-methods] - It renders every help
         head = f"CANCEL_{index}: {module.name('typing', 'Final')}[{plan}[{self.response(module, cancel)}]] = "
         return head + layout(_call(plan, entries), 0, len(head), WIDTH)
 
-    def module(self, *, asynchronous: bool) -> str:  # ruff: ignore[too-many-locals]
+    def module(self, *, asynchronous: bool) -> str:  # noqa: PLR0914
         """Return the sync or asyncio module of the helper namespaces and the helpers."""
         prefix = "Async" if asynchronous else ""
         root = f"{prefix}ProtocolHelpers"
@@ -2345,7 +2345,7 @@ class _Helpers:  # ruff: ignore[too-many-public-methods] - It renders every help
             sections=sections,
         )
 
-    def leaf(  # ruff: ignore[too-many-arguments]
+    def leaf(  # noqa: PLR0913
         self,
         module: Module,
         index: int,
@@ -2390,7 +2390,7 @@ class _Helpers:  # ruff: ignore[too-many-public-methods] - It renders every help
         )
         return "\n\n".join((head, *members))
 
-    def methods(self, module: Module, index: int, spec: PaginationSpec, *, asynchronous: bool) -> list[str]:  # ruff: ignore[too-many-locals]
+    def methods(self, module: Module, index: int, spec: PaginationSpec, *, asynchronous: bool) -> list[str]:  # noqa: PLR0914
         """Return a pagination helper's page, iterate, next_page, and resume methods."""
         operation = replace(spec.operation, fields=())
         resources = self.resources
@@ -2617,7 +2617,7 @@ class _Helpers:  # ruff: ignore[too-many-public-methods] - It renders every help
         head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{result}, {self.page(module, spec)}]] = "
         return head + layout(_call(plan, entries), 0, len(head), WIDTH)
 
-    def upload_methods(self, module: Module, index: int, spec: UploadSpec, *, asynchronous: bool) -> list[str]:  # ruff: ignore[too-many-locals]
+    def upload_methods(self, module: Module, index: int, spec: UploadSpec, *, asynchronous: bool) -> list[str]:  # noqa: PLR0914
         """Return an upload helper's start and resume methods, which return the handle that appends its chunks."""
         operation = replace(spec.operation, fields=())
         resources = self.resources
@@ -2915,7 +2915,7 @@ class _Helpers:  # ruff: ignore[too-many-public-methods] - It renders every help
 class ClientRenderer:
     """Render every module of one client package from its plan, codec plan, and wire plan."""
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         *,
         config: ClientGenerationConfig,
@@ -3302,7 +3302,7 @@ A limiter permit is acquired before opening a body and released when its respons
 runs in finally; secondary failures stay beside the primary failure. Root close refuses new calls from the root
 and its views, closes a created native client once, and leaves borrowed clients and providers caller owned.
 Native task cancellation propagates unchanged, and user callbacks are not shielded.
-{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""  # ruff: ignore[hardcoded-sql-expression]
+{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""  # noqa: S608
 
     def _compression_runtime(self) -> str:
         """Describe request compression, or that no operation of the package accepts a request coding."""

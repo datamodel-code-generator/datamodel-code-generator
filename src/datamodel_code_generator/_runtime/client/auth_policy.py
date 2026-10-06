@@ -255,7 +255,7 @@ def _requirements(
 def _signer_capabilities(signer: RequestSigner | AsyncRequestSigner) -> SignerCapabilities:
     try:
         value = signer.capabilities
-    except Exception as cause:  # ruff: ignore[blind-except] - A missing or failing capability record is a signer defect.
+    except Exception as cause:  # noqa: BLE001 - A missing or failing capability record is a signer defect.
         raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_capabilities", cause=cause) from None
     return _capabilities(value)
 

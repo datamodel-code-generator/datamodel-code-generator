@@ -26,7 +26,6 @@ import httpx2
 from typing_extensions import Self, TypeIs
 
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import plain
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
 from ..model_codecs.unset import UNSET, Unset
 from .bodies import (
@@ -281,15 +280,15 @@ def _protocol_options(
     if options is None or (protocols := options.protocols) is None or isinstance(protocols, Unset):
         return None
     if not isinstance(helpers := protocols.defaults, Unset) and helpers:
-        from ..protocols.options import checked_defaults  # ruff: ignore[import-outside-top-level] - Only helper defaults load the helper settings.
+        from ..protocols.options import checked_defaults  # noqa: PLC0415 - Only helper defaults load the helper settings.
 
         checked_defaults(helpers, defaults.helpers)
     if not isinstance(stores := protocols.cache_stores, Unset) and stores:
-        from ..protocols.options import checked_stores  # ruff: ignore[import-outside-top-level] - Only cache stores load the helper settings.
+        from ..protocols.options import checked_stores  # noqa: PLC0415 - Only cache stores load the helper settings.
 
         checked_stores(stores, defaults.helpers, asynchronous=asynchronous)
     if (connector := protocols.websocket_connector) is not None and not isinstance(connector, Unset):
-        from ..protocols.options import checked_connector  # ruff: ignore[import-outside-top-level] - Only a connector loads the helper settings.
+        from ..protocols.options import checked_connector  # noqa: PLC0415 - Only a connector loads the helper settings.
 
         checked_connector(connector, asynchronous=asynchronous)
     return protocols
@@ -675,7 +674,7 @@ def _completed(
     return Response(data=data, info=info)
 
 
-def _page(  # ruff: ignore[too-many-arguments]
+def _page(  # noqa: PLR0913
     decoder: ResponseDecoder[T],
     info: ResponseInfo,
     body: _Body,
@@ -753,7 +752,7 @@ def _compressed(call: _Call, request: httpx2.Request, deferred: object) -> tuple
         return request, False
     if request.headers.get_list("content-encoding"):
         raise ConfigurationError(field_path=("headers", "Content-Encoding"), reason="managed")
-    from .compression import gzipped_attempt  # ruff: ignore[import-outside-top-level] - Only a declared body loads the encoder.
+    from .compression import gzipped_attempt  # noqa: PLC0415 - Only a declared body loads the encoder.
 
     attempt = _attempt(request)
     body = None if attempt is None else gzipped_attempt(attempt, partial(call.check, "encode"))
@@ -765,13 +764,13 @@ def _compressed(call: _Call, request: httpx2.Request, deferred: object) -> tuple
 
 
 def _gzip_source(source: BodySource) -> BodySource:
-    from .compression import GzipSource  # ruff: ignore[import-outside-top-level] - Only a compressed body loads the encoder.
+    from .compression import GzipSource  # noqa: PLC0415 - Only a compressed body loads the encoder.
 
     return GzipSource(source)
 
 
 def _agzip_source(source: AsyncBodySource) -> AsyncBodySource:
-    from .compression import AsyncGzipSource  # ruff: ignore[import-outside-top-level] - Only a compressed body loads the encoder.
+    from .compression import AsyncGzipSource  # noqa: PLC0415 - Only a compressed body loads the encoder.
 
     return AsyncGzipSource(source)
 
@@ -806,7 +805,7 @@ def _uncredentialed(
     The credential and cookie headers and every header and query field a declared security scheme names are removed,
     whether the auth placed them or a patch, a parameter, or the server's URL carried them.
     """
-    from .security import secret_names  # ruff: ignore[import-outside-top-level] - Only a request to another origin needs the schemes.
+    from .security import secret_names  # noqa: PLC0415 - Only a request to another origin needs the schemes.
 
     names, query = secret_names(schemes)
     kept = tuple((name, value) for name, value in headers if name.lower() not in names)
@@ -828,8 +827,8 @@ class _Authentication:
 
     def candidate(self, headers: HeadersView, *, challenge_less: bool) -> bool:
         """Retain the refreshable provider/version actually used by a qualifying resource rejection."""
-        from .auth import BearerCredential  # ruff: ignore[import-outside-top-level]
-        from .auth_policy import invalid_token  # ruff: ignore[import-outside-top-level]
+        from .auth import BearerCredential  # noqa: PLC0415
+        from .auth_policy import invalid_token  # noqa: PLC0415
 
         credentials = self.credentials
         if credentials is not None:
@@ -863,7 +862,7 @@ def _auth_work(call: _Call) -> Generator[None, None, None]:
             events.emit(events.event("auth_start", sent=events.sent))
         yield
         call.check("auth")
-    except BaseException as error:  # ruff: ignore[blind-except]
+    except BaseException as error:  # noqa: BLE001
         failure = call.failure(error)
         if events is not None:
             auth_ended(events, started, failure)
@@ -882,7 +881,7 @@ async def _aauth_work(call: _Call) -> AsyncGenerator[None, None]:
             await events.aemit(events.event("auth_start", sent=events.sent))
         yield
         call.check("auth")
-    except BaseException as error:  # ruff: ignore[blind-except]
+    except BaseException as error:  # noqa: BLE001
         failure = call.failure(error)
         if events is not None:
             await aauth_ended(events, started, failure)
@@ -892,8 +891,8 @@ async def _aauth_work(call: _Call) -> AsyncGenerator[None, None]:
 
 
 def _credential_context(binding: BoundCredential | AsyncBoundCredential, call: _Call) -> CredentialContext:
-    from .auth import CredentialContext  # ruff: ignore[import-outside-top-level]
-    from .urls import origin_text  # ruff: ignore[import-outside-top-level]
+    from .auth import CredentialContext  # noqa: PLC0415
+    from .urls import origin_text  # noqa: PLC0415
 
     assert call.current_origin is not None
     return CredentialContext(
@@ -906,7 +905,7 @@ def _credential_context(binding: BoundCredential | AsyncBoundCredential, call: _
 
 
 def _expired_credentials(call: _Call) -> bool:
-    from .auth_policy import credentials_expired  # ruff: ignore[import-outside-top-level]
+    from .auth_policy import credentials_expired  # noqa: PLC0415
 
     assert call.auth is not None
     credentials = call.auth.credentials
@@ -1209,7 +1208,7 @@ class _Call(LogicalCallContext):
         )
         url = target.url
         if self.auth is not None:
-            from .auth_policy import strip_managed_query  # ruff: ignore[import-outside-top-level]
+            from .auth_policy import strip_managed_query  # noqa: PLC0415
 
             url = strip_managed_query(url, self.auth.bound)
         headers: Sequence[tuple[str, str]] = request.headers.multi_items()
@@ -1269,7 +1268,7 @@ class _SessionCall(_Call):
         They are the positions of the package's declared security schemes and the fields the call's auth places, which
         the auth adds again itself.
         """
-        from .security import secret_names  # ruff: ignore[import-outside-top-level] - Only a followed URL needs the schemes.
+        from .security import secret_names  # noqa: PLC0415 - Only a followed URL needs the schemes.
 
         query = secret_names(schemes)[1]
         return query if (auth := self.auth) is None else query | auth.bound.managed_query
@@ -1584,7 +1583,7 @@ class _Core(Generic[AdapterT, HandleT]):
                 raise ConfigurationError(reason="client_closed", field_path=())
             raise ConfigurationError(field_path=("options",), reason="invalid_type", operation_id=operation_id)
         if not isinstance(options.auth, Unset) and options.auth is not None:
-            from .auth_policy import validate_auth_mode  # ruff: ignore[import-outside-top-level]
+            from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(options.auth, asynchronous=self._asynchronous)
         return _layered(self._settings, options, operation_id)
@@ -1598,7 +1597,7 @@ class _Core(Generic[AdapterT, HandleT]):
             if security is not None and security.alternatives and all(security.alternatives):
                 raise ConfigurationError(field_path=("auth",), reason="missing_credentials")
             return None
-        from .auth_policy import bind_async_auth, bind_auth  # ruff: ignore[import-outside-top-level]
+        from .auth_policy import bind_async_auth, bind_auth  # noqa: PLC0415
 
         return (
             bind_async_auth(config, security, self._shared.security_schemes)
@@ -1611,7 +1610,7 @@ class _Core(Generic[AdapterT, HandleT]):
         operation, config = call.operation, call.settings.auth
         if (bound := self._bound(operation, config)) is None or config is None:
             return
-        from .auth_policy import validate_ownership, validate_patches  # ruff: ignore[import-outside-top-level]
+        from .auth_policy import validate_ownership, validate_patches  # noqa: PLC0415
 
         call.auth = _Authentication(bound)
         for headers in call.settings.headers:
@@ -1630,7 +1629,7 @@ class _Core(Generic[AdapterT, HandleT]):
 
     @staticmethod
     def _auth_prepared(request: httpx2.Request, call: _Call) -> None:
-        from .auth_policy import validate_ownership  # ruff: ignore[import-outside-top-level]
+        from .auth_policy import validate_ownership  # noqa: PLC0415
 
         assert call.auth is not None
         validate_ownership(
@@ -1647,7 +1646,7 @@ class _Core(Generic[AdapterT, HandleT]):
             ),
         )
 
-    def _prepare(  # ruff: ignore[too-many-arguments]
+    def _prepare(  # noqa: PLR0913
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
@@ -1715,7 +1714,7 @@ class _Core(Generic[AdapterT, HandleT]):
             )
         return _query(self._settings.query, pairs, call)
 
-    def _call_headers(  # ruff: ignore[too-many-arguments]
+    def _call_headers(  # noqa: PLR0913
         self,
         generated: list[tuple[str, str]],
         params: list[tuple[str, str]],
@@ -1771,12 +1770,12 @@ class _Core(Generic[AdapterT, HandleT]):
         partition = None if (security := self._security_context()) is None else security.credential_partition
         url = absolute_target(str(request.url)).url
         bound = self._bound(operation, settings.auth)
-        from .security import secret_names  # ruff: ignore[import-outside-top-level] - Only a cache fetch needs the schemes.
+        from .security import secret_names  # noqa: PLC0415 - Only a cache fetch needs the schemes.
 
         names, queries = secret_names(self._shared.security_schemes)
         credential: WireValue = None
         if bound is not None:
-            from .grants import grant_identity  # ruff: ignore[import-outside-top-level] - Only an authenticated cache fetch keys its credentials.
+            from .grants import grant_identity  # noqa: PLC0415 - Only an authenticated cache fetch keys its credentials.
 
             names = names.union(bound.managed_headers, ("cookie",) if bound.managed_cookies else ())
             credential = (
@@ -1818,7 +1817,7 @@ class _Core(Generic[AdapterT, HandleT]):
         self, operation: OperationPlan[object] | None, options: RequestOptions | None
     ) -> tuple[frozenset[str], frozenset[str]]:
         """Return catalog and configured signer credential positions without acquiring credentials."""
-        from .security import secret_names  # ruff: ignore[import-outside-top-level]
+        from .security import secret_names  # noqa: PLC0415
 
         headers, query = secret_names(self._shared.security_schemes)
         auth = self._call_settings(options, None if operation is None else operation.operation_id).auth
@@ -1847,7 +1846,7 @@ class _Core(Generic[AdapterT, HandleT]):
             None,
         )
 
-    def saved_request(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+    def saved_request(  # noqa: PLR0913, PLR0917
         self,
         plan: _PagePlan,
         operation: OperationPlan[object],
@@ -1892,7 +1891,7 @@ class _Core(Generic[AdapterT, HandleT]):
         raises a request DecodeError.
         """
         restored = tuple(
-            value if isinstance(value, Unset) else _coded(operation, spec, partial(spec.restored, plain(value)))
+            value if isinstance(value, Unset) else _coded(operation, spec, partial(spec.restored, value))
             for spec, value in zip(operation.parameters, arguments, strict=True)
         )
         if body is None or (request := operation.body) is None:
@@ -2007,7 +2006,7 @@ def _transport(options: ClientOptions | None, http_client: object) -> ResolvedTr
 def _released(close: Callable[[], None], operation_id: str | None, call_id: str) -> None:
     try:
         close()
-    except Exception as failure:  # ruff: ignore[blind-except]
+    except Exception as failure:  # noqa: BLE001
         raise SDKError(reason="cleanup_failed", operation_id=operation_id, call_id=call_id, cause=failure) from None
 
 
@@ -2077,14 +2076,14 @@ def _limiter_context(call: LogicalCallContext, url: str) -> LimiterContext:
 def _release_permit(permit: Permit) -> None:
     try:
         permit.release()
-    except Exception as error:  # ruff: ignore[blind-except]
+    except Exception as error:  # noqa: BLE001
         raise SDKError(reason="limiter_failed", cause=error) from None
 
 
 async def _arelease_permit(permit: AsyncPermit) -> None:
     try:
         await permit.release()
-    except Exception as error:  # ruff: ignore[blind-except]
+    except Exception as error:  # noqa: BLE001
         raise SDKError(reason="limiter_failed", cause=error) from None
 
 
@@ -2098,7 +2097,7 @@ def _acquire(limiter: Limiter | AsyncLimiter, call: LogicalCallContext, url: str
         events.emit(events.event("limiter_wait"))
     try:
         permit = limiter.acquire(_limiter_context(call, url))
-    except Exception as error:  # ruff: ignore[blind-except]
+    except Exception as error:  # noqa: BLE001
         raise SDKError(reason="limiter_failed", cause=error) from None
     if not _is_permit(permit):
         raise SDKError(reason="limiter_failed", cause=TypeError("Expected a synchronous Permit"))
@@ -2117,7 +2116,7 @@ async def _aacquire(
         await events.aemit(events.event("limiter_wait"))
     try:
         permit = await limiter.acquire(_limiter_context(call, url))
-    except Exception as error:  # ruff: ignore[blind-except]
+    except Exception as error:  # noqa: BLE001
         raise SDKError(reason="limiter_failed", cause=error) from None
     if not _is_async_permit(permit):
         raise SDKError(reason="limiter_failed", cause=TypeError("Expected an asynchronous Permit"))
@@ -2175,7 +2174,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         events = call_events(call.settings, call=call, path=path, asynchronous=False)
         try:
             self._admitted(call)
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             try:
                 if events is not None:
@@ -2210,7 +2209,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         shared.protocols, shared.root_auth = protocols, settings.auth
         return cls(shared, settings)
 
-    def execute(  # ruff: ignore[too-many-arguments]
+    def execute(  # noqa: PLR0913
         self,
         operation: OperationPlan[T],
         arguments: tuple[object, ...],
@@ -2263,7 +2262,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             if events is not None:
                 events.finish(result)
             call.check("decode")
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if events is not None:
                 events.ended(failure)
@@ -2273,7 +2272,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         finally:
             call.finish()
 
-    def execute_page(  # ruff: ignore[too-many-arguments]
+    def execute_page(  # noqa: PLR0913
         self,
         plan: _PagePlan,
         operation: OperationPlan[T],
@@ -2319,7 +2318,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             if events is not None:
                 events.finish(completed)
             call.check("decode")
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if failed is not None:
                 failed(failure, _delivery(call))
@@ -2331,7 +2330,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         finally:
             call.finish()
 
-    def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+    def execute_cached(  # noqa: PLR0913, PLR0917
         self,
         operation: OperationPlan[T],
         request: httpx2.Request,
@@ -2371,7 +2370,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             if events is not None:
                 events.finish(completed)
             call.check("decode")
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if events is not None:
                 events.ended(failure)
@@ -2381,7 +2380,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         finally:
             call.finish()
 
-    def execute_raw(  # ruff: ignore[too-many-arguments]
+    def execute_raw(  # noqa: PLR0912, PLR0913
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
@@ -2436,7 +2435,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             call.check("send")
             if stream:
                 call.handoff()
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if result is not None:
                 result.discard(failure)
@@ -2449,7 +2448,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             if not call.streaming:
                 call.finish()
 
-    def stream(  # ruff: ignore[too-many-arguments]
+    def stream(  # noqa: PLR0913
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
@@ -2508,7 +2507,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             call.check("send")
             if stream:
                 call.handoff()
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if result is not None:
                 result.discard(failure)
@@ -2532,7 +2531,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _streamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
 
-    def open_socket(  # ruff: ignore[too-many-arguments]
+    def open_socket(  # noqa: PLR0913
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
@@ -2581,7 +2580,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 events.finish(UNSET, handed_off=True)
             call.check("send")
             call.handoff()
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if result is not None:
                 result.discard(failure)
@@ -2635,7 +2634,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 _released(abandoned.close, call.operation_id, call.call_id)
             call.check("encode")
             result = self._exchange(request, source, call, receive, opener)
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             _abandoned(call, (source, entry), failure)
             raise failure from None
@@ -2717,7 +2716,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                     return result
                 closing, response = response, None
                 self._close_response(closing, call, failure)
-            except BaseException as error:  # ruff: ignore[blind-except]
+            except BaseException as error:  # noqa: BLE001
                 failure = self._exchange_failure(error, response, call, info)
                 if (
                     not isinstance(failure, APIConnectionError)
@@ -2825,7 +2824,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
 
     @staticmethod
     def _authenticate(call: _Call) -> None:
-        from .auth_policy import (  # ruff: ignore[import-outside-top-level]
+        from .auth_policy import (  # noqa: PLC0415
             BoundAuth,
             HopCredentials,
             accept_credential,
@@ -2873,9 +2872,9 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
     def _authenticated_request(
         request: httpx2.Request, attempt: BodyAttempt | None, source: BodySource | None, call: _Call
     ) -> httpx2.Request:
-        from .auth import SigningInput  # ruff: ignore[import-outside-top-level]
-        from .auth_policy import BoundAuth, apply_signature, place_credentials, sign_request  # ruff: ignore[import-outside-top-level]
-        from .urls import origin_text, signing_query  # ruff: ignore[import-outside-top-level]
+        from .auth import SigningInput  # noqa: PLC0415
+        from .auth_policy import BoundAuth, apply_signature, place_credentials, sign_request  # noqa: PLC0415
+        from .urls import origin_text, signing_query  # noqa: PLC0415
 
         auth = call.auth
         assert auth is not None
@@ -2887,7 +2886,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             return request
         digest = None
         if bound.requires_body_digest and attempt is not None:
-            from .body_sources import digest_body  # ruff: ignore[import-outside-top-level]
+            from .body_sources import digest_body  # noqa: PLC0415
 
             digest = digest_body(attempt, source, check=partial(call.check, "auth"))
         assert call.current_origin is not None
@@ -2910,7 +2909,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
 
     @staticmethod
     def _invalidate(call: _Call, *, recovering: bool) -> None:
-        from .auth_policy import BoundAuth, invalidate_credential  # ruff: ignore[import-outside-top-level]
+        from .auth_policy import BoundAuth, invalidate_credential  # noqa: PLC0415
 
         auth = call.auth
         assert auth is not None
@@ -2995,7 +2994,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 _released(released_attempt.close, call.operation_id, call.call_id)
             call.permit, permit = permit, None
             return response  # noqa: TRY300
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = self._failure(error, call, call.delivery_state)
             closes: list[Callable[[], None]] = []
             if response is not None:
@@ -3036,7 +3035,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         if (auth := call.auth) is None:
             return
         if source is not None and call.body_enabled and auth.bound.requires_body_digest:
-            from .body_sources import require_digest_source  # ruff: ignore[import-outside-top-level]
+            from .body_sources import require_digest_source  # noqa: PLC0415
 
             require_digest_source(source)
         self._authenticate(call)
@@ -3117,7 +3116,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         events = call_events(call.settings, call=call, path=path, asynchronous=True)
         try:
             self._admitted(call)
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             try:
                 if events is not None:
@@ -3152,7 +3151,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         shared.protocols, shared.root_auth = protocols, settings.auth
         return cls(shared, settings)
 
-    async def execute(  # ruff: ignore[too-many-arguments]
+    async def execute(  # noqa: PLR0913
         self,
         operation: OperationPlan[T],
         arguments: tuple[object, ...],
@@ -3205,7 +3204,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             if events is not None:
                 await events.afinish(result)
             call.check("decode")
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if events is not None:
                 await events.aended(failure)
@@ -3215,7 +3214,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         finally:
             call.finish()
 
-    async def execute_page(  # ruff: ignore[too-many-arguments]
+    async def execute_page(  # noqa: PLR0913
         self,
         plan: _PagePlan,
         operation: OperationPlan[T],
@@ -3261,7 +3260,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             if events is not None:
                 await events.afinish(completed)
             call.check("decode")
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if failed is not None:
                 failed(failure, _delivery(call))
@@ -3273,7 +3272,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         finally:
             call.finish()
 
-    async def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+    async def execute_cached(  # noqa: PLR0913, PLR0917
         self,
         operation: OperationPlan[T],
         request: httpx2.Request,
@@ -3313,7 +3312,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             if events is not None:
                 await events.afinish(completed)
             call.check("decode")
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if events is not None:
                 await events.aended(failure)
@@ -3323,7 +3322,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         finally:
             call.finish()
 
-    async def execute_raw(  # ruff: ignore[too-many-arguments]
+    async def execute_raw(  # noqa: PLR0912, PLR0913
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
@@ -3380,7 +3379,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             call.check("send")
             if stream:
                 call.handoff()
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if result is not None:
                 await result.discard(failure)
@@ -3393,7 +3392,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             if not call.streaming:
                 call.finish()
 
-    def stream(  # ruff: ignore[too-many-arguments]
+    def stream(  # noqa: PLR0913
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
@@ -3454,7 +3453,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             call.check("send")
             if stream:
                 call.handoff()
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if result is not None:
                 await result.discard(failure)
@@ -3478,7 +3477,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _astreamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
 
-    async def open_socket(  # ruff: ignore[too-many-arguments]
+    async def open_socket(  # noqa: PLR0913
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
@@ -3524,7 +3523,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 await events.afinish(UNSET, handed_off=True)
             call.check("send")
             call.handoff()
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if result is not None:
                 await result.discard(failure)
@@ -3578,7 +3577,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 await call.cleanup(abandoned.aclose)
             call.check("encode")
             result = await self._exchange(request, source, call, receive, opener)
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             await _aabandoned(call, (source, entry), failure)
             raise failure from None
@@ -3660,7 +3659,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                     return result
                 closing, response = response, None
                 await self._close_response(closing, call, failure)
-            except BaseException as error:  # ruff: ignore[blind-except]
+            except BaseException as error:  # noqa: BLE001
                 failure = await self._exchange_failure(error, response, call, info)
                 if (
                     not isinstance(failure, APIConnectionError)
@@ -3777,7 +3776,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
 
     @staticmethod
     async def _authenticate(call: _Call) -> None:
-        from .auth_policy import (  # ruff: ignore[import-outside-top-level]
+        from .auth_policy import (  # noqa: PLC0415
             AsyncBoundAuth,
             AsyncHopCredentials,
             accept_credential,
@@ -3828,9 +3827,9 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         source: AsyncBodySource | None,
         call: _Call,
     ) -> httpx2.Request:
-        from .auth import SigningInput  # ruff: ignore[import-outside-top-level]
-        from .auth_policy import AsyncBoundAuth, apply_signature, asign_request, place_credentials  # ruff: ignore[import-outside-top-level]
-        from .urls import origin_text, signing_query  # ruff: ignore[import-outside-top-level]
+        from .auth import SigningInput  # noqa: PLC0415
+        from .auth_policy import AsyncBoundAuth, apply_signature, asign_request, place_credentials  # noqa: PLC0415
+        from .urls import origin_text, signing_query  # noqa: PLC0415
 
         auth = call.auth
         assert auth is not None
@@ -3842,7 +3841,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             return request
         digest = None
         if bound.requires_body_digest and attempt is not None:
-            from .body_sources import adigest_body  # ruff: ignore[import-outside-top-level]
+            from .body_sources import adigest_body  # noqa: PLC0415
 
             digest = await adigest_body(attempt, source, check=partial(call.check, "auth"))
         assert call.current_origin is not None
@@ -3865,7 +3864,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
 
     @staticmethod
     async def _invalidate(call: _Call, *, recovering: bool) -> None:
-        from .auth_policy import AsyncBoundAuth, ainvalidate_credential  # ruff: ignore[import-outside-top-level]
+        from .auth_policy import AsyncBoundAuth, ainvalidate_credential  # noqa: PLC0415
 
         auth = call.auth
         assert auth is not None
@@ -3950,7 +3949,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 await call.cleanup(released_attempt.aclose)
             call.permit, permit = permit, None
             return response  # noqa: TRY300
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             failure = self._failure(error, call, call.delivery_state)
             closes: list[Callable[[], Awaitable[None]]] = []
             if response is not None:
@@ -3993,7 +3992,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         if (auth := call.auth) is None:
             return
         if source is not None and call.body_enabled and auth.bound.requires_body_digest:
-            from .body_sources import require_digest_source  # ruff: ignore[import-outside-top-level]
+            from .body_sources import require_digest_source  # noqa: PLC0415
 
             require_digest_source(source)
         await self._authenticate(call)

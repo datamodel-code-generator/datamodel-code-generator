@@ -238,7 +238,7 @@ class _BoundBody:
         pieces: list[bytes | BodyAttempt] = []
         try:
             for piece in self._pieces:
-                pieces.append(piece if isinstance(piece, bytes) else piece.open(context))  # ruff: ignore[manual-list-comprehension] - Retain partially opened attempts for cleanup.
+                pieces.append(piece if isinstance(piece, bytes) else piece.open(context))  # noqa: PERF401 - Retain partially opened attempts for cleanup.
             if not self._multipart and not isinstance(attempt := pieces[0], bytes):
                 return attempt
             return MultipartAttempt(pieces)
@@ -275,7 +275,7 @@ class _AsyncBoundBody:
         pieces: list[bytes | AsyncBodyAttempt] = []
         try:
             for piece in self._pieces:
-                pieces.append(piece if isinstance(piece, bytes) else await piece.aopen(context))  # ruff: ignore[manual-list-comprehension] - Retain partially opened attempts for cleanup.
+                pieces.append(piece if isinstance(piece, bytes) else await piece.aopen(context))  # noqa: PERF401 - Retain partially opened attempts for cleanup.
             if not self._multipart and not isinstance(attempt := pieces[0], bytes):
                 return attempt
             return AsyncMultipartAttempt(pieces)
@@ -342,7 +342,7 @@ def _digest_bytes(content: bytes, update: Callable[[bytes], None], check: Callab
 
 
 async def _adigest_bytes(content: bytes, update: Callable[[bytes], None], check: Callable[[], None]) -> None:
-    import asyncio  # ruff: ignore[import-outside-top-level]
+    import asyncio  # noqa: PLC0415
 
     for offset in range(0, len(content), CHUNK):
         check()
@@ -382,7 +382,7 @@ def digest_body(attempt: BodyAttempt, source: BodySource | None, *, check: Calla
     check()
     if source is not None and (declared := declared_attempt_digest(attempt)) is not None:
         return declared
-    from hashlib import sha256  # ruff: ignore[import-outside-top-level]
+    from hashlib import sha256  # noqa: PLC0415
 
     digest = sha256()
     _feed_digest(attempt, digest.update, check)
@@ -397,7 +397,7 @@ async def adigest_body(
     check()
     if source is not None and (declared := declared_attempt_digest(attempt)) is not None:
         return declared
-    from hashlib import sha256  # ruff: ignore[import-outside-top-level]
+    from hashlib import sha256  # noqa: PLC0415
 
     digest = sha256()
     await _afeed_digest(attempt, digest.update, check)

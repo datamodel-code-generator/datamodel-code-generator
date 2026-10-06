@@ -137,7 +137,7 @@ def _refuse_existing(path: Path, *, overwrite: bool) -> None:
         raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), str(path))
 
 
-def _created(path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # ruff: ignore[boolean-type-hint-positional-argument]
+def _created(path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # noqa: FBT001
     """Refuse an existing target unless overwriting, then open a new temporary file beside it."""
     _refuse_existing(path, overwrite=overwrite)
     handle, temporary = _temporary(path)
@@ -158,7 +158,7 @@ def _discarded(created: tuple[BinaryIO, Path]) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrite: bool) -> None:  # ruff: ignore[boolean-type-hint-positional-argument]
+def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrite: bool) -> None:  # noqa: FBT001
     """Write the last bytes of a completed download, close it, and give it its name."""
     file, temporary = created
     file.write(tail)
@@ -212,7 +212,7 @@ class _Raw(Generic[SourceT, HandleT]):
         "_status_secondary_errors",
     )
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         info: ResponseInfo,
         decoder: ResponseDecoder[object],
@@ -369,7 +369,7 @@ def checked(response: _Raw[SourceT, HandleT]) -> None:
 
     A stream's expiry is its call's stream deadline, as on every read.
     """
-    response._check()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    response._check()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 def held(response: RawResponse) -> Generator[bytes, None, None]:
@@ -377,36 +377,36 @@ def held(response: RawResponse) -> Generator[bytes, None, None]:
 
     A reader that stops at a terminal event of the body, or finds its end premature, decides how the stream ended.
     """
-    response._state = "streaming"  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
-    return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    response._state = "streaming"  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 def aheld(response: AsyncRawResponse) -> AsyncGenerator[bytes, None]:
     """Read an open asyncio streaming handle's decoded body, leaving its end to the reader, as `held` does."""
-    response._state = "streaming"  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
-    return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    response._state = "streaming"  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 def refused(response: RawResponse) -> None:
     """Close an open response its caller cannot use, whatever its status, raising its typed failure from its prefix."""
-    response._check()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
-    response._refuse(response._state)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    response._check()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    response._refuse(response._state)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 async def arefused(response: AsyncRawResponse) -> None:
     """Close an open asyncio response its caller cannot use, as `refused` does."""
-    response._check()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
-    await response._refuse(response._state)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    response._check()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    await response._refuse(response._state)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 def finished(response: RawResponse, error: BaseException | None = None) -> None:
     """End a held stream as read, or as failed with the reader's error, releasing it and reporting its end once."""
-    response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 async def afinished(response: AsyncRawResponse, error: BaseException | None = None) -> None:
     """End a held asyncio stream as read, or as failed with the reader's error, as `finished` does."""
-    await response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    await response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
@@ -419,7 +419,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         self._save_status(body, raw)
         self._end("buffered")
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         info: ResponseInfo,
         decoder: ResponseDecoder[object],
@@ -558,7 +558,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                 budget.spend(len(chunk))
                 decoded.append(chunk)
             self._save(raw, decoded)
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             self._end("failed", failure)
             raise failure from None
@@ -608,7 +608,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                 self._check()
                 budget.spend(len(chunk))
                 yield chunk
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             self._end("failed", failure)
             raise failure from None
@@ -632,7 +632,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                     break
         except ProtocolError as error:
             problem = error
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             self._end("failed", failure)
             return failure
@@ -655,7 +655,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         failed: BaseException | None = None
         try:
             close()
-        except Exception as failure:  # ruff: ignore[blind-except]
+        except Exception as failure:  # noqa: BLE001
             if error is None:
                 failed = error = self._call.snapshot_error(SDKError(reason="cleanup_failed", cause=failure))
                 failed.info = self._info
@@ -693,7 +693,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         self._save_status(body, raw)
         await self._end("buffered")
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(  # noqa: PLR0913
         self,
         info: ResponseInfo,
         decoder: ResponseDecoder[object],
@@ -776,7 +776,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         """
         self._downloadable()
 
-        from .disk import DiskWorker  # ruff: ignore[import-outside-top-level] - Only a download to a path starts a disk thread.
+        from .disk import DiskWorker  # noqa: PLC0415 - Only a download to a path starts a disk thread.
 
         worker = DiskWorker()
         worker.acquire()
@@ -874,7 +874,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                 budget.spend(len(chunk))
                 decoded.append(chunk)
             self._save(raw, decoded)
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
             raise failure from None
@@ -925,7 +925,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                 self._check()
                 budget.spend(len(chunk))
                 yield chunk
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
             raise failure from None
@@ -949,7 +949,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                     break
         except ProtocolError as error:
             problem = error
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
             return failure
@@ -971,7 +971,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         failed: BaseException | None = None
         try:
             await self._call.cleanup(close, error=error)
-        except Exception as failure:  # ruff: ignore[blind-except]
+        except Exception as failure:  # noqa: BLE001
             failed = error = self._failure(failure)
         except BaseException as interruption:
             if error is not None and not isinstance(error, Exception):

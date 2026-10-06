@@ -723,7 +723,7 @@ def _literal_problem(value: object) -> str | None:
 
 def project(configuration: ProtocolConfiguration) -> object:
     """Project Python records into the tree a YAML file gives; any other object becomes a value validation refuses."""
-    from datamodel_code_generator._runtime.protocols.records import (  # ruff: ignore[import-outside-top-level]
+    from datamodel_code_generator._runtime.protocols.records import (  # noqa: PLC0415
         BodySelector,
         BodyTarget,
         HeaderSelector,
@@ -815,7 +815,7 @@ def _file_problem(message: str) -> list[Diagnostic]:
 
 def _read(path: Path) -> tuple[object, list[Diagnostic]]:
     """Read one UTF-8 YAML document without anchors, aliases, merge keys, repeated keys, or deep nesting."""
-    from datamodel_code_generator.util import (  # ruff: ignore[import-outside-top-level]
+    from datamodel_code_generator.util import (  # noqa: PLC0415
         get_safe_loader,
         get_yaml_parse_errors,
         record_watch_dependency,
@@ -856,7 +856,7 @@ def _compose(loader_type: Any, text: str) -> tuple[object, list[Diagnostic]]:
 
 def _event_problem(loader: Any) -> str | None:
     """Refuse anchors, which aliases need, and nesting deeper than any composer handles alike, from the events."""
-    import yaml  # ruff: ignore[import-outside-top-level]
+    import yaml  # noqa: PLC0415
 
     depth = 0
     while loader.check_event():
@@ -872,7 +872,7 @@ def _event_problem(loader: Any) -> str | None:
 
 def _node_problems(root: object) -> list[Diagnostic]:
     """Walk the composed nodes once, refusing merge keys and keys a mapping repeats."""
-    import yaml  # ruff: ignore[import-outside-top-level]
+    import yaml  # noqa: PLC0415
 
     problems: list[Diagnostic] = []
     pending: deque[tuple[object, str]] = deque([(root, _ROOT)])
@@ -917,7 +917,7 @@ def _collides(name: str, other: str) -> bool:
     return name == other or name.startswith(f"{other}.") or other.startswith(f"{name}.")
 
 
-class _Validator:  # ruff: ignore[too-many-public-methods]
+class _Validator:  # noqa: PLR0904
     """Validate helper configuration trees, collecting problems and the schema references of the current helper."""
 
     def __init__(self) -> None:
@@ -1029,7 +1029,7 @@ class _Validator:  # ruff: ignore[too-many-public-methods]
         return value if (problem := _literal_problem(value)) is None else self.value(at, f"{at} {problem}")
 
     def pointer(self, value: object, at: str) -> object:
-        from datamodel_code_generator._runtime.protocols.records import BodySelector  # ruff: ignore[import-outside-top-level]
+        from datamodel_code_generator._runtime.protocols.records import BodySelector  # noqa: PLC0415
 
         try:
             BodySelector(pointer=value)  # ty: ignore[invalid-argument-type]
@@ -1060,7 +1060,7 @@ class _Validator:  # ruff: ignore[too-many-public-methods]
 
     def selector(self, value: object, at: str, *, every: bool = False, body: bool = False) -> object:
         """Convert a selector, which may select every occurrence of a header only in a binding value."""
-        from datamodel_code_generator._runtime.protocols.records import BodySelector, HeaderSelector  # ruff: ignore[import-outside-top-level]
+        from datamodel_code_generator._runtime.protocols.records import BodySelector, HeaderSelector  # noqa: PLC0415
 
         variants: dict[str, Spec] = {"body": {"pointer": (self.text, REQUIRED)}}
         if not body:
@@ -1083,7 +1083,7 @@ class _Validator:  # ruff: ignore[too-many-public-methods]
         return selected
 
     def target(self, value: object, at: str) -> object:
-        from datamodel_code_generator._runtime.protocols.records import (  # ruff: ignore[import-outside-top-level]
+        from datamodel_code_generator._runtime.protocols.records import (  # noqa: PLC0415
             BodyTarget,
             ParameterTarget,
             QuerystringTarget,
@@ -1146,7 +1146,7 @@ class _Validator:  # ruff: ignore[too-many-public-methods]
 
     def statuses(self, value: object, at: str) -> object:
         def status(item: object, where: str) -> object:
-            valid = type(item) is int and 100 <= item <= 599  # ruff: ignore[magic-value-comparison]
+            valid = type(item) is int and 100 <= item <= 599  # noqa: PLR2004
             return item if valid else self.value(where, f"{where} must be a status from 100 to 599")
 
         return self.distinct(at, self.items(value, at, status, nonempty=True), "a status")
