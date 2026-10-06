@@ -1,15 +1,15 @@
 # pets pydantic_v2.BaseModel
   > GET https://example.com/handoff
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream', cause=ReadTimeout('The read operation timed out')] deadline_exceeded
+  stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] phase_timeout
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
   stream read cap default APIConnectionError secondary []
-  stream observed read cap [30.0]
+  stream observed read cap [60.0]
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
   stream read cap disabled APIConnectionError secondary []
-  stream observed read cap [30.0]
+  stream observed read cap [None]
   > GET https://example.com/idle
     [host: example.com, accept-encoding: gzip, deflate] b''
   stream idle APITimeoutError
@@ -49,19 +49,19 @@
     [host: example.com, accept-encoding: gzip, deflate] b''
   stream interruption close original True released 1
   HTTP2 sync warm connection b'ready'
-  HTTP2 stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream', cause=ReadTimeout('The read operation timed out')] deadline_exceeded
+  HTTP2 stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] phase_timeout
   HTTP2 sync protocols ['h2'] requests 2
   > GET https://example.com/handoff
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream', cause=ReadTimeout('')] deadline_exceeded
+  async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('')] phase_timeout
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream read cap default APIConnectionError secondary []
-  async stream observed read cap [30.0]
+  async stream observed read cap [60.0]
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream read cap disabled APIConnectionError secondary []
-  async stream observed read cap [30.0]
+  async stream observed read cap [None]
   > GET https://example.com/idle
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream idle APITimeoutError
@@ -117,5 +117,5 @@
   async stream cleanup cancellation _Stop original True
   async stream cancelled cleanup released 0
   HTTP2 async warm connection b'ready'
-  HTTP2 async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream', cause=ReadTimeout('')] deadline_exceeded
+  HTTP2 async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('')] phase_timeout
   HTTP2 async protocols ['h2'] requests 2

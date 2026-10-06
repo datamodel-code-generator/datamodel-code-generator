@@ -156,7 +156,7 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
             with api.with_streaming_response.request_raw(
                 "GET",
                 "https://example.com/read-cap",
-                options=options.RequestOptions(stream_idle_timeout=idle),
+                options=options.RequestOptions(stream_idle_timeout=idle, total_timeout=None),
             ) as response:
                 lines.append(f"  stream read cap {label} {outcome(response.read)}")
             lines.append(f"  stream observed read cap {seen}")
@@ -264,7 +264,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             async with api.with_streaming_response.request_raw(
                 "GET",
                 "https://example.com/read-cap",
-                options=options.RequestOptions(stream_idle_timeout=idle),
+                options=options.RequestOptions(stream_idle_timeout=idle, total_timeout=None),
             ) as response:
                 lines.append(f"  async stream read cap {label} {await aoutcome(response.read)}")
             lines.append(f"  async stream observed read cap {seen}")
