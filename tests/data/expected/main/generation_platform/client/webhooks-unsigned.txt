@@ -34,8 +34,8 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['unsigned.message', 'adapted.message'] bindings 1
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper unsigned.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.message a2b3e07d5af3049ef7b74f5ddc62eb7822a2c93919dda1d4e99719aeee7efa2a
-  helper adapted.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.message fa180a5e7a132ea4286ab5de24f8da03f2adba2dfa4aa99609ee87b99eb16482
+  helper unsigned.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.message 456f15685833e06189ec1a9c6a8a239d6b24ca7fdea46fe9106412c83ee24b0a
+  helper adapted.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.message a345988fb6f2def4425ac2db374b39379352c84ef92c3afd6d2b5b220772d446
   {
     "helpers": {
       "adapted.message": {

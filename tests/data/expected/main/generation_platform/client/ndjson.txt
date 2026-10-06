@@ -42,10 +42,10 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['records.all', 'records.lenient', 'records.tagged', 'search.all'] bindings 9
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper records.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.all e08a809dc409a6397205f0a58c6f60003179fda3a6e995c74a4b4ffb55f233bf
-  helper records.lenient ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.lenient 6a9c73866b74cae0dcf4f235570bb56f18a7325658aaff8e416d02e9aae64fa7
-  helper records.tagged ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.tagged e48aab088550d428cfc8a3b5b2e0c23e594bba7dee87b492461ed2df63d4ad7e
-  helper search.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/search.all 8868f178172b709d45f8bb91c4c0a51560d0f13fd2fef17d7956a584cda0abb9
+  helper records.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.all 4afb02180b489b7b7df1be90bc76cb178a7a381f658a94660cf3642d8b5be7c8
+  helper records.lenient ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.lenient f82ea8aaa6d225342763538511ae4385813d6e4b9e4c6f6fb3c8a9cccf8c6ce6
+  helper records.tagged ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.tagged 41ad88f73433682b89058fa6bc220e1eabca5cc8648088ced44c620487dc7d9e
+  helper search.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/search.all 6cad3748d712b4eeb576ef9d10af3d51b186891d3fdc27659fb77bcea7bc35d7
   {
     "helpers": {
       "records.all": {

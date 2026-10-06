@@ -42,10 +42,10 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['users.by_header', 'users.bound', 'searches.all', 'folders.all'] bindings 14
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper users.by_header pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.by_header aa20eacca6933f470aad61677a0fca11be1643b8ca0881504e7e8208435d96f6
-  helper users.bound pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.bound 1dc88a916343cc46e9e5430d27e585235ece59e9b347ed39439e07ed44133d96
-  helper searches.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/searches.all 2de8e85b225f52c1f585f8d142218188902caada6a11744ca6548dda748fe471
-  helper folders.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/folders.all a8e3bd9c08ecde60e211c0f2f3fb5cd9437e62049e3bb6fd03a5b4f6df773e3d
+  helper users.by_header pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.by_header b27c04049d96a65a6e79f72a5bebe814710da42beab78e83348e199f6b1ba27c
+  helper users.bound pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.bound d391344d5cb5cbcf79c9aa318aa29178879fdad37242cd1d88a592ab7f75548e
+  helper searches.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/searches.all bdf30152aaebb3fcbc3fe98e7b1197393bbd43dfe28e908073668a2a170f0e27
+  helper folders.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/folders.all d90a009544a74231e1b784c2340250b23ac2ee56bcae6a4d921e748361a41ef4
   {
     "helpers": {
       "folders.all": {

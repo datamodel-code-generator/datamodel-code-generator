@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import fields, is_dataclass, replace
+from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING, Final, cast
 
@@ -15,6 +15,7 @@ from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.config import ClientGenerationConfig
 from datamodel_code_generator._client.fields import plan_fields
+from datamodel_code_generator._client.model_facts import ModelFacts
 from datamodel_code_generator._client.pagination import plan_pagination
 from datamodel_code_generator._client.plan import (
     PlanError,
@@ -136,14 +137,15 @@ class ClientTarget:
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
-        plan, named = plan_fields(plan, codecs, batch, wire)
-        pages, checked = plan_pagination(protocols, plan, codecs, wire, request)
-        polls, polled = plan_polling(protocols, plan, codecs, wire, request)
-        caches, cached = plan_caches(protocols, plan, codecs, wire, request)
-        uploads, uploaded = plan_uploads(protocols, plan, codecs, wire, request)
+        facts, coded = ModelFacts(batch), frozenset(use for use, _ in codecs.bindings)
+        plan, named = plan_fields(plan, facts, coded, wire)
+        pages, checked = plan_pagination(protocols, plan, facts, coded, wire, request)
+        polls, polled = plan_polling(protocols, plan, facts, coded, wire, request)
+        caches, cached = plan_caches(protocols, plan, facts, coded, wire, request)
+        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, wire, request)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
         helpers = tuple(sorted((*pages, *polls, *caches, *uploads), key=lambda spec: order[spec.helper.name]))
-        streams = plan_streams(streamed, protocols, plan, codecs, wire, request, stream_problems)
+        streams = plan_streams(streamed, protocols, plan, facts, coded, wire, request, stream_problems)
         sockets = plan_sockets(opened, socket_problems)
         webhooks = plan_webhooks(events, codecs, hooked)
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
@@ -299,13 +301,12 @@ class _TargetData:
         codecs: CodecPlan,
         wire: WirePlan,
     ) -> None:
-        """Index the selected operations, the use bindings, and the import locations of the generated symbols."""
+        """Index the selected operations and the import locations of the generated symbols."""
         self.plan = plan
         self.config = config
         self.request = request
         self.codecs = codecs
         self.wire = wire
-        self.bindings = dict(codecs.bindings)
         self.selected = {operation.id: index for index, operation in enumerate(request.operations)}
         self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
 
@@ -345,7 +346,6 @@ class _TargetData:
             "operations": [self.request.documents.operation(operation.contract.id)],
             "schemas": [spec.item_schema],
             "type_uses": [self.contract(spec.page)],
-            "adapters": [],
         })
 
     def polling(self, spec: PollingSpec, settings: JSONValue) -> str:
@@ -382,7 +382,6 @@ class _TargetData:
             ],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in uses],
-            "adapters": [],
         })
 
     def upload(self, spec: UploadSpec, settings: JSONValue) -> str:
@@ -413,7 +412,6 @@ class _TargetData:
             "operations": [documents.operation(item.contract.id) for item in operations],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in uses],
-            "adapters": [],
         })
 
     def cache(self, spec: CacheSpec, settings: JSONValue) -> str:
@@ -444,7 +442,6 @@ class _TargetData:
             "operations": [self.request.documents.operation(item.contract.id) for item in operations],
             "schemas": [],
             "type_uses": [self.contract(spec.response)],
-            "adapters": [],
         })
 
     def webhook(self, spec: WebhookSpec, settings: JSONValue) -> str:
@@ -467,7 +464,6 @@ class _TargetData:
             "operations": [],
             "schemas": [event.schema for event in events],
             "type_uses": [self.contract(event.use) for event in events],
-            "adapters": [],
         })
 
     def stream(self, spec: StreamSpec, settings: JSONValue) -> str:
@@ -497,7 +493,6 @@ class _TargetData:
             ],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in spec.uses],
-            "adapters": [],
         })
 
     def socket(self, spec: SocketSpec, settings: JSONValue) -> str:
@@ -519,7 +514,6 @@ class _TargetData:
             "operations": [self.request.documents.operation(operation.contract.id)],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in spec.uses],
-            "adapters": [],
         })
 
     def operation(self, spec: OperationSpec) -> JSONValue:
@@ -547,8 +541,8 @@ class _TargetData:
         return None if use is None or use.type is None else self.spelling.static(use.type)
 
     def contract(self, use: TypeUseBinding) -> object:
-        """Return a retained helper use's codec binding and the normalized schema at its site."""
-        return (self.bindings.get(use.id), self.wire.schema(cast("SourceLocation", use.schema))[1])
+        """Return a retained helper use's normalized schema at its site."""
+        return self.wire.schema(cast("SourceLocation", use.schema))[1]
 
 
 def _digest(value: object) -> str:
@@ -564,14 +558,9 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
 
 
 def _projection(value: object) -> JSONValue:
-    """Project a contract value into canonical JSON: records become objects of their fields."""
+    """Project a contract value into canonical JSON."""
     if _is_sequence(value):
         return [_projection(item) for item in value]
     if _is_mapping(value):
         return {str(key): _projection(item) for key, item in value.items()}
-    if is_dataclass(value) and not isinstance(value, type):
-        return {
-            "kind": type(value).__name__,
-            **{item.name: _projection(getattr(value, item.name)) for item in fields(value)},
-        }
     return checked_scalar(value)

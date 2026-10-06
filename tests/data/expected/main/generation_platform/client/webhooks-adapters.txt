@@ -41,12 +41,12 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['stripe.event', 'adapted.message', 'adapted.plain', 'mapped.event', 'unsigned.event', 'unsigned.message'] bindings 3
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper stripe.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/stripe.event 684ce6df1763bc0c060116e967c8a6f6bf4e1219d2ac29d0d46978bd40055adc
-  helper adapted.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.message f91cd8bbdf0799fef955c918e6e42eae8978b0d92cd4ffbbaba615ce1c9bbd1f
-  helper adapted.plain webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.plain c1ad130678fe3702ba72ed5f28a69486ccfb05a45d621fec89bb26c3a5768309
-  helper mapped.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/mapped.event fd379b7cf0d0ec0c4b8101cf36d9dc58e80ad886955c3c19939cc0a4a8628842
-  helper unsigned.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.event 944ab3c4b4dd149086627b88ee95d331b635a43c003a9b750476c3b392f62594
-  helper unsigned.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.message 91f21300c15a87cdad3b77a9b9987c43ea4e447f03137489e777cbe1dc0ad684
+  helper stripe.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/stripe.event 487cb65ff3ca314dce5d6507f31ee15f87cb4dabd7fa65dcf7a32f49e3fe8ce7
+  helper adapted.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.message 81efee472e838ef0726ff2ce562440fa740d43fb52fc34d2232ddc11ad6d4e39
+  helper adapted.plain webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.plain d2642b39fcd198abd9835fa23b554ca11d8913e10a6bb95086b5ae2441eb7b99
+  helper mapped.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/mapped.event d5ac1f2656addccb89a16114adee22a23a58c9a8ad4ee79e17ffe115b3f82320
+  helper unsigned.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.event a0e9d2619836b57965ad389f9f3c5bd6053aa37423f4171043dcd6d082353f03
+  helper unsigned.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.message e6be987f0fc6552e58d15575d42208c5305fd6ac4a837dc45d4534de274f2d66
   {
     "helpers": {
       "adapted.message": {

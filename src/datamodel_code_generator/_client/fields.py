@@ -9,22 +9,19 @@ from typing import TYPE_CHECKING, Final
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import RESERVED_ARGUMENTS, identifier, snake
 from datamodel_code_generator._client.plan import FieldArgument, FieldBranch
-from datamodel_code_generator._runtime.model_codecs.bindings import ModelNode, UnionNode
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
-from datamodel_code_generator._target_contract import SourceLocation, SymbolId
+from datamodel_code_generator._target_contract import SourceLocation
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Container, Mapping
 
+    from datamodel_code_generator._client.model_facts import ModelFacts, ModelField
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.bindings import ModelBinding, UseBinding
-    from datamodel_code_generator._target_contract import FieldUseBinding, GeneratedTypeContractBatch, TypeUseId
+    from datamodel_code_generator._target_contract import TypeUseId
 
 _KINDS: Final = frozenset({"json", "form"})
 _MEMBERS: Final = ("allOf", "anyOf", "oneOf")
-_NATIVE_KINDS: Final = frozenset({"model", "dataclass", "typed_dict", "struct"})
 
 
 def _problem(code: str, message: str, operation: OperationSpec, option_path: str | None = None) -> Diagnostic:
@@ -40,22 +37,6 @@ def _problem(code: str, message: str, operation: OperationSpec, option_path: str
 
 def _label(operation: OperationSpec) -> str:
     return f"{operation.contract.method.upper()} {operation.contract.path}"
-
-
-def _model(binding: UseBinding) -> ModelBinding | None:
-    """Return the object model a use binds natively, alone or with null, or None when its body is anything else.
-
-    A root model whose root is such a model, as a Pydantic body of an object or null is, stands for that model.
-    """
-    models = {item.symbol: item for item in binding.models}
-    node = binding.type
-    if isinstance(node, ModelNode) and (root := models[node.symbol].root) is not None:
-        node = root
-    if isinstance(node, UnionNode) and len(node.members) == 1:
-        node = node.members[0]
-    if not isinstance(node, ModelNode):
-        return None
-    return model if (model := models[node.symbol]).native_kind in _NATIVE_KINDS else None
 
 
 def _required(wire: WirePlan, site: SourceLocation, seen: set[SourceLocation]) -> set[str]:
@@ -81,30 +62,33 @@ def _required(wire: WirePlan, site: SourceLocation, seen: set[SourceLocation]) -
 class _Fields:
     """Plan the field branches of every operation whose body arguments are 'both'."""
 
-    def __init__(self, codecs: CodecPlan, batch: GeneratedTypeContractBatch, wire: WirePlan) -> None:
+    def __init__(self, facts: ModelFacts, codecs: Container[TypeUseId], wire: WirePlan) -> None:
+        self.facts = facts
+        self.codecs = codecs
         self.wire = wire
-        self.bindings: Mapping[TypeUseId, UseBinding] = dict(codecs.bindings)
-        self.symbols = {name: symbol for symbol, name in codecs.imports}
-        self.members: dict[SymbolId, list[FieldUseBinding]] = {}
-        for member in batch.fields:
-            self.members.setdefault(member.consumer, []).append(member)
         self.problems: list[Diagnostic] = []
 
-    def model(self, media: MediaSpec) -> tuple[ModelBinding, SymbolId, set[str]] | None:
-        """Return the object model a media's body binds natively, its symbol, and the names its schema requires.
+    def model(self, media: MediaSpec) -> tuple[tuple[ModelField, ...], set[str]] | None:
+        """Return the fields of the object model a media's body with a codec stands for, and the names it requires.
 
         Any other body is None, as is one whose schema requires a name that only extra properties could hold.
         """
         use = media.use
-        if media.kind not in _KINDS or media.members is not None or use is None:
+        if (
+            media.kind not in _KINDS
+            or media.members is not None
+            or use is None
+            or (value := use.type) is None
+            or use.id not in self.codecs
+        ):
             return None
-        binding = self.bindings.get(use.id)
-        model = None if binding is None else _model(binding)
+        model = self.facts.model(value)
         if model is None or use.schema is None:
             return None
-        if not (required := _required(self.wire, use.schema, set())) <= {field.wire_name for field in model.fields}:
+        fields = self.facts.fields(model.id)
+        if not (required := _required(self.wire, use.schema, set())) <= {field.wire_name for field in fields}:
             return None
-        return model, SymbolId(self.symbols[model.symbol]), required
+        return fields, required
 
     def branch(self, media: MediaSpec, names: Mapping[str, str]) -> FieldBranch | None:
         """Return the field branch of one media type, or None when its body cannot be given as fields.
@@ -115,23 +99,17 @@ class _Fields:
         """
         if (found := self.model(media)) is None:
             return None
-        model, symbol, required = found
-        declared = {member.wire_name: member for member in self.members.get(symbol, []) if member.wire_name}
-        fields: list[FieldArgument] = []
-        for item in model.fields:
-            if item.read_only:
-                continue
-            facts = declared[item.wire_name].model_facts
-            assert facts is not None
-            python_name = names.get(item.wire_name) or snake(item.wire_name)
-            fields.append(
-                FieldArgument(
-                    python_name=python_name,
-                    wire_name=item.wire_name,
-                    required=item.wire_name in required,
-                    type=facts.type,
-                )
+        declared, required = found
+        fields = [
+            FieldArgument(
+                python_name=names.get(item.wire_name) or snake(item.wire_name),
+                wire_name=item.wire_name,
+                required=item.wire_name in required,
+                type=item.type,
             )
+            for item in declared
+            if not item.read_only
+        ]
         return FieldBranch(media_type=media.media_type, fields=tuple(fields)) if fields else None
 
     def operation(self, spec: OperationSpec) -> tuple[FieldBranch, ...]:
@@ -183,10 +161,10 @@ def _taken(spec: OperationSpec, branch: FieldBranch) -> list[str]:
 
 
 def plan_fields(
-    plan: ClientPlan, codecs: CodecPlan, batch: GeneratedTypeContractBatch, wire: WirePlan
+    plan: ClientPlan, facts: ModelFacts, codecs: Container[TypeUseId], wire: WirePlan
 ) -> tuple[ClientPlan, tuple[Diagnostic, ...]]:
     """Return the plan with each operation's field branches, and the problems of naming them."""
-    fields = _Fields(codecs, batch, wire)
+    fields = _Fields(facts, codecs, wire)
     operations = tuple(replace(spec, fields=fields.operation(spec)) for spec in plan.operations)
     resources = tuple(
         replace(resource, operations=tuple(operations[spec.index] for spec in resource.operations))

@@ -37,7 +37,7 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['scope.inline'] bindings 2
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper scope.inline websocket enabled True /inputs/target_config/protocol_metadata/helpers/scope.inline d41c6bb7d732a33fbb9aecc4da3a4f9a78e24dbd47aa3c6a82178da4a008c28f
+  helper scope.inline websocket enabled True /inputs/target_config/protocol_metadata/helpers/scope.inline 976d022c5c84fe4061028039b6875adce2e31fb58b53fbbea6fef11726948e25
   {
     "helpers": {
       "scope.inline": {

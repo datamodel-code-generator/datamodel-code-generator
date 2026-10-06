@@ -21,7 +21,7 @@ STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_0,
     media='text/event-stream',
-    fingerprint='47deb62e9b7f5c9aca31b278bef559cf79bf8ebfb407d55aa696a19b7c29efab',
+    fingerprint='914106c102ca637c5c092ef60704b6e6f4f12f8a96f0edef41e6b1d2c8c898cc',
     event=native_value(model_bindings.codec_7, model_bindings.CONTEXT_7),
 )
 
@@ -31,7 +31,7 @@ STREAM_1: Final[EventPlan[_dcg_type_1 | _dcg_type_2 | UnknownEvent]] = EventPlan
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_0,
     media='text/event-stream',
-    fingerprint='047624039d1515adc69e1e230e74d8dd69aaf6b29e945ee089eda87db70cc580',
+    fingerprint='3d0cd2a5b57b3bb77d6af60ffc0314a99fb1867c2a4642495ccf282ff5f55fbc',
     routes=(
         ('created', native_value(model_bindings.codec_8, model_bindings.CONTEXT_8)),
         ('deleted', native_value(model_bindings.codec_9, model_bindings.CONTEXT_9)),
@@ -50,7 +50,7 @@ STREAM_2: Final[EventPlan[_dcg_type_1 | _dcg_type_2]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_0,
     media='text/event-stream',
-    fingerprint='30242dd9c3bbafd4d580c05e69ae1f3239c9b39fd434847ffb202cf0286fa4e6',
+    fingerprint='7b288e639b494089becf0e91b950f62a3e2227d8fb306782d04cb7d30f77db1d',
     routes=(
         ('created', native_value(model_bindings.codec_8, model_bindings.CONTEXT_8)),
         ('deleted', native_value(model_bindings.codec_9, model_bindings.CONTEXT_9)),
@@ -69,7 +69,7 @@ STREAM_3: Final[EventPlan[_dcg_type_0]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1feed/post'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='cbd2a9efc2b2e8cace2e77be641622bce70d90e03fb73d0b57bc730a8d182152',
+    fingerprint='5854fc8301e5ee84922ab5821414c233ac4c5eb9eafb799beaf3445d3b6b204c',
     event=native_value(model_bindings.codec_12, model_bindings.CONTEXT_12),
     completion='sentinel',
     terminal='[DONE]',

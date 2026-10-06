@@ -32,10 +32,10 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['search.all', 'search.fixed', 'search.next', 'lookup.all'] bindings 5
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper search.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/search.all fde5cb5097167d549c8af2aabec3f47d77df26bd5b0eaa852c0e02fa612a305c
-  helper search.fixed pagination enabled True /inputs/target_config/protocol_metadata/helpers/search.fixed c5a64056c89698504c8ff1516c3a5188236b3a7a54c18129069e8cd1bd1b23d6
-  helper search.next pagination enabled True /inputs/target_config/protocol_metadata/helpers/search.next 828cc48a145a342de2a370a3021a17fb026728ca8412a773474ded2198f68b1c
-  helper lookup.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/lookup.all a9c9c8b886f5504f24c5d0f5ca97a235792ab7bd46cdcd267037c29faeff2af2
+  helper search.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/search.all 74ace2871da80576370d6e5ee1fce47ac5eb05e94e612422f5bd55e8b3a28994
+  helper search.fixed pagination enabled True /inputs/target_config/protocol_metadata/helpers/search.fixed 20fbc46015d69813794a68f41bb38c86e7a51c8dbdeea6f5729f4d1c66a2e001
+  helper search.next pagination enabled True /inputs/target_config/protocol_metadata/helpers/search.next 368ebb50a4d42cfa14697f19716cd929bee2e45731c6a3180b7d7f4daf0b3654
+  helper lookup.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/lookup.all 0ecae5873eae07446159798b94255a411e5c1dd125146dca7d3fb529494d2521
   {
     "helpers": {
       "lookup.all": {

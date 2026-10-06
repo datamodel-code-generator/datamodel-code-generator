@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.pagination import (
-    ItemStep,
     _dot_literals,
     _fits,
     _json_type,
@@ -29,18 +28,17 @@ from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._target_contract import AnnotatedType, NoneType, UnionType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Container, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import OperationRef
+    from datamodel_code_generator._client.model_facts import ItemStep, ModelFacts
     from datamodel_code_generator._client.pagination import _Types
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
-    from datamodel_code_generator._target_contract import FinalPythonType, OperationId, TypeUseBinding
+    from datamodel_code_generator._target_contract import FinalPythonType, OperationId, TypeUseBinding, TypeUseId
 
 STATES: Final = ("pending", "succeeded", "failed", "cancelled")
 _KINDS: Final = {"polling": "polling", "sse": "SSE", "ndjson": "NDJSON"}
@@ -80,11 +78,11 @@ class PollingSpec:
 
 @dataclass(frozen=True, slots=True)
 class _Source:
-    """A response a selector reads: its operation, its declaration, and the model binding of its JSON body, if any."""
+    """A response a selector reads: its operation, its declaration, and the type of its JSON body with a codec."""
 
     spec: OperationSpec
     response: ResponseSpec
-    binding: UseBinding | None
+    body: FinalPythonType | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,22 +115,20 @@ def _nonnull(value: FinalPythonType) -> FinalPythonType:
 class _Polls:
     """Check and plan every enabled polling helper of a client target."""
 
-    def __init__(
-        self, pages: _Pages, operations: Mapping[OperationId, OperationSpec], codecs: CodecPlan, protocols: Protocols
-    ) -> None:
+    def __init__(self, pages: _Pages, operations: Mapping[OperationId, OperationSpec], protocols: Protocols) -> None:
         """Keep the shared pagination checks, the selected operations by identity, and a static type speller."""
         self.pages = pages
         self.operations = operations
         self.protocols = protocols
-        self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
+        self.spelling = TypeSource(Namespace(()), pages.facts.imports, lambda module, name: f"{module}.{name}")
 
     def spec(self, reference: OperationRef) -> OperationSpec:
         """Return the selected operation a helper reference names."""
         return self.operations[self.protocols.operations[reference].id]
 
-    def model(self, response: ResponseSpec) -> UseBinding | None:
-        """Return the native model binding of a response's one JSON media, or None for any other response."""
-        return None if (use := _page_use([response])) is None else self.pages.bindings.get(use.id)
+    def model(self, response: ResponseSpec) -> FinalPythonType | None:
+        """Return the type of a response's one JSON media with a codec, or None for any other response."""
+        return None if (use := _page_use([response])) is None or use.id not in self.pages.codecs else use.type
 
     def helper(self, helper: Helper) -> tuple[PollingSpec | None, list[Diagnostic]]:
         """Check one enabled helper against its operations, and plan it when every check passes."""
@@ -144,13 +140,13 @@ class _Polls:
         problems.extend(self.expiry(helper, created))
         successes = [response for response in poll.responses if response.success]
         page = _page_use(successes)
-        if page is None or (binding := self.model(successes[0])) is None:
+        if page is None or (body := self.model(successes[0])) is None:
             message = (
                 f"{_label(poll)} must declare exactly one JSON success response for the polling helper {helper.name!r}"
             )
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.poll", message, poll))
             return None, problems
-        polled = _Source(poll, successes[0], binding)
+        polled = _Source(poll, successes[0], body)
         problems.extend(self.states(helper, polled))
         sources = {"initial": created, "previous": [*created, polled]}
         problems.extend(self.bindings(helper, poll, tree["bindings"], f"{at}.bindings", sources, "binding"))
@@ -245,14 +241,14 @@ class _Polls:
         found: set[str] | None = set()
         for source in sources:
             spec, response = source.spec, source.response
-            if selector["from"] == "body" and source.binding is None:
+            if selector["from"] == "body" and source.body is None:
                 message = (
                     f"The {what} of {helper.name!r} reads the body of the {response.status} response of "
                     f"{_label(spec)}, which is no JSON model"
                 )
                 return _problem("E_CONFIG_VALUE", "config", at, message, spec)
-            binding = cast("UseBinding", source.binding)
-            types = self.pages.read(helper, spec, binding, response.headers, selector, at, what)
+            body = cast("FinalPythonType", source.body)
+            types = self.pages.read(helper, spec, body, response.headers, selector, at, what)
             if isinstance(types, Diagnostic):
                 return types
             found = None if types is None or found is None else found | types
@@ -379,9 +375,9 @@ class _Polls:
         if selector["from"] != "body":
             message = f"The {what} of {name!r} reads a {selector['from']}, where only a body pointer reads a result"
             return _problem("E_CONFIG_VALUE", "config", f"{at}.selector", message, spec)
-        assert source.binding is not None
+        assert source.body is not None
         pointer = selector["pointer"]
-        if (reached := self.pages.walk(source.binding, pointer)) == "unsupported":
+        if (reached := self.pages.walk(source.body, pointer)) == "unsupported":
             message = (
                 f"The {what} pointer {pointer!r} of {name!r} reads through a union or map, which is not supported yet"
             )
@@ -478,14 +474,19 @@ class _Polls:
         return reached.steps, reached.schema
 
 
-def plan_polling(
-    protocols: Protocols | None, plan: ClientPlan, codecs: CodecPlan, wire: WirePlan, request: TargetRequest
+def plan_polling(  # noqa: PLR0913, PLR0917
+    protocols: Protocols | None,
+    plan: ClientPlan,
+    facts: ModelFacts,
+    codecs: Container[TypeUseId],
+    wire: WirePlan,
+    request: TargetRequest,
 ) -> tuple[tuple[PollingSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled polling helper, returning them and each checked helper's problems."""
     if protocols is None:
         return (), {}
     operations = {spec.contract.id: spec for spec in plan.operations}
-    polls = _Polls(_Pages(protocols, plan, codecs, wire, request), operations, codecs, protocols)
+    polls = _Polls(_Pages(protocols, plan, facts, codecs, wire, request), operations, protocols)
     specs: list[PollingSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
     for helper in protocols.helpers:

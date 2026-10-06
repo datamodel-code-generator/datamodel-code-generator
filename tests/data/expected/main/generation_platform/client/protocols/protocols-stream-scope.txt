@@ -42,7 +42,7 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['scope.member'] bindings 8
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper scope.member sse enabled True /inputs/target_config/protocol_metadata/helpers/scope.member 6b8fa8ce42856bb2be51c180b41141f1e01fdf8bea446f64178a5177386af6c1
+  helper scope.member sse enabled True /inputs/target_config/protocol_metadata/helpers/scope.member b103ec2c2a6a5025d4667437204d008cb9cec6cd7c3a7f36b7e228821580055e
   {
     "helpers": {
       "scope.member": {
