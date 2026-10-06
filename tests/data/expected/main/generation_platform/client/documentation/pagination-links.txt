@@ -264,10 +264,11 @@ on that clock. Waits still pass in real time, so a test clock skips one by advan
 ## Retry decisions and delays
 
 GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PATCH require an explicit idempotent
-declaration or a valid key contract. ConnectError, ConnectTimeout, and PoolTimeout from native send may permit an
-otherwise unsafe retry; `retry_safety="never"` forbids every resend. All candidates still need replayable input.
-Pool timeouts need explicit `retry_on_pool_timeout=True`. TLS/configuration/permanent DNS errors, callback failures,
-decoding failures, cancellation, and logical deadlines are not retry candidates. Phase timeouts can be candidates.
+declaration or a valid key contract. ConnectError (TLS and DNS failures included), ConnectTimeout, and PoolTimeout
+from native send leave the request unsent and may permit an otherwise unsafe retry, unless an earlier attempt or hop
+of the call reached the server; every other transport failure is never resent. `retry_safety="never"` forbids every
+resend. All candidates still need replayable input. Pool timeouts need explicit `retry_on_pool_timeout=True`.
+Callback failures, decoding failures, cancellation, and logical deadlines are not retry candidates.
 
 Full jitter samples from zero to the capped exponential delay; `jitter="none"` uses the cap directly. A server delay
 is a minimum and is never shortened to fit the retry-after cap or remaining deadline. `respect_retry_after=False`
