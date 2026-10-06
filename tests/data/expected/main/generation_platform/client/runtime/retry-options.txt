@@ -292,19 +292,19 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 8] b'new call'
   automatic key fresh next call = FieldKeyedPostResponse(root='accepted')
   > POST https://api.example.com/keyed
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-length: 0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
   automatic key suppressed = FieldKeyedPostResponse(root='accepted')
   explicit undeclared key ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   signer claiming the key header ! ConfigurationError: ConfigurationError(operation_id='postKeyed', call_id='<call>', reason='name_collision', field_path='auth') [operation_id='postKeyed', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] name_collision
   automatic keys count=4 same retry=True fresh call=True suppressed=True
   > POST https://api.example.com/keyed
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned, content-length: 0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned] b''
   > POST https://api.example.com/keyed
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned, content-length: 0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned] b''
   caller key inherited and retained through retry = FieldKeyedPostResponse(root='accepted')
   caller key observed=['caller-owned', 'caller-owned']
   > POST https://api.example.com/keyed
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-length: 0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
   view clears caller key ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='retry'), body_bytes=b'retry', truncated=False] internal_server_error
   cleared key observed=[None]
   key sync h1 pre-send rejection ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value

@@ -22,7 +22,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 41] b'--<boundary>--\r\n'
   no parts = None
   > POST https://media.example.com/api/attachments
-    [host: media.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   no body = None
   part header on two lines ! DecodeError: DecodeError(operation_id='submitParts', call_id='<call>', reason='unencodable', location='body.a') [operation_id='submitParts', location=('body', 'a'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] unencodable
   part header naming the media type ! DecodeError: DecodeError(operation_id='submitParts', call_id='<call>', reason='unencodable', location='body.a') [operation_id='submitParts', location=('body', 'a'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] unencodable
@@ -290,7 +290,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 41] b'--<boundary>--\r\n'
   no parts = None
   > POST https://media.example.com/api/attachments
-    [host: media.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   no body = None
   part header on two lines ! DecodeError: DecodeError(operation_id='submitParts', call_id='<call>', reason='unencodable', location='body.a') [operation_id='submitParts', location=('body', 'a'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] unencodable
   part header naming the media type ! DecodeError: DecodeError(operation_id='submitParts', call_id='<call>', reason='unencodable', location='body.a') [operation_id='submitParts', location=('body', 'a'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] unencodable

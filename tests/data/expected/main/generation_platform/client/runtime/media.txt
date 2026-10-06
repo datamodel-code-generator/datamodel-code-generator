@@ -9,7 +9,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 11] b'a=1&a=2&b=+'
   pairs = (('a', '1'), ('a', '2'), ('b', ' '))
   > POST https://media.example.com/api/pairs
-    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-length: 0] b''
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
   pairs invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitPairs', call_id='<call>', reason='invalid_syntax') [operation_id='submitPairs', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'a=%zz', truncated=False, cause=WireValidationError('A percent sign must start a percent-encoded octet at /')] invalid_syntax
   pairs body ! DecodeError: DecodeError(operation_id='submitPairs', call_id='<call>', reason='unencodable', location='body') [operation_id='submitPairs', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('Form data must be a tuple of name and value string pairs')] unencodable
   > POST https://media.example.com/api/searches
@@ -51,7 +51,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 3] b'[1]'
   note = None
   > PUT https://media.example.com/api/notes
-    [host: media.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   note replace = None
   > PUT https://media.example.com/api/notes
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 1] b'n'
@@ -78,7 +78,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: application/json, content-length: 15] b'{"city":"Oslo"}'
   store file narrowed to another image ! DecodeError: DecodeError(status_code=200, operation_id='storeFile', call_id='<call>', reason='unexpected_media_type') [operation_id='storeFile', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'jpeg', truncated=False, media_type='image/jpeg'] unexpected_media_type
   > PUT https://media.example.com/api/files
-    [host: media.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   replace file without a body = None
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
@@ -120,7 +120,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 11] b'a=1&a=2&b=+'
   pairs = (('a', '1'), ('a', '2'), ('b', ' '))
   > POST https://media.example.com/api/pairs
-    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-length: 0] b''
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
   pairs invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitPairs', call_id='<call>', reason='invalid_syntax') [operation_id='submitPairs', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'a=%zz', truncated=False, cause=WireValidationError('A percent sign must start a percent-encoded octet at /')] invalid_syntax
   pairs body ! DecodeError: DecodeError(operation_id='submitPairs', call_id='<call>', reason='unencodable', location='body') [operation_id='submitPairs', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('Form data must be a tuple of name and value string pairs')] unencodable
   > POST https://media.example.com/api/searches
@@ -162,7 +162,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 3] b'[1]'
   note = None
   > PUT https://media.example.com/api/notes
-    [host: media.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   note replace = None
   > PUT https://media.example.com/api/notes
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 1] b'n'
@@ -189,7 +189,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: application/json, content-length: 15] b'{"city":"Oslo"}'
   store file narrowed to another image ! DecodeError: DecodeError(status_code=200, operation_id='storeFile', call_id='<call>', reason='unexpected_media_type') [operation_id='storeFile', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'jpeg', truncated=False, media_type='image/jpeg'] unexpected_media_type
   > PUT https://media.example.com/api/files
-    [host: media.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   replace file without a body = None
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'

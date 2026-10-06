@@ -79,7 +79,7 @@
     hook: call_end attempt=0 sent=True status=201 outcome=success phase=None path=/pets origin=https://api.example.com attempts=1 request_id=None timed=True context={}
   fields the hooks observe = Pet(id=1, name='Mimi', tag=None)
   > PATCH https://api.example.com/pets/1
-    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   update giving nothing = None
   > PATCH https://api.example.com/pets/1
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 12] b'{"name":"n"}'
@@ -196,7 +196,7 @@
     hook: call_end attempt=0 sent=True status=201 outcome=success phase=None path=/pets origin=https://api.example.com attempts=1 request_id=None timed=True context={}
   fields the hooks observe = Pet(id=1, name='Mimi', tag=None)
   > PATCH https://api.example.com/pets/1
-    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   update giving nothing = None
   > PATCH https://api.example.com/pets/1
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 12] b'{"name":"n"}'
@@ -313,7 +313,7 @@
     hook: call_end attempt=0 sent=True status=201 outcome=success phase=None path=/pets origin=https://api.example.com attempts=1 request_id=None timed=True context={}
   fields the hooks observe = Pet(id=1, name='Mimi', tag=UNSET)
   > PATCH https://api.example.com/pets/1
-    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   update giving nothing = None
   > PATCH https://api.example.com/pets/1
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 12] b'{"name":"n"}'

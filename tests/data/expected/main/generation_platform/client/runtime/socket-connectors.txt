@@ -96,7 +96,7 @@
   transport failure while pinging ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] api_connection_error
     connection close 1000 '' timeout=5.0
     connection abort
-  failing close ! SDKError: SDKError(operation_id='feedSocket', call_id='<call>', reason='cleanup_failed') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
+  failing close ! SDKError: SDKError(operation_id='feedSocket', call_id='<call>', reason='cleanup_failed') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_failed
     connection close 1001 '' timeout=5.0
   server closed ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
     connection send text=True b'first' deadline=True
@@ -163,7 +163,7 @@
   async transport failure while pinging ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] api_connection_error
     connection close 1000 '' timeout=5.0
     connection abort
-  async failing close ! SDKError: SDKError(operation_id='feedSocket', call_id='<call>', reason='cleanup_failed') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
+  async failing close ! SDKError: SDKError(operation_id='feedSocket', call_id='<call>', reason='cleanup_failed') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=OSError('close failed')] cleanup_failed
     connection close 1001 '' timeout=5.0
   async receive at the connection's deadline ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=60.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
     connection close 1001 '' timeout=5.0

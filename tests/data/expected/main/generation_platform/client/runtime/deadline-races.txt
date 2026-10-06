@@ -48,7 +48,7 @@
   acquire swallowing the cancellation resources = (1, True, 1, ())
   released response cancelled=False failure=False = ('returned',)
   released response cancelled=False failure=False resources = (1, 1, True, (), ())
-  released response cancelled=False failure=True = ('SDKError', 1, None, 'SDKError', ())
+  released response cancelled=False failure=True = ('SDKError', 1, None, 'RuntimeError', ())
   released response cancelled=False failure=True resources = (1, 1, True, (), ())
   released response cancelled=True failure=False = ('CancelledError', None, None, 'NoneType', ())
   released response cancelled=True failure=False resources = (1, 1, False, (), ())
