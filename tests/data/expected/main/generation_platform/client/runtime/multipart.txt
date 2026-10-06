@@ -176,7 +176,7 @@
   profile read without its name ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--b1--\r\n', truncated=False, cause=1 validation error for FieldProfilesGetResponse
 name
   Field required [type=missing, input_value={'age': 36}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.12/v/missing] response_validation_error
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] response_validation_error
   > GET https://media.example.com/api/attachments
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
   > GET https://media.example.com/api/attachments
@@ -223,13 +223,13 @@ name
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   upload read of broken JSON ! DecodeError: DecodeError(status_code=200, operation_id='readUpload', call_id='<call>') [operation_id='readUpload', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--b1\r\nContent-Disposition: form-data; name="photo"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n\x89PNG\r\n--b1\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{\r\n--b1--\r\n', truncated=False, cause=1 validation error for Address
   Invalid JSON: EOF while parsing an object at line 1 column 1 [type=json_invalid, input_value=b'{', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] decode_error
   > GET https://media.example.com/api/uploads
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   upload read of an address with other codes ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readUpload', call_id='<call>') [operation_id='readUpload', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--b1\r\nContent-Disposition: form-data; name="photo"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n\x89PNG\r\n--b1\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"codes":["a"]}\r\n--b1--\r\n', truncated=False, cause=1 validation error for Address
 codes.0
   Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='a', input_type=str]
-    For further information visit https://errors.pydantic.dev/2.12/v/int_parsing] response_validation_error
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] response_validation_error
   > GET https://media.example.com/api/uploads
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   upload read of its write-only secret ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readUpload', call_id='<call>') [operation_id='readUpload', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--b1\r\nContent-Disposition: form-data; name="photo"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n\x89PNG\r\n--b1\r\nContent-Disposition: form-data; name="secret"\r\n\r\ns\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A form-data part carries a member its direction excludes at /')] response_validation_error

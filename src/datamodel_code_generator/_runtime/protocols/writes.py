@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from ..client.operations import OperationPlan
-    from ..model_codecs.media import JSONValue
+    from ..model_codecs.plain import JSONValue
     from ..model_codecs.wire import WireValue
     from .records import RequestTarget, Selector
 

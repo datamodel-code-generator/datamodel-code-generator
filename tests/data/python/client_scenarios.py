@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import importlib
 import json
+import re
 import zlib
 from functools import partial
 from typing import TYPE_CHECKING, Any, Final
@@ -821,6 +822,7 @@ BACKENDS: Final = (
 )
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 STRUCTURAL: Final = BACKENDS[2:]
+_PYDANTIC_DOCS: Final = re.compile(r"errors\.pydantic\.dev/[0-9.]+/")
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
     "allowreserved-path-30": ("allowreserved-path-30", BACKENDS, reserved_paths),
     "allowreserved-path-31": ("allowreserved-path-31", BACKENDS, reserved_paths),
@@ -945,7 +947,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
 def client_runtime_report(name: str, root: Path) -> str:
     """Generate one scenario's package for each backend, run its calls, and report every exchange and outcome.
 
-    A backend whose models the client cannot convert reports the generation refusal instead of the calls.
+    A backend whose models the client cannot convert reports the generation refusal instead of the calls, and the
+    Pydantic version in its error links is left out.
     """
     case, backends, scenario = SCENARIOS[name]
     reports = []
@@ -956,4 +959,4 @@ def client_runtime_report(name: str, root: Path) -> str:
             if not str(error).startswith("MC_CODEC_UNSUPPORTED:"):
                 raise
             reports.append(f"# {case} {backend}\n  generation {error}\n")
-    return "".join(reports)
+    return _PYDANTIC_DOCS.sub("errors.pydantic.dev/<version>/", "".join(reports))

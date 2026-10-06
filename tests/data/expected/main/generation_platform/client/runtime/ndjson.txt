@@ -22,14 +22,14 @@
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=1 validation error for Record
   Invalid JSON: EOF while parsing a value at line 1 column 0 [type=json_invalid, input_value=b'', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error
     raw prefix b'' cause ValidationError context ValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   whitespace line
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=1 validation error for Record
   Invalid JSON: EOF while parsing a value at line 1 column 2 [type=json_invalid, input_value=b' \t', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error
     raw prefix b' \t' cause ValidationError context ValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   invalid UTF-8
@@ -41,14 +41,14 @@
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=1 validation error for Record
   Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value=b'\xef\xbb\xbf{"text": "a"}', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error
     raw prefix b'\xef\xbb\xbf{"text": "a"}' cause ValidationError context ValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   CR without LF
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=1 validation error for Record
   Invalid JSON: trailing characters at line 1 column 15 [type=json_invalid, input_value=b'{"text": "a"}\r{"text": "b"}', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error
     raw prefix b'{"text": "a"}\r{"text": "b"}' cause ValidationError context ValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   record refused by its type
@@ -57,7 +57,7 @@
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=2, truncated=False) [operation_id='streamRecords', condition='value', truncated=False, cause=1 validation error for Record
 text
   Input should be a valid string [type=string_type, input_value=5, input_type=int]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/string_type] stream_decode_error
     raw prefix b'{"text": 5}' cause ValidationError context ValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   final line without a line end
@@ -90,7 +90,7 @@ text
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=1 validation error for Record
   Invalid JSON: EOF while parsing an object at line 1 column 7 [type=json_invalid, input_value=b'{"text"', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error
     raw prefix b'{"text"' cause ValidationError context ValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   final line not UTF-8
@@ -142,7 +142,7 @@ text
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamRecords', condition='value', truncated=False, cause=1 validation error for Deleted
 id
   Input should be a valid string [type=string_type, input_value=5, input_type=int]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/string_type] stream_decode_error
   > GET https://api.example.com/records accept=application/x-ndjson
   line over the limit in one chunk
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
@@ -212,7 +212,7 @@ id
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamRecords', condition='value', truncated=False, cause=1 validation error for Record
 text
   Field required [type=missing, input_value={}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.12/v/missing] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] stream_decode_error
   > GET https://api.example.com/records accept=application/x-ndjson
   hooked early close after 1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed

@@ -101,11 +101,11 @@
   create a name too long ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=1 validation error for NewPet
 name
   String should have at most 8 characters [type=string_too_long, input_value='far too long', input_type=str]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_too_long] request_encoding_error
+    For further information visit https://errors.pydantic.dev/<version>/v/string_too_long] request_encoding_error
   create a numeric name ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=1 validation error for NewPet
 name
   Input should be a valid string [type=string_type, input_value=5, input_type=int]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type] request_encoding_error
+    For further information visit https://errors.pydantic.dev/<version>/v/string_type] request_encoding_error
   > POST https://api.example.com/pets/1/visits
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
   log a visit giving nothing = None
@@ -224,11 +224,11 @@ name
   create a name too long ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=1 validation error for NewPet
 name
   String should have at most 8 characters [type=string_too_long, input_value='far too long', input_type=str]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_too_long] request_encoding_error
+    For further information visit https://errors.pydantic.dev/<version>/v/string_too_long] request_encoding_error
   create a numeric name ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=1 validation error for NewPet
 name
   Input should be a valid string [type=string_type, input_value=5, input_type=int]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type] request_encoding_error
+    For further information visit https://errors.pydantic.dev/<version>/v/string_type] request_encoding_error
   > POST https://api.example.com/pets/1/visits
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 28] b'{"note":null,"options":null}'
   log a visit giving nothing = None
