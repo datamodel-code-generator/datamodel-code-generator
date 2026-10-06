@@ -1,4 +1,4 @@
-# pets pydantic_v2.BaseModel
+# pets-protocols pydantic_v2.BaseModel
   optional imports=[]
   import threads unchanged=True
   key identities=True/True/True
@@ -52,7 +52,7 @@
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  unknown protocol attribute ! AttributeError: module 'pets_pydantic_v2_basemodel.protocols' has no attribute 'MissingWebhookType' []
+  unknown protocol attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -96,7 +96,7 @@
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-# pets pydantic_v2.dataclass
+# pets-protocols pydantic_v2.dataclass
   optional imports=[]
   import threads unchanged=True
   key identities=True/True/True
@@ -150,7 +150,7 @@
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  unknown protocol attribute ! AttributeError: module 'pets_pydantic_v2_dataclass.protocols' has no attribute 'MissingWebhookType' []
+  unknown protocol attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -194,7 +194,7 @@
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-# pets dataclasses.dataclass
+# pets-protocols dataclasses.dataclass
   optional imports=[]
   import threads unchanged=True
   key identities=True/True/True
@@ -248,7 +248,7 @@
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  unknown protocol attribute ! AttributeError: module 'pets_dataclasses_dataclass.protocols' has no attribute 'MissingWebhookType' []
+  unknown protocol attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -292,7 +292,7 @@
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-# pets typing.TypedDict
+# pets-protocols typing.TypedDict
   optional imports=[]
   import threads unchanged=True
   key identities=True/True/True
@@ -346,7 +346,7 @@
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  unknown protocol attribute ! AttributeError: module 'pets_typing_typeddict.protocols' has no attribute 'MissingWebhookType' []
+  unknown protocol attribute ! AttributeError: module 'pets_protocols_typing_typeddict.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -390,7 +390,7 @@
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-# pets msgspec.Struct
+# pets-protocols msgspec.Struct
   optional imports=[]
   import threads unchanged=True
   key identities=True/True/True
@@ -444,7 +444,7 @@
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  unknown protocol attribute ! AttributeError: module 'pets_msgspec_struct.protocols' has no attribute 'MissingWebhookType' []
+  unknown protocol attribute ! AttributeError: module 'pets_protocols_msgspec_struct.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
