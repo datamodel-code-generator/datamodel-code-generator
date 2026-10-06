@@ -47,6 +47,7 @@ class PetsPhotosResource:
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
+            response_media_type=kwargs.get('response_media_type'),
         ).data
 
 
@@ -69,6 +70,7 @@ class PetsPhotosWithResponse:
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
+            response_media_type=kwargs.get('response_media_type'),
         )
 
 
@@ -88,6 +90,7 @@ class PetsPhotosWithRawResponse:
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
+            response_media_type=kwargs.get('response_media_type'),
         )
 
 
@@ -110,4 +113,5 @@ class PetsPhotosWithStreamingResponse:
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
+            response_media_type=kwargs.get('response_media_type'),
         )
