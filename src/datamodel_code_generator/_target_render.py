@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
-from functools import cache
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
@@ -20,9 +19,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import ModelArtifact
 
 RUNTIME: Final = Path(__file__).parent / "_runtime"
-_RUNTIME_IMPORT: Final = re.compile(r"^[ \t]*from \.+_runtime\.(\w+)\.(\w+) import", re.MULTILINE)
-_RELATIVE_IMPORT: Final = re.compile(r"^\s*from (\.+)((?:\w+(?:\.\w+)*)?) import[ \t]*(\([^)]*\)|[^\n]*)", re.MULTILINE)
-_IMPORTED_NAME: Final = re.compile(r"(\w+)(?:\s+as\s+\w+)?\s*(?:,|$)", re.MULTILINE)
 PATTERNS: Final = "google-re2>=1.1.20251105"
 MODEL_DEPENDENCIES: Final = (
     ("pydantic.EmailStr", "email-validator>=2.3"),
@@ -53,30 +49,14 @@ def items(values: Iterable[Doc]) -> tuple[tuple[str, Doc], ...]:
     return tuple(("", value) for value in values)
 
 
-@cache
-def _relative_imports(module: str) -> tuple[str, ...]:
-    """Return the runtime modules that one runtime module imports relatively, including submodules of a package."""
-    parents = PurePosixPath(module).parents
-    paths = []
-    source = _COMMENT.sub("", (RUNTIME / module).read_text(encoding="utf-8"))
-    for dots, target, names in _RELATIVE_IMPORT.findall(source):
-        path = parents[len(dots) - 1].joinpath(*target.split(".")) if target else parents[len(dots) - 1]
-        submodules = [path / f"{name}.py" for name in _IMPORTED_NAME.findall(names.strip("()"))]
-        found = [submodule.as_posix() for submodule in submodules if (RUNTIME / submodule).is_file()]
-        paths.extend((found or [f"{path.as_posix()}.py"]) if target else found)
-    return tuple(paths)
+def runtime_sources(modules: Iterable[str]) -> Iterator[tuple[PurePosixPath, str]]:
+    """Yield the declared runtime modules and their packages' initializers, in ascending path order.
 
-
-def runtime_sources(texts: Iterable[str]) -> Iterator[tuple[PurePosixPath, str]]:
-    """Yield the runtime modules that sources import, with their own imports, in ascending path order."""
-    pending = [f"{package}/{module}.py" for text in texts for package, module in _RUNTIME_IMPORT.findall(text)]
-    needed: set[str] = set()
-    while pending:
-        if (module := pending.pop()) not in needed:
-            needed.add(module)
-            pending.extend(_relative_imports(module))
-    packages = {f"{PurePosixPath(module).parent}/__init__.py" for module in needed}
-    for path in sorted({"__init__.py", *packages, *needed}):
+    A target declares every module its capabilities need; the copy never follows the modules' imports.
+    """
+    declared = set(modules)
+    packages = {(PurePosixPath(module).parent / "__init__.py").as_posix() for module in declared}
+    for path in sorted({"__init__.py", *packages, *declared}):
         yield PurePosixPath("_runtime", path), (RUNTIME / path).read_text(encoding="utf-8")
 
 

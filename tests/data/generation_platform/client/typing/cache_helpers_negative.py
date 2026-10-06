@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from pets import AsyncClient, Client
-from pets.options import SessionOptions
-from pets.protocols import CacheResult, PaginationOptions
+from pets.options import RetryOptions, SessionOptions
+from pets.protocols import CacheResult
 from pets.types.users import GetUserResponse, ListUsersResponse
 from pets_models import FieldUsersUserIdGetPathUserIdParameter
 
@@ -19,7 +19,7 @@ async def wrong_fetches(
     helper = client.protocols.users.profile
     unawaited: CacheResult[GetUserResponse] = async_client.protocols.users.profile.fetch(user_id=user)  # error
     helper.fetch(user_id=b"three")  # error
-    helper.fetch(user_id=user, cache_options=PaginationOptions())  # error
+    helper.fetch(user_id=user, cache_options=RetryOptions())  # error
     helper.fetch(user_id=user, session_options=SessionOptions())  # error
     helper.fetch()  # error
     listing: CacheResult[ListUsersResponse] = helper.fetch(user_id=user)  # error

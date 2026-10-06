@@ -1,4 +1,4 @@
-# pets pydantic_v2.BaseModel
+# pets-protocols pydantic_v2.BaseModel
   family AuthConfigurationError bases=('ConfigurationError',) code=auth_configuration_error
   signature AuthConfigurationError keyword-only=True required=()
   hints AuthConfigurationError ('field_path', 'condition', 'source_uri', 'source_pointer', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')

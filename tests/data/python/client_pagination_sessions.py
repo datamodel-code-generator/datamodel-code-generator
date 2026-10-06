@@ -30,6 +30,11 @@ if TYPE_CHECKING:
 _TOKEN: Final = "https://auth.example.com/token"
 
 
+def _foreign(package: ModuleType) -> ModuleType:
+    """Return the runtime options module, whose helper options include those of kinds the package does not declare."""
+    return importlib.import_module(f"{package.__name__}._runtime.protocols.options")
+
+
 def _issued(value: str) -> bytes:
     return json.dumps({
         "access_token": value,
@@ -334,7 +339,10 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
     )
     for label, entries in (
         ("unknown helper", {"users.everyone": defaults}),
-        ("options of another kind", {"users.all": protocols.ProtocolDefaults(options=protocols.PollOptions())}),
+        (
+            "options of another kind",
+            {"users.all": protocols.ProtocolDefaults(options=_foreign(package).PollOptions())},
+        ),
     ):
         settings = options.ClientOptions(protocols=options.ProtocolClientOptions(defaults=entries))
         record(lines, f"client with defaults of an {label}", lambda settings=settings: package.Client(options=settings))
