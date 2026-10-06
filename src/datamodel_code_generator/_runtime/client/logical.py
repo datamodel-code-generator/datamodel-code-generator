@@ -17,7 +17,7 @@ from .errors import (
     DeliveryState,
     IOPhase,
     SDKError,
-    add_secondary,
+    kept_primary,
 )
 from .timing import ResolvedTimeoutOptions, absolute_deadline, on_clock, real_end, wait_left
 
@@ -181,6 +181,20 @@ class LogicalCallContext:
         ):
             self.deadline = limit
 
+    def idle(self, started: float, limit: float | None = None) -> None:
+        """Raise a read timeout when a handed-over stream's read that began at `started` took its idle limit or more.
+
+        The limit is the stream's idle timeout unless one is given; the check runs once the read returned.
+        """
+        limit = self.settings.stream_idle_timeout if limit is None else limit
+        if self.streaming and limit is not None and self.monotonic() - started >= limit:
+            raise APITimeoutError(
+                phase="read",
+                reason="phase_timeout",
+                effective_timeout=limit,
+                delivery_state=DeliveryState.RESPONSE_STARTED,
+            )
+
     def finish(self) -> None:
         """Mark the call or handed-over stream finished."""
         self.finished = True
@@ -208,12 +222,8 @@ class LogicalCallContext:
         result = await operation()
         try:
             self.check(phase, delivery_state)
-            if self.streaming and phase == "stream" and idle:
-                limit = self.settings.stream_idle_timeout if idle_timeout is None else idle_timeout
-                if limit is not None and self.monotonic() - started >= limit:
-                    raise APITimeoutError(  # noqa: TRY301
-                        phase="read", effective_timeout=limit, delivery_state=DeliveryState.RESPONSE_STARTED
-                    )
+            if phase == "stream" and idle:
+                self.idle(started, idle_timeout)
         except BaseException as error:
             if cleanup is not None:
                 await self.cleanup(lambda: cleanup(result), error=error)
@@ -228,7 +238,8 @@ class LogicalCallContext:
         except BaseException as failure:
             if error is None:
                 raise
-            add_secondary(error, failure)
             self.retry_blocked = True
+            if kept_primary(error, failure) is failure:
+                raise
             return False
         return True

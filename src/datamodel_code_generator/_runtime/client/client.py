@@ -55,6 +55,7 @@ from .errors import (
     is_http_error,
     is_phase_timeout,
     is_transport,
+    kept_primary,
     redirect_refused,
     too_large,
 )
@@ -189,6 +190,7 @@ _MIN_STATUS: Final = 200
 _NOT_MODIFIED: Final = 304
 _MAX_STATUS: Final = 599
 _ERROR_STATUS: Final = 400
+_BODY: Final = "datamodel_code_generator.body"
 _SWITCHING: Final = 101
 _UNAUTHORIZED: Final = 401
 _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
@@ -604,17 +606,18 @@ def _encoded(content: object, media_type: str | None) -> tuple[EncodedAttempt | 
 
 
 def _request(*, method: str, url: str, headers: HeadersView, body: EncodedAttempt | None) -> httpx2.Request:
+    """Build a prepared request, keeping its body attempt, since HTTPX2 frames an absent body as an empty one."""
     return httpx2.Request(
-        method, url, headers=wire_fields(headers.items()), content=None if body is None else body.content
+        method,
+        url,
+        headers=wire_fields(headers.items()),
+        content=None if body is None else body.content,
+        extensions={} if body is None else {_BODY: body},
     )
 
 
 def _attempt(request: httpx2.Request) -> EncodedAttempt | None:
-    return (
-        EncodedAttempt(request.content, request.headers.get("content-type"))
-        if request.content or "content-length" in request.headers
-        else None
-    )
+    return cast("EncodedAttempt | None", request.extensions.get(_BODY))
 
 
 def _context(call: _Call) -> BodyAttemptContext:
@@ -2985,11 +2988,13 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 close()
             except BaseException as failure:  # noqa: BLE001, PERF203
                 call.retry_blocked = True
-                if primary is None:
-                    primary = failure
-                else:
-                    add_secondary(primary, failure)
-        if error is None and primary is not None:
+                released = (
+                    SDKError(reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failure)
+                    if isinstance(failure, Exception) and not isinstance(failure, SDKError)
+                    else failure
+                )
+                primary = released if primary is None else kept_primary(primary, released)
+        if primary is not None and primary is not error:
             raise primary
 
     def _close_response(self, response: httpx2.Response, call: _Call, error: BaseException | None = None) -> None:
@@ -3905,11 +3910,13 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 await call.cleanup(close)
             except BaseException as failure:  # noqa: BLE001, PERF203
                 call.retry_blocked = True
-                if primary is None:
-                    primary = failure
-                else:
-                    add_secondary(primary, failure)
-        if error is None and primary is not None:
+                released = (
+                    SDKError(reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failure)
+                    if isinstance(failure, Exception) and not isinstance(failure, SDKError)
+                    else failure
+                )
+                primary = released if primary is None else kept_primary(primary, released)
+        if primary is not None and primary is not error:
             raise primary
 
     async def _close_response(self, response: httpx2.Response, call: _Call, error: BaseException | None = None) -> None:

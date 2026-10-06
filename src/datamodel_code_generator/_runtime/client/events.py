@@ -21,6 +21,7 @@ from .errors import (
     add_secondary,
     is_hook_failure,
     is_transport,
+    kept_primary,
 )
 from .hooks import CallEvent
 
@@ -35,12 +36,8 @@ if TYPE_CHECKING:
 
 
 def _interrupted(primary: BaseException | None, interruption: BaseException) -> BaseException:
-    """Preserve the primary failure while retaining a later hook interruption."""
-    if primary is None:
-        return interruption
-    if primary is not interruption:
-        add_secondary(primary, interruption)
-    return primary
+    """Return the error a terminal hook's interruption leaves, which replaces an ordinary failure and keeps it."""
+    return interruption if primary is None or primary is interruption else kept_primary(primary, interruption)
 
 
 class CallEvents:

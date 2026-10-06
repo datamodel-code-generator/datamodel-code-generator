@@ -184,6 +184,19 @@ def add_secondary(error: BaseException, *failures: BaseException) -> None:
             error.__dict__["__notes__"] = [note]
 
 
+def kept_primary(primary: BaseException, failure: BaseException) -> BaseException:
+    """Return what propagates after a cleanup failure.
+
+    An interruption replaces an ordinary error and keeps it beside itself; any other failure stays beside the error
+    already propagating.
+    """
+    if isinstance(primary, Exception) and not isinstance(failure, Exception):
+        add_secondary(failure, primary)
+        return failure
+    add_secondary(primary, failure)
+    return primary
+
+
 def _is_notes(value: object) -> TypeIs[list[object]]:
     return isinstance(value, list)
 
