@@ -11,7 +11,6 @@ render pydantic_v2.BaseModel
   write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
-  write client/transports.py
   write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/chat/__init__.py

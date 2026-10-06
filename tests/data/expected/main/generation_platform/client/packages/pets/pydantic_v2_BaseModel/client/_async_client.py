@@ -6,18 +6,18 @@ from __future__ import annotations
 from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from types import TracebackType
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import httpx2
 from typing_extensions import Self
 
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
+from ._runtime.client.errors import add_secondary
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import AsyncBodyInput
 from .model_codecs import WireValue
 from .options import ClientOptions, RequestOptions
 from .responses import AsyncRawResponse
-from .transports import AsyncTransportAdapter, OwnedTransportAdapter
 
 if TYPE_CHECKING:
     from .resources.pets._async import AsyncPetsResource
@@ -25,34 +25,20 @@ if TYPE_CHECKING:
 _DEFAULTS = ClientDefaults(user_agent=None)
 
 
-class AsyncClient:
-    """Call the operations of this API with asyncio through HTTPX2."""
+class AsyncClientView:
+    """Typed operations and request option layers sharing the root's native client."""
 
-    def __init__(
-        self,
-        *,
-        options: ClientOptions | None = None,
-        http_client: httpx2.AsyncClient | Unset = UNSET,
-        http_client_ownership: Literal["borrowed", "owned"] = "borrowed",
-        transport_adapter: AsyncTransportAdapter | OwnedTransportAdapter[AsyncTransportAdapter] | Unset = UNSET,
-    ) -> None:
-        """Send through the transport adapter or HTTPX2 client given, borrowed unless its ownership moves.
+    _core: AsyncClientCore
 
-        Without either, the client creates an HTTPX2 client that closing it closes.
-        """
-        self._core = AsyncClientCore.create(
-            _DEFAULTS,
-            options=options,
-            http_client=http_client,
-            http_client_ownership=http_client_ownership,
-            transport_adapter=transport_adapter,
-        )
-
-    def with_options(self, options: RequestOptions) -> AsyncClient:
-        """Return a view whose calls layer these options on the client's; it shares the client's transport."""
-        view = AsyncClient.__new__(AsyncClient)
-        view._core = self._core.view(options)
+    @classmethod
+    def _from_core(cls, core: AsyncClientCore) -> AsyncClientView:
+        view = cls.__new__(cls)
+        view._core = core
         return view
+
+    def with_options(self, options: RequestOptions) -> AsyncClientView:
+        """Return a typed view with these request options layered on the current settings."""
+        return AsyncClientView._from_core(self._core.view(options))
 
     async def request_raw(
         self,
@@ -77,8 +63,21 @@ class AsyncClient:
 
         return AsyncPetsResource(self._core)
 
+
+class AsyncClient(AsyncClientView):
+    """Call the operations of this API with asyncio through HTTPX2."""
+
+    def __init__(
+        self,
+        *,
+        options: ClientOptions | None = None,
+        http_client: httpx2.AsyncClient | Unset | None = UNSET,
+    ) -> None:
+        """Borrow the native HTTP client given, or create one this root owns and closes."""
+        self._core = AsyncClientCore.create(_DEFAULTS, options=options, http_client=http_client)
+
     async def aclose(self) -> None:
-        """Stop new calls, wait for the active ones, and close the owned transport; a view stops only its calls."""
+        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
         await self._core.aclose()
 
     async def __aenter__(self) -> Self:
@@ -91,8 +90,13 @@ class AsyncClient:
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        """Close this client."""
-        await self.aclose()
+        """Close this client, keeping a close failure beside an error that leaves the block."""
+        try:
+            await self.aclose()
+        except Exception as error:
+            if exc is None:
+                raise
+            add_secondary(exc, error)
 
 
 class AsyncClientWithStreamingResponse:
