@@ -3484,14 +3484,17 @@ from pets.auth import AuthConfig, ClientCredentialsProvider, CredentialProvider
 from pets.options import ClientOptions
 
 
-def service_client(secret: CredentialProvider) -> Client:
-    provider = ClientCredentialsProvider(
-        "https://auth.example.com/token",
-        client_id="pets-service",
-        client_secret=secret,
-        scopes=("pets.read",),
-    )
-    return Client(options=ClientOptions(auth=AuthConfig({"oauth": provider})))
+def list_pets(secret: CredentialProvider) -> None:
+    with (
+        ClientCredentialsProvider(
+            "https://auth.example.com/token",
+            client_id="pets-service",
+            client_secret=secret,
+            scopes=("pets.read",),
+        ) as provider,
+        Client(options=ClientOptions(auth=AuthConfig({"oauth": provider}))) as client,
+    ):
+        client.pets.list_pets()
 ```
 
 The token request sends the configured `scopes` in canonical order, and `audience` when one is configured. The client
@@ -3549,15 +3552,18 @@ from pets.options import ClientOptions
 def save(tokens: TokenSet) -> None: ...
 
 
-def user_client(tokens: TokenSet) -> Client:
-    provider = RefreshTokenProvider(
-        "https://auth.example.com/token",
-        client_id="pets-app",
-        token_set=tokens,
-        on_token_refreshed=save,
-        client_auth_method="none",
-    )
-    return Client(options=ClientOptions(auth=AuthConfig({"oauth": provider})))
+def list_pets(tokens: TokenSet) -> None:
+    with (
+        RefreshTokenProvider(
+            "https://auth.example.com/token",
+            client_id="pets-app",
+            token_set=tokens,
+            on_token_refreshed=save,
+            client_auth_method="none",
+        ) as provider,
+        Client(options=ClientOptions(auth=AuthConfig({"oauth": provider}))) as client,
+    ):
+        client.pets.list_pets()
 ```
 
 The refresh request sends the refresh token with the client authentication, never the configured `scopes` or `audience`:

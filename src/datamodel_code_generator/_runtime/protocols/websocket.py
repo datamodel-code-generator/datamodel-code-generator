@@ -835,10 +835,10 @@ class _Queue:
 class WebSocketSession(_Sockets[SendT, RecvT]):
     """A synchronous WebSocket session: send typed messages, and receive them or iterate over them.
 
-    The session owns its connection until it closes or fails; closing the client closes it too. One receive runs at a
-    time, beside sends that go one at a time in arrival order. A closure by the server ends iteration when it was
-    normal; `receive` raises WebSocketClosedError either way. After a failure or `close()` every step raises
-    ProtocolStateError, and iteration after `close()` stops.
+    The session owns its connection until it closes or fails; closing the client leaves it open, so close each session
+    itself. One receive runs at a time, beside sends that go one at a time in arrival order. A closure by the server
+    ends iteration when it was normal; `receive` raises WebSocketClosedError either way. After a failure or `close()`
+    every step raises ProtocolStateError, and iteration after `close()` stops.
     """
 
     __slots__ = ("_connection", "_queue", "_response")
