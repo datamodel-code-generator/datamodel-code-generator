@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from itertools import starmap
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client.codec_plan import Choice, Class, Fixed, Items, Values
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
-from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
 from datamodel_code_generator._python_layout import Group, layout
 from datamodel_code_generator._target_contract import GeneratedSymbolType, OperationId
 
@@ -35,6 +35,22 @@ _NAMES: Final = (
     "Final",
     *_CODECS.values(),
 )
+
+
+@dataclass(frozen=True, slots=True)
+class UseAccessors:
+    """The generated names that serve one planned use."""
+
+    use: TypeUseId
+    codec: str
+
+
+@dataclass(frozen=True, slots=True)
+class RenderedBindings:
+    """The source of `_generated/model_bindings.py` and the accessors of every planned use."""
+
+    source: str
+    uses: tuple[UseAccessors, ...]
 
 
 def _description(use: TypeUseId) -> str:
