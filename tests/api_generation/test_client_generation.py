@@ -11,7 +11,7 @@ from tests.conftest import assert_generated_modules_output, assert_output
 from tests.data.python.client_generation import (
     client_config_report,
     client_documentation_report,
-    client_helper_digest_report,
+    client_helper_spelling_report,
     client_input_report,
     client_model_parity_report,
     client_render,
@@ -24,10 +24,10 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
     "case", ["input-cycle-dict", "input-cycle-list", "input-cycle-mutual", "input-cycle-reference", "input-aliases"]
 )
 def test_client_input(case: str, tmp_path: Path) -> None:
-    """Refuse cyclic input before publication while accepting shared aliases and recording their JSON digest."""
+    """Accept cyclic input the loader keeps, which nothing traverses, and shared aliases; ryaml refuses cycles."""
     report = client_input_report(case, tmp_path)
     expected = f"{case}.txt"
-    if case == "input-cycle-reference":
+    if case.startswith("input-cycle"):
         expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
     assert_output(report, EXPECTED / expected)
 
@@ -219,16 +219,16 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ("first", "second", "expected"),
     [
-        ("pagination", "pagination-documents", "helper-documents"),
+        ("pagination-root", "pagination-documents", "helper-documents"),
         ("webhooks", "webhooks-python", "webhook-records"),
         ("webhooks-public-keys", "webhooks-public-keys-python", "webhook-public-key-records"),
         ("webhooks-adapters", "webhooks-adapters-python", "webhook-adapter-records"),
         ("caching", "caching-python", "cache-records"),
     ],
 )
-def test_client_helper_digests(first: str, second: str, expected: str, tmp_path: Path) -> None:
-    """Digest a helper's normalized settings, so equivalent spellings and equal Python records digest alike."""
-    assert_output(client_helper_digest_report(first, second, tmp_path), EXPECTED / "digests" / f"{expected}.txt")
+def test_client_helper_spellings(first: str, second: str, expected: str, tmp_path: Path) -> None:
+    """Render equivalent helper settings, such as file references and Python records, into the same package."""
+    assert_output(client_helper_spelling_report(first, second, tmp_path), EXPECTED / "spellings" / f"{expected}.txt")
 
 
 @pytest.mark.parametrize(

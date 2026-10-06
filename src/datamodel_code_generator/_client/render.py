@@ -2969,7 +2969,7 @@ class ClientRenderer:
     ) -> None:
         """Keep the plans and helpers; the model bindings module and its accessors are rendered when first used.
 
-        The webhook modules are rendered from the native codec accessors.
+        The webhook modules are rendered from the use accessors.
         """
         self.config = config
         self.package = package

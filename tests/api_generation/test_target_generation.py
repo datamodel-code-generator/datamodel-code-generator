@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 import sys
@@ -16,6 +15,7 @@ import pytest
 from datamodel_code_generator import _api_manifest, _api_publication, _publication
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
+from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_output, freeze_time
 from tests.data.python.target_generation import SOURCE, target_config_report, target_render_report
 from tests.main.conftest import run_main_and_assert
@@ -35,6 +35,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "deletion",
         "conflict",
         "state",
+        "unowned",
         "verify",
         "selection",
         "inputs",
@@ -44,7 +45,6 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "validation",
         "empty",
         "modular",
-        "provenance",
         "references",
         "locks",
         "publish",
@@ -66,7 +66,10 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
 )
 def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Generate models once, select operations, plan target files, and publish them through a reversible journal."""
-    assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
+    expected = f"{case}.txt"
+    if case.startswith("input-cycle"):
+        expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
+    assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / expected)
 
 
 @pytest.mark.skipif(sys.version_info < (3, 12), reason="type statements require Python 3.12")
@@ -388,7 +391,7 @@ def test_target_toml_values(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Read the selection and paths of a flat target file, recording them in the published manifest."""
+    """Read the selection and paths of a flat target file, which decide the published files."""
     monkeypatch.chdir(tmp_path)
     shutil.copytree(SOURCE / "spec", tmp_path / "spec")
     run_main_and_assert(
@@ -398,9 +401,12 @@ def test_target_toml_values(
         extra_args=_toml_arguments(*arguments),
         copy_files=[(SOURCE / "configs" / f"{case}.toml", tmp_path / "target.toml")],
     )
-    manifest = json.loads((tmp_path / output / ".dcg-target-manifest.json").read_text(encoding="utf-8"))
-    recorded = {"selection": manifest["selection"], "target_config": manifest["inputs"]["target_config"]}
+    published = sorted(
+        path.relative_to(tmp_path).as_posix()
+        for path in (tmp_path / output).rglob("*")
+        if path.is_file() and "_runtime" not in path.parts
+    )
     assert_output(
-        capsys.readouterr().err + json.dumps(recorded, indent=2, sort_keys=True) + "\n",
+        capsys.readouterr().err + "\n".join(published) + "\n",
         EXPECTED / "configs" / f"{case}.txt",
     )

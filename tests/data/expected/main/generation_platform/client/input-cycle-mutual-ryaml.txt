@@ -1,0 +1,51 @@
+# input-cycle-mutual
+render pydantic_v2.BaseModel
+  cyclic YAML input rejected
+  source ../input-cycle-mutual.yaml
+  files []
+  runtime files 0
+generate pydantic_v2.BaseModel
+  cyclic YAML input rejected
+  source ../input-cycle-mutual.yaml
+  files []
+  runtime files 0
+render pydantic_v2.dataclass
+  cyclic YAML input rejected
+  source ../input-cycle-mutual.yaml
+  files []
+  runtime files 0
+generate pydantic_v2.dataclass
+  cyclic YAML input rejected
+  source ../input-cycle-mutual.yaml
+  files []
+  runtime files 0
+render dataclasses.dataclass
+  cyclic YAML input rejected
+  source ../input-cycle-mutual.yaml
+  files []
+  runtime files 0
+generate dataclasses.dataclass
+  cyclic YAML input rejected
+  source ../input-cycle-mutual.yaml
+  files []
+  runtime files 0
+render typing.TypedDict
+  cyclic YAML input rejected
+  source ../input-cycle-mutual.yaml
+  files []
+  runtime files 0
+generate typing.TypedDict
+  cyclic YAML input rejected
+  source ../input-cycle-mutual.yaml
+  files []
+  runtime files 0
+render msgspec.Struct
+  cyclic YAML input rejected
+  source ../input-cycle-mutual.yaml
+  files []
+  runtime files 0
+generate msgspec.Struct
+  cyclic YAML input rejected
+  source ../input-cycle-mutual.yaml
+  files []
+  runtime files 0

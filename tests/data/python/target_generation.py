@@ -37,12 +37,7 @@ SOURCE = Path(__file__).parents[1] / "generation_platform" / "targets"
 MANIFEST = ".dcg-target-manifest.json"
 _HASH = re.compile(r'"[0-9a-f]{64}"')
 _PRIVATE = re.compile(r"(?<![0-9a-f])(?:[0-9a-f]{32}|[0-9a-f]{16})(?![0-9a-f])")
-_MASKED = frozenset({"size", "version", "runtime_revision"})
-
-
-def fixture_class_name(name: str) -> str:
-    """Rename models so legacy process-state handling is exercised."""
-    return f"Fixture{name}"
+_MASKED = frozenset({"version"})
 
 
 def _runtime(path: Path) -> bool:
@@ -86,12 +81,8 @@ def _model(values: dict[str, Any], root: Path) -> GenerateConfig:
     resolved = None
     for key, value in values.items():
         match key:
-            case "output" | "emit_model_metadata" | "custom_file_header_path" | "lockfile":
+            case "output" | "emit_model_metadata" | "lockfile":
                 converted[key] = None if value is None else Path(value)
-            case "custom_class_name_generator":
-                converted[key] = fixture_class_name
-            case "field_extra_keys":
-                converted[key] = set(value)
             case "resolved_lock":
                 resolved = value
             case _:
@@ -126,19 +117,10 @@ def _mask(value: Any, server: str | None) -> Any:
     match value:
         case dict():
             return {
-                key: "<fastapi>"
-                if key == "target_data"
-                else "<masked>"
-                if key in _MASKED and item is not None
-                else _mask(item, server)
+                key: "<masked>" if key in _MASKED else _mask(item, server)
                 for key, item in value.items()
+                if "_runtime" not in key.split("/")
             }
-        case list():
-            return [
-                _mask(item, server)
-                for item in value
-                if not (isinstance(item, dict) and str(item.get("path", "")).startswith("_runtime/"))
-            ]
         case str() if server is not None and server in value:
             return value.replace(server, "http://server")
         case _:
