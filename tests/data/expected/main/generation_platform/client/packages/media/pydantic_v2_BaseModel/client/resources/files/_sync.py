@@ -71,6 +71,15 @@ class FilesResource:
     def store_file(
         self,
         *,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> StoreFileResponse: ...
+    @overload
+    def store_file(
+        self,
+        *,
         body: SyncBinaryBody,
         media_type: str,
         response_media_type: None = None,
@@ -98,6 +107,15 @@ class FilesResource:
     def store_file(
         self,
         *,
+        body: SyncBinaryBody,
+        media_type: str,
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> StoreFileResponse: ...
+    @overload
+    def store_file(
+        self,
+        *,
         body: _dcg_type_1,
         media_type: str,
         response_media_type: None = None,
@@ -121,12 +139,21 @@ class FilesResource:
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> bytes | None: ...
+    @overload
+    def store_file(
+        self,
+        *,
+        body: _dcg_type_1,
+        media_type: str,
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> StoreFileResponse: ...
     def store_file(
         self,
         *,
         body: _dcg_type_0 | SyncBinaryBody | _dcg_type_1,
         media_type: str | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse:
         """Call POST /files."""
@@ -210,6 +237,15 @@ class FilesWithResponse:
     def store_file(
         self,
         *,
+        body: _dcg_type_0,
+        media_type: Literal['application/json'],
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> Response[StoreFileResponse]: ...
+    @overload
+    def store_file(
+        self,
+        *,
         body: SyncBinaryBody,
         media_type: str,
         response_media_type: None = None,
@@ -237,6 +273,15 @@ class FilesWithResponse:
     def store_file(
         self,
         *,
+        body: SyncBinaryBody,
+        media_type: str,
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> Response[StoreFileResponse]: ...
+    @overload
+    def store_file(
+        self,
+        *,
         body: _dcg_type_1,
         media_type: str,
         response_media_type: None = None,
@@ -260,12 +305,21 @@ class FilesWithResponse:
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> Response[bytes | None]: ...
+    @overload
+    def store_file(
+        self,
+        *,
+        body: _dcg_type_1,
+        media_type: str,
+        response_media_type: str,
+        options: RequestOptions | None = None,
+    ) -> Response[StoreFileResponse]: ...
     def store_file(
         self,
         *,
         body: _dcg_type_0 | SyncBinaryBody | _dcg_type_1,
         media_type: str | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]:
         """Call POST /files."""
@@ -324,7 +378,7 @@ class FilesWithRawResponse:
         *,
         body: _dcg_type_0,
         media_type: Literal['application/json'],
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -333,7 +387,7 @@ class FilesWithRawResponse:
         *,
         body: SyncBinaryBody,
         media_type: str,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -342,7 +396,7 @@ class FilesWithRawResponse:
         *,
         body: _dcg_type_1,
         media_type: str,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def store_file(
@@ -350,7 +404,7 @@ class FilesWithRawResponse:
         *,
         body: _dcg_type_0 | SyncBinaryBody | _dcg_type_1,
         media_type: str | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /files."""
@@ -409,7 +463,7 @@ class FilesWithStreamingResponse:
         *,
         body: _dcg_type_0,
         media_type: Literal['application/json'],
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -418,7 +472,7 @@ class FilesWithStreamingResponse:
         *,
         body: SyncBinaryBody,
         media_type: str,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -427,7 +481,7 @@ class FilesWithStreamingResponse:
         *,
         body: _dcg_type_1,
         media_type: str,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def store_file(
@@ -435,7 +489,7 @@ class FilesWithStreamingResponse:
         *,
         body: _dcg_type_0 | SyncBinaryBody | _dcg_type_1,
         media_type: str | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /files."""
