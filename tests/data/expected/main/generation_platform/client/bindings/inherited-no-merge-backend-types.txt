@@ -40,35 +40,16 @@ render pydantic_v2.BaseModel default
       arrayRoot: List[ScalarValue] = Field(..., min_length=1)
       mappingRoot: Dict[str, ScalarValue] = Field(..., min_length=1)
   model_bindings.py
-  _model_0 symbol='models:ScalarValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ScalarValue', root=LeafNode()
-  _model_1 symbol='models:ScalarArray', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ScalarArray', root=ArrayNode(item=ModelNode(symbol='models:ScalarValue'))
-  _model_2 symbol='models:ScalarMapping', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ScalarMapping', root=MapNode(value=ModelNode(symbol='models:ScalarValue'))
-  _model_3 symbol='models:Base', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
-    FieldBinding(field_id='models:Base.direct', native_name='direct', wire_name='direct', validation_key='direct', validation_keys=('direct',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ScalarValue'))
-    FieldBinding(field_id='models:Base.inline', native_name='inline', wire_name='inline', validation_key='inline', validation_keys=('inline',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.array', native_name='array', wire_name='array', validation_key='array', validation_keys=('array',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:ScalarValue')))
-    FieldBinding(field_id='models:Base.mapping', native_name='mapping', wire_name='mapping', validation_key='mapping', validation_keys=('mapping',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=ModelNode(symbol='models:ScalarValue')))
-    FieldBinding(field_id='models:Base.deep', native_name='deep', wire_name='deep', validation_key='deep', validation_keys=('deep',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=ModelNode(symbol='models:ScalarValue'))))
-    FieldBinding(field_id='models:Base.arrayRoot', native_name='arrayRoot', wire_name='arrayRoot', validation_key='arrayRoot', validation_keys=('arrayRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ScalarArray'))
-    FieldBinding(field_id='models:Base.mappingRoot', native_name='mappingRoot', wire_name='mappingRoot', validation_key='mappingRoot', validation_keys=('mappingRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ScalarMapping'))
-  _model_4 symbol='models:Child', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.direct', native_name='direct', wire_name='direct', validation_key='direct', validation_keys=('direct',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.inline', native_name='inline', wire_name='inline', validation_key='inline', validation_keys=('inline',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.array', native_name='array', wire_name='array', validation_key='array', validation_keys=('array',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mapping', native_name='mapping', wire_name='mapping', validation_key='mapping', validation_keys=('mapping',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.deep', native_name='deep', wire_name='deep', validation_key='deep', validation_keys=('deep',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=LeafNode())))
-    FieldBinding(field_id='models:Child.arrayRoot', native_name='arrayRoot', wire_name='arrayRoot', validation_key='arrayRoot', validation_keys=('arrayRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ModelNode(symbol='models:ScalarValue')))
-    FieldBinding(field_id='models:Child.mappingRoot', native_name='mappingRoot', wire_name='mappingRoot', validation_key='mappingRoot', validation_keys=('mappingRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=ModelNode(symbol='models:ScalarValue')))
-  codec_0 -> PydanticModelCodec[models.ScalarValue]
-  codec_1 -> PydanticModelCodec[models.ScalarValue]
-  codec_2 -> PydanticModelCodec[models.ScalarArray]
-  codec_3 -> PydanticModelCodec[models.ScalarArray]
-  codec_4 -> PydanticModelCodec[models.ScalarMapping]
-  codec_5 -> PydanticModelCodec[models.ScalarMapping]
-  codec_6 -> PydanticModelCodec[models.Base]
-  codec_7 -> PydanticModelCodec[models.Base]
-  codec_8 -> PydanticModelCodec[models.Child]
-  codec_9 -> PydanticModelCodec[models.Child]
+  codec_0 models.ScalarValue
+  codec_1 models.ScalarValue
+  codec_2 models.ScalarArray
+  codec_3 models.ScalarArray
+  codec_4 models.ScalarMapping
+  codec_5 models.ScalarMapping
+  codec_6 models.Base
+  codec_7 models.Base
+  codec_8 models.Child
+  codec_9 models.Child
 render pydantic_v2.dataclass default
   models.py
   # generated by datamodel-codegen:
@@ -116,32 +97,16 @@ render pydantic_v2.dataclass default
       arrayRoot: List[ScalarValue] = Field(..., min_length=1)
       mappingRoot: Dict[str, ScalarValue] = Field(..., min_length=1)
   model_bindings.py
-  _model_0 symbol='models:Base', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
-    FieldBinding(field_id='models:Base.direct', native_name='direct', wire_name='direct', validation_key='direct', validation_keys=('direct',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.inline', native_name='inline', wire_name='inline', validation_key='inline', validation_keys=('inline',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.array', native_name='array', wire_name='array', validation_key='array', validation_keys=('array',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mapping', native_name='mapping', wire_name='mapping', validation_key='mapping', validation_keys=('mapping',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.deep', native_name='deep', wire_name='deep', validation_key='deep', validation_keys=('deep',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=LeafNode())))
-    FieldBinding(field_id='models:Base.arrayRoot', native_name='arrayRoot', wire_name='arrayRoot', validation_key='arrayRoot', validation_keys=('arrayRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mappingRoot', native_name='mappingRoot', wire_name='mappingRoot', validation_key='mappingRoot', validation_keys=('mappingRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-  _model_1 symbol='models:Child', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.direct', native_name='direct', wire_name='direct', validation_key='direct', validation_keys=('direct',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.inline', native_name='inline', wire_name='inline', validation_key='inline', validation_keys=('inline',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.array', native_name='array', wire_name='array', validation_key='array', validation_keys=('array',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mapping', native_name='mapping', wire_name='mapping', validation_key='mapping', validation_keys=('mapping',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.deep', native_name='deep', wire_name='deep', validation_key='deep', validation_keys=('deep',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=LeafNode())))
-    FieldBinding(field_id='models:Child.arrayRoot', native_name='arrayRoot', wire_name='arrayRoot', validation_key='arrayRoot', validation_keys=('arrayRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mappingRoot', native_name='mappingRoot', wire_name='mappingRoot', validation_key='mappingRoot', validation_keys=('mappingRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-  codec_0 -> PydanticModelCodec[models.ScalarValue]
-  codec_1 -> PydanticModelCodec[models.ScalarValue]
-  codec_2 -> PydanticModelCodec[models.ScalarArray]
-  codec_3 -> PydanticModelCodec[models.ScalarArray]
-  codec_4 -> PydanticModelCodec[models.ScalarMapping]
-  codec_5 -> PydanticModelCodec[models.ScalarMapping]
-  codec_6 -> PydanticModelCodec[models.Base]
-  codec_7 -> PydanticModelCodec[models.Base]
-  codec_8 -> PydanticModelCodec[models.Child]
-  codec_9 -> PydanticModelCodec[models.Child]
+  codec_0 models.ScalarValue
+  codec_1 models.ScalarValue
+  codec_2 models.ScalarArray
+  codec_3 models.ScalarArray
+  codec_4 models.ScalarMapping
+  codec_5 models.ScalarMapping
+  codec_6 models.Base
+  codec_7 models.Base
+  codec_8 models.Child
+  codec_9 models.Child
 render dataclasses.dataclass default
   models.py
   # generated by datamodel-codegen:
@@ -187,32 +152,18 @@ render dataclasses.dataclass default
       arrayRoot: List[ScalarValue]
       mappingRoot: Dict[str, ScalarValue]
   model_bindings.py
-  _model_0 symbol='models:Base', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
-    FieldBinding(field_id='models:Base.direct', native_name='direct', wire_name='direct', validation_key='direct', validation_keys=('direct',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.inline', native_name='inline', wire_name='inline', validation_key='inline', validation_keys=('inline',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.array', native_name='array', wire_name='array', validation_key='array', validation_keys=('array',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mapping', native_name='mapping', wire_name='mapping', validation_key='mapping', validation_keys=('mapping',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.deep', native_name='deep', wire_name='deep', validation_key='deep', validation_keys=('deep',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=LeafNode())))
-    FieldBinding(field_id='models:Base.arrayRoot', native_name='arrayRoot', wire_name='arrayRoot', validation_key='arrayRoot', validation_keys=('arrayRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mappingRoot', native_name='mappingRoot', wire_name='mappingRoot', validation_key='mappingRoot', validation_keys=('mappingRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-  _model_1 symbol='models:Child', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.direct', native_name='direct', wire_name='direct', validation_key='direct', validation_keys=('direct',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.inline', native_name='inline', wire_name='inline', validation_key='inline', validation_keys=('inline',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.array', native_name='array', wire_name='array', validation_key='array', validation_keys=('array',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mapping', native_name='mapping', wire_name='mapping', validation_key='mapping', validation_keys=('mapping',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.deep', native_name='deep', wire_name='deep', validation_key='deep', validation_keys=('deep',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=LeafNode())))
-    FieldBinding(field_id='models:Child.arrayRoot', native_name='arrayRoot', wire_name='arrayRoot', validation_key='arrayRoot', validation_keys=('arrayRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mappingRoot', native_name='mappingRoot', wire_name='mappingRoot', validation_key='mappingRoot', validation_keys=('mappingRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-  codec_0 -> StructuralModelCodec[models.ScalarValue]
-  codec_1 -> StructuralModelCodec[models.ScalarValue]
-  codec_2 -> StructuralModelCodec[models.ScalarArray]
-  codec_3 -> StructuralModelCodec[models.ScalarArray]
-  codec_4 -> StructuralModelCodec[models.ScalarMapping]
-  codec_5 -> StructuralModelCodec[models.ScalarMapping]
-  codec_6 -> StructuralModelCodec[models.Base]
-  codec_7 -> StructuralModelCodec[models.Base]
-  codec_8 -> StructuralModelCodec[models.Child]
-  codec_9 -> StructuralModelCodec[models.Child]
+  codec_0 models.ScalarValue
+  codec_1 models.ScalarValue
+  codec_2 models.ScalarArray
+  codec_3 models.ScalarArray
+  codec_4 models.ScalarMapping
+  codec_5 models.ScalarMapping
+  codec_6 models.Base
+  codec_7 models.Base
+  codec_8 models.Child
+  codec_9 models.Child
+  map models:Base direct=direct, inline=inline, array=array, mapping=mapping, deep=deep, arrayRoot=arrayRoot, mappingRoot=mappingRoot
+  map models:Child direct=direct, inline=inline, array=array, mapping=mapping, deep=deep, arrayRoot=arrayRoot, mappingRoot=mappingRoot
 render typing.TypedDict default
   models.py
   # generated by datamodel-codegen:
@@ -255,32 +206,18 @@ render typing.TypedDict default
       arrayRoot: List[ScalarValue]
       mappingRoot: Dict[str, ScalarValue]
   model_bindings.py
-  _model_0 symbol='models:Base', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
-    FieldBinding(field_id='models:Base.direct', native_name='direct', wire_name='direct', validation_key='direct', validation_keys=('direct',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.inline', native_name='inline', wire_name='inline', validation_key='inline', validation_keys=('inline',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.array', native_name='array', wire_name='array', validation_key='array', validation_keys=('array',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mapping', native_name='mapping', wire_name='mapping', validation_key='mapping', validation_keys=('mapping',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.deep', native_name='deep', wire_name='deep', validation_key='deep', validation_keys=('deep',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=LeafNode())))
-    FieldBinding(field_id='models:Base.arrayRoot', native_name='arrayRoot', wire_name='arrayRoot', validation_key='arrayRoot', validation_keys=('arrayRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mappingRoot', native_name='mappingRoot', wire_name='mappingRoot', validation_key='mappingRoot', validation_keys=('mappingRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-  _model_1 symbol='models:Child', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.direct', native_name='direct', wire_name='direct', validation_key='direct', validation_keys=('direct',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.inline', native_name='inline', wire_name='inline', validation_key='inline', validation_keys=('inline',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.array', native_name='array', wire_name='array', validation_key='array', validation_keys=('array',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mapping', native_name='mapping', wire_name='mapping', validation_key='mapping', validation_keys=('mapping',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.deep', native_name='deep', wire_name='deep', validation_key='deep', validation_keys=('deep',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=LeafNode())))
-    FieldBinding(field_id='models:Child.arrayRoot', native_name='arrayRoot', wire_name='arrayRoot', validation_key='arrayRoot', validation_keys=('arrayRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mappingRoot', native_name='mappingRoot', wire_name='mappingRoot', validation_key='mappingRoot', validation_keys=('mappingRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-  codec_0 -> StructuralModelCodec[models.ScalarValue]
-  codec_1 -> StructuralModelCodec[models.ScalarValue]
-  codec_2 -> StructuralModelCodec[models.ScalarArray]
-  codec_3 -> StructuralModelCodec[models.ScalarArray]
-  codec_4 -> StructuralModelCodec[models.ScalarMapping]
-  codec_5 -> StructuralModelCodec[models.ScalarMapping]
-  codec_6 -> StructuralModelCodec[models.Base]
-  codec_7 -> StructuralModelCodec[models.Base]
-  codec_8 -> StructuralModelCodec[models.Child]
-  codec_9 -> StructuralModelCodec[models.Child]
+  codec_0 models.ScalarValue
+  codec_1 models.ScalarValue
+  codec_2 models.ScalarArray
+  codec_3 models.ScalarArray
+  codec_4 models.ScalarMapping
+  codec_5 models.ScalarMapping
+  codec_6 models.Base
+  codec_7 models.Base
+  codec_8 models.Child
+  codec_9 models.Child
+  map models:Base direct=direct, inline=inline, array=array, mapping=mapping, deep=deep, arrayRoot=arrayRoot, mappingRoot=mappingRoot
+  map models:Child direct=direct, inline=inline, array=array, mapping=mapping, deep=deep, arrayRoot=arrayRoot, mappingRoot=mappingRoot
 render msgspec.Struct default
   models.py
   # generated by datamodel-codegen:
@@ -324,29 +261,13 @@ render msgspec.Struct default
       arrayRoot: List[ScalarValue]
       mappingRoot: Dict[str, ScalarValue]
   model_bindings.py
-  _model_0 symbol='models:Base', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
-    FieldBinding(field_id='models:Base.direct', native_name='direct', wire_name='direct', validation_key='direct', validation_keys=('direct',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.inline', native_name='inline', wire_name='inline', validation_key='inline', validation_keys=('inline',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.array', native_name='array', wire_name='array', validation_key='array', validation_keys=('array',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mapping', native_name='mapping', wire_name='mapping', validation_key='mapping', validation_keys=('mapping',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.deep', native_name='deep', wire_name='deep', validation_key='deep', validation_keys=('deep',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=LeafNode())))
-    FieldBinding(field_id='models:Base.arrayRoot', native_name='arrayRoot', wire_name='arrayRoot', validation_key='arrayRoot', validation_keys=('arrayRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mappingRoot', native_name='mappingRoot', wire_name='mappingRoot', validation_key='mappingRoot', validation_keys=('mappingRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-  _model_1 symbol='models:Child', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.direct', native_name='direct', wire_name='direct', validation_key='direct', validation_keys=('direct',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.inline', native_name='inline', wire_name='inline', validation_key='inline', validation_keys=('inline',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.array', native_name='array', wire_name='array', validation_key='array', validation_keys=('array',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mapping', native_name='mapping', wire_name='mapping', validation_key='mapping', validation_keys=('mapping',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.deep', native_name='deep', wire_name='deep', validation_key='deep', validation_keys=('deep',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=LeafNode())))
-    FieldBinding(field_id='models:Child.arrayRoot', native_name='arrayRoot', wire_name='arrayRoot', validation_key='arrayRoot', validation_keys=('arrayRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mappingRoot', native_name='mappingRoot', wire_name='mappingRoot', validation_key='mappingRoot', validation_keys=('mappingRoot',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-  codec_0 -> StructuralModelCodec[models.ScalarValue]
-  codec_1 -> StructuralModelCodec[models.ScalarValue]
-  codec_2 -> StructuralModelCodec[models.ScalarArray]
-  codec_3 -> StructuralModelCodec[models.ScalarArray]
-  codec_4 -> StructuralModelCodec[models.ScalarMapping]
-  codec_5 -> StructuralModelCodec[models.ScalarMapping]
-  codec_6 -> StructuralModelCodec[models.Base]
-  codec_7 -> StructuralModelCodec[models.Base]
-  codec_8 -> StructuralModelCodec[models.Child]
-  codec_9 -> StructuralModelCodec[models.Child]
+  codec_0 models.ScalarValue
+  codec_1 models.ScalarValue
+  codec_2 models.ScalarArray
+  codec_3 models.ScalarArray
+  codec_4 models.ScalarMapping
+  codec_5 models.ScalarMapping
+  codec_6 models.Base
+  codec_7 models.Base
+  codec_8 models.Child
+  codec_9 models.Child

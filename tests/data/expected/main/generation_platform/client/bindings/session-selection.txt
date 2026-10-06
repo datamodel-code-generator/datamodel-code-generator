@@ -15,12 +15,8 @@ render pydantic_v2.BaseModel default
   class Bad(BaseModel):
       bad: str
   model_bindings.py
-  _model_0 symbol='models:Good', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Good'
-    FieldBinding(field_id='models:Good.good', native_name='good', wire_name='good', validation_key='good', validation_keys=('good',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:Bad', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Bad'
-    FieldBinding(field_id='models:Bad.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.Good]
-  codec_1 -> PydanticModelCodec[models.Bad]
+  codec_0 models.Good
+  codec_1 models.Bad
 change pydantic_v2.BaseModel default field
   @@ -14 +14 @@
   -    bad: str
@@ -68,12 +64,8 @@ render pydantic_v2.dataclass default
   class Bad:
       bad: str
   model_bindings.py
-  _model_0 symbol='models:Good', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Good'
-    FieldBinding(field_id='models:Good.good', native_name='good', wire_name='good', validation_key='good', validation_keys=('good',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:Bad', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Bad'
-    FieldBinding(field_id='models:Bad.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.Good]
-  codec_1 -> PydanticModelCodec[models.Bad]
+  codec_0 models.Good
+  codec_1 models.Bad
 change pydantic_v2.dataclass default field
   @@ -18 +18 @@
   -    bad: str
@@ -115,12 +107,10 @@ render dataclasses.dataclass default
   class Bad:
       bad: str
   model_bindings.py
-  _model_0 symbol='models:Good', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Good'
-    FieldBinding(field_id='models:Good.good', native_name='good', wire_name='good', validation_key='good', validation_keys=('good',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:Bad', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Bad'
-    FieldBinding(field_id='models:Bad.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[models.Good]
-  codec_1 -> StructuralModelCodec[models.Bad]
+  codec_0 models.Good
+  codec_1 models.Bad
+  map models:Bad bad=bad
+  map models:Good good=good
 change dataclasses.dataclass default field
   @@ -18 +18 @@
   -    bad: str
@@ -160,12 +150,10 @@ render typing.TypedDict default
   class Bad(TypedDict):
       bad: str
   model_bindings.py
-  _model_0 symbol='models:Good', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Good'
-    FieldBinding(field_id='models:Good.good', native_name='good', wire_name='good', validation_key='good', validation_keys=('good',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:Bad', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Bad'
-    FieldBinding(field_id='models:Bad.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[models.Good]
-  codec_1 -> StructuralModelCodec[models.Bad]
+  codec_0 models.Good
+  codec_1 models.Bad
+  map models:Bad bad=bad
+  map models:Good good=good
 change typing.TypedDict default field
   @@ -16 +16 @@
   -    bad: str
@@ -205,12 +193,8 @@ render msgspec.Struct default
   class Bad(Struct):
       bad: str
   model_bindings.py
-  _model_0 symbol='models:Good', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Good'
-    FieldBinding(field_id='models:Good.good', native_name='good', wire_name='good', validation_key='good', validation_keys=('good',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:Bad', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Bad'
-    FieldBinding(field_id='models:Bad.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[models.Good]
-  codec_1 -> StructuralModelCodec[models.Bad]
+  codec_0 models.Good
+  codec_1 models.Bad
 change msgspec.Struct default field
   @@ -16 +16 @@
   -    bad: str

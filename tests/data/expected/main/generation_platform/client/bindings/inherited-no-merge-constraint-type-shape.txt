@@ -197,155 +197,46 @@ render pydantic_v2.BaseModel default
       anyFalseValue: constr(min_length=1)
       oneFalseValue: constr(min_length=1)
   model_bindings.py
-  _model_0 symbol='models:ConstValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ConstValue', root=LeafNode()
-  _model_1 symbol='models:UuidValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/UuidValue', root=LeafNode()
-  _model_2 symbol='models:SingleAnyValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/SingleAnyValue', root=LeafNode()
-  _model_3 symbol='models:SingleOneValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/SingleOneValue', root=LeafNode()
-  _model_4 symbol='models:MixedValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/MixedValue', root=UnionNode(members=(LeafNode(), LeafNode()))
-  _model_5 symbol='models:TupleValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/TupleValue', root=TupleNode(items=(ModelNode(symbol='models:TupleValueItem'), LeafNode()))
-  _model_6 symbol='models:TupleValueItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/TupleValue/prefixItems/0', root=LeafNode()
-  _model_7 symbol='models:RefSiblingInnerValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefSiblingInnerValue', root=LeafNode()
-  _model_8 symbol='models:RefSiblingValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefSiblingValue', root=LeafNode()
-  _model_9 symbol='models:UnconstrainedUnionValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/UnconstrainedUnionValue', root=UnionNode(members=(LeafNode(), LeafNode()))
-  _model_10 symbol='models:NullableTypeListValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/NullableTypeListValue', root=UnionNode(members=(LeafNode(),), nullable=True)
-  _model_11 symbol='models:NullableAnyValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/NullableAnyValue', root=UnionNode(members=(LeafNode(),), nullable=True)
-  _model_12 symbol='models:NullableOneValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/NullableOneValue', root=UnionNode(members=(LeafNode(),), nullable=True)
-  _model_13 symbol='models:ArrayStringUnionValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ArrayStringUnionValue', root=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode()))
-  _model_14 symbol='models:ObjectStringUnionValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ObjectStringUnionValue', root=UnionNode(members=(MapNode(value=LeafNode()), LeafNode()))
-  _model_15 symbol='models:DetailValue', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/DetailValue'
-    FieldBinding(field_id='models:DetailValue.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DetailValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_16 symbol='models:NodeValue', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/NodeValue'
-    FieldBinding(field_id='models:NodeValue.detail', native_name='detail', wire_name='detail', validation_key='detail', validation_keys=('detail',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:DetailValue'))
-    FieldBinding(field_id='models:NodeValue.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_17 symbol='models:Base', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
-    FieldBinding(field_id='models:Base.enumValue', native_name='enumValue', wire_name='enumValue', validation_key='enumValue', validation_keys=('enumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.constValue', native_name='constValue', wire_name='constValue', validation_key='constValue', validation_keys=('constValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ConstValue'))
-    FieldBinding(field_id='models:Base.uuidValue', native_name='uuidValue', wire_name='uuidValue', validation_key='uuidValue', validation_keys=('uuidValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:UuidValue'))
-    FieldBinding(field_id='models:Base.singleAnyValue', native_name='singleAnyValue', wire_name='singleAnyValue', validation_key='singleAnyValue', validation_keys=('singleAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:SingleAnyValue'))
-    FieldBinding(field_id='models:Base.singleOneValue', native_name='singleOneValue', wire_name='singleOneValue', validation_key='singleOneValue', validation_keys=('singleOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:SingleOneValue'))
-    FieldBinding(field_id='models:Base.mixedValue', native_name='mixedValue', wire_name='mixedValue', validation_key='mixedValue', validation_keys=('mixedValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:MixedValue'))
-    FieldBinding(field_id='models:Base.integerValue', native_name='integerValue', wire_name='integerValue', validation_key='integerValue', validation_keys=('integerValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.stringValue', native_name='stringValue', wire_name='stringValue', validation_key='stringValue', validation_keys=('stringValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.arrayValue', native_name='arrayValue', wire_name='arrayValue', validation_key='arrayValue', validation_keys=('arrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.numberValue', native_name='numberValue', wire_name='numberValue', validation_key='numberValue', validation_keys=('numberValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.booleanValue', native_name='booleanValue', wire_name='booleanValue', validation_key='booleanValue', validation_keys=('booleanValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.tupleValue', native_name='tupleValue', wire_name='tupleValue', validation_key='tupleValue', validation_keys=('tupleValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:TupleValue'))
-    FieldBinding(field_id='models:Base.containsTrueValue', native_name='containsTrueValue', wire_name='containsTrueValue', validation_key='containsTrueValue', validation_keys=('containsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.containsFalseValue', native_name='containsFalseValue', wire_name='containsFalseValue', validation_key='containsFalseValue', validation_keys=('containsFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.containsCountValue', native_name='containsCountValue', wire_name='containsCountValue', validation_key='containsCountValue', validation_keys=('containsCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.propertyNamesValue', native_name='propertyNamesValue', wire_name='propertyNamesValue', validation_key='propertyNamesValue', validation_keys=('propertyNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.nullableValue', native_name='nullableValue', wire_name='nullableValue', validation_key='nullableValue', validation_keys=('nullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.nonNullableValue', native_name='nonNullableValue', wire_name='nonNullableValue', validation_key='nonNullableValue', validation_keys=('nonNullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.refSiblingValue', native_name='refSiblingValue', wire_name='refSiblingValue', validation_key='refSiblingValue', validation_keys=('refSiblingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:RefSiblingValue'))
-    FieldBinding(field_id='models:Base.unconstrainedUnionValue', native_name='unconstrainedUnionValue', wire_name='unconstrainedUnionValue', validation_key='unconstrainedUnionValue', validation_keys=('unconstrainedUnionValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:UnconstrainedUnionValue'))
-    FieldBinding(field_id='models:Base.mixedUntypedEnumValue', native_name='mixedUntypedEnumValue', wire_name='mixedUntypedEnumValue', validation_key='mixedUntypedEnumValue', validation_keys=('mixedUntypedEnumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.nullableTypeListValue', native_name='nullableTypeListValue', wire_name='nullableTypeListValue', validation_key='nullableTypeListValue', validation_keys=('nullableTypeListValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:NullableTypeListValue'),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableAnyValue', native_name='nullableAnyValue', wire_name='nullableAnyValue', validation_key='nullableAnyValue', validation_keys=('nullableAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:NullableAnyValue'),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableOneValue', native_name='nullableOneValue', wire_name='nullableOneValue', validation_key='nullableOneValue', validation_keys=('nullableOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:NullableOneValue'),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableArrayValue', native_name='nullableArrayValue', wire_name='nullableArrayValue', validation_key='nullableArrayValue', validation_keys=('nullableArrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.nullableMappingValue', native_name='nullableMappingValue', wire_name='nullableMappingValue', validation_key='nullableMappingValue', validation_keys=('nullableMappingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.unionArrayItemsValue', native_name='unionArrayItemsValue', wire_name='unionArrayItemsValue', validation_key='unionArrayItemsValue', validation_keys=('unionArrayItemsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ArrayStringUnionValue'))
-    FieldBinding(field_id='models:Base.unionArrayContainsValue', native_name='unionArrayContainsValue', wire_name='unionArrayContainsValue', validation_key='unionArrayContainsValue', validation_keys=('unionArrayContainsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ArrayStringUnionValue'))
-    FieldBinding(field_id='models:Base.unionArrayLengthValue', native_name='unionArrayLengthValue', wire_name='unionArrayLengthValue', validation_key='unionArrayLengthValue', validation_keys=('unionArrayLengthValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ArrayStringUnionValue'))
-    FieldBinding(field_id='models:Base.unionObjectValuesValue', native_name='unionObjectValuesValue', wire_name='unionObjectValuesValue', validation_key='unionObjectValuesValue', validation_keys=('unionObjectValuesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ObjectStringUnionValue'))
-    FieldBinding(field_id='models:Base.unionObjectNamesValue', native_name='unionObjectNamesValue', wire_name='unionObjectNamesValue', validation_key='unionObjectNamesValue', validation_keys=('unionObjectNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ObjectStringUnionValue'))
-    FieldBinding(field_id='models:Base.unionObjectCountValue', native_name='unionObjectCountValue', wire_name='unionObjectCountValue', validation_key='unionObjectCountValue', validation_keys=('unionObjectCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ObjectStringUnionValue'))
-    FieldBinding(field_id='models:Base.nestedObjectValue', native_name='nestedObjectValue', wire_name='nestedObjectValue', validation_key='nestedObjectValue', validation_keys=('nestedObjectValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NodeValue'))
-    FieldBinding(field_id='models:Base.itemsTrueValue', native_name='itemsTrueValue', wire_name='itemsTrueValue', validation_key='itemsTrueValue', validation_keys=('itemsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mappingTrueValue', native_name='mappingTrueValue', wire_name='mappingTrueValue', validation_key='mappingTrueValue', validation_keys=('mappingTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.directTrueValue', native_name='directTrueValue', wire_name='directTrueValue', validation_key='directTrueValue', validation_keys=('directTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.anyFalseValue', native_name='anyFalseValue', wire_name='anyFalseValue', validation_key='anyFalseValue', validation_keys=('anyFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.oneFalseValue', native_name='oneFalseValue', wire_name='oneFalseValue', validation_key='oneFalseValue', validation_keys=('oneFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_18 symbol='models:Child', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.enumValue', native_name='enumValue', wire_name='enumValue', validation_key='enumValue', validation_keys=('enumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.constValue', native_name='constValue', wire_name='constValue', validation_key='constValue', validation_keys=('constValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.uuidValue', native_name='uuidValue', wire_name='uuidValue', validation_key='uuidValue', validation_keys=('uuidValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.singleAnyValue', native_name='singleAnyValue', wire_name='singleAnyValue', validation_key='singleAnyValue', validation_keys=('singleAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.singleOneValue', native_name='singleOneValue', wire_name='singleOneValue', validation_key='singleOneValue', validation_keys=('singleOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.mixedValue', native_name='mixedValue', wire_name='mixedValue', validation_key='mixedValue', validation_keys=('mixedValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.integerValue', native_name='integerValue', wire_name='integerValue', validation_key='integerValue', validation_keys=('integerValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.stringValue', native_name='stringValue', wire_name='stringValue', validation_key='stringValue', validation_keys=('stringValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.arrayValue', native_name='arrayValue', wire_name='arrayValue', validation_key='arrayValue', validation_keys=('arrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.numberValue', native_name='numberValue', wire_name='numberValue', validation_key='numberValue', validation_keys=('numberValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.booleanValue', native_name='booleanValue', wire_name='booleanValue', validation_key='booleanValue', validation_keys=('booleanValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.tupleValue', native_name='tupleValue', wire_name='tupleValue', validation_key='tupleValue', validation_keys=('tupleValue',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=(ModelNode(symbol='models:TupleValueItem1'), LeafNode())))
-    FieldBinding(field_id='models:Child.containsTrueValue', native_name='containsTrueValue', wire_name='containsTrueValue', validation_key='containsTrueValue', validation_keys=('containsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.containsFalseValue', native_name='containsFalseValue', wire_name='containsFalseValue', validation_key='containsFalseValue', validation_keys=('containsFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.containsCountValue', native_name='containsCountValue', wire_name='containsCountValue', validation_key='containsCountValue', validation_keys=('containsCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.propertyNamesValue', native_name='propertyNamesValue', wire_name='propertyNamesValue', validation_key='propertyNamesValue', validation_keys=('propertyNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.nullableValue', native_name='nullableValue', wire_name='nullableValue', validation_key='nullableValue', validation_keys=('nullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Child.nonNullableValue', native_name='nonNullableValue', wire_name='nonNullableValue', validation_key='nonNullableValue', validation_keys=('nonNullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.refSiblingValue', native_name='refSiblingValue', wire_name='refSiblingValue', validation_key='refSiblingValue', validation_keys=('refSiblingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.unconstrainedUnionValue', native_name='unconstrainedUnionValue', wire_name='unconstrainedUnionValue', validation_key='unconstrainedUnionValue', validation_keys=('unconstrainedUnionValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.mixedUntypedEnumValue', native_name='mixedUntypedEnumValue', wire_name='mixedUntypedEnumValue', validation_key='mixedUntypedEnumValue', validation_keys=('mixedUntypedEnumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.nullableTypeListValue', native_name='nullableTypeListValue', wire_name='nullableTypeListValue', validation_key='nullableTypeListValue', validation_keys=('nullableTypeListValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableAnyValue', native_name='nullableAnyValue', wire_name='nullableAnyValue', validation_key='nullableAnyValue', validation_keys=('nullableAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableOneValue', native_name='nullableOneValue', wire_name='nullableOneValue', validation_key='nullableOneValue', validation_keys=('nullableOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableArrayValue', native_name='nullableArrayValue', wire_name='nullableArrayValue', validation_key='nullableArrayValue', validation_keys=('nullableArrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.nullableMappingValue', native_name='nullableMappingValue', wire_name='nullableMappingValue', validation_key='nullableMappingValue', validation_keys=('nullableMappingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.unionArrayItemsValue', native_name='unionArrayItemsValue', wire_name='unionArrayItemsValue', validation_key='unionArrayItemsValue', validation_keys=('unionArrayItemsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionArrayContainsValue', native_name='unionArrayContainsValue', wire_name='unionArrayContainsValue', validation_key='unionArrayContainsValue', validation_keys=('unionArrayContainsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:UnionArrayContainsValue'), LeafNode())))
-    FieldBinding(field_id='models:Child.unionArrayLengthValue', native_name='unionArrayLengthValue', wire_name='unionArrayLengthValue', validation_key='unionArrayLengthValue', validation_keys=('unionArrayLengthValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:UnionArrayLengthValue'), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectValuesValue', native_name='unionObjectValuesValue', wire_name='unionObjectValuesValue', validation_key='unionObjectValuesValue', validation_keys=('unionObjectValuesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectNamesValue', native_name='unionObjectNamesValue', wire_name='unionObjectNamesValue', validation_key='unionObjectNamesValue', validation_keys=('unionObjectNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectCountValue', native_name='unionObjectCountValue', wire_name='unionObjectCountValue', validation_key='unionObjectCountValue', validation_keys=('unionObjectCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:UnionObjectCountValue'), LeafNode())))
-    FieldBinding(field_id='models:Child.nestedObjectValue', native_name='nestedObjectValue', wire_name='nestedObjectValue', validation_key='nestedObjectValue', validation_keys=('nestedObjectValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NestedObjectValue'))
-    FieldBinding(field_id='models:Child.itemsTrueValue', native_name='itemsTrueValue', wire_name='itemsTrueValue', validation_key='itemsTrueValue', validation_keys=('itemsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mappingTrueValue', native_name='mappingTrueValue', wire_name='mappingTrueValue', validation_key='mappingTrueValue', validation_keys=('mappingTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.directTrueValue', native_name='directTrueValue', wire_name='directTrueValue', validation_key='directTrueValue', validation_keys=('directTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.anyFalseValue', native_name='anyFalseValue', wire_name='anyFalseValue', validation_key='anyFalseValue', validation_keys=('anyFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.oneFalseValue', native_name='oneFalseValue', wire_name='oneFalseValue', validation_key='oneFalseValue', validation_keys=('oneFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_19 symbol='models:Detail', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/nestedObjectValue/properties/detail'
-    FieldBinding(field_id='models:Detail.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Detail.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_20 symbol='models:NestedObjectValue', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/nestedObjectValue'
-    FieldBinding(field_id='models:NestedObjectValue.detail', native_name='detail', wire_name='detail', validation_key='detail', validation_keys=('detail',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Detail'))
-    FieldBinding(field_id='models:NestedObjectValue.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_21 symbol='models:TupleValueItem1', native_kind='root', schema_id=None, root=LeafNode()
-  _model_22 symbol='models:UnionArrayContainsValue', native_kind='root', schema_id=None, root=ArrayNode(item=LeafNode())
-  _model_23 symbol='models:UnionArrayLengthValue', native_kind='root', schema_id=None, root=ArrayNode(item=LeafNode())
-  _model_24 symbol='models:UnionObjectCountValue', native_kind='root', schema_id=None, root=MapNode(value=LeafNode())
-  codec_0 -> PydanticModelCodec[models.EnumValue]
-  codec_1 -> PydanticModelCodec[models.EnumValue]
-  codec_2 -> PydanticModelCodec[models.ConstValue]
-  codec_3 -> PydanticModelCodec[models.ConstValue]
-  codec_4 -> PydanticModelCodec[models.UuidValue]
-  codec_5 -> PydanticModelCodec[models.UuidValue]
-  codec_6 -> PydanticModelCodec[models.SingleAnyValue]
-  codec_7 -> PydanticModelCodec[models.SingleAnyValue]
-  codec_8 -> PydanticModelCodec[models.SingleOneValue]
-  codec_9 -> PydanticModelCodec[models.SingleOneValue]
-  codec_10 -> PydanticModelCodec[models.MixedValue]
-  codec_11 -> PydanticModelCodec[models.MixedValue]
-  codec_12 -> PydanticModelCodec[models.TupleValue]
-  codec_13 -> PydanticModelCodec[models.TupleValue]
-  codec_14 -> PydanticModelCodec[models.RefSiblingInnerValue]
-  codec_15 -> PydanticModelCodec[models.RefSiblingInnerValue]
-  codec_16 -> PydanticModelCodec[models.RefSiblingValue]
-  codec_17 -> PydanticModelCodec[models.RefSiblingValue]
-  codec_18 -> PydanticModelCodec[models.UnconstrainedUnionValue]
-  codec_19 -> PydanticModelCodec[models.UnconstrainedUnionValue]
-  codec_20 -> PydanticModelCodec[models.MixedUntypedEnumValue]
-  codec_21 -> PydanticModelCodec[models.MixedUntypedEnumValue]
-  codec_22 -> PydanticModelCodec[models.NullableTypeListValue | None]
-  codec_23 -> PydanticModelCodec[models.NullableTypeListValue | None]
-  codec_24 -> PydanticModelCodec[models.NullableAnyValue | None]
-  codec_25 -> PydanticModelCodec[models.NullableAnyValue | None]
-  codec_26 -> PydanticModelCodec[models.NullableOneValue | None]
-  codec_27 -> PydanticModelCodec[models.NullableOneValue | None]
-  codec_28 -> PydanticModelCodec[models.ArrayStringUnionValue]
-  codec_29 -> PydanticModelCodec[models.ArrayStringUnionValue]
-  codec_30 -> PydanticModelCodec[models.ObjectStringUnionValue]
-  codec_31 -> PydanticModelCodec[models.ObjectStringUnionValue]
-  codec_32 -> PydanticModelCodec[models.DetailValue]
-  codec_33 -> PydanticModelCodec[models.DetailValue]
-  codec_34 -> PydanticModelCodec[models.NodeValue]
-  codec_35 -> PydanticModelCodec[models.NodeValue]
-  codec_36 -> PydanticModelCodec[models.Base]
-  codec_37 -> PydanticModelCodec[models.Base]
-  codec_38 -> PydanticModelCodec[models.Child]
-  codec_39 -> PydanticModelCodec[models.Child]
+  codec_0 models.EnumValue
+  codec_1 models.EnumValue
+  codec_2 models.ConstValue
+  codec_3 models.ConstValue
+  codec_4 models.UuidValue
+  codec_5 models.UuidValue
+  codec_6 models.SingleAnyValue
+  codec_7 models.SingleAnyValue
+  codec_8 models.SingleOneValue
+  codec_9 models.SingleOneValue
+  codec_10 models.MixedValue
+  codec_11 models.MixedValue
+  codec_12 models.TupleValue
+  codec_13 models.TupleValue
+  codec_14 models.RefSiblingInnerValue
+  codec_15 models.RefSiblingInnerValue
+  codec_16 models.RefSiblingValue
+  codec_17 models.RefSiblingValue
+  codec_18 models.UnconstrainedUnionValue
+  codec_19 models.UnconstrainedUnionValue
+  codec_20 models.MixedUntypedEnumValue
+  codec_21 models.MixedUntypedEnumValue
+  codec_22 models.NullableTypeListValue | None
+  codec_23 models.NullableTypeListValue | None
+  codec_24 models.NullableAnyValue | None
+  codec_25 models.NullableAnyValue | None
+  codec_26 models.NullableOneValue | None
+  codec_27 models.NullableOneValue | None
+  codec_28 models.ArrayStringUnionValue
+  codec_29 models.ArrayStringUnionValue
+  codec_30 models.ObjectStringUnionValue
+  codec_31 models.ObjectStringUnionValue
+  codec_32 models.DetailValue
+  codec_33 models.DetailValue
+  codec_34 models.NodeValue
+  codec_35 models.NodeValue
+  codec_36 models.Base
+  codec_37 models.Base
+  codec_38 models.Child
+  codec_39 models.Child
 render pydantic_v2.dataclass default
   models.py
   # generated by datamodel-codegen:
@@ -558,136 +449,46 @@ render pydantic_v2.dataclass default
       containsTrueValue: List[str] = Field(..., min_length=1)
       containsCountValue: List[str] = Field(..., min_length=2)
   model_bindings.py
-  _model_0 symbol='models:DetailValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/DetailValue'
-    FieldBinding(field_id='models:DetailValue.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DetailValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:NodeValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/NodeValue'
-    FieldBinding(field_id='models:NodeValue.detail', native_name='detail', wire_name='detail', validation_key='detail', validation_keys=('detail',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:DetailValue'))
-    FieldBinding(field_id='models:NodeValue.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_2 symbol='models:Base', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
-    FieldBinding(field_id='models:Base.enumValue', native_name='enumValue', wire_name='enumValue', validation_key='enumValue', validation_keys=('enumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.constValue', native_name='constValue', wire_name='constValue', validation_key='constValue', validation_keys=('constValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.uuidValue', native_name='uuidValue', wire_name='uuidValue', validation_key='uuidValue', validation_keys=('uuidValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.singleAnyValue', native_name='singleAnyValue', wire_name='singleAnyValue', validation_key='singleAnyValue', validation_keys=('singleAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.singleOneValue', native_name='singleOneValue', wire_name='singleOneValue', validation_key='singleOneValue', validation_keys=('singleOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.mixedValue', native_name='mixedValue', wire_name='mixedValue', validation_key='mixedValue', validation_keys=('mixedValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.integerValue', native_name='integerValue', wire_name='integerValue', validation_key='integerValue', validation_keys=('integerValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.stringValue', native_name='stringValue', wire_name='stringValue', validation_key='stringValue', validation_keys=('stringValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.arrayValue', native_name='arrayValue', wire_name='arrayValue', validation_key='arrayValue', validation_keys=('arrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.numberValue', native_name='numberValue', wire_name='numberValue', validation_key='numberValue', validation_keys=('numberValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.booleanValue', native_name='booleanValue', wire_name='booleanValue', validation_key='booleanValue', validation_keys=('booleanValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.tupleValue', native_name='tupleValue', wire_name='tupleValue', validation_key='tupleValue', validation_keys=('tupleValue',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.containsTrueValue', native_name='containsTrueValue', wire_name='containsTrueValue', validation_key='containsTrueValue', validation_keys=('containsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.containsFalseValue', native_name='containsFalseValue', wire_name='containsFalseValue', validation_key='containsFalseValue', validation_keys=('containsFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.containsCountValue', native_name='containsCountValue', wire_name='containsCountValue', validation_key='containsCountValue', validation_keys=('containsCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.propertyNamesValue', native_name='propertyNamesValue', wire_name='propertyNamesValue', validation_key='propertyNamesValue', validation_keys=('propertyNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.nullableValue', native_name='nullableValue', wire_name='nullableValue', validation_key='nullableValue', validation_keys=('nullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.nonNullableValue', native_name='nonNullableValue', wire_name='nonNullableValue', validation_key='nonNullableValue', validation_keys=('nonNullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.refSiblingValue', native_name='refSiblingValue', wire_name='refSiblingValue', validation_key='refSiblingValue', validation_keys=('refSiblingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.unconstrainedUnionValue', native_name='unconstrainedUnionValue', wire_name='unconstrainedUnionValue', validation_key='unconstrainedUnionValue', validation_keys=('unconstrainedUnionValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.mixedUntypedEnumValue', native_name='mixedUntypedEnumValue', wire_name='mixedUntypedEnumValue', validation_key='mixedUntypedEnumValue', validation_keys=('mixedUntypedEnumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.nullableTypeListValue', native_name='nullableTypeListValue', wire_name='nullableTypeListValue', validation_key='nullableTypeListValue', validation_keys=('nullableTypeListValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableAnyValue', native_name='nullableAnyValue', wire_name='nullableAnyValue', validation_key='nullableAnyValue', validation_keys=('nullableAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableOneValue', native_name='nullableOneValue', wire_name='nullableOneValue', validation_key='nullableOneValue', validation_keys=('nullableOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableArrayValue', native_name='nullableArrayValue', wire_name='nullableArrayValue', validation_key='nullableArrayValue', validation_keys=('nullableArrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.nullableMappingValue', native_name='nullableMappingValue', wire_name='nullableMappingValue', validation_key='nullableMappingValue', validation_keys=('nullableMappingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.unionArrayItemsValue', native_name='unionArrayItemsValue', wire_name='unionArrayItemsValue', validation_key='unionArrayItemsValue', validation_keys=('unionArrayItemsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionArrayContainsValue', native_name='unionArrayContainsValue', wire_name='unionArrayContainsValue', validation_key='unionArrayContainsValue', validation_keys=('unionArrayContainsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionArrayLengthValue', native_name='unionArrayLengthValue', wire_name='unionArrayLengthValue', validation_key='unionArrayLengthValue', validation_keys=('unionArrayLengthValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectValuesValue', native_name='unionObjectValuesValue', wire_name='unionObjectValuesValue', validation_key='unionObjectValuesValue', validation_keys=('unionObjectValuesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectNamesValue', native_name='unionObjectNamesValue', wire_name='unionObjectNamesValue', validation_key='unionObjectNamesValue', validation_keys=('unionObjectNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectCountValue', native_name='unionObjectCountValue', wire_name='unionObjectCountValue', validation_key='unionObjectCountValue', validation_keys=('unionObjectCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.nestedObjectValue', native_name='nestedObjectValue', wire_name='nestedObjectValue', validation_key='nestedObjectValue', validation_keys=('nestedObjectValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NodeValue'))
-    FieldBinding(field_id='models:Base.itemsTrueValue', native_name='itemsTrueValue', wire_name='itemsTrueValue', validation_key='itemsTrueValue', validation_keys=('itemsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mappingTrueValue', native_name='mappingTrueValue', wire_name='mappingTrueValue', validation_key='mappingTrueValue', validation_keys=('mappingTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.directTrueValue', native_name='directTrueValue', wire_name='directTrueValue', validation_key='directTrueValue', validation_keys=('directTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.anyFalseValue', native_name='anyFalseValue', wire_name='anyFalseValue', validation_key='anyFalseValue', validation_keys=('anyFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.oneFalseValue', native_name='oneFalseValue', wire_name='oneFalseValue', validation_key='oneFalseValue', validation_keys=('oneFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:Child', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.enumValue', native_name='enumValue', wire_name='enumValue', validation_key='enumValue', validation_keys=('enumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.constValue', native_name='constValue', wire_name='constValue', validation_key='constValue', validation_keys=('constValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.uuidValue', native_name='uuidValue', wire_name='uuidValue', validation_key='uuidValue', validation_keys=('uuidValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.singleAnyValue', native_name='singleAnyValue', wire_name='singleAnyValue', validation_key='singleAnyValue', validation_keys=('singleAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.singleOneValue', native_name='singleOneValue', wire_name='singleOneValue', validation_key='singleOneValue', validation_keys=('singleOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.mixedValue', native_name='mixedValue', wire_name='mixedValue', validation_key='mixedValue', validation_keys=('mixedValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.integerValue', native_name='integerValue', wire_name='integerValue', validation_key='integerValue', validation_keys=('integerValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.stringValue', native_name='stringValue', wire_name='stringValue', validation_key='stringValue', validation_keys=('stringValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.arrayValue', native_name='arrayValue', wire_name='arrayValue', validation_key='arrayValue', validation_keys=('arrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.numberValue', native_name='numberValue', wire_name='numberValue', validation_key='numberValue', validation_keys=('numberValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.booleanValue', native_name='booleanValue', wire_name='booleanValue', validation_key='booleanValue', validation_keys=('booleanValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.tupleValue', native_name='tupleValue', wire_name='tupleValue', validation_key='tupleValue', validation_keys=('tupleValue',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.containsTrueValue', native_name='containsTrueValue', wire_name='containsTrueValue', validation_key='containsTrueValue', validation_keys=('containsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.containsFalseValue', native_name='containsFalseValue', wire_name='containsFalseValue', validation_key='containsFalseValue', validation_keys=('containsFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.containsCountValue', native_name='containsCountValue', wire_name='containsCountValue', validation_key='containsCountValue', validation_keys=('containsCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.propertyNamesValue', native_name='propertyNamesValue', wire_name='propertyNamesValue', validation_key='propertyNamesValue', validation_keys=('propertyNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.nullableValue', native_name='nullableValue', wire_name='nullableValue', validation_key='nullableValue', validation_keys=('nullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Child.nonNullableValue', native_name='nonNullableValue', wire_name='nonNullableValue', validation_key='nonNullableValue', validation_keys=('nonNullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.refSiblingValue', native_name='refSiblingValue', wire_name='refSiblingValue', validation_key='refSiblingValue', validation_keys=('refSiblingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.unconstrainedUnionValue', native_name='unconstrainedUnionValue', wire_name='unconstrainedUnionValue', validation_key='unconstrainedUnionValue', validation_keys=('unconstrainedUnionValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.mixedUntypedEnumValue', native_name='mixedUntypedEnumValue', wire_name='mixedUntypedEnumValue', validation_key='mixedUntypedEnumValue', validation_keys=('mixedUntypedEnumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.nullableTypeListValue', native_name='nullableTypeListValue', wire_name='nullableTypeListValue', validation_key='nullableTypeListValue', validation_keys=('nullableTypeListValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableAnyValue', native_name='nullableAnyValue', wire_name='nullableAnyValue', validation_key='nullableAnyValue', validation_keys=('nullableAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableOneValue', native_name='nullableOneValue', wire_name='nullableOneValue', validation_key='nullableOneValue', validation_keys=('nullableOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableArrayValue', native_name='nullableArrayValue', wire_name='nullableArrayValue', validation_key='nullableArrayValue', validation_keys=('nullableArrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.nullableMappingValue', native_name='nullableMappingValue', wire_name='nullableMappingValue', validation_key='nullableMappingValue', validation_keys=('nullableMappingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.unionArrayItemsValue', native_name='unionArrayItemsValue', wire_name='unionArrayItemsValue', validation_key='unionArrayItemsValue', validation_keys=('unionArrayItemsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionArrayContainsValue', native_name='unionArrayContainsValue', wire_name='unionArrayContainsValue', validation_key='unionArrayContainsValue', validation_keys=('unionArrayContainsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionArrayLengthValue', native_name='unionArrayLengthValue', wire_name='unionArrayLengthValue', validation_key='unionArrayLengthValue', validation_keys=('unionArrayLengthValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectValuesValue', native_name='unionObjectValuesValue', wire_name='unionObjectValuesValue', validation_key='unionObjectValuesValue', validation_keys=('unionObjectValuesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectNamesValue', native_name='unionObjectNamesValue', wire_name='unionObjectNamesValue', validation_key='unionObjectNamesValue', validation_keys=('unionObjectNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectCountValue', native_name='unionObjectCountValue', wire_name='unionObjectCountValue', validation_key='unionObjectCountValue', validation_keys=('unionObjectCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.nestedObjectValue', native_name='nestedObjectValue', wire_name='nestedObjectValue', validation_key='nestedObjectValue', validation_keys=('nestedObjectValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NestedObjectValue'))
-    FieldBinding(field_id='models:Child.itemsTrueValue', native_name='itemsTrueValue', wire_name='itemsTrueValue', validation_key='itemsTrueValue', validation_keys=('itemsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mappingTrueValue', native_name='mappingTrueValue', wire_name='mappingTrueValue', validation_key='mappingTrueValue', validation_keys=('mappingTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.directTrueValue', native_name='directTrueValue', wire_name='directTrueValue', validation_key='directTrueValue', validation_keys=('directTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.anyFalseValue', native_name='anyFalseValue', wire_name='anyFalseValue', validation_key='anyFalseValue', validation_keys=('anyFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.oneFalseValue', native_name='oneFalseValue', wire_name='oneFalseValue', validation_key='oneFalseValue', validation_keys=('oneFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_4 symbol='models:Detail', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/nestedObjectValue/properties/detail'
-    FieldBinding(field_id='models:Detail.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Detail.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_5 symbol='models:NestedObjectValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/nestedObjectValue'
-    FieldBinding(field_id='models:NestedObjectValue.detail', native_name='detail', wire_name='detail', validation_key='detail', validation_keys=('detail',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Detail'))
-    FieldBinding(field_id='models:NestedObjectValue.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.EnumValue]
-  codec_1 -> PydanticModelCodec[models.EnumValue]
-  codec_2 -> PydanticModelCodec[models.ConstValue]
-  codec_3 -> PydanticModelCodec[models.ConstValue]
-  codec_4 -> PydanticModelCodec[models.UuidValue]
-  codec_5 -> PydanticModelCodec[models.UuidValue]
-  codec_6 -> PydanticModelCodec[models.SingleAnyValue]
-  codec_7 -> PydanticModelCodec[models.SingleAnyValue]
-  codec_8 -> PydanticModelCodec[models.SingleOneValue]
-  codec_9 -> PydanticModelCodec[models.SingleOneValue]
-  codec_10 -> PydanticModelCodec[models.MixedValue]
-  codec_11 -> PydanticModelCodec[models.MixedValue]
-  codec_12 -> PydanticModelCodec[models.TupleValue]
-  codec_13 -> PydanticModelCodec[models.TupleValue]
-  codec_14 -> PydanticModelCodec[models.RefSiblingInnerValue]
-  codec_15 -> PydanticModelCodec[models.RefSiblingInnerValue]
-  codec_16 -> PydanticModelCodec[models.RefSiblingValue]
-  codec_17 -> PydanticModelCodec[models.RefSiblingValue]
-  codec_18 -> PydanticModelCodec[models.UnconstrainedUnionValue]
-  codec_19 -> PydanticModelCodec[models.UnconstrainedUnionValue]
-  codec_20 -> PydanticModelCodec[models.MixedUntypedEnumValue]
-  codec_21 -> PydanticModelCodec[models.MixedUntypedEnumValue]
-  codec_22 -> PydanticModelCodec[models.NullableTypeListValue]
-  codec_23 -> PydanticModelCodec[models.NullableTypeListValue]
-  codec_24 -> PydanticModelCodec[models.NullableAnyValue]
-  codec_25 -> PydanticModelCodec[models.NullableAnyValue]
-  codec_26 -> PydanticModelCodec[models.NullableOneValue]
-  codec_27 -> PydanticModelCodec[models.NullableOneValue]
-  codec_28 -> PydanticModelCodec[models.ArrayStringUnionValue]
-  codec_29 -> PydanticModelCodec[models.ArrayStringUnionValue]
-  codec_30 -> PydanticModelCodec[models.ObjectStringUnionValue]
-  codec_31 -> PydanticModelCodec[models.ObjectStringUnionValue]
-  codec_32 -> PydanticModelCodec[models.DetailValue]
-  codec_33 -> PydanticModelCodec[models.DetailValue]
-  codec_34 -> PydanticModelCodec[models.NodeValue]
-  codec_35 -> PydanticModelCodec[models.NodeValue]
-  codec_36 -> PydanticModelCodec[models.Base]
-  codec_37 -> PydanticModelCodec[models.Base]
-  codec_38 -> PydanticModelCodec[models.Child]
-  codec_39 -> PydanticModelCodec[models.Child]
+  codec_0 models.EnumValue
+  codec_1 models.EnumValue
+  codec_2 models.ConstValue
+  codec_3 models.ConstValue
+  codec_4 models.UuidValue
+  codec_5 models.UuidValue
+  codec_6 models.SingleAnyValue
+  codec_7 models.SingleAnyValue
+  codec_8 models.SingleOneValue
+  codec_9 models.SingleOneValue
+  codec_10 models.MixedValue
+  codec_11 models.MixedValue
+  codec_12 models.TupleValue
+  codec_13 models.TupleValue
+  codec_14 models.RefSiblingInnerValue
+  codec_15 models.RefSiblingInnerValue
+  codec_16 models.RefSiblingValue
+  codec_17 models.RefSiblingValue
+  codec_18 models.UnconstrainedUnionValue
+  codec_19 models.UnconstrainedUnionValue
+  codec_20 models.MixedUntypedEnumValue
+  codec_21 models.MixedUntypedEnumValue
+  codec_22 models.NullableTypeListValue
+  codec_23 models.NullableTypeListValue
+  codec_24 models.NullableAnyValue
+  codec_25 models.NullableAnyValue
+  codec_26 models.NullableOneValue
+  codec_27 models.NullableOneValue
+  codec_28 models.ArrayStringUnionValue
+  codec_29 models.ArrayStringUnionValue
+  codec_30 models.ObjectStringUnionValue
+  codec_31 models.ObjectStringUnionValue
+  codec_32 models.DetailValue
+  codec_33 models.DetailValue
+  codec_34 models.NodeValue
+  codec_35 models.NodeValue
+  codec_36 models.Base
+  codec_37 models.Base
+  codec_38 models.Child
+  codec_39 models.Child
 render dataclasses.dataclass default
   models.py
   # generated by datamodel-codegen:
@@ -893,136 +694,52 @@ render dataclasses.dataclass default
       anyFalseValue: str
       oneFalseValue: str
   model_bindings.py
-  _model_0 symbol='models:DetailValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/DetailValue'
-    FieldBinding(field_id='models:DetailValue.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DetailValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:NodeValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/NodeValue'
-    FieldBinding(field_id='models:NodeValue.detail', native_name='detail', wire_name='detail', validation_key='detail', validation_keys=('detail',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:DetailValue'))
-    FieldBinding(field_id='models:NodeValue.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_2 symbol='models:Base', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
-    FieldBinding(field_id='models:Base.enumValue', native_name='enumValue', wire_name='enumValue', validation_key='enumValue', validation_keys=('enumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.constValue', native_name='constValue', wire_name='constValue', validation_key='constValue', validation_keys=('constValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.uuidValue', native_name='uuidValue', wire_name='uuidValue', validation_key='uuidValue', validation_keys=('uuidValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.singleAnyValue', native_name='singleAnyValue', wire_name='singleAnyValue', validation_key='singleAnyValue', validation_keys=('singleAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.singleOneValue', native_name='singleOneValue', wire_name='singleOneValue', validation_key='singleOneValue', validation_keys=('singleOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.mixedValue', native_name='mixedValue', wire_name='mixedValue', validation_key='mixedValue', validation_keys=('mixedValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.integerValue', native_name='integerValue', wire_name='integerValue', validation_key='integerValue', validation_keys=('integerValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.stringValue', native_name='stringValue', wire_name='stringValue', validation_key='stringValue', validation_keys=('stringValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.arrayValue', native_name='arrayValue', wire_name='arrayValue', validation_key='arrayValue', validation_keys=('arrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.numberValue', native_name='numberValue', wire_name='numberValue', validation_key='numberValue', validation_keys=('numberValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.booleanValue', native_name='booleanValue', wire_name='booleanValue', validation_key='booleanValue', validation_keys=('booleanValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.tupleValue', native_name='tupleValue', wire_name='tupleValue', validation_key='tupleValue', validation_keys=('tupleValue',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.containsTrueValue', native_name='containsTrueValue', wire_name='containsTrueValue', validation_key='containsTrueValue', validation_keys=('containsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.containsFalseValue', native_name='containsFalseValue', wire_name='containsFalseValue', validation_key='containsFalseValue', validation_keys=('containsFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.containsCountValue', native_name='containsCountValue', wire_name='containsCountValue', validation_key='containsCountValue', validation_keys=('containsCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.propertyNamesValue', native_name='propertyNamesValue', wire_name='propertyNamesValue', validation_key='propertyNamesValue', validation_keys=('propertyNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.nullableValue', native_name='nullableValue', wire_name='nullableValue', validation_key='nullableValue', validation_keys=('nullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.nonNullableValue', native_name='nonNullableValue', wire_name='nonNullableValue', validation_key='nonNullableValue', validation_keys=('nonNullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.refSiblingValue', native_name='refSiblingValue', wire_name='refSiblingValue', validation_key='refSiblingValue', validation_keys=('refSiblingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.unconstrainedUnionValue', native_name='unconstrainedUnionValue', wire_name='unconstrainedUnionValue', validation_key='unconstrainedUnionValue', validation_keys=('unconstrainedUnionValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.mixedUntypedEnumValue', native_name='mixedUntypedEnumValue', wire_name='mixedUntypedEnumValue', validation_key='mixedUntypedEnumValue', validation_keys=('mixedUntypedEnumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.nullableTypeListValue', native_name='nullableTypeListValue', wire_name='nullableTypeListValue', validation_key='nullableTypeListValue', validation_keys=('nullableTypeListValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableAnyValue', native_name='nullableAnyValue', wire_name='nullableAnyValue', validation_key='nullableAnyValue', validation_keys=('nullableAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableOneValue', native_name='nullableOneValue', wire_name='nullableOneValue', validation_key='nullableOneValue', validation_keys=('nullableOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableArrayValue', native_name='nullableArrayValue', wire_name='nullableArrayValue', validation_key='nullableArrayValue', validation_keys=('nullableArrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.nullableMappingValue', native_name='nullableMappingValue', wire_name='nullableMappingValue', validation_key='nullableMappingValue', validation_keys=('nullableMappingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.unionArrayItemsValue', native_name='unionArrayItemsValue', wire_name='unionArrayItemsValue', validation_key='unionArrayItemsValue', validation_keys=('unionArrayItemsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionArrayContainsValue', native_name='unionArrayContainsValue', wire_name='unionArrayContainsValue', validation_key='unionArrayContainsValue', validation_keys=('unionArrayContainsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionArrayLengthValue', native_name='unionArrayLengthValue', wire_name='unionArrayLengthValue', validation_key='unionArrayLengthValue', validation_keys=('unionArrayLengthValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectValuesValue', native_name='unionObjectValuesValue', wire_name='unionObjectValuesValue', validation_key='unionObjectValuesValue', validation_keys=('unionObjectValuesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectNamesValue', native_name='unionObjectNamesValue', wire_name='unionObjectNamesValue', validation_key='unionObjectNamesValue', validation_keys=('unionObjectNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectCountValue', native_name='unionObjectCountValue', wire_name='unionObjectCountValue', validation_key='unionObjectCountValue', validation_keys=('unionObjectCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.nestedObjectValue', native_name='nestedObjectValue', wire_name='nestedObjectValue', validation_key='nestedObjectValue', validation_keys=('nestedObjectValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NodeValue'))
-    FieldBinding(field_id='models:Base.itemsTrueValue', native_name='itemsTrueValue', wire_name='itemsTrueValue', validation_key='itemsTrueValue', validation_keys=('itemsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mappingTrueValue', native_name='mappingTrueValue', wire_name='mappingTrueValue', validation_key='mappingTrueValue', validation_keys=('mappingTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.directTrueValue', native_name='directTrueValue', wire_name='directTrueValue', validation_key='directTrueValue', validation_keys=('directTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.anyFalseValue', native_name='anyFalseValue', wire_name='anyFalseValue', validation_key='anyFalseValue', validation_keys=('anyFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.oneFalseValue', native_name='oneFalseValue', wire_name='oneFalseValue', validation_key='oneFalseValue', validation_keys=('oneFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:Child', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.enumValue', native_name='enumValue', wire_name='enumValue', validation_key='enumValue', validation_keys=('enumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.constValue', native_name='constValue', wire_name='constValue', validation_key='constValue', validation_keys=('constValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.uuidValue', native_name='uuidValue', wire_name='uuidValue', validation_key='uuidValue', validation_keys=('uuidValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.singleAnyValue', native_name='singleAnyValue', wire_name='singleAnyValue', validation_key='singleAnyValue', validation_keys=('singleAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.singleOneValue', native_name='singleOneValue', wire_name='singleOneValue', validation_key='singleOneValue', validation_keys=('singleOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.mixedValue', native_name='mixedValue', wire_name='mixedValue', validation_key='mixedValue', validation_keys=('mixedValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.integerValue', native_name='integerValue', wire_name='integerValue', validation_key='integerValue', validation_keys=('integerValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.stringValue', native_name='stringValue', wire_name='stringValue', validation_key='stringValue', validation_keys=('stringValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.arrayValue', native_name='arrayValue', wire_name='arrayValue', validation_key='arrayValue', validation_keys=('arrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.numberValue', native_name='numberValue', wire_name='numberValue', validation_key='numberValue', validation_keys=('numberValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.booleanValue', native_name='booleanValue', wire_name='booleanValue', validation_key='booleanValue', validation_keys=('booleanValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.tupleValue', native_name='tupleValue', wire_name='tupleValue', validation_key='tupleValue', validation_keys=('tupleValue',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.containsTrueValue', native_name='containsTrueValue', wire_name='containsTrueValue', validation_key='containsTrueValue', validation_keys=('containsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.containsFalseValue', native_name='containsFalseValue', wire_name='containsFalseValue', validation_key='containsFalseValue', validation_keys=('containsFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.containsCountValue', native_name='containsCountValue', wire_name='containsCountValue', validation_key='containsCountValue', validation_keys=('containsCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.propertyNamesValue', native_name='propertyNamesValue', wire_name='propertyNamesValue', validation_key='propertyNamesValue', validation_keys=('propertyNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.nullableValue', native_name='nullableValue', wire_name='nullableValue', validation_key='nullableValue', validation_keys=('nullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Child.nonNullableValue', native_name='nonNullableValue', wire_name='nonNullableValue', validation_key='nonNullableValue', validation_keys=('nonNullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.refSiblingValue', native_name='refSiblingValue', wire_name='refSiblingValue', validation_key='refSiblingValue', validation_keys=('refSiblingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.unconstrainedUnionValue', native_name='unconstrainedUnionValue', wire_name='unconstrainedUnionValue', validation_key='unconstrainedUnionValue', validation_keys=('unconstrainedUnionValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.mixedUntypedEnumValue', native_name='mixedUntypedEnumValue', wire_name='mixedUntypedEnumValue', validation_key='mixedUntypedEnumValue', validation_keys=('mixedUntypedEnumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.nullableTypeListValue', native_name='nullableTypeListValue', wire_name='nullableTypeListValue', validation_key='nullableTypeListValue', validation_keys=('nullableTypeListValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableAnyValue', native_name='nullableAnyValue', wire_name='nullableAnyValue', validation_key='nullableAnyValue', validation_keys=('nullableAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableOneValue', native_name='nullableOneValue', wire_name='nullableOneValue', validation_key='nullableOneValue', validation_keys=('nullableOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableArrayValue', native_name='nullableArrayValue', wire_name='nullableArrayValue', validation_key='nullableArrayValue', validation_keys=('nullableArrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.nullableMappingValue', native_name='nullableMappingValue', wire_name='nullableMappingValue', validation_key='nullableMappingValue', validation_keys=('nullableMappingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.unionArrayItemsValue', native_name='unionArrayItemsValue', wire_name='unionArrayItemsValue', validation_key='unionArrayItemsValue', validation_keys=('unionArrayItemsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionArrayContainsValue', native_name='unionArrayContainsValue', wire_name='unionArrayContainsValue', validation_key='unionArrayContainsValue', validation_keys=('unionArrayContainsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionArrayLengthValue', native_name='unionArrayLengthValue', wire_name='unionArrayLengthValue', validation_key='unionArrayLengthValue', validation_keys=('unionArrayLengthValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectValuesValue', native_name='unionObjectValuesValue', wire_name='unionObjectValuesValue', validation_key='unionObjectValuesValue', validation_keys=('unionObjectValuesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectNamesValue', native_name='unionObjectNamesValue', wire_name='unionObjectNamesValue', validation_key='unionObjectNamesValue', validation_keys=('unionObjectNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectCountValue', native_name='unionObjectCountValue', wire_name='unionObjectCountValue', validation_key='unionObjectCountValue', validation_keys=('unionObjectCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.nestedObjectValue', native_name='nestedObjectValue', wire_name='nestedObjectValue', validation_key='nestedObjectValue', validation_keys=('nestedObjectValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NestedObjectValue'))
-    FieldBinding(field_id='models:Child.itemsTrueValue', native_name='itemsTrueValue', wire_name='itemsTrueValue', validation_key='itemsTrueValue', validation_keys=('itemsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mappingTrueValue', native_name='mappingTrueValue', wire_name='mappingTrueValue', validation_key='mappingTrueValue', validation_keys=('mappingTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.directTrueValue', native_name='directTrueValue', wire_name='directTrueValue', validation_key='directTrueValue', validation_keys=('directTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.anyFalseValue', native_name='anyFalseValue', wire_name='anyFalseValue', validation_key='anyFalseValue', validation_keys=('anyFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.oneFalseValue', native_name='oneFalseValue', wire_name='oneFalseValue', validation_key='oneFalseValue', validation_keys=('oneFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_4 symbol='models:Detail', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/nestedObjectValue/properties/detail'
-    FieldBinding(field_id='models:Detail.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Detail.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_5 symbol='models:NestedObjectValue', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/nestedObjectValue'
-    FieldBinding(field_id='models:NestedObjectValue.detail', native_name='detail', wire_name='detail', validation_key='detail', validation_keys=('detail',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Detail'))
-    FieldBinding(field_id='models:NestedObjectValue.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[models.EnumValue]
-  codec_1 -> StructuralModelCodec[models.EnumValue]
-  codec_2 -> StructuralModelCodec[models.ConstValue]
-  codec_3 -> StructuralModelCodec[models.ConstValue]
-  codec_4 -> StructuralModelCodec[models.UuidValue]
-  codec_5 -> StructuralModelCodec[models.UuidValue]
-  codec_6 -> StructuralModelCodec[models.SingleAnyValue]
-  codec_7 -> StructuralModelCodec[models.SingleAnyValue]
-  codec_8 -> StructuralModelCodec[models.SingleOneValue]
-  codec_9 -> StructuralModelCodec[models.SingleOneValue]
-  codec_10 -> StructuralModelCodec[models.MixedValue]
-  codec_11 -> StructuralModelCodec[models.MixedValue]
-  codec_12 -> StructuralModelCodec[models.TupleValue]
-  codec_13 -> StructuralModelCodec[models.TupleValue]
-  codec_14 -> StructuralModelCodec[models.RefSiblingInnerValue]
-  codec_15 -> StructuralModelCodec[models.RefSiblingInnerValue]
-  codec_16 -> StructuralModelCodec[models.RefSiblingValue]
-  codec_17 -> StructuralModelCodec[models.RefSiblingValue]
-  codec_18 -> StructuralModelCodec[models.UnconstrainedUnionValue]
-  codec_19 -> StructuralModelCodec[models.UnconstrainedUnionValue]
-  codec_20 -> StructuralModelCodec[models.MixedUntypedEnumValue]
-  codec_21 -> StructuralModelCodec[models.MixedUntypedEnumValue]
-  codec_22 -> StructuralModelCodec[models.NullableTypeListValue]
-  codec_23 -> StructuralModelCodec[models.NullableTypeListValue]
-  codec_24 -> StructuralModelCodec[models.NullableAnyValue]
-  codec_25 -> StructuralModelCodec[models.NullableAnyValue]
-  codec_26 -> StructuralModelCodec[models.NullableOneValue]
-  codec_27 -> StructuralModelCodec[models.NullableOneValue]
-  codec_28 -> StructuralModelCodec[models.ArrayStringUnionValue]
-  codec_29 -> StructuralModelCodec[models.ArrayStringUnionValue]
-  codec_30 -> StructuralModelCodec[models.ObjectStringUnionValue]
-  codec_31 -> StructuralModelCodec[models.ObjectStringUnionValue]
-  codec_32 -> StructuralModelCodec[models.DetailValue]
-  codec_33 -> StructuralModelCodec[models.DetailValue]
-  codec_34 -> StructuralModelCodec[models.NodeValue]
-  codec_35 -> StructuralModelCodec[models.NodeValue]
-  codec_36 -> StructuralModelCodec[models.Base]
-  codec_37 -> StructuralModelCodec[models.Base]
-  codec_38 -> StructuralModelCodec[models.Child]
-  codec_39 -> StructuralModelCodec[models.Child]
+  codec_0 models.EnumValue
+  codec_1 models.EnumValue
+  codec_2 models.ConstValue
+  codec_3 models.ConstValue
+  codec_4 models.UuidValue
+  codec_5 models.UuidValue
+  codec_6 models.SingleAnyValue
+  codec_7 models.SingleAnyValue
+  codec_8 models.SingleOneValue
+  codec_9 models.SingleOneValue
+  codec_10 models.MixedValue
+  codec_11 models.MixedValue
+  codec_12 models.TupleValue
+  codec_13 models.TupleValue
+  codec_14 models.RefSiblingInnerValue
+  codec_15 models.RefSiblingInnerValue
+  codec_16 models.RefSiblingValue
+  codec_17 models.RefSiblingValue
+  codec_18 models.UnconstrainedUnionValue
+  codec_19 models.UnconstrainedUnionValue
+  codec_20 models.MixedUntypedEnumValue
+  codec_21 models.MixedUntypedEnumValue
+  codec_22 models.NullableTypeListValue
+  codec_23 models.NullableTypeListValue
+  codec_24 models.NullableAnyValue
+  codec_25 models.NullableAnyValue
+  codec_26 models.NullableOneValue
+  codec_27 models.NullableOneValue
+  codec_28 models.ArrayStringUnionValue
+  codec_29 models.ArrayStringUnionValue
+  codec_30 models.ObjectStringUnionValue
+  codec_31 models.ObjectStringUnionValue
+  codec_32 models.DetailValue
+  codec_33 models.DetailValue
+  codec_34 models.NodeValue
+  codec_35 models.NodeValue
+  codec_36 models.Base
+  codec_37 models.Base
+  codec_38 models.Child
+  codec_39 models.Child
+  map models:Base enumValue=enumValue, constValue=constValue, uuidValue=uuidValue, singleAnyValue=singleAnyValue, singleOneValue=singleOneValue, mixedValue=mixedValue, integerValue=integerValue, stringValue=stringValue, arrayValue=arrayValue, numberValue=numberValue, booleanValue=booleanValue, tupleValue=tupleValue, containsTrueValue=containsTrueValue, containsFalseValue=containsFalseValue, containsCountValue=containsCountValue, propertyNamesValue=propertyNamesValue, nullableValue=nullableValue, nonNullableValue=nonNullableValue, refSiblingValue=refSiblingValue, unconstrainedUnionValue=unconstrainedUnionValue, mixedUntypedEnumValue=mixedUntypedEnumValue, nullableTypeListValue=nullableTypeListValue, nullableAnyValue=nullableAnyValue, nullableOneValue=nullableOneValue, nullableArrayValue=nullableArrayValue, nullableMappingValue=nullableMappingValue, unionArrayItemsValue=unionArrayItemsValue, unionArrayContainsValue=unionArrayContainsValue, unionArrayLengthValue=unionArrayLengthValue, unionObjectValuesValue=unionObjectValuesValue, unionObjectNamesValue=unionObjectNamesValue, unionObjectCountValue=unionObjectCountValue, nestedObjectValue=nestedObjectValue, itemsTrueValue=itemsTrueValue, mappingTrueValue=mappingTrueValue, directTrueValue=directTrueValue, anyFalseValue=anyFalseValue, oneFalseValue=oneFalseValue
+  map models:Child enumValue=enumValue, constValue=constValue, uuidValue=uuidValue, singleAnyValue=singleAnyValue, singleOneValue=singleOneValue, mixedValue=mixedValue, integerValue=integerValue, stringValue=stringValue, arrayValue=arrayValue, numberValue=numberValue, booleanValue=booleanValue, tupleValue=tupleValue, containsTrueValue=containsTrueValue, containsFalseValue=containsFalseValue, containsCountValue=containsCountValue, propertyNamesValue=propertyNamesValue, nullableValue=nullableValue, nonNullableValue=nonNullableValue, refSiblingValue=refSiblingValue, unconstrainedUnionValue=unconstrainedUnionValue, mixedUntypedEnumValue=mixedUntypedEnumValue, nullableTypeListValue=nullableTypeListValue, nullableAnyValue=nullableAnyValue, nullableOneValue=nullableOneValue, nullableArrayValue=nullableArrayValue, nullableMappingValue=nullableMappingValue, unionArrayItemsValue=unionArrayItemsValue, unionArrayContainsValue=unionArrayContainsValue, unionArrayLengthValue=unionArrayLengthValue, unionObjectValuesValue=unionObjectValuesValue, unionObjectNamesValue=unionObjectNamesValue, unionObjectCountValue=unionObjectCountValue, nestedObjectValue=nestedObjectValue, itemsTrueValue=itemsTrueValue, mappingTrueValue=mappingTrueValue, directTrueValue=directTrueValue, anyFalseValue=anyFalseValue, oneFalseValue=oneFalseValue
+  map models:Detail code=code, count=count
+  map models:DetailValue code=code, count=count
+  map models:NestedObjectValue detail=detail, label=label
+  map models:NodeValue detail=detail, label=label
 render typing.TypedDict default
   models.py
   # generated by datamodel-codegen:
@@ -1219,136 +936,52 @@ render typing.TypedDict default
       anyFalseValue: str
       oneFalseValue: str
   model_bindings.py
-  _model_0 symbol='models:DetailValue', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/DetailValue'
-    FieldBinding(field_id='models:DetailValue.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DetailValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:NodeValue', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/NodeValue'
-    FieldBinding(field_id='models:NodeValue.detail', native_name='detail', wire_name='detail', validation_key='detail', validation_keys=('detail',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:DetailValue'))
-    FieldBinding(field_id='models:NodeValue.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_2 symbol='models:Base', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
-    FieldBinding(field_id='models:Base.enumValue', native_name='enumValue', wire_name='enumValue', validation_key='enumValue', validation_keys=('enumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.constValue', native_name='constValue', wire_name='constValue', validation_key='constValue', validation_keys=('constValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.uuidValue', native_name='uuidValue', wire_name='uuidValue', validation_key='uuidValue', validation_keys=('uuidValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.singleAnyValue', native_name='singleAnyValue', wire_name='singleAnyValue', validation_key='singleAnyValue', validation_keys=('singleAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.singleOneValue', native_name='singleOneValue', wire_name='singleOneValue', validation_key='singleOneValue', validation_keys=('singleOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.mixedValue', native_name='mixedValue', wire_name='mixedValue', validation_key='mixedValue', validation_keys=('mixedValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.integerValue', native_name='integerValue', wire_name='integerValue', validation_key='integerValue', validation_keys=('integerValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.stringValue', native_name='stringValue', wire_name='stringValue', validation_key='stringValue', validation_keys=('stringValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.arrayValue', native_name='arrayValue', wire_name='arrayValue', validation_key='arrayValue', validation_keys=('arrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.numberValue', native_name='numberValue', wire_name='numberValue', validation_key='numberValue', validation_keys=('numberValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.booleanValue', native_name='booleanValue', wire_name='booleanValue', validation_key='booleanValue', validation_keys=('booleanValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.tupleValue', native_name='tupleValue', wire_name='tupleValue', validation_key='tupleValue', validation_keys=('tupleValue',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.containsTrueValue', native_name='containsTrueValue', wire_name='containsTrueValue', validation_key='containsTrueValue', validation_keys=('containsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.containsFalseValue', native_name='containsFalseValue', wire_name='containsFalseValue', validation_key='containsFalseValue', validation_keys=('containsFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.containsCountValue', native_name='containsCountValue', wire_name='containsCountValue', validation_key='containsCountValue', validation_keys=('containsCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.propertyNamesValue', native_name='propertyNamesValue', wire_name='propertyNamesValue', validation_key='propertyNamesValue', validation_keys=('propertyNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.nullableValue', native_name='nullableValue', wire_name='nullableValue', validation_key='nullableValue', validation_keys=('nullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.nonNullableValue', native_name='nonNullableValue', wire_name='nonNullableValue', validation_key='nonNullableValue', validation_keys=('nonNullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.refSiblingValue', native_name='refSiblingValue', wire_name='refSiblingValue', validation_key='refSiblingValue', validation_keys=('refSiblingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.unconstrainedUnionValue', native_name='unconstrainedUnionValue', wire_name='unconstrainedUnionValue', validation_key='unconstrainedUnionValue', validation_keys=('unconstrainedUnionValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.mixedUntypedEnumValue', native_name='mixedUntypedEnumValue', wire_name='mixedUntypedEnumValue', validation_key='mixedUntypedEnumValue', validation_keys=('mixedUntypedEnumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.nullableTypeListValue', native_name='nullableTypeListValue', wire_name='nullableTypeListValue', validation_key='nullableTypeListValue', validation_keys=('nullableTypeListValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableAnyValue', native_name='nullableAnyValue', wire_name='nullableAnyValue', validation_key='nullableAnyValue', validation_keys=('nullableAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableOneValue', native_name='nullableOneValue', wire_name='nullableOneValue', validation_key='nullableOneValue', validation_keys=('nullableOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableArrayValue', native_name='nullableArrayValue', wire_name='nullableArrayValue', validation_key='nullableArrayValue', validation_keys=('nullableArrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.nullableMappingValue', native_name='nullableMappingValue', wire_name='nullableMappingValue', validation_key='nullableMappingValue', validation_keys=('nullableMappingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.unionArrayItemsValue', native_name='unionArrayItemsValue', wire_name='unionArrayItemsValue', validation_key='unionArrayItemsValue', validation_keys=('unionArrayItemsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionArrayContainsValue', native_name='unionArrayContainsValue', wire_name='unionArrayContainsValue', validation_key='unionArrayContainsValue', validation_keys=('unionArrayContainsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionArrayLengthValue', native_name='unionArrayLengthValue', wire_name='unionArrayLengthValue', validation_key='unionArrayLengthValue', validation_keys=('unionArrayLengthValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectValuesValue', native_name='unionObjectValuesValue', wire_name='unionObjectValuesValue', validation_key='unionObjectValuesValue', validation_keys=('unionObjectValuesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectNamesValue', native_name='unionObjectNamesValue', wire_name='unionObjectNamesValue', validation_key='unionObjectNamesValue', validation_keys=('unionObjectNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectCountValue', native_name='unionObjectCountValue', wire_name='unionObjectCountValue', validation_key='unionObjectCountValue', validation_keys=('unionObjectCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.nestedObjectValue', native_name='nestedObjectValue', wire_name='nestedObjectValue', validation_key='nestedObjectValue', validation_keys=('nestedObjectValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NodeValue'))
-    FieldBinding(field_id='models:Base.itemsTrueValue', native_name='itemsTrueValue', wire_name='itemsTrueValue', validation_key='itemsTrueValue', validation_keys=('itemsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mappingTrueValue', native_name='mappingTrueValue', wire_name='mappingTrueValue', validation_key='mappingTrueValue', validation_keys=('mappingTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.directTrueValue', native_name='directTrueValue', wire_name='directTrueValue', validation_key='directTrueValue', validation_keys=('directTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.anyFalseValue', native_name='anyFalseValue', wire_name='anyFalseValue', validation_key='anyFalseValue', validation_keys=('anyFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.oneFalseValue', native_name='oneFalseValue', wire_name='oneFalseValue', validation_key='oneFalseValue', validation_keys=('oneFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:Child', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.enumValue', native_name='enumValue', wire_name='enumValue', validation_key='enumValue', validation_keys=('enumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.constValue', native_name='constValue', wire_name='constValue', validation_key='constValue', validation_keys=('constValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.uuidValue', native_name='uuidValue', wire_name='uuidValue', validation_key='uuidValue', validation_keys=('uuidValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.singleAnyValue', native_name='singleAnyValue', wire_name='singleAnyValue', validation_key='singleAnyValue', validation_keys=('singleAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.singleOneValue', native_name='singleOneValue', wire_name='singleOneValue', validation_key='singleOneValue', validation_keys=('singleOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.mixedValue', native_name='mixedValue', wire_name='mixedValue', validation_key='mixedValue', validation_keys=('mixedValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.integerValue', native_name='integerValue', wire_name='integerValue', validation_key='integerValue', validation_keys=('integerValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.stringValue', native_name='stringValue', wire_name='stringValue', validation_key='stringValue', validation_keys=('stringValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.arrayValue', native_name='arrayValue', wire_name='arrayValue', validation_key='arrayValue', validation_keys=('arrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.numberValue', native_name='numberValue', wire_name='numberValue', validation_key='numberValue', validation_keys=('numberValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.booleanValue', native_name='booleanValue', wire_name='booleanValue', validation_key='booleanValue', validation_keys=('booleanValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.tupleValue', native_name='tupleValue', wire_name='tupleValue', validation_key='tupleValue', validation_keys=('tupleValue',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.containsTrueValue', native_name='containsTrueValue', wire_name='containsTrueValue', validation_key='containsTrueValue', validation_keys=('containsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.containsFalseValue', native_name='containsFalseValue', wire_name='containsFalseValue', validation_key='containsFalseValue', validation_keys=('containsFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.containsCountValue', native_name='containsCountValue', wire_name='containsCountValue', validation_key='containsCountValue', validation_keys=('containsCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.propertyNamesValue', native_name='propertyNamesValue', wire_name='propertyNamesValue', validation_key='propertyNamesValue', validation_keys=('propertyNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.nullableValue', native_name='nullableValue', wire_name='nullableValue', validation_key='nullableValue', validation_keys=('nullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Child.nonNullableValue', native_name='nonNullableValue', wire_name='nonNullableValue', validation_key='nonNullableValue', validation_keys=('nonNullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.refSiblingValue', native_name='refSiblingValue', wire_name='refSiblingValue', validation_key='refSiblingValue', validation_keys=('refSiblingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.unconstrainedUnionValue', native_name='unconstrainedUnionValue', wire_name='unconstrainedUnionValue', validation_key='unconstrainedUnionValue', validation_keys=('unconstrainedUnionValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.mixedUntypedEnumValue', native_name='mixedUntypedEnumValue', wire_name='mixedUntypedEnumValue', validation_key='mixedUntypedEnumValue', validation_keys=('mixedUntypedEnumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.nullableTypeListValue', native_name='nullableTypeListValue', wire_name='nullableTypeListValue', validation_key='nullableTypeListValue', validation_keys=('nullableTypeListValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableAnyValue', native_name='nullableAnyValue', wire_name='nullableAnyValue', validation_key='nullableAnyValue', validation_keys=('nullableAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableOneValue', native_name='nullableOneValue', wire_name='nullableOneValue', validation_key='nullableOneValue', validation_keys=('nullableOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableArrayValue', native_name='nullableArrayValue', wire_name='nullableArrayValue', validation_key='nullableArrayValue', validation_keys=('nullableArrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.nullableMappingValue', native_name='nullableMappingValue', wire_name='nullableMappingValue', validation_key='nullableMappingValue', validation_keys=('nullableMappingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.unionArrayItemsValue', native_name='unionArrayItemsValue', wire_name='unionArrayItemsValue', validation_key='unionArrayItemsValue', validation_keys=('unionArrayItemsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionArrayContainsValue', native_name='unionArrayContainsValue', wire_name='unionArrayContainsValue', validation_key='unionArrayContainsValue', validation_keys=('unionArrayContainsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionArrayLengthValue', native_name='unionArrayLengthValue', wire_name='unionArrayLengthValue', validation_key='unionArrayLengthValue', validation_keys=('unionArrayLengthValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectValuesValue', native_name='unionObjectValuesValue', wire_name='unionObjectValuesValue', validation_key='unionObjectValuesValue', validation_keys=('unionObjectValuesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectNamesValue', native_name='unionObjectNamesValue', wire_name='unionObjectNamesValue', validation_key='unionObjectNamesValue', validation_keys=('unionObjectNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectCountValue', native_name='unionObjectCountValue', wire_name='unionObjectCountValue', validation_key='unionObjectCountValue', validation_keys=('unionObjectCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.nestedObjectValue', native_name='nestedObjectValue', wire_name='nestedObjectValue', validation_key='nestedObjectValue', validation_keys=('nestedObjectValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NestedObjectValue'))
-    FieldBinding(field_id='models:Child.itemsTrueValue', native_name='itemsTrueValue', wire_name='itemsTrueValue', validation_key='itemsTrueValue', validation_keys=('itemsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mappingTrueValue', native_name='mappingTrueValue', wire_name='mappingTrueValue', validation_key='mappingTrueValue', validation_keys=('mappingTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.directTrueValue', native_name='directTrueValue', wire_name='directTrueValue', validation_key='directTrueValue', validation_keys=('directTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.anyFalseValue', native_name='anyFalseValue', wire_name='anyFalseValue', validation_key='anyFalseValue', validation_keys=('anyFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.oneFalseValue', native_name='oneFalseValue', wire_name='oneFalseValue', validation_key='oneFalseValue', validation_keys=('oneFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_4 symbol='models:Detail', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/nestedObjectValue/properties/detail'
-    FieldBinding(field_id='models:Detail.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Detail.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_5 symbol='models:NestedObjectValue', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/nestedObjectValue'
-    FieldBinding(field_id='models:NestedObjectValue.detail', native_name='detail', wire_name='detail', validation_key='detail', validation_keys=('detail',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Detail'))
-    FieldBinding(field_id='models:NestedObjectValue.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[models.EnumValue]
-  codec_1 -> StructuralModelCodec[models.EnumValue]
-  codec_2 -> StructuralModelCodec[models.ConstValue]
-  codec_3 -> StructuralModelCodec[models.ConstValue]
-  codec_4 -> StructuralModelCodec[models.UuidValue]
-  codec_5 -> StructuralModelCodec[models.UuidValue]
-  codec_6 -> StructuralModelCodec[models.SingleAnyValue]
-  codec_7 -> StructuralModelCodec[models.SingleAnyValue]
-  codec_8 -> StructuralModelCodec[models.SingleOneValue]
-  codec_9 -> StructuralModelCodec[models.SingleOneValue]
-  codec_10 -> StructuralModelCodec[models.MixedValue]
-  codec_11 -> StructuralModelCodec[models.MixedValue]
-  codec_12 -> StructuralModelCodec[models.TupleValue]
-  codec_13 -> StructuralModelCodec[models.TupleValue]
-  codec_14 -> StructuralModelCodec[models.RefSiblingInnerValue]
-  codec_15 -> StructuralModelCodec[models.RefSiblingInnerValue]
-  codec_16 -> StructuralModelCodec[models.RefSiblingValue]
-  codec_17 -> StructuralModelCodec[models.RefSiblingValue]
-  codec_18 -> StructuralModelCodec[models.UnconstrainedUnionValue]
-  codec_19 -> StructuralModelCodec[models.UnconstrainedUnionValue]
-  codec_20 -> StructuralModelCodec[models.MixedUntypedEnumValue]
-  codec_21 -> StructuralModelCodec[models.MixedUntypedEnumValue]
-  codec_22 -> StructuralModelCodec[models.NullableTypeListValue]
-  codec_23 -> StructuralModelCodec[models.NullableTypeListValue]
-  codec_24 -> StructuralModelCodec[models.NullableAnyValue]
-  codec_25 -> StructuralModelCodec[models.NullableAnyValue]
-  codec_26 -> StructuralModelCodec[models.NullableOneValue]
-  codec_27 -> StructuralModelCodec[models.NullableOneValue]
-  codec_28 -> StructuralModelCodec[models.ArrayStringUnionValue]
-  codec_29 -> StructuralModelCodec[models.ArrayStringUnionValue]
-  codec_30 -> StructuralModelCodec[models.ObjectStringUnionValue]
-  codec_31 -> StructuralModelCodec[models.ObjectStringUnionValue]
-  codec_32 -> StructuralModelCodec[models.DetailValue]
-  codec_33 -> StructuralModelCodec[models.DetailValue]
-  codec_34 -> StructuralModelCodec[models.NodeValue]
-  codec_35 -> StructuralModelCodec[models.NodeValue]
-  codec_36 -> StructuralModelCodec[models.Base]
-  codec_37 -> StructuralModelCodec[models.Base]
-  codec_38 -> StructuralModelCodec[models.Child]
-  codec_39 -> StructuralModelCodec[models.Child]
+  codec_0 models.EnumValue
+  codec_1 models.EnumValue
+  codec_2 models.ConstValue
+  codec_3 models.ConstValue
+  codec_4 models.UuidValue
+  codec_5 models.UuidValue
+  codec_6 models.SingleAnyValue
+  codec_7 models.SingleAnyValue
+  codec_8 models.SingleOneValue
+  codec_9 models.SingleOneValue
+  codec_10 models.MixedValue
+  codec_11 models.MixedValue
+  codec_12 models.TupleValue
+  codec_13 models.TupleValue
+  codec_14 models.RefSiblingInnerValue
+  codec_15 models.RefSiblingInnerValue
+  codec_16 models.RefSiblingValue
+  codec_17 models.RefSiblingValue
+  codec_18 models.UnconstrainedUnionValue
+  codec_19 models.UnconstrainedUnionValue
+  codec_20 models.MixedUntypedEnumValue
+  codec_21 models.MixedUntypedEnumValue
+  codec_22 models.NullableTypeListValue
+  codec_23 models.NullableTypeListValue
+  codec_24 models.NullableAnyValue
+  codec_25 models.NullableAnyValue
+  codec_26 models.NullableOneValue
+  codec_27 models.NullableOneValue
+  codec_28 models.ArrayStringUnionValue
+  codec_29 models.ArrayStringUnionValue
+  codec_30 models.ObjectStringUnionValue
+  codec_31 models.ObjectStringUnionValue
+  codec_32 models.DetailValue
+  codec_33 models.DetailValue
+  codec_34 models.NodeValue
+  codec_35 models.NodeValue
+  codec_36 models.Base
+  codec_37 models.Base
+  codec_38 models.Child
+  codec_39 models.Child
+  map models:Base enumValue=enumValue, constValue=constValue, uuidValue=uuidValue, singleAnyValue=singleAnyValue, singleOneValue=singleOneValue, mixedValue=mixedValue, integerValue=integerValue, stringValue=stringValue, arrayValue=arrayValue, numberValue=numberValue, booleanValue=booleanValue, tupleValue=tupleValue, containsTrueValue=containsTrueValue, containsFalseValue=containsFalseValue, containsCountValue=containsCountValue, propertyNamesValue=propertyNamesValue, nullableValue=nullableValue, nonNullableValue=nonNullableValue, refSiblingValue=refSiblingValue, unconstrainedUnionValue=unconstrainedUnionValue, mixedUntypedEnumValue=mixedUntypedEnumValue, nullableTypeListValue=nullableTypeListValue, nullableAnyValue=nullableAnyValue, nullableOneValue=nullableOneValue, nullableArrayValue=nullableArrayValue, nullableMappingValue=nullableMappingValue, unionArrayItemsValue=unionArrayItemsValue, unionArrayContainsValue=unionArrayContainsValue, unionArrayLengthValue=unionArrayLengthValue, unionObjectValuesValue=unionObjectValuesValue, unionObjectNamesValue=unionObjectNamesValue, unionObjectCountValue=unionObjectCountValue, nestedObjectValue=nestedObjectValue, itemsTrueValue=itemsTrueValue, mappingTrueValue=mappingTrueValue, directTrueValue=directTrueValue, anyFalseValue=anyFalseValue, oneFalseValue=oneFalseValue
+  map models:Child enumValue=enumValue, constValue=constValue, uuidValue=uuidValue, singleAnyValue=singleAnyValue, singleOneValue=singleOneValue, mixedValue=mixedValue, integerValue=integerValue, stringValue=stringValue, arrayValue=arrayValue, numberValue=numberValue, booleanValue=booleanValue, tupleValue=tupleValue, containsTrueValue=containsTrueValue, containsFalseValue=containsFalseValue, containsCountValue=containsCountValue, propertyNamesValue=propertyNamesValue, nullableValue=nullableValue, nonNullableValue=nonNullableValue, refSiblingValue=refSiblingValue, unconstrainedUnionValue=unconstrainedUnionValue, mixedUntypedEnumValue=mixedUntypedEnumValue, nullableTypeListValue=nullableTypeListValue, nullableAnyValue=nullableAnyValue, nullableOneValue=nullableOneValue, nullableArrayValue=nullableArrayValue, nullableMappingValue=nullableMappingValue, unionArrayItemsValue=unionArrayItemsValue, unionArrayContainsValue=unionArrayContainsValue, unionArrayLengthValue=unionArrayLengthValue, unionObjectValuesValue=unionObjectValuesValue, unionObjectNamesValue=unionObjectNamesValue, unionObjectCountValue=unionObjectCountValue, nestedObjectValue=nestedObjectValue, itemsTrueValue=itemsTrueValue, mappingTrueValue=mappingTrueValue, directTrueValue=directTrueValue, anyFalseValue=anyFalseValue, oneFalseValue=oneFalseValue
+  map models:Detail code=code, count=count
+  map models:DetailValue code=code, count=count
+  map models:NestedObjectValue detail=detail, label=label
+  map models:NodeValue detail=detail, label=label
 render msgspec.Struct default
   models.py
   # generated by datamodel-codegen:
@@ -1548,133 +1181,43 @@ render msgspec.Struct default
       anyFalseValue: str
       oneFalseValue: str
   model_bindings.py
-  _model_0 symbol='models:DetailValue', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/DetailValue'
-    FieldBinding(field_id='models:DetailValue.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:DetailValue.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:NodeValue', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/NodeValue'
-    FieldBinding(field_id='models:NodeValue.detail', native_name='detail', wire_name='detail', validation_key='detail', validation_keys=('detail',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:DetailValue'))
-    FieldBinding(field_id='models:NodeValue.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_2 symbol='models:Base', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
-    FieldBinding(field_id='models:Base.enumValue', native_name='enumValue', wire_name='enumValue', validation_key='enumValue', validation_keys=('enumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.constValue', native_name='constValue', wire_name='constValue', validation_key='constValue', validation_keys=('constValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.uuidValue', native_name='uuidValue', wire_name='uuidValue', validation_key='uuidValue', validation_keys=('uuidValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.singleAnyValue', native_name='singleAnyValue', wire_name='singleAnyValue', validation_key='singleAnyValue', validation_keys=('singleAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.singleOneValue', native_name='singleOneValue', wire_name='singleOneValue', validation_key='singleOneValue', validation_keys=('singleOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.mixedValue', native_name='mixedValue', wire_name='mixedValue', validation_key='mixedValue', validation_keys=('mixedValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.integerValue', native_name='integerValue', wire_name='integerValue', validation_key='integerValue', validation_keys=('integerValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.stringValue', native_name='stringValue', wire_name='stringValue', validation_key='stringValue', validation_keys=('stringValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.arrayValue', native_name='arrayValue', wire_name='arrayValue', validation_key='arrayValue', validation_keys=('arrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.numberValue', native_name='numberValue', wire_name='numberValue', validation_key='numberValue', validation_keys=('numberValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.booleanValue', native_name='booleanValue', wire_name='booleanValue', validation_key='booleanValue', validation_keys=('booleanValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.tupleValue', native_name='tupleValue', wire_name='tupleValue', validation_key='tupleValue', validation_keys=('tupleValue',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.containsTrueValue', native_name='containsTrueValue', wire_name='containsTrueValue', validation_key='containsTrueValue', validation_keys=('containsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.containsFalseValue', native_name='containsFalseValue', wire_name='containsFalseValue', validation_key='containsFalseValue', validation_keys=('containsFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.containsCountValue', native_name='containsCountValue', wire_name='containsCountValue', validation_key='containsCountValue', validation_keys=('containsCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.propertyNamesValue', native_name='propertyNamesValue', wire_name='propertyNamesValue', validation_key='propertyNamesValue', validation_keys=('propertyNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.nullableValue', native_name='nullableValue', wire_name='nullableValue', validation_key='nullableValue', validation_keys=('nullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.nonNullableValue', native_name='nonNullableValue', wire_name='nonNullableValue', validation_key='nonNullableValue', validation_keys=('nonNullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.refSiblingValue', native_name='refSiblingValue', wire_name='refSiblingValue', validation_key='refSiblingValue', validation_keys=('refSiblingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.unconstrainedUnionValue', native_name='unconstrainedUnionValue', wire_name='unconstrainedUnionValue', validation_key='unconstrainedUnionValue', validation_keys=('unconstrainedUnionValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Base.mixedUntypedEnumValue', native_name='mixedUntypedEnumValue', wire_name='mixedUntypedEnumValue', validation_key='mixedUntypedEnumValue', validation_keys=('mixedUntypedEnumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.nullableTypeListValue', native_name='nullableTypeListValue', wire_name='nullableTypeListValue', validation_key='nullableTypeListValue', validation_keys=('nullableTypeListValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableAnyValue', native_name='nullableAnyValue', wire_name='nullableAnyValue', validation_key='nullableAnyValue', validation_keys=('nullableAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableOneValue', native_name='nullableOneValue', wire_name='nullableOneValue', validation_key='nullableOneValue', validation_keys=('nullableOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Base.nullableArrayValue', native_name='nullableArrayValue', wire_name='nullableArrayValue', validation_key='nullableArrayValue', validation_keys=('nullableArrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.nullableMappingValue', native_name='nullableMappingValue', wire_name='nullableMappingValue', validation_key='nullableMappingValue', validation_keys=('nullableMappingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.unionArrayItemsValue', native_name='unionArrayItemsValue', wire_name='unionArrayItemsValue', validation_key='unionArrayItemsValue', validation_keys=('unionArrayItemsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionArrayContainsValue', native_name='unionArrayContainsValue', wire_name='unionArrayContainsValue', validation_key='unionArrayContainsValue', validation_keys=('unionArrayContainsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionArrayLengthValue', native_name='unionArrayLengthValue', wire_name='unionArrayLengthValue', validation_key='unionArrayLengthValue', validation_keys=('unionArrayLengthValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectValuesValue', native_name='unionObjectValuesValue', wire_name='unionObjectValuesValue', validation_key='unionObjectValuesValue', validation_keys=('unionObjectValuesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectNamesValue', native_name='unionObjectNamesValue', wire_name='unionObjectNamesValue', validation_key='unionObjectNamesValue', validation_keys=('unionObjectNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.unionObjectCountValue', native_name='unionObjectCountValue', wire_name='unionObjectCountValue', validation_key='unionObjectCountValue', validation_keys=('unionObjectCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Base.nestedObjectValue', native_name='nestedObjectValue', wire_name='nestedObjectValue', validation_key='nestedObjectValue', validation_keys=('nestedObjectValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NodeValue'))
-    FieldBinding(field_id='models:Base.itemsTrueValue', native_name='itemsTrueValue', wire_name='itemsTrueValue', validation_key='itemsTrueValue', validation_keys=('itemsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Base.mappingTrueValue', native_name='mappingTrueValue', wire_name='mappingTrueValue', validation_key='mappingTrueValue', validation_keys=('mappingTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Base.directTrueValue', native_name='directTrueValue', wire_name='directTrueValue', validation_key='directTrueValue', validation_keys=('directTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.anyFalseValue', native_name='anyFalseValue', wire_name='anyFalseValue', validation_key='anyFalseValue', validation_keys=('anyFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Base.oneFalseValue', native_name='oneFalseValue', wire_name='oneFalseValue', validation_key='oneFalseValue', validation_keys=('oneFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:Child', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.enumValue', native_name='enumValue', wire_name='enumValue', validation_key='enumValue', validation_keys=('enumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.constValue', native_name='constValue', wire_name='constValue', validation_key='constValue', validation_keys=('constValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.uuidValue', native_name='uuidValue', wire_name='uuidValue', validation_key='uuidValue', validation_keys=('uuidValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.singleAnyValue', native_name='singleAnyValue', wire_name='singleAnyValue', validation_key='singleAnyValue', validation_keys=('singleAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.singleOneValue', native_name='singleOneValue', wire_name='singleOneValue', validation_key='singleOneValue', validation_keys=('singleOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.mixedValue', native_name='mixedValue', wire_name='mixedValue', validation_key='mixedValue', validation_keys=('mixedValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.integerValue', native_name='integerValue', wire_name='integerValue', validation_key='integerValue', validation_keys=('integerValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.stringValue', native_name='stringValue', wire_name='stringValue', validation_key='stringValue', validation_keys=('stringValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.arrayValue', native_name='arrayValue', wire_name='arrayValue', validation_key='arrayValue', validation_keys=('arrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.numberValue', native_name='numberValue', wire_name='numberValue', validation_key='numberValue', validation_keys=('numberValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.booleanValue', native_name='booleanValue', wire_name='booleanValue', validation_key='booleanValue', validation_keys=('booleanValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.tupleValue', native_name='tupleValue', wire_name='tupleValue', validation_key='tupleValue', validation_keys=('tupleValue',), required=True, read_only=False, write_only=False, omit_none=False, type=TupleNode(items=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.containsTrueValue', native_name='containsTrueValue', wire_name='containsTrueValue', validation_key='containsTrueValue', validation_keys=('containsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.containsFalseValue', native_name='containsFalseValue', wire_name='containsFalseValue', validation_key='containsFalseValue', validation_keys=('containsFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.containsCountValue', native_name='containsCountValue', wire_name='containsCountValue', validation_key='containsCountValue', validation_keys=('containsCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.propertyNamesValue', native_name='propertyNamesValue', wire_name='propertyNamesValue', validation_key='propertyNamesValue', validation_keys=('propertyNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.nullableValue', native_name='nullableValue', wire_name='nullableValue', validation_key='nullableValue', validation_keys=('nullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Child.nonNullableValue', native_name='nonNullableValue', wire_name='nonNullableValue', validation_key='nonNullableValue', validation_keys=('nonNullableValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.refSiblingValue', native_name='refSiblingValue', wire_name='refSiblingValue', validation_key='refSiblingValue', validation_keys=('refSiblingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.unconstrainedUnionValue', native_name='unconstrainedUnionValue', wire_name='unconstrainedUnionValue', validation_key='unconstrainedUnionValue', validation_keys=('unconstrainedUnionValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.mixedUntypedEnumValue', native_name='mixedUntypedEnumValue', wire_name='mixedUntypedEnumValue', validation_key='mixedUntypedEnumValue', validation_keys=('mixedUntypedEnumValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
-    FieldBinding(field_id='models:Child.nullableTypeListValue', native_name='nullableTypeListValue', wire_name='nullableTypeListValue', validation_key='nullableTypeListValue', validation_keys=('nullableTypeListValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableAnyValue', native_name='nullableAnyValue', wire_name='nullableAnyValue', validation_key='nullableAnyValue', validation_keys=('nullableAnyValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableOneValue', native_name='nullableOneValue', wire_name='nullableOneValue', validation_key='nullableOneValue', validation_keys=('nullableOneValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.nullableArrayValue', native_name='nullableArrayValue', wire_name='nullableArrayValue', validation_key='nullableArrayValue', validation_keys=('nullableArrayValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.nullableMappingValue', native_name='nullableMappingValue', wire_name='nullableMappingValue', validation_key='nullableMappingValue', validation_keys=('nullableMappingValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.unionArrayItemsValue', native_name='unionArrayItemsValue', wire_name='unionArrayItemsValue', validation_key='unionArrayItemsValue', validation_keys=('unionArrayItemsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionArrayContainsValue', native_name='unionArrayContainsValue', wire_name='unionArrayContainsValue', validation_key='unionArrayContainsValue', validation_keys=('unionArrayContainsValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionArrayLengthValue', native_name='unionArrayLengthValue', wire_name='unionArrayLengthValue', validation_key='unionArrayLengthValue', validation_keys=('unionArrayLengthValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ArrayNode(item=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectValuesValue', native_name='unionObjectValuesValue', wire_name='unionObjectValuesValue', validation_key='unionObjectValuesValue', validation_keys=('unionObjectValuesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectNamesValue', native_name='unionObjectNamesValue', wire_name='unionObjectNamesValue', validation_key='unionObjectNamesValue', validation_keys=('unionObjectNamesValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.unionObjectCountValue', native_name='unionObjectCountValue', wire_name='unionObjectCountValue', validation_key='unionObjectCountValue', validation_keys=('unionObjectCountValue',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=LeafNode()), LeafNode())))
-    FieldBinding(field_id='models:Child.nestedObjectValue', native_name='nestedObjectValue', wire_name='nestedObjectValue', validation_key='nestedObjectValue', validation_keys=('nestedObjectValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:NestedObjectValue'))
-    FieldBinding(field_id='models:Child.itemsTrueValue', native_name='itemsTrueValue', wire_name='itemsTrueValue', validation_key='itemsTrueValue', validation_keys=('itemsTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Child.mappingTrueValue', native_name='mappingTrueValue', wire_name='mappingTrueValue', validation_key='mappingTrueValue', validation_keys=('mappingTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:Child.directTrueValue', native_name='directTrueValue', wire_name='directTrueValue', validation_key='directTrueValue', validation_keys=('directTrueValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.anyFalseValue', native_name='anyFalseValue', wire_name='anyFalseValue', validation_key='anyFalseValue', validation_keys=('anyFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.oneFalseValue', native_name='oneFalseValue', wire_name='oneFalseValue', validation_key='oneFalseValue', validation_keys=('oneFalseValue',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_4 symbol='models:Detail', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/nestedObjectValue/properties/detail'
-    FieldBinding(field_id='models:Detail.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Detail.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_5 symbol='models:NestedObjectValue', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/nestedObjectValue'
-    FieldBinding(field_id='models:NestedObjectValue.detail', native_name='detail', wire_name='detail', validation_key='detail', validation_keys=('detail',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Detail'))
-    FieldBinding(field_id='models:NestedObjectValue.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[models.EnumValue]
-  codec_1 -> StructuralModelCodec[models.EnumValue]
-  codec_2 -> StructuralModelCodec[models.ConstValue]
-  codec_3 -> StructuralModelCodec[models.ConstValue]
-  codec_4 -> StructuralModelCodec[models.UuidValue]
-  codec_5 -> StructuralModelCodec[models.UuidValue]
-  codec_6 -> StructuralModelCodec[models.SingleAnyValue]
-  codec_7 -> StructuralModelCodec[models.SingleAnyValue]
-  codec_8 -> StructuralModelCodec[models.SingleOneValue]
-  codec_9 -> StructuralModelCodec[models.SingleOneValue]
-  codec_10 -> StructuralModelCodec[models.MixedValue]
-  codec_11 -> StructuralModelCodec[models.MixedValue]
-  codec_12 -> StructuralModelCodec[models.TupleValue]
-  codec_13 -> StructuralModelCodec[models.TupleValue]
-  codec_14 -> StructuralModelCodec[models.RefSiblingInnerValue]
-  codec_15 -> StructuralModelCodec[models.RefSiblingInnerValue]
-  codec_16 -> StructuralModelCodec[models.RefSiblingValue]
-  codec_17 -> StructuralModelCodec[models.RefSiblingValue]
-  codec_18 -> StructuralModelCodec[models.UnconstrainedUnionValue]
-  codec_19 -> StructuralModelCodec[models.UnconstrainedUnionValue]
-  codec_20 -> StructuralModelCodec[models.MixedUntypedEnumValue]
-  codec_21 -> StructuralModelCodec[models.MixedUntypedEnumValue]
-  codec_22 -> StructuralModelCodec[models.NullableTypeListValue]
-  codec_23 -> StructuralModelCodec[models.NullableTypeListValue]
-  codec_24 -> StructuralModelCodec[models.NullableAnyValue]
-  codec_25 -> StructuralModelCodec[models.NullableAnyValue]
-  codec_26 -> StructuralModelCodec[models.NullableOneValue]
-  codec_27 -> StructuralModelCodec[models.NullableOneValue]
-  codec_28 -> StructuralModelCodec[models.ArrayStringUnionValue]
-  codec_29 -> StructuralModelCodec[models.ArrayStringUnionValue]
-  codec_30 -> StructuralModelCodec[models.ObjectStringUnionValue]
-  codec_31 -> StructuralModelCodec[models.ObjectStringUnionValue]
-  codec_32 -> StructuralModelCodec[models.DetailValue]
-  codec_33 -> StructuralModelCodec[models.DetailValue]
-  codec_34 -> StructuralModelCodec[models.NodeValue]
-  codec_35 -> StructuralModelCodec[models.NodeValue]
-  codec_36 -> StructuralModelCodec[models.Base]
-  codec_37 -> StructuralModelCodec[models.Base]
-  codec_38 -> StructuralModelCodec[models.Child]
-  codec_39 -> StructuralModelCodec[models.Child]
+  codec_0 models.EnumValue
+  codec_1 models.EnumValue
+  codec_2 models.ConstValue
+  codec_3 models.ConstValue
+  codec_4 models.UuidValue
+  codec_5 models.UuidValue
+  codec_6 models.SingleAnyValue
+  codec_7 models.SingleAnyValue
+  codec_8 models.SingleOneValue
+  codec_9 models.SingleOneValue
+  codec_10 models.MixedValue
+  codec_11 models.MixedValue
+  codec_12 models.TupleValue
+  codec_13 models.TupleValue
+  codec_14 models.RefSiblingInnerValue
+  codec_15 models.RefSiblingInnerValue
+  codec_16 models.RefSiblingValue
+  codec_17 models.RefSiblingValue
+  codec_18 models.UnconstrainedUnionValue
+  codec_19 models.UnconstrainedUnionValue
+  codec_20 models.MixedUntypedEnumValue
+  codec_21 models.MixedUntypedEnumValue
+  codec_22 models.NullableTypeListValue
+  codec_23 models.NullableTypeListValue
+  codec_24 models.NullableAnyValue
+  codec_25 models.NullableAnyValue
+  codec_26 models.NullableOneValue
+  codec_27 models.NullableOneValue
+  codec_28 models.ArrayStringUnionValue
+  codec_29 models.ArrayStringUnionValue
+  codec_30 models.ObjectStringUnionValue
+  codec_31 models.ObjectStringUnionValue
+  codec_32 models.DetailValue
+  codec_33 models.DetailValue
+  codec_34 models.NodeValue
+  codec_35 models.NodeValue
+  codec_36 models.Base
+  codec_37 models.Base
+  codec_38 models.Child
+  codec_39 models.Child

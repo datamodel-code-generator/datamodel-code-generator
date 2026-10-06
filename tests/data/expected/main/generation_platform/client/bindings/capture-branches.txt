@@ -76,57 +76,30 @@ render pydantic_v2.BaseModel default
   
   Node.model_rebuild()
   model_bindings.py
-  _model_0 symbol='models:Parent', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Parent'
-    FieldBinding(field_id='models:Parent.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Parent.other', native_name='other', wire_name='other', validation_key='other', validation_keys=('other',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Parent.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_1 symbol='models:Child', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.other', native_name='other', wire_name='other', validation_key='other', validation_keys=('other',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:Child.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_2 symbol='models:Node', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Node'
-    FieldBinding(field_id='models:Node.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Node'))
-  _model_3 symbol='models:Holder', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder'
-    FieldBinding(field_id='models:Holder.node', native_name='node', wire_name='node', validation_key='node', validation_keys=('node',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Node'))
-  _model_4 symbol='models:A', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/A'
-    FieldBinding(field_id='models:A.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_5 symbol='models:B', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/B'
-    FieldBinding(field_id='models:B.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_6 symbol='models:C', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/C'
-    FieldBinding(field_id='models:C.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:C.y', native_name='y', wire_name='y', validation_key='y', validation_keys=('y',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_7 symbol='models:Extra', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Extra', extra='allow'
-    FieldBinding(field_id='models:Extra.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_8 symbol='models:Open', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Open', extra='allow'
-    FieldBinding(field_id='models:Open.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_9 symbol='models:Code', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Code', root=LeafNode()
-  _model_10 symbol='models:Limited', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Limited', root=LeafNode()
-  _model_11 symbol='models:Defaulted', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Defaulted'
-    FieldBinding(field_id='models:Defaulted.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.Parent]
-  codec_1 -> PydanticModelCodec[models.Parent]
-  codec_2 -> PydanticModelCodec[models.Child]
-  codec_3 -> PydanticModelCodec[models.Child]
-  codec_4 -> PydanticModelCodec[models.Node]
-  codec_5 -> PydanticModelCodec[models.Node]
-  codec_6 -> PydanticModelCodec[models.Holder]
-  codec_7 -> PydanticModelCodec[models.Holder]
-  codec_8 -> PydanticModelCodec[models.A]
-  codec_9 -> PydanticModelCodec[models.A]
-  codec_10 -> PydanticModelCodec[models.B]
-  codec_11 -> PydanticModelCodec[models.B]
-  codec_12 -> PydanticModelCodec[models.C]
-  codec_13 -> PydanticModelCodec[models.C]
-  codec_14 -> PydanticModelCodec[models.Extra]
-  codec_15 -> PydanticModelCodec[models.Extra]
-  codec_16 -> PydanticModelCodec[models.Open]
-  codec_17 -> PydanticModelCodec[models.Open]
-  codec_18 -> PydanticModelCodec[models.Code]
-  codec_19 -> PydanticModelCodec[models.Code]
-  codec_20 -> PydanticModelCodec[models.Limited]
-  codec_21 -> PydanticModelCodec[models.Limited]
-  codec_22 -> PydanticModelCodec[models.Defaulted]
-  codec_23 -> PydanticModelCodec[models.Defaulted]
+  codec_0 models.Parent
+  codec_1 models.Parent
+  codec_2 models.Child
+  codec_3 models.Child
+  codec_4 models.Node
+  codec_5 models.Node
+  codec_6 models.Holder
+  codec_7 models.Holder
+  codec_8 models.A
+  codec_9 models.A
+  codec_10 models.B
+  codec_11 models.B
+  codec_12 models.C
+  codec_13 models.C
+  codec_14 models.Extra
+  codec_15 models.Extra
+  codec_16 models.Open
+  codec_17 models.Open
+  codec_18 models.Code
+  codec_19 models.Code
+  codec_20 models.Limited
+  codec_21 models.Limited
+  codec_22 models.Defaulted
+  codec_23 models.Defaulted
 render pydantic_v2.BaseModel no-merge
   models.py
   # generated by datamodel-codegen:
@@ -204,57 +177,30 @@ render pydantic_v2.BaseModel no-merge
   
   Node.model_rebuild()
   model_bindings.py
-  _model_0 symbol='models:Parent', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Parent'
-    FieldBinding(field_id='models:Parent.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Parent.other', native_name='other', wire_name='other', validation_key='other', validation_keys=('other',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Parent.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_1 symbol='models:Child', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.other', native_name='other', wire_name='other', validation_key='other', validation_keys=('other',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:Child.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_2 symbol='models:Node', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Node'
-    FieldBinding(field_id='models:Node.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Node'))
-  _model_3 symbol='models:Holder', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder'
-    FieldBinding(field_id='models:Holder.node', native_name='node', wire_name='node', validation_key='node', validation_keys=('node',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Node'))
-  _model_4 symbol='models:A', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/A'
-    FieldBinding(field_id='models:A.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_5 symbol='models:B', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/B'
-    FieldBinding(field_id='models:B.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_6 symbol='models:C', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/C'
-    FieldBinding(field_id='models:C.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:C.y', native_name='y', wire_name='y', validation_key='y', validation_keys=('y',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_7 symbol='models:Extra', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Extra', extra='allow'
-    FieldBinding(field_id='models:Extra.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_8 symbol='models:Open', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Open', extra='allow'
-    FieldBinding(field_id='models:Open.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_9 symbol='models:Code', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Code', root=LeafNode()
-  _model_10 symbol='models:Limited', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Limited', root=LeafNode()
-  _model_11 symbol='models:Defaulted', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Defaulted'
-    FieldBinding(field_id='models:Defaulted.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.Parent]
-  codec_1 -> PydanticModelCodec[models.Parent]
-  codec_2 -> PydanticModelCodec[models.Child]
-  codec_3 -> PydanticModelCodec[models.Child]
-  codec_4 -> PydanticModelCodec[models.Node]
-  codec_5 -> PydanticModelCodec[models.Node]
-  codec_6 -> PydanticModelCodec[models.Holder]
-  codec_7 -> PydanticModelCodec[models.Holder]
-  codec_8 -> PydanticModelCodec[models.A]
-  codec_9 -> PydanticModelCodec[models.A]
-  codec_10 -> PydanticModelCodec[models.B]
-  codec_11 -> PydanticModelCodec[models.B]
-  codec_12 -> PydanticModelCodec[models.C]
-  codec_13 -> PydanticModelCodec[models.C]
-  codec_14 -> PydanticModelCodec[models.Extra]
-  codec_15 -> PydanticModelCodec[models.Extra]
-  codec_16 -> PydanticModelCodec[models.Open]
-  codec_17 -> PydanticModelCodec[models.Open]
-  codec_18 -> PydanticModelCodec[models.Code]
-  codec_19 -> PydanticModelCodec[models.Code]
-  codec_20 -> PydanticModelCodec[models.Limited]
-  codec_21 -> PydanticModelCodec[models.Limited]
-  codec_22 -> PydanticModelCodec[models.Defaulted]
-  codec_23 -> PydanticModelCodec[models.Defaulted]
+  codec_0 models.Parent
+  codec_1 models.Parent
+  codec_2 models.Child
+  codec_3 models.Child
+  codec_4 models.Node
+  codec_5 models.Node
+  codec_6 models.Holder
+  codec_7 models.Holder
+  codec_8 models.A
+  codec_9 models.A
+  codec_10 models.B
+  codec_11 models.B
+  codec_12 models.C
+  codec_13 models.C
+  codec_14 models.Extra
+  codec_15 models.Extra
+  codec_16 models.Open
+  codec_17 models.Open
+  codec_18 models.Code
+  codec_19 models.Code
+  codec_20 models.Limited
+  codec_21 models.Limited
+  codec_22 models.Defaulted
+  codec_23 models.Defaulted
 render pydantic_v2.BaseModel validators
   models.py
   # generated by datamodel-codegen:
@@ -380,54 +326,27 @@ render pydantic_v2.BaseModel validators
   
   Node.model_rebuild()
   model_bindings.py
-  _model_0 symbol='models:Parent', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Parent'
-    FieldBinding(field_id='models:Parent.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Parent.other', native_name='other', wire_name='other', validation_key='other', validation_keys=('other',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Parent.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_1 symbol='models:Child', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Child.other', native_name='other', wire_name='other', validation_key='other', validation_keys=('other',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:Child.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_2 symbol='models:Node', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Node'
-    FieldBinding(field_id='models:Node.next', native_name='next', wire_name='next', validation_key='next', validation_keys=('next',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Node'))
-  _model_3 symbol='models:Holder', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder'
-    FieldBinding(field_id='models:Holder.node', native_name='node', wire_name='node', validation_key='node', validation_keys=('node',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Node'))
-  _model_4 symbol='models:A', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/A'
-    FieldBinding(field_id='models:A.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_5 symbol='models:B', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/B'
-    FieldBinding(field_id='models:B.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_6 symbol='models:C', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/C'
-    FieldBinding(field_id='models:C.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:C.y', native_name='y', wire_name='y', validation_key='y', validation_keys=('y',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_7 symbol='models:Extra', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Extra', extra='allow'
-    FieldBinding(field_id='models:Extra.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_8 symbol='models:Open', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Open', extra='allow'
-    FieldBinding(field_id='models:Open.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_9 symbol='models:Code', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Code', root=LeafNode()
-  _model_10 symbol='models:Limited', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Limited', root=LeafNode()
-  _model_11 symbol='models:Defaulted', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Defaulted'
-    FieldBinding(field_id='models:Defaulted.a', native_name='a', wire_name='a', validation_key='a', validation_keys=('a',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.Parent]
-  codec_1 -> PydanticModelCodec[models.Parent]
-  codec_2 -> PydanticModelCodec[models.Child]
-  codec_3 -> PydanticModelCodec[models.Child]
-  codec_4 -> PydanticModelCodec[models.Node]
-  codec_5 -> PydanticModelCodec[models.Node]
-  codec_6 -> PydanticModelCodec[models.Holder]
-  codec_7 -> PydanticModelCodec[models.Holder]
-  codec_8 -> PydanticModelCodec[models.A]
-  codec_9 -> PydanticModelCodec[models.A]
-  codec_10 -> PydanticModelCodec[models.B]
-  codec_11 -> PydanticModelCodec[models.B]
-  codec_12 -> PydanticModelCodec[models.C]
-  codec_13 -> PydanticModelCodec[models.C]
-  codec_14 -> PydanticModelCodec[models.Extra]
-  codec_15 -> PydanticModelCodec[models.Extra]
-  codec_16 -> PydanticModelCodec[models.Open]
-  codec_17 -> PydanticModelCodec[models.Open]
-  codec_18 -> PydanticModelCodec[models.Code]
-  codec_19 -> PydanticModelCodec[models.Code]
-  codec_20 -> PydanticModelCodec[models.Limited]
-  codec_21 -> PydanticModelCodec[models.Limited]
-  codec_22 -> PydanticModelCodec[models.Defaulted]
-  codec_23 -> PydanticModelCodec[models.Defaulted]
+  codec_0 models.Parent
+  codec_1 models.Parent
+  codec_2 models.Child
+  codec_3 models.Child
+  codec_4 models.Node
+  codec_5 models.Node
+  codec_6 models.Holder
+  codec_7 models.Holder
+  codec_8 models.A
+  codec_9 models.A
+  codec_10 models.B
+  codec_11 models.B
+  codec_12 models.C
+  codec_13 models.C
+  codec_14 models.Extra
+  codec_15 models.Extra
+  codec_16 models.Open
+  codec_17 models.Open
+  codec_18 models.Code
+  codec_19 models.Code
+  codec_20 models.Limited
+  codec_21 models.Limited
+  codec_22 models.Defaulted
+  codec_23 models.Defaulted

@@ -29,7 +29,7 @@ PARITY_CASES = json.loads((DATA / "generation_platform/binding/capture-parity.js
 
 @pytest.mark.parametrize("case", list(BINDING_CASES))
 def test_client_model_bindings(case: str, tmp_path: Path) -> None:
-    """Report the models and bindings a package ships, and what each formatter edit of the models changes.
+    """Report the models and codecs a package ships, and what each formatter edit of the models changes.
 
     An edit the bindings cannot project drops the field's binding. Cases marked "pins" keep current behaviour that
     #4299 (binding diagnostics never reach a package) and #4300 (conflicting allOf base order) will change.

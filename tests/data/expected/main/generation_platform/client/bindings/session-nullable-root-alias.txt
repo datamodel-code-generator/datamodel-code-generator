@@ -47,26 +47,7 @@ render pydantic_v2.BaseModel plain
       items: Items | None = None
       required_nullable: Nullable
   model_bindings.py
-  _model_0 symbol='models:AnyChain', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/AnyValue', root=ModelNode(symbol='models:AnyValue')
-  _model_1 symbol='models:AnyValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/AnyValue', root=LeafNode()
-  _model_2 symbol='models:Chain', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Nullable', root=ModelNode(symbol='models:Nullable')
-  _model_3 symbol='models:Chain2', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Nullable', root=ModelNode(symbol='models:Chain')
-  _model_4 symbol='models:Items', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Items', root=ArrayNode(item=LeafNode())
-  _model_5 symbol='models:Model', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Model'
-    FieldBinding(field_id='models:Model.any_value', native_name='any_value', wire_name='any_value', validation_key='any_value', validation_keys=('any_value',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:AnyValue'))
-    FieldBinding(field_id='models:Model.any_chain', native_name='any_chain', wire_name='any_chain', validation_key='any_chain', validation_keys=('any_chain',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:AnyChain'))
-    FieldBinding(field_id='models:Model.required_any', native_name='required_any', wire_name='required_any', validation_key='required_any', validation_keys=('required_any',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:AnyValue'))
-    FieldBinding(field_id='models:Model.imported_none', native_name='imported_none', wire_name='imported_none', validation_key='imported_none', validation_keys=('imported_none',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Model.plain', native_name='plain', wire_name='plain', validation_key='plain', validation_keys=('plain',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Plain'))
-    FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Nullable'))
-    FieldBinding(field_id='models:Model.union', native_name='union', wire_name='union', validation_key='union', validation_keys=('union',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:NullUnion'))
-    FieldBinding(field_id='models:Model.chain', native_name='chain', wire_name='chain', validation_key='chain', validation_keys=('chain',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Chain2'))
-    FieldBinding(field_id='models:Model.items', native_name='items', wire_name='items', validation_key='items', validation_keys=('items',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Items'))
-    FieldBinding(field_id='models:Model.required_nullable', native_name='required_nullable', wire_name='required_nullable', validation_key='required_nullable', validation_keys=('required_nullable',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Nullable'))
-  _model_6 symbol='models:NullUnion', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/NullUnion', root=UnionNode(members=(LeafNode(),), nullable=True)
-  _model_7 symbol='models:Nullable', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Nullable', root=LeafNode()
-  _model_8 symbol='models:Plain', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Plain', root=LeafNode()
-  codec_0 -> PydanticModelCodec[models.Model]
+  codec_0 models.Model
 change pydantic_v2.BaseModel plain wrapper-0
   @@ -15 +15 @@
   -Nullable = RootModel[str | None]
@@ -111,18 +92,7 @@ render pydantic_v2.BaseModel collapsed
       items: list[str] | None = None
       required_nullable: str
   model_bindings.py
-  _model_0 symbol='models:Model', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Model'
-    FieldBinding(field_id='models:Model.any_value', native_name='any_value', wire_name='any_value', validation_key='any_value', validation_keys=('any_value',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Model.any_chain', native_name='any_chain', wire_name='any_chain', validation_key='any_chain', validation_keys=('any_chain',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Model.required_any', native_name='required_any', wire_name='required_any', validation_key='required_any', validation_keys=('required_any',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Model.imported_none', native_name='imported_none', wire_name='imported_none', validation_key='imported_none', validation_keys=('imported_none',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Model.plain', native_name='plain', wire_name='plain', validation_key='plain', validation_keys=('plain',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:Model.union', native_name='union', wire_name='union', validation_key='union', validation_keys=('union',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Model.chain', native_name='chain', wire_name='chain', validation_key='chain', validation_keys=('chain',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:Model.items', native_name='items', wire_name='items', validation_key='items', validation_keys=('items',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:Model.required_nullable', native_name='required_nullable', wire_name='required_nullable', validation_key='required_nullable', validation_keys=('required_nullable',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.Model]
+  codec_0 models.Model
 render pydantic_v2.BaseModel annotated-remapped
   models.py
   # generated by datamodel-codegen:
@@ -176,24 +146,4 @@ render pydantic_v2.BaseModel annotated-remapped
       items: Items | None = None
       required_nullable: Nullable
   model_bindings.py
-  _model_0 symbol='models:AnyChain', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/AnyValue', root=ModelNode(symbol='models:AnyValue')
-  _model_1 symbol='models:AnyValue', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/AnyValue', root=LeafNode()
-  _model_2 symbol='models:Chain', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Nullable', root=ModelNode(symbol='models:Nullable')
-  _model_3 symbol='models:Chain2', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Nullable', root=ModelNode(symbol='models:Chain')
-  _model_4 symbol='models:Items', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Items', root=ArrayNode(item=LeafNode())
-  _model_5 symbol='models:Model', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Model'
-    FieldBinding(field_id='models:Model.any_value', native_name='any_value', wire_name='any_value', validation_key='any_value', validation_keys=('any_value',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:AnyValue'))
-    FieldBinding(field_id='models:Model.any_chain', native_name='any_chain', wire_name='any_chain', validation_key='any_chain', validation_keys=('any_chain',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:AnyChain'))
-    FieldBinding(field_id='models:Model.required_any', native_name='required_any', wire_name='required_any', validation_key='required_any', validation_keys=('required_any',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:AnyValue'))
-    FieldBinding(field_id='models:Model.imported_none', native_name='imported_none', wire_name='imported_none', validation_key='imported_none', validation_keys=('imported_none',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Model.plain', native_name='plain', wire_name='plain', validation_key='plain', validation_keys=('plain',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Plain'))
-    FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Nullable'))
-    FieldBinding(field_id='models:Model.union', native_name='union', wire_name='union', validation_key='union', validation_keys=('union',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:NullUnion'))
-    FieldBinding(field_id='models:Model.chain', native_name='chain', wire_name='chain', validation_key='chain', validation_keys=('chain',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Chain2'))
-    FieldBinding(field_id='models:Model.items', native_name='items', wire_name='items', validation_key='items', validation_keys=('items',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Items'))
-    FieldBinding(field_id='models:Model.required_nullable', native_name='required_nullable', wire_name='required_nullable', validation_key='required_nullable', validation_keys=('required_nullable',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Nullable'))
-  _model_6 symbol='models:NullUnion', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/NullUnion', root=UnionNode(members=(ModelNode(symbol='models:NullUnion1'),), nullable=True)
-  _model_7 symbol='models:NullUnion1', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/NullUnion/anyOf/0', root=LeafNode()
-  _model_8 symbol='models:Nullable', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Nullable', root=LeafNode()
-  _model_9 symbol='models:Plain', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Plain', root=LeafNode()
-  codec_0 -> PydanticModelCodec[models.Model]
+  codec_0 models.Model

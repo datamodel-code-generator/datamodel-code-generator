@@ -361,11 +361,11 @@ class _CodecPlanner:
                 return ArrayNode(self.node(item, self.child(schema, "items"), source), _array_kind(base))
             case GenericType(arguments=(key, item)):
                 if self.structural and (name := self.unstructured(key, _STRUCTURAL_KEYS)):
-                    self.report("MC_ADAPTER_REQUIRED", source, f"The {name} key type has no structural conversion")
+                    self.report("MC_CODEC_UNSUPPORTED", source, f"The {name} key type has no structural conversion")
                 return MapNode(self.node(item, self.child(schema, "additionalProperties"), source))
             case _:
                 if self.structural and (name := self.unstructured(value, _STRUCTURAL_LEAVES)):
-                    self.report("MC_ADAPTER_REQUIRED", source, f"The {name} type has no structural conversion")
+                    self.report("MC_CODEC_UNSUPPORTED", source, f"The {name} type has no structural conversion")
                 return LeafNode(self.representation(value, schema))
 
     def unstructured(self, value: FinalPythonType, supported: frozenset[str]) -> str | None:
@@ -409,13 +409,13 @@ class _CodecPlanner:
                 return node
             case "alias" if self.structural:
                 self.report(
-                    "MC_ADAPTER_REQUIRED", source, f"The recursive {symbol.name} alias has no structural conversion"
+                    "MC_CODEC_UNSUPPORTED", source, f"The recursive {symbol.name} alias has no structural conversion"
                 )
                 return LeafNode()
             case "enum" | "alias":
                 return LeafNode()
             case _:
-                self.report("MC_ADAPTER_REQUIRED", source, f"The {symbol.name} model has no codec binding")
+                self.report("MC_CODEC_UNSUPPORTED", source, f"The {symbol.name} model has no codec binding")
                 return LeafNode()
 
     def model(self, symbol: FinalModelSymbol, source: SourceLocation) -> None:

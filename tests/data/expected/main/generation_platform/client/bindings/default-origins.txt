@@ -16,11 +16,5 @@ render pydantic_v2.BaseModel default
       scopedOverride: Optional[int] = 7
       nullable: Optional[str] = None
   model_bindings.py
-  _model_0 symbol='models:Defaults', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Defaults'
-    FieldBinding(field_id='models:Defaults.implicit', native_name='implicit', wire_name='implicit', validation_key='implicit', validation_keys=('implicit',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:Defaults.schemaNull', native_name='schemaNull', wire_name='schemaNull', validation_key='schemaNull', validation_keys=('schemaNull',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Defaults.equalOverride', native_name='equalOverride', wire_name='equalOverride', validation_key='equalOverride', validation_keys=('equalOverride',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Defaults.scopedOverride', native_name='scopedOverride', wire_name='scopedOverride', validation_key='scopedOverride', validation_keys=('scopedOverride',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Defaults.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-  codec_0 -> PydanticModelCodec[models.Defaults]
-  codec_1 -> PydanticModelCodec[models.Defaults]
+  codec_0 models.Defaults
+  codec_1 models.Defaults

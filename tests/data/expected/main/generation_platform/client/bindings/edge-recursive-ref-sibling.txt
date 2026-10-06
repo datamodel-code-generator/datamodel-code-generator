@@ -16,8 +16,5 @@ render pydantic_v2.BaseModel default
   
   Comment.model_rebuild()
   model_bindings.py
-  _model_0 symbol='models:Comment', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/paths/~1comments/post/requestBody/content/application~1json/schema'
-    FieldBinding(field_id='models:Comment.body', native_name='body', wire_name='body', validation_key='body', validation_keys=('body',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:Comment.replies', native_name='replies', wire_name='replies', validation_key='replies', validation_keys=('replies',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=ModelNode(symbol='models:Comment')))
-  codec_0 -> PydanticModelCodec[models.Comment]
-  codec_1 -> PydanticModelCodec[models.Comment]
+  codec_0 models.Comment
+  codec_1 models.Comment

@@ -38,36 +38,8 @@ render pydantic_v2.BaseModel default
       zip: Optional[str] = None
       normal_field: Optional[str] = None
   model_bindings.py
-  _model_0 symbol='models:BuiltinTypeFieldNames', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/BuiltinTypeFieldNames'
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.bool_', native_name='bool_', wire_name='bool', validation_key='bool', validation_keys=('bool',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.bytearray', native_name='bytearray', wire_name='bytearray', validation_key='bytearray', validation_keys=('bytearray',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.bytes_', native_name='bytes_', wire_name='bytes', validation_key='bytes', validation_keys=('bytes',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.classmethod', native_name='classmethod', wire_name='classmethod', validation_key='classmethod', validation_keys=('classmethod',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.complex', native_name='complex', wire_name='complex', validation_key='complex', validation_keys=('complex',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.dict_', native_name='dict_', wire_name='dict', validation_key='dict', validation_keys=('dict',), required=False, read_only=False, write_only=False, omit_none=True, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.enumerate', native_name='enumerate', wire_name='enumerate', validation_key='enumerate', validation_keys=('enumerate',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.filter', native_name='filter', wire_name='filter', validation_key='filter', validation_keys=('filter',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.float_', native_name='float_', wire_name='float', validation_key='float', validation_keys=('float',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.frozenset', native_name='frozenset', wire_name='frozenset', validation_key='frozenset', validation_keys=('frozenset',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.int_', native_name='int_', wire_name='int', validation_key='int', validation_keys=('int',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.list_', native_name='list_', wire_name='list', validation_key='list', validation_keys=('list',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.map', native_name='map', wire_name='map', validation_key='map', validation_keys=('map',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.memoryview', native_name='memoryview', wire_name='memoryview', validation_key='memoryview', validation_keys=('memoryview',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.object', native_name='object', wire_name='object', validation_key='object', validation_keys=('object',), required=False, read_only=False, write_only=False, omit_none=True, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.property', native_name='property', wire_name='property', validation_key='property', validation_keys=('property',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.range', native_name='range', wire_name='range', validation_key='range', validation_keys=('range',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.reversed', native_name='reversed', wire_name='reversed', validation_key='reversed', validation_keys=('reversed',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.set', native_name='set', wire_name='set', validation_key='set', validation_keys=('set',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.slice', native_name='slice', wire_name='slice', validation_key='slice', validation_keys=('slice',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.staticmethod', native_name='staticmethod', wire_name='staticmethod', validation_key='staticmethod', validation_keys=('staticmethod',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.str_', native_name='str_', wire_name='str', validation_key='str', validation_keys=('str',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.super', native_name='super', wire_name='super', validation_key='super', validation_keys=('super',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.tuple', native_name='tuple', wire_name='tuple', validation_key='tuple', validation_keys=('tuple',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.type', native_name='type', wire_name='type', validation_key='type', validation_keys=('type',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.zip', native_name='zip', wire_name='zip', validation_key='zip', validation_keys=('zip',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.normal_field', native_name='normal_field', wire_name='normal_field', validation_key='normal_field', validation_keys=('normal_field',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.BuiltinTypeFieldNames]
-  codec_1 -> PydanticModelCodec[models.BuiltinTypeFieldNames]
+  codec_0 models.BuiltinTypeFieldNames
+  codec_1 models.BuiltinTypeFieldNames
 render pydantic_v2.dataclass default
   models.py
   # generated by datamodel-codegen:
@@ -109,45 +81,17 @@ render pydantic_v2.dataclass default
       zip: Optional[str] = None
       normal_field: Optional[str] = None
   model_bindings.py
-  _model_0 symbol='models:BuiltinTypeFieldNames', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/BuiltinTypeFieldNames'
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.bool', native_name='bool', wire_name='bool', validation_key='bool', validation_keys=('bool',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.bytearray', native_name='bytearray', wire_name='bytearray', validation_key='bytearray', validation_keys=('bytearray',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.bytes', native_name='bytes', wire_name='bytes', validation_key='bytes', validation_keys=('bytes',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.classmethod', native_name='classmethod', wire_name='classmethod', validation_key='classmethod', validation_keys=('classmethod',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.complex', native_name='complex', wire_name='complex', validation_key='complex', validation_keys=('complex',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.dict', native_name='dict', wire_name='dict', validation_key='dict', validation_keys=('dict',), required=False, read_only=False, write_only=False, omit_none=True, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.enumerate', native_name='enumerate', wire_name='enumerate', validation_key='enumerate', validation_keys=('enumerate',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.filter', native_name='filter', wire_name='filter', validation_key='filter', validation_keys=('filter',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.float', native_name='float', wire_name='float', validation_key='float', validation_keys=('float',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.frozenset', native_name='frozenset', wire_name='frozenset', validation_key='frozenset', validation_keys=('frozenset',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.int', native_name='int', wire_name='int', validation_key='int', validation_keys=('int',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.list', native_name='list', wire_name='list', validation_key='list', validation_keys=('list',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.map', native_name='map', wire_name='map', validation_key='map', validation_keys=('map',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.memoryview', native_name='memoryview', wire_name='memoryview', validation_key='memoryview', validation_keys=('memoryview',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.object', native_name='object', wire_name='object', validation_key='object', validation_keys=('object',), required=False, read_only=False, write_only=False, omit_none=True, type=MapNode(value=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.property', native_name='property', wire_name='property', validation_key='property', validation_keys=('property',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.range', native_name='range', wire_name='range', validation_key='range', validation_keys=('range',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.reversed', native_name='reversed', wire_name='reversed', validation_key='reversed', validation_keys=('reversed',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.set', native_name='set', wire_name='set', validation_key='set', validation_keys=('set',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.slice', native_name='slice', wire_name='slice', validation_key='slice', validation_keys=('slice',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.staticmethod', native_name='staticmethod', wire_name='staticmethod', validation_key='staticmethod', validation_keys=('staticmethod',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.str', native_name='str', wire_name='str', validation_key='str', validation_keys=('str',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.super', native_name='super', wire_name='super', validation_key='super', validation_keys=('super',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.tuple', native_name='tuple', wire_name='tuple', validation_key='tuple', validation_keys=('tuple',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.type', native_name='type', wire_name='type', validation_key='type', validation_keys=('type',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.zip', native_name='zip', wire_name='zip', validation_key='zip', validation_keys=('zip',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-    FieldBinding(field_id='models:BuiltinTypeFieldNames.normal_field', native_name='normal_field', wire_name='normal_field', validation_key='normal_field', validation_keys=('normal_field',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.BuiltinTypeFieldNames]
-  codec_1 -> PydanticModelCodec[models.BuiltinTypeFieldNames]
+  codec_0 models.BuiltinTypeFieldNames
+  codec_1 models.BuiltinTypeFieldNames
 render dataclasses.dataclass default
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion
 render typing.TypedDict default
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion
 render msgspec.Struct default
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/BuiltinTypeFieldNames/properties/bytearray: The bytes type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/BuiltinTypeFieldNames/properties/bytes: The bytes type has no structural conversion

@@ -34,20 +34,15 @@ render typing.TypedDict typing
   class Recursive(TypedDict, extra_items='Union[Recursive, Child]'):
       fixed: str
   model_bindings.py
-  _model_0 symbol='models:Imported', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Imported', extra='allow', extra_items=LeafNode()
-    FieldBinding(field_id='models:Imported.fixed', native_name='fixed', wire_name='fixed', validation_key='fixed', validation_keys=('fixed',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:Child', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_2 symbol='models:Direct', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Direct', extra='allow', extra_items=ModelNode(symbol='models:Child')
-    FieldBinding(field_id='models:Direct.fixed', native_name='fixed', wire_name='fixed', validation_key='fixed', validation_keys=('fixed',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:Nested', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Nested', extra='allow', extra_items=ArrayNode(item=ModelNode(symbol='models:Child'))
-    FieldBinding(field_id='models:Nested.fixed', native_name='fixed', wire_name='fixed', validation_key='fixed', validation_keys=('fixed',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_4 symbol='models:Recursive', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Recursive', extra='allow', extra_items=UnionNode(members=(ModelNode(symbol='models:Recursive'), ModelNode(symbol='models:Child')))
-    FieldBinding(field_id='models:Recursive.fixed', native_name='fixed', wire_name='fixed', validation_key='fixed', validation_keys=('fixed',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[models.Imported]
-  codec_1 -> StructuralModelCodec[models.Direct]
-  codec_2 -> StructuralModelCodec[models.Nested]
-  codec_3 -> StructuralModelCodec[models.Recursive]
+  codec_0 models.Imported
+  codec_1 models.Direct
+  codec_2 models.Nested
+  codec_3 models.Recursive
+  map models:Child bad=bad
+  map models:Direct fixed=fixed
+  map models:Imported fixed=fixed
+  map models:Nested fixed=fixed
+  map models:Recursive fixed=fixed
 change typing.TypedDict typing corrupt-child
   @@ -13 +13 @@
   -    bad: str
@@ -87,27 +82,22 @@ render typing.TypedDict standard
   class Recursive(TypedDict, extra_items='Union[Recursive, Child]'):
       fixed: str
   model_bindings.py
-  _model_0 symbol='models:Imported', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Imported', extra='allow', extra_items=LeafNode()
-    FieldBinding(field_id='models:Imported.fixed', native_name='fixed', wire_name='fixed', validation_key='fixed', validation_keys=('fixed',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:Child', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child'
-    FieldBinding(field_id='models:Child.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_2 symbol='models:Direct', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Direct', extra='allow', extra_items=ModelNode(symbol='models:Child')
-    FieldBinding(field_id='models:Direct.fixed', native_name='fixed', wire_name='fixed', validation_key='fixed', validation_keys=('fixed',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:Nested', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Nested', extra='allow', extra_items=ArrayNode(item=ModelNode(symbol='models:Child'))
-    FieldBinding(field_id='models:Nested.fixed', native_name='fixed', wire_name='fixed', validation_key='fixed', validation_keys=('fixed',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_4 symbol='models:Recursive', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Recursive', extra='allow', extra_items=UnionNode(members=(ModelNode(symbol='models:Recursive'), ModelNode(symbol='models:Child')))
-    FieldBinding(field_id='models:Recursive.fixed', native_name='fixed', wire_name='fixed', validation_key='fixed', validation_keys=('fixed',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[models.Imported]
-  codec_1 -> StructuralModelCodec[models.Direct]
-  codec_2 -> StructuralModelCodec[models.Nested]
-  codec_3 -> StructuralModelCodec[models.Recursive]
+  codec_0 models.Imported
+  codec_1 models.Direct
+  codec_2 models.Nested
+  codec_3 models.Recursive
+  map models:Child bad=bad
+  map models:Direct fixed=fixed
+  map models:Imported fixed=fixed
+  map models:Nested fixed=fixed
+  map models:Recursive fixed=fixed
 change typing.TypedDict standard corrupt-child
   @@ -13 +13 @@
   -    bad: str
   +    bad: int
 render typing.TypedDict remapped
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1imported/post/requestBody: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /paths/~1imported/post/requestBody: The custom_uuid.UUID type has no structural conversion
 render typing.TypedDict standard-remapped
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1imported/post/requestBody: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /paths/~1imported/post/requestBody: The custom_uuid.UUID type has no structural conversion

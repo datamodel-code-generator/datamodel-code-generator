@@ -22,17 +22,8 @@ render pydantic_v2.BaseModel default
       empty_tuple: tuple[()]
       native_field: external.Model.model_fields['items'].annotation.__args__[0].__annotations__['raw-key']
   model_bindings.py
-  _model_0 symbol='models:Bindings', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Bindings'
-    FieldBinding(field_id='models:Bindings.handler', native_name='handler', wire_name='handler', validation_key='handler', validation_keys=('handler',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Bindings.variadic', native_name='variadic', wire_name='variadic', validation_key='variadic', validation_keys=('variadic',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Bindings.pair', native_name='pair', wire_name='pair', validation_key='pair', validation_keys=('pair',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Bindings.choice', native_name='choice', wire_name='choice', validation_key='choice', validation_keys=('choice',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Bindings.optional_choice', native_name='optional_choice', wire_name='optional_choice', validation_key='optional_choice', validation_keys=('optional_choice',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Bindings.empty', native_name='empty', wire_name='empty', validation_key='empty', validation_keys=('empty',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Bindings.empty_tuple', native_name='empty_tuple', wire_name='empty_tuple', validation_key='empty_tuple', validation_keys=('empty_tuple',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Bindings.native_field', native_name='native_field', wire_name='native_field', validation_key='native_field', validation_keys=('native_field',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.Bindings]
-  codec_1 -> PydanticModelCodec[models.Bindings]
+  codec_0 models.Bindings
+  codec_1 models.Bindings
 change pydantic_v2.BaseModel default argument-list
   @@ -14 +14 @@
   -    handler: Callable[[UUID, Literal['uuid.UUID', True, 1]], str]

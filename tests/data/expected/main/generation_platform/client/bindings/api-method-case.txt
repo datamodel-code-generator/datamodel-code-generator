@@ -23,7 +23,7 @@ render pydantic_v2.BaseModel default
   class FieldCaseQueryResponse(StrEnum):
       querylower = 'querylower'
   model_bindings.py
-  codec_0 -> PydanticModelCodec[models.FieldCaseGetResponse]
-  codec_1 -> PydanticModelCodec[models.FieldCaseGetResponse1]
-  codec_2 -> PydanticModelCodec[models.FieldCaseGetResponse2]
-  codec_3 -> PydanticModelCodec[models.FieldCaseQueryResponse]
+  codec_0 models.FieldCaseGetResponse
+  codec_1 models.FieldCaseGetResponse1
+  codec_2 models.FieldCaseGetResponse2
+  codec_3 models.FieldCaseQueryResponse

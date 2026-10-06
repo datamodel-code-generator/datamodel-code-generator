@@ -25,7 +25,7 @@ render pydantic_v2.BaseModel plain
       list: Optional[int] = None
       values: Optional[List[int]] = None
   model_bindings.py
-  codec_0 -> PydanticModelCodec[uuid.UUID]
+  codec_0 uuid.UUID
 render pydantic_v2.BaseModel remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -52,7 +52,7 @@ render pydantic_v2.BaseModel remapped
       list: Optional[int] = None
       values: Optional[List[int]] = None
   model_bindings.py
-  codec_0 -> PydanticModelCodec[custom_uuid.UUID]
+  codec_0 custom_uuid.UUID
 render pydantic_v2.dataclass plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -84,7 +84,7 @@ render pydantic_v2.dataclass plain
       list: Optional[int] = None
       values: Optional[List[int]] = None
   model_bindings.py
-  codec_0 -> PydanticModelCodec[uuid.UUID]
+  codec_0 uuid.UUID
 render pydantic_v2.dataclass remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -116,7 +116,7 @@ render pydantic_v2.dataclass remapped
       list: Optional[int] = None
       values: Optional[List[int]] = None
   model_bindings.py
-  codec_0 -> PydanticModelCodec[custom_uuid.UUID]
+  codec_0 custom_uuid.UUID
 render dataclasses.dataclass plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -146,11 +146,11 @@ render dataclasses.dataclass plain
       list: Optional[int] = None
       values: Optional[List[int]] = None
   model_bindings.py
-  codec_0 -> StructuralModelCodec[uuid.UUID]
+  codec_0 uuid.UUID
 render dataclasses.dataclass remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion
 render typing.TypedDict plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -177,11 +177,11 @@ render typing.TypedDict plain
       list: NotRequired[int]
       values: NotRequired[List[int]]
   model_bindings.py
-  codec_0 -> StructuralModelCodec[uuid.UUID]
+  codec_0 uuid.UUID
 render typing.TypedDict remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion
 render msgspec.Struct plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
@@ -209,8 +209,8 @@ render msgspec.Struct plain
       list: Union[int, UnsetType] = UNSET
       values: Union[List[int], UnsetType] = UNSET
   model_bindings.py
-  codec_0 -> StructuralModelCodec[uuid.UUID]
+  codec_0 uuid.UUID
 render msgspec.Struct remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_CODEC_UNSUPPORTED binding /paths/~1native/post/requestBody: The custom_uuid.UUID type has no structural conversion

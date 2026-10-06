@@ -19,8 +19,5 @@ render pydantic_v2.BaseModel default
   class Marker(RootModel[Item]):
       root: Item
   model_bindings.py
-  _model_0 symbol='models:FieldItemsGetQueryTokenParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/0/schema', root=LeafNode()
-  _model_1 symbol='models:Item', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
-    FieldBinding(field_id='models:Item.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.FieldItemsGetQueryTokenParameter]
-  codec_1 -> PydanticModelCodec[models.Item]
+  codec_0 models.FieldItemsGetQueryTokenParameter
+  codec_1 models.Item
