@@ -10,6 +10,7 @@ call enables reconnection.
 
 from __future__ import annotations
 
+import json
 import re
 import threading
 from collections.abc import Mapping
@@ -746,9 +747,12 @@ def _bound(  # noqa: PLR0913, PLR0917
 
 
 def _json(frame: _Frame) -> JSONValue | Missing:
-    """Return an event's data parsed as JSON, or MISSING when it is not JSON."""
+    """Return an event's data parsed as JSON, or MISSING when it is not JSON.
+
+    `int` refuses the NaN and infinity constants, which a saved cursor could not hold.
+    """
     try:
-        return json_value(frame.body)
+        return cast("JSONValue", json.loads(frame.body, parse_constant=int))
     except (ValueError, RecursionError):
         return MISSING
 

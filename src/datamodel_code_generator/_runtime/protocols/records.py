@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import FrozenInstanceError, dataclass, field
-from typing import Final, Generic, Literal, NoReturn, TypeAlias, final, get_args
+from typing import Final, Generic, Literal, NoReturn, TypeAlias, cast, final, get_args
 
 from typing_extensions import Self, TypeVar
 
@@ -59,6 +59,8 @@ _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
 _NESTING: Final = "A wire value must not be nested beyond the interpreter recursion limit"
 _SURROGATES: Final = "A wire string must not contain lone surrogates"
+_KEYS: Final = "A wire object key must be a string"
+_CYCLE: Final = "A wire value must not contain cycles"
 
 
 def record_string(value: object, name: str) -> str:
@@ -100,8 +102,29 @@ def _choice(value: object, name: str, choices: tuple[str, ...]) -> None:
         raise ValueError(msg)
 
 
+def _keyed(value: object, active: set[int]) -> None:
+    """Refuse a cycle, and a member name that is no string, which JSON text would silently turn into one."""
+    marker = id(value)
+    if isinstance(value, dict):
+        members = cast("dict[object, object]", value)
+        if any(type(key) is not str for key in members):
+            raise TypeError(_KEYS)
+        items: Iterable[object] = members.values()
+    elif isinstance(value, list | tuple):
+        items = cast("list[object] | tuple[object, ...]", value)
+    else:
+        return
+    if marker in active:
+        raise ValueError(_CYCLE)
+    active.add(marker)
+    for item in items:
+        _keyed(item, active)
+    active.discard(marker)
+
+
 def _dumped(value: object, *, sort_keys: bool) -> bytes:
     try:
+        _keyed(value, set())
         text = json.dumps(value, sort_keys=sort_keys, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
         return text.encode()
     except RecursionError:
