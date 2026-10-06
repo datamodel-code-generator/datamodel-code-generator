@@ -1296,20 +1296,32 @@ class _Resources(_Typing):
     def response_arguments(self, module: Module, spec: OperationSpec) -> tuple[list[_Choice], _Choice]:
         """Return the response media arguments of each signature with its success types, and the implementation's."""
         declared = success_media(spec.responses)
+        ranged = any(
+            media_range(media.media_type)
+            for response in spec.responses
+            if response.success and not response.bodyless
+            for media in response.media
+        )
         default = self.successes(spec, spec.response_media_type)
-        if not declared:
+        if not declared and not ranged:
             return [((), default)], ((), default)
-        literal = module.name("typing", "Literal")
+        literal = module.name("typing", "Literal") if declared else ""
         groups: dict[tuple[_Key, ...], list[str]] = {}
         for media_type in declared:
             groups.setdefault(self.successes(spec, media_type), []).append(media_type)
-        parameters = (_Argument("response_media_type", f"{_literal(literal, declared)} | None", "none"),)
-        if set(groups) == {default}:
+        annotation = "str" if ranged else _literal(literal, declared)
+        parameters = (_Argument("response_media_type", f"{annotation} | None", "none"),)
+        outcomes = set(groups)
+        if ranged:
+            outcomes.add(self.successes(spec))
+        if outcomes == {default}:
             return [(parameters, default)], (parameters, default)
         variants: list[_Choice] = [((_Argument("response_media_type", "None", "none"),), default)]
         variants.extend(
             ((_Argument("response_media_type", _literal(literal, media)),), keys) for keys, media in groups.items()
         )
+        if ranged:
+            variants.append(((_Argument("response_media_type", "str"),), self.successes(spec)))
         return variants, (parameters, self.successes(spec))
 
     def branches(  # noqa: PLR0913

@@ -1,0 +1,7 @@
+use /paths/~1tickets/post request_body: native model models:Ticket models=[('models:Ticket', 'model', 'ignore', True)]
+use /paths/~1tickets/post response_body 201: native model models:Ticket models=[('models:Ticket', 'model', 'ignore', True)]
+create-server-decode: model Ticket(id=ULID(01ARZ3NDEKTSV4RRFFQ69G5FAV), parent=None) set=['id'] wire={"id":"01ARZ3NDEKTSV4RRFFQ69G5FAV"} presence=['', '/id'] extras={}
+create-server-decode-invalid: NativeValidationError native.ulid_format@/id['id']
+created-server-encode-echo: wire={"id":"01ARZ3NDEKTSV4RRFFQ69G5FAV"}
+created-server-encode-native: wire={"id":"01ARZ3NDEKTSV4RRFFQ69G5FAV","parent":"01BX5ZZKBKACTAV9WEVGEMMVRZ"}
+created-server-snapshot: model Ticket(id=ULID(01BX5ZZKBKACTAV9WEVGEMMVRZ), parent=None) set=['id'] wire={"id":"01BX5ZZKBKACTAV9WEVGEMMVRZ"} presence=['', '/id'] extras={}

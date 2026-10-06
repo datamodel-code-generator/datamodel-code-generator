@@ -146,6 +146,19 @@
   upload empty ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='uploadPhoto', call_id='<call>') [operation_id='uploadPhoto', body_bytes=b'{}', truncated=False, actual_media_type='application/json', expected_media_types=('image/*',)] unexpected_media_type_error
   upload text ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A body must be bytes or a file, stream, factory, or multipart body of the client's mode")] request_encoding_error
   upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', field_path='media_type', condition='without_body') [operation_id='uploadPhoto', field_path=('media_type',), condition='without_body'] configuration_error
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  range upload PetsPhotosResource = b'jpeg'
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  range upload PetsPhotosWithResponse = Response(b'jpeg', 200, 'image/jpeg', None, [('content-type', 'image/jpeg'), ('content-length', '4')])
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  range upload raw = b'jpeg'
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  range upload streaming = b'jpeg'
+  response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='uploadPhoto', field_path=('response_media_type',), condition='undeclared'] configuration_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   too large ! ResponseTooLargeError: ResponseTooLargeError(operation_id='listPets', call_id='<call>') [operation_id='listPets', representation='decoded', limit=10, observed_bytes=791] response_too_large_error
@@ -269,6 +282,19 @@
   async borrowed closed False
   async owned closed True
   async http_client ! ConfigurationError: ConfigurationError(field_path='http_client', condition='invalid_type') [field_path=('http_client',), condition='invalid_type'] configuration_error
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  async range upload AsyncPetsPhotosResource = b'jpeg'
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  async range upload AsyncPetsPhotosWithResponse = Response(b'jpeg', 200, 'image/jpeg', None, [('content-type', 'image/jpeg'), ('content-length', '4')])
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  async range upload raw = b'jpeg'
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  async range upload streaming = b'jpeg'
+  async response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='uploadPhoto', field_path=('response_media_type',), condition='undeclared'] configuration_error
 # pets typing.TypedDict
   > GET https://api.example.com/v1/pets?limit=5&tags=a%20b&tags=c
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=s1] b''
@@ -417,6 +443,19 @@
   upload empty ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='uploadPhoto', call_id='<call>') [operation_id='uploadPhoto', body_bytes=b'{}', truncated=False, actual_media_type='application/json', expected_media_types=('image/*',)] unexpected_media_type_error
   upload text ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A body must be bytes or a file, stream, factory, or multipart body of the client's mode")] request_encoding_error
   upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', field_path='media_type', condition='without_body') [operation_id='uploadPhoto', field_path=('media_type',), condition='without_body'] configuration_error
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  range upload PetsPhotosResource = b'jpeg'
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  range upload PetsPhotosWithResponse = Response(b'jpeg', 200, 'image/jpeg', None, [('content-type', 'image/jpeg'), ('content-length', '4')])
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  range upload raw = b'jpeg'
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  range upload streaming = b'jpeg'
+  response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='uploadPhoto', field_path=('response_media_type',), condition='undeclared'] configuration_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   too large ! ResponseTooLargeError: ResponseTooLargeError(operation_id='listPets', call_id='<call>') [operation_id='listPets', representation='decoded', limit=10, observed_bytes=791] response_too_large_error
@@ -540,3 +579,16 @@
   async borrowed closed False
   async owned closed True
   async http_client ! ConfigurationError: ConfigurationError(field_path='http_client', condition='invalid_type') [field_path=('http_client',), condition='invalid_type'] configuration_error
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  async range upload AsyncPetsPhotosResource = b'jpeg'
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  async range upload AsyncPetsPhotosWithResponse = Response(b'jpeg', 200, 'image/jpeg', None, [('content-type', 'image/jpeg'), ('content-length', '4')])
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  async range upload raw = b'jpeg'
+  > PUT https://api.example.com/v1/pets/3/photo
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
+  async range upload streaming = b'jpeg'
+  async response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='uploadPhoto', field_path=('response_media_type',), condition='undeclared'] configuration_error
