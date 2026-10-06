@@ -14,7 +14,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  12 runtime modules ['write']
+  11 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is included by include_tags 'pets' but excluded by exclude_operations: Only reading pets
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is matched by no include rule: Only reading pets
   S_OPERATION_EXCLUDED info selection /paths/~1health/get: GET /health is matched by no include rule: Only reading pets
@@ -310,7 +310,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  14 runtime modules ['write']
+  13 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is excluded by exclude_tags 'admin': Administration runs elsewhere
 render
   APIGenerationError
@@ -335,7 +335,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  12 runtime modules ['write']
+  11 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1health/get: GET /health is matched by no include rule: One operation
@@ -354,7 +354,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  12 runtime modules ['write']
+  11 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1health/get: GET /health is matched by no include rule: One operation
@@ -374,7 +374,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  12 runtime modules ['write']
+  11 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is matched by no include rule: One operation
   S_OPERATION_EXCLUDED info selection /paths/~1health/get: GET /health is matched by no include rule: One operation

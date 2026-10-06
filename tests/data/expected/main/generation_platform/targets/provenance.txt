@@ -17,7 +17,7 @@ render
   write remote_lock locks/remote.lock
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  14 runtime modules ['write']
+  13 runtime modules ['write']
 {
   "bindings": [],
   "diagnostics": [],

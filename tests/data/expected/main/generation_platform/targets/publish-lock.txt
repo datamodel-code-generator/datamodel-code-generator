@@ -17,7 +17,7 @@ generate
   written remote_lock locks/remote.lock
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  14 runtime modules ['written']
+  13 runtime modules ['written']
 tree
   locks/remote.lock
   models.py
@@ -35,7 +35,7 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  14 runtime modules ['present']
+  13 runtime modules ['present']
 generate
   target=fastapi schema_version=1
   unchanged model models.py
@@ -54,4 +54,4 @@ generate
   unchanged remote_lock locks/remote.lock
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  14 runtime modules ['unchanged']
+  13 runtime modules ['unchanged']

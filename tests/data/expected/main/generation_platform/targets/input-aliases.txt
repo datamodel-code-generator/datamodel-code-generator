@@ -13,7 +13,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  12 runtime modules ['write']
+  11 runtime modules ['write']
 {
   "bindings": [],
   "diagnostics": [],
@@ -216,7 +216,7 @@ generate
   written target server/py.typed (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  12 runtime modules ['written']
+  11 runtime modules ['written']
 tree
   server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
@@ -230,4 +230,4 @@ tree
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  12 runtime modules ['present']
+  11 runtime modules ['present']

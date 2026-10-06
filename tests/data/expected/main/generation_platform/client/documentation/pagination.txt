@@ -739,10 +739,6 @@ reference for their limits and checkpoints.
 Import `Client` and `AsyncClient` from `client` and the records below from
 `client.options`. Async calls require asyncio.
 
-## Model values
-
-Pydantic validates received JSON with the acquired model type and serializes sent models with aliases in JSON mode. Only explicitly set model fields are sent. The model's validators, serializers and constraints apply.
-
 ## Layered options and budgets
 
 `RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.

@@ -16,7 +16,7 @@ generate
   written target server/py.typed (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  14 runtime modules ['written']
+  13 runtime modules ['written']
 tree
   models.py
   server/.dcg-state/model-artifacts.json
@@ -33,4 +33,4 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  14 runtime modules ['present']
+  13 runtime modules ['present']
