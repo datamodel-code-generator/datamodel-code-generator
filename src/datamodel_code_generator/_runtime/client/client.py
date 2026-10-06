@@ -2009,6 +2009,13 @@ def _released(close: Callable[[], None], operation_id: str | None, call_id: str)
         raise SDKError(reason="cleanup_failed", operation_id=operation_id, call_id=call_id, cause=failure) from None
 
 
+async def _areleased(close: Callable[[], Awaitable[None]], operation_id: str | None, call_id: str) -> None:
+    try:
+        await close()
+    except Exception as failure:  # noqa: BLE001
+        raise SDKError(reason="cleanup_failed", operation_id=operation_id, call_id=call_id, cause=failure) from None
+
+
 def _discarded(close: Callable[[], object], error: BaseException) -> bool:
     """Run a close while an error propagates, keeping its failure beside that error."""
     if (failure := quiet_close(close)) is None:
@@ -3523,7 +3530,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 source, entry = _agzip_source(source) if compressing else source, None
             elif entry is not None:
                 abandoned, entry = entry, None
-                await call.cleanup(abandoned.aclose)
+                await _areleased(abandoned.aclose, call.operation_id, call.call_id)
             call.check("encode")
             result = await self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
@@ -3532,7 +3539,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             raise failure from None
         if source is not None:
             try:
-                await call.cleanup(source.aclose)
+                await _areleased(source.aclose, call.operation_id, call.call_id)
             except BaseException as error:
                 if isinstance(result, AsyncRawResponse):
                     await result.discard(error)
@@ -3869,7 +3876,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             call.delivery_state = DeliveryState.RESPONSE_STARTED
             if attempt is not None:
                 released_attempt, attempt = attempt, None
-                await call.cleanup(released_attempt.aclose)
+                await _areleased(released_attempt.aclose, call.operation_id, call.call_id)
             call.permit, permit = permit, None
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001

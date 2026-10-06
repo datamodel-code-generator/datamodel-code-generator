@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, BinaryIO, Final, Literal, Protocol, TypeAlias
 
 from .coding import CHUNK
 from .disk import DiskWorker
-from .errors import ConfigurationError, DecodeError, SDKError, add_secondary, body_failure
+from .errors import ConfigurationError, SDKError, add_secondary, body_failure
 
 _SHA256_BYTES: Final = 32
 
@@ -855,9 +855,9 @@ class _AsyncPathFile:
 
 
 class AsyncFileBody:
-    """A file an asyncio client sends as a whole body, read as FileBody reads, through AnyIO's existing thread offload.
+    """A file an asyncio client sends as a whole body, read as FileBody reads, one file operation at a time in a thread.
 
-    File operations finish one chunk at a time. Closing the body stops it; closing a client does not.
+    A cancelled read finishes before the file is released. Closing the body stops it; closing a client does not.
     """
 
     __slots__ = ("_source", "_worker")
@@ -1143,11 +1143,7 @@ class _AsyncFileCall:
         try:
             self._offset, self._length = await self._source.worker.run(_snapshot, self._source.file)
         except BaseException as error:  # noqa: BLE001
-            failure = (
-                DecodeError(cause=error, reason="factory", direction="request", location=("body",))
-                if isinstance(error, OSError)
-                else error
-            )
+            failure = _failed(error) if isinstance(error, OSError) else error
             try:
                 await self.aclose()
             except BaseException as secondary:  # noqa: BLE001

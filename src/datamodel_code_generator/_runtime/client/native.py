@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 _PHASES: Final[tuple[tuple[tuple[type[httpx2.TransportError], ...], IOPhase], ...]] = (
     ((httpx2.ConnectError, httpx2.ConnectTimeout), "connect"),
     ((httpx2.PoolTimeout,), "pool"),
-    ((httpx2.ReadError, httpx2.ReadTimeout), "read"),
+    ((httpx2.ReadError, httpx2.ReadTimeout, httpx2.RemoteProtocolError), "read"),
     ((httpx2.WriteError, httpx2.WriteTimeout), "write"),
 )
 
