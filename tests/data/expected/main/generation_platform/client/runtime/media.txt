@@ -61,7 +61,7 @@ secret
     For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
-  read header ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', call_id='<call>', reason='invalid_header') [operation_id='readDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for Draft
+  read header ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', call_id='<call>', reason='invalid_header', location='header.X-Draft') [operation_id='readDocument', location=('header', 'X-Draft'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for Draft
 secret
   Field required [type=missing, input_value={'id': 1, 'title': 'h'}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_header
@@ -175,7 +175,7 @@ secret
   read ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', call_id='<call>', reason='invalid_value') [operation_id='readDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] invalid_value
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
-  read header ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', call_id='<call>', reason='invalid_header') [operation_id='readDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] invalid_header
+  read header ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', call_id='<call>', reason='invalid_header', location='header.X-Draft') [operation_id='readDocument', location=('header', 'X-Draft'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] invalid_header
   > POST https://media.example.com/api/notes
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 3] b'[1]'
   note = None

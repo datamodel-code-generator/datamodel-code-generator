@@ -8,13 +8,13 @@
   info 200 application/json None HeadersView(<3 headers>)
   header X-Next = UNSET
   header x-rate = FieldPetsGetResponse200XRateHeader(root=10)
-  header X-Other ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  header X-Other ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Other') [operation_id='listPets', location=('header', 'X-Other'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  header missing ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  header missing ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
@@ -29,7 +29,7 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   error info 500 HeadersView(<2 headers>) None internal_server_error Error(code=7, message=None)
-  header error ! DecodeError: DecodeError(status_code=500, operation_id='listPets', call_id='<call>', reason='invalid_header') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  header error ! DecodeError: DecodeError(status_code=500, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Next') [operation_id='listPets', location=('header', 'X-Next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
@@ -296,13 +296,13 @@
   info 200 application/json None HeadersView(<3 headers>)
   header X-Next = UNSET
   header x-rate = 10
-  header X-Other ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  header X-Other ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Other') [operation_id='listPets', location=('header', 'X-Other'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  header missing ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  header missing ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
+  header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
@@ -317,7 +317,7 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   error info 500 HeadersView(<2 headers>) None internal_server_error {'code': 7}
-  header error ! DecodeError: DecodeError(status_code=500, operation_id='listPets', call_id='<call>', reason='invalid_header') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  header error ! DecodeError: DecodeError(status_code=500, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Next') [operation_id='listPets', location=('header', 'X-Next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets

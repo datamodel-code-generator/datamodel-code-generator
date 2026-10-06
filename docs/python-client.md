@@ -2979,9 +2979,9 @@ A request `DecodeError` has the reason `unencodable`, with the argument's path a
 `body_not_replayable`, `body_in_use`, `body_changed`, or `digest_unavailable` at the `location` `("body",)`. A response
 `DecodeError` has the reason `invalid_syntax`, `invalid_value` when the model or schema refuses the value,
 `unexpected_media_type` with the response's `media_type`, `forbidden_body`, `missing_body`, `invalid_framing`,
-`invalid_header`, or `response_too_large` with its `limit` and `observed` size. `AuthError` has the reason
-`provider_failed`, `provider_closed`, `token_expired`, `invalid_expiry`, `oauth_error`, `timeout`,
-`reauthorization_required`, or `signing_failed`, and keeps no credential material or provider description.
+`invalid_header` with the `location` `("header", name)`, or `response_too_large` with its `limit` and `observed` size.
+`AuthError` has the reason `provider_failed`, `provider_closed`, `token_expired`, `invalid_expiry`, `oauth_error`,
+`timeout`, `reauthorization_required`, or `signing_failed`, and keeps no credential material or provider description.
 
 A failing callback raises `SDKError` itself with the reason `limiter_failed`, `body_factory_failed`, or `hook_failed`
 and the callback's exception as `cause`. A hook that fails after the call completed keeps that success as the error's
