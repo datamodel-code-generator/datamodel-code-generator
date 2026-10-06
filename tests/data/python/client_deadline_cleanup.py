@@ -198,15 +198,18 @@ async def _terminal_native(package: ModuleType, options: ModuleType, errors: Mod
     primary = asyncio.CancelledError("original native")
     primary.__dict__["__notes__"] = ["original native note"]
     reused = asyncio.CancelledError("reused native")
-    for label, before in (
-        ("terminal native", None),
-        ("SDK failure then native", RuntimeError("response hook failed")),
-        ("native already primary", primary),
-        ("same native reused", reused),
+    for label, before, caused in (
+        ("terminal native", None, False),
+        ("SDK failure then native", RuntimeError("response hook failed"), False),
+        ("SDK failure then caused native", RuntimeError("response hook failed"), True),
+        ("native already primary", primary, False),
+        ("same native reused", reused, False),
     ):
         transport = _Transport()
         events: _EventLog = []
         native = reused if before is reused else asyncio.CancelledError("first terminal native")
+        if caused:
+            native.__cause__ = KeyError("native cause")
         failures: dict[str, BaseException] = {"attempt_end": native}
         if before is not None:
             failures["response_headers"] = before
@@ -243,6 +246,7 @@ async def _terminal_native(package: ModuleType, options: ModuleType, errors: Mod
                         getattr(error, "attempt_count", None),
                         tuple(type(failure).__name__ for failure in getattr(error, "secondary_errors", ())),
                         tuple(getattr(error, "__notes__", ())),
+                        getattr(error.__cause__, "reason", type(error.__cause__).__name__),
                     ),
                 )
             else:

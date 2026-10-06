@@ -193,11 +193,13 @@ def add_secondary(error: BaseException, *failures: BaseException) -> None:
 def kept_primary(primary: BaseException, failure: BaseException) -> BaseException:
     """Return what propagates after a cleanup failure.
 
-    An interruption replaces an ordinary error and keeps it beside itself; any other failure stays beside the error
-    already propagating.
+    An interruption replaces an ordinary error, names it in a note, and links it as its cause unless it has one; any
+    other failure stays beside the error already propagating.
     """
     if isinstance(primary, Exception) and not isinstance(failure, Exception):
         add_secondary(failure, primary)
+        if failure.__cause__ is None:
+            failure.__cause__ = primary
         return failure
     add_secondary(primary, failure)
     return primary
