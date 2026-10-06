@@ -2989,7 +2989,9 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             except BaseException as failure:  # noqa: BLE001, PERF203
                 call.retry_blocked = True
                 released = (
-                    SDKError(reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failure)
+                    SDKError(
+                        reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failure
+                    )
                     if isinstance(failure, Exception) and not isinstance(failure, SDKError)
                     else failure
                 )
@@ -3911,7 +3913,9 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             except BaseException as failure:  # noqa: BLE001, PERF203
                 call.retry_blocked = True
                 released = (
-                    SDKError(reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failure)
+                    SDKError(
+                        reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failure
+                    )
                     if isinstance(failure, Exception) and not isinstance(failure, SDKError)
                     else failure
                 )
