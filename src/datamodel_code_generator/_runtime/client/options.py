@@ -80,15 +80,9 @@ _RETRY_STATUS_EXCLUDED: Final = frozenset({401, 403, 407})
 _OptionT = TypeVar("_OptionT")
 
 
-def _positive_seconds(value: object, path: tuple[str, ...]) -> None:
-    match value:
-        case bool():
-            pass
-        case int() | float() if 0 < value < math.inf:
-            return
-        case _:
-            pass
-    raise ConfigurationError(field_path=path, reason="out_of_range")
+def _positive_seconds(value: float, path: tuple[str, ...]) -> None:
+    if not 0 < value < math.inf:
+        raise ConfigurationError(field_path=path, reason="out_of_range")
 
 
 def _header_patch(value: object) -> HeaderPatch:

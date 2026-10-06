@@ -646,15 +646,6 @@ def _delivery(call: _Call) -> DeliveryState:
     return call.furthest()
 
 
-def _raw(chunks: Iterable[object]) -> Iterator[bytes]:
-    """Yield the chunks of an adapter's body, skipping empty ones and refusing anything but bytes."""
-    for chunk in chunks:
-        if type(chunk) is not bytes:
-            raise SDKError(reason="invalid_response_stream", delivery_state=DeliveryState.RESPONSE_STARTED)
-        if chunk:
-            yield chunk
-
-
 def _received(decoder: ResponseDecoder[object], status: int, settings: Settings) -> _Body:
     success = decoder.success(status)
     return _Body(settings.max_response_bytes if success else settings.max_error_body_bytes, success=success)
@@ -1317,8 +1308,6 @@ class _SocketCall(_SessionCall):
         self.open_timeout = open_timeout
 
     def timeout(self) -> ResolvedTimeoutOptions:
-        if self.streaming:
-            return super().timeout()
         configured = self.settings.timeout
         limits = [
             value
@@ -1506,12 +1495,15 @@ class _Core(Generic[AdapterT, HandleT]):
 
     @staticmethod
     def _failure(error: BaseException, call: LogicalCallContext, delivery: DeliveryState) -> BaseException:
-        """Preserve cancellation and classify ordinary failure by its public send boundary.
+        """Preserve cancellation and classify an ordinary failure."""
+        return _Core._classified(error, call, delivery) if isinstance(error, Exception) else error
+
+    @staticmethod
+    def _classified(error: Exception, call: LogicalCallContext, delivery: DeliveryState) -> SDKError:
+        """Classify an ordinary failure by its public send boundary.
 
         A phase timeout whose cap was the call's remaining time is the call's deadline expiring.
         """
-        if not isinstance(error, Exception):
-            return error
         failure = (
             error
             if isinstance(error, SDKError)
@@ -1589,8 +1581,6 @@ class _Core(Generic[AdapterT, HandleT]):
         if options is None:
             return self._settings
         if not isinstance(options, RequestOptions):
-            if self._shared.closed:
-                raise ConfigurationError(reason="client_closed", field_path=("client", "closed"))
             raise ConfigurationError(field_path=("options",), reason="invalid_type", operation_id=operation_id)
         if not isinstance(options.auth, Unset) and options.auth is not None:
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
@@ -2144,8 +2134,8 @@ async def _aacquire(
     return permit
 
 
-def _read_chunks(chunks: Iterable[bytes], call: LogicalCallContext, *, trusted: bool) -> Iterator[bytes]:
-    source = iter(chunks if trusted else _raw(chunks))
+def _read_chunks(chunks: Iterable[bytes], call: LogicalCallContext) -> Iterator[bytes]:
+    source = iter(chunks)
     while True:
         call.check("send")
         try:
@@ -2704,11 +2694,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 self._close_response(closing, call, failure)
             except BaseException as error:  # noqa: BLE001
                 failure = self._exchange_failure(error, response, call, info)
-                if (
-                    not isinstance(failure, APIConnectionError)
-                    or call.sends == sends_before
-                    or call.delivery_state is not DeliveryState.NOT_SENT
-                ):
+                if not is_transport(failure) or call.sends == sends_before:
                     raise call.stopped(failure) from None
                 planned = call.retry(None, failure, replayable=source is None or source.replayable)
                 if planned is None:
@@ -2788,7 +2774,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             call.decoder,
             call.settings,
             call.operation_id,
-            lambda error: self._failure(error, call, DeliveryState.RESPONSE_STARTED),
+            lambda error: self._classified(error, call, DeliveryState.RESPONSE_STARTED),
             source=partial(response_bytes, response),
             close=release,
             events=call.events if stream else None,
@@ -3042,7 +3028,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             request.method,
             request.url,
             headers=wire_fields(headers),
-            content=None if attempt is None else _read_chunks(attempt.iter_bytes(), call, trusted=True),
+            content=None if attempt is None else _read_chunks(attempt.iter_bytes(), call),
             extensions={"timeout": attempt_timeout(call.timeout(), call.remaining()).as_dict()},
         )
         if call.auth is not None:
@@ -3622,11 +3608,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 await self._close_response(closing, call, failure)
             except BaseException as error:  # noqa: BLE001
                 failure = await self._exchange_failure(error, response, call, info)
-                if (
-                    not isinstance(failure, APIConnectionError)
-                    or call.sends == sends_before
-                    or call.delivery_state is not DeliveryState.NOT_SENT
-                ):
+                if not is_transport(failure) or call.sends == sends_before:
                     raise call.stopped(failure) from None
                 planned = call.retry(None, failure, replayable=source is None or source.replayable)
                 if planned is None:
@@ -3708,7 +3690,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             call.decoder,
             call.settings,
             call.operation_id,
-            lambda error: self._failure(error, call, DeliveryState.RESPONSE_STARTED),
+            lambda error: self._classified(error, call, DeliveryState.RESPONSE_STARTED),
             source=partial(async_response_bytes, response),
             close=release,
             events=call.events if stream else None,

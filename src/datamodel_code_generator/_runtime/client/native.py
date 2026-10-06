@@ -118,10 +118,7 @@ def response_bytes(response: httpx2.Response) -> Iterator[bytes]:
     if response.is_stream_consumed:
         raise httpx2.StreamConsumed
     response.is_stream_consumed = True
-    if not isinstance(response.stream, httpx2.SyncByteStream):
-        msg = "Expected a synchronous response stream"
-        raise TypeError(msg)
-    yield from response.stream
+    yield from cast("httpx2.SyncByteStream", response.stream)
 
 
 async def async_response_bytes(response: httpx2.Response) -> AsyncIterator[bytes]:
@@ -129,10 +126,7 @@ async def async_response_bytes(response: httpx2.Response) -> AsyncIterator[bytes
     if response.is_stream_consumed:
         raise httpx2.StreamConsumed
     response.is_stream_consumed = True
-    if not isinstance(response.stream, httpx2.AsyncByteStream):
-        msg = "Expected an asynchronous response stream"
-        raise TypeError(msg)
-    async for chunk in response.stream:
+    async for chunk in cast("httpx2.AsyncByteStream", response.stream):
         yield chunk
 
 

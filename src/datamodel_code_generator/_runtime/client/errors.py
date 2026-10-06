@@ -379,11 +379,6 @@ def is_client_closed(error: object) -> TypeGuard[ConfigurationError]:
     return isinstance(error, ConfigurationError) and error.reason == "client_closed"
 
 
-def is_redirect_refused(error: object) -> TypeGuard[ConfigurationError]:
-    """Return whether an error is a redirect that cannot be followed safely."""
-    return isinstance(error, ConfigurationError) and error.reason == "redirect_refused"
-
-
 _CALL_STATES: Final = frozenset({"client_closed", "redirect_refused", "response_consumed"})
 
 

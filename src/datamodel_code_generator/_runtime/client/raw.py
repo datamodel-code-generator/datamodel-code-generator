@@ -218,7 +218,7 @@ class _Raw(Generic[SourceT, HandleT]):
         decoder: ResponseDecoder[object],
         limits: Settings,
         operation_id: str | None,
-        failure: Callable[[Exception], BaseException],
+        failure: Callable[[Exception], SDKError],
         *,
         source: SourceT,
         events: CallEvents | None,
@@ -290,8 +290,7 @@ class _Raw(Generic[SourceT, HandleT]):
             for secondary in self._status_secondary_errors:
                 add_secondary(error, secondary)
         failure = self._classify(error)
-        if isinstance(failure, SDKError):
-            failure.info = self._info
+        failure.info = self._info
         return failure
 
     def _downloadable(self) -> None:
@@ -421,7 +420,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         decoder: ResponseDecoder[object],
         limits: Settings,
         operation_id: str | None,
-        failure: Callable[[Exception], BaseException],
+        failure: Callable[[Exception], SDKError],
         *,
         source: Callable[[], Iterator[bytes]],
         close: Callable[[], None],
@@ -692,7 +691,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         decoder: ResponseDecoder[object],
         limits: Settings,
         operation_id: str | None,
-        failure: Callable[[Exception], BaseException],
+        failure: Callable[[Exception], SDKError],
         *,
         source: Callable[[], AsyncIterator[bytes]],
         close: Callable[[], Awaitable[None]],
