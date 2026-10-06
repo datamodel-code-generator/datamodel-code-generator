@@ -22,19 +22,6 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     ValueShape,
     builtin_content,
 )
-from datamodel_code_generator._runtime.model_codecs.patterns import (
-    PatternDialectError,
-    PatternResourceError,
-    plan_pattern,
-)
-from datamodel_code_generator._runtime.model_codecs.schema import (
-    SCHEMA_ARRAY_KEYWORDS,
-    SCHEMA_MAP_KEYWORDS,
-    SCHEMA_VALUE_KEYWORDS,
-    DirectionalView,
-    SchemaPatch,
-    SchemaResource,
-)
 from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue, escape_pointer_token, freeze_wire
 from datamodel_code_generator._target_contract import (
     BindingReason,
@@ -51,10 +38,9 @@ from datamodel_code_generator._target_contract import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Iterator, Sequence
+    from collections.abc import Collection, Iterator, Sequence
 
     from datamodel_code_generator._openapi_generation import SourceLease
-    from datamodel_code_generator._runtime.model_codecs.context import Direction
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_contract import FieldUseBinding, FrozenLiteral, TypeUseBinding
 
@@ -65,8 +51,6 @@ CodecReason: TypeAlias = (
         "MC_BINDING_MISSING",
         "MC_CODEC_UNSUPPORTED",
         "MC_PARAMETER_ENCODING",
-        "MC_PATTERN_DIALECT",
-        "MC_PATTERN_RESOURCE_LIMIT",
         "MC_SCHEMA_DIALECT",
     ]
 )
@@ -78,6 +62,21 @@ _OAS_DIALECT_PREFIXES: Final = (
     "https://spec.openapis.org/oas/3.2/dialect/",
 )
 _FRAGMENT_SAFE: Final = "/?:@!$&'()*+,;=~"
+SCHEMA_VALUE_KEYWORDS: Final = frozenset({
+    "additionalProperties",
+    "contains",
+    "contentSchema",
+    "else",
+    "if",
+    "items",
+    "not",
+    "propertyNames",
+    "then",
+    "unevaluatedItems",
+    "unevaluatedProperties",
+})
+SCHEMA_MAP_KEYWORDS: Final = frozenset({"$defs", "definitions", "dependentSchemas", "patternProperties", "properties"})
+SCHEMA_ARRAY_KEYWORDS: Final = frozenset({"allOf", "anyOf", "oneOf", "prefixItems"})
 _UNSUPPORTED_KEYWORDS: Final = frozenset({
     "$dynamicAnchor",
     "$dynamicRef",
@@ -99,11 +98,6 @@ _ARRAY: Final = frozenset({"array"})
 _OBJECT: Final = frozenset({"object"})
 _STRING: Final = frozenset({"string"})
 _INTEGER_NUMBER: Final = frozenset({"integer", "number"})
-_FLAGS: Final[dict[Direction, str]] = {"request": "readOnly", "response": "writeOnly"}
-_BRANCH_ARRAYS: Final = ("anyOf", "oneOf")
-_BRANCH_VALUES: Final = ("if", "then", "else", "not")
-_GUARDED: Final = frozenset({"if", "not"})
-_CHILD_VALUES: Final = ("items", "additionalProperties", "contains", "unevaluatedItems", "unevaluatedProperties")
 _LEXICAL_KINDS: Final[dict[str, LexicalKind]] = {
     "string": "string",
     "integer": "integer",
@@ -123,6 +117,15 @@ class CodecDiagnostic:
     uses: tuple[TypeUseId, ...] = ()
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SchemaResource:
+    """One normalized 2020-12 resource, with the pointers of the schema roots it contains."""
+
+    uri: str
+    contents: WireValue
+    roots: tuple[str, ...] = ("",)
+
+
 @dataclass(frozen=True, slots=True)
 class WirePlan:
     """Keep bundled normalized schema resources, per-use schema IDs, and parameter plans."""
@@ -131,7 +134,6 @@ class WirePlan:
     schema_ids: tuple[tuple[TypeUseId, str], ...]
     parameters: tuple[tuple[OperationId, tuple[ParameterPlan, ...]], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
-    views: tuple[DirectionalView, ...] = ()
     documents: tuple[tuple[SourceDocumentId, str], ...] = ()
     version: str = ""
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
@@ -349,9 +351,6 @@ class _WirePlanner:
             case "exclusiveMinimum" | "exclusiveMaximum", bool():
                 if not self.legacy:
                     self.report("MC_SCHEMA_DIALECT", at, "Boolean exclusive bounds belong to OpenAPI 3.0")
-            case "pattern", str():
-                self.check_pattern(item, at)
-                normalized = item
             case _:
                 normalized = self.applicator(key, item, at)
         return normalized
@@ -359,9 +358,6 @@ class _WirePlanner:
     def applicator(self, key: str, item: YamlValue, at: SourceLocation) -> JSONValue:
         match item:
             case dict() if key in SCHEMA_MAP_KEYWORDS:
-                if key == "patternProperties":
-                    for pattern in item:
-                        self.check_pattern(str(pattern), _at(at, str(pattern)))
                 return {str(name): self.schema(child, _at(at, str(name))) for name, child in item.items()}
             case list() if key in SCHEMA_ARRAY_KEYWORDS:
                 return [self.schema(child, _at(at, index)) for index, child in enumerate(item)]
@@ -381,14 +377,6 @@ class _WirePlanner:
                 return None
             case _:
                 return value
-
-    def check_pattern(self, source: str, location: SourceLocation) -> None:
-        try:
-            plan_pattern(source)
-        except PatternDialectError:
-            self.report("MC_PATTERN_DIALECT", location, "The pattern is outside the builtin ECMA-262 Unicode grammar")
-        except PatternResourceError:
-            self.report("MC_PATTERN_RESOURCE_LIMIT", location, "The pattern exceeds a static resource limit")
 
     def resources(self) -> tuple[SchemaResource, ...]:
         resources: list[SchemaResource] = []
@@ -437,215 +425,6 @@ class _WirePlanner:
                 return value, location
             seen.add(location)
             location = self.resolve(reference, _at(location, "$ref"))
-
-
-class _DirectionalPlanner:
-    """Relax required members that one direction excludes, following references and allOf members."""
-
-    def __init__(self, planner: _WirePlanner, direction: Direction) -> None:
-        self.planner = planner
-        self.flag = _FLAGS[direction]
-        self.documents = {uri: document for document, uri in planner.logical.items()}
-        self.decisions: dict[tuple[SourceLocation, str], tuple[JSONValue, JSONValue]] = {}
-        self.visited: set[tuple[frozenset[SourceLocation], frozenset[tuple[str, SourceLocation]]]] = set()
-        self.guarded: set[SourceLocation] = set()
-
-    def schema(self, location: SourceLocation) -> dict[str, JSONValue]:
-        roots = self.planner.roots.get(location.document, {})
-        prefix = _enclosing(roots, location.pointer)
-        value = None if prefix is None else roots[prefix]
-        for token in _tokens(location.pointer[len(prefix or "") :]):
-            value = (
-                value.get(token)
-                if isinstance(value, dict)
-                else value[int(token)]
-                if isinstance(value, list) and token.isdigit() and int(token) < len(value)
-                else None
-            )
-        return value if isinstance(value, dict) else {}
-
-    def closure(self, locations: Iterable[SourceLocation]) -> tuple[SourceLocation, ...]:
-        group: dict[SourceLocation, None] = {}
-        pending = list(locations)
-        while pending:
-            if (location := pending.pop()) in group or not (schema := self.schema(location)):
-                continue
-            group[location] = None
-            if (target := self.target(schema)) is not None:
-                pending.append(target)
-            if isinstance(members := schema.get("allOf"), list):
-                pending.extend(_at(location, "allOf", index) for index in range(len(members)))
-        return tuple(group)
-
-    def target(self, schema: Mapping[str, JSONValue]) -> SourceLocation | None:
-        if not isinstance(reference := schema.get("$ref"), str):
-            return None
-        uri, fragment = urldefrag(reference)
-        return (
-            None
-            if (document := self.documents.get(uri)) is None
-            else SourceLocation(document, unquote(fragment), "schema")
-        )
-
-    def reaches_flag(self, root: SourceLocation) -> bool:
-        seen: set[SourceLocation] = set()
-        pending = [root]
-        while pending:
-            if (location := pending.pop()) in seen or not (schema := self.schema(location)):
-                continue
-            seen.add(location)
-            if schema.get(self.flag) is True:
-                return True
-            if (target := self.target(schema)) is not None:
-                pending.append(target)
-            for keyword, value in schema.items():
-                match value:
-                    case dict() if keyword in SCHEMA_MAP_KEYWORDS:
-                        pending.extend(_at(location, keyword, name) for name in value)
-                    case list() if keyword in SCHEMA_ARRAY_KEYWORDS:
-                        pending.extend(_at(location, keyword, index) for index in range(len(value)))
-                    case _ if keyword in SCHEMA_VALUE_KEYWORDS:
-                        pending.append(_at(location, keyword))
-                    case _:
-                        continue
-        return False
-
-    def branches(self, location: SourceLocation) -> list[SourceLocation]:
-        schema = self.schema(location)
-        branches = [
-            _at(location, keyword, index)
-            for keyword in _BRANCH_ARRAYS
-            if isinstance(members := schema.get(keyword), list)
-            for index in range(len(members))
-        ]
-        branches.extend(_at(location, keyword) for keyword in _BRANCH_VALUES if keyword in schema)
-        if isinstance(dependent := schema.get("dependentSchemas"), dict):
-            branches.extend(_at(location, "dependentSchemas", name) for name in dependent)
-        return branches
-
-    def children(self, location: SourceLocation) -> list[SourceLocation]:
-        schema = self.schema(location)
-        children = [_at(location, keyword) for keyword in _CHILD_VALUES if keyword in schema]
-        if isinstance(items := schema.get("prefixItems"), list):
-            children.extend(_at(location, "prefixItems", index) for index in range(len(items)))
-        if isinstance(patterns := schema.get("patternProperties"), dict):
-            children.extend(_at(location, "patternProperties", pattern) for pattern in patterns)
-        return children
-
-    def flagged(self, group: Iterable[SourceLocation]) -> bool:
-        return any(self.schema(location).get(self.flag) is True for location in group)
-
-    def conditional(self, group: tuple[SourceLocation, ...], seen: set[SourceLocation]) -> bool:
-        for branch in (branch for location in group for branch in self.branches(location)):
-            if branch in seen:
-                continue
-            seen.add(branch)
-            if self.flagged(inner := self.closure((branch,))) or self.conditional(inner, seen):
-                return True
-        return False
-
-    def excluded(self, declarations: tuple[SourceLocation, ...], source: SourceLocation) -> bool:
-        group = self.closure(declarations)
-        if all(any(self.schema(at).get(flag) is True for at in group) for flag in _FLAGS.values()):
-            self.planner.report(
-                "MC_SCHEMA_DIALECT", declarations[0], "A property cannot be both read-only and write-only"
-            )
-        if self.flagged(group):
-            return True
-        if self.conditional(group, set()):
-            self.planner.report(
-                "MC_SCHEMA_DIALECT", source, "A required property's readOnly or writeOnly annotation is conditional"
-            )
-        return False
-
-    def kept(
-        self, names: list[JSONValue], declared: Mapping[str, tuple[SourceLocation, ...]], source: SourceLocation
-    ) -> list[JSONValue]:
-        return [name for name in names if not self.excluded(declared.get(str(name), ()), source)]
-
-    def decide(self, location: SourceLocation, keyword: str, original: JSONValue, decided: JSONValue) -> None:
-        if self.decisions.setdefault((location, keyword), (original, decided))[1] != decided:
-            self.planner.report(
-                "MC_SCHEMA_DIALECT",
-                _at(location, keyword),
-                "The directional required members of a shared schema depend on how it is referenced",
-            )
-
-    def visit(self, locations: Iterable[SourceLocation], inherited: Mapping[str, tuple[SourceLocation, ...]]) -> None:
-        group = self.closure(locations)
-        own: dict[str, tuple[SourceLocation, ...]] = {}
-        for location in group:
-            if isinstance(properties := self.schema(location).get("properties"), dict):
-                for name in properties:
-                    own[name] = (*own.get(name, ()), _at(location, "properties", name))
-        declared = {name: (*inherited.get(name, ()), *own.get(name, ())) for name in {*inherited, *own}}
-        key = (frozenset(group), frozenset((name, at) for name, ats in declared.items() for at in ats))
-        if key in self.visited:
-            return
-        self.visited.add(key)
-        for location in group:
-            schema = self.schema(location)
-            if isinstance(required := schema.get("required"), list):
-                self.decide(location, "required", required, self.kept(required, declared, _at(location, "required")))
-            if isinstance(dependent := schema.get("dependentRequired"), dict):
-                source = _at(location, "dependentRequired")
-                self.decide(
-                    location,
-                    "dependentRequired",
-                    dependent,
-                    {
-                        name: self.kept(names, declared, source) if isinstance(names, list) else names
-                        for name, names in dependent.items()
-                    },
-                )
-        for name in own:
-            self.visit(declared[name], {})
-        for location in group:
-            self.descend(location, declared)
-
-    def descend(self, location: SourceLocation, declared: Mapping[str, tuple[SourceLocation, ...]]) -> None:
-        for child in self.children(location):
-            self.visit((child,), {})
-        for branch in self.branches(location):
-            if branch.pointer.rpartition("/")[2] in _GUARDED:
-                self.guard((branch,))
-            else:
-                self.visit((branch,), declared)
-
-    def guard(self, locations: Iterable[SourceLocation]) -> None:
-        for location in self.closure(locations):
-            if location in self.guarded:
-                continue
-            self.guarded.add(location)
-            properties = self.schema(location).get("properties")
-            self.guard((
-                *(_at(location, "properties", name) for name in (properties if isinstance(properties, dict) else {})),
-                *self.children(location),
-                *self.branches(location),
-            ))
-
-    def view(self, direction: Direction, flagged: Iterable[str]) -> DirectionalView:
-        for (location, keyword), (original, decided) in self.decisions.items():
-            if original != decided and location in self.guarded:
-                self.planner.report(
-                    "MC_SCHEMA_DIALECT",
-                    _at(location, keyword),
-                    "The directional required members of a shared schema depend on how it is referenced",
-                )
-        return DirectionalView(
-            direction=direction,
-            flagged=tuple(sorted(set(flagged))),
-            patches=tuple(
-                SchemaPatch(
-                    uri=self.planner.logical[location.document],
-                    pointer=location.pointer,
-                    keyword="required" if keyword == "required" else "dependentRequired",
-                    value=freeze_wire(decided),
-                )
-                for (location, keyword), (original, decided) in self.decisions.items()
-                if original != decided
-            ),
-        )
 
 
 def _legacy_keywords(raw: Mapping[str, YamlValue], normalized: dict[str, JSONValue]) -> None:
@@ -711,27 +490,11 @@ def plan_wire(  # noqa: PLR0913
         for use in batch.type_uses
         if use.id in styles and (style := _styles(planner, use, styles[use.id])) is not None
     )
-    views: list[DirectionalView] = []
-    for direction in _FLAGS:
-        directional = _DirectionalPlanner(planner, direction)
-        roots = [
-            binding.schema
-            for binding in batch.type_uses
-            if binding.id.direction == direction
-            and binding.schema is not None
-            and (requested is None or binding.id in requested)
-        ]
-        for root in roots:
-            directional.visit((root,), {})
-        views.append(
-            directional.view(direction, (planner.schema_id(root) for root in roots if directional.reaches_flag(root)))
-        )
     return WirePlan(
         planner.resources(),
         schema_ids,
         parameters,
         tuple(planner.diagnostics),
-        tuple(views),
         tuple(sorted(planner.logical.items())),
         planner.version,
         headers,

@@ -39,10 +39,7 @@ from ..client.responses import HeadersView
 from ..client.timing import SYSTEM_CLOCK, TOKEN_INTERVAL, Clock, Deadline, SessionOptions, real_end, wait_left
 from ..client.transports import TransportCapabilities, attempt_trace
 from ..model_codecs.errors import (
-    CodecBindingError,
     CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
     ParameterEncodingError,
     WireValidationError,
 )
@@ -123,10 +120,7 @@ _PROTOCOL_ERROR: Final = 1002
 _APPLICATION_CODES: Final = range(3000, 5000)
 _MAX_PING: Final = 125
 _DATA_ERRORS: Final = (
-    CodecBindingError,
     CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
     ParameterEncodingError,
     WireValidationError,
 )

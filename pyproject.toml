@@ -99,7 +99,6 @@ dev = [
 test = [
   "cryptography>=50",
   "email-validator>=2.2",
-  "google-re2>=1.1.20251105,<2",
   "hypothesis>=6.136.6",
   "hypothesis-jsonschema>=0.23.1",
   "inline-snapshot>=0.34.2",

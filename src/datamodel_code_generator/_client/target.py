@@ -54,7 +54,7 @@ from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
-    from datamodel_code_generator._api_generation import TargetRequest
+    from datamodel_code_generator._api_generation import ConverterStrategy, TargetRequest
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
@@ -68,7 +68,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.uploads import UploadSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
-    from datamodel_code_generator._runtime.model_codecs.bindings import ConverterStrategy
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,

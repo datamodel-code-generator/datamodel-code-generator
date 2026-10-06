@@ -21,10 +21,7 @@ from ..client.errors import (
     is_sequence,
 )
 from ..model_codecs.errors import (
-    CodecBindingError,
     CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
     ParameterEncodingError,
     WireValidationError,
 )
@@ -71,10 +68,7 @@ _DEFAULTS: Final = ResolvedWebhookOptions(
 )
 _OPTIONS: Final = tuple(item.name for item in fields(WebhookOptions))
 _DATA_ERRORS: Final = (
-    CodecBindingError,
     CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
     ParameterEncodingError,
     WireValidationError,
 )

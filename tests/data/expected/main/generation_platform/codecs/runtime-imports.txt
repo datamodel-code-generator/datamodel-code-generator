@@ -37,14 +37,10 @@ client/timing.py: ..model_codecs.unset, .errors, __future__, collections.abc, da
 client/transports.py: .bodies, .errors, .evidence, .responses, .timing, __future__, collections.abc, dataclasses, inspect, typing, typing_extensions
 client/urls.py: __future__, dataclasses, functools, httpx2, re, typing, urllib.parse
 model_codecs/__init__.py: -
-model_codecs/bindings.py: .context, __future__, dataclasses, typing
-model_codecs/context.py: __future__, dataclasses, typing
 model_codecs/errors.py: __future__, dataclasses, typing
 model_codecs/media.py: .errors, .wire, __future__, collections.abc, dataclasses, decimal, json, json.encoder, re, typing, typing_extensions, urllib.parse
 model_codecs/native.py: __future__, collections.abc, msgspec, msgspec.json, pydantic, pydantic_core, typing, typing_extensions
 model_codecs/parameters.py: .errors, .media, .unset, .wire, __future__, collections.abc, dataclasses, itertools, re, typing, urllib.parse
-model_codecs/patterns.py: .errors, __future__, dataclasses, functools, importlib, string, typing
-model_codecs/schema.py: .context, .wire, __future__, dataclasses, typing
 model_codecs/stdlib.py: __future__, base64, collections.abc, dataclasses, datetime, decimal, enum, json, typing, typing_extensions, uuid
 model_codecs/unset.py: __future__, enum, typing
 model_codecs/wire.py: .media, __future__, collections.abc, decimal, math, re, types, typing, typing_extensions

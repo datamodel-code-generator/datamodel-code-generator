@@ -35,11 +35,8 @@ from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import (
-    CodecBindingError,
     CodecError,
     CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
     ParameterEncodingError,
     WireValidationError,
 )
@@ -119,10 +116,7 @@ _CR: Final = 0x0D
 _LF: Final = 0x0A
 _COLON: Final = 0x3A
 _DATA_ERRORS: Final = (
-    CodecBindingError,
     CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
     ParameterEncodingError,
     WireValidationError,
 )
