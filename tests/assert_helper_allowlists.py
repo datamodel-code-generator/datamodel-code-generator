@@ -62,11 +62,7 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/main/test_generation_api_scope.py::datamodel_code_generator._openapi_generation",
         "private-import:tests/parser/test_openapi_scope.py::datamodel_code_generator.parser.openapi_scope",
     ),
-    "spies": (
-        "normal-path-mock:tests/data/python/client_retry_ownership.py::_async",
-        "normal-path-mock:tests/data/python/client_retry_ownership.py::retry_ownership",
-        "normal-path-mock:tests/main/test_generation_observation.py::test_generation_observation",
-    ),
+    "spies": ("normal-path-mock:tests/main/test_generation_observation.py::test_generation_observation",),
     "abnormal-e2e": (
         "normal-path-mock:tests/api_generation/test_fastapi_cli.py::test_fastapi_cli_report_replaced",
         "private-import:tests/api_generation/test_target_generation.py::datamodel_code_generator._api_manifest",

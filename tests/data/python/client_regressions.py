@@ -22,7 +22,7 @@ def no_success(package: ModuleType, lines: list[str]) -> None:
         for name in ("CreateArchive", "ReadArchive", "CheckArchive", "EmptyArchive")
     )
     exchange = Exchange(lines)
-    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+    with exchange.client() as native_client_25, package.Client(http_client=native_client_25) as api:
         for label, name, response in _responses():
             exchange.respond(response)
             record(lines, label, getattr(api.archives, name))
@@ -42,7 +42,7 @@ def _responses() -> Iterator[tuple[str, str, Any]]:
 
 async def _async_no_success(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
     """Exercise the asynchronous error-only operations and their metadata view."""
-    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+    async with exchange.async_client() as native_client_45, package.AsyncClient(http_client=native_client_45) as api:
         for label, name, response in _responses():
             exchange.respond(response)
             await arecord(lines, f"async {label}", getattr(api.archives, name))
@@ -107,7 +107,7 @@ def json_decode_errors(package: ModuleType, lines: list[str]) -> None:
     """Inspect every JSON parse failure and large malformed stream records without retaining their original errors."""
     exchange = Exchange(lines)
     errors = importlib.import_module(f"{package.__name__}.errors")
-    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+    with exchange.client() as native_client_110, package.Client(http_client=native_client_110) as api:
         for label, body in _bodies():
             exchange.respond(raw_response(200, body, "application/json"))
             try:
@@ -129,7 +129,7 @@ def json_decode_errors(package: ModuleType, lines: list[str]) -> None:
 async def _async_json_decode_errors(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
     """Inspect asynchronous JSON response and stream failures through real HTTP exchanges."""
     errors = importlib.import_module(f"{package.__name__}.errors")
-    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+    async with exchange.async_client() as native_client_132, package.AsyncClient(http_client=native_client_132) as api:
         for label, body in _bodies():
             exchange.respond(raw_response(200, body, "application/json"))
             try:

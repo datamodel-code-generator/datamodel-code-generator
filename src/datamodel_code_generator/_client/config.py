@@ -134,7 +134,7 @@ class ClientGenerationConfig(TargetConfig):
     manifest_exclusions: ClassVar[frozenset[str]] = frozenset({"selection", "protocols"})
 
     def _problems(self) -> Iterator[Diagnostic]:
-        yield from TargetConfig._problems(self)  # noqa: SLF001
+        yield from TargetConfig._problems(self)  # ruff: ignore[private-member-access]
         if type(self.schema_version) is not int or self.schema_version != 1:
             yield _diagnostic("E_CONFIG_VALUE", "schema_version", "schema_version must be 1")
         if self.transport != "httpx2":
@@ -158,7 +158,7 @@ class ClientGenerationConfig(TargetConfig):
 
 def _protocol_problems(value: object) -> Iterator[Diagnostic]:
     """Validate Python helper records, loading their definitions only for a configuration that has them."""
-    from datamodel_code_generator._client.protocols import ProtocolConfiguration, protocol_problems  # noqa: PLC0415
+    from datamodel_code_generator._client.protocols import ProtocolConfiguration, protocol_problems  # ruff: ignore[import-outside-top-level]
 
     if isinstance(value, ProtocolConfiguration):
         yield from protocol_problems(value)

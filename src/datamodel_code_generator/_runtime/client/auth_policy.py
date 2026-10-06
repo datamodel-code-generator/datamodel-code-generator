@@ -10,6 +10,7 @@ from functools import partial
 from typing import TYPE_CHECKING, Final, Literal, TypeVar
 from urllib.parse import quote, urlsplit, urlunsplit
 
+import httpx2  # noqa: TC002
 from typing_extensions import TypeIs
 
 from ..model_codecs.unset import Unset
@@ -17,15 +18,13 @@ from .auth import (
     ApiKeyCredential,
     BasicCredential,
     BearerCredential,
-    OwnedCredentialProvider,
     SignatureFields,
     SignerCapabilities,
 )
 from .auth_challenges import invalid_token
 from .errors import AuthError, ConfigurationError, DeliveryState, is_auth_classified
-from .responses import HeadersView
+from .native import cloned
 from .security import SecurityRequirement, SecurityScheme, UnavailableSecurityScheme
-from .transports import PreparedRequest
 from .urls import URLValidationError, canonical_origin, strip_query
 
 if TYPE_CHECKING:
@@ -33,12 +32,10 @@ if TYPE_CHECKING:
 
     from .auth import (
         AccessToken,
-        AsyncCloseableCredentialProvider,
         AsyncCredentialProvider,
         AsyncRefreshableTokenProvider,
         AsyncRequestSigner,
         AuthConfig,
-        CloseableCredentialProvider,
         CredentialContext,
         CredentialMaterial,
         CredentialProvider,
@@ -167,16 +164,6 @@ def async_provider(value: object) -> TypeIs[AsyncCredentialProvider]:
     return _method(value, "get", asynchronous=True)
 
 
-def is_sync_closeable(value: object) -> TypeIs[CloseableCredentialProvider]:
-    """Validate synchronous ownership capability only at an adoption boundary."""
-    return sync_provider(value) and _method(value, "close", asynchronous=False)
-
-
-def is_async_closeable(value: object) -> TypeIs[AsyncCloseableCredentialProvider]:
-    """Validate asynchronous ownership capability only at an adoption boundary."""
-    return async_provider(value) and _method(value, "aclose", asynchronous=True)
-
-
 def _sync_refreshable(value: object) -> TypeIs[RefreshableTokenProvider]:
     return all(_method(value, name, asynchronous=False) for name in ("get", "invalidate", "refresh"))
 
@@ -194,17 +181,14 @@ def _async_signer(value: object) -> TypeIs[AsyncRequestSigner]:
 
 
 def _provider(value: CredentialProviderInput) -> CredentialProvider | AsyncCredentialProvider:
-    return value.provider if isinstance(value, OwnedCredentialProvider) else value
+    return value
 
 
 def validate_auth_mode(config: AuthConfig, *, asynchronous: bool) -> None:
     """Refuse incompatible callback and ownership modes before executing user code."""
     for value in config.credentials.values():
         provider = _provider(value)
-        if isinstance(value, OwnedCredentialProvider):
-            valid = is_async_closeable(provider) if asynchronous else is_sync_closeable(provider)
-        else:
-            valid = async_provider(provider) if asynchronous else sync_provider(provider)
+        valid = async_provider(provider) if asynchronous else sync_provider(provider)
         if not valid:
             raise ConfigurationError(field_path=("auth", "credentials"), reason="invalid_mode")
         if any(getattr(provider, name, None) is not None for name in ("invalidate", "refresh")):
@@ -271,7 +255,7 @@ def _requirements(
 def _signer_capabilities(signer: RequestSigner | AsyncRequestSigner) -> SignerCapabilities:
     try:
         value = signer.capabilities
-    except Exception as cause:  # noqa: BLE001 - A missing or failing capability record is a signer defect.
+    except Exception as cause:  # ruff: ignore[blind-except] - A missing or failing capability record is a signer defect.
         raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_capabilities", cause=cause) from None
     return _capabilities(value)
 
@@ -622,10 +606,10 @@ def _cookie_fields(headers: list[tuple[str, str]], cookies: list[tuple[str, str]
 
 
 def place_credentials(
-    request: PreparedRequest[BodyT], bound: BoundAuth | AsyncBoundAuth, acquired: HopCredentials | AsyncHopCredentials
-) -> PreparedRequest[BodyT]:
+    request: httpx2.Request, bound: BoundAuth | AsyncBoundAuth, acquired: HopCredentials | AsyncHopCredentials
+) -> httpx2.Request:
     """Place validated material only at the compiled scheme's exact outgoing position."""
-    headers = list(request.headers.items())
+    headers = list(request.headers.multi_items())
     query: list[tuple[str, str]] = []
     cookies: list[tuple[str, str]] = []
     for scheme, value in zip((binding.scheme for binding in bound.credentials), acquired.values, strict=True):
@@ -641,12 +625,10 @@ def place_credentials(
         else:
             query.append((scheme.wire_name, text))
     try:
-        url = _query_url(request.url, tuple(query))
+        url = _query_url(str(request.url), tuple(query))
     except UnicodeEncodeError as cause:
         raise ConfigurationError(field_path=("auth", "credentials"), reason="invalid_query", cause=cause) from None
-    return PreparedRequest(
-        method=request.method, url=url, headers=HeadersView(_cookie_fields(headers, cookies)), body=request.body
-    )
+    return cloned(request, url=url, headers=_cookie_fields(headers, cookies))
 
 
 def _signature(value: object) -> SignatureFields:
@@ -672,8 +654,8 @@ async def asign_request(signer: AsyncRequestSigner, request: SigningInput, deliv
 
 
 def apply_signature(
-    request: PreparedRequest[BodyT], fields: SignatureFields, capabilities: SignerCapabilities
-) -> PreparedRequest[BodyT]:
+    request: httpx2.Request, fields: SignatureFields, capabilities: SignerCapabilities
+) -> httpx2.Request:
     """Apply only declared ordered signature fields, encoding new query atoms once."""
     names = frozenset(name.lower() for name in capabilities.managed_headers)
     for name, value in fields.headers:
@@ -684,12 +666,7 @@ def apply_signature(
     if any(name not in capabilities.managed_query for name, _ in fields.query):
         raise ConfigurationError(field_path=("auth", "signers"), reason="undeclared_query")
     try:
-        url = _query_url(request.url, fields.query)
+        url = _query_url(str(request.url), fields.query)
     except UnicodeEncodeError as cause:
         raise ConfigurationError(field_path=("auth", "signers"), reason="invalid_query", cause=cause) from None
-    return PreparedRequest(
-        method=request.method,
-        url=url,
-        headers=HeadersView((*request.headers.items(), *fields.headers)),
-        body=request.body,
-    )
+    return cloned(request, url=url, headers=[*request.headers.multi_items(), *fields.headers])

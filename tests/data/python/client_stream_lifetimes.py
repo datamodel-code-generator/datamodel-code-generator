@@ -182,9 +182,7 @@ def _body(size: int = 3 * _CHUNK) -> Callable[[httpx2.Request], httpx2.Response]
 
 
 def _gzipped() -> Callable[[httpx2.Request], httpx2.Response]:
-    return raw_response(
-        200, gzip.compress(_DATA, mtime=0), "application/octet-stream", **{"content-encoding": "gzip"}
-    )
+    return raw_response(200, gzip.compress(_DATA, mtime=0), "application/octet-stream", **{"content-encoding": "gzip"})
 
 
 def _stalled(gate: threading.Event) -> Callable[[httpx2.Request], httpx2.Response]:
@@ -284,7 +282,7 @@ def _borrowed(package: ModuleType, lines: list[str]) -> None:
 def _owned(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange([])
     http = exchange.client(1, kind=_Owned)
-    with package.Client(http_client=http, http_client_ownership="owned") as api:
+    with package.Client(http_client=http) as api:
         exchange.respond(_body())
         with api.with_streaming_response.request_raw("GET", _URL) as response:
             next(response.iter_bytes())
@@ -329,7 +327,9 @@ def _files_sync(package: ModuleType, lines: list[str], directory: Path) -> None:
                 response.stream_to(file)
             end = file.tell()
             file.seek(0)
-            lines.append(f"  sync borrowed file open {not file.closed} at {end} {file.read() == b'head' + _DATA[: _CHUNK + 5]}")
+            lines.append(
+                f"  sync borrowed file open {not file.closed} at {end} {file.read() == b'head' + _DATA[: _CHUNK + 5]}"
+            )
         exchange.respond(_body(), raw_response(200, b"pong", "text/plain"))
         with streaming.request_raw("GET", _URL) as response:
             failed = outcome(lambda: response.stream_to(_Sink()))
@@ -445,7 +445,7 @@ async def _async_owned(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange([])
     http = exchange.async_client(1, kind=_AsyncOwned)
     async with AsyncExitStack() as iterators:
-        async with package.AsyncClient(http_client=http, http_client_ownership="owned") as api:
+        async with package.AsyncClient(http_client=http) as api:
             exchange.respond(_body())
             async with api.with_streaming_response.request_raw("GET", _URL) as response:
                 chunks = response.iter_bytes()
@@ -477,7 +477,9 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
             writing = [thread.name for thread in _workers()]
             gate.set()
             await task
-        lines.append(f"  async download mid-body disk threads {writing} wrote {held.read_bytes() == _DATA[: 2 * _CHUNK]}")
+        lines.append(
+            f"  async download mid-body disk threads {writing} wrote {held.read_bytes() == _DATA[: 2 * _CHUNK]}"
+        )
         identity, coded = directory / "identity.bin", directory / "coded.bin"
         exchange.respond(_body(len(_DATA)), _gzipped())
         async with streaming.request_raw("GET", _URL) as response:
@@ -519,7 +521,9 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
         exchange.respond(_body())
         async with streaming.request_raw("GET", _URL, options=options.RequestOptions(cancel_token=cancel)) as raw:
             cancel.cancel()
-            lines.append(f"  async cancelled before download {await aoutcome(lambda: raw.stream_to(directory / 'no.bin'))}")
+            lines.append(
+                f"  async cancelled before download {await aoutcome(lambda: raw.stream_to(directory / 'no.bin'))}"
+            )
         exchange.respond(_body(), _body())
         async with streaming.request_raw("GET", _URL) as response:
             chunks = response.iter_bytes()
@@ -539,9 +543,7 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
     await http.aclose()
 
 
-async def _opening_faults(
-    api: Any, exchange: Exchange, lines: list[str], directory: Path, options: ModuleType
-) -> None:
+async def _opening_faults(api: Any, exchange: Exchange, lines: list[str], directory: Path, options: ModuleType) -> None:
     """Stop downloads while or right after the disk thread creates their file, and keep nothing it created."""
     streaming, target = api.with_streaming_response, directory / "opening.bin"
     cancel = options.CancelToken()

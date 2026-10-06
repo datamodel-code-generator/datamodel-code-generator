@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import math
 import time as _time
-from collections.abc import Callable  # noqa: TC003 - Public annotations support get_type_hints().
+from collections.abc import Callable  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
 from typing import Final, final
 
 from ..model_codecs.unset import UNSET, Unset
 from .errors import ConfigurationError
-
-TOKEN_INTERVAL: Final = 0.05
 
 
 def finite_number(value: object) -> float | None:
@@ -49,7 +47,7 @@ def checked_instance(value: object, kinds: tuple[type, ...], path: tuple[str, ..
 
 def _random() -> float:
     """Return a uniform float in [0, 1), loading the random source only once a full jitter needs a value."""
-    from secrets import randbits  # noqa: PLC0415
+    from secrets import randbits  # ruff: ignore[import-outside-top-level]
 
     return randbits(53) / (1 << 53)
 
@@ -118,8 +116,8 @@ class Deadline:
 def absolute_deadline(at: float, *, clock: Clock) -> Deadline:
     """Build the private absolute deadline on a clock's scale used when a call or stream resolves its budget."""
     value = object.__new__(Deadline)
-    object.__setattr__(value, "_at", at)  # noqa: PLC2801 - Initialize the frozen value without a public constructor.
-    object.__setattr__(value, "_clock", clock)  # noqa: PLC2801
+    object.__setattr__(value, "_at", at)  # ruff: ignore[unnecessary-dunder-call] - Initialize the frozen value without a public constructor.
+    object.__setattr__(value, "_clock", clock)  # ruff: ignore[unnecessary-dunder-call]
     return value
 
 
@@ -141,27 +139,6 @@ def wait_left(left: float, end: float) -> float:
     A NaN read from the clock stays NaN, which every wait treats as no time left.
     """
     return min(left, end - _time.monotonic())
-
-
-class CancelToken:
-    """An explicit cancellation signal that can be set safely from any thread."""
-
-    __slots__ = ("_event",)
-
-    def __init__(self) -> None:
-        """Start with no cancellation requested."""
-        from threading import Event  # noqa: PLC0415
-
-        self._event = Event()
-
-    @property
-    def cancelled(self) -> bool:
-        """Return whether cancellation has been requested."""
-        return self._event.is_set()
-
-    def cancel(self) -> None:
-        """Request cancellation; repeated calls leave the same signal set."""
-        self._event.set()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

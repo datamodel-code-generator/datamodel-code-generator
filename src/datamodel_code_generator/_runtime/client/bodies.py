@@ -15,8 +15,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Final, Literal, Protocol, TypeAlias
 
 from .coding import CHUNK
-from .disk import DiskWorker, carried, raise_late
-from .errors import ConfigurationError, SDKError, add_secondary, body_failure
+from .disk import DiskWorker
+from .errors import ConfigurationError, DecodeError, SDKError, add_secondary, body_failure
 
 _SHA256_BYTES: Final = 32
 
@@ -194,14 +194,14 @@ def _read(chunks: Callable[[], Iterable[object]], counter: _Counter) -> Iterator
     """Yield the non-empty chunks of a source, turning its failures into the body_factory_failed SDKError."""
     try:
         iterator = iter(chunks())
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         raise _failed(error) from None
     while True:
         try:
             chunk = next(iterator)
         except StopIteration:
             break
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             raise _failed(error) from None
         if chunk := counter.chunk(chunk):
             yield chunk
@@ -212,14 +212,14 @@ async def _aread(chunks: Callable[[], AsyncIterable[object]], counter: _Counter)
     """Yield the non-empty chunks of an async source, turning its failures into the body_factory_failed SDKError."""
     try:
         iterator = aiter(chunks())
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         raise _failed(error) from None
     while True:
         try:
             chunk = await anext(iterator)
         except StopAsyncIteration:
             break
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             raise _failed(error) from None
         if chunk := counter.chunk(chunk):
             yield chunk
@@ -249,7 +249,7 @@ def _snapshot(file: BinaryIO) -> tuple[int | None, int | None]:
             return _positioned(file)
     except OSError:
         raise
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         failure = _failed(error)
         raise failure from None
     raise body_failure(reason="body_not_replayable")
@@ -276,7 +276,7 @@ def _rewound(file: BinaryIO, offset: int | None, length: int | None) -> None:
             file.seek(offset)
     except OSError:
         raise
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         raise _failed(error) from None
     if _remaining(file) != length:
         raise body_failure(reason="body_changed")
@@ -303,14 +303,10 @@ def _opened(path: Path, identity: _Identity) -> BinaryIO:
     except BaseException as error:
         try:
             file.close()
-        except BaseException as failure:  # noqa: BLE001
+        except BaseException as failure:  # ruff: ignore[blind-except]
             body_secondary(error, failure)
         raise
     return file
-
-
-def _close_file(file: BinaryIO) -> None:
-    file.close()
 
 
 def _digest_declaration(value: object) -> bytes | None:
@@ -336,7 +332,7 @@ def _digest_position(file: BinaryIO) -> tuple[int, _Identity | None]:
             identity = None
         else:
             identity = _identity(os.fstat(descriptor))
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         raise _failed(error) from None
     return offset, identity
 
@@ -352,7 +348,7 @@ def _digest_finished(file: BinaryIO, identity: _Identity | None) -> None:
 def _digest_restored(file: BinaryIO, offset: int) -> None:
     try:
         file.seek(offset)
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         raise _failed(error) from None
 
 
@@ -465,11 +461,11 @@ class _OpenFile:
         self.claim.take()
         try:
             length = _remaining(self.file)
-        except BaseException as error:  # noqa: BLE001
+        except BaseException as error:  # ruff: ignore[blind-except]
             failure = _failed(error) if isinstance(error, OSError) else error
             try:
                 self.release()
-            except BaseException as secondary:  # noqa: BLE001
+            except BaseException as secondary:  # ruff: ignore[blind-except]
                 body_secondary(failure, secondary)
             raise failure from None
         self.claim.used = length is None
@@ -640,7 +636,7 @@ class _FactoryAttempt:
         self._closed = True
         try:
             self._attempt.close()
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             raise _failed(error) from None
 
     def check_length(self, length: int | None) -> int | None:
@@ -693,7 +689,7 @@ class BodyFactory:
     def _open(self, context: BodyAttemptContext, history: dict[int, BodyAttempt] | None = None) -> _FactoryAttempt:
         try:
             attempt = self._factory(context)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             raise _failed(error) from None
         previous, self._last = self._last, attempt
         if attempt is previous or (history is not None and history.get(id(attempt)) is attempt):
@@ -702,11 +698,11 @@ class BodyFactory:
             history[id(attempt)] = attempt
         try:
             length = _declared(self._content_length, _attempt_length(attempt))
-        except BaseException as error:  # noqa: BLE001
+        except BaseException as error:  # ruff: ignore[blind-except]
             failure = _factory_failure(error)
             try:
                 attempt.close()
-            except BaseException as secondary:  # noqa: BLE001
+            except BaseException as secondary:  # ruff: ignore[blind-except]
                 body_secondary(failure, secondary)
             raise failure from None
         return _FactoryAttempt(attempt, context, length, self._sha256)
@@ -720,7 +716,7 @@ class _AsyncFileAttempt:
 
     __slots__ = ("_consume", "_context", "_file", "_length", "_release", "_worker")
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # ruff: ignore[too-many-arguments]
         self,
         file: BinaryIO,
         context: BodyAttemptContext,
@@ -808,14 +804,11 @@ class _AsyncOpenFile:
             raise
         try:
             length = await self.worker.run(_remaining, self.file)
-        except BaseException as error:
-            if isinstance(error, asyncio.CancelledError):
-                self.worker.defer(carried(self.release()), release=True)
-                raise
+        except BaseException as error:  # ruff: ignore[blind-except]
             failure = _failed(error) if isinstance(error, OSError) else error
             try:
                 await self.release()
-            except BaseException as secondary:  # noqa: BLE001
+            except BaseException as secondary:  # ruff: ignore[blind-except]
                 body_secondary(failure, secondary)
             raise failure from None
         self.claim.used = length is None
@@ -823,16 +816,12 @@ class _AsyncOpenFile:
 
     async def release(self) -> None:
         """End a call's read once its disk work settles: close an owned file, then let the next call read."""
-        late: tuple[BaseException, ...] = ()
         try:
-            late = await self.worker.settled()
             if self.ownership == "owned":
                 self.claim.used = True
                 await self.worker.run(self.file.close, cleanup=True)
         finally:
             self.claim.lock.release()
-            self.worker.release()
-        raise_late(late)
 
 
 class _AsyncPathFile:
@@ -849,44 +838,29 @@ class _AsyncPathFile:
         """Open the file on the worker, refusing one that changed since it was first found."""
         self.worker.acquire()
         try:
-            file = await self.worker.run(_opened, self.path, self.identity, discard=_close_file)
+            file = await self.worker.run(_opened, self.path, self.identity)
         except BaseException as error:
-            if isinstance(error, asyncio.CancelledError):
-                self.worker.defer(carried(self._settled_release()), release=True)
-                raise
-            self.worker.release()
             if isinstance(error, OSError):
                 raise _failed(error) from None
             raise
         return _AsyncFileAttempt(file, context, self.identity[2], self.worker, lambda: self.release(file))
 
-    async def _settled_release(self) -> None:
-        late: tuple[BaseException, ...] = ()
-        try:
-            late = await self.worker.settled()
-        finally:
-            self.worker.release()
-        raise_late(late)
-
     async def release(self, file: BinaryIO) -> None:
         """Close the attempt's file before a stopped worker can shut down."""
-        try:
-            await self.worker.run(file.close, cleanup=True)
-        finally:
-            self.worker.release()
+        await self.worker.run(file.close, cleanup=True)
 
 
 class AsyncFileBody:
-    """A file an asyncio client sends as a whole body, read as FileBody reads, on one worker thread of its own.
+    """A file an asyncio client sends as a whole body, read as FileBody reads, through AnyIO's existing thread offload.
 
-    The worker reads one chunk at a time. Closing the body stops it; closing a client does not.
+    File operations finish one chunk at a time. Closing the body stops it; closing a client does not.
     """
 
     __slots__ = ("_source", "_worker")
 
     def __init__(self, file: BinaryIO, *, ownership: Ownership = "borrowed") -> None:
         """Send an open binary file, borrowed unless its ownership moves to the client."""
-        self._worker = DiskWorker("AsyncFileBody")
+        self._worker = DiskWorker()
         self._source: _AsyncOpenFile | _AsyncPathFile = _AsyncOpenFile(file, ownership, self._worker)
 
     @classmethod
@@ -918,7 +892,7 @@ class _AsyncPathFileBody(AsyncFileBody):
     __slots__ = ()
 
     def __init__(self, path: Path) -> None:
-        self._worker = DiskWorker("AsyncFileBody")
+        self._worker = DiskWorker()
         self._source = _AsyncPathFile(path, self._worker)
 
 
@@ -1025,7 +999,7 @@ class _AsyncFactoryAttempt:
         self._closed = True
         try:
             await self._attempt.aclose()
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             raise _failed(error) from None
 
     def check_length(self, length: int | None) -> int | None:
@@ -1083,7 +1057,7 @@ class AsyncBodyFactory:
     ) -> _AsyncFactoryAttempt:
         try:
             attempt = await self._factory(context)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             raise _failed(error) from None
         previous, self._last = self._last, attempt
         if attempt is previous or (history is not None and history.get(id(attempt)) is attempt):
@@ -1092,12 +1066,12 @@ class AsyncBodyFactory:
             history[id(attempt)] = attempt
         try:
             length = _declared(self._content_length, _attempt_length(attempt))
-        except BaseException as error:  # noqa: BLE001
+        except BaseException as error:  # ruff: ignore[blind-except]
             failure = _factory_failure(error)
             if cleanup is None:
                 try:
                     await attempt.aclose()
-                except BaseException as secondary:  # noqa: BLE001
+                except BaseException as secondary:  # ruff: ignore[blind-except]
                     body_secondary(failure, secondary)
             else:
                 await cleanup(attempt.aclose, error=failure)
@@ -1118,11 +1092,11 @@ class _FileCall:
         self._source = source
         try:
             self._offset, self._length = _snapshot(source.file)
-        except BaseException as error:  # noqa: BLE001
+        except BaseException as error:  # ruff: ignore[blind-except]
             failure = _failed(error) if isinstance(error, OSError) else error
             try:
                 self.close()
-            except BaseException as secondary:  # noqa: BLE001
+            except BaseException as secondary:  # ruff: ignore[blind-except]
                 body_secondary(failure, secondary)
             raise failure from None
 
@@ -1164,14 +1138,15 @@ class _AsyncFileCall:
     async def capture(self) -> None:
         try:
             self._offset, self._length = await self._source.worker.run(_snapshot, self._source.file)
-        except BaseException as error:
-            if isinstance(error, asyncio.CancelledError):
-                self._source.worker.defer(carried(self.aclose()), release=True)
-                raise
-            failure = _failed(error) if isinstance(error, OSError) else error
+        except BaseException as error:  # ruff: ignore[blind-except]
+            failure = (
+                DecodeError(cause=error, reason="factory", direction="request", location=("body",))
+                if isinstance(error, OSError)
+                else error
+            )
             try:
                 await self.aclose()
-            except BaseException as secondary:  # noqa: BLE001
+            except BaseException as secondary:  # ruff: ignore[blind-except]
                 body_secondary(failure, secondary)
             raise failure from None
 
@@ -1316,11 +1291,11 @@ class _FactoryCall:
         try:
             _fingerprint(_current_fingerprint(self._body), self._fingerprint)
             self._length = attempt.check_length(self._length)
-        except BaseException as error:  # noqa: BLE001
+        except BaseException as error:  # ruff: ignore[blind-except]
             failure = _factory_failure(error)
             try:
                 attempt.close()
-            except BaseException as secondary:  # noqa: BLE001
+            except BaseException as secondary:  # ruff: ignore[blind-except]
                 body_secondary(failure, secondary)
             raise failure from None
         return attempt
@@ -1358,7 +1333,7 @@ class _AsyncFactoryCall:
         try:
             _fingerprint(_current_fingerprint(self._body), self._fingerprint)
             self._length = attempt.check_length(self._length)
-        except BaseException as error:  # noqa: BLE001
+        except BaseException as error:  # ruff: ignore[blind-except]
             failure = _factory_failure(error)
             await self._cleanup(attempt.aclose, error=failure)
             raise failure from None
@@ -1371,28 +1346,28 @@ class _AsyncFactoryCall:
 def _attempt_length(attempt: BodyAttempt | AsyncBodyAttempt) -> int | None:
     try:
         return attempt.content_length
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         raise _failed(error) from None
 
 
 def _attempt_type(attempt: BodyAttempt | AsyncBodyAttempt) -> str | None:
     try:
         return attempt.content_type
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         raise _failed(error) from None
 
 
 def _declarations(body: BodyFactory | AsyncBodyFactory) -> tuple[int | None, bytes | None]:
     try:
         return body.content_length, body.fingerprint
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         raise _failed(error) from None
 
 
 def _current_fingerprint(body: BodyFactory | AsyncBodyFactory) -> bytes | None:
     try:
         return body.fingerprint
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         raise _failed(error) from None
 
 
@@ -1414,35 +1389,35 @@ def _fingerprint(actual: bytes | None, expected: bytes | None) -> None:
 
 def bind_input(body: FileBody | StreamBody) -> _FileCall | _PathCall | _StreamCall:
     """Claim one known synchronous input for the private call executor."""
-    return body._bind()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    return body._bind()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
 
 async def bind_async_input(body: AsyncFileBody | AsyncStreamBody) -> _AsyncFileCall | _AsyncPathCall | _AsyncStreamCall:
     """Claim one known async input and settle any disk preparation."""
-    return await body._bind() if isinstance(body, AsyncFileBody) else body._bind()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    return await body._bind() if isinstance(body, AsyncFileBody) else body._bind()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
 
 def bind_factory(body: BodyFactory, history: dict[int, BodyAttempt]) -> _FactoryCall:
     """Bind a synchronous factory to the call's raw-attempt identity ledger."""
-    return body._bind(history)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    return body._bind(history)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
 
 def bind_async_factory(
     body: AsyncBodyFactory, history: dict[int, AsyncBodyAttempt], cleanup: AsyncBodyCleanup
 ) -> _AsyncFactoryCall:
     """Bind an async factory to the call's raw-attempt identity ledger."""
-    return body._bind(history, cleanup)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    return body._bind(history, cleanup)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
 
 def require_primitive_digest(source: object, *, multipart: bool) -> None:
     """Check a bound primitive without opening factories, reading streams, or allocating a hasher."""
     if isinstance(source, (_FileCall, _AsyncFileCall)):
-        if source._offset is None:  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        if source._offset is None:  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
             raise body_failure(reason="digest_unavailable")
     elif isinstance(source, (_FactoryCall, _AsyncFactoryCall)):
         if multipart:
             raise body_failure(reason="digest_unavailable")
-        _required_digest(source._body._sha256)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        _required_digest(source._body._sha256)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
     elif not isinstance(source, (_PathCall, _AsyncPathCall)):
         raise body_failure(reason="digest_unavailable")
 

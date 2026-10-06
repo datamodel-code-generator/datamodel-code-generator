@@ -22,30 +22,26 @@ from ..model_codecs.media import decode_json
 from ..model_codecs.wire import thaw_wire
 from .coding import CHUNK, ContentDecoder
 from .errors import (
-    CleanupError,
     ConfigurationError,
     DecodeError,
     DeliveryState,
     ProtocolError,
+    RetryStopReason,
     SDKError,
     add_secondary,
     is_http_error,
     response_failure,
     too_large,
 )
-from .lifecycle import cleanup_secondary
 from .media import charset
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Generator, Iterator
-    from concurrent.futures import Future
     from types import TracebackType
 
     from ..model_codecs.wire import JSONValue
     from .disk import DiskWorker
-    from .errors import RetryStopReason
     from .events import CallEvents
-    from .lifecycle import Scope
     from .logical import LogicalCallContext
     from .operations import ResponseDecoder
     from .options import Settings
@@ -141,7 +137,7 @@ def _refuse_existing(path: Path, *, overwrite: bool) -> None:
         raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), str(path))
 
 
-def _created(path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # noqa: FBT001
+def _created(path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # ruff: ignore[boolean-type-hint-positional-argument]
     """Refuse an existing target unless overwriting, then open a new temporary file beside it."""
     _refuse_existing(path, overwrite=overwrite)
     handle, temporary = _temporary(path)
@@ -162,7 +158,7 @@ def _discarded(created: tuple[BinaryIO, Path]) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrite: bool) -> None:  # noqa: FBT001
+def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrite: bool) -> None:  # ruff: ignore[boolean-type-hint-positional-argument]
     """Write the last bytes of a completed download, close it, and give it its name."""
     file, temporary = created
     file.write(tail)
@@ -170,40 +166,20 @@ def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrit
     _commit(temporary, path, overwrite=overwrite)
 
 
-async def _waited(future: Future[int]) -> None:
-    """Wait on the event loop for a write on the worker."""
-    import asyncio  # noqa: PLC0415
-
-    await asyncio.wrap_future(future)
-
-
 class _Download:
-    """A download to a path: its disk worker, its temporary file once created, its unwritten bytes, and its write.
-
-    Chunks are kept until they fill a write of at least CHUNK bytes, which runs while the next ones are read. A write
-    whose outcome was taken gives way to the always finished `done`.
-    """
-
-    __slots__ = ("created", "done", "future", "parts", "size", "worker")
+    """One temporary download whose file operations finish sequentially."""
 
     def __init__(self, worker: DiskWorker) -> None:
-        from concurrent.futures import Future  # noqa: PLC0415
-
         self.worker = worker
         self.created: tuple[BinaryIO, Path] | None = None
         self.parts: list[bytes] = []
         self.size = 0
-        self.done: Future[int] = Future()
-        self.done.set_result(0)
-        self.future = self.done
 
     async def create(self, path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # noqa: FBT001
-        """Open the temporary file on the worker, keeping it to discard even when the call stops right after."""
-        self.created = created = await self.worker.run(_created, path, overwrite, discard=_discarded)
+        self.created = created = await self.worker.run(_created, path, overwrite)
         return created
 
     def add(self, chunk: bytes) -> bytes | None:
-        """Keep a chunk, and return the kept bytes once they fill a write."""
         self.parts.append(chunk)
         self.size += len(chunk)
         if self.size < CHUNK:
@@ -213,21 +189,8 @@ class _Download:
         return data
 
     async def discard(self) -> None:
-        """Let the last write settle, close and remove the unfinished file on the worker, then release the worker.
-
-        Every late failure of the download's disk work fails the discarding, so the call keeps it as secondary.
-        """
-        from .disk import raise_late  # noqa: PLC0415
-
-        try:
-            if (future := self.future) is not self.done:
-                self.worker.abandon(future)
-            late = await self.worker.settled(every=True)
-            if (created := self.created) is not None:
-                await self.worker.run(_discarded, created, cleanup=True)
-        finally:
-            self.worker.release()
-        raise_late(late)
+        if self.created is not None:
+            await self.worker.run(_discarded, self.created, cleanup=True)
 
 
 class _Raw(Generic[SourceT, HandleT]):
@@ -244,13 +207,12 @@ class _Raw(Generic[SourceT, HandleT]):
         "_operation_id",
         "_raw",
         "_retry_stop_reason",
-        "_scope",
         "_source",
         "_state",
         "_status_secondary_errors",
     )
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # ruff: ignore[too-many-arguments]
         self,
         info: ResponseInfo,
         decoder: ResponseDecoder[object],
@@ -259,13 +221,12 @@ class _Raw(Generic[SourceT, HandleT]):
         failure: Callable[[Exception], BaseException],
         *,
         source: SourceT,
-        scope: Scope[HandleT],
         events: CallEvents | None,
         call: LogicalCallContext,
         retry_stop_reason: RetryStopReason | None = None,
         status_secondary_errors: tuple[Exception, ...] = (),
     ) -> None:
-        """Keep the response metadata, how its status is classified, its call's limits, its body source, and scope.
+        """Keep response metadata, status classification, limits, body source, and resource release.
 
         A streaming handle of a call with hooks keeps its events, which report the stream's end once it was handed over.
         """
@@ -279,9 +240,12 @@ class _Raw(Generic[SourceT, HandleT]):
         self._operation_id = operation_id
         self._classify = failure
         self._source = source
-        self._scope = scope
         self._raw = self._body = b""
         self._state: State = "open"
+
+    def _save_status(self, body: bytes, raw: bytes) -> None:
+        self._body = body
+        self._raw = raw
 
     @property
     def info(self) -> ResponseInfo:
@@ -303,9 +267,7 @@ class _Raw(Generic[SourceT, HandleT]):
         return self._raw
 
     def _consumed(self, *, action: Action) -> BaseException:
-        """Return why a body that is not in memory cannot be read: its client closing, or its earlier consumption."""
-        if (closed := self._closing()) is not None:
-            return closed
+        """Return why a body that is not in memory cannot be read: its earlier consumption or explicit close."""
         state = self._state
         match state:
             case "consumed" | "closed" | "failed":
@@ -326,12 +288,6 @@ class _Raw(Generic[SourceT, HandleT]):
         self._state = "streaming"
         return ContentDecoder(self._info, self._operation_id)
 
-    def _closing(self) -> BaseException | None:
-        if (closed := self._scope.closing()) is None:
-            return None
-        closed.info = self._info
-        return self._failure(closed)
-
     def _failure(self, error: Exception) -> BaseException:
         if is_http_error(error):
             error.retry_stop_reason = self._retry_stop_reason
@@ -351,7 +307,7 @@ class _Raw(Generic[SourceT, HandleT]):
         return _Budget(limit, self._info, self._operation_id)
 
     def _check(self) -> None:
-        """Observe cancellation, client closing, and the active acquisition or stream deadline."""
+        """Observe the active acquisition or stream deadline."""
         try:
             self._call.check("stream" if self._call.streaming else "send", DeliveryState.RESPONSE_STARTED)
         except SDKError as error:
@@ -378,7 +334,11 @@ class _Raw(Generic[SourceT, HandleT]):
     def _saved_failure(self) -> BaseException:
         """Return the typed failure of a buffered response from its bounded error prefix."""
         limit, body = self._limits.max_error_body_bytes, self._body
-        error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit)
+        error = self._decoder.failure(
+            self._info,
+            body[:limit],
+            truncated=len(body) > limit,
+        )
         if is_http_error(error):
             error.retry_stop_reason = self._retry_stop_reason
             for secondary in self._status_secondary_errors:
@@ -405,11 +365,11 @@ class _Raw(Generic[SourceT, HandleT]):
 
 
 def checked(response: _Raw[SourceT, HandleT]) -> None:
-    """Raise what stops a response's call now, before using bytes it already read: cancellation, closing, or expiry.
+    """Raise what stops a response's call now, before using bytes it already read: expiry.
 
     A stream's expiry is its call's stream deadline, as on every read.
     """
-    response._check()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    response._check()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
 
 def held(response: RawResponse) -> Generator[bytes, None, None]:
@@ -417,36 +377,36 @@ def held(response: RawResponse) -> Generator[bytes, None, None]:
 
     A reader that stops at a terminal event of the body, or finds its end premature, decides how the stream ended.
     """
-    response._state = "streaming"  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    response._state = "streaming"  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
 
 def aheld(response: AsyncRawResponse) -> AsyncGenerator[bytes, None]:
     """Read an open asyncio streaming handle's decoded body, leaving its end to the reader, as `held` does."""
-    response._state = "streaming"  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    response._state = "streaming"  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
 
 def refused(response: RawResponse) -> None:
     """Close an open response its caller cannot use, whatever its status, raising its typed failure from its prefix."""
-    response._check()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    response._refuse(response._state)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    response._check()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    response._refuse(response._state)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
 
 async def arefused(response: AsyncRawResponse) -> None:
     """Close an open asyncio response its caller cannot use, as `refused` does."""
-    response._check()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    await response._refuse(response._state)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    response._check()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    await response._refuse(response._state)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
 
 def finished(response: RawResponse, error: BaseException | None = None) -> None:
     """End a held stream as read, or as failed with the reader's error, releasing it and reporting its end once."""
-    response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
 
 async def afinished(response: AsyncRawResponse, error: BaseException | None = None) -> None:
     """End a held asyncio stream as read, or as failed with the reader's error, as `finished` does."""
-    await response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    await response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
 
 class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
@@ -454,7 +414,12 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
 
     __slots__ = ("_close",)
 
-    def __init__(  # noqa: PLR0913
+    def buffered_status(self, body: bytes, raw: bytes) -> None:
+        """Retain a bounded status read and release the native response once."""
+        self._save_status(body, raw)
+        self._end("buffered")
+
+    def __init__(  # ruff: ignore[too-many-arguments]
         self,
         info: ResponseInfo,
         decoder: ResponseDecoder[object],
@@ -464,13 +429,12 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         *,
         source: Callable[[], Iterator[bytes]],
         close: Callable[[], None],
-        scope: Scope[RawResponse],
         call: LogicalCallContext,
         events: CallEvents | None = None,
         retry_stop_reason: RetryStopReason | None = None,
         status_secondary_errors: tuple[Exception, ...] = (),
     ) -> None:
-        """Keep the response metadata, its body source, the close that releases it, and its client's scope."""
+        """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
             info,
             decoder,
@@ -478,7 +442,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             operation_id,
             failure,
             source=source,
-            scope=scope,
             events=events,
             call=call,
             retry_stop_reason=retry_stop_reason,
@@ -595,7 +558,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                 budget.spend(len(chunk))
                 decoded.append(chunk)
             self._save(raw, decoded)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             failure = self._failure(error)
             self._end("failed", failure)
             raise failure from None
@@ -645,7 +608,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                 self._check()
                 budget.spend(len(chunk))
                 yield chunk
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             failure = self._failure(error)
             self._end("failed", failure)
             raise failure from None
@@ -669,7 +632,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                     break
         except ProtocolError as error:
             problem = error
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             failure = self._failure(error)
             self._end("failed", failure)
             return failure
@@ -680,31 +643,28 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         return self._failure(self._decoder.failure(self._info, b"".join(parts), truncated=truncated, problem=problem))
 
     def _end(self, state: State, error: BaseException | None = None) -> None:
-        """Enter a final state, releasing the connection and the handle's place in its scope once.
+        """Enter a final state, releasing the native connection once.
 
-        The close is taken under the scope's lock, as closing the client may end the handle while its reader does. A
+        A
         handed-over stream then reports its end to its call's hooks.
         """
         self._state = state
-        with self._scope.lock:
-            close, self._close = self._close, None
+        close, self._close = self._close, None
         if close is None:
             return
         failed: BaseException | None = None
         try:
             close()
-        except Exception as failure:  # noqa: BLE001
+        except Exception as failure:  # ruff: ignore[blind-except]
             if error is None:
-                failed = error = self._call.snapshot_error(
-                    failure if isinstance(failure, CleanupError) else CleanupError(cause=failure)
-                )
+                failed = error = self._call.snapshot_error(SDKError(reason="cleanup_failed", cause=failure))
                 failed.info = self._info
             else:
                 self._call.retry_blocked = True
-                cleanup_secondary(error, failure)
+                add_secondary(error, failure)
         except BaseException as interruption:
             if error is not None and not isinstance(error, Exception):
-                add_secondary(error, CleanupError(cause=interruption))
+                add_secondary(error, interruption)
                 self._released(error, early=state == "closed")
                 return
             self._released(interruption, early=state == "closed")
@@ -714,9 +674,8 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             raise failed
 
     def _released(self, error: BaseException | None, *, early: bool) -> None:
-        """Give up the handle's place in its scope, then report a handed-over stream's end to its call's hooks."""
+        """Report a handed-over stream's end after its native connection was released."""
         try:
-            self._scope.release_handle(self)
             if (events := self._events) is not None:
                 events.streamed(error, early=early)
         finally:
@@ -729,7 +688,12 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
 
     __slots__ = ("_close",)
 
-    def __init__(  # noqa: PLR0913
+    async def buffered_status(self, body: bytes, raw: bytes) -> None:
+        """Retain a bounded status read and release the native response once."""
+        self._save_status(body, raw)
+        await self._end("buffered")
+
+    def __init__(  # ruff: ignore[too-many-arguments]
         self,
         info: ResponseInfo,
         decoder: ResponseDecoder[object],
@@ -739,13 +703,12 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         *,
         source: Callable[[], AsyncIterator[bytes]],
         close: Callable[[], Awaitable[None]],
-        scope: Scope[AsyncRawResponse],
         call: LogicalCallContext,
         events: CallEvents | None = None,
         retry_stop_reason: RetryStopReason | None = None,
         status_secondary_errors: tuple[Exception, ...] = (),
     ) -> None:
-        """Keep the response metadata, its body source, the close that releases it, and its client's scope."""
+        """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
             info,
             decoder,
@@ -753,7 +716,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             operation_id,
             failure,
             source=source,
-            scope=scope,
             events=events,
             call=call,
             retry_stop_reason=retry_stop_reason,
@@ -813,13 +775,10 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         and removes the unfinished file before it propagates. Until then the download holds its client's close.
         """
         self._downloadable()
-        import asyncio  # noqa: PLC0415
 
-        from .disk import DiskWorker  # noqa: PLC0415 - Only a download to a path starts a disk thread.
+        from .disk import DiskWorker  # ruff: ignore[import-outside-top-level] - Only a download to a path starts a disk thread.
 
-        held = asyncio.Event()
-        self._scope.retain_cleanup(asyncio.create_task(held.wait()), owner=self._call)
-        worker = DiskWorker("AsyncRawResponse")
+        worker = DiskWorker()
         worker.acquire()
         download = _Download(worker)
         chunks: AsyncGenerator[bytes, None] | _SavedPieces | None = None
@@ -829,9 +788,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             async with aclosing(chunks):
                 async for chunk in chunks:
                     if (data := download.add(chunk)) is not None:
-                        await self._flushed(download)
-                        download.future = worker.submit(created[0].write, data)
-            await self._flushed(download)
+                        await worker.run(created[0].write, data)
             await worker.run(_committed, created, b"".join(download.parts), path, overwrite)
         except BaseException as error:
             try:
@@ -842,18 +799,9 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             raise
         finally:
             worker.close()
-            held.set()
-        worker.release()
-
-    async def _flushed(self, download: _Download) -> None:
-        """Wait for the download's last write, at once when it already ended, and raise its failure."""
-        if not (future := download.future).done():
-            await self._disk(partial(_waited, future))
-        download.future = download.done
-        future.result()
 
     async def _disk(self, operation: Callable[[], Awaitable[T]]) -> T:
-        """Await disk work: a saved body's at once, a stream's under its limits, except the idle one, and closing."""
+        """Await disk work under the stream limits and deadline; buffered bodies need no deadline."""
         if self._state == "buffered":
             return await operation()
         try:
@@ -926,7 +874,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                 budget.spend(len(chunk))
                 decoded.append(chunk)
             self._save(raw, decoded)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             failure = self._failure(error)
             await self._end("failed", failure)
             raise failure from None
@@ -936,7 +884,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         await self._end("buffered")
 
     async def _chunks(self) -> AsyncIterator[bytes]:
-        """Bound each native read by cancellation, closing, and the active call or stream limits."""
+        """Bound each native read by its active call or stream limits."""
         self._check()
         source = self._source()
         while True:
@@ -977,7 +925,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                 self._check()
                 budget.spend(len(chunk))
                 yield chunk
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             failure = self._failure(error)
             await self._end("failed", failure)
             raise failure from None
@@ -1001,7 +949,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                     break
         except ProtocolError as error:
             problem = error
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             failure = self._failure(error)
             await self._end("failed", failure)
             return failure
@@ -1012,23 +960,22 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         return self._failure(self._decoder.failure(self._info, b"".join(parts), truncated=truncated, problem=problem))
 
     async def _end(self, state: State, error: BaseException | None = None) -> None:
-        """Enter a final state, releasing the connection and the handle's place in its scope once.
+        """Enter a final state, releasing the native connection once.
 
         A handed-over stream then reports its end to its call's hooks.
         """
         self._state = state
-        with self._scope.lock:
-            close, self._close = self._close, None
+        close, self._close = self._close, None
         if close is None:
             return
         failed: BaseException | None = None
         try:
             await self._call.cleanup(close, error=error)
-        except Exception as failure:  # noqa: BLE001
+        except Exception as failure:  # ruff: ignore[blind-except]
             failed = error = self._failure(failure)
         except BaseException as interruption:
             if error is not None and not isinstance(error, Exception):
-                add_secondary(error, CleanupError(cause=interruption))
+                add_secondary(error, interruption)
                 await self._released(error, early=state == "closed")
                 return
             await self._released(interruption, early=state == "closed")
@@ -1038,9 +985,8 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             raise failed
 
     async def _released(self, error: BaseException | None, *, early: bool) -> None:
-        """Give up the handle's place in its scope, then report a handed-over stream's end to its call's hooks."""
+        """Report a handed-over stream's end after its native connection was released."""
         try:
-            self._scope.release_handle(self)
             if (events := self._events) is not None:
                 await events.astreamed(error, early=early)
         finally:

@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from ssl import SSLContext
 
     from ..client.timing import Deadline
-    from ..client.transports import AttemptIOContext
 
 __all__ = (
     "AsyncWebSocketConnection",
@@ -191,7 +190,7 @@ class WebSocketConnector(Protocol):
         self,
         request: WebSocketOpenRequest,
         *,
-        context: AttemptIOContext,
+        deadline: Deadline | None,
         options: ResolvedWSOptions,
         transport: ResolvedWebSocketTransportOptions,
     ) -> WebSocketConnection:
@@ -206,7 +205,7 @@ class AsyncWebSocketConnector(Protocol):
         self,
         request: WebSocketOpenRequest,
         *,
-        context: AttemptIOContext,
+        deadline: Deadline | None,
         options: ResolvedWSOptions,
         transport: ResolvedWebSocketTransportOptions,
     ) -> AsyncWebSocketConnection:

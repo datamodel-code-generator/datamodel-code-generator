@@ -14,6 +14,7 @@ from hashlib import sha256
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
 from uuid import uuid4
 
+import httpx2
 from typing_extensions import TypeVar
 
 from ..client.client import stored_value
@@ -22,7 +23,6 @@ from ..client.media import normalized
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
-from ..client.transports import PreparedRequest
 from ..model_codecs.unset import UNSET, Unset
 from .caches import CacheEntry, CacheResult, CacheSource
 from .errors import CacheProtocolError, CacheStoreError, CacheValidatorConflictError
@@ -32,7 +32,6 @@ from .records import canonical_json
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from ..client.bodies import EncodedAttempt
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.operations import OperationPlan
     from .caches import AsyncCacheStore, CacheStore
@@ -251,7 +250,7 @@ class _Fetch(Generic[T]):
             prepared.credential_headers,
         )
         credentials, partition = prepared.credentials, prepared.partition
-        headers = self.request.headers
+        headers = HeadersView(self.request.headers.multi_items())
         if (refused := next((name for name in _REFUSED if name in headers), None)) is not None:
             raise _invalid(plan, ("headers", refused))
         self.directives = _requested(plan, headers.get_all("cache-control"))
@@ -293,7 +292,7 @@ class _Fetch(Generic[T]):
         self.entry, plan = entry, self.plan
         if entry is None or entry.schema_fingerprint != plan.fingerprint or entry.status_code not in plan.statuses:
             return None
-        headers = self.request.headers
+        headers = HeadersView(self.request.headers.multi_items())
         if entry.vary_values != tuple(headers.get_all(name) for name in entry.vary):
             return None
         for header, stored in _VALIDATORS:
@@ -341,18 +340,19 @@ class _Fetch(Generic[T]):
             attempt_count=0,
         )
 
-    def conditional(self, entry: CacheEntry | None) -> PreparedRequest[EncodedAttempt]:
+    def conditional(self, entry: CacheEntry | None) -> httpx2.Request:
         """Return the request to send, adding the validator of a usable stale entry the caller did not give."""
         request = self.request
         self.requested_at = self.clock.time()
         validator = None if entry is None else _validator(self.plan, entry.headers)
         if validator is None or validator[0] in request.headers:
             return request
-        return PreparedRequest(
-            method=request.method,
-            url=request.url,
-            headers=HeadersView((*request.headers.items(), validator)),
-            body=request.body,
+        return httpx2.Request(
+            request.method,
+            request.url,
+            headers=[*request.headers.multi_items(), validator],
+            content=request.content,
+            extensions=dict(request.extensions),
         )
 
     @staticmethod
@@ -414,7 +414,7 @@ class _Fetch(Generic[T]):
         names = tuple(sorted(self.implicit.union(vary)))
         return {
             "vary": names,
-            "vary_values": tuple(self.request.headers.get_all(name) for name in names),
+            "vary_values": tuple(tuple(self.request.headers.get_list(name)) for name in names),
             "status_code": received.response.info.status_code,
             "headers": headers,
             "body": received.body,

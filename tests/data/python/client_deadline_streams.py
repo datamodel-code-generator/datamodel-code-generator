@@ -145,7 +145,7 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
     """Read generated raw handles over real TLS, then inject only interruption and same-turn race failures."""
     options = importlib.import_module(f"{package.__name__}.options")
     exchange = Exchange(lines)
-    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+    with exchange.client() as native_client_148, package.Client(http_client=native_client_148) as api:
         exchange.respond(_delayed(1.5))
         with api.with_streaming_response.request_raw(
             "GET",
@@ -179,7 +179,9 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
                 lines,
                 f"buffered acquisition {status}",
                 lambda: api.request_raw(
-                    "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=1, retry=options.RetryOptions(max_retries=0))
+                    "GET",
+                    "https://example.com/buffered",
+                    options=options.RequestOptions(total_timeout=1, retry=options.RetryOptions(max_retries=0)),
                 ),
             )
         token = options.CancelToken()
@@ -231,7 +233,11 @@ def _interruptions(package: ModuleType, lines: list[str]) -> None:
             response.cleanup = closing
             adapter.replies.append(lambda request, context: response)
             try:
-                with api.with_streaming_response.request_raw("GET", "https://example.com/interruption", options=options.RequestOptions(retry=options.RetryOptions(max_retries=0))) as raw:
+                with api.with_streaming_response.request_raw(
+                    "GET",
+                    "https://example.com/interruption",
+                    options=options.RequestOptions(retry=options.RetryOptions(max_retries=0)),
+                ) as raw:
                     if action == "iter_bytes":
                         list(raw.iter_bytes())
                     else:
@@ -247,7 +253,7 @@ def _http2(package: ModuleType, lines: list[str]) -> None:
     server = Http2Fixture(0)
     try:
         http = httpx2.Client(http1=False, http2=True, verify=server.client_context, trust_env=False)
-        with package.Client(http_client=http, http_client_ownership="owned") as api:
+        with package.Client(http_client=http) as api:
             warmed = api.request_raw("GET", server.url, options=options.RequestOptions(total_timeout=10))
             lines.append(f"  HTTP2 sync warm connection {warmed.read()!r}")
             server.delay = 1.5
@@ -265,7 +271,7 @@ def _http2(package: ModuleType, lines: list[str]) -> None:
 async def _async_streams(package: ModuleType, lines: list[str]) -> None:
     options = importlib.import_module(f"{package.__name__}.options")
     exchange = Exchange(lines)
-    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+    async with exchange.async_client() as native_client_268, package.AsyncClient(http_client=native_client_268) as api:
         exchange.respond(_delayed(1.5))
         async with api.with_streaming_response.request_raw(
             "GET",
@@ -298,7 +304,9 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             lines,
             "async buffered acquisition",
             lambda: api.request_raw(
-                "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=1, retry=options.RetryOptions(max_retries=0))
+                "GET",
+                "https://example.com/buffered",
+                options=options.RequestOptions(total_timeout=1, retry=options.RetryOptions(max_retries=0)),
             ),
         )
         token = options.CancelToken()
@@ -378,7 +386,11 @@ async def _async_interruptions(package: ModuleType, lines: list[str]) -> None:
             response.cleanup = closing
             adapter.replies.append(lambda request, context: response)
             try:
-                async with api.with_streaming_response.request_raw("GET", "https://example.com/interruption", options=options.RequestOptions(retry=options.RetryOptions(max_retries=0))) as raw:
+                async with api.with_streaming_response.request_raw(
+                    "GET",
+                    "https://example.com/interruption",
+                    options=options.RequestOptions(retry=options.RetryOptions(max_retries=0)),
+                ) as raw:
                     if action == "iter_bytes":
                         async for _ in raw.iter_bytes():
                             pass
@@ -409,7 +421,7 @@ async def _async_http2(package: ModuleType, lines: list[str]) -> None:
     server = Http2Fixture(0)
     try:
         http = httpx2.AsyncClient(http1=False, http2=True, verify=server.client_context, trust_env=False)
-        async with package.AsyncClient(http_client=http, http_client_ownership="owned") as api:
+        async with package.AsyncClient(http_client=http) as api:
             warmed = await api.request_raw("GET", server.url, options=options.RequestOptions(total_timeout=10))
             lines.append(f"  HTTP2 async warm connection {await warmed.read()!r}")
             server.delay = 1.5

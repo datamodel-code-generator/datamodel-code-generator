@@ -63,7 +63,6 @@ from tests.data.python.client_retry_boundaries import retry_boundaries
 from tests.data.python.client_retry_calls import retry_calls
 from tests.data.python.client_retry_errors import retry_errors
 from tests.data.python.client_retry_options import retry_options
-from tests.data.python.client_retry_ownership import retry_ownership
 from tests.data.python.client_retry_policy import retry_policy
 from tests.data.python.client_runtime import (
     Exchange,
@@ -88,7 +87,6 @@ from tests.data.python.client_stream_lifetimes import stream_lifetimes
 from tests.data.python.client_stream_resume import stream_resume
 from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_split, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
-from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import split_unions, unions
 from tests.data.python.client_uploads import upload_compression, uploads, uploads_oauth
 from tests.data.python.client_webhook_adapters import (
@@ -159,7 +157,7 @@ def _headers(package: ModuleType, lines: list[str]) -> None:
 
 def _errors(package: ModuleType, lines: list[str]) -> None:
     (errors,) = _modules(package, "errors")
-    record(lines, "error condition", lambda: errors.ConfigurationError(condition="Invalid Condition"))
+    record(lines, "error condition", lambda: errors.ConfigurationError(reason="invalid_value"))
     error = errors.SDKError()
     lines.append(
         f"  error bare {error} {error.reason_code} "
@@ -174,13 +172,9 @@ def _lifecycle(package: ModuleType, lines: list[str]) -> None:
     borrowed_http = httpx2.Client()
     with package.Client(http_client=borrowed_http):
         pass
-    transferred = httpx2.Client()
-    with package.Client(http_client=transferred, http_client_ownership="owned"):
-        pass
-    lines.append(f"  lifecycle borrowed closed {borrowed_http.is_closed} owned closed {transferred.is_closed}")
+    lines.append(f"  lifecycle borrowed closed {borrowed_http.is_closed}")
     borrowed_http.close()
     record(lines, "client http_client", lambda: package.Client(http_client="http"))
-    record(lines, "client ownership", lambda: package.Client(http_client_ownership="shared"))
     record(lines, "client options", lambda: package.Client(options="fast"))
 
 
@@ -210,7 +204,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
         )
     for label, responder, attempts in (
         ("error", json_response(500, {"code": 7, "message": "boom"}), 3),
-        ("error syntax", raw_response(500, b"{", "application/json"), 3),
+        ("error syntax", raw_response(500, b"{", "application/json"), 1),
         ("error media", raw_response(503, b"down", "text/plain"), 3),
         ("error bare", raw_response(502, b"down"), 3),
         ("redirect", raw_response(302, b"", Location="https://elsewhere.example.com"), 1),
@@ -242,7 +236,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
                     "header error",
                     lambda failure=failure: types.decode_list_pets_header(failure.info, name="X-Next"),
                 )
-    exchange.respond(*((raw_response(500, b"x" * 20, "application/json"),) * 3))
+    exchange.respond(raw_response(500, b"x" * 20, "application/json"))
     options = importlib.import_module(f"{package.__name__}.options")
     record(
         lines,
@@ -363,15 +357,15 @@ def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
         (httpx2.ConnectError, 1),
         (httpx2.ConnectTimeout, 3),
         (httpx2.PoolTimeout, 1),
-        (httpx2.WriteError, 3),
-        (httpx2.WriteTimeout, 3),
-        (httpx2.ReadTimeout, 3),
-        (httpx2.ReadError, 3),
+        (httpx2.WriteError, 1),
+        (httpx2.WriteTimeout, 1),
+        (httpx2.ReadTimeout, 1),
+        (httpx2.ReadError, 1),
         (httpx2.RemoteProtocolError, 1),
     ):
         exchange.respond(*(failing(error) for _ in range(attempts)))
         record(lines, f"transport {error.__name__}", lambda: api.pets.get_pet(pet_id=_pet(package, "getPet")))
-    exchange.respond(broken, broken, broken)
+    exchange.respond(broken)
     record(lines, "transport broken", lambda: api.pets.get_pet(pet_id=_pet(package, "getPet")))
 
 
@@ -379,11 +373,12 @@ def pets(package: ModuleType, lines: list[str]) -> None:
     """Call every pets operation synchronously, then its async client, covering each success and failure."""
     exchange = Exchange(lines)
     (options,) = _modules(package, "options")
-    with package.Client(
-        http_client=exchange.client(),
-        http_client_ownership="owned",
-        options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0)),
-    ) as api:
+    with (
+        exchange.client() as native_client_381,
+        package.Client(
+            http_client=native_client_381, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+        ) as api,
+    ):
         for step in (_list_pets, _create_pet, _get_pet, _upload, _limits, _transports):
             step(package, api, exchange, lines)
     _servers(package, None, exchange, lines)
@@ -412,12 +407,12 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
         )
         exchange.respond(failing(httpx2.ConnectError))
         await arecord(lines, "async connect", lambda: api.pets.get_pet(pet_id=pet))
-        exchange.respond(abroken, abroken, abroken)
+        exchange.respond(abroken)
         await arecord(lines, "async broken", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(raw_response(200, b"[" * 40, "application/json"))
         limited = options.RequestOptions(max_response_bytes=10)
         await arecord(lines, "async too large", lambda: api.pets.list_pets(x_trace=trace, options=limited))
-        exchange.respond(*((raw_response(500, b"x" * 40, "application/json"),) * 3))
+        exchange.respond(raw_response(500, b"x" * 40, "application/json"))
         truncated = options.RequestOptions(max_error_body_bytes=4)
         await arecord(lines, "async truncated", lambda: api.pets.list_pets(x_trace=trace, options=truncated))
     lines.append(f"  async borrowed closed {http.is_closed}")
@@ -426,9 +421,10 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
     await owned.aclose()
     await owned.aclose()
     transferred = exchange.async_client()
-    async with package.AsyncClient(http_client=transferred, http_client_ownership="owned"):
+    async with package.AsyncClient(http_client=transferred):
         pass
-    lines.append(f"  async owned closed {transferred.is_closed}")
+    lines.append(f"  async borrowed second closed {transferred.is_closed}")
+    await transferred.aclose()
     await arecord(lines, "async http_client", _async_invalid(package))
 
 
@@ -443,7 +439,7 @@ def media(package: ModuleType, lines: list[str]) -> None:
     """Send forms, pairs, documents, and notes, and decode forms, texts, documents, and object headers."""
     _, documents = _modules(package, "types.forms", "types.documents")
     exchange = Exchange(lines)
-    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+    with exchange.client() as native_client_440, package.Client(http_client=native_client_440) as api:
         form = request_body(package, "submitForm", None, {"name": "a b", "count": 2, "labels": ["x", "y"]})
         exchange.respond(
             raw_response(200, b"name=a+b&count=2", "application/x-www-form-urlencoded"),
@@ -632,7 +628,7 @@ def querystring(package: ModuleType, lines: list[str]) -> None:
             "page": 2,
         },
     )
-    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+    with exchange.client() as native_client_551, package.Client(http_client=native_client_551) as api:
         exchange.respond(json_response(200, ["a"]), json_response(200, []))
         record(lines, "search", lambda: api.default.search(criteria=criteria))
         record(lines, "search all", api.default.search)
@@ -644,7 +640,7 @@ def servers(package: ModuleType, lines: list[str]) -> None:
     """Resolve relative servers against their base, default server variables, and later servers by position."""
     (options,) = _modules(package, "options")
     exchange = Exchange(lines)
-    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+    with exchange.client() as native_client_563, package.Client(http_client=native_client_563) as api:
         exchange.respond(raw_response(204), raw_response(204), raw_response(204))
         record(lines, "status", api.default.get_status)
         record(lines, "regional", api.default.get_regional)
@@ -655,7 +651,7 @@ def servers(package: ModuleType, lines: list[str]) -> None:
 def default_server(package: ModuleType, lines: list[str]) -> None:
     """Send the generated User-Agent of a distribution to its default base URL."""
     exchange = Exchange(lines)
-    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+    with exchange.client() as native_client_574, package.Client(http_client=native_client_574) as api:
         exchange.respond(raw_response(204))
         record(lines, "status", api.default.get_status)
 
@@ -696,7 +692,7 @@ def paths(package: ModuleType, lines: list[str]) -> None:
     values reaches the operation; every other value, `...` and `.a` among them, is sent as data.
     """
     exchange = Exchange(lines)
-    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+    with exchange.client() as native_client_615, package.Client(http_client=native_client_615) as api:
         for method, values in _PATHS:
             call = partial(getattr(api.default, method), **_arguments(package, method, values))
             exchange.responders[:] = [raw_response(204)]
@@ -707,7 +703,7 @@ def paths(package: ModuleType, lines: list[str]) -> None:
 async def _async_paths(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     api: Any
-    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+    async with exchange.async_client() as native_client_626, package.AsyncClient(http_client=native_client_626) as api:
         for method, values in _PATHS:
             call = partial(getattr(api.default, method), **_arguments(package, method, values))
             exchange.responders[:] = [raw_response(204)]
@@ -746,11 +742,12 @@ def codings(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     pets = json.dumps([{"id": index, "name": "cat"} for index in range(4000)]).encode()
     (options,) = _modules(package, "options")
-    with package.Client(
-        http_client=exchange.client(),
-        http_client_ownership="owned",
-        options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0)),
-    ) as api:
+    with (
+        exchange.client() as native_client_665,
+        package.Client(
+            http_client=native_client_665, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+        ) as api,
+    ):
         pet, trace = _pet(package, "getPet"), _trace(package)
         for label, responder in (
             ("gzip", _coded("gzip", gzip.compress(_PET, mtime=0))),
@@ -801,7 +798,7 @@ def codings(package: ModuleType, lines: list[str]) -> None:
 
 async def _async_codings(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
     pet = _pet(package, "getPet")
-    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+    async with exchange.async_client() as native_client_714, package.AsyncClient(http_client=native_client_714) as api:
         exchange.respond(
             _coded("gzip, deflate", zlib.compress(gzip.compress(_PET, mtime=0))),
             _coded("identity", _PET),
@@ -844,7 +841,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "retry-errors": ("pets", ("pydantic_v2.BaseModel",), retry_errors),
     "retry-calls": ("retries", ("pydantic_v2.BaseModel",), retry_calls),
     "retry-boundaries": ("retries", ("pydantic_v2.BaseModel",), retry_boundaries),
-    "retry-ownership": ("pets", ("pydantic_v2.BaseModel",), retry_ownership),
     "retry-options": ("retries", ("pydantic_v2.BaseModel",), retry_options),
     "retry-policy": ("retries", ("pydantic_v2.BaseModel",), retry_policy),
     "redirects": ("retries", ("pydantic_v2.BaseModel",), redirects),
@@ -863,8 +859,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "default-server": ("default-server", ("pydantic_v2.BaseModel",), default_server),
     "paths": ("paths", ("pydantic_v2.BaseModel",), paths),
     "codings": ("pets", ("pydantic_v2.BaseModel",), codings),
-    "transports": ("pets", ("pydantic_v2.BaseModel",), transports),
-    "lifecycle": ("pets", ("pydantic_v2.BaseModel",), lifecycle),
     "raw": ("pets", ("pydantic_v2.BaseModel",), raw),
     "stream-lifetimes": ("pets", ("pydantic_v2.BaseModel",), stream_lifetimes),
     "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),

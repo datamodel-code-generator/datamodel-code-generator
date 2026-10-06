@@ -188,7 +188,11 @@ def _uploads_read(api: Any, exchange: Exchange, lines: list[str]) -> None:
     for label, status, parts in (
         ("upload read", 200, _UPLOAD_PARTS),
         ("upload read of its required parts", 200, (photo, title)),
-        ("upload read of scans", 201, ((_NAMED % b"note", b"n"), (_NAMED % b"scan-1", b"1"), (_NAMED % b"scan-2", b"2"))),
+        (
+            "upload read of scans",
+            201,
+            ((_NAMED % b"note", b"n"), (_NAMED % b"scan-1", b"1"), (_NAMED % b"scan-2", b"2")),
+        ),
         ("upload read of a photo and parts of any name", 202, (photo, (_NAMED % b"x", b"1"), (_NAMED % b"x", b"{}"))),
         ("upload read of a photo alone", 203, (photo,)),
     ):
@@ -200,7 +204,11 @@ def _uploads_read(api: Any, exchange: Exchange, lines: list[str]) -> None:
         ("upload read of a count that is no integer", 200, (title, photo, (_NAMED % b"count", b"x"))),
         ("upload read of an extra that is no integer", 200, (title, photo, (_NAMED % b"bonus", b"x"))),
         ("upload read of broken JSON", 200, (title, photo, (_NAMED % b"meta" + _JSON, b"{"))),
-        ("upload read of an address with other codes", 200, (title, photo, (_NAMED % b"meta" + _JSON, b'{"codes":["a"]}'))),
+        (
+            "upload read of an address with other codes",
+            200,
+            (title, photo, (_NAMED % b"meta" + _JSON, b'{"codes":["a"]}')),
+        ),
         ("upload read of its write-only secret", 200, (title, photo, (_NAMED % b"secret", b"s"))),
         (
             "upload read of a draft with its write-only secret",
@@ -375,15 +383,28 @@ def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         ("cover in text", (file("cover", b"x", content_type="text/plain", headers=limit),)),
         ("cover of a scan without its media type", (cover, file("scans", b"s"))),
         ("cover of an object as text", (cover, field("extra", {"k": 1}))),
-        ("cover of a note its charset cannot represent", (cover, field("note", "h\xe9llo", content_type="text/plain; charset=us-ascii"))),
+        (
+            "cover of a note its charset cannot represent",
+            (cover, field("note", "h\xe9llo", content_type="text/plain; charset=us-ascii")),
+        ),
     ):
         record(lines, label, lambda parts=parts: api.forms.submit_cover(body=body(parts)))
     exchange.respond(raw_response(204))
-    record(lines, "cover of an extra in UTF-16 text", lambda: api.forms.submit_cover(body=body((cover, field("extra", 7, content_type="text/plain; charset=utf-16")))))
+    record(
+        lines,
+        "cover of an extra in UTF-16 text",
+        lambda: api.forms.submit_cover(
+            body=body((cover, field("extra", 7, content_type="text/plain; charset=utf-16")))
+        ),
+    )
     card = request_body(package, "submitCard", None, {"title": "h\xe9llo", "count": 2, "tags": ["a", "b"]})
     exchange.respond(raw_response(204))
     record(lines, "card", lambda: api.forms.submit_card(body=card))
-    record(lines, "card of a tag its charset cannot represent", lambda: api.forms.submit_card(body=request_body(package, "submitCard", None, {"tags": ["\xe9"]})))
+    record(
+        lines,
+        "card of a tag its charset cannot represent",
+        lambda: api.forms.submit_card(body=request_body(package, "submitCard", None, {"tags": ["\xe9"]})),
+    )
 
 
 def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -422,7 +443,9 @@ def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
     record(
         lines,
         "album of UTF-16 tags",
-        lambda: api.forms.submit_album(body=body((photo, field("tags", ["x", "y"], content_type="text/plain; charset=utf-16")))),
+        lambda: api.forms.submit_album(
+            body=body((photo, field("tags", ["x", "y"], content_type="text/plain; charset=utf-16")))
+        ),
     )
     record(
         lines,
@@ -447,7 +470,10 @@ def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         ("album of bounds whose extra is named as another member", (photo, clash, field("title", "t"))),
         ("album of another member named as a bound's extra", (photo, field("title", "t"), clash)),
         ("album of a tag holding its delimiter", (photo, field("tags", ["a b"]))),
-        ("album of tags their named charset cannot represent", (photo, field("tags", ["\xe9"], content_type="text/plain; charset=us-ascii"))),
+        (
+            "album of tags their named charset cannot represent",
+            (photo, field("tags", ["\xe9"], content_type="text/plain; charset=us-ascii")),
+        ),
     ):
         record(lines, label, lambda parts=parts: api.forms.submit_album(body=body(parts)))
 
@@ -543,7 +569,7 @@ def split_parts(package: ModuleType, lines: list[str]) -> None:
     """
     bodies = importlib.import_module(f"{package.__name__}.bodies")
     exchange = Exchange(lines)
-    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+    with exchange.client() as native_client_546, package.Client(http_client=native_client_546) as api:
         parts = [bodies.FilePart("photo", b"\x89PNG")]
         for name in ("note", "spare"):
             value = record(

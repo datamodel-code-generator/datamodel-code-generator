@@ -66,22 +66,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ._async_client import AsyncClient
-    from ._client import Client
+    from ._async_client import AsyncClient, AsyncClientView
+    from ._client import Client, ClientView
 
-__all__ = ["AsyncClient", "Client"]
+__all__ = ["AsyncClient", "AsyncClientView", "Client", "ClientView"]
 
 
 def __getattr__(name: str) -> object:
     """Import a client on first use, so importing the package loads no HTTP runtime."""
-    if name == "Client":
-        from ._client import Client
+    if name in {"Client", "ClientView"}:
+        from . import _client
 
-        return Client
-    if name == "AsyncClient":
-        from ._async_client import AsyncClient
+        return getattr(_client, name)
+    if name in {"AsyncClient", "AsyncClientView"}:
+        from . import _async_client
 
-        return AsyncClient
+        return getattr(_async_client, name)
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
 '''
@@ -113,7 +113,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ._runtime.client.options import (
-    CancelToken,
     ClientOptions,
     Clock,
     Deadline,
@@ -135,7 +134,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "UNSET",
-    "CancelToken",
     "ClientOptions",
     "Clock",
     "Deadline",
@@ -172,7 +170,6 @@ def __dir__() -> list[str]:
 _AUTH_NAMES: Final = (
     "AccessToken",
     "ApiKeyCredential",
-    "AsyncCloseableCredentialProvider",
     "AsyncCredentialProvider",
     "AsyncEnvironmentCredentialProvider",
     "AsyncRefreshableTokenProvider",
@@ -182,13 +179,11 @@ _AUTH_NAMES: Final = (
     "AuthConfig",
     "BasicCredential",
     "BearerCredential",
-    "CloseableCredentialProvider",
     "CredentialContext",
     "CredentialMaterial",
     "CredentialProvider",
     "CredentialProviderInput",
     "EnvironmentCredentialProvider",
-    "OwnedCredentialProvider",
     "RefreshableTokenProvider",
     "RequestSigner",
     "SignatureFields",
@@ -217,8 +212,6 @@ _AUTH: Final = (
     + "]\n"
 )
 _ERROR_NAMES: Final = (
-    "AdapterContractError",
-    "AdapterExecutionError",
     "APIConnectionError",
     "APIStatusError",
     "APITimeoutError",
@@ -226,7 +219,6 @@ _ERROR_NAMES: Final = (
     "AuthError",
     "AuthReason",
     "BadRequestError",
-    "CleanupError",
     "ConfigurationError",
     "ConflictError",
     "DecodeError",
@@ -240,11 +232,9 @@ _ERROR_NAMES: Final = (
     "ProtocolSizeError",
     "ProtocolStoreError",
     "RateLimitError",
-    "RequestCancelledError",
     "RetryStopReason",
     "SDKError",
     "UnprocessableEntityError",
-    "UnsupportedAsyncBackendError",
     "UnsupportedContentCodingError",
     "WebhookVerificationError",
 )
@@ -507,29 +497,8 @@ _BODIES: Final = (
     + "".join(f"    {name!r},\n" for name in sorted((*_BODY_NAMES, *_MULTIPART_NAMES, "FormData")))
     + "]\n"
 )
-_TRANSPORT_NAMES: Final = (
-    "AsyncTransportAdapter",
-    "AsyncTransportResponse",
-    "AttemptIOContext",
-    "IOPhase",
-    "OwnedTransportAdapter",
-    "PreparedRequest",
-    "ResolvedTimeoutOptions",
-    "TransportAdapter",
-    "TransportCapabilities",
-    "TransportResponse",
-    "TransportTraceSink",
-)
-_TRANSPORTS: Final = (
-    '"""Transport adapters: how the clients hand each request to an HTTP implementation."""\n\n'
-    "from ._runtime.client.transports import (\n"
-    + "".join(f"    {name},\n" for name in _TRANSPORT_NAMES)
-    + ")\n\n__all__ = [\n"
-    + "".join(f"    {name!r},\n" for name in _TRANSPORT_NAMES)
-    + "]\n"
-)
 _SYNC_LIFECYCLE: Final = '''    def close(self) -> None:
-        """Stop new calls, wait for the active ones, and close the owned transport; a view stops only its calls."""
+        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
         self._core.close()
 
     def __enter__(self) -> {result}:
@@ -543,9 +512,14 @@ _SYNC_LIFECYCLE: Final = '''    def close(self) -> None:
         traceback: {traceback} | None,
     ) -> None:
         """Close this client."""
-        self.close()'''
+        try:
+            self.close()
+        except BaseException as error:
+            if exc is None:
+                raise
+            {secondary}(exc, error)'''
 _ASYNC_LIFECYCLE: Final = '''    async def aclose(self) -> None:
-        """Stop new calls, wait for the active ones, and close the owned transport; a view stops only its calls."""
+        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
         await self._core.aclose()
 
     async def __aenter__(self) -> {result}:
@@ -559,7 +533,12 @@ _ASYNC_LIFECYCLE: Final = '''    async def aclose(self) -> None:
         traceback: {traceback} | None,
     ) -> None:
         """Close this client."""
-        await self.aclose()'''
+        try:
+            await self.aclose()
+        except BaseException as error:
+            if exc is None:
+                raise
+            {secondary}(exc, error)'''
 
 
 @dataclass(frozen=True, slots=True)
@@ -1004,7 +983,7 @@ class _Typing:
 class _Resources(_Typing):
     """Render the root clients and the resource modules with their typed operation methods."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # ruff: ignore[too-many-arguments]
         self,
         plan: ClientPlan,
         codecs: CodecPlan,
@@ -1044,7 +1023,13 @@ class _Resources(_Typing):
             (resource, f"{prefix}{resource.pascal}Resource", f".resources.{resource.namespace}._{mode}")
             for resource in self.plan.roots
         ]
-        names = {f"{prefix}Client", f"{prefix}ClientWithStreamingResponse", f"{prefix}ProtocolHelpers", "_DEFAULTS"}
+        names = {
+            f"{prefix}Client",
+            f"{prefix}ClientView",
+            f"{prefix}ClientWithStreamingResponse",
+            f"{prefix}ProtocolHelpers",
+            "_DEFAULTS",
+        }
         module = Module({*names, *(name for _, name, _ in roots)}, self.symbols, level=1)
         lazy = [(name, path) for _, name, path in roots]
         protocols = f"{prefix}ProtocolHelpers" if self.helpers or self.streams or self.sockets else None
@@ -1057,10 +1042,7 @@ class _Resources(_Typing):
             "http_client": f"{module.namespace.module('httpx2')}.{prefix}Client",
             "unset": module.local("_runtime.model_codecs.unset", "Unset"),
             "unset_value": module.local("_runtime.model_codecs.unset", "UNSET"),
-            "literal": module.name("typing", "Literal"),
             "core": module.local("_runtime.client.client", f"{prefix}ClientCore"),
-            "adapter": module.local("transports", f"{prefix}TransportAdapter"),
-            "owned_adapter": module.local("transports", "OwnedTransportAdapter"),
             "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
             "raw": module.local("responses", f"{prefix}RawResponse"),
@@ -1069,7 +1051,9 @@ class _Resources(_Typing):
             "coroutine": "async " if asynchronous else "",
             "wait": "await " if asynchronous else "",
             "lifecycle": (_ASYNC_LIFECYCLE if asynchronous else _SYNC_LIFECYCLE).format(
-                result=module.name("typing_extensions", "Self"), traceback=module.name("types", "TracebackType")
+                result=module.name("typing_extensions", "Self"),
+                traceback=module.name("types", "TracebackType"),
+                secondary=module.local("_runtime.client.errors", "add_secondary"),
             ),
         }
         imports = module.imports()
@@ -1304,7 +1288,7 @@ class _Resources(_Typing):
             variants.append(((_Argument("response_media_type", "str"),), self.successes(spec)))
         return variants, (parameters, self.successes(spec))
 
-    def branches(  # noqa: PLR0913
+    def branches(  # ruff: ignore[too-many-arguments]
         self,
         module: Module,
         spec: OperationSpec,
@@ -1963,7 +1947,7 @@ _CACHE_OPTIONS: Final = (("cache_options", ".", "CacheOptions"), _HELPER_OPTIONS
 _DEFAULT_STATUSES: Final = [200]
 
 
-class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
+class _Helpers:  # ruff: ignore[too-many-public-methods] - It renders every helper kind of a package.
     """Render the protocol helpers of a client package: their plans and their sync and asyncio namespaces."""
 
     def __init__(self, resources: _Resources, fingerprints: Mapping[str, str]) -> None:
@@ -2058,7 +2042,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         return self.accessor(module, f"_items_{index}", self.page(module, spec), returns, what, spec.steps)
 
     @staticmethod
-    def accessor(  # noqa: PLR0913, PLR0917
+    def accessor(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         module: Module, name: str, data: str, returns: str, what: str, steps: tuple[ItemStep, ...]
     ) -> str:
         """Return a typed accessor reading a value through its steps, returning None where an optional step is None."""
@@ -2205,7 +2189,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             f"(pointer={operation.contract.id.use_site.pointer!r})"
         )
 
-    def polling(self, module: Module, index: int, spec: PollingSpec) -> list[str]:  # noqa: PLR0914
+    def polling(self, module: Module, index: int, spec: PollingSpec) -> list[str]:  # ruff: ignore[too-many-locals]
         """Return a polling helper's result accessors and its plan.
 
         The plan names the create, poll, and result operations, the states, the bindings, the interval, and the
@@ -2285,7 +2269,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         head = f"CANCEL_{index}: {module.name('typing', 'Final')}[{plan}[{self.response(module, cancel)}]] = "
         return head + layout(_call(plan, entries), 0, len(head), WIDTH)
 
-    def module(self, *, asynchronous: bool) -> str:  # noqa: PLR0914
+    def module(self, *, asynchronous: bool) -> str:  # ruff: ignore[too-many-locals]
         """Return the sync or asyncio module of the helper namespaces and the helpers."""
         prefix = "Async" if asynchronous else ""
         root = f"{prefix}ProtocolHelpers"
@@ -2361,7 +2345,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             sections=sections,
         )
 
-    def leaf(  # noqa: PLR0913
+    def leaf(  # ruff: ignore[too-many-arguments]
         self,
         module: Module,
         index: int,
@@ -2406,7 +2390,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         )
         return "\n\n".join((head, *members))
 
-    def methods(self, module: Module, index: int, spec: PaginationSpec, *, asynchronous: bool) -> list[str]:  # noqa: PLR0914
+    def methods(self, module: Module, index: int, spec: PaginationSpec, *, asynchronous: bool) -> list[str]:  # ruff: ignore[too-many-locals]
         """Return a pagination helper's page, iterate, next_page, and resume methods."""
         operation = replace(spec.operation, fields=())
         resources = self.resources
@@ -2633,7 +2617,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{result}, {self.page(module, spec)}]] = "
         return head + layout(_call(plan, entries), 0, len(head), WIDTH)
 
-    def upload_methods(self, module: Module, index: int, spec: UploadSpec, *, asynchronous: bool) -> list[str]:  # noqa: PLR0914
+    def upload_methods(self, module: Module, index: int, spec: UploadSpec, *, asynchronous: bool) -> list[str]:  # ruff: ignore[too-many-locals]
         """Return an upload helper's start and resume methods, which return the handle that appends its chunks."""
         operation = replace(spec.operation, fields=())
         resources = self.resources
@@ -2931,7 +2915,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 class ClientRenderer:
     """Render every module of one client package from its plan, codec plan, and wire plan."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # ruff: ignore[too-many-arguments]
         self,
         *,
         config: ClientGenerationConfig,
@@ -3154,7 +3138,7 @@ Import `Client` and `AsyncClient` from `{self.config.package}` and the records b
 `UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
 sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
 `timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None` and
-`deadline=None` clear their own limits. `cleanup_timeout` remains positive and finite.
+`deadline=None` clear their own limits.
 
 | Setting | Effective default |
 |---|---|
@@ -3166,13 +3150,12 @@ sets and tuples replace the inherited collection. `retry=None` and `redirects=No
 | respect Retry-After / retry pool timeout | True / False |
 | redirects / maximum redirects / 303 conversion | False / 5 / False |
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
-| stream idle / stream total / cleanup | 60 seconds / None / 5 seconds |
+| stream idle / stream total | 60 seconds / None |
 | maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
 Zero retries permits only the initial resource attempt. `Deadline.after(seconds)` shares an absolute monotonic expiry
-across calls; the earlier of that expiry and the relative total timeout wins. `CancelToken` is thread-safe and remains
-cancelled once signalled. Sync callbacks, DNS, I/O, and cleanup are cooperative and may return after a deadline. Async
-SDK waits enforce their budgets.
+across calls; the earlier of that expiry and the relative total timeout wins. Each attempt receives its remaining
+phase timeout. Callbacks and cleanup are cooperative and may return after a deadline.
 Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
 `ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
 `OAuthProviderOptions(clock=...)` does so for a provider, and `Deadline.after(seconds, clock=...)` creates a deadline
@@ -3181,7 +3164,7 @@ on that clock. Waits still pass in real time, so a test clock skips one by advan
 ## Retry decisions and delays
 
 GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PATCH require an explicit idempotent
-declaration or a valid key contract. Proven unsent failures from the SDK-owned native transport may permit an
+declaration or a valid key contract. ConnectError, ConnectTimeout, and PoolTimeout from native send may permit an
 otherwise unsafe retry; `retry_safety="never"` forbids every resend. All candidates still need replayable input.
 Pool timeouts need explicit `retry_on_pool_timeout=True`. TLS/configuration/permanent DNS errors, callback failures,
 decoding failures, cancellation, and logical deadlines are not retry candidates. Phase timeouts can be candidates.
@@ -3228,7 +3211,7 @@ stripped on an origin change. Invalid/multiple Location, loops, limits, and reje
 with the reason `redirect_refused`, no redirect body, and delivery/response metadata when available.
 
 `TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
-http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
+http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.
 SDK-created HTTP clients honor proxy and CA environment settings with trust_env=True, preserving native system
 trust. With trust_env=False, HTTPX2 environment configuration is disabled while native TLS trust behavior is
 preserved. Caller ssl_context or verify=False controls origin TLS; injected native clients retain their settings and
@@ -3239,10 +3222,8 @@ view, or request options to bound them; `None` removes an inherited cap. For buf
 `raise_for_status()` applies the error-prefix cap.
 An SSLContext supplies TLS settings and conflicts with any explicit verify override.
 HTTP/2 is explicit and requires its dependency. Injected native clients retain their pool/proxy/TLS construction;
-incompatible construction settings are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter`
-transfers adapter ownership.
-`retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
-contract and disables SDK retries. The default SDK-owned native transport disables native internal retries.
+incompatible construction settings are rejected. Borrowed clients stay caller owned. Root close is idempotent and
+closes only the native client the SDK created. Request views share that root and have no close method.
 
 ## Explicit authentication and signing
 
@@ -3269,9 +3250,9 @@ its async counterpart has the same explicit selection. Imports and constructors 
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
 Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
-Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
-Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
-Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are
+Provider contexts carry current origin/deadline/requirements, and audience is currently None.
+Providers retain their caller's lifetime. Views share the root's native HTTP client.
+Provider and signer callbacks consume the call deadline; synchronous callbacks are
 cooperative and cannot be forcibly terminated. Wrong callback modes fail before I/O, with no implicit offload.
 
 Anonymous operations and `request_raw` send no credentials by default. Opt in with `send_on_anonymous=True` and
@@ -3317,11 +3298,11 @@ bounded raw bytes. `AuthError` names its `reason`, `DecodeError` a request argum
 declaration, and `ConfigurationError` a refused setting or call. Safe error representations omit key/body/header
 values.
 
-A limiter permit is acquired before opening a body and released when its response is released. Cleanup has its own
-bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
-possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
-wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
-{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""  # noqa: S608
+A limiter permit is acquired before opening a body and released when its response is released. Resource release
+runs in finally; secondary failures stay beside the primary failure. Root close refuses new calls from the root
+and its views, closes a created native client once, and leaves borrowed clients and providers caller owned.
+Native task cancellation propagates unchanged, and user callbacks are not shielded.
+{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""  # ruff: ignore[hardcoded-sql-expression]
 
     def _compression_runtime(self) -> str:
         """Describe request compression, or that no operation of the package accepts a request coding."""
@@ -3614,8 +3595,8 @@ discriminator maps it to; data that does not decode raises `StreamDecodeError`, 
 completion; an end before it raises `StreamInterruptedError`, a cut frame `IncompleteFrameError`, and a broken
 connection `StreamInterruptedError` with its transport failure as the cause. A helper that does not declare `resume`
 never reconnects, and `StreamOptions(reconnect=True)` raises `ConfigurationError` for it. Close a stream with
-`with`, `async with`, or `close()`; leaving a loop early does not release its response, and closing the client with a
-stream open raises `CleanupError` once its cleanup timeout passes.
+`with`, `async with`, or `close()`; leaving a loop early does not release its response. A root close does not drain
+active streams; each stream releases its own response and limiter permit.
 {lines}{_RESUMED if resumed else ""}"""
 
     def socket_runtime(self) -> str:
@@ -3726,7 +3707,6 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("auth.py"), "auth", _AUTH),
             self.file(PurePosixPath("bodies.py"), "bodies", _BODIES),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs()),
-            self.file(PurePosixPath("transports.py"), "transports", _TRANSPORTS),
             self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _PROTOCOLS),
             self.file(PurePosixPath("resources", "__init__.py"), "package", '"""The resources of the clients."""\n'),
         ]

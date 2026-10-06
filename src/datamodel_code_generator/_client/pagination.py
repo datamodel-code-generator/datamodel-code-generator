@@ -176,7 +176,7 @@ def _json_type(value: object) -> str:
 
 
 def _listed(kinds: list[str]) -> str:
-    return kinds[0] if len(kinds) == 1 else f"{', '.join(kinds[:-1])}{',' if len(kinds) > 2 else ''} or {kinds[-1]}"  # noqa: PLR2004
+    return kinds[0] if len(kinds) == 1 else f"{', '.join(kinds[:-1])}{',' if len(kinds) > 2 else ''} or {kinds[-1]}"  # ruff: ignore[magic-value-comparison]
 
 
 def _fits(kind: str, accepted: frozenset[str] | None) -> bool:
@@ -186,7 +186,7 @@ def _fits(kind: str, accepted: frozenset[str] | None) -> bool:
 def _branches(value: FinalPythonType) -> bool:
     """Return whether a type is a union of several types or a mapping, which no accessor reads through."""
     return isinstance(value, UnionType) or (
-        isinstance(value, GenericType) and value.tuple_form != "fixed" and len(value.arguments) == 2  # noqa: PLR2004
+        isinstance(value, GenericType) and value.tuple_form != "fixed" and len(value.arguments) == 2  # ruff: ignore[magic-value-comparison]
     )
 
 
@@ -203,7 +203,7 @@ def _sequence(value: FinalPythonType) -> bool:
 class _Pages:
     """Check and plan every enabled pagination helper of a client target."""
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         protocols: Protocols,
         plan: ClientPlan,
@@ -414,7 +414,7 @@ class _Pages:
             return None
         return reached.steps, item
 
-    def read(  # noqa: PLR0913, PLR0917
+    def read(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -603,7 +603,7 @@ class _Pages:
             message = f"The {chosen} of {name!r} reads {_listed(others)} values, where only {expected} values fit"
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec)
 
-    def fits(  # noqa: PLR0913, PLR0917
+    def fits(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -772,7 +772,7 @@ def _child(location: SourceLocation, token: str) -> SourceLocation:
     return SourceLocation(location.document, f"{location.pointer}/{token}", location.role)
 
 
-def plan_pagination(  # noqa: PLR0913, PLR0917
+def plan_pagination(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
     protocols: Protocols | None,
     plan: ClientPlan,
     facts: ModelFacts,

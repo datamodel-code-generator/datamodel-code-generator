@@ -945,7 +945,7 @@ def _extra(location: SourceLocation) -> SourceLocation:
     return SourceLocation(location.document, f"{location.pointer}/additionalProperties", "schema")
 
 
-def _sent(  # noqa: PLR0913
+def _sent(  # ruff: ignore[too-many-arguments]
     wire: WirePlan,
     schemas: Mapping[tuple[SourceDocumentId, str, Direction], TypeUseBinding],
     use: TypeUseBinding,
@@ -1040,7 +1040,7 @@ def _received(
     ), additional
 
 
-def _read(  # noqa: PLR0913
+def _read(  # ruff: ignore[too-many-arguments]
     wire: WirePlan,
     schemas: Mapping[tuple[SourceDocumentId, str, Direction], TypeUseBinding],
     body: TypeUseBinding,

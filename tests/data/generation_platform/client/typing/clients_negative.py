@@ -7,19 +7,9 @@ from typing import BinaryIO
 
 from pets import AsyncClient, Client
 from pets.auth import OAuthProviderOptions
-from pets.errors import (
-    APIStatusError,
-    APITimeoutError,
-    AuthError,
-    ConfigurationError,
-    DecodeError,
-    DeliveryState,
-    RequestCancelledError,
-    SDKError,
-)
+from pets.errors import APIConnectionError, APITimeoutError, ConfigurationError, DeliveryState, SDKError
 from pets.hooks import AsyncLimiter, AsyncPermit, Limiter, LimiterContext, Permit
 from pets.options import (
-    CancelToken,
     ClientOptions,
     Clock,
     Deadline,
@@ -31,7 +21,6 @@ from pets.options import (
     TransportOptions,
 )
 from pets.responses import RawResponse, ResponseInfo
-from pets.transports import OwnedTransportAdapter
 from pets.types.pets import decode_list_pets_header
 from pets_models import (
     FieldPetsGetHeaderXTraceParameter,
@@ -55,10 +44,10 @@ def misuse(client: Client, trace: FieldPetsGetHeaderXTraceParameter, pet: FieldP
 
 
 def misuse_transports(client: Client, adapter: object) -> None:
-    from clients import Adapter, AsyncAdapter
+    import httpx2
 
-    Client(transport_adapter=OwnedTransportAdapter(AsyncAdapter()))  # error
-    AsyncClient(transport_adapter=Adapter())  # error
+    Client(http_client=httpx2.AsyncClient())  # error
+    AsyncClient(http_client=httpx2.Client())  # error
     client.with_options(None)  # error
     del adapter
 
@@ -115,13 +104,12 @@ def misuse_hooks() -> None:
     RequestOptions(context={"tags": ["a"]})  # error
 
 
-def misuse_timing(deadline: Deadline, token: CancelToken, phase: TimeoutOptions, context: LimiterContext) -> None:
+def misuse_timing(deadline: Deadline, phase: TimeoutOptions, context: LimiterContext) -> None:
     Deadline.after("soon")  # error
     TimeoutOptions(connect="slow")  # error
     ClientOptions(timeout=30)  # error
     RequestOptions(total_timeout="soon")  # error
     RequestOptions(deadline=60)  # error
-    RequestOptions(cancel_token=True)  # error
     RequestOptions(stream_idle_timeout="forever")  # error
     RequestOptions(stream_total_timeout="forever")  # error
     deadline.at = 0  # error
@@ -131,7 +119,6 @@ def misuse_timing(deadline: Deadline, token: CancelToken, phase: TimeoutOptions,
     RequestOptions(clock=Clock())  # error
     ClientOptions(clock=None)  # error
     OAuthProviderOptions(clock=object())  # error
-    token.cancelled = True  # error
     phase.read = 1  # error
     context.remaining_timeout = 0  # error
 
@@ -145,15 +132,12 @@ def misuse_limiters(sync: Limiter, asynchronous: AsyncLimiter, permit: Permit, a
     del wrong_sync, wrong_async, wrong_permit, wrong_async_permit
 
 
-def misuse_deadline_errors(error: SDKError) -> None:
-    state = DeliveryState.NOT_SENT
-    APITimeoutError(effective_timeout="1", delivery_state=state)  # error
-    RequestCancelledError(source="asyncio", delivery_state=state)  # error
-    AuthError(reason="expired")  # error
-    DecodeError(direction="request")  # error
-    APIStatusError(body=b"")  # error
+def misuse_native_errors(error: SDKError) -> None:
+    APITimeoutError(phase="not-a-phase", delivery_state=DeliveryState.NOT_SENT)  # error
+    APIConnectionError(delivery_state="NOT_SENT")  # error
     SDKError(attempt_count="one")  # error
-    error.attempt_count = "zero"  # error
+    error.attempt_count = "one"  # error
+    error.elapsed = "soon"  # error
 
 
 def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: ConfigurationError) -> None:
@@ -170,7 +154,6 @@ def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: Configu
     RequestOptions(transport=TransportOptions())  # error
     ClientOptions(transport=None)  # error
     TransportOptions(verify="strict")  # error
-    TransportOptions(retry_owner="native")  # error
     IdempotencyKey()  # error
     IdempotencyKey("opaque", None)  # error
     key.value = "changed"  # error

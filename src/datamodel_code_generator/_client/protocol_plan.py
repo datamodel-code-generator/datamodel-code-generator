@@ -63,7 +63,7 @@ def plan_protocols(request: TargetRequest, source: Path | ProtocolConfiguration 
     """
     if source is None:
         return None
-    from datamodel_code_generator._client.protocols import load_protocols  # noqa: PLC0415
+    from datamodel_code_generator._client.protocols import load_protocols  # ruff: ignore[import-outside-top-level]
 
     helpers, base, problems = load_protocols(source, request.cwd)
     resolver = _Resolver(request, base)

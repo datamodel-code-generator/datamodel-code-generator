@@ -720,8 +720,8 @@ def _key_inheritance(package: ModuleType, options: ModuleType, lines: list[str])
             http_client=native,
             options=options.ClientOptions(idempotency_key=client_key, retry=options.RetryOptions(initial_delay=0)),
         ) as api,
-        api.with_options(options.RequestOptions(idempotency_key=view_key)) as view,
     ):
+        view = api.with_options(options.RequestOptions(idempotency_key=view_key))
         for layer, current, key in (("client", api, client_key), ("view", view, view_key)):
             for surface, declared, label, request in _key_cases(options, key):
                 before = len(reply.keys)
@@ -773,8 +773,8 @@ async def _async_key_inheritance(package: ModuleType, options: ModuleType, lines
             http_client=native,
             options=options.ClientOptions(idempotency_key=client_key, retry=options.RetryOptions(initial_delay=0)),
         ) as api,
-        api.with_options(options.RequestOptions(idempotency_key=view_key)) as view,
     ):
+        view = api.with_options(options.RequestOptions(idempotency_key=view_key))
         for layer, current, key in (("client", api, client_key), ("view", view, view_key)):
             for surface, declared, label, request in _key_cases(options, key):
                 before = len(reply.keys)
