@@ -12,7 +12,7 @@
   responses closed=True borrowed closed=False
 file source change remains terminal
   > POST https://api.example.com/files
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0, content-length: 0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   first advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', expected_size=10, actual_size=3) [condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_source_changed_error [expected_size=10, actual_size=3]
   checkpoint confirmed=0 phase=uploading
   advance after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='advance') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
@@ -24,7 +24,7 @@ file source change remains terminal
   stored u1: 0 bytes, original=False
 async file source change remains terminal
   > POST https://api.example.com/files
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0, content-length: 0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   first advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', expected_size=10, actual_size=3) [condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] upload_source_changed_error [expected_size=10, actual_size=3]
   checkpoint confirmed=0 phase=uploading
   advance after restore ! ProtocolStateError: ProtocolStateError(state='source_changed', action='advance') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
