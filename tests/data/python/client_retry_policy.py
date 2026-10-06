@@ -5,15 +5,15 @@ from __future__ import annotations
 import importlib
 import math
 from functools import partial
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Any, Final
 from uuid import UUID
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, arecord, record, run
+from tests.data.python.client_runtime import Exchange, arecord, failing, record, run
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import AsyncIterator, Callable, Iterator
     from types import ModuleType
 
 
@@ -28,23 +28,6 @@ class _Events:
                 for name in ("name", "attempt_index", "status", "sent", "outcome", "retry_reason", "attempt_count")
             )
         )
-
-
-class _FaultAdapter:
-    def __init__(self, transports: ModuleType, failure: Exception) -> None:
-        self.capabilities = transports.TransportCapabilities(
-            internal_retry_limit=0, delivery_evidence=False, http_versions=("HTTP/1.1",)
-        )
-        self.failure = failure
-        self.sends = 0
-
-    def send(self, request: object, context: object) -> NoReturn:
-        del request, context
-        self.sends += 1
-        raise self.failure
-
-    def close(self) -> None:
-        pass
 
 
 class _Clock:
@@ -369,35 +352,201 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
         )
 
 
-def _fault_gates(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    errors = importlib.import_module(f"{package.__name__}.errors")
-    transports = importlib.import_module(f"{package.__name__}.transports")
-    outcome = partial(_outcome, error_type=errors.SDKError)
-    cause = OSError("injected I/O failure")
-    for label, phase, owner, method, declared_unsent, pool in (
-        ("unclassified before owner", "unknown", "transport", "get_never", False, False),
-        ("owner before never", "read", "transport", "get_never", False, False),
-        ("custom read candidate", "read", "sdk", "get_safe", False, False),
-        ("custom write candidate", "write", "sdk", "get_safe", False, False),
-        ("custom unsent cannot bypass safety", "read", "sdk", "post_unsafe", True, False),
-        ("never applies to unsent", "read", "sdk", "post_never", True, False),
-        ("pool default excluded", "pool", "sdk", "get_safe", True, False),
-        ("pool explicitly enabled", "pool", "sdk", "get_safe", True, True),
+_UNSENT: Final = (httpx2.ConnectError, httpx2.ConnectTimeout, httpx2.PoolTimeout)
+_STARTED: Final = (
+    httpx2.WriteError,
+    httpx2.WriteTimeout,
+    httpx2.ReadError,
+    httpx2.ReadTimeout,
+    httpx2.RemoteProtocolError,
+)
+
+
+class _Attempt:
+    """A body attempt that sends a first chunk, then fails as its source breaks while the request is on the wire."""
+
+    content_length = None
+    content_type = "application/octet-stream"
+
+    def iter_bytes(self) -> Iterator[bytes]:
+        yield b"partial"
+        message = "body source failed mid-send"
+        raise OSError(message)
+
+    async def aiter_bytes(self) -> AsyncIterator[bytes]:
+        for chunk in self.iter_bytes():
+            yield chunk
+
+    def close(self) -> None:
+        pass
+
+    async def aclose(self) -> None:
+        pass
+
+
+def _delivered(result: object) -> tuple[object, ...]:
+    """Describe a delivery outcome: the error class and reason, delivery state, phase, stop reason, attempts, cause."""
+    if not isinstance(result, BaseException):
+        return getattr(result, "data", None), getattr(getattr(result, "info", None), "attempt_count", None)
+    return (
+        type(result).__name__,
+        getattr(result, "reason", None),
+        str(getattr(result, "delivery_state", None)),
+        getattr(result, "phase", None),
+        getattr(result, "retry_stop_reason", None),
+        getattr(result, "attempt_count", None),
+        type(getattr(result, "cause", None)).__name__,
+    )
+
+
+def _calls(api: Any, options: ModuleType) -> tuple[tuple[str, Callable[[], Any]], ...]:
+    """Return the safe, keyed, unsafe, and never-retried operations a delivery failure is reported through."""
+    key = options.RequestOptions(idempotency_key=options.IdempotencyKey("delivery-key"))
+    return (
+        ("get_safe", api.retry.with_response.get_safe),
+        ("post_keyed", lambda: api.retry.with_response.post_keyed(body=b"payload", options=key)),
+        ("post_unsafe", lambda: api.retry.with_response.post_unsafe(body=b"payload")),
+        ("get_never", api.retry.with_response.get_never),
+    )
+
+
+def _delivery_cases(options: ModuleType) -> Iterator[tuple[str, type[httpx2.TransportError], object]]:
+    """Yield each native failure with the request options that leave one retry available."""
+    request = options.RequestOptions(retry=options.RetryOptions(max_retries=1))
+    for error in (*_UNSENT, *_STARTED):
+        yield error.__name__, error, request
+    pool = options.RequestOptions(retry=options.RetryOptions(max_retries=1, retry_on_pool_timeout=True))
+    yield "PoolTimeout enabled", httpx2.PoolTimeout, pool
+
+
+def _delivery(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Classify native failures by class: only an unsent request may be resent, and only by an eligible operation."""
+    exchange = Exchange([])
+    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+    with exchange.client() as native, package.Client(http_client=native, options=config) as api:
+        for label, error, request in _delivery_cases(options):
+            for name, call in _calls(api.with_options(request), options):
+                exchange.respond(failing(error), _response(200))
+                lines.append(f"  native {label} {name} = {_delivered(_failed(call))} unused={len(exchange.responders)}")
+                exchange.responders.clear()
+    _started(package, options, lines)
+
+
+async def _adelivery(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    exchange = Exchange([])
+    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
+        for label, error, request in _delivery_cases(options):
+            for name, call in _calls(api.with_options(request), options):
+                exchange.respond(failing(error), _response(200))
+                result = _delivered(await _afailed(call))
+                lines.append(f"  async native {label} {name} = {result} unused={len(exchange.responders)}")
+                exchange.responders.clear()
+    await _astarted(package, options, lines)
+
+
+def _dropped(request: httpx2.Request) -> httpx2.Response:
+    """Fail on the server after it read the whole request, so the client loses the connection without a response."""
+    del request
+    message = "server lost the request after reading it"
+    raise ConnectionResetError(message)
+
+
+def _started(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Fail real TLS exchanges after their send started and observe that the server receives each request once."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    exchange, opened = Exchange(lines), []
+
+    def factory(context: Any) -> _Attempt:
+        opened.append(context.attempt_index)
+        return _Attempt()
+
+    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_retries=1))
+    with exchange.client() as native, package.Client(http_client=native, options=config) as api:
+        for name, call in _calls(api, options)[:2]:
+            exchange.respond(_dropped, _response(200))
+            record(lines, f"server dropped {name}", lambda call=call: _delivered(_failed(call)))
+            lines.append(f"    unused={len(exchange.responders)}")
+            exchange.responders.clear()
+        exchange.respond(_response(200))
+        key = options.RequestOptions(idempotency_key=options.IdempotencyKey("delivery-key"))
+        record(
+            lines,
+            "body fails mid-send",
+            lambda: _delivered(_failed(lambda: api.retry.post_keyed(body=bodies.BodyFactory(factory), options=key))),
+        )
+        lines.append(f"    opened={opened} unused={len(exchange.responders)}")
+        exchange.responders.clear()
+    exchange = Exchange(lines)
+    pool = options.ClientOptions(
+        retry=options.RetryOptions(initial_delay=0, max_retries=1), timeout=options.TimeoutOptions(pool=0.05)
+    )
+    with exchange.client(connections=1) as native, package.Client(http_client=native, options=pool) as api:
+        exchange.respond(_response(200))
+        with api.retry.with_streaming_response.get_safe() as held:
+            for enabled in (False, True):
+                request = options.RequestOptions(retry=options.RetryOptions(retry_on_pool_timeout=enabled))
+                record(
+                    lines,
+                    f"held pool retry_on_pool_timeout={enabled}",
+                    lambda request=request: _delivered(_failed(lambda: api.retry.get_safe(options=request))),
+                )
+            record(lines, "held response still readable", held.read)
+
+
+def _failed(call: Callable[[], object]) -> object:
+    """Return a call's result, or the ordinary failure it raised."""
+    try:
+        return call()
+    except Exception as error:  # noqa: BLE001
+        return error
+
+
+async def _afailed(call: Callable[[], Any]) -> object:
+    """Return an async call's result, or the ordinary failure it raised."""
+    try:
+        return await call()
+    except Exception as error:  # noqa: BLE001
+        return error
+
+
+async def _astarted(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    exchange, opened = Exchange(lines), []
+
+    async def factory(context: Any) -> _Attempt:  # noqa: RUF029
+        opened.append(context.attempt_index)
+        return _Attempt()
+
+    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_retries=1))
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
+        for name, call in _calls(api, options)[:2]:
+            exchange.respond(_dropped, _response(200))
+            lines.append(f"  async server dropped {name} = {_delivered(await _afailed(call))}")
+            lines.append(f"    unused={len(exchange.responders)}")
+            exchange.responders.clear()
+        exchange.respond(_response(200))
+        key = options.RequestOptions(idempotency_key=options.IdempotencyKey("delivery-key"))
+        body = bodies.AsyncBodyFactory(factory)
+        result = await _afailed(lambda: api.retry.post_keyed(body=body, options=key))
+        lines.append(f"  async body fails mid-send = {_delivered(result)}")
+        lines.append(f"    opened={opened} unused={len(exchange.responders)}")
+        exchange.responders.clear()
+    exchange = Exchange(lines)
+    pool = options.ClientOptions(
+        retry=options.RetryOptions(initial_delay=0, max_retries=1), timeout=options.TimeoutOptions(pool=0.05)
+    )
+    async with (
+        exchange.async_client(connections=1) as native,
+        package.AsyncClient(http_client=native, options=pool) as api,
     ):
-        state = errors.DeliveryState.NOT_SENT if declared_unsent else errors.DeliveryState.MAYBE_SENT
-        failure = (
-            errors.APITimeoutError(phase=phase, delivery_state=state, effective_timeout=0.01, cause=cause)
-            if phase == "pool"
-            else errors.APIConnectionError(phase=phase, delivery_state=state, cause=cause)
-        )
-        adapter = _FaultAdapter(transports, failure)
-        configured = options.ClientOptions(
-            transport=options.TransportOptions(retry_owner=owner),
-            retry=options.RetryOptions(initial_delay=0, max_retries=1, retry_on_pool_timeout=pool),
-        )
-        with package.Client(transport_adapter=adapter, options=configured) as api:
-            record(lines, label, lambda method=method: outcome(getattr(api.retry.with_response, method)))
-        lines.append(f"    sends={adapter.sends} cause-retained={failure.cause is cause}")
+        exchange.respond(_response(200))
+        async with api.retry.with_streaming_response.get_safe() as held:
+            for enabled in (False, True):
+                request = options.RequestOptions(retry=options.RetryOptions(retry_on_pool_timeout=enabled))
+                result = await _afailed(lambda request=request: api.retry.get_safe(options=request))
+                lines.append(f"  async held pool retry_on_pool_timeout={enabled} = {_delivered(result)}")
+            await arecord(lines, "async held response still readable", held.read)
 
 
 def _bodies(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -599,6 +748,7 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
             f"retries={sum(event[0] == 'retry_scheduled' for event in events.values)} "
             f"unused={len(exchange.responders)}"
         )
+    await _adelivery(package, options, lines)
 
 
 def retry_policy(package: ModuleType, lines: list[str]) -> None:
@@ -608,7 +758,7 @@ def retry_policy(package: ModuleType, lines: list[str]) -> None:
     _hints(package, options, lines)
     _server_delays(package, options, lines)
     _keys(package, options, lines)
-    _fault_gates(package, options, lines)
+    _delivery(package, options, lines)
     _bodies(package, options, lines)
     _timing(package, options, lines)
     _frozen_retries(package, options, lines)

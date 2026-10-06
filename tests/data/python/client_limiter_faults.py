@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-import importlib
-from typing import TYPE_CHECKING, NoReturn, Protocol
+from typing import TYPE_CHECKING
 
 import httpx2
 
@@ -19,11 +18,20 @@ from tests.data.python.client_limiters import (
     _SemaphoreLimiter,
     _modules,
 )
-from tests.data.python.client_runtime import Exchange, aoutcome, arecord, argument, outcome, raw_response, record, run
-from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response
+from tests.data.python.client_runtime import (
+    Exchange,
+    aoutcome,
+    arecord,
+    argument,
+    injected,
+    outcome,
+    raw_response,
+    record,
+    run,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterator
+    from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
     from types import ModuleType
 
 _PET = b'{"id":3,"name":"fox"}'
@@ -68,65 +76,36 @@ class _ForeignAsyncPermit:
         self.released += 1
 
 
-class _BodyToClose(Protocol):
-    def iter_bytes(self) -> Iterator[bytes]: ...
+class _ClosingStream(httpx2.SyncByteStream, httpx2.AsyncByteStream):
+    """A response body whose native close fails after it counts the close."""
 
-    def close(self) -> None: ...
+    def __init__(self) -> None:
+        self.closes = 0
 
+    def __iter__(self) -> Iterator[bytes]:
+        yield _PET
 
-class _AsyncBodyToClose(Protocol):
-    def aiter_bytes(self) -> AsyncIterator[bytes]: ...
-
-    async def aclose(self) -> None: ...
-
-
-class _Request(Protocol):
-    @property
-    def body(self) -> _BodyToClose | None: ...
-
-
-class _AsyncRequest(Protocol):
-    @property
-    def body(self) -> _AsyncBodyToClose | None: ...
-
-
-class _AdapterState:
-    """A faulty adapter that fails after cleaning up its request body."""
-
-    def __init__(self, transports: ModuleType) -> None:
-        self.capabilities = transports.TransportCapabilities(
-            internal_retry_limit=0, delivery_evidence=False, http_versions=("HTTP/1.1",)
-        )
-        self.sent = 0
-        self.content = b""
-
-
-class _ClosingAdapter(_AdapterState):
-    def send(self, request: _Request, context: object) -> NoReturn:
-        del context
-        self.sent += 1
-        if (body := request.body) is not None:
-            self.content = b"".join(body.iter_bytes())
-            body.close()
-            body.close()
-        raise RuntimeError("Adapter failed after body cleanup")
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        yield _PET
 
     def close(self) -> None:
-        pass
-
-
-class _AsyncClosingAdapter(_AdapterState):
-    async def send(self, request: _AsyncRequest, context: object) -> NoReturn:
-        del context
-        self.sent += 1
-        if (body := request.body) is not None:
-            self.content = b"".join([chunk async for chunk in body.aiter_bytes()])
-            await body.aclose()
-            await body.aclose()
-        raise RuntimeError("Adapter failed after body cleanup")
+        self.closes += 1
+        msg = "close failed"
+        raise RuntimeError(msg)
 
     async def aclose(self) -> None:
-        pass
+        self.close()
+
+
+def _closing(stream: _ClosingStream) -> object:
+    return injected(lambda _: httpx2.Response(200, headers={"content-type": "application/json"}, stream=stream))
+
+
+def _sent_then_failed(request: httpx2.Request) -> httpx2.Response:
+    """Fail in the transport after the whole request body was read from the SDK."""
+    del request
+    msg = "Transport failed after reading the body"
+    raise RuntimeError(msg)
 
 
 class _FaultBody(_Body):
@@ -214,62 +193,81 @@ def _sync_callbacks(package: ModuleType, lines: list[str]) -> None:
 
 
 def _sync_response_cleanup(package: ModuleType, lines: list[str]) -> None:
-    options, _, types = _modules(package)
-    transports = importlib.import_module(f"{package.__name__}.transports")
-    responses = importlib.import_module(f"{package.__name__}.responses")
+    options, _, _ = _modules(package)
     pet = argument(package, "getPet", "path", "petId", 3)
     for failure in (None, RuntimeError("Permit close failed")):
         limiter = _SemaphoreLimiter(release_failure=failure)
-        adapter = Adapter(transports, lines)
-        response = Response(
-            lines, 200, responses.HeadersView((("content-type", "application/json"),)), (_PET,), close_error=True
-        )
-        adapter.replies.append(lambda request, context: response)
-        with package.Client(transport_adapter=adapter, options=options.ClientOptions(limiter=limiter)) as api:
-            try:
-                api.pets.get_pet(pet_id=pet)
-            except Exception as error:
-                cause = getattr(error, "cause", None)
-                record(
-                    lines,
-                    f"response close failure with permit failure={failure is not None}",
-                    lambda: (
-                        type(error).__name__,
-                        type(cause).__name__,
-                        tuple(type(item).__name__ for item in getattr(error, "secondary_errors", ())),
-                        not hasattr(cause, "add_note")
-                        or bool(getattr(cause, "__notes__", ())) == (failure is not None),
-                    ),
-                )
-        lines.append(f"    {limiter.usage.report}")
+        exchange, stream = Exchange(lines), _ClosingStream()
+        exchange.respond(_closing(stream))
+        with (
+            exchange.client() as native,
+            package.Client(http_client=native, options=options.ClientOptions(limiter=limiter)) as api,
+        ):
+            record(
+                lines,
+                f"response close failure with permit failure={failure is not None}",
+                lambda api=api: _close_failure(_raised(lambda: api.pets.get_pet(pet_id=pet)), failure),
+            )
+        lines.append(f"    closes={stream.closes} {limiter.usage.report}")
+
+
+def _raised(call: Callable[[], object]) -> Exception | None:
+    try:
+        call()
+    except Exception as error:  # noqa: BLE001
+        return error
+    return None
+
+
+async def _araised(call: Callable[[], Awaitable[object]]) -> Exception | None:
+    try:
+        await call()
+    except Exception as error:  # noqa: BLE001
+        return error
+    return None
+
+
+def _close_failure(error: Exception | None, failure: BaseException | None) -> tuple[object, ...]:
+    """Describe a failed response close, the classes of its cause and secondaries, and where the permit failure went."""
+    if error is None:
+        return ("returned",)
+    cause = getattr(error, "cause", None)
+    return (
+        type(error).__name__,
+        type(cause).__name__,
+        tuple(type(item).__name__ for item in getattr(error, "secondary_errors", ())),
+        not hasattr(cause, "add_note") or bool(getattr(cause, "__notes__", ())) == (failure is not None),
+    )
 
 
 def _sync_body_cleanup(package: ModuleType, lines: list[str]) -> None:
     options, bodies, _ = _modules(package)
-    transports = importlib.import_module(f"{package.__name__}.transports")
     limiter = _SemaphoreLimiter()
     factory = _Factory(limiter.usage)
-    adapter = _ClosingAdapter(transports)
-    with package.Client(transport_adapter=adapter, options=options.ClientOptions(limiter=limiter)) as api:
+    exchange = Exchange(lines)
+    exchange.respond(injected(_sent_then_failed))
+    with (
+        exchange.client() as native,
+        package.Client(http_client=native, options=options.ClientOptions(limiter=limiter)) as api,
+    ):
         record(
             lines,
-            "adapter closes body before failure",
+            "transport fails after reading the body",
             lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.BodyFactory(factory.open)),
         )
-    lines.append(
-        f"    sent={adapter.sent} content={adapter.content!r} factory={factory.opened}/{factory.closed} {limiter.usage.report}"
-    )
+    lines.append(f"    factory={factory.opened}/{factory.closed} {limiter.usage.report}")
     exchange = Exchange(lines)
     exchange.respond(raw_response(200, _PNG, "image/png"))
-    http = exchange.client()
     limiter = _SemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
     factory = _FaultFactory(limiter.usage)
-    with package.Client(http_client=http, options=options.ClientOptions(limiter=limiter)) as api:
+    with (
+        exchange.client() as native,
+        package.Client(http_client=native, options=options.ClientOptions(limiter=limiter)) as api,
+    ):
         lines.append(
             f"  body and permit close failure: {outcome(lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.BodyFactory(factory.open)))}"
         )
     lines.append(f"    factory={factory.opened}/{factory.closed} {limiter.usage.report}")
-    http.close()
 
 
 async def _async(package: ModuleType, lines: list[str]) -> None:
@@ -317,64 +315,49 @@ async def _async_callbacks(package: ModuleType, lines: list[str]) -> None:
 
 
 async def _async_response_cleanup(package: ModuleType, lines: list[str]) -> None:
-    options, _, types = _modules(package)
-    transports = importlib.import_module(f"{package.__name__}.transports")
-    responses = importlib.import_module(f"{package.__name__}.responses")
+    options, _, _ = _modules(package)
     pet = argument(package, "getPet", "path", "petId", 3)
     for failure in (None, RuntimeError("Permit close failed")):
         limiter = _AsyncSemaphoreLimiter(release_failure=failure)
-        adapter = AsyncAdapter(transports, lines)
-        response = AsyncResponse(
-            lines, 200, responses.HeadersView((("content-type", "application/json"),)), (_PET,), close_error=True
-        )
-        adapter.replies.append(lambda request, context: response)
-        async with package.AsyncClient(
-            transport_adapter=adapter, options=options.ClientOptions(limiter=limiter)
-        ) as api:
-            try:
-                await api.pets.get_pet(pet_id=pet)
-            except Exception as error:
-                cause = getattr(error, "cause", None)
-                record(
-                    lines,
-                    f"async response close failure with permit failure={failure is not None}",
-                    lambda: (
-                        type(error).__name__,
-                        type(cause).__name__,
-                        tuple(type(item).__name__ for item in getattr(error, "secondary_errors", ())),
-                        not hasattr(cause, "add_note")
-                        or bool(getattr(cause, "__notes__", ())) == (failure is not None),
-                    ),
-                )
-        lines.append(f"    {limiter.usage.report}")
+        exchange, stream = Exchange(lines), _ClosingStream()
+        exchange.respond(_closing(stream))
+        async with (
+            exchange.async_client() as native,
+            package.AsyncClient(http_client=native, options=options.ClientOptions(limiter=limiter)) as api,
+        ):
+            observed = _close_failure(await _araised(lambda api=api: api.pets.get_pet(pet_id=pet)), failure)
+        record(lines, f"async response close failure with permit failure={failure is not None}", lambda: observed)
+        lines.append(f"    closes={stream.closes} {limiter.usage.report}")
 
 
 async def _async_body_cleanup(package: ModuleType, lines: list[str]) -> None:
     options, bodies, _ = _modules(package)
-    transports = importlib.import_module(f"{package.__name__}.transports")
     limiter = _AsyncSemaphoreLimiter()
     factory = _Factory(limiter.usage)
-    adapter = _AsyncClosingAdapter(transports)
-    async with package.AsyncClient(transport_adapter=adapter, options=options.ClientOptions(limiter=limiter)) as api:
+    exchange = Exchange(lines)
+    exchange.respond(injected(_sent_then_failed))
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(http_client=native, options=options.ClientOptions(limiter=limiter)) as api,
+    ):
         await arecord(
             lines,
-            "async adapter closes body before failure",
+            "async transport fails after reading the body",
             lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.AsyncBodyFactory(factory.aopen)),
         )
-    lines.append(
-        f"    sent={adapter.sent} content={adapter.content!r} factory={factory.opened}/{factory.closed} {limiter.usage.report}"
-    )
+    lines.append(f"    factory={factory.opened}/{factory.closed} {limiter.usage.report}")
     exchange = Exchange(lines)
     exchange.respond(raw_response(200, _PNG, "image/png"))
-    http = exchange.async_client()
     limiter = _AsyncSemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
     factory = _FaultFactory(limiter.usage)
-    async with package.AsyncClient(http_client=http, options=options.ClientOptions(limiter=limiter)) as api:
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(http_client=native, options=options.ClientOptions(limiter=limiter)) as api,
+    ):
         lines.append(
             f"  async body and permit close failure: {await aoutcome(lambda: api.pets.photos.upload(pet_id=_photo(package), body=bodies.AsyncBodyFactory(factory.aopen)))}"
         )
     lines.append(f"    factory={factory.opened}/{factory.closed} {limiter.usage.report}")
-    await http.aclose()
 
 
 async def _native_priority(package: ModuleType, lines: list[str]) -> None:
@@ -391,7 +374,7 @@ async def _native_priority(package: ModuleType, lines: list[str]) -> None:
                     await asyncio.Event().wait()
                 except asyncio.CancelledError:
                     body.stopped.set()
-                    raise httpx2.ReadError("Adapter failed after cancellation", request=request) from None
+                    raise httpx2.ReadError("Transport failed after cancellation", request=request) from None
             return httpx2.Response(200, headers={"content-type": "application/json"}, stream=body)
 
         async with httpx2.AsyncClient(transport=httpx2.MockTransport(failing)) as http:
@@ -414,7 +397,7 @@ async def _native_priority(package: ModuleType, lines: list[str]) -> None:
                     await caller
                 except BaseException as error:
                     lines.append(
-                        f"  {mode} native cancellation before adapter failure={type(error).__name__} stopped={body.stopped.is_set()}"
+                        f"  {mode} transport failure after cancellation={type(error).__name__} stopped={body.stopped.is_set()}"
                     )
                 if mode == "stream-read":
                     await manager.__aexit__(None, None, None)
