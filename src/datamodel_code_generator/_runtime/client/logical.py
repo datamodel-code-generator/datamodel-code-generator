@@ -10,7 +10,9 @@ from uuid import uuid4
 import anyio
 
 from .errors import (
+    APIConnectionError,
     APITimeoutError,
+    AuthError,
     DeadlinePhase,
     DeliveryState,
     SDKError,
@@ -85,11 +87,16 @@ class LogicalCallContext:
         self.delivery_state = DeliveryState.NOT_SENT
 
     def snapshot_error(self, error: ErrorT) -> ErrorT:
-        """Attach the call's identity, how far it got, and its final execution measurements."""
-        error.delivery_state = self.furthest()
+        """Attach the call's identity and final execution measurements to an error to publish.
+
+        An error without its own delivery evidence, NOT_SENT, takes how far the call got; a transport failure keeps its
+        own classification and an auth failure the evidence of its own exchange.
+        """
         error.operation_id = self.operation_id
         error.call_id = self.call_id
         error.parent_session_id = self.parent_session_id
+        if error.delivery_state is DeliveryState.NOT_SENT and not isinstance(error, (APIConnectionError, AuthError)):
+            error.delivery_state = self.furthest()
         if error.info is None:
             error.attempt_count = self.attempt_count
             error.elapsed = max(0.0, self.monotonic() - self.started)
