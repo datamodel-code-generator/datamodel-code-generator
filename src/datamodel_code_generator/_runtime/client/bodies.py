@@ -808,7 +808,7 @@ class _AsyncOpenFile:
             raise
         try:
             length = await self.worker.run(_remaining, self.file)
-        except BaseException as error:
+        except BaseException as error:  # noqa: BLE001
             failure = _failed(error) if isinstance(error, OSError) else error
             try:
                 await self.release()
@@ -1142,7 +1142,7 @@ class _AsyncFileCall:
     async def capture(self) -> None:
         try:
             self._offset, self._length = await self._source.worker.run(_snapshot, self._source.file)
-        except BaseException as error:
+        except BaseException as error:  # noqa: BLE001
             failure = (
                 DecodeError(cause=error, reason="factory", direction="request", location=("body",))
                 if isinstance(error, OSError)

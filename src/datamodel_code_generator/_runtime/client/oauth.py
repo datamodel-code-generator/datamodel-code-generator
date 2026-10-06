@@ -617,7 +617,7 @@ class AsyncTokenEndpoint:
         if (provider := self.authentication.secret) is not None:
             try:
                 secret = _secret_value(await provider.get(_secret_context(self.endpoint.origin, session.deadline)))
-            except Exception as error:  # ruff: ignore[blind-except]
+            except Exception as error:  # noqa: BLE001
                 raise _provider_failure(error) from None
         if session.deadline.remaining() <= 0:
             return expired(session, DeliveryState.NOT_SENT)

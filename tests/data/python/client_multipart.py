@@ -568,7 +568,7 @@ def split_parts(package: ModuleType, lines: list[str]) -> None:
     """
     bodies = importlib.import_module(f"{package.__name__}.bodies")
     exchange = Exchange(lines)
-    with exchange.client() as native_client_546, package.Client(http_client=native_client_546) as api:
+    with exchange.client() as http, package.Client(http_client=http) as api:
         parts = [bodies.FilePart("photo", b"\x89PNG")]
         for name in ("note", "spare"):
             value = record(

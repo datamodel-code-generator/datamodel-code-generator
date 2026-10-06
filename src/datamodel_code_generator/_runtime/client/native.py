@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Final, Literal
 
 import httpx2
 
@@ -14,6 +14,13 @@ if TYPE_CHECKING:
     from .errors import IOPhase
     from .options import ResolvedTransportOptions
     from .timing import ResolvedTimeoutOptions
+
+_PHASES: Final[tuple[tuple[tuple[type[httpx2.TransportError], ...], IOPhase], ...]] = (
+    ((httpx2.ConnectError, httpx2.ConnectTimeout), "connect"),
+    ((httpx2.PoolTimeout,), "pool"),
+    ((httpx2.ReadError, httpx2.ReadTimeout), "read"),
+    ((httpx2.WriteError, httpx2.WriteTimeout), "write"),
+)
 
 
 def attempt_timeout(phases: ResolvedTimeoutOptions, remaining: float | None) -> httpx2.Timeout:
@@ -42,19 +49,25 @@ def native_error(error: Exception, *, send_started: bool, response_started: bool
     if isinstance(error, SDKError):
         error.delivery_state = state
         return error
-    phase: IOPhase = (
-        "connect"
-        if isinstance(error, (httpx2.ConnectError, httpx2.ConnectTimeout))
-        else "pool"
-        if isinstance(error, httpx2.PoolTimeout)
-        else "read"
-        if isinstance(error, (httpx2.ReadError, httpx2.ReadTimeout))
-        else "write"
-        if isinstance(error, (httpx2.WriteError, httpx2.WriteTimeout))
-        else "unknown"
-    )
-    cls = APITimeoutError if isinstance(error, httpx2.TimeoutException) else APIConnectionError
-    return cls(phase=phase, delivery_state=state, cause=error)
+    phase = next((phase for kinds, phase in _PHASES if isinstance(error, kinds)), "unknown")
+    if isinstance(error, httpx2.TimeoutException):
+        return APITimeoutError(
+            phase=phase,
+            reason="phase_timeout",
+            effective_timeout=_expired_cap(error, phase),
+            delivery_state=state,
+            cause=error,
+        )
+    return APIConnectionError(phase=phase, delivery_state=state, cause=error)
+
+
+def _expired_cap(error: httpx2.TimeoutException, phase: IOPhase) -> float | None:
+    """Return the phase timeout the failed request carried, when the native error kept its request."""
+    try:
+        caps = error.request.extensions.get("timeout")
+    except RuntimeError:
+        return None
+    return caps.get(phase) if isinstance(caps, dict) else None
 
 
 def transport_retry_reason(

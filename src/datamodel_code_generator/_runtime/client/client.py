@@ -1499,7 +1499,7 @@ class _Core(Generic[AdapterT, HandleT]):
 
     def _admitted(self, call: LogicalCallContext) -> None:
         if self._shared.closed:
-            raise call.snapshot_error(ConfigurationError(reason="client_closed", field_path=()))
+            raise call.snapshot_error(ConfigurationError(reason="client_closed", field_path=("client", "closed")))
         call.check()
 
     @staticmethod
@@ -1580,7 +1580,7 @@ class _Core(Generic[AdapterT, HandleT]):
             return self._settings
         if not isinstance(options, RequestOptions):
             if self._shared.closed:
-                raise ConfigurationError(reason="client_closed", field_path=())
+                raise ConfigurationError(reason="client_closed", field_path=("client", "closed"))
             raise ConfigurationError(field_path=("options",), reason="invalid_type", operation_id=operation_id)
         if not isinstance(options.auth, Unset) and options.auth is not None:
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
@@ -1749,14 +1749,14 @@ class _Core(Generic[AdapterT, HandleT]):
     ) -> CacheRequest:
         """Return what a cache fetch keys and sends: its settings, its request before auth, and its credentials.
 
-        A cancelled, closing, or expired fetch is refused first, as a call is. The URL is the request's own as the
-        client interprets it. The credentials are, for each credential the auth binds, its scheme, kind, and required
-        scopes and the audience and requested scopes of an SDK token provider, and each signer's declared capabilities;
-        they are None for a request that carries no credential, from the auth or from a credential header, a cookie, or
-        a security scheme's header or query field.
+        A fetch on a closed client or past its deadline is refused first, as a call is. The URL is the request's own
+        as the client interprets it. The credentials are, for each credential the auth binds, its scheme, kind, and
+        required scopes and the audience and requested scopes of an SDK token provider, and each signer's declared
+        capabilities; they are None for a request that carries no credential, from the auth or from a credential
+        header, a cookie, or a security scheme's header or query field.
         """
         settings = self._call_settings(options, operation.operation_id)
-        LogicalCallContext(settings, operation.operation_id).check()
+        self._admitted(LogicalCallContext(settings, operation.operation_id))
         request, _ = self._prepare(
             operation,
             arguments,
@@ -2380,7 +2380,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         finally:
             call.finish()
 
-    def execute_raw(  # noqa: PLR0912, PLR0913
+    def execute_raw(  # noqa: PLR0913
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
@@ -2647,7 +2647,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 raise
         return result
 
-    def _exchange(  # noqa: PLR0912, PLR0915
+    def _exchange(  # noqa: PLR0915
         self,
         original: httpx2.Request,
         source: BodySource | None,
@@ -2704,8 +2704,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                         truncated=received.truncated or received.problem is not None,
                         problem=received.problem,
                     )
-                    if not received.truncated and received.problem is None and failure.cause is None:
-                        planned = self._status_plan(info, source, call)
+                    planned = self._status_plan(info, source, call)
                     if planned is None:
                         call.received_body = received
                 if planned is None:
@@ -2980,7 +2979,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                     if opener is None
                     else opener(outgoing, call)
                 )
-            except Exception as error:  # ruff: ignore[blind-except]
+            except Exception as error:  # noqa: BLE001
                 native_failure = (
                     error
                     if opener is not None and isinstance(error, SDKError)
@@ -3014,7 +3013,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         for close in closes:
             try:
                 close()
-            except BaseException as failure:  # ruff: ignore[blind-except, try-except-in-loop]
+            except BaseException as failure:  # noqa: BLE001, PERF203
                 call.retry_blocked = True
                 if primary is None:
                     primary = failure
@@ -3101,7 +3100,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         if shared.created:
             try:
                 shared.http_client.close()
-            except Exception as error:  # ruff: ignore[blind-except]
+            except Exception as error:  # noqa: BLE001
                 raise SDKError(reason="close_failed", cause=error) from None
 
 
@@ -3322,7 +3321,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         finally:
             call.finish()
 
-    async def execute_raw(  # noqa: PLR0912, PLR0913
+    async def execute_raw(  # noqa: PLR0913
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
@@ -3590,7 +3589,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 raise
         return result
 
-    async def _exchange(  # noqa: PLR0912, PLR0915
+    async def _exchange(  # noqa: PLR0915
         self,
         original: httpx2.Request,
         source: AsyncBodySource | None,
@@ -3647,8 +3646,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                         truncated=received.truncated or received.problem is not None,
                         problem=received.problem,
                     )
-                    if not received.truncated and received.problem is None and failure.cause is None:
-                        planned = await self._status_plan(info, source, call)
+                    planned = await self._status_plan(info, source, call)
                     if planned is None:
                         call.received_body = received
                 if planned is None:
@@ -3935,7 +3933,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                     if opener is None
                     else await opener(outgoing, call)
                 )
-            except Exception as error:  # ruff: ignore[blind-except]
+            except Exception as error:  # noqa: BLE001
                 native_failure = (
                     error
                     if opener is not None and isinstance(error, SDKError)
@@ -3969,7 +3967,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         for close in closes:
             try:
                 await call.cleanup(close)
-            except BaseException as failure:  # ruff: ignore[blind-except, try-except-in-loop]
+            except BaseException as failure:  # noqa: BLE001, PERF203
                 call.retry_blocked = True
                 if primary is None:
                     primary = failure
@@ -4059,5 +4057,5 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             try:
                 with anyio.CancelScope(shield=True):
                     await shared.http_client.aclose()
-            except Exception as error:  # ruff: ignore[blind-except]
+            except Exception as error:  # noqa: BLE001
                 raise SDKError(reason="close_failed", cause=error) from None

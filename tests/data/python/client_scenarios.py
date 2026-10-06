@@ -204,7 +204,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
         )
     for label, responder, attempts in (
         ("error", json_response(500, {"code": 7, "message": "boom"}), 3),
-        ("error syntax", raw_response(500, b"{", "application/json"), 1),
+        ("error syntax", raw_response(500, b"{", "application/json"), 3),
         ("error media", raw_response(503, b"down", "text/plain"), 3),
         ("error bare", raw_response(502, b"down"), 3),
         ("redirect", raw_response(302, b"", Location="https://elsewhere.example.com"), 1),
@@ -236,7 +236,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
                     "header error",
                     lambda failure=failure: types.decode_list_pets_header(failure.info, name="X-Next"),
                 )
-    exchange.respond(raw_response(500, b"x" * 20, "application/json"))
+    exchange.respond(*((raw_response(500, b"x" * 20, "application/json"),) * 3))
     options = importlib.import_module(f"{package.__name__}.options")
     record(
         lines,
@@ -354,7 +354,7 @@ def _limits(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
 
 def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     for error, attempts in (
-        (httpx2.ConnectError, 1),
+        (httpx2.ConnectError, 3),
         (httpx2.ConnectTimeout, 3),
         (httpx2.PoolTimeout, 1),
         (httpx2.WriteError, 1),
@@ -374,10 +374,8 @@ def pets(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     (options,) = _modules(package, "options")
     with (
-        exchange.client() as native_client_381,
-        package.Client(
-            http_client=native_client_381, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
-        ) as api,
+        exchange.client() as http,
+        package.Client(http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))) as api,
     ):
         for step in (_list_pets, _create_pet, _get_pet, _upload, _limits, _transports):
             step(package, api, exchange, lines)
@@ -412,7 +410,7 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
         exchange.respond(raw_response(200, b"[" * 40, "application/json"))
         limited = options.RequestOptions(max_response_bytes=10)
         await arecord(lines, "async too large", lambda: api.pets.list_pets(x_trace=trace, options=limited))
-        exchange.respond(raw_response(500, b"x" * 40, "application/json"))
+        exchange.respond(*((raw_response(500, b"x" * 40, "application/json"),) * 3))
         truncated = options.RequestOptions(max_error_body_bytes=4)
         await arecord(lines, "async truncated", lambda: api.pets.list_pets(x_trace=trace, options=truncated))
     lines.append(f"  async borrowed closed {http.is_closed}")
@@ -439,7 +437,7 @@ def media(package: ModuleType, lines: list[str]) -> None:
     """Send forms, pairs, documents, and notes, and decode forms, texts, documents, and object headers."""
     _, documents = _modules(package, "types.forms", "types.documents")
     exchange = Exchange(lines)
-    with exchange.client() as native_client_440, package.Client(http_client=native_client_440) as api:
+    with exchange.client() as http, package.Client(http_client=http) as api:
         form = request_body(package, "submitForm", None, {"name": "a b", "count": 2, "labels": ["x", "y"]})
         exchange.respond(
             raw_response(200, b"name=a+b&count=2", "application/x-www-form-urlencoded"),
@@ -539,7 +537,7 @@ def _range_responses(resource: Any, exchange: Exchange, lines: list[str], name: 
 async def _async_range_responses(package: ModuleType, lines: list[str], case: str) -> None:
     """Select concrete image responses through each asyncio view using the existing HTTPS recipes."""
     exchange = Exchange(lines)
-    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
         if case == "pets":
             resource, name, arguments = api.pets.photos, "upload", {"pet_id": _pet(package, "uploadPhoto")}
         else:
@@ -628,7 +626,7 @@ def querystring(package: ModuleType, lines: list[str]) -> None:
             "page": 2,
         },
     )
-    with exchange.client() as native_client_551, package.Client(http_client=native_client_551) as api:
+    with exchange.client() as http, package.Client(http_client=http) as api:
         exchange.respond(json_response(200, ["a"]), json_response(200, []))
         record(lines, "search", lambda: api.default.search(criteria=criteria))
         record(lines, "search all", api.default.search)
@@ -640,7 +638,7 @@ def servers(package: ModuleType, lines: list[str]) -> None:
     """Resolve relative servers against their base, default server variables, and later servers by position."""
     (options,) = _modules(package, "options")
     exchange = Exchange(lines)
-    with exchange.client() as native_client_563, package.Client(http_client=native_client_563) as api:
+    with exchange.client() as http, package.Client(http_client=http) as api:
         exchange.respond(raw_response(204), raw_response(204), raw_response(204))
         record(lines, "status", api.default.get_status)
         record(lines, "regional", api.default.get_regional)
@@ -651,7 +649,7 @@ def servers(package: ModuleType, lines: list[str]) -> None:
 def default_server(package: ModuleType, lines: list[str]) -> None:
     """Send the generated User-Agent of a distribution to its default base URL."""
     exchange = Exchange(lines)
-    with exchange.client() as native_client_574, package.Client(http_client=native_client_574) as api:
+    with exchange.client() as http, package.Client(http_client=http) as api:
         exchange.respond(raw_response(204))
         record(lines, "status", api.default.get_status)
 
@@ -692,7 +690,7 @@ def paths(package: ModuleType, lines: list[str]) -> None:
     values reaches the operation; every other value, `...` and `.a` among them, is sent as data.
     """
     exchange = Exchange(lines)
-    with exchange.client() as native_client_615, package.Client(http_client=native_client_615) as api:
+    with exchange.client() as http, package.Client(http_client=http) as api:
         for method, values in _PATHS:
             call = partial(getattr(api.default, method), **_arguments(package, method, values))
             exchange.responders[:] = [raw_response(204)]
@@ -703,7 +701,7 @@ def paths(package: ModuleType, lines: list[str]) -> None:
 async def _async_paths(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     api: Any
-    async with exchange.async_client() as native_client_626, package.AsyncClient(http_client=native_client_626) as api:
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
         for method, values in _PATHS:
             call = partial(getattr(api.default, method), **_arguments(package, method, values))
             exchange.responders[:] = [raw_response(204)]
@@ -743,9 +741,9 @@ def codings(package: ModuleType, lines: list[str]) -> None:
     pets = json.dumps([{"id": index, "name": "cat"} for index in range(4000)]).encode()
     (options,) = _modules(package, "options")
     with (
-        exchange.client() as native_client_665,
+        exchange.client() as http,
         package.Client(
-            http_client=native_client_665, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+            http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
         ) as api,
     ):
         pet, trace = _pet(package, "getPet"), _trace(package)
@@ -798,7 +796,7 @@ def codings(package: ModuleType, lines: list[str]) -> None:
 
 async def _async_codings(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
     pet = _pet(package, "getPet")
-    async with exchange.async_client() as native_client_714, package.AsyncClient(http_client=native_client_714) as api:
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
         exchange.respond(
             _coded("gzip, deflate", zlib.compress(gzip.compress(_PET, mtime=0))),
             _coded("identity", _PET),
