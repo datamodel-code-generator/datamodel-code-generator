@@ -154,7 +154,7 @@ def attempt_factory(
     def build(context: Any) -> Attempt:
         remaining = context.remaining_timeout
         bounded = None if remaining is None else 0 < remaining <= 60
-        lines.append(f"  factory {context.call_id} {bounded}")
+        lines.append(f"  factory {context.call_id} {context.attempt_index} {context.hop_index} {bounded}")
         return Attempt(lines, chunks, length, **options)
 
     return build

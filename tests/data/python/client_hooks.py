@@ -97,7 +97,7 @@ class AsyncRecorder(Recorder):
 def _described(event: Any) -> str:
     facts = [
         event.name,
-        f"attempt={event.attempt_count}",
+        f"attempt={event.attempt_index}",
         f"sent={event.sent}",
         f"status={event.status}",
         f"outcome={event.outcome}",
@@ -134,15 +134,11 @@ def hooks(package: ModuleType, lines: list[str]) -> None:
         record(lines, "get", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(json_response(200, [], **{"X-Rate": "1", "X-Request-Id": "req-7"}))
         call = options.RequestOptions(context={"retry": 1, "user": None})
-        record(
-            lines,
-            "list with its request ID and a call context",
-            lambda: api.pets.list_pets(x_trace=trace, options=call),
-        )
+        record(lines, "list with its request ID and a call context", lambda: api.pets.list_pets(x_trace=trace, options=call))
         exchange.respond(json_response(404, {"code": 7, "message": "gone"}))
         record(lines, "get missing", lambda: api.pets.get_pet(pet_id=pet))
         record(lines, "list of a trace its codec refuses", lambda: api.pets.list_pets(x_trace=object()))
-        exchange.respond(_refusing)
+        exchange.respond(_refusing, _refusing, _refusing)
         record(lines, "get of a refused connection", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(_interrupting)
         try:
@@ -167,9 +163,7 @@ def _failing(  # noqa: PLR0913, PLR0917
     ):
         if respond:
             exchange.respond(json_response(200, _PET))
-        view = api.with_options(
-            options.RequestOptions(hooks=(Recorder(lines, "b", failing), Recorder(lines, "c", failing)))
-        )
+        view = api.with_options(options.RequestOptions(hooks=(Recorder(lines, "b", failing), Recorder(lines, "c", failing))))
         lines.append(f"  {label}: {_outcome(lambda view=view: view.pets.get_pet(pet_id=pet), errors)}")
     exchange.respond(json_response(200, _PET), json_response(200, _PET))
     ended = api.with_options(options.RequestOptions(hooks=(Recorder(lines, "d", ("call_end",)),)))
@@ -179,23 +173,20 @@ def _failing(  # noqa: PLR0913, PLR0917
     failed = api.with_options(options.RequestOptions(hooks=(Recorder(lines, "e", ("attempt_start",)),)))
     lines.append(f"  failure before sending: {_outcome(lambda: failed.pets.get_pet(pet_id=pet), errors)}")
     exchange.respond(json_response(200, _PET))
-    record(
-        lines,
-        "hooks replaced by none",
-        lambda: api.with_options(options.RequestOptions(hooks=())).pets.get_pet(pet_id=pet),
-    )
+    record(lines, "hooks replaced by none", lambda: api.with_options(options.RequestOptions(hooks=())).pets.get_pet(pet_id=pet))
 
 
 def _outcome(call: Callable[[], object], errors: ModuleType) -> str:
-    """Keep a successful native result beside a terminal hook failure."""
+    """Describe a hook failure's facts and the success it completed, if any."""
     try:
         call()
     except errors.SDKError as error:
         completed = error.completed_result
-        result = getattr(completed, "data", None)
+        result = "completed nothing" if completed is None else f"completed {completed.data!r}"
         causes = [type(item).__name__ for item in error.secondary_errors]
         return (
-            f"{error} delivery={error.delivery_state.value} cause={error.cause} secondary={causes} completed={result!r}"
+            f"{error} code={error.reason_code} delivery={error.delivery_state.value} "
+            f"cause={error.cause} secondary={causes} {result}"
         )
     return "no error"
 
@@ -209,18 +200,14 @@ def _raw(api: Any, exchange: Exchange, lines: list[str], options: ModuleType, pe
         record(lines, "streamed get", streamed.read)
     exchange.respond(json_response(200, _PET))
     kept = api.with_options(options.RequestOptions(hooks=(Recorder(lines, "f", ("call_end",)),)))
-    record(
-        lines,
-        "streamed get whose hook fails",
-        lambda: kept.pets.with_streaming_response.get_pet(pet_id=pet).__enter__(),
-    )
+    record(lines, "streamed get whose hook fails", lambda: kept.pets.with_streaming_response.get_pet(pet_id=pet).__enter__())
     exchange.respond(json_response(200, _PET))
     record(lines, "raw get after it", lambda: api.pets.with_raw_response.get_pet(pet_id=pet).info.status_code)
     _streams(api, exchange, lines, options, pet)
     trace = object()
     record(lines, "raw list of a trace its codec refuses", lambda: api.pets.with_raw_response.list_pets(x_trace=trace))
     record(lines, "raw request to no URL", lambda: api.request_raw("GET", "not a url"))
-    exchange.respond(_refusing)
+    exchange.respond(_refusing, _refusing, _refusing)
     record(lines, "raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
 
 
@@ -268,11 +255,7 @@ def _refused(package: ModuleType, lines: list[str], options: ModuleType) -> None
     merged = options.ClientOptions(context={"a": "x" * 4096})
     http = Exchange(lines).client()
     with package.Client(http_client=http, options=merged) as api:
-        record(
-            lines,
-            "context merged over 8 KiB",
-            lambda: api.with_options(options.RequestOptions(context={"b": "y" * 4096})),
-        )
+        record(lines, "context merged over 8 KiB", lambda: api.with_options(options.RequestOptions(context={"b": "y" * 4096})))
         asynchronous = api.with_options(options.RequestOptions(hooks=(AsyncRecorder(lines, "z"),)))
         record(lines, "async hook on a sync client", lambda: asynchronous.request_raw("GET", _RAW))
     http.close()
@@ -298,26 +281,17 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
         every = ("response_headers", "attempt_end", "call_end")
         noisy = api.with_options(options.RequestOptions(hooks=(AsyncRecorder(lines, "m", every),)))
         await arecord(lines, "async hook failing on headers and every end", lambda: noisy.pets.get_pet(pet_id=pet))
-        await arecord(
-            lines,
-            "async raw list of a trace its codec refuses",
-            lambda: api.pets.with_raw_response.list_pets(x_trace=object()),
-        )
+        await arecord(lines, "async raw list of a trace its codec refuses", lambda: api.pets.with_raw_response.list_pets(x_trace=object()))
         await arecord(lines, "async raw request to no URL", lambda: api.request_raw("GET", "not a url"))
-        exchange.respond(_refusing)
-        await arecord(
-            lines, "async raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(pet_id=pet)
-        )
+        exchange.respond(_refusing, _refusing, _refusing)
+        await arecord(lines, "async raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
         exchange.respond(_cancelling)
         try:
             await api.pets.get_pet(pet_id=pet)
         except asyncio.CancelledError:
             lines.append("  async get cancelled: CancelledError")
         exchange.respond(json_response(200, _PET), json_response(200, _PET))
-        for label, failing_ends in (
-            ("a failing hook", ("call_end",)),
-            ("every end failing", ("attempt_end", "call_end")),
-        ):
+        for label, failing_ends in (("a failing hook", ("call_end",)), ("every end failing", ("attempt_end", "call_end"))):
             ended = api.with_options(options.RequestOptions(hooks=(AsyncRecorder(lines, "j", failing_ends),)))
             try:
                 await ended.pets.get_pet(pet_id=pet)
