@@ -15,11 +15,14 @@ from enum import Enum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
+import anyio
 import httpx2
 from typing_extensions import Self, TypeVar
 
 from ..client.errors import (
+    APIConnectionError,
     APITimeoutError,
+    AuthError,
     ConfigurationError,
     DecodeError,
     DeliveryState,
@@ -30,7 +33,7 @@ from ..client.errors import (
     is_phase_timeout,
     is_transport,
 )
-from ..client.native import request_fields
+from ..client.native import native_error, request_fields
 from ..client.options import RequestOptions
 from ..client.raw import afinished, finished
 from ..client.responses import HeadersView
@@ -55,6 +58,7 @@ from .errors import (
     StreamDecodeError,
     WebSocketClosedError,
     WebSocketHandshakeError,
+    WebSocketProxyError,
 )
 from .options import WSOptions, resolved_transport
 from .websocket_types import Message, PingReceipt, ResolvedWSOptions, WebSocketOpenRequest
@@ -359,6 +363,24 @@ class _AsyncUpgraded(httpx2.AsyncByteStream):
             raise
 
 
+def _retryable(error: APIConnectionError) -> APIConnectionError:
+    """Return a connector's open failure, its proof that nothing was sent as the native connect failure it stands for.
+
+    The shared retry classification retries only the native connect trio, so a failure the connector proved NOT_SENT
+    takes a native connect error, or a connect timeout for a timeout, as its cause, keeping the connector's own cause
+    as that one's. A proxy's refusal and a broken handshake are never retried, so they stay as they are.
+    """
+    if error.delivery_state is not DeliveryState.NOT_SENT or isinstance(
+        error, (WebSocketProxyError, WebSocketHandshakeError)
+    ):
+        return error
+    native = httpx2.ConnectTimeout if isinstance(error, APITimeoutError) else httpx2.ConnectError
+    proof = native(str(cause) if (cause := error.cause) is not None else "the WebSocket connector sent nothing")
+    proof.__cause__ = cause
+    error.cause = proof
+    return error
+
+
 class _Handshakes(Generic[OpenedT]):
     """What the synchronous and asyncio handshake adapters share: the plan, the limits, and the checks of a 101."""
 
@@ -408,6 +430,8 @@ class _Handshake(_Handshakes[_Upgraded]):
             connection = self._connector.open(
                 opening, deadline=call.deadline, options=self._options(call), transport=self._transport
             )
+        except APIConnectionError as error:
+            raise _retryable(error) from None
         except HandshakeResponse as response:
             if response.status_code < _FINAL:
                 raise WebSocketHandshakeError(
@@ -443,6 +467,8 @@ class _AsyncHandshake(_Handshakes[_AsyncUpgraded]):
             connection = await self._connector.open(
                 opening, deadline=call.deadline, options=self._options(call), transport=self._transport
             )
+        except APIConnectionError as error:
+            raise _retryable(error) from None
         except HandshakeResponse as response:
             if response.status_code < _FINAL:
                 raise WebSocketHandshakeError(
@@ -534,27 +560,30 @@ class _Sockets(Generic[SendT, RecvT]):
         return _progress(self._sent, self._received)
 
     def _stamped(self, error: ErrorT) -> ErrorT:
-        """Give a failure of the session the helper's context, the handshake call's identity, and its counters."""
+        """Give a failure of the session the helper's context, the handshake call's identity, and its counters.
+
+        A failure keeps its own delivery evidence; one without any, NOT_SENT, takes how far the handshake call got,
+        unless it is a transport or auth failure, whose NOT_SENT is its proof.
+        """
         if isinstance(error, (ProtocolError, WebSocketHandshakeError)):
             error.helper_id = self._plan.helper_id
             error.operation = self._plan.operation
+        state = error.delivery_state
         failure = self._call.snapshot_error(error)
+        if state is not DeliveryState.NOT_SENT or isinstance(error, (APIConnectionError, AuthError)):
+            failure.delivery_state = state
         failure.info = self._info
         return failure
 
     def _own(self, error: BaseException) -> BaseException:
-        """Return a failure as the session's: stamped, with a connection's unclassified exception as its cause.
+        """Return a failure as the session's: stamped, a connection's unclassified exception classified as the client's.
 
         A native interruption, such as cancellation, stays itself.
         """
         if isinstance(error, SDKError):
             return self._stamped(error)
         if isinstance(error, Exception):
-            return self._stamped(
-                WebSocketHandshakeError(
-                    condition="negotiation", delivery_state=DeliveryState.RESPONSE_STARTED, cause=error
-                )
-            )
+            return self._stamped(native_error(error, send_started=True, response_started=True))
         return error
 
     def _halted(self) -> Exception | None:
@@ -682,10 +711,23 @@ class _Sockets(Generic[SendT, RecvT]):
     def _phase_timeout(
         self, timeout: float | None, phase: Literal["read", "write"], delivery: DeliveryState
     ) -> BaseException:
-        """Return what stops the call when its deadline passed, else the expiry of a phase's own timeout."""
+        """Return what stops the call when its deadline passed, else the expiry of a phase's own timeout.
+
+        A wait without a timeout of its own ended at the deadline: by the client's clock, or by the real time it
+        measured when it began when that clock lags behind.
+        """
         if (halt := self._halted()) is not None:
             return halt
-        assert timeout is not None
+        if timeout is None:
+            deadline = self._call.deadline
+            return self._stamped(
+                APITimeoutError(
+                    reason="deadline_exceeded",
+                    deadline_at=None if deadline is None else deadline.at,
+                    phase="stream",
+                    delivery_state=delivery,
+                )
+            )
         return self._stamped(
             APITimeoutError(
                 reason="phase_timeout",
@@ -1011,8 +1053,12 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         self._usable("send")
         cap = self._deadline(self._socket.send_timeout)
         lane = self._call.lane(cap)
+        left = _left(cap, _end(cap))
         try:
-            await lane.bounded(self._queue.acquire, phase="stream", idle=False, cleanup=self._release_turn)
+            with anyio.fail_after(None if left is None else max(0.0, left)):
+                await lane.bounded(self._queue.acquire, phase="stream", idle=False, cleanup=self._release_turn)
+        except TimeoutError:
+            raise self._unsent() from None
         except BaseException as error:  # noqa: BLE001
             raise (self._unsent() if self._capped(error, cap) else self._own(error)) from None
         try:
