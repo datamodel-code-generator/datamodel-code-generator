@@ -187,6 +187,8 @@ def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: l
             f"body={error.body_bytes == body} info={error.info is received.info} "
             f"operation={error.operation_id!r} call={bool(error.call_id) and error.call_id == received.info.call_id}"
         )
+    else:
+        lines.append("  saved integer limit decoded")
     small = options.RequestOptions(max_response_bytes=8)
     for label, responder, limit in (
         ("identity", _streamed(200, (_PET[:8], _PET[8:])), small),
@@ -531,6 +533,8 @@ async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines:
             f"body={error.body_bytes == body} info={error.info is received.info} "
             f"operation={error.operation_id!r} call={bool(error.call_id) and error.call_id == received.info.call_id}"
         )
+    else:
+        lines.append("  async saved integer limit decoded")
     for label, responder, limit in (
         ("coded", _gzip(200, bytes(100), 100), options.RequestOptions(max_response_bytes=8)),
         ("expanded", _gzip(200, bytes(100), 100), options.RequestOptions(max_response_bytes=50)),
