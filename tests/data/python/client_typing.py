@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope
 from datamodel_code_generator._api_generation import generate_target
@@ -12,6 +12,9 @@ from datamodel_code_generator._client.target import ClientTarget
 from datamodel_code_generator.format import Formatter
 from tests.data.python.client_generation import SOURCE, client_config, copy_references
 from tests.data.python.strict_typing import checked, marked_lines, negative
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 SAMPLES = SOURCE / "typing"
 
@@ -21,6 +24,8 @@ def client_typing_report(
     backend: DataModelType,
     case_name: str = "pets",
     samples: tuple[str, ...] = ("clients", "signatures", "webhooks", "protocols"),
+    *,
+    package_targets: tuple[str, ...] = ("pets",),
 ) -> str:
     """Check a case's package with the positive samples, then their negative samples line by line."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
@@ -44,7 +49,8 @@ def client_typing_report(
         for name in (f"{sample}.py", f"{sample}_negative.py"):
             shutil.copyfile(SAMPLES / name, root / name)
     positives = [f"{sample}.py" for sample in samples]
-    lines = [*checked(root, ["pets", *positives], " and ".join(("pets", *positives)))]
+    targets = [*package_targets, *positives]
+    lines = [*checked(root, targets, " and ".join(targets))]
     for sample in samples:
         marked = marked_lines(root / (name := f"{sample}_negative.py"))
         lines.extend((f"{name} {len(marked)} marked lines", *negative(root, name, marked)))
