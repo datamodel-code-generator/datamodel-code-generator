@@ -226,8 +226,6 @@ class _Planner:
             return self.symbols[value.symbol].name
         if isinstance(value, BoundType):
             return render_python_type_expr(value.binding.expression)
-        if isinstance(value, GenericType):
-            return f"{self.label(value.base)}[{', '.join(map(self.label, value.arguments))}]"
         return _name(value) or type(value).__name__
 
     def unsupported(self, value: FinalPythonType, schema: SourceLocation | None) -> None:
@@ -287,8 +285,7 @@ class _Planner:
             if name in _SEQUENCES and len(value.arguments) == 1:
                 item = self.shape(value.arguments[0], self.child(schema, "items"))
                 return None if item is None and _SEQUENCES[name] == "list" else Items(item, _SEQUENCES[name])
-            if not value.arguments and (name in _MAPPINGS or _SEQUENCES.get(name or "") == "list"):
-                return None
+            return None
         if isinstance(value, LiteralType):
             enums = [item for item in value.values if isinstance(item, GeneratedEnumMember)]
             return Class(GeneratedSymbolType(enums[0].symbol)) if enums else None
