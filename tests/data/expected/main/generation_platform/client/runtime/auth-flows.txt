@@ -118,10 +118,10 @@
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  refresh fails = ('AuthError', 'provider_failed', None, 'RuntimeError', (), 1, 'RESPONSE_STARTED', 0)
+  refresh fails = ('AuthError', 'provider_failed', None, 'RuntimeError', (), 1, 'NOT_SENT', 0)
     callbacks=['get', 'invalidate', 'get', 'refresh']
   > POST https://api.example.com/unsafe
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-length: 0, authorization: Bearer token] b''
   unsafe operation rejected = ('AuthenticationError', None, 'unsafe_operation', 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/never
@@ -146,11 +146,11 @@
   signed anonymous rejected = ('AuthenticationError', None, 'status_not_retryable', 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  retry token already expired = ('AuthError', 'token_expired', None, 'NoneType', (), 1, 'RESPONSE_STARTED', 0)
+  retry token already expired = ('AuthError', 'token_expired', None, 'NoneType', (), 1, 'NOT_SENT', 0)
     callbacks=['get', 'get'] resource_arrivals=1
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  redirect hop token already expired = ('AuthError', 'token_expired', None, 'NoneType', (), 1, 'RESPONSE_STARTED', 0)
+  redirect hop token already expired = ('AuthError', 'token_expired', None, 'NoneType', (), 1, 'NOT_SENT', 0)
     callbacks=['get', 'get'] resource_arrivals=1
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
@@ -200,10 +200,10 @@
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async refresh fails = ('AuthError', 'provider_failed', None, 'RuntimeError', (), 1, 'RESPONSE_STARTED', 0)
+  async refresh fails = ('AuthError', 'provider_failed', None, 'RuntimeError', (), 1, 'NOT_SENT', 0)
     callbacks=['get', 'invalidate', 'get', 'refresh']
   > POST https://api.example.com/unsafe
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-length: 0, authorization: Bearer token] b''
   async unsafe operation rejected = ('AuthenticationError', None, 'unsafe_operation', 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/never
@@ -263,26 +263,22 @@
     callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   async auth_start hook fails = ('SDKError', 'hook_failed', None, 'RuntimeError', (), 0, 'NOT_SENT', 0)
     callbacks=[] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  close with a failing owned provider = ('CleanupError', 0, 0, 'RuntimeError')
-  adopt after close = ('ConfigurationError', 'client_closed', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  close again = ('closed',)
-    closes=(1, 1, 0)
-  adopt through a closed view = ('returned', None)
-  close root = ('closed',)
-    adopted closes=1
-  async aclose with a failing owned provider = ('CleanupError', 0, 0, 'RuntimeError')
-  async aclose outlived by an owned provider = ('CleanupError', 0, 1, 'NoneType')
-  async aclose once the provider closed = ('closed',)
-  async aclose during a call outlasting it = ('CleanupError', 1, 1, 'NoneType')
-  async outlasting call = ('ConfigurationError', 'client_closed', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  async aclose once the call ended = ('closed',)
-    closes=(1, 1, 1)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  credentials kept to their origin = ('ConfigurationError', 'origin_denied', None, 'NoneType', (), 1, 'RESPONSE_STARTED', 0)
+  root call = ('returned', 200)
+  call after close = ('ConfigurationError', 'client_closed', None, 'NoneType', (), 0, 'NOT_SENT', 0)
+    provider closes=0 borrowed closed=False view close=False
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
+  async root call = ('returned', 200)
+  async call after close = ('ConfigurationError', 'client_closed', None, 'NoneType', (), 0, 'NOT_SENT', 0)
+    provider closes=0 borrowed closed=False view close=False
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
+  credentials kept to their origin = ('ConfigurationError', 'origin_denied', None, 'NoneType', (), 1, 'NOT_SENT', 0)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token, x-sig: signed] b''
-  signer kept to its origin = ('ConfigurationError', 'origin_denied', None, 'NoneType', (), 1, 'RESPONSE_STARTED', 0)
+  signer kept to its origin = ('ConfigurationError', 'origin_denied', None, 'NoneType', (), 1, 'NOT_SENT', 0)
   > GET https://api.example.com/api-key/query?api_key=query-secret
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
   > GET https://other.example.com/api-key/query?page=1&api_key=query-secret

@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.data.python.client_oauth import Adapter, AsyncAdapter, AsyncResponse, Response
+from tests.data.python.client_oauth import Response, Script
 from tests.data.python.client_pagination import Harness, adrained, drained, fetched, progress, users
 from tests.data.python.client_runtime import (
     Exchange,
@@ -204,17 +204,9 @@ def _deadlines(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
 
 
 def _failures(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Fail a pager at a cancelled token or an interruption, refusing every later step."""
-    options = harness.options
-    helper = api.protocols.users.all
-    token = options.CancelToken()
-    pager = helper.iterate(options=options.RequestOptions(cancel_token=token))
-    exchange.respond(users("1", cursor="a"))
-    record(lines, "item before cancelling", lambda pager=pager: next(pager).id)
-    token.cancel()
-    record(lines, "item after cancelling", lambda: next(pager))
-    record(lines, "item after the cancelled page", lambda: next(pager))
-    pager = helper.iterate()
+    """Fail a pager at an interruption, refusing every later step."""
+    del harness
+    pager = api.protocols.users.all.iterate()
     exchange.respond(_interrupting)
     try:
         next(pager)
@@ -504,55 +496,49 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: 
 _AUTH_ROWS: Final = (("pages share one token", (users("1", cursor="a"), users("2"))),)
 
 
-def _auth_line(pager: Any, adapter: Adapter) -> str:
-    return f"    progress {progress(pager)} token sends={adapter.sends}"
+def _auth_line(pager: Any, script: Script) -> str:
+    return f"    progress {progress(pager)} token sends={script.sends}"
 
 
 def pagination_auth(package: ModuleType, lines: list[str]) -> None:
     """Authenticate every page with one OAuth token, whose request takes no send slot of the session."""
     harness = Harness(package)
-    auth, transports, responses = (
-        importlib.import_module(f"{package.__name__}.{name}") for name in ("auth", "transports", "responses")
-    )
+    auth = importlib.import_module(f"{package.__name__}.auth")
     exchange = Exchange(lines)
     for label, pages in _AUTH_ROWS:
-        tokens = (Response(responses, 200, _issued("token-1")), Response(responses, 200, _issued("token-2")))
-        adapter = Adapter(transports, *tokens)
+        script = Script(Response(200, _issued("token-1")), Response(200, _issued("token-2")))
         provider = auth.ClientCredentialsProvider(
             _TOKEN,
             client_id="c",
             client_secret=auth.StaticCredentialProvider(auth.ApiKeyCredential("s")),
-            token_transport=adapter,
+            http_client=script.client(),
         )
         settings = harness.client_options(auth=auth.AuthConfig({"oauth": provider}))
         with provider, exchange.client() as native, package.Client(http_client=native, options=settings) as api:
             exchange.respond(*pages)
             pager = api.protocols.secure.users.iterate(session_options=harness.options.SessionOptions())
             drained(lines, label, pager)
-            lines.append(_auth_line(pager, adapter))
-    run(lambda: _async_auth(harness, auth, transports, responses, lines))
+            lines.append(_auth_line(pager, script))
+    run(lambda: _async_auth(harness, auth, lines))
 
 
-async def _async_auth(
-    harness: Harness, auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
+async def _async_auth(harness: Harness, auth: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     for label, pages in _AUTH_ROWS:
-        tokens = (AsyncResponse(responses, 200, _issued("token-1")), AsyncResponse(responses, 200, _issued("token-2")))
-        adapter = AsyncAdapter(transports, *tokens)
+        script = Script(Response(200, _issued("token-1")), Response(200, _issued("token-2")))
         provider = auth.AsyncClientCredentialsProvider(
             _TOKEN,
             client_id="c",
             client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
-            token_transport=adapter,
+            http_client=script.async_client(),
         )
         settings = harness.client_options(auth=auth.AuthConfig({"oauth": provider}))
         async with (
+            provider,
             exchange.async_client() as native,
             harness.package.AsyncClient(http_client=native, options=settings) as api,
         ):
             exchange.respond(*pages)
             pager = api.protocols.secure.users.iterate(session_options=harness.options.SessionOptions())
             await adrained(lines, f"async {label}", pager)
-            lines.append(_auth_line(pager, adapter))
-        await provider.aclose()
+            lines.append(_auth_line(pager, script))

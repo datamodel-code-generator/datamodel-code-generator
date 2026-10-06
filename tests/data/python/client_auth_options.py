@@ -88,8 +88,8 @@ def _layered(
     )
     root_config = auth.AuthConfig(
         {
-            "bearer": auth.OwnedCredentialProvider(root),
-            "bearer_alias": auth.OwnedCredentialProvider(root),
+            "bearer": root,
+            "bearer_alias": root,
             "header_key": root_key,
         },
         selection=1,
@@ -98,12 +98,12 @@ def _layered(
     )
     view_config = auth.AuthConfig(
         {
-            "header_key": auth.OwnedCredentialProvider(view_key),
+            "header_key": view_key,
             "bearer": view_token,
-            "basic": auth.OwnedCredentialProvider(unused),
+            "basic": unused,
         },
     )
-    call_config = auth.AuthConfig({"header_key": auth.OwnedCredentialProvider(call_key)})
+    call_config = auth.AuthConfig({"header_key": call_key})
     client_options = options.ClientOptions(
         base_url=server.url,
         transport=options.TransportOptions(ssl_context=server.verify, http2=http2),
@@ -147,10 +147,6 @@ def _layered(
                     child = cleared.with_options(options.RequestOptions())
                     await arecord(lines, "cleared view inherits None", child.auth.empty_security)
                     await arecord(lines, "cleared view rejects required", child.auth.inherited_auth)
-                    await child.aclose()
-                    await cleared.aclose()
-                    await view.aclose()
-                    await inherited.aclose()
                     lines.append(
                         f"  {mode} {protocol} before root close={tuple(provider.closes for provider in providers)}"
                     )
@@ -189,10 +185,6 @@ def _layered(
                 child = cleared.with_options(options.RequestOptions())
                 record(lines, "cleared view inherits None", child.auth.empty_security)
                 record(lines, "cleared view rejects required", child.auth.inherited_auth)
-                child.close()
-                cleared.close()
-                view.close()
-                inherited.close()
                 lines.append(
                     f"  {mode} {protocol} before root close={tuple(provider.closes for provider in providers)}"
                 )

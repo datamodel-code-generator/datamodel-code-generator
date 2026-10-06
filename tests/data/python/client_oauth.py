@@ -1,4 +1,4 @@
-"""Shared pieces of the OAuth provider scenarios: outcome lines, token responses, and injected transports and secrets."""
+"""Shared pieces of the OAuth provider scenarios: outcome lines, token responses, scripted transports and secrets."""
 
 from __future__ import annotations
 
@@ -8,15 +8,14 @@ import socket
 import threading
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Final
+
+import httpx2
 
 from tests.data.python.client_runtime import raw_response
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
-    from types import ModuleType
-
-    import httpx2
 
     from tests.data.python.client_runtime import Exchange
 
@@ -31,9 +30,11 @@ _FIELDS: Final = (
     "loop_mismatch",
     "source",
 )
+_SECRETS: Final = ("access-", "refresh-", "se:cr et", "async secret", "upload-control")
 
 
 def failure_line(error: BaseException) -> str:
+    """Describe a failure by its safe fields, naming any token or secret its representations reveal."""
     parts = [type(error).__name__]
     for name in _FIELDS:
         value = getattr(error, name, None)
@@ -45,6 +46,9 @@ def failure_line(error: BaseException) -> str:
             parts.append(f"reason={reason}")
     if (context := error.__cause__) is not None:
         parts.append(f"from={type(context).__name__}")
+    text = f"{error!r} {error} {getattr(error, 'cause', None)!r} {context!r}"
+    if leaked := [secret for secret in _SECRETS if secret in text]:
+        parts.append(f"leaked={leaked}")
     return " ".join(parts)
 
 
@@ -79,134 +83,123 @@ class Caller(threading.Thread):
         self.line = self.report(self.call)
 
 
-class Response:
-    """A token response of an injected transport: its body arrives in two halves, maybe slowly, and may fail."""
+class _Halves(httpx2.SyncByteStream, httpx2.AsyncByteStream):
+    """A token response body arriving in two halves, maybe slowly, that may fail while it streams or closes."""
 
-    def __init__(  # noqa: PLR0913
-        self,
-        responses: ModuleType,
-        status: object = 200,
-        body: bytes = b"",
-        *,
-        failure: BaseException | None = None,
-        close_failure: BaseException | None = None,
-        reported: bool = False,
-        pause: float = 0,
-        tail: float = 0,
-    ) -> None:
-        self.status_code = status
-        self.headers = responses.HeadersView((("content-type", "application/json"),))
-        self.body = body
-        self.failure = failure
-        self.close_failure = close_failure
-        self.reported = reported
-        self.pause = pause
-        self.tail = tail
+    def __init__(self, response: Response) -> None:
+        self.response = response
 
-    def iter_raw_bytes(self) -> Iterator[bytes]:
-        half = len(self.body) // 2
-        yield self.body[:half]
-        time.sleep(self.pause)
-        yield self.body[half:]
-        time.sleep(self.tail)
-        if self.failure is not None:
-            raise self.failure
+    def __iter__(self) -> Iterator[bytes]:
+        response = self.response
+        half = len(response.body) // 2
+        yield response.body[:half]
+        time.sleep(response.pause)
+        yield response.body[half:]
+        time.sleep(response.tail)
+        if response.failure is not None:
+            raise response.failure
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        response = self.response
+        half = len(response.body) // 2
+        yield response.body[:half]
+        await self._pause(response.pause)
+        yield response.body[half:]
+        await self._pause(response.tail)
+        if response.failure is not None:
+            raise response.failure
+
+    async def _pause(self, delay: float) -> None:
+        if self.response.blocking:
+            time.sleep(delay)
+        else:
+            await asyncio.sleep(delay)
 
     def close(self) -> None:
-        if self.close_failure is not None:
-            raise self.close_failure
-
-
-class AsyncResponse(Response):
-    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:  # ty: ignore[invalid-method-override]
-        half = len(self.body) // 2
-        yield self.body[:half]
-        await asyncio.sleep(self.pause)
-        yield self.body[half:]
-        await asyncio.sleep(self.tail)
-        if self.failure is not None:
-            raise self.failure
+        if self.response.close_failure is not None:
+            raise self.response.close_failure
 
     async def aclose(self) -> None:
-        Response.close(self)
+        self.close()
+
+
+@dataclass(frozen=True)
+class Response:
+    """A JSON token response of a scripted transport: its body arrives in two halves, maybe slowly, and may fail.
+
+    A blocking response pauses with the event loop blocked, so only the endpoint's own checks see the pause end.
+    """
+
+    status: int = 200
+    body: bytes = b""
+    failure: BaseException | None = None
+    close_failure: BaseException | None = None
+    pause: float = 0
+    tail: float = 0
+    blocking: bool = False
+
+    def __call__(self, request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(
+            self.status, headers={"content-type": "application/json"}, stream=_Halves(self), request=request
+        )
 
 
 @dataclass(frozen=True)
 class Late:
-    """A scripted reply the adapter gives only after a delay."""
+    """A scripted reply the transport gives only after a delay."""
 
     delay: float
     reply: object
 
 
-@dataclass(frozen=True)
-class Reported:
-    """A scripted failure the adapter raises after reporting that the response started with these headers."""
+class Script(httpx2.BaseTransport, httpx2.AsyncBaseTransport):
+    """A token transport answering from a script of replies and failures, maybe after a gate opens.
 
-    error: BaseException
-    headers: object
-
-
-class Adapter:
-    """An injected token transport answering from a script of responses and failures, maybe after a gate opens."""
+    An asyncio request held back waits at most its read timeout, as a native transport does, and then times out.
+    """
 
     def __init__(
-        self,
-        transports: ModuleType,
-        *replies: object,
-        retries: int | None = 0,
-        evidence: bool = False,
-        gate: threading.Event | None = None,
+        self, *replies: object, gate: threading.Event | None = None, hold: asyncio.Event | None = None
     ) -> None:
-        self.capabilities = transports.TransportCapabilities(
-            internal_retry_limit=retries, delivery_evidence=evidence, http_versions=("HTTP/1.1",)
-        )
         self.replies = list(replies)
-        self.closes = 0
         self.sends = 0
         self.gate = gate
+        self.hold = hold
         self.entered = threading.Event()
 
-    def _reply(self, context: Any) -> object:
+    def _reply(self, request: httpx2.Request) -> httpx2.Response:
         self.sends += 1
         reply = self.replies.pop(0)
         if isinstance(reply, Late):
             time.sleep(reply.delay)
             reply = reply.reply
-        if isinstance(reply, Reported):
-            context.trace.response_headers_received(http_version="HTTP/1.1", status_code=200, headers=reply.headers)
-            raise reply.error
         if isinstance(reply, BaseException):
             raise reply
-        if isinstance(reply, Response) and reply.reported:
-            context.trace.response_headers_received(http_version="HTTP/1.1", status_code=200, headers=reply.headers)
-        return reply
+        return reply(request)
 
-    def send(self, request: object, context: object) -> object:
-        del request
+    def handle_request(self, request: httpx2.Request) -> httpx2.Response:
         self.entered.set()
         if self.gate is not None:
-            self.gate.wait(30)
-        return self._reply(context)
+            self.gate.wait(LIMIT)
+        return self._reply(request)
 
-    def close(self) -> None:
-        self.closes += 1
-
-
-class AsyncAdapter(Adapter):
-    def __init__(self, transports: ModuleType, *replies: object, hold: asyncio.Event | None = None) -> None:
-        super().__init__(transports, *replies)
-        self.hold = hold
-
-    async def send(self, request: object, context: object) -> object:  # ty: ignore[invalid-method-override]
-        del request
+    async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
         self.entered.set()
-        if self.hold is not None:
-            await self.hold.wait()
-        return self._reply(context)
+        if (hold := self.hold) is not None:
+            try:
+                await asyncio.wait_for(hold.wait(), request.extensions["timeout"]["read"])
+            except TimeoutError:
+                msg = "held past the read timeout"
+                raise httpx2.ReadTimeout(msg, request=request) from None
+        return self._reply(request)
 
-    async def aclose(self) -> None:
-        self.closes += 1
+    def client(self) -> httpx2.Client:
+        """Return a native client sending through this script."""
+        return httpx2.Client(transport=self)
+
+    def async_client(self) -> httpx2.AsyncClient:
+        """Return a native asyncio client sending through this script."""
+        return httpx2.AsyncClient(transport=self)
 
 
 class Secret:
