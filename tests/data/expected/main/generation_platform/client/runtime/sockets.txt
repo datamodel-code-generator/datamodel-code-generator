@@ -98,7 +98,7 @@
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
   whole 1 text str'100000' raw=b'100000'
     server GET /secure/socket [authorization: Bearer first-material] | closed 1000 ''
-  send past its timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='NOT_SENT', phase='write', effective_timeout=1e-09) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout
+  send past its timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='write', effective_timeout=1e-09) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] phase_timeout
   hooked normal end
     hook call_start outcome=None status=None
     hook attempt_start outcome=None status=None
@@ -145,24 +145,25 @@
   received with debug logging 1 text str'secret-reply' raw=b'secret-reply'
     server GET /secure/socket [authorization: Bearer first-material] | closed 1000 ''
     client debug records 0 with secrets 0
-  client close with a session open ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cleanup_error
-  receive after the client closed ! ConfigurationError: ConfigurationError(operation_id='roomSocket', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='roomSocket', field_path=('client', 'closing'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] client_closed
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
+  client close with a session open = None
+  client close again = None
+  received after the client closed 1 text ServerMessage{'kind': 'joined', 'user': 'ann'} raw=b'{"kind": "joined", "user": "ann"}'
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
   open timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=1.0) [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=TimeoutError] phase_timeout
-  deadline during the open ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='deadline_exceeded', delivery_state='MAYBE_SENT', phase='send') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='send', cause=APITimeoutError] deadline_exceeded
   closed before a response ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=InvalidMessage] api_connection_error
   malformed response ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', condition='invalid_message') [operation_id='feedSocket', condition='invalid_message', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=InvalidMessage] web_socket_handshake_error
   missing upgrade ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', condition='upgrade') [operation_id='feedSocket', condition='upgrade', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect', cause=InvalidUpgrade] web_socket_handshake_error
   wrong accept ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', condition='invalid_header') [operation_id='feedSocket', condition='invalid_header', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect', cause=InvalidHeaderValue] web_socket_handshake_error
   subprotocol not offered ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', condition='negotiation') [operation_id='feedSocket', condition='negotiation', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect', cause=NegotiationError] web_socket_handshake_error
   header line too long ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', condition='size') [operation_id='feedSocket', condition='size', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=InvalidMessage] web_socket_handshake_error
+  deadline during the open ! APITimeoutError reason=phase_timeout phase=connect delivery_state=DeliveryState.MAYBE_SENT remaining=True
   refused connection retry=1 ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] api_connection_error
   refused connection retry=0 ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] api_connection_error
   refused retry with failed permit release ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectionRefusedError] api_connection_error
     refused permit cleanup entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   untrusted certificate ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=SSLCertVerificationError] api_connection_error
   peer hanging up during a ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
-  peer hanging up during a whole send ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=APIConnectionError] delivery_unknown_error
+  peer hanging up during a whole send ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=APIConnectionError] delivery_unknown_error
   unanswered ping ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
   after the unanswered ping ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='receive') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_state_error
   unanswered keepalive ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
@@ -171,8 +172,6 @@
   another default ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
   default ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
   first ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
-  polled ping unanswered ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.2) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
-  polled ping cancelled ! RequestCancelledError: RequestCancelledError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
   explicit proxy 1 binary bytesb'\x00\x01' raw=b'\x00\x01'
     server GET /feed/socket [] | closed 1000 ''
   environment proxy 1 binary bytesb'\x00\x01' raw=b'\x00\x01'
@@ -182,8 +181,8 @@
   refusing proxy requests ['CONNECT localhost:<port> HTTP/1.1']
   garbled proxy ! WebSocketProxyError: WebSocketProxyError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=InvalidProxyMessage] web_socket_proxy_error
   garbled proxy requests ['CONNECT localhost:<port> HTTP/1.1']
-  environment proxy of another scheme ! ConfigurationError: ConfigurationError(operation_id='feedSocket', call_id='<call>', reason='invalid_value', field_path='websocket_transport.trust_env') [operation_id='feedSocket', field_path=('websocket_transport', 'trust_env'), delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>] invalid_value
-  environment proxy user without a password ! ConfigurationError: ConfigurationError(operation_id='feedSocket', call_id='<call>', reason='invalid_value', field_path='websocket_transport.trust_env') [operation_id='feedSocket', field_path=('websocket_transport', 'trust_env'), delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>] invalid_value
+  environment proxy of another scheme ! ConfigurationError: ConfigurationError(operation_id='feedSocket', call_id='<call>', reason='invalid_value', field_path='websocket_transport.trust_env') [operation_id='feedSocket', field_path=('websocket_transport', 'trust_env'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  environment proxy user without a password ! ConfigurationError: ConfigurationError(operation_id='feedSocket', call_id='<call>', reason='invalid_value', field_path='websocket_transport.trust_env') [operation_id='feedSocket', field_path=('websocket_transport', 'trust_env'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   async connected 101 'chat.v2'
     1 text ServerMessage{'kind': 'joined', 'user': 'ann'} raw=b'{"kind": "joined", "user": "ann"}'
     async iterated 2 text ServerMessage{'kind': 'said', 'text': 'BYE'} raw=b'{"kind": "said", "text": "BYE"}'
@@ -213,7 +212,7 @@
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
   async session deadline connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
   async session deadline ! APITimeoutError: APITimeoutError(operation_id='roomSocket', call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | no close
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | still open
   async abnormal closure connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
   async abnormal closure ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1011, clean=False) [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1011 'boom'
@@ -224,18 +223,14 @@
   async send once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
     server GET /feed/socket [] | closed 1000 ''
   async ping once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
-  async cancelled receive ! RequestCancelledError: RequestCancelledError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | no close
-  async send after the cancellation ! RequestCancelledError: RequestCancelledError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
-    async session after the unsent send AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2') sent 0
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
   async receive cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
   async receive past wait_for ! TimeoutError:  []
   async send after the cancelled receives = None
     async received 1 binary bytesb'after' raw=b'after'
     server GET /feed/socket [] | closed 1000 ''
-  async receive stopped by the client closing ! ConfigurationError: ConfigurationError(operation_id='roomSocket', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='roomSocket', field_path=('client', 'closing'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] client_closed
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
+  async client close with a receive waiting = None
+  async receive kept through the client closing = Message(frame='text', sequence=1)
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
   async unanswered ping ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
   async ping with a payload another ping waits for ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='pinging', action='ping') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_state_error
     async pings waiting 3 AsyncWebSocketSession(helper_id='feed.text', state='open', subprotocol=None)

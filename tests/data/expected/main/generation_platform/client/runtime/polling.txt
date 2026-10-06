@@ -127,19 +127,19 @@ fetch with a body and poll with the previous status
   wait = Report(rows=6)
 querystring polls
   > POST https://api.example.com/exports
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   > GET https://api.example.com/exports/status?%7B%22id%22%3A%22e1%22%7D
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/exports/status?%7B%22id%22%3A%22e1%22%7D
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   wait without a result = None
   > POST https://api.example.com/exports
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   > GET https://api.example.com/exports/status?%7B%22id%22%3A%22e1%22%7D
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   failed export ! OperationFailedError: PollSnapshot(state=2, terminal=True, status=200, data=ExportState:None) operation_failed_error session=True
   > POST https://api.example.com/exports
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, content-length: 0] b''
   > GET https://api.example.com/exports/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/reports/latest
@@ -194,7 +194,7 @@ failures that settle nothing
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  poll that fails to connect ! APIConnectionError: APIConnectionError(operation_id='getJob', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect') [operation_id='getJob', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=ConnectError('failed')] api_connection_error session=True
+  poll that fails to connect ! APIConnectionError: APIConnectionError(operation_id='getJob', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getJob', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('failed')] api_connection_error session=True
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   poll again = PollSnapshot(state='done', terminal=True, status=200, data=Job:j1)
@@ -205,14 +205,6 @@ failures that settle nothing
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   fetch again = Report(rows=2)
   progress {'polls': 2}
-  > POST https://api.example.com/jobs
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  cancelled wait ! RequestCancelledError: RequestCancelledError(operation_id='getJob', call_id='<call>', delivery_state='NOT_SENT') [operation_id='getJob', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error session=True
-  progress {'polls': 0}
-  > POST https://api.example.com/jobs
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  poll refused before sending ! RequestCancelledError: RequestCancelledError(operation_id='getJob', call_id='<call>', delivery_state='NOT_SENT') [operation_id='getJob', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error session=True
-  progress {'polls': 0}
 server delay of a failed result fetch
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -318,6 +310,7 @@ async server delay of a failed poll
 async client closing during a wait
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  wait while the client closes ! ConfigurationError: ConfigurationError(operation_id='getJob', call_id='<call>', reason='client_closed', field_path='client.closing') [operation_id='getJob', field_path=('client', 'closing'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed session=True
+  wait done after the client closed: False
+  wait cancelled
   status after the client closed ! ConfigurationError: ConfigurationError(operation_id='getJob', call_id='<call>', reason='client_closed', field_path='client.closed') [operation_id='getJob', field_path=('client', 'closed'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed session=True
   progress {'polls': 0}

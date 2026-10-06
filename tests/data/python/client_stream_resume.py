@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import itertools
+from contextlib import asynccontextmanager, contextmanager
 import json
 from datetime import datetime, timezone
 from functools import partial
@@ -12,11 +13,10 @@ from typing import TYPE_CHECKING, Any, Final
 import httpx2
 
 from tests.data.python.client_runtime import arecord, argument, describe, record, run
-from tests.data.python.client_streams import _AsyncEnds, _Ends, _event, _Harness, _Probed
-from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response, Stop
+from tests.data.python.client_streams import _AsyncEnds, _Ends, _event, _Feed, _Harness
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterable
+    from collections.abc import AsyncIterator, Callable, Iterable, Iterator
     from types import ModuleType
 
 _NDJSON: Final = "application/x-ndjson"
@@ -25,33 +25,18 @@ _PAST: Final = datetime(2000, 1, 1, tzinfo=timezone.utc)
 _TRACKED: Final = (("X-Stream-Id", "s1"), ("X-Resume-Token", "t1"), ("X-Stream-Expires", _EXPIRES))
 
 
-def _header(headers: Iterable[tuple[str, str]], name: str) -> str | None:
-    return next((value for key, value in headers if key.lower() == name), None)
+class _Stop(BaseException):
+    """An interruption that is not an Exception, as KeyboardInterrupt is."""
 
 
-def _request(lines: list[str], request: Any, body: bytes | None) -> None:
-    """Report a request's method, URL, Last-Event-ID, and any body."""
-    sent = "" if body is None else f" body={body!r}"
-    lines.append(
-        f"  > {request.method} {request.url} last-event-id={_header(request.headers, 'last-event-id')!r}{sent}"
-    )
+class _Reopens(_Feed):
+    """A transport whose replies stream exact chunks, reporting each request's line, Last-Event-ID, and body."""
 
-
-class _Reopens(Adapter):
-    """An adapter whose replies stream exact chunks, reporting each request's line, Last-Event-ID, and body."""
-
-    def send(self, request: Any, context: Any) -> Any:
-        _request(self.lines, request, None if request.body is None else b"".join(request.body.iter_bytes()))
-        return self.replies.pop(0)(request, context)
-
-
-class _AsyncReopens(AsyncAdapter):
-    """The asyncio form of the reporting adapter."""
-
-    async def send(self, request: Any, context: Any) -> Any:
-        body = None if request.body is None else b"".join([chunk async for chunk in request.body.aiter_bytes()])
-        _request(self.lines, request, body)
-        return self.replies.pop(0)(request, context)
+    def report(self, request: httpx2.Request) -> None:
+        """Report a request's method, URL, Last-Event-ID, and any body."""
+        sent = f" body={body!r}" if (body := request.content) else ""
+        lines = self.lines
+        lines.append(f"  > {request.method} {request.url} last-event-id={request.headers.get('last-event-id')!r}{sent}")
 
 
 def _events(*frames: str) -> tuple[bytes, ...]:
@@ -105,20 +90,32 @@ def _replaced(state: Any, **members: Any) -> dict[str, Any]:
 
 
 class _Resumes:
-    """A generated package's harness, its reporting adapter, and the options of a reconnecting stream."""
+    """A generated package's harness, its reporting transport, and the options of a reconnecting stream."""
 
-    def __init__(
-        self, package: ModuleType, lines: list[str], adapter: Adapter, response: type[Response] = Response
-    ) -> None:
+    def __init__(self, package: ModuleType, lines: list[str]) -> None:
         self.harness = harness = _Harness(package, lines)
         self.lines = lines
-        self.adapter = adapter
-        self.response = response
+        self.feed = _Reopens(lines)
         self.reconnect = harness.protocols.StreamOptions(reconnect=True)
 
     def reply(self, *chunks: object, **settings: Any) -> None:
-        """Queue a reply streaming the chunks, as the client's kind of response unless told otherwise."""
-        self.adapter.replies.append(self.harness.reply(chunks, **{"response": self.response, **settings}))
+        """Queue a reply streaming the chunks."""
+        self.feed.replies.append(self.harness.reply(chunks, **settings))
+
+    @contextmanager
+    def client(self, options: Any = None) -> Iterator[Any]:
+        """Yield a client of the package sending through the reporting transport."""
+        with self.feed.client() as http, self.harness.package.Client(http_client=http, options=options) as api:
+            yield api
+
+    @asynccontextmanager
+    async def async_client(self, options: Any = None) -> AsyncIterator[Any]:
+        """Yield an asyncio client of the package sending through the reporting transport."""
+        async with (
+            self.feed.async_client() as http,
+            self.harness.package.AsyncClient(http_client=http, options=options) as api,
+        ):
+            yield api
 
     def redirect(self) -> None:
         """Queue a redirect whose follow-up the session has no send slot for."""
@@ -141,9 +138,8 @@ class _Resumes:
 
 def stream_resume(package: ModuleType, lines: list[str]) -> None:
     """Checkpoint, resume, and reconnect streams through the synchronous and asyncio clients."""
-    transports = importlib.import_module(f"{package.__name__}.transports")
-    resumes = _Resumes(package, lines, _Reopens(transports, lines))
-    with package.Client(transport_adapter=resumes.adapter, options=resumes.client_options()) as api:
+    resumes = _Resumes(package, lines)
+    with resumes.client(resumes.client_options()) as api:
         _cursors(resumes, api)
         _checkpoints(resumes, api)
         _reconnects(resumes, api)
@@ -192,11 +188,10 @@ def _clock_replies(resumes: _Resumes) -> Any:
 
 def _clocked(package: ModuleType, lines: list[str]) -> None:
     """Checkpoint, resume, and reconnect on an injected stepped clock without real waits."""
-    transports = importlib.import_module(f"{package.__name__}.transports")
-    resumes = _Resumes(package, lines, _Reopens(transports, lines))
+    resumes = _Resumes(package, lines)
     lines.append("stepped client clock")
     session = _clock_replies(resumes)
-    with package.Client(transport_adapter=resumes.adapter, options=_clock_options(resumes)) as api:
+    with resumes.client(_clock_options(resumes)) as api:
         helper = api.protocols.events.tracked
         stream = helper.open(session_options=session)
         lines.append(f"  {_event(next(stream))}")
@@ -217,11 +212,10 @@ def _clocked(package: ModuleType, lines: list[str]) -> None:
 
 async def _aclocked(package: ModuleType, lines: list[str]) -> None:
     """Resume and reconnect with asyncio on the same stepped-clock schedule."""
-    transports = importlib.import_module(f"{package.__name__}.transports")
-    resumes = _Resumes(package, lines, _AsyncReopens(transports, lines), AsyncResponse)
+    resumes = _Resumes(package, lines)
     lines.append("async stepped client clock")
     session = _clock_replies(resumes)
-    async with package.AsyncClient(transport_adapter=resumes.adapter, options=_clock_options(resumes)) as api:
+    async with resumes.async_client(_clock_options(resumes)) as api:
         helper = api.protocols.events.tracked
         stream = await helper.open(session_options=session)
         lines.append(f"  {_event(await anext(stream))}")
@@ -270,7 +264,7 @@ def _checkpoints(resumes: _Resumes, api: Any) -> None:
     lines.append("checkpoints")
     held: list[Any] = []
     probe = lambda: record(lines, "checkpoint while receiving", held[0].checkpoint)  # ruff: ignore[lambda-assignment]
-    resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', probe, b'data: {"text": "b"}\n\n', response=_Probed)
+    resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', probe, b'data: {"text": "b"}\n\n')
     held.append(stream := helper.open())
     _drained(lines, "probed", stream)
     resumes.reply(*_events('id: 1\ndata: {"text": "a"}\n\n', "data: {broken\n\n"))
@@ -299,7 +293,7 @@ def _checkpoints(resumes: _Resumes, api: Any) -> None:
     record(
         lines, "open through a view patching the cursor header", api.with_options(headers).protocols.events.live.open
     )
-    with resumes_client(resumes, harness.options.ClientOptions(headers=(("Last-Event-ID", "7"),))) as patched:
+    with resumes.client(harness.options.ClientOptions(headers=(("Last-Event-ID", "7"),))) as patched:
         record(lines, "open on a client patching the cursor header", patched.protocols.events.live.open)
     fixed = harness.options.RequestOptions(idempotency_key=harness.options.IdempotencyKey.new())
     record(lines, "open fixing an idempotency key", lambda: helper.open(options=fixed))
@@ -357,20 +351,16 @@ def _ineligible(resumes: _Resumes, api: Any) -> None:
     _drained(
         lines, "read timeout tied with the idle limit", helper.open(options=level, stream_options=resumes.reconnect)
     )
-    errors = harness.errors
-    undecodable = errors.APIConnectionError(
-        delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="read", cause=httpx2.DecodingError("bad coding")
-    )
-    resumes.reply(first, undecodable)
+    resumes.reply(first, httpx2.DecodingError("bad coding"))
     _drained(lines, "read failure classified as not retryable", helper.open(stream_options=resumes.reconnect))
-    resumes.reply(first, errors.APIConnectionError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="write"))
+    resumes.reply(first, httpx2.WriteError("write failed"))
     _drained(lines, "failure outside the read phase", helper.open(stream_options=resumes.reconnect))
-    resumes.reply(first, Stop())
+    resumes.reply(first, _Stop())
     stream = helper.open(stream_options=resumes.reconnect)
     next(stream)
     try:
         next(stream)
-    except Stop:
+    except _Stop:
         lines.append(f"  stopped ! Stop then {describe(_failure(partial(next, stream)))}")
     resumes.reply(first, b'data: {"text": "b"}\n\n')
     stream = helper.open(stream_options=resumes.reconnect)
@@ -594,7 +584,6 @@ def _refusals(resumes: _Resumes, api: Any) -> None:
     records.close()
     record(lines, "resume a string", lambda: helper.resume("state"))
     record(lines, "resume another helper's state", lambda: helper.resume(other))
-    options = harness.options
     for label, saved in (
         ("missing members", {"cursor": "1"}),
         ("cursor not a string", _replaced(state, cursor=5)),
@@ -643,18 +632,12 @@ def _cursor_refusals(resumes: _Resumes, api: Any) -> None:
     )
 
 
-def resumes_client(resumes: _Resumes, options: Any) -> Any:
-    """Return another client of the package over the same adapter."""
-    return resumes.harness.package.Client(transport_adapter=resumes.adapter, options=options)
-
-
 async def _async_resume(package: ModuleType, lines: list[str]) -> None:
     """Reconnect, checkpoint, and resume asyncio streams."""
-    transports = importlib.import_module(f"{package.__name__}.transports")
-    resumes = _Resumes(package, lines, _AsyncReopens(transports, lines), AsyncResponse)
+    resumes = _Resumes(package, lines)
     harness = resumes.harness
     lines.append("asyncio")
-    async with package.AsyncClient(transport_adapter=resumes.adapter, options=resumes.client_options()) as api:
+    async with resumes.async_client(resumes.client_options()) as api:
         helper = api.protocols.events.live
         hooked = api.with_options(harness.options.RequestOptions(hooks=(_AsyncEnds(lines),))).protocols.events.live
         cut = harness.interrupted()
@@ -681,12 +664,12 @@ async def _async_resume(package: ModuleType, lines: list[str]) -> None:
             await anext(stream)
         except Exception as error:  # ruff: ignore[blind-except]
             _origins(lines, error)
-        resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', Stop())
+        resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', _Stop())
         stream = await helper.open(stream_options=resumes.reconnect)
         await anext(stream)
         try:
             await anext(stream)
-        except Stop:
+        except _Stop:
             lines.append("  async stopped ! Stop")
         await _async_tracked(resumes, api.protocols.events.tracked)
 
@@ -778,15 +761,11 @@ def _guard_auth(resumes: _Resumes, *, asynchronous: bool, authenticated: bool) -
 
 def _write_guards(package: ModuleType, lines: list[str]) -> None:
     """Refuse credential writes and query defaults before reopening, preserving independent query fields."""
-    transports = importlib.import_module(f"{package.__name__}.transports")
-    resumes = _Resumes(package, lines, _Reopens(transports, lines))
+    resumes = _Resumes(package, lines)
     options = resumes.harness.options
     lines.append("stream write guards")
     for authenticated in (False, True):
-        with package.Client(
-            transport_adapter=resumes.adapter,
-            options=_guard_auth(resumes, asynchronous=False, authenticated=authenticated),
-        ) as api:
+        with resumes.client(_guard_auth(resumes, asynchronous=False, authenticated=authenticated)) as api:
             for name in ("scoped", "bound", "deep", "deepbound"):
                 resumes.reply(b'id: 1\ndata: {"scope": {"api_key": "SERVER_KEY"}}\n\n', resumes.harness.interrupted())
                 stream = getattr(api.protocols.marks, name).open(stream_options=resumes.reconnect)
@@ -805,7 +784,7 @@ def _write_guards(package: ModuleType, lines: list[str]) -> None:
                 _guarded(lines, "active auth collision on open", partial(api.protocols.marks.scoped.open, scope=scope))
     for name, field, origin, patch in _query_patches(resumes):
         settings = patch if origin == "client" else resumes.client_options()
-        with package.Client(transport_adapter=resumes.adapter, options=settings) as api:
+        with resumes.client(settings) as api:
             owner = api.with_options(patch) if origin == "view" else api
             helper = getattr(owner.protocols.marks, name)
             _guarded(
@@ -813,7 +792,7 @@ def _write_guards(package: ModuleType, lines: list[str]) -> None:
                 f"query patch {name} {field} {origin}",
                 partial(helper.open, options=patch if origin == "call" else None),
             )
-    with package.Client(transport_adapter=resumes.adapter, options=resumes.client_options()) as api:
+    with resumes.client(resumes.client_options()) as api:
         _cleared_guards(resumes, api)
         resumes.reply(b'event: tick\ndata: {"seq": 1}\n\n', b"data: [DONE]\n\n")
         query = resumes.harness.models.FeedQuery(topic="t")
@@ -883,15 +862,11 @@ def _cleared_guards(resumes: _Resumes, api: Any) -> None:
 
 async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
     """Exercise identical credential, patch, clearing, and child admission contracts with asyncio."""
-    transports = importlib.import_module(f"{package.__name__}.transports")
-    resumes = _Resumes(package, lines, _AsyncReopens(transports, lines), AsyncResponse)
+    resumes = _Resumes(package, lines)
     options = resumes.harness.options
     lines.append("async stream write guards")
     for authenticated in (False, True):
-        async with package.AsyncClient(
-            transport_adapter=resumes.adapter,
-            options=_guard_auth(resumes, asynchronous=True, authenticated=authenticated),
-        ) as api:
+        async with resumes.async_client(_guard_auth(resumes, asynchronous=True, authenticated=authenticated)) as api:
             for name in ("scoped", "bound", "deep", "deepbound"):
                 resumes.reply(b'id: 1\ndata: {"scope": {"api_key": "SERVER_KEY"}}\n\n', resumes.harness.interrupted())
                 stream = await getattr(api.protocols.marks, name).open(stream_options=resumes.reconnect)
@@ -914,7 +889,7 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
                 )
     for name, field, origin, patch in _query_patches(resumes):
         settings = patch if origin == "client" else resumes.client_options()
-        async with package.AsyncClient(transport_adapter=resumes.adapter, options=settings) as api:
+        async with resumes.async_client(settings) as api:
             owner = api.with_options(patch) if origin == "view" else api
             helper = getattr(owner.protocols.marks, name)
             await _aguarded(
@@ -922,7 +897,7 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
                 f"query patch {name} {field} {origin}",
                 partial(helper.open, options=patch if origin == "call" else None),
             )
-    async with package.AsyncClient(transport_adapter=resumes.adapter, options=resumes.client_options()) as api:
+    async with resumes.async_client(resumes.client_options()) as api:
         for name in ("scoped", "named", "deep"):
             owner = api if name == "scoped" else api.with_options(options.RequestOptions(query=(("tag", "kept"),)))
             helper = getattr(owner.protocols.marks, name)
