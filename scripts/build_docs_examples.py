@@ -838,8 +838,10 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 "text",
                 "\n".join(
                     line.strip()
-                    for line in read_text(EXPECTED_CLIENT / "validation-ambiguous.txt").splitlines()
-                    if "E_CONFIG_VALUE" in line
+                    for line in read_text(
+                        EXPECTED_MAIN / "generation_platform/codecs/structural/shapes-dataclass.txt"
+                    ).splitlines()
+                    if "needs a declared discriminator" in line
                 ),
             ),
         ),

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from models import FieldSearchPostResponse as _dcg_type_1
 from models import Pet as _dcg_type_0
 
 from ...errors import HTTPStatusError
@@ -56,14 +55,6 @@ PutLabelsErrorData: TypeAlias = None
 
 class PutLabelsHTTPError(HTTPStatusError[PutLabelsErrorData]):
     """An error response of put_labels, with its decoded payload when one is declared."""
-
-
-SearchPetsResponse: TypeAlias = _dcg_type_1
-SearchPetsErrorData: TypeAlias = None
-
-
-class SearchPetsHTTPError(HTTPStatusError[SearchPetsErrorData]):
-    """An error response of search_pets, with its decoded payload when one is declared."""
 
 
 PutPhotoResponse: TypeAlias = None

@@ -18,8 +18,3 @@ class CodecContext:
     schema_id: str | None
     operation_id: str | None = None
     media_type: str | None = None
-
-    @property
-    def inbound(self) -> bool:
-        """Return whether this call receives a value: client responses and server requests."""
-        return (self.surface == "client") == (self.direction == "response")

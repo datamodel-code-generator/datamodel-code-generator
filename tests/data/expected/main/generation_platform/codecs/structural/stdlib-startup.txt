@@ -1,21 +1,9 @@
-matching: built
-converter: CodecConfigurationError The binding does not select a structural converter
-backend: CodecConfigurationError The binding does not select a structural converter
-bundle-direction: CodecConfigurationError The schema bundle does not validate the binding's direction
-missing-model: CodecConfigurationError The native type of models:Ticket does not match its binding
-not-dataclass: CodecConfigurationError The native type of models:Ticket does not match its binding
-init-disagrees: CodecConfigurationError The native type of models:Ticket does not match its binding
-required-disagrees: CodecConfigurationError The native type of models:Ticket does not match its binding
-unbound-required: CodecConfigurationError The native type of models:Ticket does not match its binding
-unresolved-annotation: CodecConfigurationError The native type of models:Ticket does not match its binding
-leaf-disagrees: CodecConfigurationError The native type of models:Ticket.label does not match its binding
-bytes-leaf: CodecConfigurationError The native type of models:Ticket.label does not match its binding
-union-disagrees: CodecConfigurationError The native type of models:Ticket.label does not match its binding
-container-disagrees: CodecConfigurationError The native type of models:Record.items does not match its binding
-key-disagrees: CodecConfigurationError The native type of models:Keyed.by_color does not match its binding
-constructor-refuses: NativeValidationError native.constructor@[]
-native-gap: ModelProjectionError The native use has an unplanned projection gap at /stamp
-relaxed-union: NativeValidationError native.union@/choice['choice']
-relaxed-leaf: NativeValidationError native.string_type@/name['name']
-relaxed-tuple: NativeValidationError native.tuple_type@/pair['pair']
-relaxed-key: NativeValidationError native.enum@/by_color/blue['by_color', 'blue']
+APIGenerationError
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1leaves/post/requestBody: The dataclasses.dataclass converter has no conversion for the datetime.timedelta type
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1leaves/post/requestBody: The dataclasses.dataclass converter has no conversion for the ipaddress.IPv4Address type
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1leaves/post/requestBody: The dataclasses.dataclass converter has no conversion for the ipaddress.IPv6Address type
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1leaves/post/requestBody: The dataclasses.dataclass converter has no conversion for the ipaddress.IPv4Network type
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1leaves/post/requestBody: The dataclasses.dataclass converter has no conversion for the ipaddress.IPv6Network type
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1leaves/post/requestBody: The dataclasses.dataclass converter has no conversion for the pathlib.Path type
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1leaves/post/requestBody: The union members are both JSON strings, which the dataclasses.dataclass converter cannot tell apart
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1keyed/post/requestBody: The None key type has no dataclasses.dataclass conversion

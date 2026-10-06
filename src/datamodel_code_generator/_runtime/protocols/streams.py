@@ -43,7 +43,7 @@ from ..model_codecs.errors import (
     ParameterEncodingError,
     WireValidationError,
 )
-from ..model_codecs.media import decode_json
+from ..model_codecs.media import decode_json, json_value
 from ..model_codecs.unset import UNSET, Unset
 from .errors import (
     MAX_RAW_PREFIX,
@@ -76,12 +76,12 @@ if TYPE_CHECKING:
     from typing import TypeAlias
 
     from ..client.client import AsyncClientCore, ClientCore
-    from ..client.codecs import NativeValue
     from ..client.logical import LogicalCallContext, OperationSession
-    from ..client.operations import OperationPlan
+    from ..client.operations import InboundModelCodec, OperationPlan
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
     from ..client.timing import Clock, Deadline
+    from ..model_codecs.media import JSONValue
     from ..model_codecs.wire import WireValue
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
     from .pagination import PageBinding
@@ -242,11 +242,11 @@ class EventPlan(Generic[T]):
     call: OperationPlan[object, object]
     media: str
     fingerprint: str
-    event: NativeValue[T] | None = None
-    routes: tuple[tuple[str, NativeValue[T]], ...] = ()
+    event: InboundModelCodec[T] | None = None
+    routes: tuple[tuple[str, InboundModelCodec[T]], ...] = ()
     discriminator: BodySelector | None = None
     unknown: Callable[[str, str], T] | None = None
-    errors: tuple[tuple[str, NativeValue[object]], ...] = ()
+    errors: tuple[tuple[str, InboundModelCodec[object]], ...] = ()
     completion: Literal["eof", "sentinel", "event_type"] = "eof"
     terminal: str | None = None
     kind: Literal["sse", "ndjson"] = "sse"
@@ -713,7 +713,7 @@ def _dotted(resume: StreamResumePlan, bound: tuple[WireValue, ...], given: _Give
     def callers() -> dict[str, str]:
         arguments = () if given is None else given[0]
         return {
-            name: parameters[position].path_text(parameters[position].encode(arguments[position]))
+            name: parameters[position].path_text(parameters[position].dump(arguments[position]))
             for _, parts in resume.dotted
             for name, index, _, position in parts
             if index is None
@@ -956,8 +956,8 @@ class _Events(Generic[T]):
         self._session = session
         self._info = info
         self._prefix = min(limits.max_event_bytes, MAX_RAW_PREFIX)
-        self._routes: Mapping[str, NativeValue[T]] = dict(plan.routes)
-        self._errors: Mapping[str, NativeValue[object]] = dict(plan.errors)
+        self._routes: Mapping[str, InboundModelCodec[T]] = dict(plan.routes)
+        self._errors: Mapping[str, InboundModelCodec[object]] = dict(plan.errors)
         self._lock = threading.Lock()
         self._state = _State.OPEN
         self._given = position.given
@@ -1304,7 +1304,7 @@ class _Events(Generic[T]):
             and (frame.data if plan.completion == "sentinel" else frame.event_type) == plan.terminal
         ):
             return _ENDED
-        wire: WireValue | None = None
+        wire: JSONValue | None = None
         key = frame.event_type
         if (selector := plan.discriminator) is not None:
             wire = self._wire(frame)
@@ -1315,7 +1315,7 @@ class _Events(Generic[T]):
                 raise self._stamped(self._decode_error(frame.body, condition, location=selector))
             key = found
         if (error := self._errors.get(key)) is not None:
-            data = self._decoded(error, frame, wire)
+            data = self._decoded(error, frame)
             raise self._stamped(
                 StreamRemoteError(event_type=frame.event_type or None, data=data, sequence=self._sequence)
             )
@@ -1324,9 +1324,7 @@ class _Events(Generic[T]):
                 raise self._stamped(self._decode_error(frame.body, "value", location=selector))
             value = unknown(key, frame.data)
         else:
-            if wire is None:
-                wire = self._wire(frame)
-            value = self._decoded(decoder, frame, wire)
+            value = self._decoded(decoder, frame)
         if (resume := self._resume) is not None:
             self._advance(resume, frame, wire)
         self._delivered = self._sequence
@@ -1339,22 +1337,21 @@ class _Events(Generic[T]):
             raw_data=frame.data,
         )
 
-    def _wire(self, frame: _Frame) -> WireValue:
+    def _wire(self, frame: _Frame) -> JSONValue:
         """Return an event's data parsed as JSON, raising StreamDecodeError for data that does not parse."""
         data = frame.body
         try:
-            return decode_json(data)
-        except _DATA_ERRORS as error:
+            return json_value(data)
+        except (ValueError, UnicodeDecodeError, RecursionError) as error:
             raise self._stamped(self._decode_error(data, "malformed", cause=error)) from None
 
-    def _decoded(self, decoder: NativeValue[U], frame: _Frame, wire: WireValue | None) -> U:
-        """Return an event's data converted through its converter."""
-        if wire is None:
-            wire = self._wire(frame)
+    def _decoded(self, codec: InboundModelCodec[U], frame: _Frame) -> U:
+        """Return an event's data decoded by its codec, raising StreamDecodeError for data it refuses."""
         try:
-            return decoder.convert(wire)
-        except _DATA_ERRORS as error:
-            raise self._stamped(self._decode_error(frame.body, "value", cause=error)) from None
+            return codec.decode(frame.body)
+        except codec.errors as error:
+            condition: Literal["value", "malformed"] = "malformed" if codec.malformed(error) else "value"
+            raise self._stamped(self._decode_error(frame.body, condition, cause=error)) from None
 
     def _decode_error(
         self,

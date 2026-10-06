@@ -1,12 +1,4 @@
-use /paths/~1leaves/post request_body: native dataclass models:Leaves models=[('models:Box', 'dataclass', 'ignore', True), ('models:Leaves', 'dataclass', 'ignore', True)]
-use /paths/~1leaves/post response_body 200: native dataclass models:Leaves models=[('models:Box', 'dataclass', 'ignore', True), ('models:Leaves', 'dataclass', 'ignore', True)]
-use /paths/~1records/put request_body: native dataclass models:Record models=[('models:Record', 'dataclass', 'ignore', True)]
-use /paths/~1records/put response_body 200: native dataclass models:Record models=[('models:Record', 'dataclass', 'ignore', True)]
-use /paths/~1keyed/post request_body: native dataclass models:Keyed models=[('models:Keyed', 'dataclass', 'ignore', True), ('models:Record', 'dataclass', 'ignore', True)]
-use /paths/~1keyed/post response_body 200: native dataclass models:Keyed models=[('models:Keyed', 'dataclass', 'ignore', True), ('models:Record', 'dataclass', 'ignore', True)]
-use /paths/~1tickets/post request_body: native dataclass models:Ticket models=[('models:Ticket', 'dataclass', 'ignore', True)]
-use /paths/~1tickets/post response_body 200: native dataclass models:Ticket models=[('models:Ticket', 'dataclass', 'ignore', True)]
-leaves-server-decode: model Leaves(when=None, day=None, clock=None, span=None, uid=None, v4=None, v6=None, net4=None, net6=None, file=None, price=None, cents=None, ratio=None, count=None, flag=None, nothing=None, mode=None, pick=None, color=None, level=None, tags={'a', 'b'}, boxes=None, pair=None, seq=[2, 1], choice=None, rank=None, moments=['x'], idents=None, anything=None) wire={"tags":["b","a"],"seq":[2,1],"moments":["x"]} presence=['', '/tags', '/tags/0', '/tags/1', '/seq', '/seq/0', '/seq/1', '/moments', '/moments/0'] extras={}
-leaves-server-response: wire={"nothing":null,"tags":["a","b"],"seq":[2,1],"moments":["x"],"anything":null}
-keyed-client-decode: model Keyed(by_color=None, by_code=None, by_name={'x': Record(name='a', stamp='s', items=['i'], note=None, hint=None)}) wire={"by_name":{"x":{"name":"a","stamp":"s","items":["i"]}}} presence=['', '/by_name', '/by_name/x', '/by_name/x/name', '/by_name/x/stamp', '/by_name/x/items', '/by_name/x/items/0'] extras={}
-keyed-server-encode: wire={"by_name":{"x":{"name":"a","stamp":"s","items":["i"]}}}
+APIGenerationError
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1leaves/post/requestBody: The dataclasses.dataclass converter has no conversion for the datetime.timedelta type
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1leaves/post/requestBody: The union members are both JSON strings, which the dataclasses.dataclass converter cannot tell apart
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1keyed/post/requestBody: The None key type has no dataclasses.dataclass conversion

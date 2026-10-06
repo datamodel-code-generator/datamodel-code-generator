@@ -22,8 +22,8 @@ class _Codec:
     def __init__(self) -> None:
         self.calls = 0
 
-    def serialize(self, value: object, context: object, *, validate: bool = False) -> str:
-        del value, context, validate
+    def dump(self, value: object) -> str:
+        del value
         self.calls += 1
         return "encoded"
 
@@ -38,7 +38,7 @@ class _FailedClose(_File):
 def retry_ownership(package: ModuleType, lines: list[str]) -> None:
     """Observe omitted input release before sending and final source release before return or handoff."""
     bodies = importlib.import_module(f"{package.__name__}.bodies")
-    codecs = importlib.import_module(f"{package.__name__}._runtime.model_codecs.pydantic_v2")
+    codecs = importlib.import_module(f"{package.__name__}._runtime.model_codecs.native")
     exchange = Exchange([])
     with exchange.client() as native, package.Client(http_client=native) as api:
         file, codec = _File(b"unused"), _Codec()
@@ -49,7 +49,7 @@ def retry_ownership(package: ModuleType, lines: list[str]) -> None:
             return httpx2.Response(201, json={"id": 1, "name": "encoded"})
 
         exchange.respond(omitted)
-        with patch.object(codecs.PydanticModelCodec, "serialize", side_effect=codec.serialize):
+        with patch.object(codecs.PydanticCodec, "dump", side_effect=codec.dump):
             record(
                 lines,
                 "codec omits owned input",
@@ -86,7 +86,7 @@ async def _async(package: ModuleType, bodies: ModuleType, codecs: ModuleType, li
             return httpx2.Response(201, json={"id": 1, "name": "encoded"})
 
         exchange.respond(omitted)
-        with patch.object(codecs.PydanticModelCodec, "serialize", side_effect=codec.serialize):
+        with patch.object(codecs.PydanticCodec, "dump", side_effect=codec.dump):
             await arecord(
                 lines,
                 "async codec omits owned input",

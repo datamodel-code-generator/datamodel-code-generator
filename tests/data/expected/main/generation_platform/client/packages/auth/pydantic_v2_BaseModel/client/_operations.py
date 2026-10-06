@@ -9,7 +9,6 @@ from ._generated import model_bindings, security
 from ._runtime.client.multipart import PartPlan
 from ._runtime.client.operations import (
     BodyMedia,
-    Encoder,
     OperationPlan,
     ParameterSpec,
     RequestBody,
@@ -301,7 +300,7 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse, CookieParametersErro
                 required=True,
                 reserved_names=('session_key',),
             ),
-            encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            codec=model_bindings.codec_0,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -313,7 +312,7 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse, CookieParametersErro
                 kind='integer',
                 reserved_names=('filter', 'kind'),
             ),
-            encoder=Encoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
+            codec=model_bindings.codec_1,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -322,7 +321,7 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse, CookieParametersErro
                 style='simple',
                 required=True,
             ),
-            encoder=Encoder(model_bindings.codec_2, model_bindings.CONTEXT_2),
+            codec=model_bindings.codec_2,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -335,7 +334,7 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse, CookieParametersErro
                 additional=FieldPlan('', 'string'),
                 reserved_names=('page',),
             ),
-            encoder=Encoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
+            codec=model_bindings.codec_3,
         ),
     ),
     security=security.OPERATION_11,
@@ -586,10 +585,7 @@ OPERATION_25: Final[OperationPlan[SignedMultipartResponse, SignedMultipartErrorD
                 kind='multipart',
                 parts=(
                     PartPlan('file', file=True, required=True),
-                    PartPlan(
-                        'note',
-                        encoder=Encoder(model_bindings.codec_4, model_bindings.CONTEXT_4),
-                    ),
+                    PartPlan('note', codec=model_bindings.codec_4),
                 ),
             ),
         ),

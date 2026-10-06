@@ -4,32 +4,24 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from functools import partial
-from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias, cast
 
 from typing_extensions import TypeIs, TypeVar
 
-from ..model_codecs.errors import (
-    CodecBindingError,
-    CodecError,
-    CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
-    ParameterEncodingError,
-    WireValidationError,
-)
+from ..model_codecs.errors import CodecError, CodecResourceLimitError, ParameterEncodingError, WireValidationError
 from ..model_codecs.media import (
     decode_form,
-    decode_json,
     encode_form,
-    encode_json,
     form_encode,
     issue,
+    json_value,
     percent_decode,
+    plain,
     split_form,
 )
+from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import path_text, query_pairs
 from ..model_codecs.unset import Unset
-from ..model_codecs.wire import checked_wire
 from .errors import (
     BodyProtocolError,
     ConfigurationError,
@@ -48,6 +40,7 @@ from .multipart import (
     MultipartSource,
     PartPlan,
     PartSyntaxError,
+    PartValueError,
     decode_parts,
     encode_multipart,
     new_boundary,
@@ -56,9 +49,9 @@ from .multipart import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Mapping, Sequence
+    from typing import Any
 
-    from ..model_codecs.context import CodecContext
-    from ..model_codecs.media import FieldPlan
+    from ..model_codecs.media import FieldPlan, JSONValue
     from ..model_codecs.parameters import ParameterPlan
     from ..model_codecs.wire import WireValue
     from .multipart import PartDecoder
@@ -80,70 +73,59 @@ _MAX_SUCCESS: Final = 299
 _MIN_ERROR: Final = 400
 _MAX_ERROR: Final = 599
 _PAIR: Final = 2
-DATA_ERRORS: Final = (
-    CodecBindingError,
-    CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
-    ParameterEncodingError,
-    WireValidationError,
-)
+PARSE_ERRORS: Final = (CodecResourceLimitError, ParameterEncodingError, WireValidationError)
 
 
 class OutboundModelCodec(Protocol):
-    """The sending half of a model codec, as the generated bindings provide it."""
+    """The model codec of a sent use: parameters, request bodies, sent parts, and socket messages."""
 
-    def serialize(self, value: object, context: CodecContext) -> WireValue:
-        """Return the wire value of a native value without its schema; a snapshot is encoded as it is."""
+    def encode(self, value: Any) -> bytes:
+        """Return the JSON bytes of a value."""
         ...
 
-    def assemble(self, fields: Mapping[str, object], context: CodecContext) -> WireValue:
-        """Construct a model from fields given by wire name and return its wire value with only those fields."""
+    def dump(self, value: Any) -> object:
+        """Return the JSON value of a value."""
         ...
 
-    def from_wire(self, wire: WireValue, context: CodecContext) -> Projected[object]:
-        """Validate a wire value to send and project it."""
+    def assemble(self, fields: Mapping[str, object]) -> object:
+        """Return the model the fields a call gives by wire name construct."""
         ...
 
+    def decode(self, content: bytes) -> object:
+        """Return the value the JSON bytes of a saved value restore."""
+        ...
 
-class Projected(Protocol[T_co]):
-    """A decoded value that yields its native value, or raises for a known projection gap."""
-
-    def require_model(self) -> T_co:
-        """Return the native value."""
+    @property
+    def errors(self) -> tuple[type[Exception], ...]:
+        """Return the failures of the codec's backend."""
         ...
 
 
 class InboundModelCodec(Protocol[T_co]):
-    """The receiving half of a model codec whose native value a call returns."""
+    """The model codec of a received use whose value a call returns."""
 
-    def decode(self, wire: WireValue, context: CodecContext) -> Projected[T_co]:
-        """Validate a received wire value and project it."""
+    def decode(self, content: bytes) -> T_co:
+        """Return the value of received JSON bytes."""
         ...
 
-    def convert(self, wire: WireValue, context: CodecContext) -> T_co:
-        """Construct the native value of a received wire value through the backend's converter alone."""
+    def convert(self, value: object) -> T_co:
+        """Return the value of a parsed JSON value, such as a header's, a form's, or a text part's."""
+        ...
+
+    @property
+    def errors(self) -> tuple[type[Exception], ...]:
+        """Return the failures of the codec's backend."""
+        ...
+
+    def malformed(self, error: Exception) -> bool:
+        """Return whether a failure of the codec's backend is received bytes that are not JSON."""
         ...
 
 
-@dataclass(frozen=True, slots=True)
-class Encoder:
-    """A model codec accessor bound to its sending context."""
-
-    codec: Callable[[], OutboundModelCodec]
-    context: CodecContext
-
-    def encode(self, value: object) -> WireValue:
-        """Return the wire value of a native value as it serializes."""
-        return self.codec().serialize(value, self.context)
-
-    def assemble(self, fields: Mapping[str, object]) -> WireValue:
-        """Return the wire value of the model the fields construct."""
-        return self.codec().assemble(fields, self.context)
-
-    def restored(self, wire: WireValue) -> object:
-        """Return the native value that sends a saved wire value, validated against its schema first."""
-        return self.codec().from_wire(wire, self.context).require_model()
+def request_errors(codec: OutboundModelCodec | None) -> tuple[type[Exception], ...]:
+    """Return the failures of encoding a sent value: its codec's, its media's, and Python's own refusals."""
+    codecs = () if codec is None else codec.errors
+    return (*codecs, *PARSE_ERRORS, ValueError, TypeError)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -165,20 +147,20 @@ class ServerPlan:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterSpec:
-    """One effective parameter: its wire plan and, when it has a schema, the codec that validates its argument."""
+    """One effective parameter: its wire plan and, when it has a schema, the codec of its argument."""
 
     plan: ParameterPlan
-    encoder: Encoder | None = None
+    codec: OutboundModelCodec | None = None
 
-    def encode(self, value: object) -> WireValue:
+    def dump(self, value: object) -> JSONValue:
         """Return the wire value of a present argument."""
-        return checked_wire(value) if self.encoder is None else self.encoder.encode(value)
+        return cast("JSONValue", value if self.codec is None else self.codec.dump(value))
 
-    def restored(self, wire: WireValue) -> object:
-        """Return the argument that sends a saved wire value, validated as its codec validates a caller's."""
-        return checked_wire(wire) if self.encoder is None else self.encoder.restored(wire)
+    def restored(self, wire: (JSONValue | WireValue)) -> object:
+        """Return the argument that sends a saved wire value, decoded as its codec decodes JSON."""
+        return wire if self.codec is None else self.codec.decode(_json_bytes(plain(wire)))
 
-    def path_text(self, wire: WireValue) -> str:
+    def path_text(self, wire: (JSONValue | WireValue)) -> str:
         """Return the text a path parameter's wire value substitutes for its placeholder."""
         return path_text(self.plan, wire)
 
@@ -250,7 +232,7 @@ class BodyMedia:
 
     media_type: str
     kind: BodyKind
-    encoder: Encoder | None = None
+    codec: OutboundModelCodec | None = None
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
     parts: tuple[PartPlan, ...] | None = None
@@ -265,39 +247,43 @@ class BodyMedia:
         """
         match self.kind:
             case "json":
-                return encode_json(self.wire(value))
+                return self.json(value)
             case "text":
-                if not isinstance(text := self.wire(value), str):
+                if not isinstance(text := self.dump(value), str):
                     msg = "A text body must be a string"
                     raise ParameterEncodingError(msg)
                 return encode_text(text, sent)
-            case "form" if self.encoder is not None:
+            case "form" if self.codec is not None:
                 styled = {plan.name: partial(query_pairs, plan) for plan in self.encoded} if self.encoded else None
-                return encode_form(self.wire(value), self.fields, self.additional, styled)
+                return encode_form(self.dump(value), self.fields, self.additional, styled)
             case "form":
                 return _form_data(value)
             case _:
                 pass
         return value
 
-    def wire(self, value: object) -> WireValue:
-        """Return the wire value of a JSON or text argument, or of the fields a call gives instead."""
-        if self.encoder is None:
-            return checked_wire(value)
-        if isinstance(value, FieldBody):
-            return self.encoder.assemble(value.fields())
-        return self.encoder.encode(value)
+    def json(self, value: object) -> bytes:
+        """Return the JSON bytes of a body argument, or of the model the fields a call gives construct."""
+        if (codec := self.codec) is None:
+            return _json_bytes(value)
+        return codec.encode(codec.assemble(value.fields()) if isinstance(value, FieldBody) else value)
 
-    def restored(self, wire: WireValue) -> object:
-        """Return the body that sends a saved wire value, validated as its codec validates a caller's."""
-        return checked_wire(wire) if self.encoder is None else self.encoder.restored(wire)
+    def dump(self, value: object) -> JSONValue:
+        """Return the wire value of a body argument, or of the model the fields a call gives construct."""
+        if (codec := self.codec) is None:
+            return cast("JSONValue", value)
+        return cast("JSONValue", codec.dump(codec.assemble(value.fields()) if isinstance(value, FieldBody) else value))
+
+    def restored(self, wire: (JSONValue | WireValue)) -> object:
+        """Return the body that sends a saved wire value, decoded as its codec decodes JSON."""
+        return wire if self.codec is None else self.codec.decode(_json_bytes(plain(wire)))
 
     def multipart(self, value: object, boundary: str) -> object:
         """Return a form-data body: an object's members as parts, or the parts a call gives, checked by any plans."""
-        if self.encoder is None:
+        if self.codec is None:
             return MultipartSource(value, boundary, self.parts, self.additional_part)
         return encode_multipart(
-            self.encoder.encode(value),
+            cast("JSONValue", self.codec.dump(value)),
             boundary,
             dict(self.content_types) if self.content_types else None,
             {plan.name: plan for plan in self.encoded} if self.encoded else None,
@@ -361,7 +347,7 @@ class RequestBody:
             content = selected.encode(value, sent)
         except RequestEncodingError as error:
             raise RequestEncodingError(location=error.location, operation_id=operation_id, cause=error.cause) from None
-        except (*DATA_ERRORS, ValueError, TypeError) as error:
+        except request_errors(selected.codec) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation_id, cause=error) from None
         return EncodedBody(media_type=sent, content=content)
 
@@ -419,7 +405,7 @@ class Branch(Generic[T_co]):
         status: str,
         media_type: str | None,
         decode: Callable[[bytes, ResponseInfo], T_co],
-        paged: Callable[[bytes, ResponseInfo], tuple[T_co, WireValue]] | None = None,
+        paged: Callable[[bytes, ResponseInfo], tuple[T_co, JSONValue]] | None = None,
     ) -> None:
         """Bind the status key, the declared media type (None for no body), and its decoders of values and pages."""
         self.status = status
@@ -431,7 +417,7 @@ class Branch(Generic[T_co]):
         """Decode a complete body of this branch."""
         return self._decode(body, info)
 
-    def page(self, body: bytes, info: ResponseInfo) -> tuple[T_co, WireValue]:
+    def page(self, body: bytes, info: ResponseInfo) -> tuple[T_co, JSONValue]:
         """Decode a complete body into its value and the wire value a model branch read it from.
 
         Another branch, such as one without a body, has no wire value a helper reads, so its wire value is None.
@@ -465,11 +451,16 @@ class _BodyFramingError(_InvalidBodyError):
         )
 
 
-def _json(body: bytes, _: ResponseInfo) -> WireValue:
+def _parsed(parse: Callable[[bytes], T], body: bytes) -> T:
+    """Return what a body parses to, raising a parse failure as the body's decode failure."""
     try:
-        return decode_json(body)
-    except CodecError as error:
+        return parse(body)
+    except (CodecError, ValueError, RecursionError) as error:
         raise _InvalidBodyError(error) from None
+
+
+def _json(body: bytes, _: ResponseInfo) -> JSONValue:
+    return _parsed(json_value, body)
 
 
 def _text(body: bytes, info: ResponseInfo) -> str:
@@ -479,13 +470,14 @@ def _text(body: bytes, info: ResponseInfo) -> str:
         raise _InvalidBodyError(error) from None
 
 
+def _form_pairs(body: bytes) -> FormData:
+    return tuple(
+        (percent_decode(name, plus=True), percent_decode(value, plus=True)) for name, value in split_form(body)
+    )
+
+
 def _pairs(body: bytes, _: ResponseInfo) -> FormData:
-    try:
-        return tuple(
-            (percent_decode(name, plus=True), percent_decode(value, plus=True)) for name, value in split_form(body)
-        )
-    except CodecError as error:
-        raise _InvalidBodyError(error) from None
+    return _parsed(_form_pairs, body)
 
 
 def _bytes(body: bytes, _: ResponseInfo) -> bytes:
@@ -542,8 +534,8 @@ class PartsReader(Generic[T]):
                 value = plan.read(part)
             except PartSyntaxError as error:
                 raise _InvalidBodyError(error.cause) from None
-            except DATA_ERRORS as error:
-                raise _BodyValueError(error) from None
+            except PartValueError as error:
+                raise _BodyValueError(error.cause) from None
             parts.append(DecodedPart(name, value, part.filename, part.content_type, part.headers))
         for plan in self._declared.values():
             if plan.required and plan.name not in seen:
@@ -553,27 +545,41 @@ class PartsReader(Generic[T]):
         return MultipartData(tuple(parts))
 
 
-class _Reader:
-    __slots__ = ("additional", "additional_part", "fields", "kind", "parts")
+class _Model(Generic[T_co]):
+    __slots__ = ("additional", "additional_part", "codec", "fields", "kind", "parts")
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         kind: ReadKind,
+        codec: InboundModelCodec[T_co],
         fields: tuple[FieldPlan, ...],
         additional: FieldPlan | None,
         parts: tuple[PartPlan, ...],
         additional_part: PartPlan | None,
     ) -> None:
         self.kind = kind
+        self.codec = codec
         self.fields = fields
         self.additional = additional
         self.parts = parts
         self.additional_part = additional_part
 
-    def read(self, body: bytes, info: ResponseInfo) -> WireValue:
+    def __call__(self, body: bytes, info: ResponseInfo) -> T_co:
+        codec = self.codec
+        try:
+            return codec.decode(body) if self.kind == "json" else codec.convert(plain(self.read(body, info)))
+        except codec.errors as error:
+            if codec.malformed(error):
+                raise _InvalidBodyError(error) from None
+            raise _BodyValueError(error) from None
+
+    def paged(self, body: bytes, info: ResponseInfo) -> tuple[T_co, JSONValue]:
+        """Decode a helper response and keep the parsed JSON its selectors read."""
+        value = self(body, info)
+        return value, _json(body, info) if self.kind == "json" else None
+
+    def read(self, body: bytes, info: ResponseInfo) -> object:
         match self.kind:
-            case "json":
-                return _json(body, info)
             case "text":
                 return _text(body, info)
             case "multipart":
@@ -584,49 +590,26 @@ class _Reader:
                     raise _InvalidBodyError(error) from None
             case _:
                 pass
-        try:
-            return decode_form(body, self.fields, self.additional)
-        except CodecError as error:
-            raise _InvalidBodyError(error) from None
-
-
-class _Native(Generic[T_co]):
-    __slots__ = ("_codec", "_context", "_reader")
-
-    def __init__(self, reader: _Reader, codec: Callable[[], InboundModelCodec[T_co]], context: CodecContext) -> None:
-        self._reader = reader
-        self._codec = codec
-        self._context = context
-
-    def __call__(self, body: bytes, info: ResponseInfo) -> T_co:
-        return self.paged(body, info)[0]
-
-    def paged(self, body: bytes, info: ResponseInfo) -> tuple[T_co, WireValue]:
-        wire = self._reader.read(body, info)
-        try:
-            return self._codec().convert(wire, self._context), wire
-        except DATA_ERRORS as error:
-            raise _BodyValueError(error) from None
+        return _parsed(partial(decode_form, fields=self.fields, additional=self.additional), body)
 
 
 def model_branch(  # noqa: PLR0913
     status: str,
     media_type: str,
     kind: ReadKind,
-    codec: Callable[[], InboundModelCodec[T]],
-    context: CodecContext,
+    codec: InboundModelCodec[T],
     *,
     fields: tuple[FieldPlan, ...] = (),
     additional: FieldPlan | None = None,
     parts: tuple[PartPlan, ...] = (),
     additional_part: PartPlan | None = None,
 ) -> Branch[T]:
-    """Return a branch that converts its body through a model codec into the native value."""
-    native = _Native(_Reader(kind, fields, additional, parts, additional_part), codec, context)
-    return Branch(status, media_type, native, native.paged)
+    """Return a branch that decodes its body through a model codec into the native value."""
+    model = _Model(kind, codec, fields, additional, parts, additional_part)
+    return Branch(status, media_type, model, model.paged)
 
 
-def wire_branch(status: str, media_type: str) -> Branch[WireValue]:
+def wire_branch(status: str, media_type: str) -> Branch[JSONValue]:
     """Return a JSON branch without a schema."""
     return Branch(status, media_type, _json)
 
@@ -796,7 +779,7 @@ class ResponseDecoder(Generic[T_co, E_co]):
         *,
         truncated: bool = False,
         problem: BaseException | None = None,
-    ) -> tuple[T_co, WireValue]:
+    ) -> tuple[T_co, JSONValue]:
         """Return a page's success value with the wire value it was read from, parsing its body once.
 
         Any other response raises its typed failure, as `decode` does.

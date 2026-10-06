@@ -2660,14 +2660,14 @@ adds 2.4–4.1 µs: 1.6 µs to bind them and select the media type, which the ca
 Generated clients send and read model values through their model backend, with no validation layer of their own:
 
 - **Requests.** Arguments and bodies are serialized from the model values as given. Aliases, presence, and the
-  conversion of dates, decimals, enums, and media follow the models, and a read-only member is left out. A value is
+  conversion of dates, decimals, enums, and media follow the models. A value is
   checked only as far as its model's constructor already checked it, and what the serializer cannot represent fails
   with `RequestEncodingError` before anything is sent. An empty array or object in a style-encoded parameter or a form
   member is left out as an omitted value is: it writes no query pair, header, cookie, or part. A path segment cannot be
   left out, so an empty array or object in a path parameter fails with `RequestEncodingError` before anything is sent.
 - **Responses.** Bodies, parts, stream events, and socket messages are converted by the model backend into the declared
   types, which check what those types declare and coerce as the backend does; a value the type refuses raises
-  `ResponseValidationError`, and a write-only member is refused.
+  `ResponseValidationError`. Read-only and write-only behavior follows the generated model options.
 - **Binding.** A missing required argument, an unknown keyword, or a media type the operation does not declare fails
   before anything is sent.
 - **Path segments.** Path arguments that make their segment `.` or `..` once encoded in their parameters' styles and
@@ -2676,17 +2676,18 @@ Generated clients send and read model values through their model backend, with n
   whose encoded text is non-empty, with a `ParameterEncodingError` cause, before anything is sent: URL normalization in
   clients, proxies, and servers would remove the segment and send the call to another resource, and encoding the dots
   does not prevent it. `...` and `.a` are sent as they are, and a dot segment the path template spells is not refused.
-- **Headers.** The header decoders check a header's value against its schema before converting it. Read a body
-  without any model with `with_raw_response` or `with_streaming_response` instead.
+- **Headers.** Header values are converted through their native types. Read a body without any model with
+  `with_raw_response` or `with_streaming_response` instead.
 
-A response whose union members only their schemas tell apart, such as two object models read by a stdlib dataclass or
-TypedDict converter, cannot be converted, so generation fails with `E_CONFIG_VALUE` naming the use:
+A union of object models read by a stdlib dataclass or TypedDict converter needs a declared discriminator. Without
+one, generation fails with `MC_CODEC_UNSUPPORTED` naming the use:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.model-codecs.diagnostics -->
 <!-- fmt: off -->
 
 ```text
-E_CONFIG_VALUE binding /paths/~1orders~1{orderId}/get/responses/200: The client cannot convert the response body 200 application/json of GET /orders/{orderId}, which tells its union members apart only by their schemas
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1animals~1any/put/requestBody: The union of Cat and Dog needs a declared discriminator for the dataclasses.dataclass converter
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1kin/put/requestBody: The union of Animal and Cat needs a declared discriminator for the dataclasses.dataclass converter
 ```
 
 <!-- fmt: on -->

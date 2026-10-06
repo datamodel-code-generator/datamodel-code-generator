@@ -6,6 +6,7 @@ use only one of them never loads the other's dependencies. Errors keep no key, s
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, fields, replace
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -27,7 +28,6 @@ from ..model_codecs.errors import (
     ParameterEncodingError,
     WireValidationError,
 )
-from ..model_codecs.media import decode_json
 from ..model_codecs.unset import Unset
 from .errors import ProtocolDataError
 from .records import BodySelector
@@ -35,11 +35,10 @@ from .values import Missing, resolve
 from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedWebhook, WebhookOptions
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Mapping, Sequence
 
     from ..client.operations import InboundModelCodec
-    from ..model_codecs.context import CodecContext
-    from ..model_codecs.wire import WireValue
+    from ..model_codecs.media import JSONValue
 
 __all__ = (
     "EventDecoder",
@@ -82,58 +81,44 @@ _DATA_ERRORS: Final = (
 
 
 class _Failed(Enum):
-    FAILED = "failed"
+    MALFORMED = "malformed"
+    VALUE = "value"
 
 
-_FAILED: Final = _Failed.FAILED
-
-
-def _parsed(raw_body: bytes, helper_id: str) -> WireValue:
+def _parsed(raw_body: bytes, helper_id: str) -> JSONValue:
     """Return a body's JSON value, raising ProtocolDataError with no trace of the body when it does not parse."""
     try:
-        wire: WireValue | _Failed = decode_json(raw_body)
-    except _DATA_ERRORS:
-        wire = _FAILED
+        wire: JSONValue | _Failed = json.loads(raw_body)
+    except (ValueError, UnicodeDecodeError, RecursionError):
+        wire = _Failed.MALFORMED
     if isinstance(wire, _Failed):
         raise ProtocolDataError(condition="malformed", helper_id=helper_id)
     return wire
 
 
 class EventDecoder(Generic[T_co]):
-    """Decode a JSON body into a helper's event type, validated against its schema when asked.
+    """Decode a JSON body into a helper's event type through the codec of the event's request-body use."""
 
-    The codec context of the event's request-body use is received as a server receives a request.
-    """
+    __slots__ = ("_codec",)
 
-    __slots__ = ("_codec", "_context", "_validate")
-
-    def __init__(self, codec: Callable[[], InboundModelCodec[T_co]], context: CodecContext, *, validate: bool) -> None:
-        """Keep the codec accessor, the receiving context of its use, and whether to validate with the schema."""
+    def __init__(self, codec: InboundModelCodec[T_co]) -> None:
+        """Keep the codec of the event's use."""
         self._codec = codec
-        self._context = replace(context, surface="server")
-        self._validate = validate
 
     def decode(self, raw_body: bytes, helper_id: str) -> T_co:
-        """Return the event, raising ProtocolDataError for JSON that does not parse or a value its type refuses."""
-        return self.typed(_parsed(raw_body, helper_id), helper_id)
-
-    def typed(self, wire: WireValue, helper_id: str) -> T_co:
-        """Return the event of a parsed body, raising ProtocolDataError for a value its type refuses.
+        """Return the event, raising ProtocolDataError for JSON that does not parse or a value its type refuses.
 
         Data errors are categorized as ordinary responses categorize them, and configuration errors propagate. The
         error keeps no cause, context, or other trace of the body.
         """
-        codec = self._codec()
+        codec = self._codec
         try:
-            event: T_co | _Failed = (
-                codec.decode(wire, self._context).require_model()
-                if self._validate
-                else codec.convert(wire, self._context)
-            )
-        except _DATA_ERRORS:
-            event = _FAILED
+            event: T_co | _Failed = codec.decode(raw_body)
+        except codec.errors as error:
+            event = _Failed.MALFORMED if codec.malformed(error) else _Failed.VALUE
         if isinstance(event, _Failed):
-            raise ProtocolDataError(condition="value", helper_id=helper_id)
+            condition: Literal["malformed", "value"] = "malformed" if event is _Failed.MALFORMED else "value"
+            raise ProtocolDataError(condition=condition, helper_id=helper_id)
         return event
 
 
@@ -152,11 +137,10 @@ class MappedEventDecoder(Generic[T_co]):
         self._events = dict(events)
 
     def decode(self, raw_body: bytes, helper_id: str) -> T_co:
-        """Return the event of the type the body names, parsing the body once."""
-        wire = _parsed(raw_body, helper_id)
-        name = resolve(wire, self._location.pointer)
+        """Return the event of the type the body names, which its type's decoder decodes from the body."""
+        name = resolve(_parsed(raw_body, helper_id), self._location.pointer)
         if isinstance(name, str) and (decoder := self._events.get(name)) is not None:
-            return decoder.typed(wire, helper_id)
+            return decoder.decode(raw_body, helper_id)
         condition: Literal["missing", "null", "type", "value"] = "type"
         match name:
             case str():

@@ -10,12 +10,7 @@ from models import FieldUsersGetResponse200XNextHeader as _dcg_type_2
 from models import UserPage as _dcg_type_0
 
 from ..._generated import model_bindings
-from ..._runtime.client.codecs import (
-    HeaderBranch,
-    ResponseHeaders,
-    native_value,
-    optional_header,
-)
+from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...errors import HTTPStatusError
 from ...options import Unset
@@ -44,7 +39,7 @@ _LIST_USERS_HEADERS: Final[ResponseHeaders[_dcg_type_2, Unset]] = ResponseHeader
                             name='X-Next',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_4, model_bindings.CONTEXT_4),
+                        codec=model_bindings.codec_4,
                         missing=optional_header,
                     ),
                 ),

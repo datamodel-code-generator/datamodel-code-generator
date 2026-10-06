@@ -37,9 +37,9 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['rfc8032.ed25519', 'wycheproof.rsa', 'github.push'] bindings 4
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper rfc8032.ed25519 webhook enabled True /inputs/target_config/protocol_metadata/helpers/rfc8032.ed25519 9fa01f8026342b5f897e5bd44e122d32669aa9f3f4f573b4d2d94d765eb4dfa9
-  helper wycheproof.rsa webhook enabled True /inputs/target_config/protocol_metadata/helpers/wycheproof.rsa 7e9594462e06c46bf8b78b1a4076430ba425584dc44b15b3b9fcea2fc7ff7e27
-  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push 0117d03856f195840ffd65cc0a8ab045e575c19ac31ccc24dc35c89d4e8a9086
+  helper rfc8032.ed25519 webhook enabled True /inputs/target_config/protocol_metadata/helpers/rfc8032.ed25519 c51fa12be2d78ff6af1e7174b913438dfd7415b73e21eb171f44cc749322d6d5
+  helper wycheproof.rsa webhook enabled True /inputs/target_config/protocol_metadata/helpers/wycheproof.rsa 857236ce24054ebc2ba261a1083d544cce1b308a49848c26be8a4b934e7531a7
+  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push 5d5df2700f4c349ea6115f57015d51a748908294936de9b117004d9228f6eb57
   {
     "helpers": {
       "github.push": {

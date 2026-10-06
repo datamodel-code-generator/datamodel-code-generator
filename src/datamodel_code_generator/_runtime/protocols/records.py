@@ -6,7 +6,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import FrozenInstanceError, dataclass, field
 from decimal import Decimal
-from typing import Final, Generic, Literal, NoReturn, TypeAlias, final, get_args
+from typing import Final, Generic, Literal, NoReturn, TypeAlias, cast, final, get_args
 
 from typing_extensions import Self, TypeVar
 
@@ -104,7 +104,7 @@ def _canonical(value: WireValue) -> JSONValue:
     if isinstance(value, float | Decimal):
         number = Decimal(repr(value)) if isinstance(value, float) else value
         return int(number) if _INTEGER.fullmatch(str(number)) else number
-    return value
+    return cast("JSONValue", value)
 
 
 def frozen_wire(value: object) -> WireValue:

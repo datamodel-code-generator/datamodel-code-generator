@@ -10,17 +10,15 @@ from tests.data.python.model_codec_reports import (
     alias_hint_report,
     json_media_report,
     media_report,
-    missing_format_report,
     parameter_decoding_report,
     parameter_encoding_report,
     pattern_report,
     runtime_import_report,
-    schema_report,
     wire_value_report,
 )
 
 if TYPE_CHECKING:
-    import pytest
+    pass
 
 DATA = Path(__file__).parents[1] / "data"
 CODECS = DATA / "generation_platform/codecs"
@@ -43,9 +41,6 @@ def test_ecma_patterns_through_re2() -> None:
     assert_output(pattern_report(CODECS / "patterns.json"), EXPECTED / "patterns.txt")
 
 
-def test_offline_schema_validation() -> None:
-    """Validate against bundled 2020-12 resources with exact numbers, RE2 patterns, and precise pointers."""
-    assert_output(schema_report(CODECS / "schema-validation.json"), EXPECTED / "schema-validation.txt")
 
 
 def test_parameter_style_encoding() -> None:
@@ -63,11 +58,6 @@ def test_media_types_and_error_records() -> None:
     assert_output(media_report(CODECS / "media-types.json"), EXPECTED / "media-types.txt")
 
 
-def test_missing_format_dependency_stops_startup(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Fail validator construction when an installed format checker set lacks a builtin format."""
-    assert_output(
-        missing_format_report(monkeypatch, CODECS / "schema-validation.json"), EXPECTED / "missing-format.txt"
-    )
 
 
 def test_wire_alias_hints() -> None:

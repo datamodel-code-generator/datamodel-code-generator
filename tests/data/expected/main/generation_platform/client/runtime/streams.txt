@@ -102,25 +102,40 @@
   > GET https://api.example.com/events accept=text/event-stream
   mapped event failing its type
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /id')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Created
+id
+  Field required [type=missing, input_value={'type': 'created'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.12/v/missing] stream_decode_error
+  > GET https://api.example.com/events accept=text/event-stream
+  malformed discriminator JSON
+  < closed
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   not JSON
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=1 validation error for Message
+  Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   refused by its type
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.string_type) at /text')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
+text
+  Input should be a valid string [type=string_type, input_value=5, input_type=int]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   refused natively
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /text')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
+text
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.12/v/missing] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   < closed
   large event raw prefix 65536 truncated=True
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  invalid mapped event cause NativeValidationError prefix b'{"type": "created"}'
+  invalid mapped event cause ValidationError prefix b'{"type": "created"}'
   > GET https://api.example.com/events accept=text/event-stream
   line over the limit
   < closed
@@ -232,7 +247,10 @@
   hooked undecodable event
   < closed
     hook stream_end outcome=error
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /text')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
+text
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.12/v/missing] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   hooked early close after 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
@@ -257,6 +275,10 @@
     2 anything id=None retry=None data=Deleted{'type': 'deleted', 'id': '2'} raw='{"type": "deleted", "id": "2"}'
   < closed
     end
+  > GET https://api.example.com/events accept=text/event-stream
+  async malformed discriminator JSON
+  < closed
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   async cut frame
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -307,7 +329,10 @@
   async hooked undecodable event
   < closed
     hook stream_end outcome=error
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /text')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
+text
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.12/v/missing] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   async hooked early close after 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed

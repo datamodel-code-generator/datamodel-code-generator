@@ -30,12 +30,12 @@ from tests.data.python.client_deadline_races import deadline_races
 from tests.data.python.client_deadline_streams import deadline_streams
 from tests.data.python.client_evolution import evolution
 from tests.data.python.client_fields import fields, optional_models
-from tests.data.python.client_headers import headers
+from tests.data.python.client_headers import headers, native_boundaries
 from tests.data.python.client_hooks import hooks
 from tests.data.python.client_limiter_faults import limiter_faults
 from tests.data.python.client_limiters import limiters
 from tests.data.python.client_multipart import multipart, split_parts
-from tests.data.python.client_native import native_faults, native_wire
+from tests.data.python.client_native import native_codec_backends, native_faults, native_wire
 from tests.data.python.client_native_signing import native_signing
 from tests.data.python.client_oauth_client_credentials import oauth_client_credentials
 from tests.data.python.client_oauth_refresh import oauth_refresh
@@ -849,6 +849,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "retry-policy": ("retries", ("pydantic_v2.BaseModel",), retry_policy),
     "redirects": ("retries", ("pydantic_v2.BaseModel",), redirects),
     "redirect-head": ("pets", ("pydantic_v2.BaseModel",), head_redirects),
+    "native-codec-backends": ("pets", BACKENDS, native_codec_backends),
     "native-wire": ("retries", ("pydantic_v2.BaseModel",), native_wire),
     "native-faults": ("retries", ("pydantic_v2.BaseModel",), native_faults),
     "native-signing": ("auth", ("pydantic_v2.BaseModel",), native_signing),
@@ -871,6 +872,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
     "multipart-split": ("multipart-split", STRUCTURAL, split_parts),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
+    "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
     "signatures": ("pets", BACKENDS, signatures),
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
@@ -943,4 +945,15 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
 def client_runtime_report(name: str, root: Path) -> str:
     """Generate one scenario's package for each backend, run its calls, and report every exchange and outcome."""
     case, backends, scenario = SCENARIOS[name]
-    return "".join(generated(case, backend, root / backend.replace(".", "_"), scenario) for backend in backends)
+    reports = []
+    for backend in backends:
+        try:
+            reports.append(generated(case, backend, root / backend.replace(".", "_"), scenario))
+        except Exception as error:
+            if name not in {"fields-structural", "webhook-backends"} or backend not in {
+                "dataclasses.dataclass", "typing.TypedDict"
+            } or not str(error).startswith("MC_CODEC_UNSUPPORTED:"):
+                raise
+            reports.append(f"# {case} {backend}\n")
+            reports.append(f"  generation {error}\n")
+    return "".join(reports)

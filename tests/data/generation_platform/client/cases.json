@@ -807,6 +807,13 @@
     "input": "evolution.yaml",
     "backends": [
       "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
     ]
   },
   "fields": {
@@ -1013,7 +1020,13 @@
           "ref": "/paths/~1pets~1{petId}~1owner/put",
           "body_arguments": "body"
         }
-      ]
+      ],
+      "selection": {
+        "exclude_operations": [
+          "/paths/~1search/post"
+        ],
+        "reason": "Stdlib unions need a declared discriminator; native union conversion is covered separately."
+      }
     }
   },
   "fields-unpack": {
@@ -4886,5 +4899,11 @@
         "_operations.py"
       ]
     ]
+  },
+  "native-boundaries": {
+    "input": "native-boundaries.yaml",
+    "config": {
+      "body_arguments": "both"
+    }
   }
 }

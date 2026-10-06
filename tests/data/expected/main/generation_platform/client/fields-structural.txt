@@ -27,7 +27,7 @@ render dataclasses.dataclass
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 19
+  namespace client helpers [] bindings 17
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 default.create_pet(query:tag=tag)
     exports client.types.default.CreatePetResponse client.types.default.CreatePetErrorData client.types.default.CreatePetHTTPError
@@ -47,16 +47,14 @@ render dataclasses.dataclass
   /selection/selected_operations/5 default.put_labels(path:petId=pet_id)
     exports client.types.default.PutLabelsResponse client.types.default.PutLabelsErrorData client.types.default.PutLabelsHTTPError
     exports None
-  /selection/selected_operations/6 default.search_pets()
-    exports client.types.default.SearchPetsResponse client.types.default.SearchPetsErrorData client.types.default.SearchPetsHTTPError
-    exports None
-  /selection/selected_operations/7 default.put_photo(path:petId=pet_id)
+  /selection/selected_operations/6 default.put_photo(path:petId=pet_id)
     exports client.types.default.PutPhotoResponse client.types.default.PutPhotoErrorData client.types.default.PutPhotoHTTPError
     exports None
-  /selection/selected_operations/8 default.replace_pet(path:petId=pet_id)
+  /selection/selected_operations/7 default.replace_pet(path:petId=pet_id)
     exports client.types.default.ReplacePetResponse client.types.default.ReplacePetErrorData client.types.default.ReplacePetHTTPError
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  S_OPERATION_EXCLUDED selection /paths/~1search/post: POST /search is excluded by exclude_operations: Stdlib unions need a declared discriminator; native union conversion is covered separately.
 render typing.TypedDict
   write models.py
   write client/__init__.py
@@ -85,7 +83,7 @@ render typing.TypedDict
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 19
+  namespace client helpers [] bindings 17
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 default.create_pet(query:tag=tag)
     exports client.types.default.CreatePetResponse client.types.default.CreatePetErrorData client.types.default.CreatePetHTTPError
@@ -105,13 +103,11 @@ render typing.TypedDict
   /selection/selected_operations/5 default.put_labels(path:petId=pet_id)
     exports client.types.default.PutLabelsResponse client.types.default.PutLabelsErrorData client.types.default.PutLabelsHTTPError
     exports None
-  /selection/selected_operations/6 default.search_pets()
-    exports client.types.default.SearchPetsResponse client.types.default.SearchPetsErrorData client.types.default.SearchPetsHTTPError
-    exports None
-  /selection/selected_operations/7 default.put_photo(path:petId=pet_id)
+  /selection/selected_operations/6 default.put_photo(path:petId=pet_id)
     exports client.types.default.PutPhotoResponse client.types.default.PutPhotoErrorData client.types.default.PutPhotoHTTPError
     exports None
-  /selection/selected_operations/8 default.replace_pet(path:petId=pet_id)
+  /selection/selected_operations/7 default.replace_pet(path:petId=pet_id)
     exports client.types.default.ReplacePetResponse client.types.default.ReplacePetErrorData client.types.default.ReplacePetHTTPError
     exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  S_OPERATION_EXCLUDED selection /paths/~1search/post: POST /search is excluded by exclude_operations: Stdlib unions need a declared discriminator; native union conversion is covered separately.

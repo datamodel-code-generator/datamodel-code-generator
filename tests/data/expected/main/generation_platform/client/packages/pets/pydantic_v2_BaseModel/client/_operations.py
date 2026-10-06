@@ -6,11 +6,9 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
-from ._runtime.client.codecs import native_value
 from ._runtime.client.multipart import PartPlan, file_part, value_part
 from ._runtime.client.operations import (
     BodyMedia,
-    Encoder,
     OperationPlan,
     ParameterSpec,
     PartsReader,
@@ -63,27 +61,10 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse, ListPetsErrorData]] = Operati
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_4, model_bindings.CONTEXT_4,
-            ),
-            model_branch(
-                'default',
-                'application/json',
-                'json',
-                model_bindings.codec_7, model_bindings.CONTEXT_7,
-            ),
+            model_branch('200', 'application/json', 'json', model_bindings.codec_4),
+            model_branch('default', 'application/json', 'json', model_bindings.codec_7),
         ),
-        (
-            model_branch(
-                'default',
-                'application/json',
-                'json',
-                model_bindings.codec_7, model_bindings.CONTEXT_7,
-            ),
-        ),
+        (model_branch('default', 'application/json', 'json', model_bindings.codec_7),),
         ListPetsHTTPError,
     ),
     parameters=(
@@ -96,7 +77,7 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse, ListPetsErrorData]] = Operati
                 kind='integer',
                 reserved_names=('tags',),
             ),
-            encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            codec=model_bindings.codec_0,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -107,7 +88,7 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse, ListPetsErrorData]] = Operati
                 shape='array',
                 reserved_names=('limit',),
             ),
-            encoder=Encoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
+            codec=model_bindings.codec_1,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -116,7 +97,7 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse, ListPetsErrorData]] = Operati
                 style='simple',
                 required=True,
             ),
-            encoder=Encoder(model_bindings.codec_2, model_bindings.CONTEXT_2),
+            codec=model_bindings.codec_2,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -125,7 +106,7 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse, ListPetsErrorData]] = Operati
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
+            codec=model_bindings.codec_3,
         ),
     ),
     request_id_header='X-Request-Id',
@@ -137,22 +118,8 @@ OPERATION_1: Final[OperationPlan[CreatePetResponse, CreatePetErrorData]] = Opera
     path='/pets',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '201',
-                'application/json',
-                'json',
-                model_bindings.codec_10, model_bindings.CONTEXT_10,
-            ),
-        ),
-        (
-            model_branch(
-                '4XX',
-                'application/json',
-                'json',
-                model_bindings.codec_11, model_bindings.CONTEXT_11,
-            ),
-        ),
+        (model_branch('201', 'application/json', 'json', model_bindings.codec_10),),
+        (model_branch('4XX', 'application/json', 'json', model_bindings.codec_11),),
         CreatePetHTTPError,
     ),
     body=RequestBody(
@@ -160,12 +127,12 @@ OPERATION_1: Final[OperationPlan[CreatePetResponse, CreatePetErrorData]] = Opera
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_8, model_bindings.CONTEXT_8),
+                codec=model_bindings.codec_8,
             ),
             BodyMedia(
                 media_type='text/plain',
                 kind='text',
-                encoder=Encoder(model_bindings.codec_9, model_bindings.CONTEXT_9),
+                codec=model_bindings.codec_9,
             ),
         ),
         required=True,
@@ -179,18 +146,8 @@ OPERATION_2: Final[OperationPlan[GetPetResponse, GetPetErrorData]] = OperationPl
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_13, model_bindings.CONTEXT_13,
-            ),
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_14, model_bindings.CONTEXT_14,
-            ),
+            model_branch('200', 'application/json', 'json', model_bindings.codec_13),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_14),
         ),
         (empty_branch('404'),),
         GetPetHTTPError,
@@ -204,7 +161,7 @@ OPERATION_2: Final[OperationPlan[GetPetResponse, GetPetErrorData]] = OperationPl
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_12, model_bindings.CONTEXT_12),
+            codec=model_bindings.codec_12,
         ),
     ),
     response_media_type='application/json',
@@ -225,7 +182,7 @@ OPERATION_3: Final[OperationPlan[DeletePetsByPetIdResponse, DeletePetsByPetIdErr
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_15, model_bindings.CONTEXT_15),
+            codec=model_bindings.codec_15,
         ),
     ),
 )
@@ -245,7 +202,7 @@ OPERATION_4: Final[OperationPlan[HeadPetResponse, HeadPetErrorData]] = Operation
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_16, model_bindings.CONTEXT_16),
+            codec=model_bindings.codec_16,
         ),
     ),
 )
@@ -265,7 +222,7 @@ OPERATION_5: Final[OperationPlan[UploadResponse, UploadErrorData]] = OperationPl
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
+            codec=model_bindings.codec_18,
         ),
     ),
     body=RequestBody(
@@ -289,7 +246,7 @@ OPERATION_6: Final[OperationPlan[AttachFilesResponse, AttachFilesErrorData]] = O
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_19, model_bindings.CONTEXT_19),
+            codec=model_bindings.codec_19,
         ),
     ),
     body=RequestBody(
@@ -298,15 +255,8 @@ OPERATION_6: Final[OperationPlan[AttachFilesResponse, AttachFilesErrorData]] = O
                 media_type='multipart/form-data',
                 kind='multipart',
                 parts=(
-                    PartPlan(
-                        'note',
-                        encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
-                    ),
-                    PartPlan(
-                        'labels',
-                        repeated=True,
-                        encoder=Encoder(model_bindings.codec_22, model_bindings.CONTEXT_22),
-                    ),
+                    PartPlan('note', codec=model_bindings.codec_21),
+                    PartPlan('labels', repeated=True, codec=model_bindings.codec_22),
                     PartPlan('file', file=True, required=True),
                 ),
             ),
@@ -328,15 +278,11 @@ OPERATION_7: Final[OperationPlan[ReadFilesResponse, ReadFilesErrorData]] = Opera
                 'multipart/form-data',
                 PartsReader[str | bytes](
                     (
-                        value_part(
-                            'note',
-                            'string',
-                            native_value(model_bindings.codec_23, model_bindings.CONTEXT_23),
-                        ),
+                        value_part('note', 'string', model_bindings.codec_23),
                         value_part(
                             'labels',
                             'string',
-                            native_value(model_bindings.codec_24, model_bindings.CONTEXT_24),
+                            model_bindings.codec_24,
                             repeated=True,
                         ),
                         file_part('file', required=True),
@@ -356,7 +302,7 @@ OPERATION_7: Final[OperationPlan[ReadFilesResponse, ReadFilesErrorData]] = Opera
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
+            codec=model_bindings.codec_20,
         ),
     ),
 )

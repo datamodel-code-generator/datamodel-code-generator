@@ -10,7 +10,6 @@ from models import Note as _dcg_type_0
 
 from .. import _operations
 from .._generated import model_bindings
-from .._runtime.client.codecs import native_value
 from .._runtime.protocols.pagination import CursorPlan, PaginationPlan
 from .._runtime.protocols.records import BodySelector, ParameterTarget
 from .._runtime.protocols.references import OperationRef
@@ -45,5 +44,5 @@ STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
     call=_operations.OPERATION_1,
     media='text/event-stream',
     fingerprint='b898c12f6160a565c9391791dbb42b6459bb729a9665af07d3ba2e64d1b94cd5',
-    event=native_value(model_bindings.codec_3, model_bindings.CONTEXT_3),
+    event=model_bindings.codec_3,
 )

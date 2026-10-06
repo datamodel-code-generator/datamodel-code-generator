@@ -3,269 +3,269 @@ pyright pets and clients.py and signatures.py and webhooks.py and protocols.py: 
 ty pets and clients.py and signatures.py and webhooks.py and protocols.py: clean
 clients_negative.py 86 marked lines
 mypy clients_negative.py: 86/86 marked lines with one error, 0 elsewhere, 0 in other files
-  47 call-arg
-  48 arg-type
-  49 call-overload
-  50 call-overload
-  52 call-overload
-  53 arg-type
+  53 call-arg
   54 arg-type
+  55 call-overload
+  56 call-overload
+  58 call-overload
+  59 arg-type
   60 arg-type
-  61 arg-type
-  62 arg-type
+  66 arg-type
   67 arg-type
-  68 assignment
-  70 arg-type
-  71 call-arg
-  75 misc
-  77 assignment
-  84 arg-type
-  85 arg-type
-  86 list-item
-  87 arg-type
-  88 arg-type
+  68 arg-type
+  73 arg-type
+  74 assignment
+  76 arg-type
+  77 call-arg
+  81 misc
+  83 assignment
+  92 arg-type
+  93 arg-type
+  94 list-item
   95 arg-type
   96 arg-type
-  97 arg-type
-  98 assignment
-  100 arg-type
-  101 arg-type
-  102 assignment
-  109 assignment
+  108 arg-type
+  109 arg-type
+  110 arg-type
+  111 assignment
+  113 arg-type
   114 arg-type
-  115 dict-item
-  119 arg-type
-  120 arg-type
-  121 arg-type
-  122 arg-type
-  123 arg-type
-  124 arg-type
-  125 arg-type
-  126 arg-type
+  115 assignment
+  122 assignment
   127 arg-type
-  128 misc
-  129 misc
-  130 arg-type
-  131 arg-type
-  132 call-arg
+  128 dict-item
+  132 arg-type
   133 arg-type
   134 arg-type
-  135 misc
-  136 misc
-  137 misc
-  141 assignment
-  142 assignment
-  143 assignment
-  144 assignment
-  145 arg-type
-  151 arg-type
-  152 arg-type
-  153 arg-type
-  154 arg-type
-  155 arg-type
-  156 arg-type
-  157 misc
-  158 misc
-  162 arg-type
-  163 arg-type
+  135 arg-type
+  136 arg-type
+  137 arg-type
+  138 arg-type
+  139 arg-type
+  140 arg-type
+  141 misc
+  142 misc
+  143 arg-type
+  144 arg-type
+  145 call-arg
+  146 arg-type
+  147 arg-type
+  148 misc
+  149 misc
+  150 misc
+  154 assignment
+  155 assignment
+  156 assignment
+  157 assignment
+  158 arg-type
   164 arg-type
   165 arg-type
   166 arg-type
   167 arg-type
   168 arg-type
   169 arg-type
-  170 arg-type
-  171 arg-type
-  172 call-arg
-  173 arg-type
-  174 arg-type
+  170 misc
+  171 misc
   175 arg-type
-  176 call-arg
-  177 call-arg
-  178 misc
-  185 arg-type
-  187 misc
-  188 call-arg
-  189 arg-type
-  190 misc
+  176 arg-type
+  177 arg-type
+  178 arg-type
+  179 arg-type
+  180 arg-type
+  181 arg-type
+  182 arg-type
+  183 arg-type
+  184 arg-type
+  185 call-arg
+  186 arg-type
+  187 arg-type
+  188 arg-type
+  189 call-arg
+  190 call-arg
   191 misc
+  198 arg-type
+  200 misc
+  201 call-arg
+  202 arg-type
+  203 misc
+  204 misc
 pyright clients_negative.py: 83/86 marked lines with one error, 0 elsewhere, 0 in other files
-  47 reportCallIssue
-  48 reportArgumentType
-  49 reportArgumentType
-  49 reportCallIssue
-  50 reportArgumentType
-  50 reportCallIssue
-  52 reportArgumentType
-  52 reportCallIssue
-  53 reportArgumentType
+  53 reportCallIssue
   54 reportArgumentType
+  55 reportArgumentType
+  55 reportCallIssue
+  56 reportArgumentType
+  56 reportCallIssue
+  58 reportArgumentType
+  58 reportCallIssue
+  59 reportArgumentType
   60 reportArgumentType
-  61 reportArgumentType
-  62 reportArgumentType
+  66 reportArgumentType
   67 reportArgumentType
-  68 reportAssignmentType
-  70 reportArgumentType
-  71 reportCallIssue
-  75 reportGeneralTypeIssues
-  77 reportAssignmentType
-  84 reportArgumentType
-  85 reportArgumentType
-  86 reportArgumentType
-  87 reportArgumentType
-  88 reportArgumentType
+  68 reportArgumentType
+  73 reportArgumentType
+  74 reportAssignmentType
+  76 reportArgumentType
+  77 reportCallIssue
+  81 reportGeneralTypeIssues
+  83 reportAssignmentType
+  92 reportArgumentType
+  93 reportArgumentType
+  94 reportArgumentType
   95 reportArgumentType
   96 reportArgumentType
-  97 reportArgumentType
-  98 reportAssignmentType
-  100 reportArgumentType
-  101 reportArgumentType
-  102 reportAssignmentType
-  109 reportAssignmentType
+  108 reportArgumentType
+  109 reportArgumentType
+  110 reportArgumentType
+  111 reportAssignmentType
+  113 reportArgumentType
   114 reportArgumentType
-  115 reportArgumentType
-  119 reportArgumentType
-  120 reportArgumentType
-  121 reportArgumentType
-  122 reportArgumentType
-  123 reportArgumentType
-  124 reportArgumentType
-  125 reportArgumentType
-  126 reportArgumentType
+  115 reportAssignmentType
+  122 reportAssignmentType
   127 reportArgumentType
-  128 reportAttributeAccessIssue
-  129 reportAttributeAccessIssue
-  130 reportArgumentType
-  131 reportArgumentType
-  132 reportCallIssue
+  128 reportArgumentType
+  132 reportArgumentType
   133 reportArgumentType
   134 reportArgumentType
-  135 reportAttributeAccessIssue
-  136 reportAttributeAccessIssue
-  137 reportAttributeAccessIssue
-  141 reportAssignmentType
-  142 reportAssignmentType
-  143 reportAssignmentType
-  144 reportAssignmentType
-  145 reportArgumentType
-  151 reportArgumentType
-  152 reportArgumentType
-  153 reportArgumentType
-  154 reportArgumentType
-  155 reportArgumentType
-  156 reportArgumentType
-  157 reportAttributeAccessIssue
-  158 reportAttributeAccessIssue
-  162 reportArgumentType
-  163 reportArgumentType
+  135 reportArgumentType
+  136 reportArgumentType
+  137 reportArgumentType
+  138 reportArgumentType
+  139 reportArgumentType
+  140 reportArgumentType
+  141 reportAttributeAccessIssue
+  142 reportAttributeAccessIssue
+  143 reportArgumentType
+  144 reportArgumentType
+  145 reportCallIssue
+  146 reportArgumentType
+  147 reportArgumentType
+  148 reportAttributeAccessIssue
+  149 reportAttributeAccessIssue
+  150 reportAttributeAccessIssue
+  154 reportAssignmentType
+  155 reportAssignmentType
+  156 reportAssignmentType
+  157 reportAssignmentType
+  158 reportArgumentType
   164 reportArgumentType
   165 reportArgumentType
   166 reportArgumentType
   167 reportArgumentType
   168 reportArgumentType
   169 reportArgumentType
-  170 reportArgumentType
-  171 reportArgumentType
-  172 reportCallIssue
-  173 reportArgumentType
-  174 reportArgumentType
+  170 reportAttributeAccessIssue
+  171 reportAttributeAccessIssue
   175 reportArgumentType
-  176 reportCallIssue
-  177 reportCallIssue
-  178 reportAttributeAccessIssue
-  185 reportArgumentType
-  187 reportAttributeAccessIssue
-  188 reportCallIssue
-  189 reportArgumentType
-  190 reportAttributeAccessIssue
+  176 reportArgumentType
+  177 reportArgumentType
+  178 reportArgumentType
+  179 reportArgumentType
+  180 reportArgumentType
+  181 reportArgumentType
+  182 reportArgumentType
+  183 reportArgumentType
+  184 reportArgumentType
+  185 reportCallIssue
+  186 reportArgumentType
+  187 reportArgumentType
+  188 reportArgumentType
+  189 reportCallIssue
+  190 reportCallIssue
   191 reportAttributeAccessIssue
+  198 reportArgumentType
+  200 reportAttributeAccessIssue
+  201 reportCallIssue
+  202 reportArgumentType
+  203 reportAttributeAccessIssue
+  204 reportAttributeAccessIssue
 ty clients_negative.py: 86/86 marked lines with one error, 0 elsewhere, 0 in other files
-  47 missing-argument
-  48 invalid-argument-type
-  49 no-matching-overload
-  50 no-matching-overload
-  52 no-matching-overload
-  53 invalid-argument-type
+  53 missing-argument
   54 invalid-argument-type
+  55 no-matching-overload
+  56 no-matching-overload
+  58 no-matching-overload
+  59 invalid-argument-type
   60 invalid-argument-type
-  61 invalid-argument-type
-  62 invalid-argument-type
+  66 invalid-argument-type
   67 invalid-argument-type
-  68 invalid-assignment
-  70 invalid-argument-type
-  71 missing-argument
-  75 invalid-await
-  77 invalid-assignment
-  84 invalid-argument-type
-  85 invalid-argument-type
-  86 invalid-argument-type
-  87 invalid-argument-type
-  88 invalid-argument-type
+  68 invalid-argument-type
+  73 invalid-argument-type
+  74 invalid-assignment
+  76 invalid-argument-type
+  77 missing-argument
+  81 invalid-await
+  83 invalid-assignment
+  92 invalid-argument-type
+  93 invalid-argument-type
+  94 invalid-argument-type
   95 invalid-argument-type
   96 invalid-argument-type
-  97 invalid-argument-type
-  98 invalid-assignment
-  100 invalid-argument-type
-  101 invalid-argument-type
-  102 invalid-assignment
-  109 invalid-assignment
+  108 invalid-argument-type
+  109 invalid-argument-type
+  110 invalid-argument-type
+  111 invalid-assignment
+  113 invalid-argument-type
   114 invalid-argument-type
-  115 invalid-argument-type
-  119 invalid-argument-type
-  120 invalid-argument-type
-  121 invalid-argument-type
-  122 invalid-argument-type
-  123 invalid-argument-type
-  124 invalid-argument-type
-  125 invalid-argument-type
-  126 invalid-argument-type
+  115 invalid-assignment
+  122 invalid-assignment
   127 invalid-argument-type
-  128 invalid-assignment
-  129 invalid-assignment
-  130 invalid-argument-type
-  131 invalid-argument-type
-  132 unknown-argument
+  128 invalid-argument-type
+  132 invalid-argument-type
   133 invalid-argument-type
   134 invalid-argument-type
-  135 invalid-assignment
-  136 invalid-assignment
-  137 invalid-assignment
+  135 invalid-argument-type
+  136 invalid-argument-type
+  137 invalid-argument-type
+  138 invalid-argument-type
+  139 invalid-argument-type
+  140 invalid-argument-type
   141 invalid-assignment
   142 invalid-assignment
-  143 invalid-assignment
-  144 invalid-assignment
-  145 invalid-argument-type
-  151 invalid-argument-type
-  152 invalid-argument-type
-  153 invalid-argument-type
-  154 invalid-argument-type
-  155 invalid-argument-type
-  156 invalid-argument-type
+  143 invalid-argument-type
+  144 invalid-argument-type
+  145 unknown-argument
+  146 invalid-argument-type
+  147 invalid-argument-type
+  148 invalid-assignment
+  149 invalid-assignment
+  150 invalid-assignment
+  154 invalid-assignment
+  155 invalid-assignment
+  156 invalid-assignment
   157 invalid-assignment
-  158 invalid-assignment
-  162 invalid-argument-type
-  163 invalid-argument-type
+  158 invalid-argument-type
   164 invalid-argument-type
   165 invalid-argument-type
   166 invalid-argument-type
   167 invalid-argument-type
   168 invalid-argument-type
   169 invalid-argument-type
-  170 invalid-argument-type
-  171 invalid-argument-type
-  172 unknown-argument
-  173 invalid-argument-type
-  174 invalid-argument-type
+  170 invalid-assignment
+  171 invalid-assignment
   175 invalid-argument-type
-  176 missing-argument
-  177 too-many-positional-arguments
-  178 invalid-assignment
-  185 invalid-argument-type
-  187 invalid-assignment
-  188 missing-argument
-  189 invalid-argument-type
-  190 invalid-assignment
+  176 invalid-argument-type
+  177 invalid-argument-type
+  178 invalid-argument-type
+  179 invalid-argument-type
+  180 invalid-argument-type
+  181 invalid-argument-type
+  182 invalid-argument-type
+  183 invalid-argument-type
+  184 invalid-argument-type
+  185 unknown-argument
+  186 invalid-argument-type
+  187 invalid-argument-type
+  188 invalid-argument-type
+  189 missing-argument
+  190 too-many-positional-arguments
   191 invalid-assignment
+  198 invalid-argument-type
+  200 invalid-assignment
+  201 missing-argument
+  202 invalid-argument-type
+  203 invalid-assignment
+  204 invalid-assignment
 signatures_negative.py 2 marked lines
 mypy signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
   41 misc

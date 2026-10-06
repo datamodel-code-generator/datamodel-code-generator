@@ -98,8 +98,14 @@
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create streamed = b'{"id":1,"name":"Mimi"}'
-  create a name too long ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
-  create a numeric name ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
+  create a name too long ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=1 validation error for NewPet
+name
+  String should have at most 8 characters [type=string_too_long, input_value='far too long', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_too_long] request_encoding_error
+  create a numeric name ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=1 validation error for NewPet
+name
+  Input should be a valid string [type=string_type, input_value=5, input_type=int]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type] request_encoding_error
   > POST https://api.example.com/pets/1/visits
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
   log a visit giving nothing = None
@@ -117,40 +123,40 @@
   async create streamed = b'{"id":1,"name":"Mimi"}'
 # fields pydantic_v2.dataclass
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 93] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":null,"owner":null,"id":null,"secret":null}'
   create from its required fields = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 99] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":"2020-01-02","owner":{"email":"e"},"secret":"s"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 125] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":"2020-01-02","owner":{"email":"e","nickName":null},"id":null,"secret":"s"}'
   create from every field, with a null tag = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 15] b'name=Mimi&tag=t'
   create from form fields = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 39] b'{"name":"Mimi","kind":"cat","tag":null}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 93] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":null,"owner":null,"id":null,"secret":null}'
   create from a body = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 93] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":null,"owner":null,"id":null,"secret":null}'
   create from fields and an UNSET body = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 39] b'{"name":"Mimi","kind":"cat","tag":null}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 93] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":null,"owner":null,"id":null,"secret":null}'
   create from a body and UNSET fields = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets?tag=q
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 15] b'name=Mimi&tag=b'
   create with a query tag and a body tag = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets/1/visits
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 28] b'{"note":null,"options":null}'
   log a visit giving nothing of a required body = None
   > POST https://api.example.com/pets/1/visits
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"options":["a"]}'
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 29] b'{"note":null,"options":["a"]}'
   log a visit with renamed options = None
   > POST https://api.example.com/pets/1/visits
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 1] b'n'
   log a visit as text = None
   > PUT https://api.example.com/pets/1/owner
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 13] b'{"email":"e"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 29] b'{"email":"e","nickName":null}'
   set an owner, which takes only a body = None
   > POST https://api.example.com/owners
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 13] b'{"email":"e"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 29] b'{"email":"e","nickName":null}'
   create an owner from fields of a body that may be null = None
   > POST https://api.example.com/owners
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 4] b'null'
@@ -190,7 +196,7 @@
     hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
     hook: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets origin=https://api.example.com counts=0/0 request_id=None timed=False context={}
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 93] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":null,"owner":null,"id":null,"secret":null}'
     hook: response_headers attempt=0 sent=True status=201 outcome=None phase=None path=/pets origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
     hook: attempt_end attempt=0 sent=True status=201 outcome=None phase=None path=/pets origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
     hook: call_end attempt=0 sent=True status=201 outcome=success phase=None path=/pets origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
@@ -199,38 +205,44 @@
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   update giving nothing = None
   > PATCH https://api.example.com/pets/1
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 12] b'{"name":"n"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 23] b'{"name":"n","tag":null}'
   update a name = None
   > PATCH https://api.example.com/pets/1
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 12] b'{"tag":null}'
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 24] b'{"name":null,"tag":null}'
   update a null tag = None
   update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', call_id='<call>', field_path='media_type', condition='without_body') [operation_id='updatePet', field_path=('media_type',), condition='without_body'] configuration_error
   log a visit naming only text ! ConfigurationError: ConfigurationError(operation_id='logVisit', call_id='<call>', field_path='media_type', condition='without_body') [operation_id='logVisit', field_path=('media_type',), condition='without_body'] configuration_error
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 93] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":null,"owner":null,"id":null,"secret":null}'
   create with its response = Response(Pet(id=1, name='Mimi', tag=None), 201, 'application/json', None, [('content-length', '22'), ('content-type', 'application/json')])
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 93] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":null,"owner":null,"id":null,"secret":null}'
   create raw = {'id': 1, 'name': 'Mimi'}
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 93] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":null,"owner":null,"id":null,"secret":null}'
   create streamed = b'{"id":1,"name":"Mimi"}'
-  create a name too long ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
-  create a numeric name ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
+  create a name too long ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=1 validation error for NewPet
+name
+  String should have at most 8 characters [type=string_too_long, input_value='far too long', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_too_long] request_encoding_error
+  create a numeric name ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=1 validation error for NewPet
+name
+  Input should be a valid string [type=string_type, input_value=5, input_type=int]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type] request_encoding_error
   > POST https://api.example.com/pets/1/visits
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 28] b'{"note":null,"options":null}'
   log a visit giving nothing = None
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 93] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":null,"owner":null,"id":null,"secret":null}'
   async create from fields = Pet(id=1, name='Mimi', tag=None)
   async fields refused once awaited: made a coroutine
   async a body and fields ! TypeError: create_pet() takes a body or its field arguments, not both: 'name' []
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 93] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":null,"owner":null,"id":null,"secret":null}'
   async create raw from fields = {'id': 1, 'name': 'Mimi'}
   async a streamed body and fields ! TypeError: create_pet() takes a body or its field arguments, not both: 'name' []
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 93] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":null,"owner":null,"id":null,"secret":null}'
   async create streamed = b'{"id":1,"name":"Mimi"}'
 # fields msgspec.Struct
   > POST https://api.example.com/pets
@@ -335,9 +347,7 @@
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 36] b'{"name":"far too long","kind":"cat"}'
   create a name too long = Pet(id=1, name='Mimi', tag=UNSET)
-  > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"name":5,"kind":"cat"}'
-  create a numeric name = Pet(id=1, name='Mimi', tag=UNSET)
+  create a numeric name ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=ValidationError('Expected `str`, got `int` - at `$.name`')] request_encoding_error
   > POST https://api.example.com/pets/1/visits
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
   log a visit giving nothing = None

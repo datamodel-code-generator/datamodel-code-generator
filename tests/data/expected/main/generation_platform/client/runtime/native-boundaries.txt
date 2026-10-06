@@ -1,0 +1,84 @@
+# native-boundaries pydantic_v2.BaseModel
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  duplicate JSON keys = Entry(value='last')
+  missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  malformed JSON ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False, cause=1 validation error for Entry
+  Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] response_header_decode_error
+  missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  missing required header ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False] response_header_decode_error
+  missing optional JSON header = UNSET
+  > POST https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
+  nullable model from fields = None
+# native-boundaries pydantic_v2.dataclass
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  duplicate JSON keys = Entry(value='last')
+  missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  malformed JSON ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False, cause=1 validation error for Entry
+  Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] response_header_decode_error
+  missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  missing required header ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False] response_header_decode_error
+  missing optional JSON header = UNSET
+  > POST https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
+  nullable model from fields = None
+# native-boundaries dataclasses.dataclass
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  duplicate JSON keys = Entry(value='last')
+  missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  malformed JSON ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] response_header_decode_error
+  missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  missing required header ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False] response_header_decode_error
+  missing optional JSON header = UNSET
+  > POST https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
+  nullable model from fields = None
+# native-boundaries typing.TypedDict
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  duplicate JSON keys = {'value': 'last'}
+  missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  malformed JSON ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] response_header_decode_error
+  missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  missing required header ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False] response_header_decode_error
+  missing optional JSON header = UNSET
+  > POST https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
+  nullable model from fields = None
+# native-boundaries msgspec.Struct
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  duplicate JSON keys = Entry(value='last')
+  missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  malformed JSON ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False, cause=DecodeError('JSON is malformed: object keys must be strings (byte 1)')] response_header_decode_error
+  missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  missing required header ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=204, operation_id='getValues', call_id='<call>') [operation_id='getValues', body_bytes=b'', truncated=False] response_header_decode_error
+  missing optional JSON header = UNSET
+  > POST https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
+  nullable model from fields = None
