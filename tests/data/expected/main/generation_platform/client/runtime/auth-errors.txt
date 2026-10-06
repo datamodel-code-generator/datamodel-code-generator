@@ -54,7 +54,7 @@
   invalid auth phase bool ! ValueError: phase must be one of its declared values []
   invalid auth phase list ! ValueError: phase must be one of its declared values []
   invalid auth delivery_state unknown ! ValueError: delivery_state must be a DeliveryState []
-  invalid auth delivery_state none = AuthError: AuthError(reason='provider_failed', delivery_state='NOT_SENT', phase='unknown') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] provider_failed
+  invalid auth delivery_state none = AuthError: AuthError(reason='provider_failed', delivery_state='MAYBE_SENT', phase='unknown') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown'] provider_failed
   invalid auth delivery_state bool ! ValueError: delivery_state must be a DeliveryState []
   invalid auth delivery_state list ! ValueError: delivery_state must be a DeliveryState []
   invalid ConfigurationError reason symbol ! ValueError: A reason must be an SDK-defined lowercase symbol []

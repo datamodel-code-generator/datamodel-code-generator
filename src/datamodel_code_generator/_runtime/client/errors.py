@@ -95,6 +95,12 @@ class ErrorMetadata(_CallMetadata, total=False):
     info: ResponseInfo | None
 
 
+def _delivery_default(metadata: _CallMetadata, state: DeliveryState) -> None:
+    """Give an error without a delivery state, whether absent or None, its constructor's default."""
+    if metadata.get("delivery_state") is None:
+        metadata["delivery_state"] = state
+
+
 class SDKError(Exception):
     """Base of every exception the client raises, with the identifiers and measurements of the failed call.
 
@@ -303,7 +309,7 @@ class APIConnectionError(SDKError):
         **metadata: Unpack[ErrorMetadata],
     ) -> None:
         """Keep the delivery evidence and the phase that failed; without evidence the request may have been sent."""
-        metadata.setdefault("delivery_state", DeliveryState.MAYBE_SENT)
+        _delivery_default(metadata, DeliveryState.MAYBE_SENT)
         super().__init__(reason=reason, **metadata)
         self.phase: IOPhase | DeadlinePhase = phase
         self.retry_stop_reason: RetryStopReason | None = retry_stop_reason
@@ -389,7 +395,7 @@ def is_hook_failure(error: object) -> TypeGuard[SDKError]:
 
 def redirect_refused(**metadata: Unpack[ErrorMetadata]) -> ConfigurationError:
     """Return the failure of a redirect that cannot be followed safely; no redirect body is retained."""
-    metadata.setdefault("delivery_state", DeliveryState.RESPONSE_STARTED)
+    _delivery_default(metadata, DeliveryState.RESPONSE_STARTED)
     return ConfigurationError(field_path=("redirects",), reason="redirect_refused", **metadata)
 
 
@@ -414,7 +420,7 @@ class APIStatusError(SDKError):
         **metadata: Unpack[_CallMetadata],
     ) -> None:
         """Keep the response metadata, the decoded or raw body, and the bounded body bytes."""
-        metadata.setdefault("delivery_state", DeliveryState.RESPONSE_STARTED)
+        _delivery_default(metadata, DeliveryState.RESPONSE_STARTED)
         super().__init__(info=info, reason=reason, **metadata)
         self.body = body
         self.body_bytes = body_bytes
@@ -513,7 +519,7 @@ class AuthError(SDKError):
             _error_status(status_code)
         if oauth_error is not None:
             error_choice(oauth_error, OAUTH_ERROR_CODES, "oauth_error")
-        metadata.setdefault("delivery_state", DeliveryState.MAYBE_SENT)
+        _delivery_default(metadata, DeliveryState.MAYBE_SENT)
         super().__init__(reason=reason, **metadata)
         self.reason: AuthReason = reason
         self.phase: AuthPhase = phase
@@ -781,7 +787,7 @@ class RequestCancelledError(SDKError):
 class _AdapterError(SDKError):
     def __init__(self, **metadata: Unpack[ErrorMetadata]) -> None:
         """Keep how far the request got."""
-        metadata.setdefault("delivery_state", DeliveryState.MAYBE_SENT)
+        _delivery_default(metadata, DeliveryState.MAYBE_SENT)
         super().__init__(**metadata)
 
     def _details(self) -> tuple[tuple[str, object], ...]:
