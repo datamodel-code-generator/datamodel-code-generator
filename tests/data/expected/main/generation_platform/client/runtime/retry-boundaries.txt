@@ -24,7 +24,7 @@
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('call_end', 0, 200, True, 1, 1, None, 'cancel')] one-call=True queued=0
   stream_end interruption after a failed body = ('KeyboardInterrupt', True, ['Secondary cleanup failure: TransportError'])
   stream_end interruption after a failed block = ('KeyboardInterrupt', True, ['Secondary cleanup failure: ValueError'])
-  intermediate hook interruption = ('_Stop', True, ['Secondary cleanup failure: GetSafeHTTPError'])
+  intermediate hook interruption = ('_Stop', True, ['Secondary cleanup failure: InternalServerError'])
   intermediate hook interruption events = [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')]
   async pre-send descriptor call_start = (('PhaseTimeoutError', None, 0, 0, 'read', ()), True, 1)
     events=[('call_start', None, None, False, 0, 0, None, None), ('transport_failure', 0, None, False, 0, 0, None, None), ('attempt_end', 0, None, False, 0, 0, None, None), ('call_end', 0, None, False, 0, 0, None, 'error')] one-call=True queued=2
@@ -44,7 +44,7 @@
   async terminal hook order = ([('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')])
   async stream_end interruption after a failed body = ('_Stop', True, ['Secondary cleanup failure: TransportError'])
   async stream_end interruption after a failed block = ('_Stop', True, ['Secondary cleanup failure: ValueError'])
-  async intermediate hook interruption = ('_Stop', True, ['Secondary cleanup failure: GetSafeHTTPError'])
+  async intermediate hook interruption = ('_Stop', True, ['Secondary cleanup failure: InternalServerError'])
   async intermediate hook interruption events = [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')]
   stream reuses its deadline through EOF = b'bounded stream'
   async missing optional HTTP2 dependency ! ConfigurationError: ConfigurationError(field_path='transport.http2', condition='unavailable') [field_path=('transport', 'http2'), condition='unavailable', cause=ImportError("Using http2=True, but the 'h2' package is not installed. Make sure to install httpx using `pip install httpx[http2]`.")] configuration_error

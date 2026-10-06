@@ -272,21 +272,21 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  budget derived defaults=GetSafeHTTPError attempts=3 sends=3 used=3 stop=max_retries_exhausted
+  budget derived defaults=InternalServerError attempts=3 sends=3 used=3 stop=max_retries_exhausted
   budget derived defaults arrivals=3
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  budget derived disabled retry=GetSafeHTTPError attempts=1 sends=1 used=1 stop=disabled
+  budget derived disabled retry=InternalServerError attempts=1 sends=1 used=1 stop=disabled
   budget derived disabled retry arrivals=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  budget explicit one inherited=GetSafeHTTPError attempts=1 sends=1 used=1 stop=network_budget_exhausted
+  budget explicit one inherited=InternalServerError attempts=1 sends=1 used=1 stop=network_budget_exhausted
   budget explicit one inherited arrivals=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  budget uncapped inherited=GetSafeHTTPError attempts=2 sends=2 used=2 stop=max_retries_exhausted
+  budget uncapped inherited=InternalServerError attempts=2 sends=2 used=2 stop=max_retries_exhausted
   budget uncapped inherited arrivals=2
   budget zero override=BudgetExceededError attempts=0 sends=0 used=0 stop=None
   budget zero override arrivals=0
@@ -304,7 +304,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  budget seven inherited=GetSafeHTTPError attempts=7 sends=7 used=7 stop=network_budget_exhausted
+  budget seven inherited=InternalServerError attempts=7 sends=7 used=7 stop=network_budget_exhausted
   budget seven inherited arrivals=7
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
@@ -312,7 +312,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  budget explicit call replaces one=GetSafeHTTPError attempts=3 sends=3 used=3 stop=max_retries_exhausted
+  budget explicit call replaces one=InternalServerError attempts=3 sends=3 used=3 stop=max_retries_exhausted
   budget explicit call replaces one arrivals=3
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
@@ -328,7 +328,7 @@
   vendor case-insensitive match arrivals=2
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  vendor disabled ! GetVendorHTTPError: GetVendorHTTPError(status_code=501, operation_id='getVendor', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getVendor', status_code=501, error_decoded=True, error_data=FieldVendorGetResponse(root='vendor'), body_bytes=b'vendor', truncated=False] get_vendor_http_error
+  vendor disabled ! InternalServerError: InternalServerError(status_code=501, operation_id='getVendor', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getVendor', status_code=501, body=FieldVendorGetResponse(root='vendor'), body_bytes=b'vendor', truncated=False] internal_server_error
   vendor disabled arrivals=1
   vendor mismatched retry_after_ms_header ! ConfigurationError: ConfigurationError(operation_id='getVendor', call_id='<call>', field_path='retry.retry_after_ms_header', condition='invalid_value') [operation_id='getVendor', field_path=('retry', 'retry_after_ms_header'), condition='invalid_value'] configuration_error
   vendor undeclared retry_after_ms_header ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='retry.retry_after_ms_header', condition='invalid_value') [operation_id='getSafe', field_path=('retry', 'retry_after_ms_header'), condition='invalid_value'] configuration_error
@@ -356,7 +356,7 @@
   caller key observed=['caller-owned', 'caller-owned']
   > POST https://api.example.com/keyed
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
-  view clears caller key ! PostKeyedHTTPError: PostKeyedHTTPError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, error_decoded=True, error_data=FieldKeyedPostResponse(root='retry'), body_bytes=b'retry', truncated=False] post_keyed_http_error
+  view clears caller key ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='retry'), body_bytes=b'retry', truncated=False] internal_server_error
   cleared key observed=[None]
   key sync h1 pre-send rejection ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
   rejected key arrivals=0

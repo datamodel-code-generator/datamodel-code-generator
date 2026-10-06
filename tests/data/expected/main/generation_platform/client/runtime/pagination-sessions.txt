@@ -18,7 +18,7 @@
     progress {'pages': 1, 'items': 1, 'network_send_count': 1, 'network_send_budget_used': 1}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  retry without a send slot ! ListUsersHTTPError: ListUsersHTTPError(status_code=503, operation_id='listUsers', call_id='<call>', retry_stop_reason='parent_budget_exhausted') [operation_id='listUsers', status_code=503, error_decoded=False, body_bytes=b'{"message":"busy"}', truncated=False] list_users_http_error stop=parent_budget_exhausted
+  retry without a send slot ! InternalServerError: InternalServerError(status_code=503, operation_id='listUsers', call_id='<call>', retry_stop_reason='parent_budget_exhausted') [operation_id='listUsers', status_code=503, body=b'{"message":"busy"}', body_bytes=b'{"message":"busy"}', truncated=False] internal_server_error stop=parent_budget_exhausted
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   redirect without a send slot ! SessionLimitError: SessionLimitError(operation_id='listUsers', call_id='<call>', kind='network_sends', limit=1) [operation_id='listUsers', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error cause=BudgetExceededError counters=1/1 session=True
@@ -34,7 +34,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  typed error after retries ! ListUsersHTTPError: ListUsersHTTPError(status_code=500, operation_id='listUsers', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listUsers', status_code=500, error_decoded=True, error_data=Error(message='down'), body_bytes=b'{"message":"down"}', truncated=False] list_users_http_error data=Error(message='down')
+  typed error after retries ! InternalServerError: InternalServerError(status_code=500, operation_id='listUsers', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listUsers', status_code=500, body=Error(message='down'), body_bytes=b'{"message":"down"}', truncated=False] internal_server_error body=Error(message='down')
   after the typed error ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [] protocol_state_error
   session timeout ! DeadlineExceededError: DeadlineExceededError(operation_id='listUsers', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error session=True {'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0}
   earlier session timeout ! DeadlineExceededError: DeadlineExceededError(operation_id='listUsers', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error session=True {'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0}

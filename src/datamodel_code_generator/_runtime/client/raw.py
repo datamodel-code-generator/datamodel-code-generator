@@ -15,7 +15,7 @@ from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Final, Generic, Literal, TypeAlias
 
-from typing_extensions import Self, TypeIs, TypeVar
+from typing_extensions import Self, TypeVar
 
 from ..model_codecs.media import json_value
 from .coding import CHUNK, ContentDecoder
@@ -23,12 +23,12 @@ from .errors import (
     CleanupError,
     DecodeError,
     DeliveryState,
-    HTTPStatusError,
     ProtocolError,
     ResponseConsumedError,
     ResponseTooLargeError,
     SDKError,
     add_secondary,
+    is_http_error,
 )
 from .lifecycle import cleanup_secondary
 from .media import charset
@@ -55,10 +55,6 @@ State: TypeAlias = Literal["buffered", "open", "streaming", "consumed", "closed"
 SourceT = TypeVar("SourceT")
 HandleT = TypeVar("HandleT")
 T = TypeVar("T")
-
-
-def _status_error(error: Exception) -> TypeIs[HTTPStatusError[object]]:
-    return isinstance(error, HTTPStatusError)
 
 
 def _pieces(data: bytes) -> Generator[bytes, None, None]:
@@ -268,7 +264,7 @@ class _Raw(Generic[SourceT, HandleT]):
     def __init__(  # noqa: PLR0913
         self,
         info: ResponseInfo,
-        decoder: ResponseDecoder[object, object],
+        decoder: ResponseDecoder[object],
         limits: Settings,
         operation_id: str | None,
         failure: Callable[[Exception], BaseException],
@@ -286,7 +282,7 @@ class _Raw(Generic[SourceT, HandleT]):
         """
         self._events = events
         self._call = call
-        self._retry_stop_reason = retry_stop_reason
+        self._retry_stop_reason: RetryStopReason | None = retry_stop_reason
         self._status_secondary_errors = status_secondary_errors
         self._info = info
         self._decoder = decoder
@@ -344,7 +340,7 @@ class _Raw(Generic[SourceT, HandleT]):
         return self._failure(closed)
 
     def _failure(self, error: Exception) -> BaseException:
-        if _status_error(error):
+        if is_http_error(error):
             error.retry_stop_reason = self._retry_stop_reason
             for secondary in self._status_secondary_errors:
                 add_secondary(error, secondary)
@@ -390,7 +386,7 @@ class _Raw(Generic[SourceT, HandleT]):
         """Return the typed failure of a buffered response from its bounded error prefix."""
         limit, body = self._limits.max_error_body_bytes, self._body
         error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit)
-        if _status_error(error):
+        if is_http_error(error):
             error.retry_stop_reason = self._retry_stop_reason
             for secondary in self._status_secondary_errors:
                 add_secondary(error, secondary)
@@ -468,7 +464,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     def __init__(  # noqa: PLR0913
         self,
         info: ResponseInfo,
-        decoder: ResponseDecoder[object, object],
+        decoder: ResponseDecoder[object],
         limits: Settings,
         operation_id: str | None,
         failure: Callable[[Exception], BaseException],
@@ -743,7 +739,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     def __init__(  # noqa: PLR0913
         self,
         info: ResponseInfo,
-        decoder: ResponseDecoder[object, object],
+        decoder: ResponseDecoder[object],
         limits: Settings,
         operation_id: str | None,
         failure: Callable[[Exception], BaseException],

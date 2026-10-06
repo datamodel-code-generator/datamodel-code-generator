@@ -19,89 +19,37 @@ from ._runtime.client.operations import (
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.auth import (
-    AliasAuthErrorData,
-    AliasAuthHTTPError,
     AliasAuthResponse,
-    AndAuthErrorData,
-    AndAuthHTTPError,
     AndAuthResponse,
-    AnonymousErrorData,
-    AnonymousHTTPError,
     AnonymousResponse,
-    ApiKeyCookieErrorData,
-    ApiKeyCookieHTTPError,
     ApiKeyCookieResponse,
-    ApiKeyHeaderErrorData,
-    ApiKeyHeaderHTTPError,
     ApiKeyHeaderResponse,
-    ApiKeyQueryErrorData,
-    ApiKeyQueryHTTPError,
     ApiKeyQueryResponse,
-    AuthorizationOrErrorData,
-    AuthorizationOrHTTPError,
     AuthorizationOrResponse,
-    BasicErrorData,
-    BasicHTTPError,
     BasicResponse,
-    BearerErrorData,
-    BearerHTTPError,
     BearerResponse,
-    ChallengeLessErrorData,
-    ChallengeLessHTTPError,
     ChallengeLessResponse,
-    CookieParametersErrorData,
-    CookieParametersHTTPError,
     CookieParametersResponse,
-    EmptySecurityErrorData,
-    EmptySecurityHTTPError,
     EmptySecurityResponse,
-    IdempotentAuthErrorData,
-    IdempotentAuthHTTPError,
     IdempotentAuthResponse,
-    InheritedAuthErrorData,
-    InheritedAuthHTTPError,
     InheritedAuthResponse,
-    NeverAuthErrorData,
-    NeverAuthHTTPError,
     NeverAuthResponse,
-    OauthEmptyErrorData,
-    OauthEmptyHTTPError,
     OauthEmptyResponse,
-    OauthReadErrorData,
-    OauthReadHTTPError,
     OauthReadResponse,
-    OauthScopesErrorData,
-    OauthScopesHTTPError,
     OauthScopesResponse,
-    OpenidReadErrorData,
-    OpenidReadHTTPError,
     OpenidReadResponse,
-    OptionalAuthErrorData,
-    OptionalAuthHTTPError,
     OptionalAuthResponse,
-    OptionalTokenFirstErrorData,
-    OptionalTokenFirstHTTPError,
     OptionalTokenFirstResponse,
-    OrAuthErrorData,
-    OrAuthHTTPError,
     OrAuthResponse,
-    SignedBodyErrorData,
-    SignedBodyHTTPError,
     SignedBodyResponse,
-    SignedMultipartErrorData,
-    SignedMultipartHTTPError,
     SignedMultipartResponse,
-    UnsafeAuthErrorData,
-    UnsafeAuthHTTPError,
     UnsafeAuthResponse,
-    VendorAuthErrorData,
-    VendorAuthHTTPError,
     VendorAuthResponse,
 )
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
-OPERATION_0: Final[OperationPlan[InheritedAuthResponse, InheritedAuthErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[InheritedAuthResponse]] = OperationPlan(
     operation_id='inherited_auth',
     method='GET',
     path='/inherited',
@@ -112,12 +60,11 @@ OPERATION_0: Final[OperationPlan[InheritedAuthResponse, InheritedAuthErrorData]]
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        InheritedAuthHTTPError,
     ),
     security=security.OPERATION_0,
 )
 
-OPERATION_1: Final[OperationPlan[AnonymousResponse, AnonymousErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[AnonymousResponse]] = OperationPlan(
     operation_id='anonymous',
     method='GET',
     path='/anonymous',
@@ -128,12 +75,11 @@ OPERATION_1: Final[OperationPlan[AnonymousResponse, AnonymousErrorData]] = Opera
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        AnonymousHTTPError,
     ),
     security=security.OPERATION_1,
 )
 
-OPERATION_2: Final[OperationPlan[EmptySecurityResponse, EmptySecurityErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[EmptySecurityResponse]] = OperationPlan(
     operation_id='empty_security',
     method='GET',
     path='/empty',
@@ -144,12 +90,11 @@ OPERATION_2: Final[OperationPlan[EmptySecurityResponse, EmptySecurityErrorData]]
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        EmptySecurityHTTPError,
     ),
     security=security.OPERATION_2,
 )
 
-OPERATION_3: Final[OperationPlan[OptionalAuthResponse, OptionalAuthErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[OptionalAuthResponse]] = OperationPlan(
     operation_id='optional_auth',
     method='GET',
     path='/optional',
@@ -160,12 +105,11 @@ OPERATION_3: Final[OperationPlan[OptionalAuthResponse, OptionalAuthErrorData]] =
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        OptionalAuthHTTPError,
     ),
     security=security.OPERATION_3,
 )
 
-OPERATION_4: Final[OperationPlan[OptionalTokenFirstResponse, OptionalTokenFirstErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[OptionalTokenFirstResponse]] = OperationPlan(
     operation_id='optional_token_first',
     method='GET',
     path='/optional-token-first',
@@ -176,12 +120,11 @@ OPERATION_4: Final[OperationPlan[OptionalTokenFirstResponse, OptionalTokenFirstE
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        OptionalTokenFirstHTTPError,
     ),
     security=security.OPERATION_4,
 )
 
-OPERATION_5: Final[OperationPlan[AndAuthResponse, AndAuthErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[AndAuthResponse]] = OperationPlan(
     operation_id='and_auth',
     method='GET',
     path='/and',
@@ -192,12 +135,11 @@ OPERATION_5: Final[OperationPlan[AndAuthResponse, AndAuthErrorData]] = Operation
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        AndAuthHTTPError,
     ),
     security=security.OPERATION_5,
 )
 
-OPERATION_6: Final[OperationPlan[OrAuthResponse, OrAuthErrorData]] = OperationPlan(
+OPERATION_6: Final[OperationPlan[OrAuthResponse]] = OperationPlan(
     operation_id='or_auth',
     method='GET',
     path='/or',
@@ -208,12 +150,11 @@ OPERATION_6: Final[OperationPlan[OrAuthResponse, OrAuthErrorData]] = OperationPl
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        OrAuthHTTPError,
     ),
     security=security.OPERATION_6,
 )
 
-OPERATION_7: Final[OperationPlan[AuthorizationOrResponse, AuthorizationOrErrorData]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[AuthorizationOrResponse]] = OperationPlan(
     operation_id='authorization_or',
     method='GET',
     path='/authorization-or',
@@ -224,12 +165,11 @@ OPERATION_7: Final[OperationPlan[AuthorizationOrResponse, AuthorizationOrErrorDa
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        AuthorizationOrHTTPError,
     ),
     security=security.OPERATION_7,
 )
 
-OPERATION_8: Final[OperationPlan[ApiKeyHeaderResponse, ApiKeyHeaderErrorData]] = OperationPlan(
+OPERATION_8: Final[OperationPlan[ApiKeyHeaderResponse]] = OperationPlan(
     operation_id='api_key_header',
     method='GET',
     path='/api-key/header',
@@ -240,12 +180,11 @@ OPERATION_8: Final[OperationPlan[ApiKeyHeaderResponse, ApiKeyHeaderErrorData]] =
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        ApiKeyHeaderHTTPError,
     ),
     security=security.OPERATION_8,
 )
 
-OPERATION_9: Final[OperationPlan[ApiKeyQueryResponse, ApiKeyQueryErrorData]] = OperationPlan(
+OPERATION_9: Final[OperationPlan[ApiKeyQueryResponse]] = OperationPlan(
     operation_id='api_key_query',
     method='GET',
     path='/api-key/query',
@@ -256,12 +195,11 @@ OPERATION_9: Final[OperationPlan[ApiKeyQueryResponse, ApiKeyQueryErrorData]] = O
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        ApiKeyQueryHTTPError,
     ),
     security=security.OPERATION_9,
 )
 
-OPERATION_10: Final[OperationPlan[ApiKeyCookieResponse, ApiKeyCookieErrorData]] = OperationPlan(
+OPERATION_10: Final[OperationPlan[ApiKeyCookieResponse]] = OperationPlan(
     operation_id='api_key_cookie',
     method='GET',
     path='/api-key/cookie',
@@ -272,12 +210,11 @@ OPERATION_10: Final[OperationPlan[ApiKeyCookieResponse, ApiKeyCookieErrorData]] 
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        ApiKeyCookieHTTPError,
     ),
     security=security.OPERATION_10,
 )
 
-OPERATION_11: Final[OperationPlan[CookieParametersResponse, CookieParametersErrorData]] = OperationPlan(
+OPERATION_11: Final[OperationPlan[CookieParametersResponse]] = OperationPlan(
     operation_id='cookie_parameters',
     method='GET',
     path='/api-key/cookie-parameters',
@@ -288,7 +225,6 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse, CookieParametersErro
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        CookieParametersHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -340,7 +276,7 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse, CookieParametersErro
     security=security.OPERATION_11,
 )
 
-OPERATION_12: Final[OperationPlan[BasicResponse, BasicErrorData]] = OperationPlan(
+OPERATION_12: Final[OperationPlan[BasicResponse]] = OperationPlan(
     operation_id='basic',
     method='GET',
     path='/basic',
@@ -351,12 +287,11 @@ OPERATION_12: Final[OperationPlan[BasicResponse, BasicErrorData]] = OperationPla
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        BasicHTTPError,
     ),
     security=security.OPERATION_12,
 )
 
-OPERATION_13: Final[OperationPlan[BearerResponse, BearerErrorData]] = OperationPlan(
+OPERATION_13: Final[OperationPlan[BearerResponse]] = OperationPlan(
     operation_id='bearer',
     method='GET',
     path='/bearer',
@@ -367,12 +302,11 @@ OPERATION_13: Final[OperationPlan[BearerResponse, BearerErrorData]] = OperationP
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        BearerHTTPError,
     ),
     security=security.OPERATION_13,
 )
 
-OPERATION_14: Final[OperationPlan[AliasAuthResponse, AliasAuthErrorData]] = OperationPlan(
+OPERATION_14: Final[OperationPlan[AliasAuthResponse]] = OperationPlan(
     operation_id='alias_auth',
     method='GET',
     path='/alias',
@@ -383,12 +317,11 @@ OPERATION_14: Final[OperationPlan[AliasAuthResponse, AliasAuthErrorData]] = Oper
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        AliasAuthHTTPError,
     ),
     security=security.OPERATION_14,
 )
 
-OPERATION_15: Final[OperationPlan[OauthReadResponse, OauthReadErrorData]] = OperationPlan(
+OPERATION_15: Final[OperationPlan[OauthReadResponse]] = OperationPlan(
     operation_id='oauth_read',
     method='GET',
     path='/oauth/read',
@@ -399,12 +332,11 @@ OPERATION_15: Final[OperationPlan[OauthReadResponse, OauthReadErrorData]] = Oper
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        OauthReadHTTPError,
     ),
     security=security.OPERATION_15,
 )
 
-OPERATION_16: Final[OperationPlan[OauthScopesResponse, OauthScopesErrorData]] = OperationPlan(
+OPERATION_16: Final[OperationPlan[OauthScopesResponse]] = OperationPlan(
     operation_id='oauth_scopes',
     method='GET',
     path='/oauth/scopes',
@@ -415,12 +347,11 @@ OPERATION_16: Final[OperationPlan[OauthScopesResponse, OauthScopesErrorData]] = 
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        OauthScopesHTTPError,
     ),
     security=security.OPERATION_16,
 )
 
-OPERATION_17: Final[OperationPlan[OauthEmptyResponse, OauthEmptyErrorData]] = OperationPlan(
+OPERATION_17: Final[OperationPlan[OauthEmptyResponse]] = OperationPlan(
     operation_id='oauth_empty',
     method='GET',
     path='/oauth/empty',
@@ -431,12 +362,11 @@ OPERATION_17: Final[OperationPlan[OauthEmptyResponse, OauthEmptyErrorData]] = Op
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        OauthEmptyHTTPError,
     ),
     security=security.OPERATION_17,
 )
 
-OPERATION_18: Final[OperationPlan[OpenidReadResponse, OpenidReadErrorData]] = OperationPlan(
+OPERATION_18: Final[OperationPlan[OpenidReadResponse]] = OperationPlan(
     operation_id='openid_read',
     method='GET',
     path='/openid/read',
@@ -447,12 +377,11 @@ OPERATION_18: Final[OperationPlan[OpenidReadResponse, OpenidReadErrorData]] = Op
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        OpenidReadHTTPError,
     ),
     security=security.OPERATION_18,
 )
 
-OPERATION_19: Final[OperationPlan[ChallengeLessResponse, ChallengeLessErrorData]] = OperationPlan(
+OPERATION_19: Final[OperationPlan[ChallengeLessResponse]] = OperationPlan(
     operation_id='challenge_less',
     method='GET',
     path='/challenge-less',
@@ -463,13 +392,12 @@ OPERATION_19: Final[OperationPlan[ChallengeLessResponse, ChallengeLessErrorData]
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        ChallengeLessHTTPError,
     ),
     security=security.OPERATION_19,
     auth_challenge_less_401=True,
 )
 
-OPERATION_20: Final[OperationPlan[UnsafeAuthResponse, UnsafeAuthErrorData]] = OperationPlan(
+OPERATION_20: Final[OperationPlan[UnsafeAuthResponse]] = OperationPlan(
     operation_id='unsafe_auth',
     method='POST',
     path='/unsafe',
@@ -480,7 +408,6 @@ OPERATION_20: Final[OperationPlan[UnsafeAuthResponse, UnsafeAuthErrorData]] = Op
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        UnsafeAuthHTTPError,
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -489,7 +416,7 @@ OPERATION_20: Final[OperationPlan[UnsafeAuthResponse, UnsafeAuthErrorData]] = Op
     security=security.OPERATION_20,
 )
 
-OPERATION_21: Final[OperationPlan[IdempotentAuthResponse, IdempotentAuthErrorData]] = OperationPlan(
+OPERATION_21: Final[OperationPlan[IdempotentAuthResponse]] = OperationPlan(
     operation_id='idempotent_auth',
     method='POST',
     path='/idempotent',
@@ -500,7 +427,6 @@ OPERATION_21: Final[OperationPlan[IdempotentAuthResponse, IdempotentAuthErrorDat
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        IdempotentAuthHTTPError,
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -510,7 +436,7 @@ OPERATION_21: Final[OperationPlan[IdempotentAuthResponse, IdempotentAuthErrorDat
     security=security.OPERATION_21,
 )
 
-OPERATION_22: Final[OperationPlan[NeverAuthResponse, NeverAuthErrorData]] = OperationPlan(
+OPERATION_22: Final[OperationPlan[NeverAuthResponse]] = OperationPlan(
     operation_id='never_auth',
     method='GET',
     path='/never',
@@ -521,13 +447,12 @@ OPERATION_22: Final[OperationPlan[NeverAuthResponse, NeverAuthErrorData]] = Oper
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        NeverAuthHTTPError,
     ),
     retry_safety='never',
     security=security.OPERATION_22,
 )
 
-OPERATION_23: Final[OperationPlan[VendorAuthResponse, VendorAuthErrorData]] = OperationPlan(
+OPERATION_23: Final[OperationPlan[VendorAuthResponse]] = OperationPlan(
     operation_id='vendor_auth',
     method='GET',
     path='/vendor',
@@ -538,14 +463,13 @@ OPERATION_23: Final[OperationPlan[VendorAuthResponse, VendorAuthErrorData]] = Op
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        VendorAuthHTTPError,
     ),
     retry_after_ms_header='X-Retry-In-Ms',
     should_retry_header='X-Retry-Permitted',
     security=security.OPERATION_23,
 )
 
-OPERATION_24: Final[OperationPlan[SignedBodyResponse, SignedBodyErrorData]] = OperationPlan(
+OPERATION_24: Final[OperationPlan[SignedBodyResponse]] = OperationPlan(
     operation_id='signed_body',
     method='PUT',
     path='/signed',
@@ -556,7 +480,6 @@ OPERATION_24: Final[OperationPlan[SignedBodyResponse, SignedBodyErrorData]] = Op
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        SignedBodyHTTPError,
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -565,7 +488,7 @@ OPERATION_24: Final[OperationPlan[SignedBodyResponse, SignedBodyErrorData]] = Op
     security=security.OPERATION_24,
 )
 
-OPERATION_25: Final[OperationPlan[SignedMultipartResponse, SignedMultipartErrorData]] = OperationPlan(
+OPERATION_25: Final[OperationPlan[SignedMultipartResponse]] = OperationPlan(
     operation_id='signed_multipart',
     method='POST',
     path='/signed-multipart',
@@ -576,7 +499,6 @@ OPERATION_25: Final[OperationPlan[SignedMultipartResponse, SignedMultipartErrorD
             binary_branch('default', 'application/octet-stream'),
         ),
         (binary_branch('default', 'application/octet-stream'),),
-        SignedMultipartHTTPError,
     ),
     body=RequestBody(
         media=(

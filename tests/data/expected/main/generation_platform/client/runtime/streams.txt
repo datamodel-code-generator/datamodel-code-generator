@@ -177,13 +177,13 @@ text
   redirect without a session send slot ! SessionLimitError: SessionLimitError(operation_id='streamEvents', call_id='<call>', kind='network_sends', limit=1) [operation_id='streamEvents', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  declared error status ! StreamEventsHTTPError: StreamEventsHTTPError(status_code=404, operation_id='streamEvents', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='streamEvents', status_code=404, error_decoded=True, error_data=Problem(detail='missing'), body_bytes=b'{"detail": "missing"}', truncated=False] stream_events_http_error
+  declared error status ! NotFoundError: NotFoundError(status_code=404, operation_id='streamEvents', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='streamEvents', status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail": "missing"}', truncated=False] not_found_error
   > GET https://api.example.com/events accept=text/event-stream
   < closed
   no content ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=204, operation_id='streamEvents', call_id='<call>') [operation_id='streamEvents', body_bytes=b'', truncated=False, expected_media_types=('text/event-stream',)] unexpected_media_type_error
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  undeclared success status ! UnexpectedStatusError: UnexpectedStatusError(status_code=201, operation_id='streamEvents', call_id='<call>') [operation_id='streamEvents', status_code=201, body_bytes=b'', truncated=False] unexpected_status_error
+  undeclared success status ! APIStatusError: APIStatusError(status_code=201, operation_id='streamEvents', call_id='<call>', reason='unexpected_status') [operation_id='streamEvents', status_code=201, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > GET https://api.example.com/events accept=text/event-stream
   < closed
   no media type ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='streamEvents', call_id='<call>') [operation_id='streamEvents', body_bytes=b'', truncated=False, expected_media_types=('text/event-stream',)] unexpected_media_type_error

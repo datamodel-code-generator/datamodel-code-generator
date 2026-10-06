@@ -138,7 +138,7 @@ class ChannelPlan(Generic[SendT, RecvT]):
 
     helper_id: str
     operation: OperationRef
-    call: OperationPlan[object, object]
+    call: OperationPlan[object]
     fingerprint: str
     connectors: tuple[Callable[[], WebSocketConnector], Callable[[], AsyncWebSocketConnector]]
     send_codec: Literal["json", "utf8", "bytes"] = "json"

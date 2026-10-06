@@ -93,10 +93,10 @@
   rejected token refreshed = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
   > GET https://api.example.com/oauth/scopes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
-  refreshed narrow grant refused by resource ! OauthScopesHTTPError: OauthScopesHTTPError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, error_decoded=True, error_data=b'forbidden', body_bytes=b'forbidden', truncated=False] oauth_scopes_http_error
+  refreshed narrow grant refused by resource ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False] permission_denied_error
   > GET https://api.example.com/oauth/scopes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
-  403 leaves the refreshed grant unchanged ! OauthScopesHTTPError: OauthScopesHTTPError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, error_decoded=True, error_data=b'forbidden', body_bytes=b'forbidden', truncated=False] oauth_scopes_http_error
+  403 leaves the refreshed grant unchanged ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False] permission_denied_error
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
   > GET https://api.example.com/oauth/read
@@ -104,7 +104,7 @@
   expired narrow grant refreshed and accepted = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
   > GET https://api.example.com/oauth/scopes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
-  write operation refused by resource ! OauthScopesHTTPError: OauthScopesHTTPError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, error_decoded=True, error_data=b'forbidden', body_bytes=b'forbidden', truncated=False] oauth_scopes_http_error
+  write operation refused by resource ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False] permission_denied_error
     token_requests=2 resource_arrivals=7 refreshed_grants=('read',)
   lifetime 100s with refresh token refresh-1 after 95s = access-2 scopes=None expires_in_minutes=60 same=None
     after 101s = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']

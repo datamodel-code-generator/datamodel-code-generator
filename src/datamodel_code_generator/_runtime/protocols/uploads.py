@@ -19,12 +19,11 @@ from typing_extensions import Self, TypeVar
 
 from ..client.bodies import AsyncBodyFactory, BodyFactory
 from ..client.errors import (
+    APIStatusError,
     BudgetExceededError,
     DeliveryState,
-    HTTPStatusError,
     ProtocolConfigurationError,
     TransportError,
-    UnexpectedStatusError,
 )
 from ..client.options import RequestOptions
 from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
@@ -105,7 +104,7 @@ class _Phase(Enum):
 _PHASES: Final = MappingProxyType({phase.value: phase for phase in _Phase})
 
 
-def _unreplayed(call: OperationPlan[T, object]) -> OperationPlan[T, object]:
+def _unreplayed(call: OperationPlan[T]) -> OperationPlan[T]:
     """Return an append that shared retries never send again once it may have been delivered.
 
     An operation retried only while it was proven unsent stays as declared; any other is never retried, so an unknown
@@ -136,12 +135,12 @@ class UploadPlan(Generic[T, C]):
 
     helper_id: str
     operation: OperationRef
-    create: OperationPlan[C, object]
+    create: OperationPlan[C]
     probe_operation: OperationRef
-    probe: OperationPlan[object, object]
+    probe: OperationPlan[object]
     remote_offset: Selector
     append_operation: OperationRef
-    append: OperationPlan[object, object]
+    append: OperationPlan[object]
     offset: ParameterTarget
     max_chunk_bytes: int
     partial_commit: bool
@@ -156,7 +155,7 @@ class UploadPlan(Generic[T, C]):
     checksum_encoding: Literal["base64", "hex"] = "base64"
     checksum_prefix: bool = False
     completion_operation: OperationRef | None = None
-    completion: OperationPlan[T, object] | None = None
+    completion: OperationPlan[T] | None = None
     completion_bindings: tuple[PageBinding, ...] = ()
     size_position: int | None = field(init=False)
     probed: Targeted[object] = field(init=False)
@@ -861,7 +860,7 @@ def _refused(error: BaseException) -> bool:
     A 502 or 504 proves nothing: a gateway answers with it when the server behind it may have applied the call.
     """
     return (
-        isinstance(error, (HTTPStatusError, UnexpectedStatusError))
+        isinstance(error, APIStatusError)
         and not _MIN_SUCCESS <= (status := error.info.status_code) <= _MAX_SUCCESS
         and status not in _GATEWAY_STATUSES
     )
@@ -869,7 +868,7 @@ def _refused(error: BaseException) -> bool:
 
 def _probed_again(error: Exception) -> bool:
     """Return whether a probe failed in a way another probe may settle: a transport error or an error status."""
-    return isinstance(error, (TransportError, HTTPStatusError, UnexpectedStatusError))
+    return isinstance(error, (TransportError, APIStatusError))
 
 
 def _session(limits: _Limits) -> OperationSession:

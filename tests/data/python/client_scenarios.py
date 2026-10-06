@@ -186,7 +186,7 @@ def _lifecycle(package: ModuleType, lines: list[str]) -> None:
 
 
 def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    (types,) = _modules(package, "types.pets")
+    types, errors = _modules(package, "types.pets", "errors")
     limit = argument(package, "listPets", "query", "limit", 5)
     labels = argument(package, "listPets", "query", "tags", ["a b", "c"])
     trace = argument(package, "listPets", "header", "X-Trace", "t1")
@@ -233,10 +233,10 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             exchange.respond(*((json_response(500, {"code": 7}),) * 3))
             try:
                 api.pets.list_pets(x_trace=trace)
-            except types.ListPetsHTTPError as failure:
+            except errors.InternalServerError as failure:
                 lines.append(
-                    f"  error info {failure.status_code} {failure.headers!r} "
-                    f"{failure.reason_code} {failure.error_data!r}"
+                    f"  error info {failure.status_code} {failure.headers!r} {failure.request_id} "
+                    f"{failure.reason_code} {failure.body!r}"
                 )
                 record(
                     lines,

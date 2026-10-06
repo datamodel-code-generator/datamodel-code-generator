@@ -7,13 +7,12 @@ from datetime import datetime
 from enum import Enum
 from typing import ClassVar, Final, Generic, Literal, TypeAlias, get_args
 
-from typing_extensions import TypeIs, TypeVar
+from typing_extensions import TypeGuard, TypeIs, TypeVar  # noqa: UP035 - The typing import line stays as it was.
 
 from ..model_codecs.unset import UNSET, Unset
 from ..protocols.references import OperationRef
 from .responses import HeadersView, Response, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 
-E_co = TypeVar("E_co", covariant=True, default=object)
 T_co = TypeVar("T_co", covariant=True, default=object)
 
 RetryStopReason: TypeAlias = Literal[
@@ -1481,8 +1480,12 @@ class LimiterExecutionError(SDKError):
         return (*super()._details(), ("action", self.action))
 
 
-class HTTPStatusError(SDKError, Generic[E_co]):
-    """A final 4xx or 5xx response, with its bounded body and the decoded error payload when one is declared."""
+class APIStatusError(SDKError):
+    """A final status the operation does not declare as a success, with its bounded body.
+
+    `body` is the payload decoded with the operation's declared error schema for the status, or the bounded raw bytes
+    when none is declared or it did not decode; the decode failure is then the cause.
+    """
 
     info: ResponseInfo
 
@@ -1490,11 +1493,10 @@ class HTTPStatusError(SDKError, Generic[E_co]):
         self,
         *,
         info: ResponseInfo,
-        error_data: E_co | None = None,
-        error_decoded: bool = False,
+        body: object = None,
         body_bytes: bytes = b"",
         truncated: bool = False,
-        error_decode_error: BaseException | None = None,
+        reason: str | None = None,
         retry_stop_reason: RetryStopReason | None = None,
         operation_id: str | None = None,
         call_id: str | None = None,
@@ -1511,7 +1513,7 @@ class HTTPStatusError(SDKError, Generic[E_co]):
         auth_refresh_pending: int = 0,
         wire_send_count: int | None = None,
     ) -> None:
-        """Keep the response metadata, the bounded body, and the error payload or why it did not decode."""
+        """Keep the response metadata, the decoded or raw body, and the bounded body bytes."""
         super().__init__(
             operation_id=operation_id,
             call_id=call_id,
@@ -1529,17 +1531,11 @@ class HTTPStatusError(SDKError, Generic[E_co]):
             auth_refresh_pending=auth_refresh_pending,
             wire_send_count=wire_send_count,
         )
-        self._error_data = error_data
-        self.error_decoded = error_decoded
+        self.body = body
         self.body_bytes = body_bytes
         self.truncated = truncated
-        self.error_decode_error = error_decode_error
-        self.retry_stop_reason = retry_stop_reason
-
-    @property
-    def error_data(self) -> E_co | None:
-        """Return the decoded error payload, or None when none was declared or decoded."""
-        return self._error_data
+        self.reason = reason
+        self.retry_stop_reason: RetryStopReason | None = retry_stop_reason
 
     @property
     def status_code(self) -> int:
@@ -1550,75 +1546,79 @@ class HTTPStatusError(SDKError, Generic[E_co]):
     def headers(self) -> HeadersView:
         """Return the final response headers."""
         return self.info.headers
+
+    @property
+    def request_id(self) -> str | None:
+        """Return the request identifier the response carried, or None without one."""
+        return self.info.request_id
+
+    @property
+    def reason_code(self) -> str:
+        """Return the stable reason, or the snake_case name of the exception class without one."""
+        return self.reason or super().reason_code
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (
             ("status_code", self.info.status_code),
             *super()._details(),
+            ("reason", self.reason),
             ("request_id", self.info.request_id),
             ("retry_stop_reason", self.retry_stop_reason),
         )
 
 
-class UnexpectedStatusError(SDKError):
-    """A final status the operation does not declare as a success or an error, such as an undeclared 3xx."""
+class BadRequestError(APIStatusError):
+    """A final 400 response."""
 
-    info: ResponseInfo
 
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        info: ResponseInfo,
-        body_bytes: bytes = b"",
-        truncated: bool = False,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the response metadata and the bounded body."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.body_bytes = body_bytes
-        self.truncated = truncated
+class AuthenticationError(APIStatusError):
+    """A final 401 response."""
 
-    @property
-    def status_code(self) -> int:
-        """Return the final status code."""
-        return self.info.status_code
 
-    @property
-    def headers(self) -> HeadersView:
-        """Return the final response headers."""
-        return self.info.headers
+class PermissionDeniedError(APIStatusError):
+    """A final 403 response."""
 
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (("status_code", self.info.status_code), *super()._details(), ("request_id", self.info.request_id))
+
+class NotFoundError(APIStatusError):
+    """A final 404 response."""
+
+
+class ConflictError(APIStatusError):
+    """A final 409 response."""
+
+
+class UnprocessableEntityError(APIStatusError):
+    """A final 422 response."""
+
+
+class RateLimitError(APIStatusError):
+    """A final 429 response."""
+
+
+class InternalServerError(APIStatusError):
+    """A final 5xx response."""
+
+
+_STATUS_ERRORS: Final[dict[int, type[APIStatusError]]] = {
+    400: BadRequestError,
+    401: AuthenticationError,
+    403: PermissionDeniedError,
+    404: NotFoundError,
+    409: ConflictError,
+    422: UnprocessableEntityError,
+    429: RateLimitError,
+}
+_SERVER_ERROR: Final = 500
+
+
+def status_error(status: int) -> type[APIStatusError]:
+    """Return the exception class of a final status that the operation does not declare as a success."""
+    return InternalServerError if status >= _SERVER_ERROR else _STATUS_ERRORS.get(status, APIStatusError)
+
+
+def is_http_error(error: object) -> TypeGuard[APIStatusError]:
+    """Return whether an error is a final 4xx or 5xx response rather than an unexpected status."""
+    return isinstance(error, APIStatusError) and error.reason != "unexpected_status"
 
 
 class ResponseDecodeError(SDKError):

@@ -45,7 +45,7 @@ secret
     For further information visit https://errors.pydantic.dev/<version>/v/missing] response_validation_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store failed ! StoreDocumentHTTPError: StoreDocumentHTTPError(status_code=500, operation_id='storeDocument', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='storeDocument', status_code=500, error_decoded=True, error_data='down', body_bytes=b'down', truncated=False] store_document_http_error
+  store failed ! InternalServerError: InternalServerError(status_code=500, operation_id='storeDocument', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='storeDocument', status_code=500, body='down', body_bytes=b'down', truncated=False] internal_server_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
   store syntax ! DecodeError: DecodeError(status_code=200, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'\xff', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] decode_error
@@ -162,7 +162,7 @@ secret
   store moved invalid ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"title":5}', truncated=False, cause=TypeError("Draft.__init__() missing 2 required positional arguments: 'id' and 'secret'")] response_validation_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store failed ! StoreDocumentHTTPError: StoreDocumentHTTPError(status_code=500, operation_id='storeDocument', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='storeDocument', status_code=500, error_decoded=True, error_data='down', body_bytes=b'down', truncated=False] store_document_http_error
+  store failed ! InternalServerError: InternalServerError(status_code=500, operation_id='storeDocument', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='storeDocument', status_code=500, body='down', body_bytes=b'down', truncated=False] internal_server_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
   store syntax ! DecodeError: DecodeError(status_code=200, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'\xff', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] decode_error

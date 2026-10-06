@@ -103,7 +103,7 @@ class ReadMedia(BodyMedia):
         return wire
 
 
-def position(call: OperationPlan[T, object], location: str, name: str) -> int:
+def position(call: OperationPlan[T], location: str, name: str) -> int:
     """Return the argument position of a declared parameter, matching a header's name without regard to case."""
 
     def key(value: str) -> str:
@@ -118,8 +118,8 @@ def position(call: OperationPlan[T, object], location: str, name: str) -> int:
 
 
 def targeted(
-    call: OperationPlan[T, object], targets: Iterable[RequestTarget]
-) -> tuple[OperationPlan[T, object], Writes, frozenset[str], frozenset[str]]:
+    call: OperationPlan[T], targets: Iterable[RequestTarget]
+) -> tuple[OperationPlan[T], Writes, frozenset[str], frozenset[str]]:
     """Return an operation that takes the values written to the targets as wire values, and where each one goes.
 
     A write is a parameter's argument position without a pointer, a querystring's position with a pointer into its
@@ -163,7 +163,7 @@ def targeted(
     return called, tuple(writes), frozenset(headers), frozenset(queries)
 
 
-def query_written(call: OperationPlan[T, object], writes: Writes, name: str) -> bool:
+def query_written(call: OperationPlan[T], writes: Writes, name: str) -> bool:
     """Return whether a query patch can replace a field written by a helper, including object properties.
 
     Exploded form objects own their declared properties and any additional name their parameter accepts. Deep
@@ -187,7 +187,7 @@ def query_written(call: OperationPlan[T, object], writes: Writes, name: str) -> 
     return False
 
 
-def read_paths(call: OperationPlan[T, object], sources: Sequence[tuple[RequestTarget, Selector | None]]) -> ReadPaths:
+def read_paths(call: OperationPlan[T], sources: Sequence[tuple[RequestTarget, Selector | None]]) -> ReadPaths:
     """Return the path segments read values are written to, each parameter by name, write, selector, and position.
 
     A parameter the caller's argument fills has no write.
@@ -241,7 +241,7 @@ class Targeted(Generic[T]):
     written to, which must not encode to a dot segment.
     """
 
-    call: OperationPlan[T, object]
+    call: OperationPlan[T]
     writes: Writes
     headers: frozenset[str]
     queries: frozenset[str]
@@ -257,7 +257,7 @@ class Targeted(Generic[T]):
 
 
 def targeted_writes(
-    call: OperationPlan[T, object],
+    call: OperationPlan[T],
     bindings: Iterable[tuple[RequestTarget, Selector | None]],
     extra: Iterable[RequestTarget] = (),
 ) -> Targeted[T]:

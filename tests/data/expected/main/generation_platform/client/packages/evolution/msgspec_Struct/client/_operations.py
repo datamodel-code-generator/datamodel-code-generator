@@ -14,11 +14,11 @@ from ._runtime.client.operations import (
     model_branch,
 )
 from ._runtime.model_codecs.parameters import ParameterPlan
-from .types.orders import GetOrderErrorData, GetOrderHTTPError, GetOrderResponse
+from .types.orders import GetOrderResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://evolution.example.com'),)
 
-OPERATION_0: Final[OperationPlan[GetOrderResponse, GetOrderErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[GetOrderResponse]] = OperationPlan(
     operation_id='getOrder',
     method='GET',
     path='/orders/{orderId}',
@@ -29,7 +29,6 @@ OPERATION_0: Final[OperationPlan[GetOrderResponse, GetOrderErrorData]] = Operati
             model_branch('default', 'application/json', 'json', model_bindings.codec_3),
         ),
         (model_branch('default', 'application/json', 'json', model_bindings.codec_3),),
-        GetOrderHTTPError,
     ),
     parameters=(
         ParameterSpec(

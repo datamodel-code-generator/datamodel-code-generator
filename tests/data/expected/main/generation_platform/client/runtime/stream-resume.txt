@@ -156,7 +156,7 @@ failures that never reconnect
   < closed
   > GET https://api.example.com/events last-event-id='1'
   < closed
-    ! StreamEventsHTTPError: StreamEventsHTTPError(status_code=404, operation_id='streamEvents', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='streamEvents', status_code=404, error_decoded=True, error_data=Problem(detail='gone'), body_bytes=b'{"detail": "gone"}', truncated=False] stream_events_http_error resume_state=NoneType
+    ! NotFoundError: NotFoundError(status_code=404, operation_id='streamEvents', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='streamEvents', status_code=404, body=Problem(detail='gone'), body_bytes=b'{"detail": "gone"}', truncated=False] not_found_error resume_state=NoneType
   after the failed reopen saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": "1", "expires_at": null}
   > GET https://api.example.com/events last-event-id=None
   error event

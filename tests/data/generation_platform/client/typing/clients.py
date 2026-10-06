@@ -34,11 +34,13 @@ from pets.bodies import (
 )
 from pets.model_codecs import JSONValue
 from pets.errors import (
+    APIStatusError,
     BudgetExceededError,
     DeadlineExceededError,
     DeliveryState,
     HookExecutionError,
     LimiterExecutionError,
+    NotFoundError,
     PhaseTimeoutError,
     RedirectPolicyError,
     RequestCancelledError,
@@ -70,8 +72,6 @@ from pets.transports import (
 )
 from pets.types.pets import (
     CreatePetResponse,
-    ListPetsErrorData,
-    ListPetsHTTPError,
     ListPetsResponse,
     decode_list_pets_header,
 )
@@ -105,8 +105,13 @@ def call(
     client.pets.photos.upload(pet_id=photo, body=b"\x00")
     try:
         client.pets.list_pets(x_trace=trace)
-    except ListPetsHTTPError as error:
-        assert_type(error.error_data, ListPetsErrorData | None)
+    except NotFoundError as error:
+        assert_type(error.body, object)
+        assert_type(error.status_code, int)
+        assert_type(error.headers, HeadersView)
+        assert_type(error.request_id, str | None)
+    except APIStatusError as error:
+        assert_type(error.body_bytes, bytes)
 
 
 async def call_async(client: AsyncClient, trace: FieldPetsGetHeaderXTraceParameter) -> None:

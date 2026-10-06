@@ -71,7 +71,7 @@ settled operations
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  failed fetch ! GetReportHTTPError: GetReportHTTPError(status_code=500, operation_id='getReport', call_id='<call>', retry_stop_reason='disabled') [operation_id='getReport', status_code=500, error_decoded=False, body_bytes=b'{}', truncated=False] get_report_http_error session=True
+  failed fetch ! InternalServerError: InternalServerError(status_code=500, operation_id='getReport', call_id='<call>', retry_stop_reason='disabled') [operation_id='getReport', status_code=500, body=b'{}', body_bytes=b'{}', truncated=False] internal_server_error session=True
   fetch due saved {"bound": ["j1"], "cancel": [], "expires_at": null, "phase": "fetch", "seed": []}
   resumed fetch status ! ProtocolStateError: ProtocolStateError(state='succeeded', action='status') [] protocol_state_error session=True
   > GET https://api.example.com/jobs/j1/report
@@ -176,7 +176,7 @@ remote cancellation
   cancel again = CancelReceipt(status=204, data=NoneType:None)
   > DELETE https://api.example.com/jobs/j9
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-reason: requested] b''
-  cancel refused ! CancelJobHTTPError: CancelJobHTTPError(status_code=409, operation_id='cancelJob', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='cancelJob', status_code=409, error_decoded=False, body_bytes=b'{"message":"conflict"}', truncated=False] cancel_job_http_error session=True
+  cancel refused ! ConflictError: ConflictError(status_code=409, operation_id='cancelJob', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='cancelJob', status_code=409, body=b'{"message":"conflict"}', body_bytes=b'{"message":"conflict"}', truncated=False] conflict_error session=True
   tracked saved {"bound": ["j5"], "cancel": ["j9", "requested"], "expires_at": "2999-01-01T00:00:00+00:00", "phase": "pending", "seed": []}
   resumed class JobsTrackedHandle
   > DELETE https://api.example.com/jobs/j9
@@ -279,7 +279,7 @@ async resume
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  failed fetch ! GetReportHTTPError: GetReportHTTPError(status_code=500, operation_id='getReport', call_id='<call>', retry_stop_reason='disabled') [operation_id='getReport', status_code=500, error_decoded=False, body_bytes=b'{}', truncated=False] get_report_http_error session=True
+  failed fetch ! InternalServerError: InternalServerError(status_code=500, operation_id='getReport', call_id='<call>', retry_stop_reason='disabled') [operation_id='getReport', status_code=500, body=b'{}', body_bytes=b'{}', truncated=False] internal_server_error session=True
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resumed fetch = Report(rows=4)

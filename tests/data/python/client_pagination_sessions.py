@@ -195,7 +195,7 @@ def _sends(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     )
     pager = helper.iterate()
     error = _failure(lambda: next(pager))
-    lines.append(f"  typed error after retries ! {describe(error)} data={getattr(error, 'error_data', None)!r}")
+    lines.append(f"  typed error after retries ! {describe(error)} body={getattr(error, 'body', None)!r}")
     record(lines, "after the typed error", lambda: next(pager))
 
 

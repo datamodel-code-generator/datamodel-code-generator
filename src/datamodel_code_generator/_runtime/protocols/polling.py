@@ -123,7 +123,7 @@ class CancelPlan(Generic[K]):
     """
 
     operation: OperationRef
-    call: OperationPlan[K, object]
+    call: OperationPlan[K]
     bindings: tuple[PageBinding, ...] = ()
     targeted: Targeted[K] = field(init=False)
 
@@ -151,10 +151,10 @@ class PollingPlan(Generic[T, P, C]):
 
     helper_id: str
     operation: OperationRef
-    create: OperationPlan[C, object]
+    create: OperationPlan[C]
     accepted: tuple[int, ...]
     poll_operation: OperationRef
-    poll: OperationPlan[P, object]
+    poll: OperationPlan[P]
     state: Selector
     pending: tuple[JSONValue, ...]
     succeeded: tuple[JSONValue, ...]
@@ -165,7 +165,7 @@ class PollingPlan(Generic[T, P, C]):
     inline: Callable[[P], T | None] | None = None
     inline_selector: BodySelector | None = None
     fetch_operation: OperationRef | None = None
-    fetch: OperationPlan[T, object] | None = None
+    fetch: OperationPlan[T] | None = None
     fetch_bindings: tuple[PageBinding, ...] = ()
     immediate: Callable[[C], T | None] | None = None
     immediate_statuses: tuple[int, ...] = ()
@@ -180,7 +180,7 @@ class PollingPlan(Generic[T, P, C]):
     fetched: Targeted[T] | None = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
-    children: tuple[OperationPlan[Any, object], ...] = field(init=False)
+    children: tuple[OperationPlan[Any], ...] = field(init=False)
 
     def __post_init__(self) -> None:
         """Index the states by canonical JSON, and derive the poll, fetch, and cancel operations writing values."""
@@ -535,7 +535,7 @@ class _Operation(Generic[T, P]):
         self._sendable()
         return _sent(cancel.targeted, values)
 
-    def _due(self, core: ClientCore | AsyncClientCore, call: OperationPlan[Any, object]) -> LogicalCallContext | None:
+    def _due(self, core: ClientCore | AsyncClientCore, call: OperationPlan[Any]) -> LogicalCallContext | None:
         """Return the context to wait in before the next poll or result fetch, or None when it may be sent now.
 
         The poll limit, for a poll, and the session's send slots are checked first. A wait longer than the allowed
@@ -808,7 +808,7 @@ class _Operation(Generic[T, P]):
         return (*self._plan.polled.request(self._bound), None)
 
     def _checked(
-        self, call: OperationPlan[Any, object], request: Callable[[], tuple[tuple[object, ...], object, None]]
+        self, call: OperationPlan[Any], request: Callable[[], tuple[tuple[object, ...], object, None]]
     ) -> None:
         """Prepare a request the restored handle sends next as its call would, refusing saved values it cannot send."""
         try:
@@ -938,7 +938,7 @@ class LroHandle(_Operation[T, P]):
             )
         self._settle(step)
 
-    def _pause(self, call: OperationPlan[Any, object]) -> None:
+    def _pause(self, call: OperationPlan[Any]) -> None:
         """Wait until the next poll or result fetch is due."""
         if (waiter := self._due(self._core, call)) is not None:
             try:
@@ -1090,7 +1090,7 @@ class AsyncLroHandle(_Operation[T, P]):
             )
         self._settle(step)
 
-    async def _pause(self, call: OperationPlan[Any, object]) -> None:
+    async def _pause(self, call: OperationPlan[Any]) -> None:
         """Wait until the next poll or result fetch is due."""
         if (waiter := self._due(self._core, call)) is not None:
             try:

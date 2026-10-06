@@ -15,40 +15,24 @@ from ._runtime.client.operations import (
 )
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.default import (
-    ActualHeaderErrorData,
-    ActualHeaderHTTPError,
     ActualHeaderResponse,
-    AliasedHeaderErrorData,
-    AliasedHeaderHTTPError,
     AliasedHeaderResponse,
-    AliasedQueryErrorData,
-    AliasedQueryHTTPError,
     AliasedQueryResponse,
-    ExplicitErrorData,
-    ExplicitHTTPError,
     ExplicitResponse,
-    ExternalExplicitErrorData,
-    ExternalExplicitHTTPError,
     ExternalExplicitResponse,
-    ExternalInheritedErrorData,
-    ExternalInheritedHTTPError,
     ExternalInheritedResponse,
-    ExternalQueryErrorData,
-    ExternalQueryHTTPError,
     ExternalQueryResponse,
-    InheritedErrorData,
-    InheritedHTTPError,
     InheritedResponse,
 )
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
-OPERATION_0: Final[OperationPlan[InheritedResponse, InheritedErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[InheritedResponse]] = OperationPlan(
     operation_id='inherited',
     method='POST',
     path='/inherited',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), InheritedHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'),
@@ -58,12 +42,12 @@ OPERATION_0: Final[OperationPlan[InheritedResponse, InheritedErrorData]] = Opera
     security=security.OPERATION_0,
 )
 
-OPERATION_1: Final[OperationPlan[ExplicitResponse, ExplicitErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[ExplicitResponse]] = OperationPlan(
     operation_id='explicit',
     method='POST',
     path='/explicit',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ExplicitHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'),
@@ -73,56 +57,56 @@ OPERATION_1: Final[OperationPlan[ExplicitResponse, ExplicitErrorData]] = Operati
     security=security.OPERATION_1,
 )
 
-OPERATION_2: Final[OperationPlan[AliasedQueryResponse, AliasedQueryErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[AliasedQueryResponse]] = OperationPlan(
     operation_id='aliased_query',
     method='POST',
     path='/aliased-query',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), AliasedQueryHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     security=security.OPERATION_2,
 )
 
-OPERATION_3: Final[OperationPlan[ActualHeaderResponse, ActualHeaderErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[ActualHeaderResponse]] = OperationPlan(
     operation_id='actual_header',
     method='POST',
     path='/actual-header',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ActualHeaderHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     security=security.OPERATION_3,
 )
 
-OPERATION_4: Final[OperationPlan[AliasedHeaderResponse, AliasedHeaderErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[AliasedHeaderResponse]] = OperationPlan(
     operation_id='aliased_header',
     method='POST',
     path='/aliased-header',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), AliasedHeaderHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     security=security.OPERATION_4,
 )
 
-OPERATION_5: Final[OperationPlan[ExternalInheritedResponse, ExternalInheritedErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[ExternalInheritedResponse]] = OperationPlan(
     operation_id='external_inherited',
     method='POST',
     path='/external-inherited',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ExternalInheritedHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     security=security.OPERATION_5,
 )
 
-OPERATION_6: Final[OperationPlan[ExternalExplicitResponse, ExternalExplicitErrorData]] = OperationPlan(
+OPERATION_6: Final[OperationPlan[ExternalExplicitResponse]] = OperationPlan(
     operation_id='external_explicit',
     method='POST',
     path='/external-explicit',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ExternalExplicitHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     security=security.OPERATION_6,
 )
 
-OPERATION_7: Final[OperationPlan[ExternalQueryResponse, ExternalQueryErrorData]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[ExternalQueryResponse]] = OperationPlan(
     operation_id='external_query',
     method='POST',
     path='/external-query',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ExternalQueryHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     security=security.OPERATION_7,
 )

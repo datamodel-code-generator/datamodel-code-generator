@@ -43,16 +43,16 @@ status
   order of a status added since, read raw = {'id': 1, 'status': 'archived'}
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, error_decoded=True, error_data=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] get_order_http_error
+  problem ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, body=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] conflict_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem that changed its shape ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, error_decoded=False, error_decode_error=2 validation errors for Problem
+  problem that changed its shape ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, body=b'{"message":"gone"}', body_bytes=b'{"message":"gone"}', truncated=False, cause=2 validation errors for Problem
 code
   Field required [type=missing, input_value={'message': 'gone'}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing
 message
   Extra inputs are not permitted [type=extra_forbidden, input_value='gone', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden, body_bytes=b'{"message":"gone"}', truncated=False] get_order_http_error
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden] conflict_error
 # evolution-forbid msgspec.Struct
   > GET https://evolution.example.com/orders/1?view=brief
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -80,7 +80,7 @@ message
   order of a status added since, read raw = {'id': 1, 'status': 'archived'}
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, error_decoded=True, error_data=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] get_order_http_error
+  problem ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, body=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] conflict_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem that changed its shape ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, error_decoded=False, error_decode_error=ValidationError('Object contains unknown field `message`'), body_bytes=b'{"message":"gone"}', truncated=False] get_order_http_error
+  problem that changed its shape ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, body=b'{"message":"gone"}', body_bytes=b'{"message":"gone"}', truncated=False, cause=ValidationError('Object contains unknown field `message`')] conflict_error

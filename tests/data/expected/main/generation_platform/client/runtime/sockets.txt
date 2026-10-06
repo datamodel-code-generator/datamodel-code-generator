@@ -20,15 +20,15 @@
     server GET /feed/socket [] | closed 1000 ''
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1, sec-websocket-extensions: permessage-deflate; client_max_window_bits] | closed 1000 'done'
   compression the helper does not permit ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('ws_options', 'compression'), condition='invalid_value'] protocol_configuration_error
-  declared error ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, error_decoded=True, error_data=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] room_socket_http_error
+  declared error ! NotFoundError: NotFoundError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, body=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] not_found_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-  undeclared success ! UnexpectedStatusError: UnexpectedStatusError(status_code=200, operation_id='roomSocket', call_id='<call>') [operation_id='roomSocket', status_code=200, body_bytes=b'plain', truncated=False] unexpected_status_error
+  undeclared success ! APIStatusError: APIStatusError(status_code=200, operation_id='roomSocket', call_id='<call>', reason='unexpected_status') [operation_id='roomSocket', status_code=200, body=b'plain', body_bytes=b'plain', truncated=False] unexpected_status
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-  not retried ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=503, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] room_socket_http_error
+  not retried ! InternalServerError: InternalServerError(status_code=503, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=503, body=b'', body_bytes=b'', truncated=False] internal_server_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-  retry after not honored ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=429, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=429, error_decoded=False, error_decode_error=UnexpectedMediaTypeError(), body_bytes=b'', truncated=False] room_socket_http_error
+  retry after not honored ! RateLimitError: RateLimitError(status_code=429, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=429, body=b'', body_bytes=b'', truncated=False, cause=UnexpectedMediaTypeError] rate_limit_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-  redirect not followed ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='roomSocket', call_id='<call>') [operation_id='roomSocket', status_code=302, body_bytes=b'', truncated=False] unexpected_status_error
+  redirect not followed ! APIStatusError: APIStatusError(status_code=302, operation_id='roomSocket', call_id='<call>', reason='unexpected_status') [operation_id='roomSocket', status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
   subprotocol not selected ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', condition='negotiation') [operation_id='roomSocket', condition='negotiation', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect'] web_socket_handshake_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | no close
@@ -136,12 +136,12 @@
     hook response_headers outcome=None status=404
     hook attempt_end outcome=None status=404
     hook call_end outcome=error status=404
-  connect ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, error_decoded=True, error_data=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] room_socket_http_error
+  connect ! NotFoundError: NotFoundError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, body=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] not_found_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
-  rejected token not refreshed ! SecureSocketHTTPError: SecureSocketHTTPError(status_code=401, operation_id='secureSocket', call_id='<call>', retry_stop_reason='auth_unrefreshable') [operation_id='secureSocket', status_code=401, error_decoded=False, body_bytes=b'', truncated=False] secure_socket_http_error
+  rejected token not refreshed ! AuthenticationError: AuthenticationError(status_code=401, operation_id='secureSocket', call_id='<call>', retry_stop_reason='auth_unrefreshable') [operation_id='secureSocket', status_code=401, body=b'', body_bytes=b'', truncated=False] authentication_error
     provider ['get']
     server GET /secure/socket [authorization: Bearer first-material, x-trace: t1] | refused
-  no refresh without retries ! SecureSocketHTTPError: SecureSocketHTTPError(status_code=401, operation_id='secureSocket', call_id='<call>', retry_stop_reason='auth_unrefreshable') [operation_id='secureSocket', status_code=401, error_decoded=False, body_bytes=b'', truncated=False] secure_socket_http_error
+  no refresh without retries ! AuthenticationError: AuthenticationError(status_code=401, operation_id='secureSocket', call_id='<call>', retry_stop_reason='auth_unrefreshable') [operation_id='secureSocket', status_code=401, body=b'', body_bytes=b'', truncated=False] authentication_error
     provider ['get']
     server GET /secure/socket [authorization: Bearer first-material, x-trace: t1] | refused
   received with debug logging 1 text str'secret-reply' raw=b'secret-reply'
@@ -203,7 +203,7 @@
   async iteration after closing []
   async invalid close ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='roomSocket', call_id='<call>', condition='invalid_value') [operation_id='roomSocket', field_path=('code',), condition='invalid_value'] protocol_configuration_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 4000 'bye'
-  async refusal connect ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, error_decoded=True, error_data=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] room_socket_http_error
+  async refusal connect ! NotFoundError: NotFoundError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, body=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] not_found_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
   async decode failure connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
   async decode failure ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='roomSocket', condition='malformed', truncated=False, cause=ValidationError] stream_decode_error sequence=1 prefix=10 truncated=False cause=ValidationError retained=False
@@ -267,5 +267,5 @@
     hook response_headers outcome=None status=404
     hook attempt_end outcome=None status=404
     hook call_end outcome=error status=404
-  connect ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, error_decoded=True, error_data=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] room_socket_http_error
+  connect ! NotFoundError: NotFoundError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, body=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] not_found_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
