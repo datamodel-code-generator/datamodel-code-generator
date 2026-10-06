@@ -1,0 +1,55 @@
+openapi: 3.1.0
+info: {title: Native ledger values, version: '1'}
+paths:
+  /ledger:
+    post:
+      operationId: ledger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Ledger'}
+      responses:
+        '200':
+          description: Native ledger values
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Ledger'}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind, name]
+      properties:
+        kind: {type: string, const: cat}
+        name: {type: string}
+    Dog:
+      type: object
+      required: [kind, bark]
+      properties:
+        kind: {type: string, const: dog}
+        bark: {type: boolean}
+    Ledger:
+      type: object
+      required: [stamp, day, clock, uid, amount, content, pair, history, pet, active_since]
+      properties:
+        stamp: {type: string, format: date-time}
+        day: {type: string, format: date}
+        clock: {type: string, format: time}
+        uid: {type: string, format: uuid}
+        amount: {type: number, format: decimal}
+        content: {type: string, format: binary}
+        pair:
+          type: array
+          prefixItems: [{type: integer}, {type: string, format: date}]
+          items: false
+        history:
+          type: object
+          additionalProperties: {type: string, format: date}
+        pet:
+          oneOf: [{$ref: '#/components/schemas/Cat'}, {$ref: '#/components/schemas/Dog'}]
+          discriminator:
+            propertyName: kind
+            mapping: {cat: '#/components/schemas/Cat', dog: '#/components/schemas/Dog'}
+        active_since:
+          oneOf: [{type: boolean}, {type: string, format: date}]

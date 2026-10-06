@@ -1,76 +1,67 @@
 mypy positive samples: clean
 pyright positive samples: clean
 ty positive samples: clean
-samples/codecs_negative.py: 13 marked lines
-mypy samples/codecs_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
-  26 assignment
-  27 arg-type
-  28 assignment
-  29 assignment
-  30 assignment
-  31 assignment
+samples/codecs_negative.py: 11 marked lines
+mypy samples/codecs_negative.py: 11/11 marked lines with one error, 0 elsewhere, 0 in other files
+  33 assignment
+  34 arg-type
+  35 arg-type
+  36 assignment
   40 assignment
-  41 assignment
-  42 assignment
-  50 arg-type
-  51 assignment
-  59 arg-type
-  60 assignment
-pyright samples/codecs_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
-  26 reportAssignmentType
-  27 reportArgumentType
-  28 reportAssignmentType
-  29 reportAssignmentType
-  30 reportAssignmentType
-  31 reportAssignmentType
+  41 arg-type
+  42 arg-type
+  43 assignment
+  47 assignment
+  48 arg-type
+  49 assignment
+pyright samples/codecs_negative.py: 11/11 marked lines with one error, 0 elsewhere, 0 in other files
+  33 reportAssignmentType
+  34 reportArgumentType
+  35 reportArgumentType
+  36 reportAssignmentType
   40 reportAssignmentType
-  41 reportAssignmentType
-  42 reportAssignmentType
-  50 reportArgumentType
-  51 reportAssignmentType
-  59 reportArgumentType
-  60 reportAssignmentType
-ty samples/codecs_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
-  26 invalid-assignment
-  27 invalid-argument-type
-  28 invalid-assignment
-  29 invalid-assignment
-  30 invalid-assignment
-  31 invalid-assignment
+  41 reportArgumentType
+  42 reportArgumentType
+  43 reportAssignmentType
+  47 reportAssignmentType
+  48 reportArgumentType
+  49 reportAssignmentType
+ty samples/codecs_negative.py: 11/11 marked lines with one error, 0 elsewhere, 0 in other files
+  33 invalid-assignment
+  34 invalid-argument-type
+  35 invalid-argument-type
+  36 invalid-assignment
   40 invalid-assignment
-  41 invalid-assignment
-  42 invalid-assignment
-  50 invalid-argument-type
-  51 invalid-assignment
-  59 invalid-argument-type
-  60 invalid-assignment
-samples/negative.py: 8 marked lines
-mypy samples/negative.py: 8/8 marked lines with one error, 0 elsewhere, 0 in other files
-  8 assignment
-  9 dict-item
-  10 list-item
+  41 invalid-argument-type
+  42 invalid-argument-type
+  43 invalid-assignment
+  47 invalid-assignment
+  48 invalid-argument-type
+  49 invalid-assignment
+samples/negative.py: 7 marked lines
+mypy samples/negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
   11 assignment
   12 dict-item
-  13 call-overload
-  14 call-overload
-  15 arg-type
-pyright samples/negative.py: 6/8 marked lines with one error, 0 elsewhere, 0 in other files
-  8 reportAssignmentType
-  9 reportAssignmentType
-  10 reportAssignmentType
+  13 list-item
+  15 dict-item
+  16 call-overload
+  17 call-overload
+  18 arg-type
+pyright samples/negative.py: 5/7 marked lines with one error, 0 elsewhere, 0 in other files
   11 reportAssignmentType
   12 reportAssignmentType
-  13 reportArgumentType
-  13 reportCallIssue
-  14 reportArgumentType
-  14 reportCallIssue
-  15 reportArgumentType
-ty samples/negative.py: 8/8 marked lines with one error, 0 elsewhere, 0 in other files
-  8 invalid-assignment
-  9 invalid-assignment
-  10 invalid-assignment
+  13 reportAssignmentType
+  15 reportAssignmentType
+  16 reportArgumentType
+  16 reportCallIssue
+  17 reportArgumentType
+  17 reportCallIssue
+  18 reportArgumentType
+ty samples/negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
   11 invalid-assignment
   12 invalid-assignment
-  13 no-matching-overload
-  14 no-matching-overload
-  15 invalid-argument-type
+  13 invalid-assignment
+  15 invalid-assignment
+  16 no-matching-overload
+  17 no-matching-overload
+  18 invalid-argument-type

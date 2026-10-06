@@ -8,7 +8,6 @@ from ._operations import (
     PutLabelsResponse,
     PutPhotoResponse,
     ReplacePetResponse,
-    SearchPetsResponse,
     SetOwnerResponse,
     UpdatePetResponse,
 )
@@ -20,7 +19,6 @@ __all__ = [
     'PutLabelsResponse',
     'PutPhotoResponse',
     'ReplacePetResponse',
-    'SearchPetsResponse',
     'SetOwnerResponse',
     'UpdatePetResponse',
 ]

@@ -32,20 +32,17 @@ from ..client.errors import (
     is_phase_timeout,
     is_transport,
 )
+from ..client.operations import request_errors
 from ..client.options import RequestOptions
 from ..client.raw import afinished, finished
 from ..client.responses import HeadersView
 from ..client.timing import SYSTEM_CLOCK, TOKEN_INTERVAL, Clock, Deadline, SessionOptions, real_end, wait_left
 from ..client.transports import TransportCapabilities, attempt_trace
 from ..model_codecs.errors import (
-    CodecBindingError,
     CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
     ParameterEncodingError,
     WireValidationError,
 )
-from ..model_codecs.media import decode_json, encode_json
 from ..model_codecs.unset import UNSET, Unset
 from .errors import (
     MAX_CLOSE_REASON,
@@ -67,9 +64,8 @@ if TYPE_CHECKING:
 
     from ..client.bodies import AsyncBodyAttempt, BodyAttempt
     from ..client.client import AsyncClientCore, ClientCore
-    from ..client.codecs import NativeValue
     from ..client.logical import LogicalCallContext, OperationSession
-    from ..client.operations import Encoder, OperationPlan
+    from ..client.operations import InboundModelCodec, OperationPlan, OutboundModelCodec
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
     from ..client.transports import AsyncTransportResponse, AttemptIOContext, PreparedRequest, TransportResponse
@@ -123,10 +119,7 @@ _PROTOCOL_ERROR: Final = 1002
 _APPLICATION_CODES: Final = range(3000, 5000)
 _MAX_PING: Final = 125
 _DATA_ERRORS: Final = (
-    CodecBindingError,
     CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
     ParameterEncodingError,
     WireValidationError,
 )
@@ -149,10 +142,10 @@ class ChannelPlan(Generic[SendT, RecvT]):
     connectors: tuple[Callable[[], WebSocketConnector], Callable[[], AsyncWebSocketConnector]]
     send_codec: Literal["json", "utf8", "bytes"] = "json"
     send_frame: Literal["text", "binary"] = "text"
-    encoder: Encoder | None = None
+    encoder: OutboundModelCodec | None = None
     receive_codec: Literal["json", "utf8", "bytes"] = "json"
     receive_frame: Literal["text", "binary"] = "text"
-    decoder: NativeValue[RecvT] | None = None
+    decoder: InboundModelCodec[RecvT] | None = None
     subprotocols: tuple[str, ...] = ()
     compression: bool = False
 
@@ -278,7 +271,7 @@ def _encoded(plan: ChannelPlan[SendT, RecvT], value: object) -> bytes:
     match plan.send_codec:
         case "json":
             assert plan.encoder is not None
-            return encode_json(plan.encoder.encode(value))
+            return plan.encoder.encode(value)
         case "utf8" if isinstance(value, str):
             return value.encode("utf-8")
         case "bytes" if isinstance(value, (bytes, bytearray)):
@@ -673,7 +666,7 @@ class _Sockets(Generic[SendT, RecvT]):
         plan = self._plan
         try:
             data = _encoded(plan, value)
-        except (*_DATA_ERRORS, ValueError, TypeError) as error:
+        except request_errors(plan.encoder) as error:
             raise self._stamped(
                 DecodeError(reason="unencodable", direction="request", location=("message",), cause=error)
             ) from None
@@ -690,15 +683,13 @@ class _Sockets(Generic[SendT, RecvT]):
         value: object = data
         match plan.receive_codec:
             case "json":
-                assert plan.decoder is not None
+                codec = plan.decoder
+                assert codec is not None
                 try:
-                    wire = decode_json(data)
-                except _DATA_ERRORS as error:
-                    raise self._decode_error(data, "malformed", error) from None
-                try:
-                    value = plan.decoder.convert(wire)
-                except _DATA_ERRORS as error:
-                    raise self._decode_error(data, "value", error) from None
+                    value = codec.decode(data)
+                except codec.errors as error:
+                    condition: Literal["value", "malformed"] = "malformed" if codec.malformed(error) else "value"
+                    raise self._decode_error(data, condition, error) from None
             case "utf8":
                 try:
                     value = data.decode("utf-8")

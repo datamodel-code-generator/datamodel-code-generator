@@ -11,7 +11,6 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Literal, Protocol, TypeAlias
 
-from ..model_codecs.wire import JSONScalar  # noqa: TC001 - Public annotations support get_type_hints().
 from .errors import DeadlinePhase, IOPhase  # noqa: TC001 - Public annotations support get_type_hints().
 from .timing import CancelToken  # noqa: TC001 - Public annotations support get_type_hints().
 
@@ -58,6 +57,7 @@ RetryReason: TypeAlias = Literal[
     "auth_invalid_token",
 ]
 CallOutcome: TypeAlias = Literal["success", "error", "cancel", "handed_off"]
+JSONScalar: TypeAlias = bool | int | float | str | None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

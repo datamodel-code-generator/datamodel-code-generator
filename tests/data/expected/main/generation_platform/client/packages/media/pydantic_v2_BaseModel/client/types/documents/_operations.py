@@ -8,19 +8,14 @@ from typing import Final, Literal, TypeAlias
 from models import Draft as _dcg_type_0
 
 from ..._generated import model_bindings
-from ..._runtime.client.codecs import (
-    HeaderBranch,
-    ResponseHeaders,
-    native_value,
-    optional_header,
-)
+from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.media import FieldPlan
 from ..._runtime.model_codecs.parameters import ParameterPlan
-from ...model_codecs import WireValue
+from ...model_codecs import JSONValue
 from ...options import Unset
 from ...responses import ResponseInfo
 
-StoreDocumentResponse: TypeAlias = WireValue | str | None | _dcg_type_0
+StoreDocumentResponse: TypeAlias = JSONValue | str | None | _dcg_type_0
 
 
 ReadDocumentResponse: TypeAlias = _dcg_type_0
@@ -48,7 +43,7 @@ _READ_DOCUMENT_HEADERS: Final[ResponseHeaders[_dcg_type_0, Unset]] = ResponseHea
                             ),
                             additional=FieldPlan('', 'string'),
                         ),
-                        decode=native_value(model_bindings.codec_17, model_bindings.CONTEXT_17),
+                        codec=model_bindings.codec_17,
                         missing=optional_header,
                     ),
                 ),

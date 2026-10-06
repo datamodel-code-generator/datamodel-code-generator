@@ -33,11 +33,7 @@ _PLAN: Final[WebhookPlan[_dcg_type_0, RSAPSSKey]] = WebhookPlan(
     header='x-signature',
     encoding='hex',
     prefix='',
-    event=EventDecoder(
-        model_bindings.codec_3,
-        model_bindings.CONTEXT_3,
-        validate=False,
-    ),
+    event=EventDecoder(model_bindings.codec_3),
 )
 
 

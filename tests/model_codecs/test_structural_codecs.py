@@ -21,6 +21,11 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
 @pytest.mark.parametrize(
     ("source", "cases"),
     [
+        ("structural/native-containers", "native-containers-typeddict"),
+        ("structural/native-leaves", "native-temporal-dataclass"),
+        ("structural/native-leaves", "native-temporal-typeddict"),
+        ("structural/native-leaves", "native-leaves-dataclass"),
+        ("structural/native-leaves", "native-leaves-typeddict"),
         ("pydantic/pets", "pets-dataclass"),
         ("pydantic/pets", "pets-typeddict"),
         ("pydantic/pets", "pets-msgspec"),

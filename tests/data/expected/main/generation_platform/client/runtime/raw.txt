@@ -24,15 +24,18 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved undecodable text text ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='invalid_syntax') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'\xff\xfe', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff\xfe', 0, 1, 'invalid start byte')] invalid_syntax
-  saved undecodable text json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='invalid_syntax') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'\xff\xfe', truncated=False, cause=WireValidationError('JSON text must be UTF-8 at /')] invalid_syntax
+  saved undecodable text json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='invalid_syntax') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'\xff\xfe', truncated=False, cause=JSONDecodeError('Expecting value: line 1 column 1 (char 0)')] invalid_syntax
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved latin-1 text text = 'café'
-  saved latin-1 text json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='invalid_syntax') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'caf\xe9', truncated=False, cause=WireValidationError('JSON text must be UTF-8 at /')] invalid_syntax
+  saved latin-1 text json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='invalid_syntax') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'caf\xe9', truncated=False, cause=UnicodeDecodeError('utf-8', b'caf\xe9', 3, 4, 'unexpected end of data')] invalid_syntax
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved invalid json text = '{'
-  saved invalid json json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='invalid_syntax') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] invalid_syntax
+  saved invalid json json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='invalid_syntax') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] invalid_syntax
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved integer limit DecodeError cause=ValueError body=True info=True operation='getPet' call=True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved identity ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='response_too_large') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=8, observed=21] response_too_large
@@ -260,6 +263,9 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async saved status ! InternalServerError: InternalServerError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'0123', body_bytes=b'0123', truncated=True] internal_server_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async saved integer limit DecodeError cause=ValueError body=True info=True operation='getPet' call=True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async saved coded ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='response_too_large') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, limit=8, observed=24] response_too_large

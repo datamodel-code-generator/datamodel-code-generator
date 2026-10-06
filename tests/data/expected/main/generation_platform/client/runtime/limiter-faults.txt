@@ -3,7 +3,7 @@
     entered=1 wrong_mode_released=0 queued=1
   async permit from sync limiter ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=TypeError('Expected a synchronous Permit')] limiter_failed
     entered=1 wrong_mode_released=0 queued=1
-  raw preparation before limiter ! DecodeError: DecodeError(operation_id='getPet', call_id='<call>', reason='unencodable', location='path.petId') [operation_id='getPet', location=('path', 'petId'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ModelProjectionError('The value at / does not have its bound shape')] unencodable
+  raw preparation before limiter ! DecodeError: DecodeError(operation_id='getPet', call_id='<call>', reason='unencodable', location='path.petId') [operation_id='getPet', location=('path', 'petId'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] unencodable
   stopped call with failing hooks: APITimeoutError secondary ['RuntimeError', 'RuntimeError']
     entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=['call_start:0', 'call_end:0']/['call_start:0', 'call_end:0'] counters=[0] queued=1
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
@@ -26,7 +26,7 @@
     entered=1 wrong_mode_released=0 queued=1
   sync permit from async limiter ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=TypeError('Expected an asynchronous Permit')] limiter_failed
     entered=1 wrong_mode_released=0 queued=1
-  async raw preparation before limiter ! DecodeError: DecodeError(operation_id='getPet', call_id='<call>', reason='unencodable', location='path.petId') [operation_id='getPet', location=('path', 'petId'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ModelProjectionError('The value at / does not have its bound shape')] unencodable
+  async raw preparation before limiter ! DecodeError: DecodeError(operation_id='getPet', call_id='<call>', reason='unencodable', location='path.petId') [operation_id='getPet', location=('path', 'petId'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] unencodable
   async stopped call with failing hooks: APITimeoutError secondary ['RuntimeError', 'RuntimeError']
     entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=['call_start:0', 'call_end:0']/['call_start:0', 'call_end:0'] counters=[0] queued=1
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None

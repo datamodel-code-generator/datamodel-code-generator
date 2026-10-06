@@ -122,32 +122,28 @@ def _shipped(diagnostics: list[str], modules: Modules, *, maps: bool) -> list[st
     return lines
 
 
-def _constants(node: ast.expr) -> dict[str | None, Any]:
-    """Return the constant keyword arguments of a call."""
-    keywords = node.keywords if isinstance(node, ast.Call) else []
-    return {item.arg: item.value.value for item in keywords if isinstance(item.value, ast.Constant)}
-
-
-def _map(call: ast.Call) -> str:
-    """Return a model's module and name, then each wire name paired with the field that holds it."""
-    fields = next((item.value for item in call.keywords if item.arg == "fields"), None)
-    pairs = ", ".join(
-        f"{field['wire_name']}={field['native_name']}"
-        for field in map(_constants, fields.elts if isinstance(fields, ast.Tuple) else ())
-    )
-    return f"map {_constants(call)['symbol']} {pairs}".rstrip()
-
-
 def _codecs(text: str, *, maps: bool) -> Iterator[str]:
     """Yield the type each codec reads and writes, then the field map of each dataclass or TypedDict model."""
     models: list[str] = []
+    modules: dict[str, str] = {}
     for node in ast.parse(text).body:
         match node:
-            case ast.FunctionDef(body=[ast.Return(value=ast.Call() as call)]) if node.name.startswith("_model_"):
-                if maps and _constants(call)["native_kind"] in {"dataclass", "typed_dict"}:
-                    models.append(_map(call))
-            case ast.FunctionDef(returns=ast.Subscript(slice=type_)) if node.name.startswith("codec_"):
-                yield f"{node.name} {ast.unparse(type_)}"
+            case ast.Import():
+                modules.update((alias.asname or alias.name, alias.name) for alias in node.names)
+            case ast.ImportFrom(level=0):
+                modules.update((alias.asname or alias.name, f"{node.module}.{alias.name}") for alias in node.names)
+            case ast.AnnAssign(
+                target=ast.Name(id=name), annotation=ast.Subscript(slice=ast.Subscript(slice=type_))
+            ) if name.startswith("codec_"):
+                yield f"{name} {ast.unparse(type_)}"
+            case ast.AnnAssign(target=ast.Name(id="MODELS"), value=ast.Dict(keys=keys, values=values)) if maps:
+                for key, value in zip(keys, values, strict=True):
+                    module, _, model = ast.unparse(key).rpartition(".")
+                    pairs = ", ".join(
+                        f"{ast.literal_eval(field.args[0])}={ast.literal_eval(field.args[1])}"
+                        for field in value.args[0].elts
+                    )
+                    models.append(f"map {modules.get(module, module)}:{model} {pairs}".rstrip())
             case _:
                 pass
     yield from sorted(models)

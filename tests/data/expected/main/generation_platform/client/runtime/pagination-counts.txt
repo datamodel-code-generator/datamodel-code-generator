@@ -62,7 +62,8 @@
   > GET https://api.example.com/finds?start=5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   no querystring ['1', '2']
-  text start [] ! DecodeError: DecodeError(operation_id='listUsers', call_id='<call>', reason='unencodable', location='query.offset') [operation_id='listUsers', location=('query', 'offset'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ModelProjectionError('The value at / does not have its bound shape')] unencodable
+  text start [] ! UserWarning: Pydantic serializer warnings:
+  PydanticSerializationUnexpectedValue(Expected `FieldUsersGetQueryOffsetParameter` - serialized value may not be as expected [input_value='forty', input_type=str]) []
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?position=41
@@ -74,7 +75,8 @@
   > GET https://api.example.com/users?page=4
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   page number start ended by an empty page ['1', '2']
-  text body start [] ! ProtocolDataError: ProtocolDataError(operation_id='search', call_id='<call>', condition='type') [operation_id='search', condition='type', location=BodyTarget(pointer='/window/start'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  text body start [] ! UserWarning: Pydantic serializer warnings:
+  PydanticSerializationUnexpectedValue(Expected `int` - serialized value may not be as expected [field_name='start', input_value='x', input_type=str]) []
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?offset=3

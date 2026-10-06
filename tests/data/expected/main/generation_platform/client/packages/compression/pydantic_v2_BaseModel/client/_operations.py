@@ -8,7 +8,6 @@ from typing import Final
 from ._generated import model_bindings
 from ._runtime.client.operations import (
     BodyMedia,
-    Encoder,
     OperationPlan,
     ParameterSpec,
     RequestBody,
@@ -38,14 +37,7 @@ OPERATION_0: Final[OperationPlan[CreateItemResponse]] = OperationPlan(
     path='/items',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '201',
-                'application/json',
-                'json',
-                model_bindings.codec_1, model_bindings.CONTEXT_1,
-            ),
-        ),
+        (model_branch('201', 'application/json', 'json', model_bindings.codec_1),),
         (),
     ),
     body=RequestBody(
@@ -53,7 +45,7 @@ OPERATION_0: Final[OperationPlan[CreateItemResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+                codec=model_bindings.codec_0,
             ),
         ),
         default='application/json',
@@ -67,14 +59,7 @@ OPERATION_1: Final[OperationPlan[ListItemsResponse]] = OperationPlan(
     path='/items',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_3, model_bindings.CONTEXT_3,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_3),),
         (),
     ),
     parameters=(
@@ -85,7 +70,7 @@ OPERATION_1: Final[OperationPlan[ListItemsResponse]] = OperationPlan(
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_2, model_bindings.CONTEXT_2),
+            codec=model_bindings.codec_2,
         ),
     ),
     accepted_content_encodings=('gzip',),
@@ -102,7 +87,7 @@ OPERATION_2: Final[OperationPlan[CreateNoteResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_4, model_bindings.CONTEXT_4),
+                codec=model_bindings.codec_4,
             ),
         ),
         default='application/json',
@@ -124,7 +109,7 @@ OPERATION_3: Final[OperationPlan[PutBlobResponse]] = OperationPlan(
                 style='simple',
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_5, model_bindings.CONTEXT_5),
+            codec=model_bindings.codec_5,
         ),
     ),
     body=RequestBody(
@@ -140,14 +125,7 @@ OPERATION_4: Final[OperationPlan[SearchResponse]] = OperationPlan(
     path='/search',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_8, model_bindings.CONTEXT_8,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_8),),
         (),
     ),
     parameters=(
@@ -158,7 +136,7 @@ OPERATION_4: Final[OperationPlan[SearchResponse]] = OperationPlan(
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_6, model_bindings.CONTEXT_6),
+            codec=model_bindings.codec_6,
         ),
     ),
     body=RequestBody(
@@ -166,7 +144,7 @@ OPERATION_4: Final[OperationPlan[SearchResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_7, model_bindings.CONTEXT_7),
+                codec=model_bindings.codec_7,
             ),
         ),
         default='application/json',
@@ -181,14 +159,7 @@ OPERATION_5: Final[OperationPlan[FeedResponse]] = OperationPlan(
     path='/feed',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_10, model_bindings.CONTEXT_10,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_10),),
         (),
     ),
     body=RequestBody(
@@ -196,7 +167,7 @@ OPERATION_5: Final[OperationPlan[FeedResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_9, model_bindings.CONTEXT_9),
+                codec=model_bindings.codec_9,
             ),
         ),
         default='application/json',
@@ -211,14 +182,7 @@ OPERATION_6: Final[OperationPlan[CreateJobResponse]] = OperationPlan(
     path='/jobs',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '202',
-                'application/json',
-                'json',
-                model_bindings.codec_12, model_bindings.CONTEXT_12,
-            ),
-        ),
+        (model_branch('202', 'application/json', 'json', model_bindings.codec_12),),
         (),
     ),
     body=RequestBody(
@@ -226,7 +190,7 @@ OPERATION_6: Final[OperationPlan[CreateJobResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_11, model_bindings.CONTEXT_11),
+                codec=model_bindings.codec_11,
             ),
         ),
         default='application/json',
@@ -241,14 +205,7 @@ OPERATION_7: Final[OperationPlan[GetJobResponse]] = OperationPlan(
     path='/jobs/{jobId}',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_14, model_bindings.CONTEXT_14,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_14),),
         (),
     ),
     parameters=(
@@ -259,7 +216,7 @@ OPERATION_7: Final[OperationPlan[GetJobResponse]] = OperationPlan(
                 style='simple',
                 required=True,
             ),
-            encoder=Encoder(model_bindings.codec_13, model_bindings.CONTEXT_13),
+            codec=model_bindings.codec_13,
         ),
     ),
 )
@@ -270,14 +227,7 @@ OPERATION_8: Final[OperationPlan[CreateCheckResponse]] = OperationPlan(
     path='/checks',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '202',
-                'application/json',
-                'json',
-                model_bindings.codec_15, model_bindings.CONTEXT_15,
-            ),
-        ),
+        (model_branch('202', 'application/json', 'json', model_bindings.codec_15),),
         (),
     ),
 )
@@ -288,14 +238,7 @@ OPERATION_9: Final[OperationPlan[CheckStatusResponse]] = OperationPlan(
     path='/checks/status',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_17, model_bindings.CONTEXT_17,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_17),),
         (),
     ),
     body=RequestBody(
@@ -303,7 +246,7 @@ OPERATION_9: Final[OperationPlan[CheckStatusResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_16, model_bindings.CONTEXT_16),
+                codec=model_bindings.codec_16,
             ),
         ),
         default='application/json',
@@ -318,14 +261,7 @@ OPERATION_10: Final[OperationPlan[ReopenEventsResponse]] = OperationPlan(
     path='/events',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/event-stream',
-                'text',
-                model_bindings.codec_19, model_bindings.CONTEXT_19,
-            ),
-        ),
+        (model_branch('200', 'text/event-stream', 'text', model_bindings.codec_19),),
         (),
     ),
     parameters=(
@@ -336,7 +272,7 @@ OPERATION_10: Final[OperationPlan[ReopenEventsResponse]] = OperationPlan(
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
+            codec=model_bindings.codec_18,
         ),
     ),
 )
@@ -347,14 +283,7 @@ OPERATION_11: Final[OperationPlan[WatchResponse]] = OperationPlan(
     path='/events',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/event-stream',
-                'text',
-                model_bindings.codec_22, model_bindings.CONTEXT_22,
-            ),
-        ),
+        (model_branch('200', 'text/event-stream', 'text', model_bindings.codec_22),),
         (),
     ),
     parameters=(
@@ -365,7 +294,7 @@ OPERATION_11: Final[OperationPlan[WatchResponse]] = OperationPlan(
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
+            codec=model_bindings.codec_20,
         ),
     ),
     body=RequestBody(
@@ -373,7 +302,7 @@ OPERATION_11: Final[OperationPlan[WatchResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
+                codec=model_bindings.codec_21,
             ),
         ),
         default='application/json',

@@ -32,7 +32,7 @@ from pets.bodies import (
     StreamBody,
     SyncBinaryBody,
 )
-from pets.model_codecs import JSONValue, WireValue
+from pets.model_codecs import JSONValue
 from pets.errors import (
     APIConnectionError,
     APIStatusError,
@@ -209,7 +209,7 @@ def multipart(client: Client, file: BinaryIO) -> None:
     assert_type(photo.content, FileBody)
     parts: MultipartBody[str | int] = MultipartBody((name, count, photo))
     assert_type(parts.parts, tuple[FilePart[SyncBinaryBody] | FieldPart[str | int], ...])
-    body = MultipartBody[WireValue]((FieldPart("meta", {"k": 1}), FieldPart("skipped", UNSET), FilePart("f", b"x")))
+    body = MultipartBody[JSONValue]((FieldPart("meta", {"k": 1}), FieldPart("skipped", UNSET), FilePart("f", b"x")))
     client.request_raw("POST", "https://example.com/forms", body=body)
 
 
@@ -237,7 +237,7 @@ def multipart_data(data: MultipartData[bytes]) -> None:
 
 
 async def multipart_async(client: AsyncClient) -> None:
-    body = AsyncMultipartBody[WireValue]((FieldPart("a", "x"), FilePart("f", AsyncFileBody.from_path("a.bin"))))
+    body = AsyncMultipartBody[JSONValue]((FieldPart("a", "x"), FilePart("f", AsyncFileBody.from_path("a.bin"))))
     await client.request_raw("POST", "https://example.com/forms", body=body)
 
 

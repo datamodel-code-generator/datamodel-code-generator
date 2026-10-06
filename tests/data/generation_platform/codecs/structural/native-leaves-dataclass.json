@@ -1,0 +1,47 @@
+{
+  "backend": "dataclasses.dataclass",
+  "package": "native_leaves_dataclass",
+  "scopes": [
+    "schemas",
+    "paths"
+  ],
+  "options": {
+    "use_standard_primitive_types": true
+  },
+  "cases": [
+    {
+      "name": "ledger-native",
+      "use": "/paths/~1ledger/post request_body",
+      "op": "decode",
+      "value": {
+        "stamp": "2024-01-02T03:04:05+00:00",
+        "day": "2024-01-02",
+        "clock": "03:04:05",
+        "uid": "00000000-0000-0000-0000-000000000001",
+        "amount": 4.5,
+        "content": "YQ==",
+        "pair": [
+          1,
+          "2024-01-02"
+        ],
+        "history": {
+          "first": "2024-01-02"
+        },
+        "pet": {
+          "kind": "cat",
+          "name": "Milo"
+        },
+        "active_since": false
+      }
+    },
+    {
+      "name": "ledger-wire",
+      "use": "/paths/~1ledger/post response_body 200",
+      "op": "encode",
+      "value": {
+        "result": "ledger-native",
+        "attr": "value"
+      }
+    }
+  ]
+}

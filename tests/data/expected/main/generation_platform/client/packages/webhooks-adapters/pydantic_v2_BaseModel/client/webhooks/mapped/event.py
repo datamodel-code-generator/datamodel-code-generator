@@ -37,16 +37,8 @@ _PLAN: Final[WebhookPlan[_dcg_type_0 | _dcg_type_1, HmacKey]] = WebhookPlan(
     event=MappedEventDecoder(
         '/type',
         {
-            'invoice.paid': EventDecoder(
-                model_bindings.codec_0,
-                model_bindings.CONTEXT_0,
-                validate=False,
-            ),
-            'customer.created': EventDecoder(
-                model_bindings.codec_1,
-                model_bindings.CONTEXT_1,
-                validate=False,
-            ),
+            'invoice.paid': EventDecoder(model_bindings.codec_0),
+            'customer.created': EventDecoder(model_bindings.codec_1),
         },
     ),
 )

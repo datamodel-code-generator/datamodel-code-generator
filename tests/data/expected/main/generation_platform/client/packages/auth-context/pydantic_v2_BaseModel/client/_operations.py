@@ -7,7 +7,6 @@ from typing import Final
 
 from ._generated import model_bindings, security
 from ._runtime.client.operations import (
-    Encoder,
     OperationPlan,
     ParameterSpec,
     ResponseDecoder,
@@ -37,7 +36,7 @@ OPERATION_0: Final[OperationPlan[InheritedResponse]] = OperationPlan(
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'),
-            encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            codec=model_bindings.codec_0,
         ),
     ),
     security=security.OPERATION_0,
@@ -52,7 +51,7 @@ OPERATION_1: Final[OperationPlan[ExplicitResponse]] = OperationPlan(
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'),
-            encoder=Encoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
+            codec=model_bindings.codec_1,
         ),
     ),
     security=security.OPERATION_1,

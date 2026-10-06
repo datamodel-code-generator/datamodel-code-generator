@@ -96,7 +96,10 @@
   null items [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='null') [operation_id='listLoose', condition='null', location=BodySelector(pointer='/data'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  items of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":{"id":"1"},"next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] invalid_value
+  items of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":{"id":"1"},"next":null}', truncated=False, cause=1 validation error for LoosePage
+data
+  Input should be a valid array [type=list_type, input_value={'id': '1'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/list_type] invalid_value
   > GET https://api.example.com/nested
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   missing nested result [] ! ProtocolDataError: ProtocolDataError(operation_id='listNested', call_id='<call>', condition='missing') [operation_id='listNested', condition='missing', location=BodySelector(pointer='/result/items'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
@@ -108,10 +111,15 @@
   duplicate cursor header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='x-next', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  invalid page [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_syntax') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] invalid_syntax
+  invalid page [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_syntax') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{', truncated=False, cause=1 validation error for LoosePage
+  Invalid JSON: EOF while parsing an object at line 1 column 1 [type=json_invalid, input_value=b'{', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_syntax
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page its model refuses [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":[{"name":"x"}]}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /data/0/id')] invalid_value
+  page its model refuses [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":[{"name":"x"}]}', truncated=False, cause=1 validation error for LoosePage
+data.0.id
+  Field required [type=missing, input_value={'name': 'x'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/loose?cursor=7
@@ -238,7 +246,13 @@
   body media ['1']
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  cursor its parameter refuses ['1'] ! DecodeError: DecodeError(operation_id='listLoose', call_id='<call>', reason='unencodable', location='query.cursor') [operation_id='listLoose', location=('query', 'cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('The str value does not have the integer lexical kind')] unencodable
+  > GET https://api.example.com/loose?cursor=t1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/loose?cursor=t1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/loose?cursor=t1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cursor its parameter refuses ['1'] ! APIConnectionError: APIConnectionError(operation_id='listLoose', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='listLoose', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('Server disconnected without sending a response.')] api_connection_error
   > GET https://api.example.com/labels
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/labels?after=n1

@@ -36,27 +36,10 @@ OPERATION_0: Final[OperationPlan[GetSafeResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_0, model_bindings.CONTEXT_0,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_1, model_bindings.CONTEXT_1,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_0),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_1),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_1, model_bindings.CONTEXT_1,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_1),),
     ),
 )
 
@@ -67,27 +50,10 @@ OPERATION_1: Final[OperationPlan[PostUnsafeResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_2, model_bindings.CONTEXT_2,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_3, model_bindings.CONTEXT_3,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_2),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_3),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_3, model_bindings.CONTEXT_3,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_3),),
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -102,27 +68,10 @@ OPERATION_2: Final[OperationPlan[PostIdempotentResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_4, model_bindings.CONTEXT_4,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_5, model_bindings.CONTEXT_5,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_4),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_5),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_5, model_bindings.CONTEXT_5,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_5),),
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -138,27 +87,10 @@ OPERATION_3: Final[OperationPlan[PostKeyedResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_6, model_bindings.CONTEXT_6,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_7, model_bindings.CONTEXT_7,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_6),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_7),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_7, model_bindings.CONTEXT_7,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_7),),
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -174,27 +106,10 @@ OPERATION_4: Final[OperationPlan[PostKeyOnlyResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_8, model_bindings.CONTEXT_8,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_9, model_bindings.CONTEXT_9,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_8),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_9),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_9, model_bindings.CONTEXT_9,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_9),),
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -210,27 +125,10 @@ OPERATION_5: Final[OperationPlan[GetNeverResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_10, model_bindings.CONTEXT_10,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_11, model_bindings.CONTEXT_11,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_10),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_11),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_11, model_bindings.CONTEXT_11,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_11),),
     ),
     retry_safety='never',
 )
@@ -242,27 +140,10 @@ OPERATION_6: Final[OperationPlan[PostNeverResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_12, model_bindings.CONTEXT_12,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_13, model_bindings.CONTEXT_13,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_12),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_13),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_13, model_bindings.CONTEXT_13,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_13),),
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -278,27 +159,10 @@ OPERATION_7: Final[OperationPlan[GetVendorResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_14, model_bindings.CONTEXT_14,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_15, model_bindings.CONTEXT_15,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_14),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_15),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_15, model_bindings.CONTEXT_15,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_15),),
     ),
     retry_after_ms_header='X-Retry-In-Ms',
     should_retry_header='X-Retry-Permitted',
@@ -311,27 +175,10 @@ OPERATION_8: Final[OperationPlan[GetKeyedSafeResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_16, model_bindings.CONTEXT_16,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_17, model_bindings.CONTEXT_17,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_16),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_17),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_17, model_bindings.CONTEXT_17,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_17),),
     ),
     idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
 )

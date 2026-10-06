@@ -292,7 +292,8 @@ def client_helper_spelling_report(first: str, second: str, root: Path) -> str:
 def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
     """Render one fixture for each of its backends, returning a report and every backend's Python modules.
 
-    A case's `modules` keeps all modules (`true`), none (`false`), the listed ones, or maps each backend to one of these.
+    A case's `modules` keeps all modules (`true`), none (`false`), the listed ones,
+    or maps each backend to one of these.
     """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     lines = [f"# {case.get('expected', case_name)}"]

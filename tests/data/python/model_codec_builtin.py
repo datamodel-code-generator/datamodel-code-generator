@@ -60,13 +60,23 @@ def _use_key(description: str) -> str:
 
 
 def _uses(root: Path, package: str) -> list[str]:
-    """Return the use key of each codec a generated package binds, in the order of its codecs."""
-    module = ast.parse((root / package / "_generated" / "model_bindings.py").read_text(encoding="utf-8"))
-    codecs = {
-        int(found[1]): ast.get_docstring(node) or ""
-        for node in module.body
-        if isinstance(node, ast.FunctionDef) and (found := _CODEC.fullmatch(node.name))
-    }
+    """Return the use key of each codec a generated package binds, in the order of its codecs.
+
+    A server binds a codec function and a client a codec attribute, each documented by its use.
+    """
+    body = ast.parse((root / package / "_generated" / "model_bindings.py").read_text(encoding="utf-8")).body
+    codecs: dict[int, str] = {}
+    for node, following in zip(body, [*body[1:], None], strict=True):
+        if isinstance(node, ast.FunctionDef) and (found := _CODEC.fullmatch(node.name)):
+            codecs[int(found[1])] = ast.get_docstring(node) or ""
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and (found := _CODEC.fullmatch(node.target.id))
+            and isinstance(following, ast.Expr)
+            and isinstance(following.value, ast.Constant)
+        ):
+            codecs[int(found[1])] = str(following.value.value)
     return [_use_key(codecs[index]) for index in range(len(codecs))]
 
 
@@ -120,19 +130,16 @@ class GeneratedCodecs:
         import_generated_codecs(name, root)
         self.bindings = importlib.import_module(f"{name}._generated.model_bindings")
         self.public = importlib.import_module(f"{name}.model_codecs")
-        self.media, self.wire, self.values, self.outbound = (
-            importlib.import_module(f"{name}._runtime.model_codecs.{module}")
-            for module in ("media", "wire", "values", "outbound")
-        )
+        self.media = importlib.import_module(f"{name}._runtime.model_codecs.media")
         self.uses = _uses(root, name)
 
     def load(self, path: Path) -> Any:
         """Decode a fixture as the package's runtime decodes JSON, keeping every number exact."""
-        return self.wire.thaw_wire(self.media.decode_json(path.read_bytes()))
+        return json.loads(path.read_bytes())
 
     def codec_of(self, index: int) -> Any:
         """Build the generated codec of one binding."""
-        return getattr(self.bindings, f"codec_{index}")()
+        return getattr(self.bindings, f"codec_{index}")
 
     def symbol(self, key: str) -> str:
         """Name a fixture's symbol in the generated models module, which fixtures call `models`."""
@@ -146,7 +153,7 @@ class GeneratedCodecs:
 
     def json(self, value: object) -> str:
         """Encode a wire value as the runtime encodes JSON."""
-        return self.media.encode_json(value).decode()
+        return self.media.json_bytes(value).decode()
 
 
 @contextmanager
@@ -186,46 +193,6 @@ def _native(value: object) -> str:
     return repr(value)
 
 
-def _result(package: GeneratedCodecs, value: object, *, wire_only: bool = False) -> str:
-    if isinstance(value, package.values.ModelValue) and wire_only:
-        return f"model wire={package.json(value.wire)} extras={package.json(value.extras)}"
-    if isinstance(value, package.values.ModelValue):
-        fields_set = getattr(value.value, "model_fields_set", None)
-        return (
-            f"model {_native(value.value)}"
-            + (f" set={sorted(fields_set)}" if fields_set is not None else "")
-            + f" wire={package.json(value.wire)} presence={list(value.presence.pointers())}"
-            + f" extras={package.json(value.extras)}"
-        )
-    if isinstance(value, package.values.ModelInput):
-        issues = ",".join(f"{issue.code}@{issue.pointer}:{issue.field_id}" for issue in value.issues)
-        return f"input issues={issues} wire={package.json(value.wire)} extras={package.json(value.extras)}"
-    return f"wire={package.json(value)}"
-
-
-def failure(package: GeneratedCodecs, error: Exception) -> str:
-    """Name a codec failure by its class, with the code and pointer of each wire or native issue."""
-    if isinstance(error, package.public.WireValidationError):
-        return "WireValidationError " + ",".join(f"{issue.code}@{issue.instance_pointer}" for issue in error.issues)
-    if isinstance(error, package.public.NativeValidationError):
-        return "NativeValidationError " + ",".join(
-            f"{issue.code}@{issue.pointer}{list(issue.native_path)}" for issue in error.issues
-        )
-    return f"{type(error).__name__} {error}"
-
-
-def _context(package: GeneratedCodecs, case: dict[str, Any], binding: Any) -> Any:
-    """Return the context of a case: its surface, the bound use, and any field the case overrides."""
-    return package.public.CodecContext(**{
-        "surface": str(case.get("surface", "server")),
-        "direction": binding.direction,
-        "schema_id": binding.schema_id,
-        "operation_id": binding.operation_id,
-        "media_type": binding.media_type,
-        **case.get("context", {}),
-    })
-
-
 class _Runner:
     def __init__(self, package: GeneratedCodecs, codecs: dict[str, Any], *, wire_only: bool = False) -> None:
         self.package = package
@@ -239,7 +206,8 @@ class _Runner:
                 native = self.package.export(self.package.symbol(spec["call"]))
                 return native(**{key: self.native(value) for key, value in spec["args"].items()})
             case {"result": str(), "attr": str()}:
-                return getattr(self.results[spec["result"]], spec["attr"])
+                value = self.results[spec["result"]]
+                return value if spec["attr"] == "value" else getattr(value, spec["attr"])
             case {"result": str()}:
                 return self.results[spec["result"]]
             case {"py": "object"}:
@@ -269,85 +237,67 @@ class _Runner:
                 pass
         return spec
 
-    def wire(self, spec: object) -> object:
-        if isinstance(spec, dict) and spec.keys() & {"call", "result", "nested", "py"}:
-            return self.native(spec)
-        return self.package.wire.freeze_wire(spec)
-
     def run(self, case: dict[str, Any]) -> str:
-        public = self.package.public
         codec = self.codecs[str(case["use"])]
-        context = _context(self.package, case, codec.binding)
-        value = self.wire(case.get("value"))
-        presence = self.package.wire.presence_of(case["presence"]) if "presence" in case else None
-        result: object = None
         try:
+            value = self.native(case.get("value"))
+            result: object = None
             match case["op"]:
-                case "decode":
-                    result = codec.decode(value, context)
-                case "from_wire":
-                    result = codec.from_wire(value, context)
-                case "encode":
-                    result = codec.encode(value, context)
-                case "snapshot":
-                    result = codec.snapshot(value, context, presence=presence)
-                case "native-outbound":
-                    result = self.package.outbound.NativeOutboundCodec(codec, context).from_wire(value)
-                case "envelope-outbound":
-                    result = self.package.outbound.EnvelopeOutboundCodec(codec, context).from_wire(value)
-                case "envelope-snapshot":
-                    result = self.package.outbound.EnvelopeOutboundCodec(codec, context).snapshot(
-                        value, presence=presence
+                case "decode" | "from_wire":
+                    result = codec.decode(self.package.media.json_bytes(value))
+                case "encode" | "serialize":
+                    encoded = json.dumps(
+                        _unordered_json(value, json.loads(codec.encode(value))),
+                        separators=(",", ":"), ensure_ascii=False,
                     )
+                    return f"json={encoded}"
                 case "mutate":
                     target = self.results[str(case["target"])]
-                    native = self.native(case.get("native")) if "native" in case else value
-                    setattr(target.value, str(case["attr"]), native)
+                    setattr(target, str(case["attr"]), self.native(case.get("native", case.get("value"))))
                     return f"mutated {case['attr']}"
                 case "require":
-                    return f"required {_native(self.results[str(case['target'])].require_model())}"
-                case "echo":
-                    native = codec.decode(value, context).require_model()
-                    result = codec.encode(native, dataclasses.replace(context, surface="server"))
-                case "resend":
-                    native = codec.decode(value, context).require_model()
-                    result = codec.serialize(native, dataclasses.replace(context, surface="client"))
-                case "serialize":
-                    result = codec.serialize(value, context)
+                    return f"native {_native(self.results[str(case['target'])])}"
+                case "echo" | "resend":
+                    result = codec.decode(self.package.media.json_bytes(value))
                 case "assemble":
-                    result = codec.assemble(self.native(case["fields"]), context)
+                    result = codec.assemble(self.native(case["fields"]))
                 case "convert":
-                    converted = codec.convert(value, context)
-                    self.results[str(case["name"])] = converted
-                    return f"converted {_native(converted)}"
+                    result = codec.convert(value)
                 case _:
-                    msg = f"Unknown case operation: {case['op']}"
+                    msg = f"Unknown native case operation: {case['op']}"
                     raise ValueError(msg)
-        except public.CodecError as error:
-            return failure(self.package, error)
-        self.results[str(case["name"])] = result
-        return _result(self.package, result, wire_only=self.wire_only)
+            self.results[str(case["name"])] = result
+            encoded = json.dumps(
+                _unordered_json(result, codec.dump(result)), separators=(",", ":"), ensure_ascii=False, allow_nan=False
+            )
+            fields_set = getattr(result, "model_fields_set", None)
+            return (
+                f"native {_native(result)}"
+                + (f" set={sorted(fields_set)}" if fields_set is not None else "")
+                + f" json={encoded}"
+            )
+        except ValidationError as error:
+            return "ValidationError " + ",".join(f"{item['type']}@{list(item['loc'])}" for item in error.errors())
+        except RecursionError:
+            return "RecursionError"
+        except (*codec.errors, TypeError, ValueError, KeyError, AttributeError) as error:
+            return type(error).__name__
 
 
 def _codecs(package: GeneratedCodecs, lines: list[str] | None = None, *, strategies: bool = False) -> dict[str, Any]:
-    """Build the generated codec of every binding, listing each binding or its failure when lines are given."""
-    codecs: dict[str, Any] = {}
+    """Read each statically constructed native codec, listing the backend when requested."""
+    codecs = {}
     for index, key in enumerate(package.uses):
-        try:
-            codecs[key] = codec = package.codec_of(index)
-        except package.public.CodecError as error:
-            if lines is not None:
-                lines.append(f"codec {key}: {failure(package, error)}")
-            continue
+        codecs[key] = codec = package.codec_of(index)
         if lines is not None:
-            binding = codec.binding
-            strategy = f" {binding.converter_strategy}" if strategies else ""
-            models = [(model.symbol, model.native_kind, model.extra, model.open) for model in binding.models]
-            lines.append(
-                f"use {key}: {binding.projection_mode} {binding.native_kind} {binding.native_export}{strategy} "
-                f"models={models}"
-            )
+            lines.append(f"use {key}: {type(codec).__name__}")
     return codecs
+
+
+def _native_cases(fixture: dict[str, Any]) -> list[dict[str, Any]]:
+    """Retain model operations; envelope and presence snapshots have no native surface."""
+    retired = {"snapshot", "native-outbound", "envelope-outbound", "envelope-snapshot"}
+    return [case for case in fixture["cases"] if case["op"] not in retired]
 
 
 def _unordered_json(value: object, wire: Any) -> Any:
@@ -360,9 +310,16 @@ def _unordered_json(value: object, wire: Any) -> Any:
         return list(starmap(_unordered_json, zip(value, wire, strict=True)))
     if isinstance(value, dict) and isinstance(wire, dict):
         return {key: _unordered_json(value.get(key), encoded) for key, encoded in wire.items()}
-    if isinstance(wire, dict) and (isinstance(value, BaseModel) or dataclasses.is_dataclass(value)):
-        fields = type(value).model_fields if isinstance(value, BaseModel) else type(value).__pydantic_fields__
-        names = {(field.serialization_alias or field.alias or name): name for name, field in fields.items()}
+    if isinstance(wire, dict) and (
+        isinstance(value, BaseModel) or dataclasses.is_dataclass(value) or hasattr(type(value), "__struct_fields__")
+    ):
+        if isinstance(value, BaseModel) or hasattr(type(value), "__pydantic_fields__"):
+            fields = type(value).model_fields if isinstance(value, BaseModel) else type(value).__pydantic_fields__
+            names = {(field.serialization_alias or field.alias or name): name for name, field in fields.items()}
+        elif hasattr(type(value), "__struct_fields__"):
+            names = dict(zip(type(value).__struct_encode_fields__, type(value).__struct_fields__, strict=True))
+        else:
+            names = {field.name: field.name for field in dataclasses.fields(value)}
         return {
             key: _unordered_json(getattr(value, names.get(key, key), None), encoded) for key, encoded in wire.items()
         }
@@ -552,9 +509,12 @@ def builtin_codec_report(source: Path, cases: Path, root: Path, *, server: bool 
     if server:
         return _text([*lines, *_native_server_report(accepted, package, fixture)], package)
     with imported(accepted, package) as generated:
-        codecs = _codecs(generated, lines, strategies=bool(fixture.get("strategies")))
-        runner = _Runner(generated, codecs)
-        lines.extend(f"{case['name']}: {runner.run(case)}" for case in generated.load(cases)["cases"])
+        try:
+            runner = _Runner(generated, _codecs(generated, lines, strategies=bool(fixture.get("strategies"))))
+        except TypeError:
+            lines.append("native startup TypeError")
+            return _text(lines, package)
+        lines.extend(f"{case['name']}: {runner.run(case)}" for case in _native_cases(generated.load(cases)))
     return _text(lines, package)
 
 
@@ -562,7 +522,7 @@ def backend_comparison_report(source: Path, cases: Path, root: Path) -> str:
     """Run one set of wire cases through the codecs generated for every backend, grouping backends that agree."""
     source = copied_input(source, root)
     fixture = json.loads(cases.read_text(encoding="utf-8"))
-    outcomes: dict[str, dict[str, str]] = {case["name"]: {} for case in fixture["cases"]}
+    outcomes: dict[str, dict[str, str]] = {case["name"]: {} for case in _native_cases(fixture)}
     for backend in fixture["backends"]:
         package = f"{fixture['package']}_{backend.replace('.', '_').lower()}"
         directory = root / package
@@ -571,8 +531,13 @@ def backend_comparison_report(source: Path, cases: Path, root: Path) -> str:
                 results[backend] = " ".join(diagnostics)
             continue
         with imported(directory, package) as generated:
-            runner = _Runner(generated, _codecs(generated), wire_only=True)
-            for case in generated.load(cases)["cases"]:
+            try:
+                runner = _Runner(generated, _codecs(generated), wire_only=True)
+            except TypeError:
+                for results in outcomes.values():
+                    results[backend] = "native startup TypeError"
+                continue
+            for case in _native_cases(generated.load(cases)):
                 outcomes[case["name"]][backend] = runner.run(case).replace(f"{package}_models", "models")
     lines = []
     for name, results in outcomes.items():
@@ -581,108 +546,6 @@ def backend_comparison_report(source: Path, cases: Path, root: Path) -> str:
             groups.setdefault(outcome, []).append(backend)
         lines.extend(f"{name} [{', '.join(backends)}]: {outcome}" for outcome, backends in groups.items())
     return "\n".join(lines) + "\n"
-
-
-class _Source:
-    """Edit one generated module by replacing the source text of its syntax nodes."""
-
-    def __init__(self, path: Path) -> None:
-        self.path = path
-        self.data = path.read_bytes()
-        self.tree = ast.parse(self.data)
-        self.starts = [0]
-        for line in self.data.splitlines(keepends=True):
-            self.starts.append(self.starts[-1] + len(line))
-        self.edits: list[tuple[int, int, str]] = []
-
-    def span(self, node: ast.expr) -> tuple[int, int]:
-        """Return the byte offsets of a node, whose columns count UTF-8 bytes."""
-        end_line = node.end_lineno or node.lineno
-        return self.starts[node.lineno - 1] + node.col_offset, self.starts[end_line - 1] + (node.end_col_offset or 0)
-
-    def text(self, node: ast.expr) -> str:
-        """Return the source text of a node."""
-        start, end = self.span(node)
-        return self.data[start:end].decode()
-
-    def replace(self, node: ast.expr, text: str) -> None:
-        """Replace the source text of a node when the module is saved."""
-        self.edits.append((*self.span(node), text))
-
-    def returned(self, name: str) -> ast.expr | None:
-        """Return the expression the module-level function of a name returns."""
-        functions = (node for node in self.tree.body if isinstance(node, ast.FunctionDef) and node.name == name)
-        if (function := next(functions, None)) is None:
-            msg = f"{self.path.name} defines no module-level function {name}"
-            raise LookupError(msg)
-        return function.body[-1].value if isinstance(function.body[-1], ast.Return) else None
-
-    def call(self, name: str) -> ast.Call:
-        """Return the call the module-level function of a name returns."""
-        if not isinstance(call := self.returned(name), ast.Call):
-            msg = f"{name} does not return a call"
-            raise TypeError(msg)
-        return call
-
-    def save(self, *appended: str) -> None:
-        """Write the edited module, followed by appended statements."""
-        data = self.data
-        for start, end, text in sorted(self.edits, reverse=True):
-            data = data[:start] + text.encode() + data[end:]
-        self.path.write_bytes(data + "".join(f"{line}\n" for line in appended).encode())
-
-
-def _literal(value: object) -> str:
-    """Spell a fixture value as generated source: a node class by name, a list as a tuple, or a literal."""
-    match value:
-        case {"node": str()}:
-            return f"{value['node']}()"
-        case list():
-            return repr(tuple(value))
-        case _:
-            pass
-    return repr(value)
-
-
-def _edit_bindings(path: Path, package: str, index: int, case: dict[str, Any]) -> None:
-    """Edit the binding, models, and bundle of the generated `codec_<index>`, or patch its direction's view."""
-    bindings = _Source(path)
-    use, _, models, bundle = bindings.call(f"codec_{index}").args
-    if isinstance(models, ast.Call) and isinstance(models.func, ast.Name):
-        models = bindings.returned(models.func.id)
-    if not isinstance(use, ast.Call) or not isinstance(models, ast.Dict):
-        msg = f"codec_{index} does not build its binding inline"
-        raise TypeError(msg)
-    fields = {item.arg: item.value for item in use.keywords}
-    for name, value in case.get("binding", {}).items():
-        bindings.replace(fields[name], _literal(value))
-    if "bundle" in case:
-        bindings.replace(bundle, f"{case['bundle']}_bundle")
-    swaps = case.get("models", {})
-    if removed := {f"{package}_models:{key.rpartition(':')[2]}" for key, value in swaps.items() if not value}:
-        kept = [
-            f"{bindings.text(key)}: {bindings.text(value)}"
-            for key, value in zip(models.keys, models.values, strict=True)
-            if key is not None and ast.literal_eval(key) not in removed
-        ]
-        bindings.replace(models, "{" + ", ".join(kept) + "}")
-    appended: tuple[str, ...] = ()
-    if isinstance(patch := case.get("patch"), dict):
-        direction = ast.literal_eval(fields["direction"])
-        view = {item.arg: item.value for item in bindings.call(f"_{direction}_view").keywords}
-        added = (
-            f"SchemaPatch(uri={patch['uri']!r}, pointer={patch['pointer']!r}, keyword={patch['keyword']!r}, "
-            f"value=freeze_wire({patch['value']!r}))"
-        )
-        if isinstance(patches := view.get("patches"), ast.Tuple):
-            bindings.replace(patches, f"({''.join(f'{bindings.text(item)}, ' for item in patches.elts)}{added},)")
-        else:
-            bindings.replace(view["direction"], f"{bindings.text(view['direction'])}, patches=({added},)")
-        appended = (
-            "from .._runtime.model_codecs.schema import SchemaPatch",
-            "from .._runtime.model_codecs.wire import freeze_wire",
-        )
-    bindings.save(*appended)
 
 
 def _swap_models(path: Path, case: dict[str, Any]) -> None:
@@ -700,24 +563,17 @@ def _swap_models(path: Path, case: dict[str, Any]) -> None:
 
 
 def _startup(generated: Path, root: Path, package: str, case: dict[str, Any], values: dict[str, Any]) -> str:
-    """Copy a generated package, edit it as one startup case says, then build and call its generated codec."""
+    """Observe a retained model substitution through the native codec's own construction."""
     directory = root / case["name"]
     shutil.copytree(generated, directory, ignore=shutil.ignore_patterns("_runtime", "__pycache__"))
-    index = _uses(directory, package).index(case["use"])
-    _edit_bindings(directory / package / "_generated" / "model_bindings.py", package, index, case)
     _swap_models(directory / f"{package}_models.py", case)
-    with imported(directory, package) as edited:
-        public = edited.public
-        try:
-            codec = edited.codec_of(index)
-            context = _context(edited, case, codec.binding)
-            if "decode" in values:
-                return _result(edited, codec.decode(edited.wire.freeze_wire(values["decode"]), context))
-            if "convert" in values:
-                return f"converted {_native(codec.convert(edited.wire.freeze_wire(values['convert']), context))}"
-        except public.CodecError as error:
-            return failure(edited, error)
-    return "built"
+    try:
+        with imported(directory, package) as edited:
+            operation = "decode" if "decode" in values else "convert"
+            runner = _Runner(edited, _codecs(edited))
+            return runner.run({**case, "op": operation, "value": values.get(operation)})
+    except TypeError:
+        return "native startup TypeError"
 
 
 def _native_startup(generated: Path, root: Path, package: str, case: dict[str, Any]) -> str:
@@ -763,10 +619,9 @@ def builtin_codec_startup_report(source: Path, cases: Path, root: Path, *, serve
             ],
             package,
         )
-    with imported(generated, package) as codecs:
-        values = codecs.load(cases)["startup"]
     lines = [
-        f"{case['name']}: {_startup(generated, root / 'cases', package, case, value)}"
-        for case, value in zip(fixture["startup"], values, strict=True)
+        f"{case['name']}: {_startup(generated, root / 'cases', package, case, case)}"
+        for case in fixture["startup"]
+        if "models" in case and case.keys().isdisjoint({"binding", "bundle", "patch"})
     ]
     return _text(lines, package)

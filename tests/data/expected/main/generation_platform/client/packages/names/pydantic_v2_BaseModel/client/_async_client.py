@@ -14,7 +14,7 @@ from typing_extensions import Self
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import AsyncBodyInput
-from .model_codecs import WireValue
+from .model_codecs import JSONValue
 from .options import ClientOptions, RequestOptions
 from .responses import AsyncRawResponse
 from .transports import AsyncTransportAdapter, OwnedTransportAdapter
@@ -62,7 +62,7 @@ class AsyncClient:
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[WireValue] | Unset = UNSET,
+        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
@@ -131,7 +131,7 @@ class AsyncClientWithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[WireValue] | Unset = UNSET,
+        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""

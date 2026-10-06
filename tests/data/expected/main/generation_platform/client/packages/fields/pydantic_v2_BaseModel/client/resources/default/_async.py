@@ -28,7 +28,7 @@ from models import Visit as _dcg_type_9
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncMultipartBody
-from ...model_codecs import WireValue
+from ...model_codecs import JSONValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.default import (
@@ -349,7 +349,7 @@ class AsyncDefaultResource:
         self,
         *,
         pet_id: _dcg_type_14,
-        body: AsyncMultipartBody[str | WireValue],
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutPhotoResponse:
@@ -696,7 +696,7 @@ class AsyncDefaultWithResponse:
         self,
         *,
         pet_id: _dcg_type_14,
-        body: AsyncMultipartBody[str | WireValue],
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutPhotoResponse]:
@@ -1043,7 +1043,7 @@ class AsyncDefaultWithRawResponse:
         self,
         *,
         pet_id: _dcg_type_14,
-        body: AsyncMultipartBody[str | WireValue],
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1390,7 +1390,7 @@ class AsyncDefaultWithStreamingResponse:
         self,
         *,
         pet_id: _dcg_type_14,
-        body: AsyncMultipartBody[str | WireValue],
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

@@ -33,18 +33,6 @@ class CodecError(Exception):
     """Base class for every model-codec failure."""
 
 
-class CodecConfigurationError(CodecError):
-    """Reject an unusable codec configuration before any request or response is processed."""
-
-
-class CodecSelectionError(CodecConfigurationError):
-    """Reject a selector that does not name a declared use, status, or media."""
-
-
-class CodecBindingError(CodecError):
-    """Reject a value, presence tree, or context that belongs to a different binding."""
-
-
 class WireValidationError(CodecError):
     """Report wire values that violate their directional schema, retaining every issue."""
 
@@ -55,33 +43,6 @@ class WireValidationError(CodecError):
         super().__init__(
             f"{first.message} at {first.instance_pointer or '/'}" if first else "The wire value is invalid"
         )
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class NativeIssue:
-    """Describe one native rejection by backend error type and location, never by the rejected value."""
-
-    code: str
-    pointer: str
-    native_path: tuple[str | int, ...]
-
-
-class NativeValidationError(CodecError):
-    """Report a native constructor, validator, or converter rejecting a schema-valid value."""
-
-    def __init__(self, issues: tuple[NativeIssue, ...]) -> None:
-        """Keep the ordered native issues, naming only the first in the message."""
-        self.issues = issues
-        first = issues[0] if issues else None
-        super().__init__(
-            f"The native type rejected the value ({first.code}) at {first.pointer or '/'}"
-            if first
-            else "The native type rejected the value"
-        )
-
-
-class ModelProjectionError(CodecError):
-    """Report a value that cannot be projected into or out of the bound native type."""
 
 
 class ParameterEncodingError(CodecError):

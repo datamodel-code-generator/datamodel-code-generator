@@ -103,7 +103,10 @@
   304 with another vary = revalidated 8:cat status=200 network=304 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('content-type', 'application/json'), ('etag', '"e"'), ('vary', 'accept-language'), ('Content-Length', '21')]
   > GET https://api.example.com/users/8
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  after the vary change ! NotFoundError: NotFoundError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"id":8,"name":"cat"}', body_bytes=b'{"id":8,"name":"cat"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /message')] not_found_error
+  after the vary change ! NotFoundError: NotFoundError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"id":8,"name":"cat"}', body_bytes=b'{"id":8,"name":"cat"}', truncated=False, cause=1 validation error for Error
+message
+  Field required [type=missing, input_value={'id': 8, 'name': 'cat'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] not_found_error
   > GET https://api.example.com/users/25
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   aged stored = network 25:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"g"'), ('cache-control', 'max-age=60'), ('age', '100'), ('content-length', '22'), ('content-type', 'application/json')]
@@ -307,7 +310,13 @@
   still fresh ! NotFoundError: NotFoundError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Error(message='gone'), body_bytes=b'{"message":"gone"}', truncated=False] not_found_error
   > GET https://api.example.com/users/17
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  validators stored ! DecodeError: DecodeError(status_code=200, operation_id='getUser', call_id='<call>', reason='invalid_value') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":"x"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.int_parsing) at /id')] invalid_value
+  validators stored ! DecodeError: DecodeError(status_code=200, operation_id='getUser', call_id='<call>', reason='invalid_value') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":"x"}', truncated=False, cause=2 validation errors for User
+id
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='x', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing
+name
+  Field required [type=missing, input_value={'id': 'x'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
   > GET https://api.example.com/users/17
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "g"] b''
   matching caller validator ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error
