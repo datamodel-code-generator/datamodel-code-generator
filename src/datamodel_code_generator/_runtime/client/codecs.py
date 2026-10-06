@@ -1,23 +1,22 @@
-"""Typed response header accessors of generated client operations."""
+"""Typed response header accessors of generated client operations, and the model codecs their bindings call."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generic, NoReturn
+from dataclasses import dataclass, replace
+from typing import TYPE_CHECKING, Generic, NoReturn, cast
 
 from typing_extensions import TypeVar
 
+from ..model_codecs.media import media_kind, plain
 from ..model_codecs.parameters import ParameterFragment, RawParameter, decode_parameter
 from ..model_codecs.unset import UNSET, Unset
 from .errors import ResponseHeaderDecodeError
-from .operations import DATA_ERRORS, status_key
+from .operations import PARSE_ERRORS, status_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from ..model_codecs.context import CodecContext
     from ..model_codecs.parameters import ParameterPlan
-    from ..model_codecs.wire import WireValue
     from .operations import InboundModelCodec
     from .responses import ResponseInfo
 
@@ -38,35 +37,11 @@ def optional_header(_info: ResponseInfo, _operation_id: str | None) -> Unset:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class HeaderBranch(Generic[T_co, M_co]):
-    """One status's declaration of a header: its wire plan, its value decoder, and what its absence yields."""
+    """One status's declaration of a header: its wire plan, the codec of its value, and what its absence yields."""
 
     plan: ParameterPlan
-    decode: Callable[[WireValue], T_co]
+    codec: InboundModelCodec[T_co]
     missing: Callable[[ResponseInfo, str | None], M_co]
-
-
-class NativeValue(Generic[T_co]):
-    """Decode a received header or part value into its native value: by its schema, or through its converter alone."""
-
-    __slots__ = ("_codec", "_context")
-
-    def __init__(self, codec: Callable[[], InboundModelCodec[T_co]], context: CodecContext) -> None:
-        """Bind the value's codec accessor and context."""
-        self._codec = codec
-        self._context = context
-
-    def __call__(self, wire: WireValue) -> T_co:
-        """Validate a wire value against its schema and construct its native value."""
-        return self._codec().decode(wire, self._context).require_model()
-
-    def convert(self, wire: WireValue) -> T_co:
-        """Construct the native value of a wire value through its converter alone."""
-        return self._codec().convert(wire, self._context)
-
-
-def native_value(codec: Callable[[], InboundModelCodec[T]], context: CodecContext) -> NativeValue[T]:
-    """Return a decoder of a header or part value that constructs the native value."""
-    return NativeValue(codec, context)
 
 
 class ResponseHeaders(Generic[T_co, M_co]):
@@ -93,12 +68,16 @@ class ResponseHeaders(Generic[T_co, M_co]):
         fragments = tuple(
             ParameterFragment(header.encode("latin-1"), value.encode()) for header, value in info.headers.items()
         )
+        codec = branch.codec
+        errors: tuple[type[Exception], ...] = (*codec.errors, *PARSE_ERRORS)
         try:
-            wire = decode_parameter(branch.plan, RawParameter(location="header", fragments=fragments))
+            native_json = media_kind(branch.plan.content_media_type or "") == "json"
+            plan = replace(branch.plan, content_media_type="text/plain") if native_json else branch.plan
+            wire = decode_parameter(plan, RawParameter(location="header", fragments=fragments))
             if isinstance(wire, Unset):
                 return branch.missing(info, self._operation_id)
-            return branch.decode(wire)
-        except DATA_ERRORS as error:
+            return codec.decode(cast("str", wire).encode()) if native_json else codec.convert(plain(wire))
+        except errors as error:
             raise ResponseHeaderDecodeError(
                 info=info, operation_id=self._operation_id, call_id=info.call_id, cause=error
             ) from None

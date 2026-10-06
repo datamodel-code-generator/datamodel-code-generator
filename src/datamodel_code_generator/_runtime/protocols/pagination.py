@@ -697,7 +697,7 @@ class _Walk(Generic[T, P]):
             plan, arguments = self.plan, self.request.arguments
             parameters = plan.call.parameters
             texts = self.paths = {
-                name: parameters[position].path_text(parameters[position].encode(arguments[position]))
+                name: parameters[position].path_text(parameters[position].dump(arguments[position]))
                 for _, parts in plan.dotted
                 for name, index, _, position in parts
                 if index is None
@@ -842,13 +842,13 @@ class _Walk(Generic[T, P]):
             body = call.body
             assert body is not None
             media = tuple(
-                ReadMedia(media_type=media.media_type, kind=media.kind, encoder=media.encoder, read=read)
+                ReadMedia(media_type=media.media_type, kind=media.kind, codec=media.codec, read=read)
                 for media in body.media
             )
             return replace(call, body=replace(body, media=media))
         parameters = list(call.parameters)
         spec = parameters[position]
-        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, read=read)
+        parameters[position] = ReadParameter(plan=spec.plan, codec=spec.codec, read=read)
         return replace(call, parameters=tuple(parameters))
 
     def started(self, wire: WireValue) -> None:

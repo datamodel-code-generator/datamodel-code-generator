@@ -17,9 +17,7 @@ from typing import TYPE_CHECKING, BinaryIO, Final, Generic, Literal, TypeAlias
 
 from typing_extensions import Self, TypeIs, TypeVar
 
-from ..model_codecs.errors import CodecError
-from ..model_codecs.media import decode_json
-from ..model_codecs.wire import thaw_wire
+from ..model_codecs.media import json_value
 from .coding import CHUNK, ContentDecoder
 from .errors import (
     CleanupError,
@@ -40,7 +38,7 @@ if TYPE_CHECKING:
     from concurrent.futures import Future
     from types import TracebackType
 
-    from ..model_codecs.wire import JSONValue
+    from ..model_codecs.media import JSONValue
     from .disk import DiskWorker
     from .errors import RetryStopReason
     from .events import CallEvents
@@ -379,8 +377,8 @@ class _Raw(Generic[SourceT, HandleT]):
 
     def _json(self, body: bytes) -> JSONValue:
         try:
-            return thaw_wire(decode_json(body))
-        except CodecError as error:
+            return json_value(body)
+        except (ValueError, RecursionError) as error:
             raise self._undecodable(body, error) from None
 
     def _undecodable(self, body: bytes, cause: BaseException) -> DecodeError:

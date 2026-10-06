@@ -3,7 +3,7 @@
     entered=1 wrong_mode_released=0 queued=1
   async permit from sync limiter ! LimiterExecutionError: LimiterExecutionError(operation_id='getPet', call_id='<call>', action='acquire') [operation_id='getPet', cause=TypeError('Expected a synchronous Permit')] limiter_execution_error
     entered=1 wrong_mode_released=0 queued=1
-  raw preparation before limiter ! RequestEncodingError: RequestEncodingError(operation_id='getPet', call_id='<call>', location='path.petId') [operation_id='getPet', location=('path', 'petId'), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
+  raw preparation before limiter ! RequestEncodingError: RequestEncodingError(operation_id='getPet', call_id='<call>', location='path.petId') [operation_id='getPet', location=('path', 'petId'), cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] request_encoding_error
   stopped call with failing hooks: DeadlineExceededError secondary ['RuntimeError', 'RuntimeError']
     entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=['call_start:0', 'call_end:0']/['call_start:0', 'call_end:0'] counters=[(0, 0, 0)] queued=1
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
@@ -26,7 +26,7 @@
     entered=1 wrong_mode_released=0 queued=1
   sync permit from async limiter ! LimiterExecutionError: LimiterExecutionError(operation_id='getPet', call_id='<call>', action='acquire') [operation_id='getPet', cause=TypeError('Expected an asynchronous Permit')] limiter_execution_error
     entered=1 wrong_mode_released=0 queued=1
-  async raw preparation before limiter ! RequestEncodingError: RequestEncodingError(operation_id='getPet', call_id='<call>', location='path.petId') [operation_id='getPet', location=('path', 'petId'), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
+  async raw preparation before limiter ! RequestEncodingError: RequestEncodingError(operation_id='getPet', call_id='<call>', location='path.petId') [operation_id='getPet', location=('path', 'petId'), cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] request_encoding_error
   async stopped call with failing hooks: DeadlineExceededError secondary ['RuntimeError', 'RuntimeError']
     entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=['call_start:0', 'call_end:0']/['call_start:0', 'call_end:0'] counters=[(0, 0, 0)] queued=1
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None

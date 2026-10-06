@@ -142,17 +142,6 @@ class WirePlan:
         """Return the bundled schema identifier of a planned source location."""
         return f"{dict(self.documents)[location.document]}#{quote(location.pointer, safe=_FRAGMENT_SAFE)}"
 
-    def resolved(self, locations: Iterable[SourceLocation]) -> dict[SourceLocation, SourceLocation]:
-        """Map each location whose schema the bundle holds to that schema's location, past whole-schema references.
-
-        A location the normalized bundle lacks, such as a legacy reference's dropped sibling, maps to nothing.
-        """
-        return {
-            location: target
-            for location in locations
-            if isinstance(self._node(target := self.schema(location)[0]), Mapping | bool)
-        }
-
     def schema(self, location: SourceLocation) -> tuple[SourceLocation, Mapping[str, WireValue]]:
         """Return the normalized schema object at a location, following whole-schema references."""
         value = self._node(location)

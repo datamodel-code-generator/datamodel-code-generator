@@ -7,7 +7,6 @@ from typing import Final
 
 from ._generated import model_bindings, security
 from ._runtime.client.operations import (
-    Encoder,
     OperationPlan,
     ParameterSpec,
     ResponseDecoder,
@@ -57,21 +56,14 @@ OPERATION_0: Final[OperationPlan[ParameterResponse, ParameterErrorData]] = Opera
     path='/parameter',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_1, model_bindings.CONTEXT_1,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_1),),
         (),
         ParameterHTTPError,
     ),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Request-Key', style='simple'),
-            encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            codec=model_bindings.codec_0,
         ),
     ),
 )
@@ -82,14 +74,7 @@ OPERATION_1: Final[OperationPlan[ApiKeyResponse, ApiKeyErrorData]] = OperationPl
     path='/api-key',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_3, model_bindings.CONTEXT_3,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_3),),
         (),
         ApiKeyHTTPError,
     ),
@@ -102,14 +87,7 @@ OPERATION_2: Final[OperationPlan[BearerResponse, BearerErrorData]] = OperationPl
     path='/bearer',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_5, model_bindings.CONTEXT_5,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_5),),
         (),
         BearerHTTPError,
     ),
@@ -122,14 +100,7 @@ OPERATION_3: Final[OperationPlan[OauthResponse, OauthErrorData]] = OperationPlan
     path='/oauth',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_7, model_bindings.CONTEXT_7,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_7),),
         (),
         OauthHTTPError,
     ),
@@ -142,14 +113,7 @@ OPERATION_4: Final[OperationPlan[OpenidResponse, OpenidErrorData]] = OperationPl
     path='/openid',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_9, model_bindings.CONTEXT_9,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_9),),
         (),
         OpenidHTTPError,
     ),
@@ -162,14 +126,7 @@ OPERATION_5: Final[OperationPlan[CookieResponse, CookieErrorData]] = OperationPl
     path='/cookie',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_11, model_bindings.CONTEXT_11,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_11),),
         (),
         CookieHTTPError,
     ),
@@ -183,14 +140,7 @@ OPERATION_6: Final[OperationPlan[QueryResponse, QueryErrorData]] = OperationPlan
     path='/query',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_13, model_bindings.CONTEXT_13,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_13),),
         (),
         QueryHTTPError,
     ),
@@ -204,14 +154,7 @@ OPERATION_7: Final[OperationPlan[IgnoredResponse, IgnoredErrorData]] = Operation
     path='/ignored',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_15, model_bindings.CONTEXT_15,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_15),),
         (),
         IgnoredHTTPError,
     ),
@@ -224,14 +167,7 @@ OPERATION_8: Final[OperationPlan[DirectionResponse, DirectionErrorData]] = Opera
     path='/direction',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_18, model_bindings.CONTEXT_18,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_18),),
         (),
         DirectionHTTPError,
     ),
@@ -242,7 +178,7 @@ OPERATION_8: Final[OperationPlan[DirectionResponse, DirectionErrorData]] = Opera
                 name='X-Retry-Control',
                 style='simple',
             ),
-            encoder=Encoder(model_bindings.codec_17, model_bindings.CONTEXT_17),
+            codec=model_bindings.codec_17,
         ),
     ),
     request_id_header='X-Idempotency',
@@ -257,14 +193,7 @@ OPERATION_9: Final[OperationPlan[UnusedResponse, UnusedErrorData]] = OperationPl
     path='/unused',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_20, model_bindings.CONTEXT_20,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_20),),
         (),
         UnusedHTTPError,
     ),

@@ -1,11 +1,4 @@
-use /paths/~1animals~1any/put request_body: native alias models:FieldAnimalsAnyPutRequest models=[('models:Cat', 'dataclass', 'ignore', False), ('models:Dog', 'dataclass', 'ignore', True)]
-use /paths/~1kin/put request_body: native alias models:FieldKinPutRequest models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'ignore', False)]
-use /paths/~1tree/put request_body: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
-use /paths/~1tree/put response_body 200: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
-use /paths/~1mixed/post request_body: native alias models:Mixed models=[('models:Large', 'dataclass', 'ignore', True), ('models:Small', 'dataclass', 'ignore', True)]
-use /paths/~1values/post request_body: native dataclass models:Values models=[('models:Values', 'dataclass', 'ignore', True)]
-use /paths/~1values/post response_body 200: native dataclass models:Values models=[('models:Values', 'dataclass', 'ignore', True)]
-animal-server-dog: ModelProjectionError The native use has an unplanned projection gap at /id
-animal-any-decode-cat: WireValidationError schema.anyOf@
-mixed-server-decode: model Large(size='large') wire={"size":"large"} presence=['', '/size'] extras={}
-kin-client-encode-cat: wire={"meow":true}
+APIGenerationError
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1animals~1any/put/requestBody: The union of Cat and Dog needs a declared discriminator for the dataclasses.dataclass converter
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1kin/put/requestBody: The union of Animal and Cat needs a declared discriminator for the dataclasses.dataclass converter
+diagnostic MC_CODEC_UNSUPPORTED /components/schemas/Values/properties/span: The dataclasses.dataclass converter has no conversion for the datetime.timedelta type

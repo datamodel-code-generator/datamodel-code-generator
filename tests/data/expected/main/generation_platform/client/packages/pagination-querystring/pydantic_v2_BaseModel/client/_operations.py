@@ -7,7 +7,6 @@ from typing import Final
 
 from ._generated import model_bindings
 from ._runtime.client.operations import (
-    Encoder,
     OperationPlan,
     ParameterSpec,
     ResponseDecoder,
@@ -33,14 +32,7 @@ OPERATION_0: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
     path='/search',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_1, model_bindings.CONTEXT_1,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_1),),
         (),
         SearchHTTPError,
     ),
@@ -53,7 +45,7 @@ OPERATION_0: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
                 fields=(FieldPlan('term', 'string'), FieldPlan('page', 'integer')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            codec=model_bindings.codec_0,
         ),
     ),
 )
@@ -64,14 +56,7 @@ OPERATION_1: Final[OperationPlan[LookupResponse, LookupErrorData]] = OperationPl
     path='/lookup',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_4, model_bindings.CONTEXT_4,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_4),),
         (),
         LookupHTTPError,
     ),
@@ -82,7 +67,7 @@ OPERATION_1: Final[OperationPlan[LookupResponse, LookupErrorData]] = OperationPl
                 name='filter',
                 content_media_type='application/json',
             ),
-            encoder=Encoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
+            codec=model_bindings.codec_3,
         ),
     ),
 )

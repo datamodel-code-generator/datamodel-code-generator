@@ -11,7 +11,6 @@ from models import Message as _dcg_type_0
 
 from .. import _operations
 from .._generated import model_bindings
-from .._runtime.client.codecs import native_value
 from .._runtime.protocols.records import BodySelector
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.streams import EventPlan, UnknownEvent, unknown_event
@@ -22,7 +21,7 @@ STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
     call=_operations.OPERATION_0,
     media='text/event-stream',
     fingerprint='914106c102ca637c5c092ef60704b6e6f4f12f8a96f0edef41e6b1d2c8c898cc',
-    event=native_value(model_bindings.codec_7, model_bindings.CONTEXT_7),
+    event=model_bindings.codec_7,
 )
 
 
@@ -32,14 +31,9 @@ STREAM_1: Final[EventPlan[_dcg_type_1 | _dcg_type_2 | UnknownEvent]] = EventPlan
     call=_operations.OPERATION_0,
     media='text/event-stream',
     fingerprint='3d0cd2a5b57b3bb77d6af60ffc0314a99fb1867c2a4642495ccf282ff5f55fbc',
-    routes=(
-        ('created', native_value(model_bindings.codec_8, model_bindings.CONTEXT_8)),
-        ('deleted', native_value(model_bindings.codec_9, model_bindings.CONTEXT_9)),
-    ),
+    routes=(('created', model_bindings.codec_8), ('deleted', model_bindings.codec_9)),
     unknown=unknown_event,
-    errors=(
-        ('error', native_value(model_bindings.codec_10, model_bindings.CONTEXT_10)),
-    ),
+    errors=(('error', model_bindings.codec_10),),
     completion='event_type',
     terminal='done',
 )
@@ -51,14 +45,9 @@ STREAM_2: Final[EventPlan[_dcg_type_1 | _dcg_type_2]] = EventPlan(
     call=_operations.OPERATION_0,
     media='text/event-stream',
     fingerprint='7b288e639b494089becf0e91b950f62a3e2227d8fb306782d04cb7d30f77db1d',
-    routes=(
-        ('created', native_value(model_bindings.codec_8, model_bindings.CONTEXT_8)),
-        ('deleted', native_value(model_bindings.codec_9, model_bindings.CONTEXT_9)),
-    ),
+    routes=(('created', model_bindings.codec_8), ('deleted', model_bindings.codec_9)),
     discriminator=BodySelector(pointer='/type'),
-    errors=(
-        ('failed', native_value(model_bindings.codec_11, model_bindings.CONTEXT_11)),
-    ),
+    errors=(('failed', model_bindings.codec_11),),
     completion='sentinel',
     terminal='[DONE]',
 )
@@ -70,7 +59,7 @@ STREAM_3: Final[EventPlan[_dcg_type_0]] = EventPlan(
     call=_operations.OPERATION_1,
     media='text/event-stream',
     fingerprint='5854fc8301e5ee84922ab5821414c233ac4c5eb9eafb799beaf3445d3b6b204c',
-    event=native_value(model_bindings.codec_12, model_bindings.CONTEXT_12),
+    event=model_bindings.codec_12,
     completion='sentinel',
     terminal='[DONE]',
 )

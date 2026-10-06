@@ -54,27 +54,10 @@ OPERATION_0: Final[OperationPlan[GetSafeResponse, GetSafeErrorData]] = Operation
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_0, model_bindings.CONTEXT_0,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_1, model_bindings.CONTEXT_1,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_0),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_1),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_1, model_bindings.CONTEXT_1,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_1),),
         GetSafeHTTPError,
     ),
 )
@@ -86,27 +69,10 @@ OPERATION_1: Final[OperationPlan[PostUnsafeResponse, PostUnsafeErrorData]] = Ope
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_2, model_bindings.CONTEXT_2,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_3, model_bindings.CONTEXT_3,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_2),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_3),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_3, model_bindings.CONTEXT_3,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_3),),
         PostUnsafeHTTPError,
     ),
     body=RequestBody(
@@ -122,27 +88,10 @@ OPERATION_2: Final[OperationPlan[PostIdempotentResponse, PostIdempotentErrorData
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_4, model_bindings.CONTEXT_4,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_5, model_bindings.CONTEXT_5,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_4),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_5),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_5, model_bindings.CONTEXT_5,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_5),),
         PostIdempotentHTTPError,
     ),
     body=RequestBody(
@@ -159,27 +108,10 @@ OPERATION_3: Final[OperationPlan[PostKeyedResponse, PostKeyedErrorData]] = Opera
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_6, model_bindings.CONTEXT_6,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_7, model_bindings.CONTEXT_7,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_6),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_7),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_7, model_bindings.CONTEXT_7,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_7),),
         PostKeyedHTTPError,
     ),
     body=RequestBody(
@@ -196,27 +128,10 @@ OPERATION_4: Final[OperationPlan[PostKeyOnlyResponse, PostKeyOnlyErrorData]] = O
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_8, model_bindings.CONTEXT_8,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_9, model_bindings.CONTEXT_9,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_8),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_9),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_9, model_bindings.CONTEXT_9,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_9),),
         PostKeyOnlyHTTPError,
     ),
     body=RequestBody(
@@ -233,27 +148,10 @@ OPERATION_5: Final[OperationPlan[GetNeverResponse, GetNeverErrorData]] = Operati
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_10, model_bindings.CONTEXT_10,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_11, model_bindings.CONTEXT_11,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_10),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_11),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_11, model_bindings.CONTEXT_11,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_11),),
         GetNeverHTTPError,
     ),
     retry_safety='never',
@@ -266,27 +164,10 @@ OPERATION_6: Final[OperationPlan[PostNeverResponse, PostNeverErrorData]] = Opera
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_12, model_bindings.CONTEXT_12,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_13, model_bindings.CONTEXT_13,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_12),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_13),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_13, model_bindings.CONTEXT_13,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_13),),
         PostNeverHTTPError,
     ),
     body=RequestBody(
@@ -303,27 +184,10 @@ OPERATION_7: Final[OperationPlan[GetVendorResponse, GetVendorErrorData]] = Opera
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_14, model_bindings.CONTEXT_14,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_15, model_bindings.CONTEXT_15,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_14),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_15),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_15, model_bindings.CONTEXT_15,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_15),),
         GetVendorHTTPError,
     ),
     retry_after_ms_header='X-Retry-In-Ms',
@@ -337,27 +201,10 @@ OPERATION_8: Final[OperationPlan[GetKeyedSafeResponse, GetKeyedSafeErrorData]] =
     servers=_SERVERS_0,
     responses=ResponseDecoder(
         (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_16, model_bindings.CONTEXT_16,
-            ),
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_17, model_bindings.CONTEXT_17,
-            ),
+            model_branch('200', 'text/plain', 'text', model_bindings.codec_16),
+            model_branch('default', 'text/plain', 'text', model_bindings.codec_17),
         ),
-        (
-            model_branch(
-                'default',
-                'text/plain',
-                'text',
-                model_bindings.codec_17, model_bindings.CONTEXT_17,
-            ),
-        ),
+        (model_branch('default', 'text/plain', 'text', model_bindings.codec_17),),
         GetKeyedSafeHTTPError,
     ),
     idempotency=IdempotencyPlan(header_name='Idempotency-Key'),

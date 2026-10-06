@@ -24,7 +24,9 @@
     connection ping b'probe' deadline=False polled=False
     ping PingReceipt(latency=0.25)
     connection close 1002 '' timeout=5.0
-  feed message of another type ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='roomSocket', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
+  feed message of another type ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='roomSocket', condition='malformed', truncated=False, cause=1 validation error for ServerMessage
+  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value=b'plain', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error
     open wss://api.example.com/feed/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=() WebSocketOpenRequest(subprotocols=()) ResolvedWSOptions(open_timeout=5.0, idle_timeout=60.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, compression=None) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
     connection send text=True b'text' deadline=True
     connection close 1001 '' timeout=5.0

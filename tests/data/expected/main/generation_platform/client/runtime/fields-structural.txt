@@ -3,19 +3,19 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create from its required fields = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 99] b'{"name":"Mimi","kind":"cat","tag":null,"birthDate":"2020-01-02","owner":{"email":"e"},"secret":"s"}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 88] b'{"name":"Mimi","kind":"cat","birthDate":"2020-01-02","owner":{"email":"e"},"secret":"s"}'
   create from every field, with a null tag = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 15] b'name=Mimi&tag=t'
   create from form fields = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 39] b'{"name":"Mimi","kind":"cat","tag":null}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create from a body = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create from fields and an UNSET body = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 39] b'{"name":"Mimi","kind":"cat","tag":null}'
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create from a body and UNSET fields = Pet(id=1, name='Mimi', tag=None)
   > POST https://api.example.com/pets?tag=q
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 15] b'name=Mimi&tag=b'
@@ -85,7 +85,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 12] b'{"name":"n"}'
   update a name = None
   > PATCH https://api.example.com/pets/1
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 12] b'{"tag":null}'
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
   update a null tag = None
   update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', call_id='<call>', field_path='media_type', condition='without_body') [operation_id='updatePet', field_path=('media_type',), condition='without_body'] configuration_error
   log a visit naming only text ! ConfigurationError: ConfigurationError(operation_id='logVisit', call_id='<call>', field_path='media_type', condition='without_body') [operation_id='logVisit', field_path=('media_type',), condition='without_body'] configuration_error

@@ -7,7 +7,6 @@ from typing import Final
 
 from ._generated import model_bindings
 from ._runtime.client.operations import (
-    Encoder,
     OperationPlan,
     ParameterSpec,
     ResponseDecoder,
@@ -66,7 +65,7 @@ OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse, GetFilesByFile
                 required=True,
                 reserved_names=('ext',),
             ),
-            encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            codec=model_bindings.codec_0,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -76,7 +75,7 @@ OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse, GetFilesByFile
                 required=True,
                 reserved_names=('fileName',),
             ),
-            encoder=Encoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
+            codec=model_bindings.codec_1,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -85,11 +84,11 @@ OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse, GetFilesByFile
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_2, model_bindings.CONTEXT_2),
+            codec=model_bindings.codec_2,
         ),
         ParameterSpec(
             plan=ParameterPlan(location='header', name='2fa', style='simple'),
-            encoder=Encoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
+            codec=model_bindings.codec_3,
         ),
     ),
 )
