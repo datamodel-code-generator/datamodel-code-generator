@@ -35,14 +35,14 @@
   client limiter entered=6 granted=6 released=6 release_calls=6 active=0 peak=1
   view limiter entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   request limiter entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  context operation=getPet origin=https://api.example.com parent=None remaining=True token=True call=True/True safe=True
-  context operation=getPet origin=https://api.example.com parent=None remaining=True token=True call=True/True safe=True
-  context operation=getPet origin=https://api.example.com parent=None remaining=True token=True call=True/True safe=True
-  context operation=getPet origin=https://api.example.com parent=None remaining=True token=True call=True/True safe=True
-  context operation=None origin=https://raw.example.com parent=None remaining=disabled token=True call=True/True safe=True
-  context operation=None origin=https://raw.example.com parent=None remaining=True token=True call=True/True safe=True
+  context operation=getPet origin=https://api.example.com parent=None remaining=True call=True/True safe=True
+  context operation=getPet origin=https://api.example.com parent=None remaining=True call=True/True safe=True
+  context operation=getPet origin=https://api.example.com parent=None remaining=True call=True/True safe=True
+  context operation=getPet origin=https://api.example.com parent=None remaining=True call=True/True safe=True
+  context operation=None origin=https://raw.example.com parent=None remaining=disabled call=True/True safe=True
+  context operation=None origin=https://raw.example.com parent=None remaining=True call=True/True safe=True
   unique limiter calls=6
-  events call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 ends=[(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+  events call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 ends=[1, 1, 1, 1, 1, 1]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   waiting behind stream=True factory=[] queued=1 entered=2 granted=1 released=0 release_calls=0 active=1 peak=1
@@ -51,51 +51,57 @@
   waiting upload = b'\x89PNG'
   waiting upload joined=True factory=[1]/[1]
   semaphore concurrency entered=2 granted=2 released=2 release_calls=2 active=0 peak=1
-  acquire failure ! LimiterExecutionError: LimiterExecutionError(operation_id='getPet', call_id='<call>', action='acquire') [operation_id='getPet', cause=RuntimeError('acquire failed')] limiter_execution_error
-    entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
+  acquire failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('acquire failed')] limiter_failed
+    entered=1 granted=0 released=0 release_calls=0 active=0 peak=0 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', cause=LimiterExecutionError()] cleanup_error
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+  release failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('release failed')] limiter_failed
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  status failure ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=True, body_bytes=b'', truncated=False] get_pet_http_error
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+  status failure ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body_bytes=b'', truncated=False] not_found_error
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  decode failure ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'{', truncated=False, cause=1 validation error for Pet
+  decode failure ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='invalid_syntax') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{', truncated=False, cause=1 validation error for Pet
   Invalid JSON: EOF while parsing an object at line 1 column 1 [type=json_invalid, input_value=b'{', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] decode_error
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_syntax
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  status and release failure: GetPetHTTPError secondary ['LimiterExecutionError']
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+  status and release failure: NotFoundError secondary ['SDKError']
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  body read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=1
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  body read and release failure: APIConnectionError secondary ['SDKError']
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  unsent connect failure resent = Pet(id=3, name='fox', tag=None)
+    entered=2 granted=2 released=2 release_calls=2 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  body read failure ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
-    entered=3 granted=3 released=3 release_calls=3 active=0 peak=1
+  sent read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadError('failed')] api_connection_error
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  body read and release failure: TransportError secondary ['LimiterExecutionError']
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  buffered raw release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', cause=LimiterExecutionError()] cleanup_error
+  buffered raw release failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='cleanup_failed') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://raw.example.com/items?private=1
     [host: raw.example.com, accept-encoding: gzip, deflate] b''
-  request_raw release failure ! CleanupError: CleanupError(call_id='<call>', pending_calls=0, pending_leases=0) [cause=LimiterExecutionError()] cleanup_error
+  request_raw release failure ! SDKError: SDKError(call_id='<call>', reason='cleanup_failed') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  stream close release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', cause=LimiterExecutionError()] cleanup_error
+  stream close release failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='cleanup_failed') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  factory failure after grant ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=RuntimeError('Upload factory failed')] body_factory_error
+  factory failure after grant ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('Upload factory failed')] body_factory_failed
   failed factory [1]/[] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   native acquire interruption=KeyboardInterrupt identity=True
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
@@ -103,50 +109,46 @@
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  limited stream read failure ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
+  limited stream read failure ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
   failed stream released entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  hook call_start: HookExecutionError secondary []
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 call_end:0 ends=[(0, 0, 0)]
-  hook limiter_wait: HookExecutionError secondary []
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 limiter_wait:0 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
-  hook limiter_acquired: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
-  hook attempt_start: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
+  hook call_start: SDKError secondary []
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 call_end:0 ends=[0]
+  hook limiter_wait: SDKError secondary []
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 limiter_wait:0 attempt_end:0 call_end:0 ends=[0]
+  hook limiter_acquired: SDKError secondary []
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_end:0 call_end:0 ends=[0]
+  hook attempt_start: SDKError secondary []
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 ends=[0]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  hook response_headers: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[(1, 1, 1)]
+  hook response_headers: SDKError secondary []
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[1]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  hook attempt_end: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[(1, 1, 1)]
+  hook attempt_end: SDKError secondary []
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[1]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  hook call_end: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[(1, 1, 1)]
+  hook call_end: SDKError secondary []
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[1]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  stream handoff hook attempt_end: HookExecutionError secondary []
+  stream handoff hook attempt_end: SDKError secondary []
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  stream handoff hook call_end: HookExecutionError secondary []
+  stream handoff hook call_end: SDKError secondary []
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1
-  hook and release failure: HookExecutionError secondary ['LimiterExecutionError']
+  hook and release failure: SDKError secondary ['SDKError']
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  async limiter in sync client ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', field_path='limiter', condition='async_limiter') [operation_id='getPet', field_path=('limiter',), condition='async_limiter'] configuration_error
-  async limiter in sync view ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', field_path='limiter', condition='async_limiter') [operation_id='getPet', field_path=('limiter',), condition='async_limiter'] configuration_error
-  async limiter in sync request ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', field_path='limiter', condition='async_limiter') [operation_id='getPet', field_path=('limiter',), condition='async_limiter'] configuration_error
+  async limiter in sync client ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='async_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] async_limiter
+  async limiter in sync view ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='async_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] async_limiter
+  async limiter in sync request ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='async_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] async_limiter
   opposite sync mode entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 queued=0
-  zero timeout ! DeadlineExceededError: DeadlineExceededError(operation_id='uploadPhoto', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[(0, 0, 0)] queued=1
-  pre-cancelled ! RequestCancelledError: RequestCancelledError(operation_id='uploadPhoto', call_id='<call>', source='cancel_token', delivery_state='NOT_SENT') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[(0, 0, 0)] queued=1
-  zero budget ! BudgetExceededError: BudgetExceededError(operation_id='uploadPhoto', call_id='<call>', budget_kind='network', limit=0, used=0) [operation_id='uploadPhoto', limit=0] budget_exceeded_error
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 factory=[1]/[1] events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 ends=[(0, 0, 0)] queued=1
-  closed client admission ! ClientClosedError: ClientClosedError(operation_id='uploadPhoto', call_id='<call>', state='CLOSED', owner='client') [operation_id='uploadPhoto'] client_closed_error
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[(0, 0, 0)] queued=1
+  zero timeout ! APITimeoutError: APITimeoutError(operation_id='uploadPhoto', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[0] queued=1
+  closed client admission ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='client_closed', field_path='client.closed') [operation_id='uploadPhoto', field_path=('client', 'closed'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[0] queued=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async limited typed = Response(Pet(id=3, name='fox', tag=None), 200, 'application/json', None, [('content-length', '21'), ('content-type', 'application/json')])
@@ -183,14 +185,14 @@
   async client limiter entered=6 granted=6 released=6 release_calls=6 active=0 peak=1
   async view limiter entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   async request limiter entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  context operation=getPet origin=https://api.example.com parent=None remaining=True token=True call=True/True safe=True
-  context operation=getPet origin=https://api.example.com parent=None remaining=True token=True call=True/True safe=True
-  context operation=getPet origin=https://api.example.com parent=None remaining=True token=True call=True/True safe=True
-  context operation=getPet origin=https://api.example.com parent=None remaining=True token=True call=True/True safe=True
-  context operation=None origin=https://raw.example.com parent=None remaining=disabled token=True call=True/True safe=True
-  context operation=None origin=https://raw.example.com parent=None remaining=True token=True call=True/True safe=True
+  context operation=getPet origin=https://api.example.com parent=None remaining=True call=True/True safe=True
+  context operation=getPet origin=https://api.example.com parent=None remaining=True call=True/True safe=True
+  context operation=getPet origin=https://api.example.com parent=None remaining=True call=True/True safe=True
+  context operation=getPet origin=https://api.example.com parent=None remaining=True call=True/True safe=True
+  context operation=None origin=https://raw.example.com parent=None remaining=disabled call=True/True safe=True
+  context operation=None origin=https://raw.example.com parent=None remaining=True call=True/True safe=True
   unique limiter calls=6
-  events call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 ends=[(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+  events call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1 stream_end:0 ends=[1, 1, 1, 1, 1, 1]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async waiting behind stream=True factory=[] queued=1 entered=2 granted=1 released=0 release_calls=0 active=1 peak=1
@@ -199,97 +201,99 @@
   async waiting upload = b'\x89PNG'
   async waiting upload factory=[1]/[1]
   async semaphore concurrency entered=2 granted=2 released=2 release_calls=2 active=0 peak=1
-  async acquire failure ! LimiterExecutionError: LimiterExecutionError(operation_id='getPet', call_id='<call>', action='acquire') [operation_id='getPet', cause=RuntimeError('acquire failed')] limiter_execution_error
-    entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
+  async acquire failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('acquire failed')] limiter_failed
+    entered=1 granted=0 released=0 release_calls=0 active=0 peak=0 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', cause=LimiterExecutionError()] cleanup_error
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+  async release failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='limiter_failed') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('release failed')] limiter_failed
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async status failure ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=True, body_bytes=b'', truncated=False] get_pet_http_error
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+  async status failure ! NotFoundError: NotFoundError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body_bytes=b'', truncated=False] not_found_error
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async decode failure ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'{', truncated=False, cause=1 validation error for Pet
+  async decode failure ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>', reason='invalid_syntax') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{', truncated=False, cause=1 validation error for Pet
   Invalid JSON: EOF while parsing an object at line 1 column 1 [type=json_invalid, input_value=b'{', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] decode_error
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_syntax
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async status and release failure: GetPetHTTPError secondary ['LimiterExecutionError']
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+  async status and release failure: NotFoundError secondary ['SDKError']
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async body read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=1
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async body read and release failure: APIConnectionError secondary ['SDKError']
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async unsent connect failure resent = Pet(id=3, name='fox', tag=None)
+    entered=2 granted=2 released=2 release_calls=2 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async body read failure ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
-    entered=3 granted=3 released=3 release_calls=3 active=0 peak=1
+  async sent read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadError('failed')] api_connection_error
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async body read and release failure: TransportError secondary ['LimiterExecutionError']
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async buffered raw release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', cause=LimiterExecutionError()] cleanup_error
+  async buffered raw release failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='cleanup_failed') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://raw.example.com/items?private=1
     [host: raw.example.com, accept-encoding: gzip, deflate] b''
-  async request_raw release failure ! CleanupError: CleanupError(call_id='<call>', pending_calls=0, pending_leases=0) [cause=LimiterExecutionError()] cleanup_error
+  async request_raw release failure ! SDKError: SDKError(call_id='<call>', reason='cleanup_failed') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async stream close release failure ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', cause=LimiterExecutionError()] cleanup_error
+  async stream close release failure ! SDKError: SDKError(operation_id='getPet', call_id='<call>', reason='cleanup_failed') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=SDKError()] cleanup_failed
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  async factory failure after grant ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=RuntimeError('Upload factory failed')] body_factory_error
+  async factory failure after grant ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('Upload factory failed')] body_factory_failed
   async failed factory [1]/[] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   native async acquire interruption=CancelledError
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async limited stream read failure ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
+  async limited stream read failure ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] api_connection_error
   async failed stream released entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  async hook call_start: HookExecutionError secondary []
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 call_end:0 ends=[(0, 0, 0)]
-  async hook limiter_wait: HookExecutionError secondary []
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 limiter_wait:0 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
-  async hook limiter_acquired: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
-  async hook attempt_start: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
+  async hook call_start: SDKError secondary []
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 call_end:0 ends=[0]
+  async hook limiter_wait: SDKError secondary []
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 limiter_wait:0 attempt_end:0 call_end:0 ends=[0]
+  async hook limiter_acquired: SDKError secondary []
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_end:0 call_end:0 ends=[0]
+  async hook attempt_start: SDKError secondary []
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 ends=[0]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async hook response_headers: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[(1, 1, 1)]
+  async hook response_headers: SDKError secondary []
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[1]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async hook attempt_end: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[(1, 1, 1)]
+  async hook attempt_end: SDKError secondary []
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[1]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async hook call_end: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[(1, 1, 1)]
+  async hook call_end: SDKError secondary []
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:0 call_end:0 ends=[1]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async stream handoff hook attempt_end: HookExecutionError secondary []
+  async stream handoff hook attempt_end: SDKError secondary []
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async stream handoff hook call_end: HookExecutionError secondary []
+  async stream handoff hook call_end: SDKError secondary []
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1
-  async hook and release failure: HookExecutionError secondary ['LimiterExecutionError']
+  async hook and release failure: SDKError secondary ['SDKError']
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  sync limiter in async client ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', field_path='limiter', condition='sync_limiter') [operation_id='getPet', field_path=('limiter',), condition='sync_limiter'] configuration_error
-  sync limiter in async view ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', field_path='limiter', condition='sync_limiter') [operation_id='getPet', field_path=('limiter',), condition='sync_limiter'] configuration_error
-  sync limiter in async request ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', field_path='limiter', condition='sync_limiter') [operation_id='getPet', field_path=('limiter',), condition='sync_limiter'] configuration_error
+  sync limiter in async client ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='sync_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] sync_limiter
+  sync limiter in async view ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='sync_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] sync_limiter
+  sync limiter in async request ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='sync_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] sync_limiter
   opposite async mode entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 queued=0
-  async zero timeout ! DeadlineExceededError: DeadlineExceededError(operation_id='uploadPhoto', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[(0, 0, 0)] queued=1
-  async pre-cancelled ! RequestCancelledError: RequestCancelledError(operation_id='uploadPhoto', call_id='<call>', source='cancel_token', delivery_state='NOT_SENT') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[(0, 0, 0)] queued=1
-  async zero budget ! BudgetExceededError: BudgetExceededError(operation_id='uploadPhoto', call_id='<call>', budget_kind='network', limit=0, used=0) [operation_id='uploadPhoto', limit=0] budget_exceeded_error
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 factory=[1]/[1] events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 ends=[(0, 0, 0)] queued=1
-  async closed client admission ! ClientClosedError: ClientClosedError(operation_id='uploadPhoto', call_id='<call>', state='CLOSED', owner='client') [operation_id='uploadPhoto'] client_closed_error
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[(0, 0, 0)] queued=1
+  async zero timeout ! APITimeoutError: APITimeoutError(operation_id='uploadPhoto', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='unknown') [operation_id='uploadPhoto', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[0] queued=1
+  async closed client admission ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='client_closed', field_path='client.closed') [operation_id='uploadPhoto', field_path=('client', 'closed'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 factory=[]/[] events=call_start:0 call_end:0 ends=[0] queued=1

@@ -1,13 +1,13 @@
 # media pydantic_v2.BaseModel
   multipart reopens = b'ok'
     requests=3 stable_body=True stable_type=True closes=1 factories=[(0, 0, True), (0, 1, True), (0, 2, True)]
-  multipart one shot blocks redirect ! RedirectPolicyError: RedirectPolicyError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] redirect_policy_error
+  multipart one shot blocks redirect ! ConfigurationError: ConfigurationError(call_id='<call>', reason='redirect_refused', field_path='redirects') [field_path=('redirects',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] redirect_refused
     requests=1 pending=1 begins=1 closes=1
-  multipart shared raw attempt refused ! BodyNotReplayableError: BodyNotReplayableError(operation_id='submitParts', call_id='<call>', source_kind='factory', condition='same_attempt') [operation_id='submitParts', condition='same_attempt'] body_not_replayable_error
+  multipart shared raw attempt refused ! DecodeError: DecodeError(operation_id='submitParts', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='submitParts', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
     requests=0 closes=1 contexts=([(0, 0, True)], [(0, 0, True)])
   async multipart reopens = b'ok'
     requests=3 stable_body=True stable_type=True closes=1 factories=[(0, 0, True), (0, 1, True), (0, 2, True)]
-  async multipart one shot blocks redirect ! RedirectPolicyError: RedirectPolicyError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] redirect_policy_error
+  async multipart one shot blocks redirect ! ConfigurationError: ConfigurationError(call_id='<call>', reason='redirect_refused', field_path='redirects') [field_path=('redirects',), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] redirect_refused
     requests=1 pending=1 begins=1 closes=1
-  async multipart shared raw attempt refused ! BodyNotReplayableError: BodyNotReplayableError(operation_id='submitParts', call_id='<call>', source_kind='factory', condition='same_attempt') [operation_id='submitParts', condition='same_attempt'] body_not_replayable_error
+  async multipart shared raw attempt refused ! DecodeError: DecodeError(operation_id='submitParts', call_id='<call>', reason='body_not_replayable', location='body') [operation_id='submitParts', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] body_not_replayable
     requests=0 closes=1 contexts=([(0, 0, True)], [(0, 0, True)])

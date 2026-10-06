@@ -11,8 +11,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Literal, Protocol, TypeAlias
 
-from .errors import IOPhase  # noqa: TC001 - Public annotations support get_type_hints().
-from .timing import CancelToken  # noqa: TC001 - Public annotations support get_type_hints().
+from .errors import DeadlinePhase, IOPhase  # noqa: TC001 - Public annotations support get_type_hints().
 
 __all__ = (
     "AsyncHook",
@@ -77,22 +76,13 @@ class CallEvent:
     parent_session_id: str | None = None
     attempt_index: int | None = None
     sent: bool = False
-    phase: IOPhase | None = None
+    phase: IOPhase | DeadlinePhase | None = None
     status: int | None = None
     duration: float | None = None
     retry_reason: RetryReason | None = None
     request_id: str | None = None
     outcome: CallOutcome | None = None
-    attempts: int = 0
-    sends: int = 0
-    resource_attempt_count: int = 0
-    redirect_count: int = 0
-    auth_exchange_count: int = 0
-    network_send_count: int = 0
-    network_send_budget_used: int = 0
-    auth_exchange_budget_used: int = 0
-    auth_refresh_ids: tuple[str, ...] = ()
-    auth_refresh_pending: int = 0
+    attempt_count: int = 0
     options: Mapping[str, JSONScalar] | None = None
     context: Mapping[str, JSONScalar] = field(default_factory=lambda: MappingProxyType({}))
 
@@ -122,7 +112,6 @@ class LimiterContext:
     call_id: str
     parent_session_id: str | None
     remaining_timeout: float | None
-    cancel_token: CancelToken | None
 
 
 class Permit(Protocol):

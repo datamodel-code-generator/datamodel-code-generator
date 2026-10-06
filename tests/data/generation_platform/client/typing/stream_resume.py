@@ -23,7 +23,7 @@ def resumed(client: Client) -> None:
         import_state(state.export()),
         stream_options=StreamOptions(reconnect=True, max_reconnect_wait=5),
         options=RequestOptions(),
-        session_options=SessionOptions(max_network_sends=4),
+        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(again, EventStream[Message])
     assert_type(client.protocols.events.tracked.resume(state), EventStream[Created | UnknownEvent])

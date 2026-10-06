@@ -3,44 +3,44 @@
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  HEAD303 typed allow=False body=True hops=1 ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='headPet', call_id='<call>') [operation_id='headPet', condition='forbidden_body', body_bytes=b'redirected representation', truncated=False] body_protocol_error
-    ends=[('call_end', 200, 'error', 1, 1, 2, 2)] unused=0
+  HEAD303 typed allow=False body=True hops=1 ! DecodeError: DecodeError(status_code=200, operation_id='headPet', call_id='<call>', reason='forbidden_body') [operation_id='headPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'redirected representation', truncated=False] forbidden_body
+    ends=[('call_end', 200, 'error', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  HEAD303 response allow=False body=True hops=1 ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='headPet', call_id='<call>') [operation_id='headPet', condition='forbidden_body', body_bytes=b'redirected representation', truncated=False] body_protocol_error
-    ends=[('call_end', 200, 'error', 1, 1, 2, 2)] unused=0
+  HEAD303 response allow=False body=True hops=1 ! DecodeError: DecodeError(status_code=200, operation_id='headPet', call_id='<call>', reason='forbidden_body') [operation_id='headPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'redirected representation', truncated=False] forbidden_body
+    ends=[('call_end', 200, 'error', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 raw allow=False body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 stream allow=False body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'handed_off', 1, 1, 2, 2), ('stream_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'handed_off', 1), ('stream_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 typed allow=False body=False hops=1 = None
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 response allow=False body=False hops=1 = Response(None, 200, 'text/plain', None, [('etag', '"redirected"'), ('content-type', 'text/plain'), ('content-length', '0')])
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en, content-length: 12] b'head request'
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 escape allow=False body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
@@ -48,49 +48,49 @@
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 raw allow=False body=True hops=2 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 2, 3, 3)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  HEAD303 typed allow=True body=True hops=1 ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='headPet', call_id='<call>') [operation_id='headPet', condition='forbidden_body', body_bytes=b'redirected representation', truncated=False] body_protocol_error
-    ends=[('call_end', 200, 'error', 1, 1, 2, 2)] unused=0
+  HEAD303 typed allow=True body=True hops=1 ! DecodeError: DecodeError(status_code=200, operation_id='headPet', call_id='<call>', reason='forbidden_body') [operation_id='headPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'redirected representation', truncated=False] forbidden_body
+    ends=[('call_end', 200, 'error', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  HEAD303 response allow=True body=True hops=1 ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='headPet', call_id='<call>') [operation_id='headPet', condition='forbidden_body', body_bytes=b'redirected representation', truncated=False] body_protocol_error
-    ends=[('call_end', 200, 'error', 1, 1, 2, 2)] unused=0
+  HEAD303 response allow=True body=True hops=1 ! DecodeError: DecodeError(status_code=200, operation_id='headPet', call_id='<call>', reason='forbidden_body') [operation_id='headPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'redirected representation', truncated=False] forbidden_body
+    ends=[('call_end', 200, 'error', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 raw allow=True body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 stream allow=True body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'handed_off', 1, 1, 2, 2), ('stream_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'handed_off', 1), ('stream_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 typed allow=True body=False hops=1 = None
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 response allow=True body=False hops=1 = Response(None, 200, 'text/plain', None, [('etag', '"redirected"'), ('content-type', 'text/plain'), ('content-length', '0')])
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en, content-length: 12] b'head request'
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 escape allow=True body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
@@ -98,49 +98,49 @@
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   HEAD303 raw allow=True body=True hops=2 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 2, 3, 3)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  async HEAD303 typed allow=False body=True hops=1 ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='headPet', call_id='<call>') [operation_id='headPet', condition='forbidden_body', body_bytes=b'redirected representation', truncated=False] body_protocol_error
-    ends=[('call_end', 200, 'error', 1, 1, 2, 2)] unused=0
+  async HEAD303 typed allow=False body=True hops=1 ! DecodeError: DecodeError(status_code=200, operation_id='headPet', call_id='<call>', reason='forbidden_body') [operation_id='headPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'redirected representation', truncated=False] forbidden_body
+    ends=[('call_end', 200, 'error', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  async HEAD303 response allow=False body=True hops=1 ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='headPet', call_id='<call>') [operation_id='headPet', condition='forbidden_body', body_bytes=b'redirected representation', truncated=False] body_protocol_error
-    ends=[('call_end', 200, 'error', 1, 1, 2, 2)] unused=0
+  async HEAD303 response allow=False body=True hops=1 ! DecodeError: DecodeError(status_code=200, operation_id='headPet', call_id='<call>', reason='forbidden_body') [operation_id='headPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'redirected representation', truncated=False] forbidden_body
+    ends=[('call_end', 200, 'error', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 raw allow=False body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 stream allow=False body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'handed_off', 1, 1, 2, 2), ('stream_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'handed_off', 1), ('stream_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 typed allow=False body=False hops=1 = None
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 response allow=False body=False hops=1 = Response(None, 200, 'text/plain', None, [('etag', '"redirected"'), ('content-type', 'text/plain'), ('content-length', '0')])
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en, content-length: 12] b'head request'
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 escape allow=False body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
@@ -148,49 +148,49 @@
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 raw allow=False body=True hops=2 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 2, 3, 3)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  async HEAD303 typed allow=True body=True hops=1 ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='headPet', call_id='<call>') [operation_id='headPet', condition='forbidden_body', body_bytes=b'redirected representation', truncated=False] body_protocol_error
-    ends=[('call_end', 200, 'error', 1, 1, 2, 2)] unused=0
+  async HEAD303 typed allow=True body=True hops=1 ! DecodeError: DecodeError(status_code=200, operation_id='headPet', call_id='<call>', reason='forbidden_body') [operation_id='headPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'redirected representation', truncated=False] forbidden_body
+    ends=[('call_end', 200, 'error', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  async HEAD303 response allow=True body=True hops=1 ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='headPet', call_id='<call>') [operation_id='headPet', condition='forbidden_body', body_bytes=b'redirected representation', truncated=False] body_protocol_error
-    ends=[('call_end', 200, 'error', 1, 1, 2, 2)] unused=0
+  async HEAD303 response allow=True body=True hops=1 ! DecodeError: DecodeError(status_code=200, operation_id='headPet', call_id='<call>', reason='forbidden_body') [operation_id='headPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'redirected representation', truncated=False] forbidden_body
+    ends=[('call_end', 200, 'error', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 raw allow=True body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 stream allow=True body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'handed_off', 1, 1, 2, 2), ('stream_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'handed_off', 1), ('stream_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 typed allow=True body=False hops=1 = None
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 response allow=True body=False hops=1 = Response(None, 200, 'text/plain', None, [('etag', '"redirected"'), ('content-type', 'text/plain'), ('content-length', '0')])
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en, content-length: 12] b'head request'
   > GET https://api.example.com/redirected
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 escape allow=True body=True hops=1 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 1, 2, 2)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: identity, content-language: en] b''
   > GET https://api.example.com/redirected
@@ -198,4 +198,4 @@
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async HEAD303 raw allow=True body=True hops=2 = b'redirected representation'
-    ends=[('call_end', 200, 'success', 1, 2, 3, 3)] unused=0
+    ends=[('call_end', 200, 'success', 1)] unused=0

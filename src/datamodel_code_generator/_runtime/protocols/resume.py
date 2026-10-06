@@ -52,15 +52,6 @@ class ResumeStateError(ProtocolError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
     ) -> None:
         """Keep only the rejection category, never the state's contents."""
         error_choice(condition, _RESUME_CONDITIONS, "condition")
@@ -73,15 +64,6 @@ class ResumeStateError(ProtocolError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
         )
         self.condition = condition
 

@@ -74,22 +74,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ._async_client import AsyncClient
-    from ._client import Client
+    from ._async_client import AsyncClient, AsyncClientView
+    from ._client import Client, ClientView
 
-__all__ = ["AsyncClient", "Client"]
+__all__ = ["AsyncClient", "AsyncClientView", "Client", "ClientView"]
 
 
 def __getattr__(name: str) -> object:
     """Import a client on first use, so importing the package loads no HTTP runtime."""
-    if name == "Client":
-        from ._client import Client
+    if name in {"Client", "ClientView"}:
+        from . import _client
 
-        return Client
-    if name == "AsyncClient":
-        from ._async_client import AsyncClient
+        return getattr(_client, name)
+    if name in {"AsyncClient", "AsyncClientView"}:
+        from . import _async_client
 
-        return AsyncClient
+        return getattr(_async_client, name)
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
 '''
@@ -115,7 +115,6 @@ __all__ = [
 ]
 '''
 _OPTION_NAMES: Final = (
-    "CancelToken",
     "ClientOptions",
     "Clock",
     "Deadline",
@@ -179,19 +178,16 @@ def _options(capabilities: Capabilities) -> str:
 
 
 _AUTH_NAMES: Final = (
-    "AsyncCloseableCredentialProvider",
     "AsyncCredentialProvider",
     "AsyncEnvironmentCredentialProvider",
     "AsyncRequestSigner",
     "AsyncStaticCredentialProvider",
     "AuthConfig",
-    "CloseableCredentialProvider",
     "CredentialContext",
     "CredentialMaterial",
     "CredentialProvider",
     "CredentialProviderInput",
     "EnvironmentCredentialProvider",
-    "OwnedCredentialProvider",
     "RequestSigner",
     "SignatureFields",
     "SignerCapabilities",
@@ -280,54 +276,29 @@ def _auth(capabilities: Capabilities) -> str:
 
 
 _ERROR_NAMES: Final = (
-    "AdapterContractError",
-    "AdapterExecutionError",
-    "AuthConfigurationError",
-    "AuthProviderClosedError",
-    "AuthProviderExecutionError",
-    "AuthReauthorizationRequiredError",
-    "AuthRefreshError",
-    "AuthTimeoutError",
-    "BodyChangedError",
-    "BodyFactoryError",
-    "BodyNotReplayableError",
-    "BodyProtocolError",
-    "BudgetExceededError",
-    "CleanupError",
-    "ClientClosedError",
+    "APIConnectionError",
+    "APIStatusError",
+    "APITimeoutError",
+    "AuthenticationError",
+    "AuthError",
+    "AuthReason",
+    "BadRequestError",
     "ConfigurationError",
+    "ConflictError",
     "DecodeError",
-    "DeadlineExceededError",
     "DecompressionLimitError",
     "DeliveryState",
-    "HTTPStatusError",
-    "HookExecutionError",
+    "InternalServerError",
     "IOPhase",
-    "LimiterExecutionError",
-    "OAuthExchangeError",
-    "PhaseTimeoutError",
-    "ProtocolConfigurationError",
+    "NotFoundError",
+    "PermissionDeniedError",
     "ProtocolError",
     "ProtocolSizeError",
     "ProtocolStoreError",
-    "RedirectPolicyError",
-    "RequestEncodingError",
-    "RequestCancelledError",
-    "ResponseConsumedError",
-    "ResponseDecodeError",
-    "ResponseHeaderDecodeError",
-    "ResponseTooLargeError",
-    "ResponseValidationError",
-    "ResultUnavailableError",
+    "RateLimitError",
     "RetryStopReason",
     "SDKError",
-    "SigningConfigurationError",
-    "SigningExecutionError",
-    "TokenExpiredError",
-    "TransportError",
-    "UnexpectedMediaTypeError",
-    "UnexpectedStatusError",
-    "UnsupportedAsyncBackendError",
+    "UnprocessableEntityError",
     "UnsupportedContentCodingError",
     "WebhookVerificationError",
 )
@@ -361,13 +332,7 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "WebSocketHandshakeError",
     "WebSocketProxyError",
 )
-_ERROR_CAPABILITIES: Final = {
-    "AuthProviderClosedError": "oauth",
-    "AuthReauthorizationRequiredError": "oauth",
-    "AuthTimeoutError": "oauth",
-    "OAuthExchangeError": "oauth",
-    "WebhookVerificationError": "webhooks",
-}
+_ERROR_CAPABILITIES: Final = {"WebhookVerificationError": "webhooks"}
 _SESSION_ERRORS: Final = ("ProtocolStateError", "SessionLimitError")
 _PROTOCOL_ERRORS: Final[dict[Helper, tuple[str, ...]]] = {
     "pagination": ("PaginationCycleError", "ResumeStateError", *_SESSION_ERRORS),
@@ -612,29 +577,8 @@ _BODIES: Final = (
     + "".join(f"    {name!r},\n" for name in sorted((*_BODY_NAMES, *_MULTIPART_NAMES, "FormData")))
     + "]\n"
 )
-_TRANSPORT_NAMES: Final = (
-    "AsyncTransportAdapter",
-    "AsyncTransportResponse",
-    "AttemptIOContext",
-    "IOPhase",
-    "OwnedTransportAdapter",
-    "PreparedRequest",
-    "ResolvedTimeoutOptions",
-    "TransportAdapter",
-    "TransportCapabilities",
-    "TransportResponse",
-    "TransportTraceSink",
-)
-_TRANSPORTS: Final = (
-    '"""Transport adapters: how the clients hand each request to an HTTP implementation."""\n\n'
-    "from ._runtime.client.transports import (\n"
-    + "".join(f"    {name},\n" for name in _TRANSPORT_NAMES)
-    + ")\n\n__all__ = [\n"
-    + "".join(f"    {name!r},\n" for name in _TRANSPORT_NAMES)
-    + "]\n"
-)
 _SYNC_LIFECYCLE: Final = '''    def close(self) -> None:
-        """Stop new calls, wait for the active ones, and close the owned transport; a view stops only its calls."""
+        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
         self._core.close()
 
     def __enter__(self) -> {result}:
@@ -647,10 +591,15 @@ _SYNC_LIFECYCLE: Final = '''    def close(self) -> None:
         exc: BaseException | None,
         traceback: {traceback} | None,
     ) -> None:
-        """Close this client."""
-        self.close()'''
+        """Close this client, keeping a close failure beside an error that leaves the block."""
+        try:
+            self.close()
+        except Exception as error:
+            if exc is None:
+                raise
+            {secondary}(exc, error)'''
 _ASYNC_LIFECYCLE: Final = '''    async def aclose(self) -> None:
-        """Stop new calls, wait for the active ones, and close the owned transport; a view stops only its calls."""
+        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
         await self._core.aclose()
 
     async def __aenter__(self) -> {result}:
@@ -663,8 +612,13 @@ _ASYNC_LIFECYCLE: Final = '''    async def aclose(self) -> None:
         exc: BaseException | None,
         traceback: {traceback} | None,
     ) -> None:
-        """Close this client."""
-        await self.aclose()'''
+        """Close this client, keeping a close failure beside an error that leaves the block."""
+        try:
+            await self.aclose()
+        except Exception as error:
+            if exc is None:
+                raise
+            {secondary}(exc, error)'''
 
 
 @dataclass(frozen=True, slots=True)
@@ -836,7 +790,7 @@ def exports(spec: OperationSpec) -> tuple[str, ...]:
     """Return the public names the types module of a resource defines for one operation."""
     headers = (f"decode_{spec.name}_header",) if any(response.headers for response in spec.responses) else ()
     name = spec.pascal
-    return (f"{name}Response", f"{name}ErrorData", f"{name}HTTPError", *headers)
+    return (f"{name}Response", *headers)
 
 
 def _header_names(spec: OperationSpec) -> _Headers:
@@ -1133,10 +1087,12 @@ class _Resources(_Typing):
         if self.plan.security_schemes:
             entries.append(("security_schemes=", f"{module.local('_generated', 'security')}.ROOT_SCHEMES"))
         name = module.local("_runtime.client.client", "ClientDefaults")
-        helpers = (*self.helpers, *self.streams, *self.sockets)
-        if not helpers:
+        if helpers := (*self.helpers, *self.streams, *self.sockets):
+            entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
+        if any("gzip" in spec.accepted_content_encodings for spec in self.plan.operations):
+            entries.append(("request_coding=", module.local("_runtime.client.compression", "GZIP")))
+        if len(entries) == 1 + bool(self.plan.security_schemes):
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
-        entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
 
     def client(self, *, asynchronous: bool) -> str:
@@ -1147,7 +1103,13 @@ class _Resources(_Typing):
             (resource, f"{prefix}{resource.pascal}Resource", f".resources.{resource.namespace}._{mode}")
             for resource in self.plan.roots
         ]
-        names = {f"{prefix}Client", f"{prefix}ClientWithStreamingResponse", f"{prefix}ProtocolHelpers", "_DEFAULTS"}
+        names = {
+            f"{prefix}Client",
+            f"{prefix}ClientView",
+            f"{prefix}ClientWithStreamingResponse",
+            f"{prefix}ProtocolHelpers",
+            "_DEFAULTS",
+        }
         module = Module({*names, *(name for _, name, _ in roots)}, self.symbols, level=1)
         lazy = [(name, path) for _, name, path in roots]
         protocols = f"{prefix}ProtocolHelpers" if self.helpers or self.streams or self.sockets else None
@@ -1160,10 +1122,7 @@ class _Resources(_Typing):
             "http_client": f"{module.namespace.module('httpx2')}.{prefix}Client",
             "unset": module.local("_runtime.model_codecs.unset", "Unset"),
             "unset_value": module.local("_runtime.model_codecs.unset", "UNSET"),
-            "literal": module.name("typing", "Literal"),
             "core": module.local("_runtime.client.client", f"{prefix}ClientCore"),
-            "adapter": module.local("transports", f"{prefix}TransportAdapter"),
-            "owned_adapter": module.local("transports", "OwnedTransportAdapter"),
             "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
             "raw": module.local("responses", f"{prefix}RawResponse"),
@@ -1172,7 +1131,9 @@ class _Resources(_Typing):
             "coroutine": "async " if asynchronous else "",
             "wait": "await " if asynchronous else "",
             "lifecycle": (_ASYNC_LIFECYCLE if asynchronous else _SYNC_LIFECYCLE).format(
-                result=module.name("typing_extensions", "Self"), traceback=module.name("types", "TracebackType")
+                result=module.name("typing_extensions", "Self"),
+                traceback=module.name("types", "TracebackType"),
+                secondary=module.local("_runtime.client.errors", "add_secondary"),
             ),
         }
         imports = module.imports()
@@ -1581,7 +1542,7 @@ class _Types(_Typing):
         module = Module(reserved, self.symbols, level=len(resource.parts) + 2)
         sections = [section for spec in resource.operations for section in self.sections(module, spec)]
         return types_template.render(
-            docstring=f"The result types, errors, and header accessors of the {resource.namespace} operations.",
+            docstring=f"The result types and header accessors of the {resource.namespace} operations.",
             imports=module.imports(),
             sections=sections,
         )
@@ -1589,16 +1550,8 @@ class _Types(_Typing):
     def sections(self, module: Module, spec: OperationSpec) -> list[str]:
         """Return the definitions of one operation's types."""
         alias = module.name("typing", "TypeAlias")
-        name = spec.pascal
         successes = self.union(module, self.successes(spec), "None")
-        errors = dict.fromkeys(key for response in spec.responses if response.error for key in self.payloads(response))
-        sections = [
-            f"{name}Response: {alias} = {successes}\n{name}ErrorData: {alias} = {self.union(module, errors, 'None')}",
-            (
-                f"class {name}HTTPError({module.local('errors', 'HTTPStatusError')}[{name}ErrorData]):\n"
-                f'    """An error response of {spec.name}, with its decoded payload when one is declared."""'
-            ),
-        ]
+        sections = [f"{spec.pascal}Response: {alias} = {successes}"]
         if headers := _header_names(spec):
             sections.append(self.header_accessor(module, spec, headers))
         return sections
@@ -1736,10 +1689,7 @@ class _Registry(_Typing):
         plan = module.local(_RUNTIME, "OperationPlan")
         for spec in self.plan.operations:
             types = f"types.{spec.resource}"
-            result = (
-                f"{module.local(types, f'{spec.pascal}Response')}, {module.local(types, f'{spec.pascal}ErrorData')}"
-            )
-            head = f"OPERATION_{spec.index}: {final}[{plan}[{result}]] = "
+            head = f"OPERATION_{spec.index}: {final}[{plan}[{module.local(types, f'{spec.pascal}Response')}]] = "
             sections.append(head + layout(self.operation(module, spec, servers[spec.servers]), 0, len(head), WIDTH))
         return (
             '"""The operation registry of this package; regenerate it instead of editing."""\n\n'
@@ -1920,7 +1870,6 @@ class _Registry(_Typing):
         entries: list[tuple[str, Doc]] = [
             ("", _tuple(success)),
             ("", _tuple(errors)),
-            ("", module.local(f"types.{spec.resource}", f"{spec.pascal}HTTPError")),
         ]
         if spec.success_statuses:
             entries.append(("success_statuses=", f"frozenset({{{', '.join(map(str, spec.success_statuses))}}})"))
@@ -1996,9 +1945,9 @@ continuation, and binding values of the last page, or of the page before it whil
 how many of that page's items were delivered, which a resumed pager fetches again and skips. It never saves pages, the
 cycle history, the call's options, its session, or anything its auth adds; a call giving a cookie, a credential header,
 or a parameter or querystring field at a security scheme's position cannot be checkpointed and raises
-`ProtocolConfigurationError`, and no helper writes a cursor or binding to such a position or to any cookie, since
+`ConfigurationError`, and no helper writes a cursor or binding to such a position or to any cookie, since
 cookies commonly carry session state. Pages and items count on from the checkpoint against the resumed call's limits,
-while its sends and timeout start afresh. `resume` builds the saved arguments and body as their codecs build a
+while its timeout starts afresh. `resume` builds the saved arguments and body as their codecs build a
 caller's, takes literal bindings from the helper, and prepares the request it sends next without sending, with the
 resuming client's own auth. It raises `ResumeStateError` before sending for another helper's checkpoint and a malformed
 state, a value its codec refuses, a media type the operation does not declare, a saved value that cannot be encoded into
@@ -2053,7 +2002,7 @@ cursor pointer reads from an event's data, which an empty event ID or a null val
 a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the bindings' values, the server's
 expiry, and the caller's first request when the reopen repeats it, never events, counts, responses, the session, or
 the call's options. A call given a cookie or credential argument cannot be checkpointed: `checkpoint()` raises
-`ProtocolConfigurationError` with the condition `wrong_capability`, and `ProtocolDataError` for a cursor the reopen
+`ConfigurationError` with the reason `wrong_capability`, and `ProtocolDataError` for a cursor the reopen
 request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of its own, writing
 the cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
 reconnections afresh; it refuses another helper's state, an expired one, and one that does not fit with
@@ -2063,8 +2012,8 @@ client's, a view's, or the call's, may patch a header or query parameter a reope
 With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
 transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
 `TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
-delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections or of the
-session's sends raises `StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
+delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections raises
+`StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
 longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
 idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
 reopen are delivered again.
@@ -3127,7 +3076,7 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 ```
 
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
-The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline/send budget.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
 `RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
 set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
@@ -3321,8 +3270,8 @@ Import `Client` and `AsyncClient` from `{self.config.package}` and the records b
 `RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
 `UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
 sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
-`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`,
-`deadline=None`, and `max_network_sends=None` clear their own limits. `cleanup_timeout` remains positive and finite.
+`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None` and
+`deadline=None` clear their own limits.
 
 | Setting | Effective default |
 |---|---|
@@ -3334,14 +3283,12 @@ sets and tuples replace the inherited collection. `retry=None` and `redirects=No
 | respect Retry-After / retry pool timeout | True / False |
 | redirects / maximum redirects / 303 conversion | False / 5 / False |
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
-| network send slots | 1 + max_retries + (max_redirects when redirects are enabled) |
-| stream idle / stream total / cleanup | 60 seconds / None / 5 seconds |
+| stream idle / stream total | 60 seconds / None |
 | maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
-Zero retries permits only the initial resource attempt. A zero send budget refuses all sends. Reservations are not
-refunded. `Deadline.after(seconds)` shares an absolute monotonic expiry across calls; the earlier of that expiry and
-the relative total timeout wins. `CancelToken` is thread-safe and remains cancelled once signalled. Sync callbacks,
-DNS, I/O, and cleanup are cooperative and may return after a deadline. Async SDK waits enforce their budgets.
+Zero retries permits only the initial resource attempt. `Deadline.after(seconds)` shares an absolute monotonic expiry
+across calls; the earlier of that expiry and the relative total timeout wins. Each attempt receives its remaining
+phase timeout. Callbacks and cleanup are cooperative and may return after a deadline.
 Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
 `ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
 {clock}`Deadline.after(seconds, clock=...)` creates a deadline
@@ -3350,20 +3297,20 @@ on that clock. Waits still pass in real time, so a test clock skips one by advan
 ## Retry decisions and delays
 
 GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PATCH require an explicit idempotent
-declaration or a valid key contract. Proven unsent failures from the SDK-owned native transport may permit an
-otherwise unsafe retry; `retry_safety="never"` forbids every resend. All candidates still need replayable input and
-available budgets.
-Pool timeouts need explicit `retry_on_pool_timeout=True`. TLS/configuration/permanent DNS errors, callback failures,
-decoding failures, cancellation, and logical deadlines are not retry candidates. Phase timeouts can be candidates.
+declaration or a valid key contract. ConnectError (TLS and DNS failures included), ConnectTimeout, and PoolTimeout
+from native send leave the request unsent and may permit an otherwise unsafe retry, unless an earlier attempt or hop
+of the call reached the server; every other transport failure is never resent. `retry_safety="never"` forbids every
+resend. All candidates still need replayable input. Pool timeouts need explicit `retry_on_pool_timeout=True`.
+Callback failures, decoding failures, cancellation, and logical deadlines are not retry candidates.
 
 Full jitter samples from zero to the capped exponential delay; `jitter="none"` uses the cap directly. A server delay
 is a minimum and is never shortened to fit the retry-after cap or remaining deadline. `respect_retry_after=False`
 explicitly ignores server hints. Vendor millisecond/boolean controls require the names declared for the operation;
 an options value cannot invent that declaration, and explicit None disables an inherited vendor control.
 
-Typed errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
-including retry exhaustion, rather than converting statuses to typed HTTP errors. Transport, budget, cancellation,
-and redirect-policy failures still raise. Stream acquisition can retry; body reads never retry after handle handoff.
+Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
+including retry exhaustion, rather than raising status errors. Transport, cancellation, and redirect-policy failures
+still raise. Stream acquisition can retry; body reads never retry after handle handoff.
 After handoff, stream idle/total limits replace the completed acquisition deadline; an explicitly configured read
 phase cap still applies. Close an abandoned stream to release its response and limiter permit.
 
@@ -3392,13 +3339,13 @@ resources remain caller-owned; close explicitly created async file adapters to r
 
 `RedirectOptions(enabled=True)` enables SDK-controlled hops. 301/302 permit only GET/HEAD. 303 changes to GET for
 GET/HEAD or explicit `allow_303_to_get=True`, dropping body and content/framing headers including Content-Encoding.
-307/308 preserve method/body and require safety and replayability. Every hop consumes a send slot and the logical
-deadline. The origin allowlist and HTTPS downgrade permission are separate; credentials and cookies from the
-original request are stripped on an origin change. Invalid/multiple Location, loops, limits, and rejected hops raise
-`RedirectPolicyError` with `body_available=False` and delivery/response metadata when available.
+307/308 preserve method/body and require safety and replayability. Every hop consumes the logical deadline. The
+origin allowlist and HTTPS downgrade permission are separate; credentials and cookies from the original request are
+stripped on an origin change. Invalid/multiple Location, loops, limits, and rejected hops raise `ConfigurationError`
+with the reason `redirect_refused`, no redirect body, and delivery/response metadata when available.
 
 `TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
-http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
+http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.
 SDK-created HTTP clients honor proxy and CA environment settings with trust_env=True, preserving native system
 trust. With trust_env=False, HTTPX2 environment configuration is disabled while native TLS trust behavior is
 preserved. Caller ssl_context or verify=False controls origin TLS; injected native clients retain their settings and
@@ -3409,10 +3356,8 @@ view, or request options to bound them; `None` removes an inherited cap. For buf
 `raise_for_status()` applies the error-prefix cap.
 An SSLContext supplies TLS settings and conflicts with any explicit verify override.
 HTTP/2 is explicit and requires its dependency. Injected native clients retain their pool/proxy/TLS construction;
-incompatible construction settings are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter`
-transfers adapter ownership.
-`retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
-contract and disables SDK retries. The default SDK-owned native transport disables native internal retries.
+incompatible construction settings are rejected. Borrowed clients stay caller owned. Root close is idempotent and
+closes only the native client the SDK created. Request views share that root and have no close method.
 
 ## Explicit authentication and signing
 
@@ -3425,9 +3370,9 @@ That choice stays fixed through a call and its retries.
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
 Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
-Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
-Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
-Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are
+Provider contexts carry current origin/deadline/requirements, and audience is currently None.
+Providers retain their caller's lifetime. Views share the root's native HTTP client.
+Provider and signer callbacks consume the call deadline; synchronous callbacks are
 cooperative and cannot be forcibly terminated. Wrong callback modes fail before I/O, with no implicit offload.
 
 Anonymous operations and `request_raw` send no credentials by default. Opt in with `send_on_anonymous=True` and
@@ -3438,17 +3383,17 @@ signatures for its current origin. Generic patches cannot change managed credent
 Static providers cannot refresh. Custom refresh providers explicitly implement get/invalidate/refresh (all async in
 the async Protocol). At most one eligible 401 recovery invalidates the exact used token version and refreshes; a
 Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration is required. Retry safety, replay,
-retry counts, send slots, and the original deadline still apply. Zero retries prevents recovery resends, while first
+retry counts and the original deadline still apply. Zero retries prevents recovery resends, while first
 acquisition remains allowed. These callbacks start no builtin token exchange.
 
-Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
-They receive final per-hop method/URL/raw query/headers and optional SHA-256 digest after credential and body framing,
-before attempt hooks and sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop.
-`SigningExecutionError` preserves callback failures without transport retry. No effective auth means no provider,
+Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names. They receive
+final per-hop method/URL/raw query/headers and optional SHA-256 digest after credential and body framing, before attempt
+hooks and sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the
+reason `signing_failed` preserves callback failures without transport retry. No effective auth means no provider,
 signer, environment read, or body hashing. Optional hashing costs O(payload bytes), uses chunked reads, and restores
 seekable offsets. `BodyFactory(..., sha256=32_byte_digest)` and the async counterpart declare a whole payload digest
-without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is
-never implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
+without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is never
+implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
 
 Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
@@ -3456,18 +3401,21 @@ their potentially sensitive messages.
 
 {self._oauth_runtime(capabilities)}
 
-## Counters and cleanup
+## Errors and cleanup
 
-`ResponseInfo`, terminal events, and SDK errors expose logical resource attempts, redirect count, adapter invocations,
-and reserved send slots. `wire_send_count` on ResponseInfo/errors is known only when trusted adapter evidence proves
-wire sends; a borrowed transport can hide internal sends. Error counters exist even without a response.
-`PhaseTimeoutError` identifies the phase cap; `DeadlineExceededError` identifies the logical/stream budget.
-`BudgetExceededError` reports its kind, limit, and used slots. Safe error representations omit key/body/header values.
+Every exception derives from `SDKError`, which keeps a stable `reason`, the call's `attempt_count`, `elapsed`, and
+`request_id`, and how far the request got. `APIConnectionError` is an I/O failure and `APITimeoutError` a phase cap
+(`effective_timeout`) or the logical/stream deadline (`deadline_at`). A final status the operation does not declare as
+a success raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with
+`status_code`, `headers`, `request_id`, and `body` decoded with the operation's declared error schema, else the
+bounded raw bytes. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
+declaration, and `ConfigurationError` a refused setting or call. Safe error representations omit key/body/header
+values.
 
-A limiter permit is acquired before opening a body and released when its response is released. Cleanup has its own
-bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
-possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
-wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
+A limiter permit is acquired before opening a body and released when its response is released. Resource release
+runs in finally; secondary failures stay beside the primary failure. Root close refuses new calls from the root
+and its views, closes a created native client once, and leaves borrowed clients and providers caller owned.
+Native task cancellation propagates unchanged, and user callbacks are not shielded.
 {self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""  # noqa: S608
 
     def _compression_runtime(self) -> str:
@@ -3521,12 +3469,11 @@ helper, then the default below. The session types are imported from:
 | poll interval | the helper's declared interval, 1 second unless declared |
 | allowed wait before a poll | 60 seconds; None removes it |
 | session total timeout | 600 seconds; None removes it |
-| network sends per session | 2000; None removes it |
 
 `start` sends the create request once, resent only as shared retries allow. An accepted status returns a pending
 handle, a declared immediate status a handle that already holds the result, and any other success status raises
 `ProtocolDataError`. An interval longer than the allowed wait, or not shorter than the session, raises
-`ProtocolConfigurationError` before the create request. Each poll waits until the interval after the last response, an
+`ConfigurationError` before the create request. Each poll waits until the interval after the last response, an
 error response included, has passed, or the longer delay the helper's declared delay header gives, and a result fetch
 after a failed one waits the same way; nothing is sent early: a server delay longer than the allowed wait, or not
 shorter than what remains of the session, raises `PollWaitLimitError` without sending. A resumed handle polls at
@@ -3547,7 +3494,7 @@ or the values a due result fetch writes, and the server's expiry, never polls, r
 the call's options; a settled operation has nothing left to continue, and its `checkpoint()` raises
 `ProtocolStateError`. The helper's `resume` is never awaited and returns a handle in a session of its own that sends
 nothing until `status` or `wait`: a pending one polls again at once, and one whose fetch is due fetches the result;
-polls, the session's timeout, deadline, and sends start afresh. Before returning,
+polls, the session's timeout, and deadline start afresh. Before returning,
 it refuses another helper's state, an expired one, and one that does not fit the helper with `ResumeStateError`, and a
 saved dot segment for a path parameter with `ProtocolDataError`; a saved value the result fetch writes into its
 querystring or body is checked when the fetch request is built. `PollWaitLimitError` and a `SessionLimitError` of a
@@ -3584,7 +3531,6 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 | chunks per upload | 10000; None removes it |
 | probes after an append of unknown outcome | 3; 0 probes none |
 | session total timeout | None (no limit) |
-| network sends per session | 10000; None removes it |
 
 A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
 to its end; sync and asyncio clients take the same sources and read one chunk at a time. `start` measures its size and
@@ -3656,7 +3602,6 @@ another kind's options, fail construction. The session types are imported from:
 | items per session | None (no limit); 0 ends a pager at once |
 | decoded body per page | 8 MiB |
 {size}| session total timeout | None (no limit) |
-| network sends per session | None (no limit) |
 
 {rules}
 {self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""
@@ -3671,7 +3616,7 @@ another kind's options, fail construction. The session types are imported from:
 A cache helper keeps entries only in the store `ProtocolClientOptions.cache_stores` lends it under its name, a
 `MemoryCacheStore` or `AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the
 client's mode; a client without one refuses `fetch` with
-`ProtocolConfigurationError` before sending. The client never creates or closes a store. The types are imported from
+`ConfigurationError` before sending. The client never creates or closes a store. The types are imported from
 `{self.config.package}.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
 stores.
 
@@ -3685,7 +3630,7 @@ events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise
 time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the credentials the
 auth binds, and selected by the request headers its `Vary` names and those a header patch or a declared parameter fills.
 A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper declared authenticated,
-and the client's own auth, not a view's or a call's; anything else raises `ProtocolConfigurationError`. A response whose
+and the client's own auth, not a view's or a call's; anything else raises `ConfigurationError`. A response whose
 `Vary` names a header the auth manages is never stored, and one partition is one permission set: credentials the client
 cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
 only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
@@ -3757,16 +3702,15 @@ from:
 | line size | 256 KiB |
 | event data size | 1 MiB |
 | session total timeout | None |
-| network sends per session | 16; None removes it |
 {_RECONNECT_LIMITS if resumed else ""}
 The idle timeout runs only while the next step waits for bytes. An event's data is JSON decoded by the schema its
 discriminator maps it to; data that does not decode raises `StreamDecodeError`, a declared error event raises
 `StreamRemoteError`, and a line or event over its limit raises `ProtocolSizeError`. The stream ends at its declared
 completion; an end before it raises `StreamInterruptedError`, a cut frame `IncompleteFrameError`, and a broken
 connection `StreamInterruptedError` with its transport failure as the cause. A helper that does not declare `resume`
-never reconnects, and `StreamOptions(reconnect=True)` raises `ProtocolConfigurationError` for it. Close a stream with
-`with`, `async with`, or `close()`; leaving a loop early does not release its response, and closing the client with a
-stream open raises `CleanupError` once its cleanup timeout passes.
+never reconnects, and `StreamOptions(reconnect=True)` raises `ConfigurationError` for it. Close a stream with
+`with`, `async with`, or `close()`; leaving a loop early does not release its response. A root close does not drain
+active streams; each stream releases its own response and limiter permit.
 {lines}{_RESUMED if resumed else ""}"""
 
     def socket_runtime(self) -> str:
@@ -3779,7 +3723,7 @@ stream open raises `CleanupError` once its cleanup timeout passes.
 
 A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
 initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises
-the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the call's options, then
+the operation's `APIStatusError`. Each limit comes from the call's options, then
 `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
 
 - `{package}.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,
@@ -3797,20 +3741,19 @@ the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit c
 | ping interval and pong timeout | 20 seconds each; None removes them |
 | close timeout | 5 seconds |
 | session total timeout | None |
-| network sends per session | 16, for handshakes; None removes it |
 
-The connection and the handshake's limiter permit belong to the session until it closes or fails, and closing the
-client closes it. One `receive` waits at a time, and a second one raises `ConcurrentReceiveError`; sends go one at a
-time in arrival order beside it. Cancelling an asyncio `receive` leaves the session usable; a cancelled send or ping
-fails it. A message is JSON coded by the helper's schema, UTF-8 text, or bytes, in the frame kind the helper declares;
-one that does not decode raises `StreamDecodeError` and closes the connection with 1002, and one over the size limit
-raises `ProtocolSizeError` after the connection closed with 1009. A receive that waits longer than the idle timeout
-raises `PhaseTimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
-reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises `PhaseTimeoutError`
-and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`, closes the session,
-and is never sent again. Messages are written whole: in a `WebSocketSession`, the send timeout is checked before the
-write starts, and a started write runs until it completes or the connection fails. Sessions never reconnect.
-`WSOptions(compression="deflate")` raises `ProtocolConfigurationError` for a helper that does not permit compression.
+The connection and the handshake's limiter permit belong to the session until it closes or fails; closing the client
+leaves an open session to its owner. One `receive` waits at a time, and a second one raises `ConcurrentReceiveError`;
+sends go one at a time in arrival order beside it. Cancelling an asyncio `receive` leaves the session usable; a
+cancelled send or ping fails it. A message is JSON coded by the helper's schema, UTF-8 text, or bytes, in the frame kind
+the helper declares; one that does not decode raises `StreamDecodeError` and closes the connection with 1002, and one
+over the size limit raises `ProtocolSizeError` after the connection closed with 1009. A receive that waits longer than
+the idle timeout raises `APITimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError`
+with its code and reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises
+`APITimeoutError` and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`,
+closes the session, and is never sent again. Messages are written whole: in a `WebSocketSession`, the send timeout is
+checked before the write starts, and a started write runs until it completes or the connection fails. Sessions never
+reconnect. `WSOptions(compression="deflate")` raises `ConfigurationError` for a helper that does not permit compression.
 Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or invalidated
 by a refused upgrade. Only a transport failure proven `NOT_SENT` before handover may use the call's existing retry
 policy.
@@ -3829,7 +3772,7 @@ session sends the code and reason given, 1000 by default, and drops the connecti
         return """
 An offset or page-number helper sends the first request as the caller gives it and starts at the position the caller
 passes for the written target, or else at the configured first position; a starting value that is not an integer raises
-`RequestEncodingError` when its codec refuses it and `ProtocolDataError` otherwise, before sending. Each later page's
+a request `DecodeError` when its codec refuses it and `ProtocolDataError` otherwise, before sending. Each later page's
 position is the last one advanced by the configured step, or by the last page's item count. A page whose `has_more` is
 false ends the traversal, and so does one after which the items counted before the next position reach its `total`: the
 offsets past the first position for an offset, the items delivered since the start for a page number, which also ends
@@ -3892,7 +3835,6 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("auth.py"), "auth", _auth(capabilities)),
             self.file(PurePosixPath("bodies.py"), "bodies", _BODIES),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs()),
-            self.file(PurePosixPath("transports.py"), "transports", _TRANSPORTS),
             self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _protocols(capabilities)),
             self.file(PurePosixPath("resources", "__init__.py"), "package", '"""The resources of the clients."""\n'),
         ]

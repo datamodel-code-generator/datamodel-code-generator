@@ -1,4 +1,4 @@
-# pets-protocols pydantic_v2.BaseModel
+# pets pydantic_v2.BaseModel
   optional imports=[]
   import threads unchanged=True
   key identities=True/True/True
@@ -52,51 +52,51 @@
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  unknown protocol attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.protocols' has no attribute 'MissingWebhookType' []
-  options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_keys bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
+  unknown protocol attribute ! AttributeError: module 'pets_pydantic_v2_basemodel.protocols' has no attribute 'MissingWebhookType' []
+  options max_body_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-# pets-protocols pydantic_v2.dataclass
+# pets pydantic_v2.dataclass
   optional imports=[]
   import threads unchanged=True
   key identities=True/True/True
@@ -150,51 +150,51 @@
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  unknown protocol attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.protocols' has no attribute 'MissingWebhookType' []
-  options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_keys bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
+  unknown protocol attribute ! AttributeError: module 'pets_pydantic_v2_dataclass.protocols' has no attribute 'MissingWebhookType' []
+  options max_body_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-# pets-protocols dataclasses.dataclass
+# pets dataclasses.dataclass
   optional imports=[]
   import threads unchanged=True
   key identities=True/True/True
@@ -248,51 +248,51 @@
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  unknown protocol attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.protocols' has no attribute 'MissingWebhookType' []
-  options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_keys bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
+  unknown protocol attribute ! AttributeError: module 'pets_dataclasses_dataclass.protocols' has no attribute 'MissingWebhookType' []
+  options max_body_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-# pets-protocols typing.TypedDict
+# pets typing.TypedDict
   optional imports=[]
   import threads unchanged=True
   key identities=True/True/True
@@ -346,51 +346,51 @@
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  unknown protocol attribute ! AttributeError: module 'pets_protocols_typing_typeddict.protocols' has no attribute 'MissingWebhookType' []
-  options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_keys bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
+  unknown protocol attribute ! AttributeError: module 'pets_typing_typeddict.protocols' has no attribute 'MissingWebhookType' []
+  options max_body_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
-# pets-protocols msgspec.Struct
+# pets msgspec.Struct
   optional imports=[]
   import threads unchanged=True
   key identities=True/True/True
@@ -444,47 +444,47 @@
   verifier key identity=True
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
-  unknown protocol attribute ! AttributeError: module 'pets_protocols_msgspec_struct.protocols' has no attribute 'MissingWebhookType' []
-  options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_body_bytes string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_header_bytes string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_header_bytes',), condition='invalid_value'] protocol_configuration_error
-  options max_keys bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_keys string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_keys',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures float ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options max_signatures string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_signatures',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options past_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('past_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance NaN ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance negative infinity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance string ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
-  options future_tolerance unrepresentable ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('future_tolerance',), condition='invalid_value'] protocol_configuration_error
+  unknown protocol attribute ! AttributeError: module 'pets_msgspec_struct.protocols' has no attribute 'MissingWebhookType' []
+  options max_body_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_body_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_header_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_keys string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options max_signatures string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_signatures') [field_path=('max_signatures',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options past_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='past_tolerance') [field_path=('past_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance NaN ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance negative infinity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import httpx2
 
 from tests.data.python.client_retry_policy import _response
-from tests.data.python.client_runtime import Exchange, arecord, argument, raw_response, record, run
+from tests.data.python.client_runtime import Exchange, arecord, argument, failing, raw_response, record, run
 from tests.data.python.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ class _Events:
         self.values.append(
             tuple(
                 getattr(event, name)
-                for name in ("name", "attempt_index", "status", "origin", "attempts", "sends", "outcome")
+                for name in ("name", "attempt_index", "status", "origin", "attempt_count", "outcome")
             )
         )
 
@@ -45,22 +45,16 @@ def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tupl
         return (
             type(error).__name__,
             getattr(error, "delivery_state", None),
-            getattr(error, "body_available", None),
+            getattr(error, "reason", None),
             getattr(info, "status_code", None),
-            getattr(error, "resource_attempt_count", None),
-            getattr(error, "redirect_count", None),
-            getattr(error, "network_send_count", None),
-            getattr(error, "network_send_budget_used", None),
+            getattr(error, "attempt_count", None),
             type(getattr(error, "cause", None)).__name__,
         )
     info = getattr(value, "info", None)
     return (
         getattr(value, "data", getattr(value, "body_bytes", None)),
         getattr(info, "status_code", None),
-        getattr(info, "resource_attempt_count", None),
-        getattr(info, "redirect_count", None),
-        getattr(info, "network_send_count", None),
-        getattr(info, "network_send_budget_used", None),
+        getattr(info, "attempt_count", None),
     )
 
 
@@ -154,13 +148,6 @@ def _statuses(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
         record(
             lines,
             "cumulative limit",
-            lambda request=request: outcome(lambda: api.retry.with_response.get_safe(options=request)),
-        )
-        exchange.respond(_response(302, (("Location", "/next"),)))
-        request = options.RequestOptions(max_network_sends=1)
-        record(
-            lines,
-            "hop budget",
             lambda request=request: outcome(lambda: api.retry.with_response.get_safe(options=request)),
         )
 
@@ -311,6 +298,15 @@ def _restored(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
                 ),
             )
             lines.append(f"    unused={len(exchange.responders)}")
+        exchange.responders.clear()
+        exchange.respond(_response(303, (("Location", "/done"),)), failing(httpx2.ConnectError), _response(200))
+        request = options.RequestOptions(redirects=options.RedirectOptions(enabled=True, allow_303_to_get=True))
+        record(
+            lines,
+            "unsent 303 hop never resends an unsafe POST",
+            lambda: outcome(lambda: api.retry.with_response.post_unsafe(body=b"original", options=request)),
+        )
+        lines.append(f"    unused={len(exchange.responders)}")
 
 
 def _origins(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -394,7 +390,7 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
             raise RuntimeError(message)
         info = getattr(response, "info", None)
         counts = tuple(
-            getattr(info, name, None) for name in ("resource_attempt_count", "redirect_count", "network_send_count")
+            getattr(info, name, None) for name in ("attempt_count", "request_id")
         )
         lines.append(f"    counts={counts!r}")
         exchange.respond(
@@ -411,7 +407,7 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
         )
         info = getattr(response, "info", None)
         counts = tuple(
-            getattr(info, name, None) for name in ("resource_attempt_count", "redirect_count", "network_send_count")
+            getattr(info, name, None) for name in ("attempt_count", "request_id")
         )
         lines.append(f"    counts={counts!r} unused={len(exchange.responders)}")
 
@@ -441,10 +437,7 @@ class _HeadEvents:
                         "name",
                         "status",
                         "outcome",
-                        "resource_attempt_count",
-                        "redirect_count",
-                        "network_send_count",
-                        "network_send_budget_used",
+                        "attempt_count",
                     )
                 )
             )

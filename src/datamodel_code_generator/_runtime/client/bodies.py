@@ -15,16 +15,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Final, Literal, Protocol, TypeAlias
 
 from .coding import CHUNK
-from .disk import DiskWorker, carried, raise_late
-from .errors import (
-    BodyChangedError,
-    BodyFactoryError,
-    BodyNotReplayableError,
-    ConfigurationError,
-    SDKError,
-    SigningConfigurationError,
-    add_secondary,
-)
+from .disk import DiskWorker
+from .errors import ConfigurationError, SDKError, add_secondary, body_failure
 
 _SHA256_BYTES: Final = 32
 
@@ -131,10 +123,10 @@ class AsyncBodyAttemptFactory(Protocol):
 
 
 class AsyncBodyCleanup(Protocol):
-    """Retain abnormal body cleanup under the logical call's existing cleanup budget."""
+    """Release a body resource, keeping its failure beside an error that is already propagating."""
 
     async def __call__(self, operation: Callable[[], Awaitable[None]], *, error: BaseException | None = None) -> bool:
-        """Join cleanup or retain it for the owning client's later drain."""
+        """Run the release and return whether it succeeded."""
         ...
 
 
@@ -168,8 +160,8 @@ class EncodedAttempt:
         """Hold nothing to release."""
 
 
-def _failed(context: BodyAttemptContext, cause: BaseException) -> BodyFactoryError:
-    return BodyFactoryError(attempt_index=context.attempt_index, hop_index=context.hop_index, cause=cause)
+def _failed(cause: BaseException) -> SDKError:
+    return SDKError(reason="body_factory_failed", cause=cause)
 
 
 class _Counter:
@@ -186,49 +178,49 @@ class _Counter:
     def chunk(self, chunk: object) -> bytes:
         """Return a chunk that is bytes and does not pass the declared length."""
         if type(chunk) is not bytes:
-            raise _failed(self.context, TypeError("A body chunk must be bytes"))
+            raise _failed(TypeError("A body chunk must be bytes"))
         self.size += len(chunk)
         if self.length is not None and self.size > self.length:
-            raise BodyChangedError(source_kind=self.kind, check="length")
+            raise body_failure(reason="body_changed")
         return chunk
 
     def end(self) -> None:
         """Refuse a body that ended short of its declared length."""
         if self.length is not None and self.size != self.length:
-            raise BodyChangedError(source_kind=self.kind, check="length")
+            raise body_failure(reason="body_changed")
 
 
 def _read(chunks: Callable[[], Iterable[object]], counter: _Counter) -> Iterator[bytes]:
-    """Yield the non-empty chunks of a source, turning its failures into BodyFactoryError."""
+    """Yield the non-empty chunks of a source, turning its failures into the body_factory_failed SDKError."""
     try:
         iterator = iter(chunks())
     except Exception as error:  # noqa: BLE001
-        raise _failed(counter.context, error) from None
+        raise _failed(error) from None
     while True:
         try:
             chunk = next(iterator)
         except StopIteration:
             break
         except Exception as error:  # noqa: BLE001
-            raise _failed(counter.context, error) from None
+            raise _failed(error) from None
         if chunk := counter.chunk(chunk):
             yield chunk
     counter.end()
 
 
 async def _aread(chunks: Callable[[], AsyncIterable[object]], counter: _Counter) -> AsyncIterator[bytes]:
-    """Yield the non-empty chunks of an async source, turning its failures into BodyFactoryError."""
+    """Yield the non-empty chunks of an async source, turning its failures into the body_factory_failed SDKError."""
     try:
         iterator = aiter(chunks())
     except Exception as error:  # noqa: BLE001
-        raise _failed(counter.context, error) from None
+        raise _failed(error) from None
     while True:
         try:
             chunk = await anext(iterator)
         except StopAsyncIteration:
             break
         except Exception as error:  # noqa: BLE001
-            raise _failed(counter.context, error) from None
+            raise _failed(error) from None
         if chunk := counter.chunk(chunk):
             yield chunk
     counter.end()
@@ -243,24 +235,24 @@ def _file_chunks(file: BinaryIO) -> Iterator[bytes]:
         yield chunk
 
 
-def _remaining(file: BinaryIO, context: BodyAttemptContext | None = None) -> int | None:
+def _remaining(file: BinaryIO) -> int | None:
     """Return the bytes from an open file's position to its end, leaving it there; None if it cannot seek.
 
     A closed file, such as an owned one after its call, cannot be sent again.
     """
-    return _snapshot(file, context)[1]
+    return _snapshot(file)[1]
 
 
-def _snapshot(file: BinaryIO, context: BodyAttemptContext | None = None) -> tuple[int | None, int | None]:
+def _snapshot(file: BinaryIO) -> tuple[int | None, int | None]:
     try:
         if not file.closed:
             return _positioned(file)
     except OSError:
         raise
     except Exception as error:  # noqa: BLE001
-        failure = BodyFactoryError(cause=error) if context is None else _failed(context, error)
+        failure = _failed(error)
         raise failure from None
-    raise BodyNotReplayableError(source_kind="file", condition="consumed")
+    raise body_failure(reason="body_not_replayable")
 
 
 def _positioned(file: BinaryIO) -> tuple[int | None, int | None]:
@@ -278,16 +270,16 @@ def _positioned(file: BinaryIO) -> tuple[int | None, int | None]:
     return offset, max(0, end - offset)
 
 
-def _rewound(file: BinaryIO, offset: int | None, length: int | None, context: BodyAttemptContext) -> None:
+def _rewound(file: BinaryIO, offset: int | None, length: int | None) -> None:
     try:
         if offset is not None:
             file.seek(offset)
     except OSError:
         raise
     except Exception as error:  # noqa: BLE001
-        raise _failed(context, error) from None
-    if _remaining(file, context) != length:
-        raise BodyChangedError(source_kind="file", check="length")
+        raise _failed(error) from None
+    if _remaining(file) != length:
+        raise body_failure(reason="body_changed")
 
 
 def _kept() -> None:
@@ -300,7 +292,7 @@ async def _akept() -> None:
 
 def _unchanged(file: BinaryIO, identity: _Identity) -> None:
     if _identity(os.fstat(file.fileno())) != identity:
-        raise BodyChangedError(source_kind="file", check="stat")
+        raise body_failure(reason="body_changed")
 
 
 def _opened(path: Path, identity: _Identity) -> BinaryIO:
@@ -325,17 +317,17 @@ def _digest_declaration(value: object) -> bytes | None:
     if value is None:
         return None
     if not isinstance(value, bytes) or len(value) != _SHA256_BYTES:
-        raise ConfigurationError(field_path=("sha256",), condition="invalid_value")
+        raise ConfigurationError(field_path=("sha256",), reason="invalid_value")
     return bytes(value)
 
 
 def _required_digest(value: bytes | None) -> bytes:
     if value is None:
-        raise SigningConfigurationError(field_path=("body", "sha256"), condition="digest_unavailable")
+        raise ConfigurationError(field_path=("body", "sha256"), reason="digest_unavailable")
     return value
 
 
-def _digest_position(file: BinaryIO, context: BodyAttemptContext) -> tuple[int, _Identity | None]:
+def _digest_position(file: BinaryIO) -> tuple[int, _Identity | None]:
     try:
         offset = file.tell()
         try:
@@ -345,23 +337,23 @@ def _digest_position(file: BinaryIO, context: BodyAttemptContext) -> tuple[int, 
         else:
             identity = _identity(os.fstat(descriptor))
     except Exception as error:  # noqa: BLE001
-        raise _failed(context, error) from None
+        raise _failed(error) from None
     return offset, identity
 
 
-def _digest_finished(file: BinaryIO, identity: _Identity | None, context: BodyAttemptContext) -> None:
+def _digest_finished(file: BinaryIO, identity: _Identity | None) -> None:
     if identity is not None:
         try:
             _unchanged(file, identity)
         except OSError as error:
-            raise _failed(context, error) from None
+            raise _failed(error) from None
 
 
-def _digest_restored(file: BinaryIO, offset: int, context: BodyAttemptContext) -> None:
+def _digest_restored(file: BinaryIO, offset: int) -> None:
     try:
         file.seek(offset)
     except Exception as error:  # noqa: BLE001
-        raise _failed(context, error) from None
+        raise _failed(error) from None
 
 
 def _declared(length: int | None, attempt_length: int | None) -> int | None:
@@ -369,7 +361,7 @@ def _declared(length: int | None, attempt_length: int | None) -> int | None:
     if length is None:
         return attempt_length
     if attempt_length not in {None, length}:
-        raise BodyChangedError(source_kind="factory", check="length")
+        raise body_failure(reason="body_changed")
     return length
 
 
@@ -382,13 +374,13 @@ class _Claim:
         self.lock = threading.Lock()
         self.used = False
 
-    def take(self, kind: Literal["file", "stream"]) -> None:
+    def take(self) -> None:
         """Take the input, or refuse one another call reads or a one-shot one already read."""
         if not self.lock.acquire(blocking=False):
-            raise BodyNotReplayableError(source_kind=kind, condition="concurrent")
+            raise body_failure(reason="body_in_use")
         if self.used:
             self.lock.release()
-            raise BodyNotReplayableError(source_kind=kind, condition="consumed")
+            raise body_failure(reason="body_not_replayable")
 
 
 class _FileAttempt:
@@ -431,20 +423,20 @@ class _FileAttempt:
     def update_digest(self, update: Callable[[bytes], None], check: Callable[[], None]) -> None:
         """Hash this descriptor's payload without consuming its replay state or changing its position."""
         check()
-        offset, identity = _digest_position(self._file, self._context)
+        offset, identity = _digest_position(self._file)
         primary: BaseException | None = None
         try:
             for chunk in _read(lambda: _file_chunks(self._file), _Counter(self._context, "file", self._length)):
                 check()
                 update(chunk)
                 check()
-            _digest_finished(self._file, identity, self._context)
+            _digest_finished(self._file, identity)
         except BaseException as error:
             primary = error
             raise
         finally:
             try:
-                _digest_restored(self._file, offset, self._context)
+                _digest_restored(self._file, offset)
             except BaseException as failure:
                 if primary is None:
                     raise
@@ -470,11 +462,11 @@ class _OpenFile:
 
     def attempt(self, context: BodyAttemptContext) -> BodyAttempt:
         """Begin reading the file, refusing one another call reads, one that is closed, or one read once."""
-        self.claim.take("file")
+        self.claim.take()
         try:
-            length = _remaining(self.file, context)
+            length = _remaining(self.file)
         except BaseException as error:  # noqa: BLE001
-            failure = _failed(context, error) if isinstance(error, OSError) else error
+            failure = _failed(error) if isinstance(error, OSError) else error
             try:
                 self.release()
             except BaseException as secondary:  # noqa: BLE001
@@ -507,7 +499,7 @@ class _PathFile:
         try:
             file = _opened(self.path, self.identity)
         except OSError as error:
-            raise _failed(context, error) from None
+            raise _failed(error) from None
         return _FileAttempt(file, context, self.identity[2], file.close)
 
 
@@ -600,7 +592,7 @@ class StreamBody:
 
     def __call__(self, context: BodyAttemptContext, /) -> BodyAttempt:
         """Begin the only attempt, refusing a stream already read."""
-        self._claim.take("stream")
+        self._claim.take()
         self._claim.used = True
         self._claim.lock.release()
         return _StreamAttempt(self._chunks, context, owned=self._ownership == "owned")
@@ -635,21 +627,21 @@ class _FactoryAttempt:
     @property
     def content_type(self) -> str | None:
         """Return the media type the attempt names."""
-        return _attempt_type(self._attempt, self._context)
+        return _attempt_type(self._attempt)
 
     def iter_bytes(self) -> Iterator[bytes]:
         """Yield the attempt's chunks."""
         return _read(self._attempt.iter_bytes, _Counter(self._context, "factory", self._length))
 
     def close(self) -> None:
-        """Close the attempt, turning its failure into BodyFactoryError."""
+        """Close the attempt, turning its failure into the body_factory_failed SDKError."""
         if self._closed:
             return
         self._closed = True
         try:
             self._attempt.close()
         except Exception as error:  # noqa: BLE001
-            raise _failed(self._context, error) from None
+            raise _failed(error) from None
 
     def check_length(self, length: int | None) -> int | None:
         """Retain a length already observed by this call for subsequent chunk checks."""
@@ -702,16 +694,16 @@ class BodyFactory:
         try:
             attempt = self._factory(context)
         except Exception as error:  # noqa: BLE001
-            raise _failed(context, error) from None
+            raise _failed(error) from None
         previous, self._last = self._last, attempt
         if attempt is previous or (history is not None and history.get(id(attempt)) is attempt):
-            raise BodyNotReplayableError(source_kind="factory", condition="same_attempt")
+            raise body_failure(reason="body_not_replayable")
         if history is not None:
             history[id(attempt)] = attempt
         try:
-            length = _declared(self._content_length, _attempt_length(attempt, context))
+            length = _declared(self._content_length, _attempt_length(attempt))
         except BaseException as error:  # noqa: BLE001
-            failure = _factory_failure(context, error)
+            failure = _factory_failure(error)
             try:
                 attempt.close()
             except BaseException as secondary:  # noqa: BLE001
@@ -767,7 +759,7 @@ class _AsyncFileAttempt:
     async def update_digest(self, update: Callable[[bytes], None], check: Callable[[], None]) -> None:
         """Hash on the retained disk worker, restoring the descriptor even after cancellation."""
         check()
-        offset, identity = await self._worker.run(_digest_position, self._file, self._context)
+        offset, identity = await self._worker.run(_digest_position, self._file)
         primary: BaseException | None = None
         try:
             async for chunk in _aread(self._chunks, _Counter(self._context, "file", self._length)):
@@ -775,13 +767,13 @@ class _AsyncFileAttempt:
                 update(chunk)
                 check()
                 await asyncio.sleep(0)
-            await self._worker.run(_digest_finished, self._file, identity, self._context)
+            await self._worker.run(_digest_finished, self._file, identity)
         except BaseException as error:
             primary = error
             raise
         finally:
             try:
-                await self._worker.run(_digest_restored, self._file, offset, self._context, cleanup=True)
+                await self._worker.run(_digest_restored, self._file, offset, cleanup=True)
             except BaseException as failure:
                 if primary is None:
                     raise
@@ -808,19 +800,16 @@ class _AsyncOpenFile:
 
     async def attempt(self, context: BodyAttemptContext) -> AsyncBodyAttempt:
         """Begin reading the file, refusing one another call reads, one that is closed, or one read once."""
-        self.claim.take("file")
+        self.claim.take()
         try:
             self.worker.acquire()
         except BaseException:
             self.claim.lock.release()
             raise
         try:
-            length = await self.worker.run(_remaining, self.file, context)
-        except BaseException as error:
-            if isinstance(error, asyncio.CancelledError):
-                self.worker.defer(carried(self.release()), release=True)
-                raise
-            failure = _failed(context, error) if isinstance(error, OSError) else error
+            length = await self.worker.run(_remaining, self.file)
+        except BaseException as error:  # noqa: BLE001
+            failure = _failed(error) if isinstance(error, OSError) else error
             try:
                 await self.release()
             except BaseException as secondary:  # noqa: BLE001
@@ -831,16 +820,12 @@ class _AsyncOpenFile:
 
     async def release(self) -> None:
         """End a call's read once its disk work settles: close an owned file, then let the next call read."""
-        late: tuple[BaseException, ...] = ()
         try:
-            late = await self.worker.settled()
             if self.ownership == "owned":
                 self.claim.used = True
                 await self.worker.run(self.file.close, cleanup=True)
         finally:
             self.claim.lock.release()
-            self.worker.release()
-        raise_late(late)
 
 
 class _AsyncPathFile:
@@ -859,42 +844,27 @@ class _AsyncPathFile:
         try:
             file = await self.worker.run(_opened, self.path, self.identity, discard=_close_file)
         except BaseException as error:
-            if isinstance(error, asyncio.CancelledError):
-                self.worker.defer(carried(self._settled_release()), release=True)
-                raise
-            self.worker.release()
             if isinstance(error, OSError):
-                raise _failed(context, error) from None
+                raise _failed(error) from None
             raise
         return _AsyncFileAttempt(file, context, self.identity[2], self.worker, lambda: self.release(file))
 
-    async def _settled_release(self) -> None:
-        late: tuple[BaseException, ...] = ()
-        try:
-            late = await self.worker.settled()
-        finally:
-            self.worker.release()
-        raise_late(late)
-
     async def release(self, file: BinaryIO) -> None:
         """Close the attempt's file before a stopped worker can shut down."""
-        try:
-            await self.worker.run(file.close, cleanup=True)
-        finally:
-            self.worker.release()
+        await self.worker.run(file.close, cleanup=True)
 
 
 class AsyncFileBody:
-    """A file an asyncio client sends as a whole body, read as FileBody reads, on one worker thread of its own.
+    """A file an asyncio client sends as a whole body, read as FileBody reads, one file operation at a time in a thread.
 
-    The worker reads one chunk at a time. Closing the body stops it; closing a client does not.
+    A cancelled read finishes before the file is released. Closing the body stops it; closing a client does not.
     """
 
     __slots__ = ("_source", "_worker")
 
     def __init__(self, file: BinaryIO, *, ownership: Ownership = "borrowed") -> None:
         """Send an open binary file, borrowed unless its ownership moves to the client."""
-        self._worker = DiskWorker("AsyncFileBody")
+        self._worker = DiskWorker()
         self._source: _AsyncOpenFile | _AsyncPathFile = _AsyncOpenFile(file, ownership, self._worker)
 
     @classmethod
@@ -926,7 +896,7 @@ class _AsyncPathFileBody(AsyncFileBody):
     __slots__ = ()
 
     def __init__(self, path: Path) -> None:
-        self._worker = DiskWorker("AsyncFileBody")
+        self._worker = DiskWorker()
         self._source = _AsyncPathFile(path, self._worker)
 
 
@@ -985,7 +955,7 @@ class AsyncStreamBody:
 
     async def __call__(self, context: BodyAttemptContext, /) -> AsyncBodyAttempt:
         """Begin the only attempt, refusing a stream already read."""
-        self._claim.take("stream")
+        self._claim.take()
         self._claim.used = True
         self._claim.lock.release()
         return _AsyncStreamAttempt(self._chunks, context, owned=self._ownership == "owned")
@@ -1020,21 +990,21 @@ class _AsyncFactoryAttempt:
     @property
     def content_type(self) -> str | None:
         """Return the media type the attempt names."""
-        return _attempt_type(self._attempt, self._context)
+        return _attempt_type(self._attempt)
 
     def aiter_bytes(self) -> AsyncIterator[bytes]:
         """Yield the attempt's chunks."""
         return _aread(self._attempt.aiter_bytes, _Counter(self._context, "factory", self._length))
 
     async def aclose(self) -> None:
-        """Close the attempt, turning its failure into BodyFactoryError."""
+        """Close the attempt, turning its failure into the body_factory_failed SDKError."""
         if self._closed:
             return
         self._closed = True
         try:
             await self._attempt.aclose()
         except Exception as error:  # noqa: BLE001
-            raise _failed(self._context, error) from None
+            raise _failed(error) from None
 
     def check_length(self, length: int | None) -> int | None:
         """Retain the call's previously observed length for later reads."""
@@ -1092,16 +1062,16 @@ class AsyncBodyFactory:
         try:
             attempt = await self._factory(context)
         except Exception as error:  # noqa: BLE001
-            raise _failed(context, error) from None
+            raise _failed(error) from None
         previous, self._last = self._last, attempt
         if attempt is previous or (history is not None and history.get(id(attempt)) is attempt):
-            raise BodyNotReplayableError(source_kind="factory", condition="same_attempt")
+            raise body_failure(reason="body_not_replayable")
         if history is not None:
             history[id(attempt)] = attempt
         try:
-            length = _declared(self._content_length, _attempt_length(attempt, context))
+            length = _declared(self._content_length, _attempt_length(attempt))
         except BaseException as error:  # noqa: BLE001
-            failure = _factory_failure(context, error)
+            failure = _factory_failure(error)
             if cleanup is None:
                 try:
                     await attempt.aclose()
@@ -1122,12 +1092,12 @@ class _FileCall:
     __slots__ = ("_length", "_offset", "_source")
 
     def __init__(self, source: _OpenFile) -> None:
-        source.claim.take("file")
+        source.claim.take()
         self._source = source
         try:
             self._offset, self._length = _snapshot(source.file)
         except BaseException as error:  # noqa: BLE001
-            failure = BodyFactoryError(cause=error) if isinstance(error, OSError) else error
+            failure = _failed(error) if isinstance(error, OSError) else error
             try:
                 self.close()
             except BaseException as secondary:  # noqa: BLE001
@@ -1140,9 +1110,9 @@ class _FileCall:
 
     def open(self, context: BodyAttemptContext) -> BodyAttempt:
         try:
-            _rewound(self._source.file, self._offset, self._length, context)
+            _rewound(self._source.file, self._offset, self._length)
         except OSError as error:
-            raise _failed(context, error) from None
+            raise _failed(error) from None
         return _FileAttempt(self._source.file, context, self._length, _kept, self._consumed)
 
     def _consumed(self) -> None:
@@ -1159,7 +1129,7 @@ class _AsyncFileCall:
     __slots__ = ("_length", "_offset", "_source")
 
     def __init__(self, source: _AsyncOpenFile) -> None:
-        source.claim.take("file")
+        source.claim.take()
         try:
             source.worker.acquire()
         except BaseException:
@@ -1172,11 +1142,8 @@ class _AsyncFileCall:
     async def capture(self) -> None:
         try:
             self._offset, self._length = await self._source.worker.run(_snapshot, self._source.file)
-        except BaseException as error:
-            if isinstance(error, asyncio.CancelledError):
-                self._source.worker.defer(carried(self.aclose()), release=True)
-                raise
-            failure = BodyFactoryError(cause=error) if isinstance(error, OSError) else error
+        except BaseException as error:  # noqa: BLE001
+            failure = _failed(error) if isinstance(error, OSError) else error
             try:
                 await self.aclose()
             except BaseException as secondary:  # noqa: BLE001
@@ -1190,9 +1157,9 @@ class _AsyncFileCall:
     async def aopen(self, context: BodyAttemptContext) -> AsyncBodyAttempt:
         source = self._source
         try:
-            await source.worker.run(_rewound, source.file, self._offset, self._length, context)
+            await source.worker.run(_rewound, source.file, self._offset, self._length)
         except OSError as error:
-            raise _failed(context, error) from None
+            raise _failed(error) from None
         return _AsyncFileAttempt(source.file, context, self._length, source.worker, _akept, consume=self._consumed)
 
     def _consumed(self) -> None:
@@ -1247,7 +1214,7 @@ class _StreamCall:
     __slots__ = ("_chunks", "_claim", "_ownership")
 
     def __init__(self, chunks: Iterable[bytes], claim: _Claim, ownership: Ownership) -> None:
-        claim.take("stream")
+        claim.take()
         self._chunks, self._claim, self._ownership = chunks, claim, ownership
 
     @property
@@ -1276,7 +1243,7 @@ class _AsyncStreamCall:
     __slots__ = ("_chunks", "_claim", "_ownership")
 
     def __init__(self, chunks: AsyncIterable[bytes], claim: _Claim, ownership: Ownership) -> None:
-        claim.take("stream")
+        claim.take()
         self._chunks, self._claim, self._ownership = chunks, claim, ownership
 
     @property
@@ -1322,10 +1289,10 @@ class _FactoryCall:
     def open(self, context: BodyAttemptContext) -> BodyAttempt:
         attempt = self._open(context, self._history)
         try:
-            _fingerprint(_current_fingerprint(self._body, context), self._fingerprint)
+            _fingerprint(_current_fingerprint(self._body), self._fingerprint)
             self._length = attempt.check_length(self._length)
         except BaseException as error:  # noqa: BLE001
-            failure = _factory_failure(context, error)
+            failure = _factory_failure(error)
             try:
                 attempt.close()
             except BaseException as secondary:  # noqa: BLE001
@@ -1364,10 +1331,10 @@ class _AsyncFactoryCall:
     async def aopen(self, context: BodyAttemptContext) -> AsyncBodyAttempt:
         attempt = await self._open(context, self._history, self._cleanup)
         try:
-            _fingerprint(_current_fingerprint(self._body, context), self._fingerprint)
+            _fingerprint(_current_fingerprint(self._body), self._fingerprint)
             self._length = attempt.check_length(self._length)
         except BaseException as error:  # noqa: BLE001
-            failure = _factory_failure(context, error)
+            failure = _factory_failure(error)
             await self._cleanup(attempt.aclose, error=failure)
             raise failure from None
         return attempt
@@ -1376,36 +1343,36 @@ class _AsyncFactoryCall:
         """Leave history clearing to the whole call's owner."""
 
 
-def _attempt_length(attempt: BodyAttempt | AsyncBodyAttempt, context: BodyAttemptContext) -> int | None:
+def _attempt_length(attempt: BodyAttempt | AsyncBodyAttempt) -> int | None:
     try:
         return attempt.content_length
     except Exception as error:  # noqa: BLE001
-        raise _failed(context, error) from None
+        raise _failed(error) from None
 
 
-def _attempt_type(attempt: BodyAttempt | AsyncBodyAttempt, context: BodyAttemptContext) -> str | None:
+def _attempt_type(attempt: BodyAttempt | AsyncBodyAttempt) -> str | None:
     try:
         return attempt.content_type
     except Exception as error:  # noqa: BLE001
-        raise _failed(context, error) from None
+        raise _failed(error) from None
 
 
 def _declarations(body: BodyFactory | AsyncBodyFactory) -> tuple[int | None, bytes | None]:
     try:
         return body.content_length, body.fingerprint
     except Exception as error:  # noqa: BLE001
-        raise BodyFactoryError(cause=error) from None
+        raise _failed(error) from None
 
 
-def _current_fingerprint(body: BodyFactory | AsyncBodyFactory, context: BodyAttemptContext) -> bytes | None:
+def _current_fingerprint(body: BodyFactory | AsyncBodyFactory) -> bytes | None:
     try:
         return body.fingerprint
     except Exception as error:  # noqa: BLE001
-        raise _failed(context, error) from None
+        raise _failed(error) from None
 
 
-def _factory_failure(context: BodyAttemptContext, error: BaseException) -> BaseException:
-    return _failed(context, error) if isinstance(error, Exception) and not isinstance(error, SDKError) else error
+def _factory_failure(error: BaseException) -> BaseException:
+    return _failed(error) if isinstance(error, Exception) and not isinstance(error, SDKError) else error
 
 
 def body_secondary(error: BaseException, failure: BaseException) -> None:
@@ -1417,7 +1384,7 @@ def body_secondary(error: BaseException, failure: BaseException) -> None:
 
 def _fingerprint(actual: bytes | None, expected: bytes | None) -> None:
     if actual != expected:
-        raise BodyChangedError(source_kind="factory", check="fingerprint")
+        raise body_failure(reason="body_changed")
 
 
 def bind_input(body: FileBody | StreamBody) -> _FileCall | _PathCall | _StreamCall:
@@ -1446,16 +1413,13 @@ def require_primitive_digest(source: object, *, multipart: bool) -> None:
     """Check a bound primitive without opening factories, reading streams, or allocating a hasher."""
     if isinstance(source, (_FileCall, _AsyncFileCall)):
         if source._offset is None:  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-            raise BodyNotReplayableError(
-                source_kind="multipart" if multipart else "file",
-                condition="digest_unavailable" if multipart else "not_seekable",
-            )
+            raise body_failure(reason="digest_unavailable")
     elif isinstance(source, (_FactoryCall, _AsyncFactoryCall)):
         if multipart:
-            raise BodyNotReplayableError(source_kind="multipart", condition="digest_unavailable")
+            raise body_failure(reason="digest_unavailable")
         _required_digest(source._body._sha256)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     elif not isinstance(source, (_PathCall, _AsyncPathCall)):
-        raise BodyNotReplayableError(source_kind="multipart" if multipart else "stream", condition="digest_unavailable")
+        raise body_failure(reason="digest_unavailable")
 
 
 def declared_attempt_digest(attempt: BodyAttempt | AsyncBodyAttempt) -> bytes | None:

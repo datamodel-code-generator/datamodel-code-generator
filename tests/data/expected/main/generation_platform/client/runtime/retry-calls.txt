@@ -1,74 +1,56 @@
 # retries pydantic_v2.BaseModel
-  typed status retry = (FieldSafeGetResponse(root='done'), 2, 2)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('attempt_start', 1, None, False, 1, 1, None, None), ('response_headers', 1, 200, True, 2, 2, None, None), ('attempt_end', 1, 200, True, 2, 2, None, None), ('call_end', 1, 200, True, 2, 2, None, 'success')] one-call=True queued=0
-  typed read retry = (FieldSafeGetResponse(root='complete'), 2, 2)
+  typed status retry = (FieldSafeGetResponse(root='done'), 2)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('attempt_start', 1, None, False, 1, None, None), ('response_headers', 1, 200, True, 2, None, None), ('attempt_end', 1, 200, True, 2, None, None), ('call_end', 1, 200, True, 2, None, 'success')] one-call=True queued=0
+  typed read failure never resent = ('APIConnectionError', 'unknown_delivery', 1, 'read', ())
   typed read failed response closes = 1
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('transport_failure', 0, None, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'read_error', None), ('attempt_start', 1, None, False, 1, 1, None, None), ('response_headers', 1, 200, True, 2, 2, None, None), ('attempt_end', 1, 200, True, 2, 2, None, None), ('call_end', 1, 200, True, 2, 2, None, 'success')] one-call=True queued=0
-  buffered raw retry = (b'buffered', 2, 2)
-  buffered raw repeated status = (None, None)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 200, True, 1, None, None), ('transport_failure', 0, None, True, 1, None, None), ('attempt_end', 0, 200, True, 1, None, None), ('call_end', 0, 200, True, 1, None, 'error')] one-call=True queued=1
+  buffered read failure never resent = ('APIConnectionError', 'unknown_delivery', 1, 'read', ())
   buffered read failed response closes = 1
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('transport_failure', 0, None, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'read_error', None), ('attempt_start', 1, None, False, 1, 1, None, None), ('response_headers', 1, 200, True, 2, 2, None, None), ('attempt_end', 1, 200, True, 2, 2, None, None), ('call_end', 1, 200, True, 2, 2, None, 'success')] one-call=True queued=0
-  post-handoff read never retries = ('TransportError', 'transport_not_retryable', 1, 1, 'read', ())
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 200, True, 1, None, None), ('transport_failure', 0, None, True, 1, None, None), ('attempt_end', 0, 200, True, 1, None, None), ('call_end', 0, 200, True, 1, None, 'error')] one-call=True queued=1
+  post-handoff read never retries = ('APIConnectionError', None, 1, 'read', ())
   stream failed response closes = 1
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('call_end', 0, 200, True, 1, 1, None, 'handed_off'), ('stream_end', 0, 200, True, 1, 1, None, 'error')] one-call=True queued=1
-  stream status reason open = ('GetSafeHTTPError', 'disabled', 1, 1, None, ())
-  stream repeated status reason open = ('GetSafeHTTPError', 'disabled', 1, 1, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'handed_off'), ('stream_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=0
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 200, True, 1, None, None), ('attempt_end', 0, 200, True, 1, None, None), ('call_end', 0, 200, True, 1, None, 'handed_off'), ('stream_end', 0, 200, True, 1, None, 'error')] one-call=True queued=1
+  stream status reason open = ('InternalServerError', 'disabled', 1, None, ())
+  stream repeated status reason open = ('InternalServerError', 'disabled', 1, None, ())
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'handed_off'), ('stream_end', 0, 503, True, 1, None, 'error')] one-call=True queued=0
   partial raw bytes = b'busy'
-  stream status reason partial = ('GetSafeHTTPError', 'max_retries_exhausted', 3, 3, None, ())
-  stream repeated status reason partial = ('GetSafeHTTPError', 'max_retries_exhausted', 3, 3, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('attempt_start', 1, None, False, 1, 1, None, None), ('response_headers', 1, 503, True, 2, 2, None, None), ('attempt_end', 1, 503, True, 2, 2, None, None), ('retry_scheduled', 1, None, True, 2, 2, 'status', None), ('attempt_start', 2, None, False, 2, 2, None, None), ('response_headers', 2, 503, True, 3, 3, None, None), ('attempt_end', 2, 503, True, 3, 3, None, None), ('call_end', 2, 503, True, 3, 3, None, 'handed_off'), ('stream_end', 2, 503, True, 3, 3, None, 'error')] one-call=True queued=0
-  terminal hook cancellation typed = ('RequestCancelledError', None, 1, 1, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('call_end', 0, 200, True, 1, 1, None, 'cancel')] one-call=True queued=0
-  terminal hook cancellation buffered = ('RequestCancelledError', None, 1, 1, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('call_end', 0, 200, True, 1, 1, None, 'cancel')] one-call=True queued=0
-  terminal hook cancellation stream = ('RequestCancelledError', None, 1, 1, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('call_end', 0, 200, True, 1, 1, None, 'cancel')] one-call=True queued=0
-  stop hook response_headers = ('HookExecutionError', None, 1, 1, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  stop hook attempt_end = ('GetSafeHTTPError', 'callback_failure', 1, 1, None, ('RuntimeError',))
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  stop hook retry_scheduled = ('HookExecutionError', None, 1, 1, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  failed cleanup stops status retry = ('GetSafeHTTPError', 'callback_failure', 1, 1, None, ('RuntimeError',))
+  stream status reason partial = ('InternalServerError', 'max_retries_exhausted', 3, None, ())
+  stream repeated status reason partial = ('InternalServerError', 'max_retries_exhausted', 3, None, ())
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('attempt_start', 1, None, False, 1, None, None), ('response_headers', 1, 503, True, 2, None, None), ('attempt_end', 1, 503, True, 2, None, None), ('retry_scheduled', 1, None, True, 2, 'status', None), ('attempt_start', 2, None, False, 2, None, None), ('response_headers', 2, 503, True, 3, None, None), ('attempt_end', 2, 503, True, 3, None, None), ('call_end', 2, 503, True, 3, None, 'handed_off'), ('stream_end', 2, 503, True, 3, None, 'error')] one-call=True queued=0
+  stop hook response_headers = ('SDKError', None, 1, None, ())
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'error')] one-call=True queued=1
+  stop hook attempt_end = ('InternalServerError', 'callback_failure', 1, None, ('RuntimeError',))
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'error')] one-call=True queued=1
+  stop hook retry_scheduled = ('SDKError', None, 1, None, ())
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('call_end', 0, 503, True, 1, None, 'error')] one-call=True queued=1
+  failed cleanup stops status retry = ('InternalServerError', 'callback_failure', 1, None, ('SDKError',))
   failed cleanup count = 1
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  native retry close CancelledError = (('CancelledError', True, ('native retry close',), ['original close note']), 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  native retry close _Stop = (('_Stop', True, ('native retry close',), ['original close note']), 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  native retry close KeyboardInterrupt = (('KeyboardInterrupt', True, ('native retry close',), ['original close note']), 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  native retry close SystemExit = (('SystemExit', True, ('native retry close',), ['original close note']), 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  sync wait token = ('RequestCancelledError', None, 1, 1, None, ())
-  sync wait cleanup = (True, [])
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  sync wait view = ('ClientClosedError', None, 1, 1, None, ())
-  sync wait cleanup = (True, [])
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  sync wait owner = ('ClientClosedError', None, 1, 1, None, ())
-  sync wait cleanup = (True, [])
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  drained interrupted send = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: _Stop']), 1, 0, 1, 0)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('limiter_wait', 0, None, False, 0, 0, None, None), ('limiter_acquired', 0, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('attempt_end', 0, None, True, 1, 1, None, None), ('call_end', 0, None, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  drained interrupted response = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: _Stop']), 1, 1, 1, 0)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('limiter_wait', 0, None, False, 0, 0, None, None), ('limiter_acquired', 0, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  drained interrupted ordinary response = (('_Stop', True, ('permit interruption',), ()), 1, 1, 1, 0)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('limiter_wait', 0, None, False, 0, 0, None, None), ('limiter_acquired', 0, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  close drains every handle = (('_Stop', True, ('first handle interruption',), ['Secondary cleanup failure: ValueError', 'Secondary cleanup failure: _Stop', 'Secondary cleanup failure: OSError']), [1, 1, 1], ['adapter'])
-  drained client close once = [1, 1, 1, 1]
-  pre-send failure call_start = (('BodyFactoryError', None, 0, 0, None, ()), False, True, 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_end', 0, None, False, 0, 0, None, None), ('call_end', 0, None, False, 0, 0, None, 'error')] one-call=True queued=2
-  pre-send failure retry_scheduled = (('BodyFactoryError', None, 1, 1, None, ()), False, True, 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('attempt_end', 1, None, False, 1, 1, None, None), ('call_end', 1, None, True, 1, 1, None, 'error')] one-call=True queued=1
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'error')] one-call=True queued=1
+  native retry close CancelledError = (('CancelledError', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], []), 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  native retry close _Stop = (('_Stop', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], []), 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  native retry close KeyboardInterrupt = (('KeyboardInterrupt', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], []), 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  native retry close SystemExit = (('SystemExit', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], []), 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  interrupted cleanup send = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: APIConnectionError', 'Secondary cleanup failure: _Stop'], []), 1, 0, 1, 0)
+    events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('attempt_end', 0, None, True, 1, None, None), ('call_end', 0, None, True, 1, None, 'cancel')] one-call=True queued=1
+  interrupted cleanup response = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: InternalServerError', 'Secondary cleanup failure: _Stop'], []), 1, 1, 1, 0)
+    events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  interrupted cleanup ordinary response = (('_Stop', True, ('permit interruption',), ['Secondary cleanup failure: InternalServerError'], []), 1, 1, 1, 0)
+    events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  pre-send failure call_start = (('SDKError', None, 0, None, ()), False, True, 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_end', 0, None, False, 0, None, None), ('call_end', 0, None, False, 0, None, 'error')] one-call=True queued=2
+  pre-send failure retry_scheduled = (('SDKError', None, 1, None, ()), False, True, 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('attempt_end', 1, None, False, 1, None, None), ('call_end', 1, None, True, 1, None, 'error')] one-call=True queued=1
   key client typed declared=True omitted = FieldKeyedPostResponse(root='client-key')
   key admission = (['client-key', 'client-key'], 0)
   key client typed declared=True empty = FieldKeyedPostResponse(root='client-key')
   key admission = (['client-key', 'client-key'], 0)
   key client typed declared=True UNSET = FieldKeyedPostResponse(root='client-key')
   key admission = (['client-key', 'client-key'], 0)
-  key client typed declared=True None ! PostKeyedHTTPError: PostKeyedHTTPError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, error_decoded=True, error_data=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] post_keyed_http_error
+  key client typed declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
   key admission = ([None], 1)
   key client typed declared=True override = FieldKeyedPostResponse(root='call-key')
   key admission = (['call-key', 'call-key'], 0)
@@ -80,7 +62,7 @@
   key admission = (['client-key', 'client-key'], 0)
   key client response declared=True UNSET = FieldKeyedPostResponse(root='client-key')
   key admission = (['client-key', 'client-key'], 0)
-  key client response declared=True None ! PostKeyedHTTPError: PostKeyedHTTPError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, error_decoded=True, error_data=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] post_keyed_http_error
+  key client response declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
   key admission = ([None], 1)
   key client response declared=True override = FieldKeyedPostResponse(root='call-key')
   key admission = (['call-key', 'call-key'], 0)
@@ -110,77 +92,77 @@
   key admission = (['call-key', 'call-key'], 0)
   key client stream declared=True same object = b'client-key'
   key admission = (['client-key', 'client-key'], 0)
-  key client typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key client typed declared=False None = FieldSafeGetResponse(root='absent')
   key admission = ([None, None], 0)
-  key client typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key client response declared=False None = FieldSafeGetResponse(root='absent')
   key admission = ([None, None], 0)
-  key client response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key client buffered declared=False None = b'absent'
   key admission = ([None, None], 0)
-  key client buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key client stream declared=False None = b'absent'
   key admission = ([None, None], 0)
-  key client stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key client request raw declared=False None = b'absent'
   key admission = ([None, None], 0)
-  key client request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key client request stream declared=False None = b'absent'
   key admission = ([None, None], 0)
-  key client request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key client request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key client request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key view typed declared=True omitted = FieldKeyedPostResponse(root='view-key')
   key admission = (['view-key', 'view-key'], 0)
@@ -188,7 +170,7 @@
   key admission = (['view-key', 'view-key'], 0)
   key view typed declared=True UNSET = FieldKeyedPostResponse(root='view-key')
   key admission = (['view-key', 'view-key'], 0)
-  key view typed declared=True None ! PostKeyedHTTPError: PostKeyedHTTPError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, error_decoded=True, error_data=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] post_keyed_http_error
+  key view typed declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
   key admission = ([None], 1)
   key view typed declared=True override = FieldKeyedPostResponse(root='call-key')
   key admission = (['call-key', 'call-key'], 0)
@@ -200,7 +182,7 @@
   key admission = (['view-key', 'view-key'], 0)
   key view response declared=True UNSET = FieldKeyedPostResponse(root='view-key')
   key admission = (['view-key', 'view-key'], 0)
-  key view response declared=True None ! PostKeyedHTTPError: PostKeyedHTTPError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, error_decoded=True, error_data=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] post_keyed_http_error
+  key view response declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
   key admission = ([None], 1)
   key view response declared=True override = FieldKeyedPostResponse(root='call-key')
   key admission = (['call-key', 'call-key'], 0)
@@ -230,135 +212,130 @@
   key admission = (['call-key', 'call-key'], 0)
   key view stream declared=True same object = b'view-key'
   key admission = (['view-key', 'view-key'], 0)
-  key view typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key view typed declared=False None = FieldSafeGetResponse(root='absent')
   key admission = ([None, None], 0)
-  key view typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key view response declared=False None = FieldSafeGetResponse(root='absent')
   key admission = ([None, None], 0)
-  key view response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key view buffered declared=False None = b'absent'
   key admission = ([None, None], 0)
-  key view buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key view stream declared=False None = b'absent'
   key admission = ([None, None], 0)
-  key view stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key view request raw declared=False None = b'absent'
   key admission = ([None, None], 0)
-  key view request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
   key view request stream declared=False None = b'absent'
   key admission = ([None, None], 0)
-  key view request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  key view request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  key view request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   key admission = ([], 2)
-  concurrent inherited keys = ((FieldKeyedPostResponse(root='client-key'), None, None), ('ConfigurationError', None, 0, 0, None, ()), (FieldKeyedPostResponse(root='view-key'), None, None), ('ConfigurationError', None, 0, 0, None, ()))
+  concurrent inherited keys = ((FieldKeyedPostResponse(root='client-key'), None), ('ConfigurationError', None, 0, None, ()), (FieldKeyedPostResponse(root='view-key'), None), ('ConfigurationError', None, 0, None, ()))
   concurrent key admission = (['client-key', 'view-key'], 2)
   key client unchanged after mixed calls = FieldKeyedPostResponse(root='client-key')
   key view unchanged after mixed calls = FieldKeyedPostResponse(root='view-key')
-  async typed read retry = (FieldSafeGetResponse(root='complete'), 2, 2)
+  async typed read failure never resent = ('APIConnectionError', 'unknown_delivery', 1, 'read', ())
   async failed response closes = 1
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('transport_failure', 0, None, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'read_error', None), ('attempt_start', 1, None, False, 1, 1, None, None), ('response_headers', 1, 200, True, 2, 2, None, None), ('attempt_end', 1, 200, True, 2, 2, None, None), ('call_end', 1, 200, True, 2, 2, None, 'success')] one-call=True queued=0
-  async buffered read retry = (b'complete', 2, 2)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 200, True, 1, None, None), ('transport_failure', 0, None, True, 1, None, None), ('attempt_end', 0, 200, True, 1, None, None), ('call_end', 0, 200, True, 1, None, 'error')] one-call=True queued=1
+  async buffered read failure never resent = ('APIConnectionError', 'unknown_delivery', 1, 'read', ())
   async failed response closes = 1
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('transport_failure', 0, None, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'read_error', None), ('attempt_start', 1, None, False, 1, 1, None, None), ('response_headers', 1, 200, True, 2, 2, None, None), ('attempt_end', 1, 200, True, 2, 2, None, None), ('call_end', 1, 200, True, 2, 2, None, 'success')] one-call=True queued=0
-  async post-handoff never retries = ('TransportError', 'transport_not_retryable', 1, 1, 'read', ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('call_end', 0, 200, True, 1, 1, None, 'handed_off'), ('stream_end', 0, 200, True, 1, 1, None, 'error')] one-call=True queued=1
-  async stream status reason open = ('GetSafeHTTPError', 'disabled', 1, 1, None, ())
-  async repeated status reason open = ('GetSafeHTTPError', 'disabled', 1, 1, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'handed_off'), ('stream_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=0
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 200, True, 1, None, None), ('transport_failure', 0, None, True, 1, None, None), ('attempt_end', 0, 200, True, 1, None, None), ('call_end', 0, 200, True, 1, None, 'error')] one-call=True queued=1
+  async post-handoff never retries = ('APIConnectionError', None, 1, 'read', ())
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 200, True, 1, None, None), ('attempt_end', 0, 200, True, 1, None, None), ('call_end', 0, 200, True, 1, None, 'handed_off'), ('stream_end', 0, 200, True, 1, None, 'error')] one-call=True queued=1
+  async stream status reason open = ('InternalServerError', 'disabled', 1, None, ())
+  async repeated status reason open = ('InternalServerError', 'disabled', 1, None, ())
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'handed_off'), ('stream_end', 0, 503, True, 1, None, 'error')] one-call=True queued=0
   async partial raw bytes = b'busy'
-  async stream status reason partial = ('GetSafeHTTPError', 'max_retries_exhausted', 3, 3, None, ())
-  async repeated status reason partial = ('GetSafeHTTPError', 'max_retries_exhausted', 3, 3, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('attempt_start', 1, None, False, 1, 1, None, None), ('response_headers', 1, 503, True, 2, 2, None, None), ('attempt_end', 1, 503, True, 2, 2, None, None), ('retry_scheduled', 1, None, True, 2, 2, 'status', None), ('attempt_start', 2, None, False, 2, 2, None, None), ('response_headers', 2, 503, True, 3, 3, None, None), ('attempt_end', 2, 503, True, 3, 3, None, None), ('call_end', 2, 503, True, 3, 3, None, 'handed_off'), ('stream_end', 2, 503, True, 3, 3, None, 'error')] one-call=True queued=0
-  async stop hook attempt_end = ('GetSafeHTTPError', 'callback_failure', 1, 1, None, ('RuntimeError',))
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  async stop hook retry_scheduled = ('HookExecutionError', None, 1, 1, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  async failed cleanup stops retry = ('GetSafeHTTPError', 'callback_failure', 1, 1, None, ('RuntimeError',))
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  async native retry close CancelledError = (('GetSafeHTTPError', False, (), ()), 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  async native retry close _Stop = (('_Stop', True, ('native retry close',), ['original close note']), 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  async native retry close KeyboardInterrupt = (('KeyboardInterrupt', True, ('native retry close',), ['original close note']), 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  async native retry close SystemExit = (('SystemExit', True, ('native retry close',), ['original close note']), 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  async wait token = ('RequestCancelledError', None, 1, 1, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  async wait view = ('ClientClosedError', None, 1, 1, None, ())
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
+  async stream status reason partial = ('InternalServerError', 'max_retries_exhausted', 3, None, ())
+  async repeated status reason partial = ('InternalServerError', 'max_retries_exhausted', 3, None, ())
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('attempt_start', 1, None, False, 1, None, None), ('response_headers', 1, 503, True, 2, None, None), ('attempt_end', 1, 503, True, 2, None, None), ('retry_scheduled', 1, None, True, 2, 'status', None), ('attempt_start', 2, None, False, 2, None, None), ('response_headers', 2, 503, True, 3, None, None), ('attempt_end', 2, 503, True, 3, None, None), ('call_end', 2, 503, True, 3, None, 'handed_off'), ('stream_end', 2, 503, True, 3, None, 'error')] one-call=True queued=0
+  async stop hook attempt_end = ('InternalServerError', 'callback_failure', 1, None, ('RuntimeError',))
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'error')] one-call=True queued=1
+  async stop hook retry_scheduled = ('SDKError', None, 1, None, ())
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('call_end', 0, 503, True, 1, None, 'error')] one-call=True queued=1
+  async failed cleanup stops retry = ('InternalServerError', 'callback_failure', 1, None, ('SDKError',))
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'error')] one-call=True queued=1
+  async native retry close CancelledError = (('CancelledError', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], []), 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  async native retry close _Stop = (('_Stop', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], []), 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  async native retry close KeyboardInterrupt = (('KeyboardInterrupt', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], []), 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  async native retry close SystemExit = (('SystemExit', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], []), 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
   async wait native = ('CancelledError', ('retry wait interrupted',))
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  async drained interrupted send = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: _Stop']), 1, 0, 1, 0)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('limiter_wait', 0, None, False, 0, 0, None, None), ('limiter_acquired', 0, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('attempt_end', 0, None, True, 1, 1, None, None), ('call_end', 0, None, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  async drained interrupted response = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: _Stop']), 1, 1, 1, 0)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('limiter_wait', 0, None, False, 0, 0, None, None), ('limiter_acquired', 0, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  async drained interrupted ordinary response = (('_Stop', True, ('permit interruption',), ()), 1, 1, 1, 0)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('limiter_wait', 0, None, False, 0, 0, None, None), ('limiter_acquired', 0, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
-  async close drains every handle = (('CancelledError', True, ('first handle interruption',), ['Secondary cleanup failure: ClientClosedError', 'Secondary cleanup failure: _Stop', 'Secondary cleanup failure: OSError']), [1, 1, 1], ['adapter'])
-  async pre-send failure call_start = (('BodyFactoryError', None, 0, 0, None, ()), False, True, 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_end', 0, None, False, 0, 0, None, None), ('call_end', 0, None, False, 0, 0, None, 'error')] one-call=True queued=2
-  async pre-send failure retry_scheduled = (('BodyFactoryError', None, 1, 1, None, ()), False, True, 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('attempt_end', 1, None, False, 1, 1, None, None), ('call_end', 1, None, True, 1, 1, None, 'error')] one-call=True queued=1
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  async interrupted cleanup send = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: APIConnectionError', 'Secondary cleanup failure: _Stop'], []), 1, 0, 1, 0)
+    events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('attempt_end', 0, None, True, 1, None, None), ('call_end', 0, None, True, 1, None, 'cancel')] one-call=True queued=1
+  async interrupted cleanup response = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: InternalServerError', 'Secondary cleanup failure: _Stop'], []), 1, 1, 1, 0)
+    events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  async interrupted cleanup ordinary response = (('_Stop', True, ('permit interruption',), ['Secondary cleanup failure: InternalServerError'], []), 1, 1, 1, 0)
+    events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
+  async pre-send failure call_start = (('SDKError', None, 0, None, ()), False, True, 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_end', 0, None, False, 0, None, None), ('call_end', 0, None, False, 0, None, 'error')] one-call=True queued=2
+  async pre-send failure retry_scheduled = (('SDKError', None, 1, None, ()), False, True, 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('attempt_end', 1, None, False, 1, None, None), ('call_end', 1, None, True, 1, None, 'error')] one-call=True queued=1
   async key client typed declared=True omitted = FieldKeyedPostResponse(root='client-key')
   async key admission = (['client-key', 'client-key'], 0)
   async key client typed declared=True empty = FieldKeyedPostResponse(root='client-key')
   async key admission = (['client-key', 'client-key'], 0)
   async key client typed declared=True UNSET = FieldKeyedPostResponse(root='client-key')
   async key admission = (['client-key', 'client-key'], 0)
-  async key client typed declared=True None ! PostKeyedHTTPError: PostKeyedHTTPError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, error_decoded=True, error_data=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] post_keyed_http_error
+  async key client typed declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
   async key admission = ([None], 1)
   async key client typed declared=True override = FieldKeyedPostResponse(root='call-key')
   async key admission = (['call-key', 'call-key'], 0)
@@ -370,7 +347,7 @@
   async key admission = (['client-key', 'client-key'], 0)
   async key client response declared=True UNSET = FieldKeyedPostResponse(root='client-key')
   async key admission = (['client-key', 'client-key'], 0)
-  async key client response declared=True None ! PostKeyedHTTPError: PostKeyedHTTPError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, error_decoded=True, error_data=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] post_keyed_http_error
+  async key client response declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
   async key admission = ([None], 1)
   async key client response declared=True override = FieldKeyedPostResponse(root='call-key')
   async key admission = (['call-key', 'call-key'], 0)
@@ -400,77 +377,77 @@
   async key admission = (['call-key', 'call-key'], 0)
   async key client stream declared=True same object = b'client-key'
   async key admission = (['client-key', 'client-key'], 0)
-  async key client typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key client typed declared=False None = FieldSafeGetResponse(root='absent')
   async key admission = ([None, None], 0)
-  async key client typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key client response declared=False None = FieldSafeGetResponse(root='absent')
   async key admission = ([None, None], 0)
-  async key client response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key client buffered declared=False None = b'absent'
   async key admission = ([None, None], 0)
-  async key client buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key client stream declared=False None = b'absent'
   async key admission = ([None, None], 0)
-  async key client stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key client request raw declared=False None = b'absent'
   async key admission = ([None, None], 0)
-  async key client request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key client request stream declared=False None = b'absent'
   async key admission = ([None, None], 0)
-  async key client request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key client request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key client request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key view typed declared=True omitted = FieldKeyedPostResponse(root='view-key')
   async key admission = (['view-key', 'view-key'], 0)
@@ -478,7 +455,7 @@
   async key admission = (['view-key', 'view-key'], 0)
   async key view typed declared=True UNSET = FieldKeyedPostResponse(root='view-key')
   async key admission = (['view-key', 'view-key'], 0)
-  async key view typed declared=True None ! PostKeyedHTTPError: PostKeyedHTTPError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, error_decoded=True, error_data=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] post_keyed_http_error
+  async key view typed declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
   async key admission = ([None], 1)
   async key view typed declared=True override = FieldKeyedPostResponse(root='call-key')
   async key admission = (['call-key', 'call-key'], 0)
@@ -490,7 +467,7 @@
   async key admission = (['view-key', 'view-key'], 0)
   async key view response declared=True UNSET = FieldKeyedPostResponse(root='view-key')
   async key admission = (['view-key', 'view-key'], 0)
-  async key view response declared=True None ! PostKeyedHTTPError: PostKeyedHTTPError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, error_decoded=True, error_data=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] post_keyed_http_error
+  async key view response declared=True None ! InternalServerError: InternalServerError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False] internal_server_error
   async key admission = ([None], 1)
   async key view response declared=True override = FieldKeyedPostResponse(root='call-key')
   async key admission = (['call-key', 'call-key'], 0)
@@ -520,79 +497,79 @@
   async key admission = (['call-key', 'call-key'], 0)
   async key view stream declared=True same object = b'view-key'
   async key admission = (['view-key', 'view-key'], 0)
-  async key view typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key view typed declared=False None = FieldSafeGetResponse(root='absent')
   async key admission = ([None, None], 0)
-  async key view typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key view response declared=False None = FieldSafeGetResponse(root='absent')
   async key admission = ([None, None], 0)
-  async key view response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key view buffered declared=False None = b'absent'
   async key admission = ([None, None], 0)
-  async key view buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key view stream declared=False None = b'absent'
   async key admission = ([None, None], 0)
-  async key view stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view request raw declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view request raw declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view request raw declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key view request raw declared=False None = b'absent'
   async key admission = ([None, None], 0)
-  async key view request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view request raw declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view request raw declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view request stream declared=False omitted ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view request stream declared=False empty ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view request stream declared=False UNSET ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
   async key view request stream declared=False None = b'absent'
   async key admission = ([None, None], 0)
-  async key view request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view request stream declared=False override ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async key view request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='idempotency_key', condition='not_declared') [field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  async key view request stream declared=False same object ! ConfigurationError: ConfigurationError(call_id='<call>', reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] not_declared
   async key admission = ([], 2)
-  async concurrent inherited keys = [(FieldKeyedPostResponse(root='client-key'), None, None), ('ConfigurationError', None, 0, 0, None, ()), (FieldKeyedPostResponse(root='view-key'), None, None), ('ConfigurationError', None, 0, 0, None, ())]
+  async concurrent inherited keys = [(FieldKeyedPostResponse(root='client-key'), None), ('ConfigurationError', None, 0, None, ()), (FieldKeyedPostResponse(root='view-key'), None), ('ConfigurationError', None, 0, None, ())]
   async concurrent key admission = (['client-key', 'view-key'], 2)
   async key client unchanged after mixed calls = FieldKeyedPostResponse(root='client-key')
   async key view unchanged after mixed calls = FieldKeyedPostResponse(root='view-key')

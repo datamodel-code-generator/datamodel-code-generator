@@ -2,19 +2,16 @@
 """Explicit credential providers and request signers for this package."""
 
 from ._runtime.client.auth import (
-    AsyncCloseableCredentialProvider,
     AsyncCredentialProvider,
     AsyncEnvironmentCredentialProvider,
     AsyncRequestSigner,
     AsyncStaticCredentialProvider,
     AuthConfig,
-    CloseableCredentialProvider,
     CredentialContext,
     CredentialMaterial,
     CredentialProvider,
     CredentialProviderInput,
     EnvironmentCredentialProvider,
-    OwnedCredentialProvider,
     RequestSigner,
     SignatureFields,
     SignerCapabilities,
@@ -24,19 +21,16 @@ from ._runtime.client.auth import (
 )
 
 __all__ = [
-    'AsyncCloseableCredentialProvider',
     'AsyncCredentialProvider',
     'AsyncEnvironmentCredentialProvider',
     'AsyncRequestSigner',
     'AsyncStaticCredentialProvider',
     'AuthConfig',
-    'CloseableCredentialProvider',
     'CredentialContext',
     'CredentialMaterial',
     'CredentialProvider',
     'CredentialProviderInput',
     'EnvironmentCredentialProvider',
-    'OwnedCredentialProvider',
     'RequestSigner',
     'SignatureFields',
     'SignerCapabilities',

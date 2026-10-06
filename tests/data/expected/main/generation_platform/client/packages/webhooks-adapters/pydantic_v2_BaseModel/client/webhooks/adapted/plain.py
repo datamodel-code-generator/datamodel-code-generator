@@ -51,7 +51,7 @@ def verify(
     The verifier is called once, synchronously in both functions, and must authenticate
     the whole raw body and every fact it returns; a result that is not a
     VerifiedSignature, lacks a fact this helper requires, returns one it does not
-    declare, or has a naive timestamp raises AdapterContractError before decoding.
+    declare, or has a naive timestamp raises ConfigurationError before decoding.
     Verification retains no delivery state; deduplicate in your application using
     delivery_id when present.
     """
@@ -80,7 +80,7 @@ async def verify_async(
     The verifier is called once, synchronously in both functions, and must authenticate
     the whole raw body and every fact it returns; a result that is not a
     VerifiedSignature, lacks a fact this helper requires, returns one it does not
-    declare, or has a naive timestamp raises AdapterContractError before decoding.
+    declare, or has a naive timestamp raises ConfigurationError before decoding.
     Verification retains no delivery state; deduplicate in your application using
     delivery_id when present.
     """

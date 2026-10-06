@@ -8,18 +8,16 @@ from typing import BinaryIO
 from pets import AsyncClient, Client
 from pets.auth import OAuthProviderOptions
 from pets.errors import (
-    BudgetExceededError,
-    DeadlineExceededError,
+    APIStatusError,
+    APITimeoutError,
+    AuthError,
+    ConfigurationError,
+    DecodeError,
     DeliveryState,
-    LimiterExecutionError,
-    PhaseTimeoutError,
-    RedirectPolicyError,
-    RequestCancelledError,
     SDKError,
 )
 from pets.hooks import AsyncLimiter, AsyncPermit, Limiter, LimiterContext, Permit
 from pets.options import (
-    CancelToken,
     ClientOptions,
     Clock,
     Deadline,
@@ -31,7 +29,6 @@ from pets.options import (
     TransportOptions,
 )
 from pets.responses import RawResponse, ResponseInfo
-from pets.transports import OwnedTransportAdapter
 from pets.types.pets import decode_list_pets_header
 from pets_models import (
     FieldPetsGetHeaderXTraceParameter,
@@ -55,10 +52,10 @@ def misuse(client: Client, trace: FieldPetsGetHeaderXTraceParameter, pet: FieldP
 
 
 def misuse_transports(client: Client, adapter: object) -> None:
-    from clients import Adapter, AsyncAdapter
+    import httpx2
 
-    Client(transport_adapter=OwnedTransportAdapter(AsyncAdapter()))  # error
-    AsyncClient(transport_adapter=Adapter())  # error
+    Client(http_client=httpx2.AsyncClient())  # error
+    AsyncClient(http_client=httpx2.Client())  # error
     client.with_options(None)  # error
     del adapter
 
@@ -115,14 +112,12 @@ def misuse_hooks() -> None:
     RequestOptions(context={"tags": ["a"]})  # error
 
 
-def misuse_timing(deadline: Deadline, token: CancelToken, phase: TimeoutOptions, context: LimiterContext) -> None:
+def misuse_timing(deadline: Deadline, phase: TimeoutOptions, context: LimiterContext) -> None:
     Deadline.after("soon")  # error
     TimeoutOptions(connect="slow")  # error
     ClientOptions(timeout=30)  # error
     RequestOptions(total_timeout="soon")  # error
     RequestOptions(deadline=60)  # error
-    RequestOptions(cancel_token=True)  # error
-    RequestOptions(max_network_sends=0.5)  # error
     RequestOptions(stream_idle_timeout="forever")  # error
     RequestOptions(stream_total_timeout="forever")  # error
     deadline.at = 0  # error
@@ -132,7 +127,6 @@ def misuse_timing(deadline: Deadline, token: CancelToken, phase: TimeoutOptions,
     RequestOptions(clock=Clock())  # error
     ClientOptions(clock=None)  # error
     OAuthProviderOptions(clock=object())  # error
-    token.cancelled = True  # error
     phase.read = 1  # error
     context.remaining_timeout = 0  # error
 
@@ -148,17 +142,15 @@ def misuse_limiters(sync: Limiter, asynchronous: AsyncLimiter, permit: Permit, a
 
 def misuse_deadline_errors(error: SDKError) -> None:
     state = DeliveryState.NOT_SENT
-    PhaseTimeoutError(effective_timeout=1, phase="unknown", delivery_state=state)  # error
-    DeadlineExceededError(deadline_at=0, elapsed=1, phase="connect", delivery_state=state)  # error
-    RequestCancelledError(source="asyncio", delivery_state=state)  # error
-    BudgetExceededError(budget_kind="auth", limit=1, used=0)  # error
-    LimiterExecutionError(action="wait")  # error
-    SDKError(network_send_count="one")  # error
-    error.network_send_count = 0  # error
-    error.wire_send_count = 0  # error
+    APITimeoutError(effective_timeout="1", delivery_state=state)  # error
+    AuthError(reason="expired")  # error
+    DecodeError(direction="request")  # error
+    APIStatusError(body=b"")  # error
+    SDKError(attempt_count="one")  # error
+    error.attempt_count = "zero"  # error
 
 
-def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: RedirectPolicyError) -> None:
+def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: ConfigurationError) -> None:
     RetryOptions(max_retries=None)  # error
     RetryOptions(jitter="equal")  # error
     RetryOptions(statuses=[429, 503])  # error
@@ -172,7 +164,6 @@ def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: Redirec
     RequestOptions(transport=TransportOptions())  # error
     ClientOptions(transport=None)  # error
     TransportOptions(verify="strict")  # error
-    TransportOptions(retry_owner="native")  # error
     IdempotencyKey()  # error
     IdempotencyKey("opaque", None)  # error
     key.value = "changed"  # error
@@ -182,10 +173,8 @@ def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: Redirec
         call_id=info.call_id,
         elapsed=0,
         content_type=None,
-        wire_send_count="one",  # error
+        attempt_count="one",  # error
     )
-    info.wire_send_count = 1  # error
-    RedirectPolicyError()  # error
-    RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, body_available=True)  # error
-    error.body_available = False  # error
-    error.delivery_state = DeliveryState.NOT_SENT  # error
+    info.attempt_count = 1  # error
+    ConfigurationError(field_path=("redirects",), reason="redirect_refused", body_available=False)  # error
+    error.delivery_state = "NOT_SENT"  # error

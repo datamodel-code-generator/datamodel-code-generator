@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import threading
 from collections.abc import Mapping
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
@@ -18,7 +17,7 @@ from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final, ove
 
 from typing_extensions import Self, TypeVar
 
-from ..client.errors import BudgetExceededError, ProtocolConfigurationError, RequestEncodingError
+from ..client.errors import ConfigurationError, DecodeError
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
@@ -55,7 +54,7 @@ from .resume import (
 from .values import MISSING, Missing, RepeatedValueError, resolve, selected, server_expiry
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Sequence
+    from collections.abc import Callable, Sequence
     from datetime import datetime
     from types import TracebackType
 
@@ -123,7 +122,7 @@ class CancelPlan(Generic[K]):
     """
 
     operation: OperationRef
-    call: OperationPlan[K, object]
+    call: OperationPlan[K]
     bindings: tuple[PageBinding, ...] = ()
     targeted: Targeted[K] = field(init=False)
 
@@ -151,10 +150,10 @@ class PollingPlan(Generic[T, P, C]):
 
     helper_id: str
     operation: OperationRef
-    create: OperationPlan[C, object]
+    create: OperationPlan[C]
     accepted: tuple[int, ...]
     poll_operation: OperationRef
-    poll: OperationPlan[P, object]
+    poll: OperationPlan[P]
     state: Selector
     pending: tuple[JSONValue, ...]
     succeeded: tuple[JSONValue, ...]
@@ -165,7 +164,7 @@ class PollingPlan(Generic[T, P, C]):
     inline: Callable[[P], T | None] | None = None
     inline_selector: BodySelector | None = None
     fetch_operation: OperationRef | None = None
-    fetch: OperationPlan[T, object] | None = None
+    fetch: OperationPlan[T] | None = None
     fetch_bindings: tuple[PageBinding, ...] = ()
     immediate: Callable[[C], T | None] | None = None
     immediate_statuses: tuple[int, ...] = ()
@@ -180,7 +179,7 @@ class PollingPlan(Generic[T, P, C]):
     fetched: Targeted[T] | None = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
-    children: tuple[OperationPlan[Any, object], ...] = field(init=False)
+    children: tuple[OperationPlan[Any], ...] = field(init=False)
 
     def __post_init__(self) -> None:
         """Index the states by canonical JSON, and derive the poll, fetch, and cancel operations writing values."""
@@ -224,7 +223,6 @@ class _Limits:
     max_wait: float | None = 60.0
     total_timeout: float | None = 600.0
     deadline: Deadline | None = None
-    max_network_sends: int | None = 2000
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -232,9 +230,9 @@ class _Limits:
 _DEFAULTS: Final = _Limits(interval=1.0)
 
 
-def _invalid(plan: PollingPlan[T, P, C], path: tuple[str, ...]) -> ProtocolConfigurationError:
-    return ProtocolConfigurationError(
-        field_path=path, condition="invalid_value", helper_id=plan.helper_id, operation=plan.operation
+def _invalid(plan: PollingPlan[T, P, C], path: tuple[str, ...]) -> ConfigurationError:
+    return ConfigurationError(
+        field_path=path, reason="invalid_value", helper_id=plan.helper_id, operation=plan.operation
     )
 
 
@@ -278,7 +276,6 @@ def _limits(
         max_wait=layered(kinds, "max_wait", _DEFAULTS.max_wait),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
-        max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
         clock=core.clock,
     )
@@ -392,12 +389,9 @@ class _Operation(Generic[T, P]):
 
     @property
     def progress(self) -> ProtocolProgress:
-        """Return the polls sent so far and the session's sends."""
-        session = self._session
+        """Return the polls sent so far."""
         return MappingProxyType({
             "polls": self._polls,
-            "network_send_count": session.network_send_count,
-            "network_send_budget_used": session.network_send_budget_used,
         })
 
     def checkpoint(self) -> ResumeState:
@@ -440,62 +434,21 @@ class _Operation(Generic[T, P]):
             parent_session_id=self._session.session_id,
         )
 
-    def _limit(
-        self,
-        limit: int,
-        kind: Literal["polls", "network_sends"],
-        refused: BudgetExceededError | None = None,
-        *,
-        created: bool = True,
-    ) -> SessionLimitError:
-        """Return the error of a session limit reached while the operation is unsettled, with a refused child call.
+    def _limit(self, limit: int, kind: Literal["polls"], *, created: bool = True) -> SessionLimitError:
+        """Return the error of a session limit reached while the operation is unsettled.
 
         It keeps a checkpoint of the handle once the operation was created.
         """
         plan = self._plan
-        saved = self._saved() if created else None
-        if refused is None:
-            return SessionLimitError(
-                kind=kind,
-                limit=limit,
-                progress=self.progress,
-                resume_state=saved,
-                helper_id=plan.helper_id,
-                operation=plan.operation,
-                parent_session_id=self._session.session_id,
-            )
         return SessionLimitError(
             kind=kind,
             limit=limit,
             progress=self.progress,
-            resume_state=saved,
+            resume_state=self._saved() if created else None,
             helper_id=plan.helper_id,
             operation=plan.operation,
-            operation_id=refused.operation_id,
-            call_id=refused.call_id,
-            parent_session_id=refused.parent_session_id,
-            info=refused.info,
-            cause=refused,
-            resource_attempt_count=refused.resource_attempt_count,
-            redirect_count=refused.redirect_count,
-            auth_exchange_count=refused.auth_exchange_count,
-            network_send_count=refused.network_send_count,
-            network_send_budget_used=refused.network_send_budget_used,
-            auth_exchange_budget_used=refused.auth_exchange_budget_used,
-            auth_refresh_ids=refused.auth_refresh_ids,
-            auth_refresh_pending=refused.auth_refresh_pending,
-            wire_send_count=refused.wire_send_count,
+            parent_session_id=self._session.session_id,
         )
-
-    @contextmanager
-    def _mapped(self, *, created: bool = True) -> Generator[None, None, None]:
-        """Raise a child call's refusal for want of a session send slot as the session's limit error."""
-        try:
-            yield
-        except BudgetExceededError as error:
-            if error.budget_kind != "parent_network":
-                raise
-            raise self._limit(error.limit, "network_sends", error, created=created) from None
 
     def _enter(self, action: str) -> None:
         """Take the handle for one step, refusing a concurrent step and a closed handle."""
@@ -514,16 +467,10 @@ class _Operation(Generic[T, P]):
         self._closed = True
         self._lock.release()
 
-    def _sendable(self) -> None:
-        """Refuse a child call the session has no send slot left for."""
-        session = self._session
-        if (limit := session.send_limit) is not None and session.network_send_budget_used >= limit:
-            raise self._limit(limit, "network_sends")
-
     def _cancelling(self, cancel: CancelPlan[K]) -> Callable[[], tuple[tuple[object, ...], object, None]]:
         """Return the remote cancel request of a pending operation, without waiting for a step that polls it.
 
-        A closed handle and a settled operation refuse it, and so does a session without a send slot.
+        A closed handle and a settled operation refuse it.
         """
         action = "cancel_remote"
         with self._guard:
@@ -532,10 +479,9 @@ class _Operation(Generic[T, P]):
             if (phase := self._phase) is not _Phase.PENDING:
                 raise self._state_error(action, phase.value)
             values = self._cancel
-        self._sendable()
         return _sent(cancel.targeted, values)
 
-    def _due(self, core: ClientCore | AsyncClientCore, call: OperationPlan[Any, object]) -> LogicalCallContext | None:
+    def _due(self, core: ClientCore | AsyncClientCore, call: OperationPlan[Any]) -> LogicalCallContext | None:
         """Return the context to wait in before the next poll or result fetch, or None when it may be sent now.
 
         The poll limit, for a poll, and the session's send slots are checked first. A wait longer than the allowed
@@ -543,7 +489,6 @@ class _Operation(Generic[T, P]):
         """
         if call is self._plan.polled.call and (limit := self._limits.max_polls) is not None and self._polls >= limit:
             raise self._limit(limit, "polls")
-        self._sendable()
         if (required := self._not_before - self._limits.clock.monotonic()) <= 0:
             return None
         limits = self._limits
@@ -551,7 +496,6 @@ class _Operation(Generic[T, P]):
             raise self._waited(required, allowed, "wait")
         waiter = core.waiting(limits.options, self._session, call.operation_id)
         if (remaining := waiter.remaining()) is not None and required >= remaining:
-            waiter.finish()
             raise self._waited(required, remaining, "deadline")
         return waiter
 
@@ -743,7 +687,7 @@ class _Operation(Generic[T, P]):
 
     def _counted(self, admitted: int) -> None:
         """Count a poll once its call was admitted to send, never one refused before sending."""
-        if self._session.network_send_budget_used > admitted:
+        if self._session.sends > admitted:
             self._polls += 1
 
     def _failed(self, error: Exception) -> None:
@@ -808,12 +752,12 @@ class _Operation(Generic[T, P]):
         return (*self._plan.polled.request(self._bound), None)
 
     def _checked(
-        self, call: OperationPlan[Any, object], request: Callable[[], tuple[tuple[object, ...], object, None]]
+        self, call: OperationPlan[Any], request: Callable[[], tuple[tuple[object, ...], object, None]]
     ) -> None:
         """Prepare a request the restored handle sends next as its call would, refusing saved values it cannot send."""
         try:
             self._client.checked_page(call, request, None, self._limits.options)
-        except (RequestEncodingError, ProtocolDataError, CodecError):
+        except (DecodeError, ProtocolDataError, CodecError):
             raise MalformedStateError from None
 
     def _seeded(self) -> None:
@@ -835,7 +779,7 @@ class _Operation(Generic[T, P]):
         }
         try:
             self._client.checked_arguments(fetched.call, given, self._limits.options)
-        except RequestEncodingError:
+        except DecodeError:
             raise MalformedStateError from None
         self._dots(
             fetched,
@@ -924,46 +868,41 @@ class LroHandle(_Operation[T, P]):
     def _create(self, arguments: tuple[object, ...], body: object, media_type: str | None) -> None:
         """Send the create request as the session's first child call and settle what it gives."""
         core, plan = self._core, self._plan
-        with self._mapped(created=False):
-            step = core.execute_page(
-                plan,
-                plan.create,
-                lambda: (arguments, body, None),
-                self._created,
-                body=body,
-                media_type=media_type,
-                options=self._limits.options,
-                session=self._session,
-                max_page_bytes=None,
-            )
+        step = core.execute_page(
+            plan,
+            plan.create,
+            lambda: (arguments, body, None),
+            self._created,
+            body=body,
+            media_type=media_type,
+            options=self._limits.options,
+            session=self._session,
+            max_page_bytes=None,
+        )
         self._settle(step)
 
-    def _pause(self, call: OperationPlan[Any, object]) -> None:
+    def _pause(self, call: OperationPlan[Any]) -> None:
         """Wait until the next poll or result fetch is due."""
         if (waiter := self._due(self._core, call)) is not None:
-            try:
-                waiter.sleep_until(self._not_before)
-            finally:
-                waiter.finish()
+            waiter.sleep_until(self._not_before)
 
     def _poll(self) -> None:
         """Wait until the next poll is due, then poll once and settle what it gives; a sent poll is counted."""
         core, plan, session = self._core, self._plan, self._session
         self._pause(plan.polled.call)
-        admitted = session.network_send_budget_used
+        admitted = session.sends
         try:
-            with self._mapped():
-                step = core.execute_page(
-                    plan,
-                    plan.polled.call,
-                    self._poll_request,
-                    self._polled,
-                    body=UNSET,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=session,
-                    max_page_bytes=None,
-                )
+            step = core.execute_page(
+                plan,
+                plan.polled.call,
+                self._poll_request,
+                self._polled,
+                body=UNSET,
+                media_type=None,
+                options=self._limits.options,
+                session=session,
+                max_page_bytes=None,
+            )
         except Exception as error:
             self._failed(error)
             raise
@@ -978,18 +917,17 @@ class LroHandle(_Operation[T, P]):
         assert fetched is not None
         self._pause(fetched.call)
         try:
-            with self._mapped():
-                result = self._core.execute_page(
-                    plan,
-                    fetched.call,
-                    self._fetch_request,
-                    _kept,
-                    body=UNSET,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=self._session,
-                    max_page_bytes=None,
-                )
+            result = self._core.execute_page(
+                plan,
+                fetched.call,
+                self._fetch_request,
+                _kept,
+                body=UNSET,
+                media_type=None,
+                options=self._limits.options,
+                session=self._session,
+                max_page_bytes=None,
+            )
         except Exception as error:
             self._failed(error)
             raise
@@ -1001,18 +939,17 @@ class LroHandle(_Operation[T, P]):
         It runs alongside a step another thread is running, such as a `wait` sleeping until its next poll.
         """
         request = self._cancelling(cancel)
-        with self._mapped():
-            return self._core.execute_page(
-                self._plan,
-                cancel.targeted.call,
-                request,
-                _receipt,
-                body=UNSET,
-                media_type=None,
-                options=self._limits.options,
-                session=self._session,
-                max_page_bytes=None,
-            )
+        return self._core.execute_page(
+            self._plan,
+            cancel.targeted.call,
+            request,
+            _receipt,
+            body=UNSET,
+            media_type=None,
+            options=self._limits.options,
+            session=self._session,
+            max_page_bytes=None,
+        )
 
     def status(self) -> PollSnapshot[P]:
         """Poll once, after the wait the last response requires, and return the poll; a settled handle sends nothing."""
@@ -1076,46 +1013,41 @@ class AsyncLroHandle(_Operation[T, P]):
     async def _create(self, arguments: tuple[object, ...], body: object, media_type: str | None) -> None:
         """Send the create request as the session's first child call and settle what it gives."""
         core, plan = self._core, self._plan
-        with self._mapped(created=False):
-            step = await core.execute_page(
-                plan,
-                plan.create,
-                lambda: (arguments, body, None),
-                self._created,
-                body=body,
-                media_type=media_type,
-                options=self._limits.options,
-                session=self._session,
-                max_page_bytes=None,
-            )
+        step = await core.execute_page(
+            plan,
+            plan.create,
+            lambda: (arguments, body, None),
+            self._created,
+            body=body,
+            media_type=media_type,
+            options=self._limits.options,
+            session=self._session,
+            max_page_bytes=None,
+        )
         self._settle(step)
 
-    async def _pause(self, call: OperationPlan[Any, object]) -> None:
+    async def _pause(self, call: OperationPlan[Any]) -> None:
         """Wait until the next poll or result fetch is due."""
         if (waiter := self._due(self._core, call)) is not None:
-            try:
-                await waiter.asleep_until(self._not_before)
-            finally:
-                waiter.finish()
+            await waiter.asleep_until(self._not_before)
 
     async def _poll(self) -> None:
         """Wait until the next poll is due, then poll once and settle what it gives; a sent poll is counted."""
         core, plan, session = self._core, self._plan, self._session
         await self._pause(plan.polled.call)
-        admitted = session.network_send_budget_used
+        admitted = session.sends
         try:
-            with self._mapped():
-                step = await core.execute_page(
-                    plan,
-                    plan.polled.call,
-                    self._poll_request,
-                    self._polled,
-                    body=UNSET,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=session,
-                    max_page_bytes=None,
-                )
+            step = await core.execute_page(
+                plan,
+                plan.polled.call,
+                self._poll_request,
+                self._polled,
+                body=UNSET,
+                media_type=None,
+                options=self._limits.options,
+                session=session,
+                max_page_bytes=None,
+            )
         except Exception as error:
             self._failed(error)
             raise
@@ -1130,18 +1062,17 @@ class AsyncLroHandle(_Operation[T, P]):
         assert fetched is not None
         await self._pause(fetched.call)
         try:
-            with self._mapped():
-                result = await self._core.execute_page(
-                    plan,
-                    fetched.call,
-                    self._fetch_request,
-                    _kept,
-                    body=UNSET,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=self._session,
-                    max_page_bytes=None,
-                )
+            result = await self._core.execute_page(
+                plan,
+                fetched.call,
+                self._fetch_request,
+                _kept,
+                body=UNSET,
+                media_type=None,
+                options=self._limits.options,
+                session=self._session,
+                max_page_bytes=None,
+            )
         except Exception as error:
             self._failed(error)
             raise
@@ -1153,18 +1084,17 @@ class AsyncLroHandle(_Operation[T, P]):
         It runs alongside a step another task is running, such as a `wait` sleeping until its next poll.
         """
         request = self._cancelling(cancel)
-        with self._mapped():
-            return await self._core.execute_page(
-                self._plan,
-                cancel.targeted.call,
-                request,
-                _receipt,
-                body=UNSET,
-                media_type=None,
-                options=self._limits.options,
-                session=self._session,
-                max_page_bytes=None,
-            )
+        return await self._core.execute_page(
+            self._plan,
+            cancel.targeted.call,
+            request,
+            _receipt,
+            body=UNSET,
+            media_type=None,
+            options=self._limits.options,
+            session=self._session,
+            max_page_bytes=None,
+        )
 
     async def status(self) -> PollSnapshot[P]:
         """Poll once, after the wait the last response requires, and return the poll; a settled handle sends nothing."""
@@ -1214,7 +1144,6 @@ def _session(limits: _Limits) -> OperationSession:
     return OperationSession(
         total_timeout=limits.total_timeout,
         deadline=limits.deadline,
-        max_network_sends=limits.max_network_sends,
         clock=limits.clock,
     )
 

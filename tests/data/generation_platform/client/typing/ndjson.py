@@ -17,7 +17,7 @@ def records(client: Client, query: SearchQuery) -> None:
     stream = client.protocols.records.all.open(
         stream_options=StreamOptions(max_line_bytes=1024, max_event_bytes=512),
         options=RequestOptions(),
-        session_options=SessionOptions(max_network_sends=2),
+        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(stream, EventStream[Record])
     events: Iterator[StreamEvent[Record]] = stream

@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Awaitable, Callable  # noqa: TC003 - Public annotations support get_type_hints().
-from typing import TYPE_CHECKING, Literal, TypeAlias, final
+from typing import TYPE_CHECKING, Literal, final
 
-from typing_extensions import Self, TypeAliasType
+import httpx2  # noqa: TC002
+from typing_extensions import Self
 
-from ..model_codecs.unset import UNSET, Unset
 from .auth import (
     AsyncCredentialProvider,
     BearerCredential,
@@ -21,22 +21,12 @@ from .auth import (
     TokenSet,
     TokenVersion,
 )
-from .errors import AuthConfigurationError
+from .errors import ConfigurationError
 from .options import OAuthProviderOptions
 
 if TYPE_CHECKING:
     from .oauth import Endpoint
     from .refresh import AsyncTokens, SyncTokens
-    from .transports import AsyncTransportAdapter, OwnedTransportAdapter, TransportAdapter
-
-    TokenTransport: TypeAlias = TransportAdapter | OwnedTransportAdapter[TransportAdapter]
-    AsyncTokenTransport: TypeAlias = AsyncTransportAdapter | OwnedTransportAdapter[AsyncTransportAdapter]
-else:
-    TokenTransport = TypeAliasType("TokenTransport", "TransportAdapter | OwnedTransportAdapter[TransportAdapter]")
-    AsyncTokenTransport = TypeAliasType(
-        "AsyncTokenTransport", "AsyncTransportAdapter | OwnedTransportAdapter[AsyncTransportAdapter]"
-    )
-
 __all__ = (
     "AsyncClientCredentialsProvider",
     "AsyncRefreshTokenProvider",
@@ -44,7 +34,6 @@ __all__ = (
     "OAuthProviderOptions",
     "RefreshTokenProvider",
     "TokenSet",
-    "grant_identity",
 )
 
 
@@ -58,14 +47,14 @@ def _options(options: object) -> OAuthProviderOptions:
     if options is None:
         return OAuthProviderOptions()
     if not isinstance(options, OAuthProviderOptions):
-        raise AuthConfigurationError(field_path=("options",), condition="invalid_type")
+        raise ConfigurationError(field_path=("options",), reason="invalid_type")
     return options
 
 
 def _callback(value: object, *, asynchronous: bool) -> None:
     """Refuse a token callback that is not callable, or not a coroutine function exactly when the provider is async."""
     if value is not None and (not callable(value) or inspect.iscoroutinefunction(value) != asynchronous):
-        raise AuthConfigurationError(field_path=("on_token_refreshed",), condition="invalid_mode")
+        raise ConfigurationError(field_path=("on_token_refreshed",), reason="invalid_mode")
 
 
 class _Tokens:
@@ -88,8 +77,12 @@ class _Tokens:
         """Forget the current token if it is the version a resource rejected; another version stays usable."""
         self._tokens.invalidate(version)
 
+    def grant_identity(self) -> tuple[str | None, tuple[str, ...]]:
+        """Return the audience and the requested scopes, which tell this provider's tokens apart in a cache key."""
+        return self._tokens.identity()
+
     def close(self) -> None:
-        """Close the token transport the provider owns; later calls raise AuthProviderClosedError."""
+        """Close the token transport the provider owns; later calls raise the provider_closed AuthError."""
         self._tokens.close()
 
     def __enter__(self) -> Self:
@@ -121,8 +114,12 @@ class _AsyncTokens:
         """Forget the current token if it is the version a resource rejected; another version stays usable."""
         self._tokens.invalidate(version)
 
+    def grant_identity(self) -> tuple[str | None, tuple[str, ...]]:
+        """Return the audience and the requested scopes, which tell this provider's tokens apart in a cache key."""
+        return self._tokens.identity()
+
     async def aclose(self) -> None:
-        """Close the token transport the provider owns; later calls raise AuthProviderClosedError."""
+        """Close the token transport the provider owns; later calls raise the provider_closed AuthError."""
         await self._tokens.aclose()
 
     async def __aenter__(self) -> Self:
@@ -132,13 +129,6 @@ class _AsyncTokens:
     async def __aexit__(self, *exc_info: object) -> None:
         """Close the provider."""
         await self.aclose()
-
-
-def grant_identity(provider: object) -> tuple[str | None, tuple[str, ...]] | None:
-    """Return the audience and requested scopes of an OAuth token provider of the SDK, or None for any other."""
-    if isinstance(provider, (_Tokens, _AsyncTokens)):
-        return provider._tokens.identity()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    return None
 
 
 @final
@@ -162,7 +152,7 @@ class ClientCredentialsProvider(_Tokens):
         scopes: tuple[str, ...] = (),
         audience: str | None = None,
         options: OAuthProviderOptions | None = None,
-        token_transport: TokenTransport | Unset = UNSET,
+        http_client: httpx2.Client | None = None,
     ) -> None:
         """Validate the endpoint, client authentication, scopes, audience, and transport without I/O."""
         from .auth_policy import sync_provider  # noqa: PLC0415
@@ -173,7 +163,7 @@ class ClientCredentialsProvider(_Tokens):
         grant = ClientCredentialsGrant(client_auth_method, scopes, audience)
         authentication = client_authentication(client_id, client_auth_method, client_secret, sync_provider)
         endpoint = TokenEndpoint(
-            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
+            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, http_client
         )
         super().__init__(SyncTokens(resolved, grant, endpoint))
 
@@ -194,7 +184,7 @@ class AsyncClientCredentialsProvider(_AsyncTokens):
         scopes: tuple[str, ...] = (),
         audience: str | None = None,
         options: OAuthProviderOptions | None = None,
-        token_transport: AsyncTokenTransport | Unset = UNSET,
+        http_client: httpx2.AsyncClient | None = None,
     ) -> None:
         """Validate the endpoint, client authentication, scopes, audience, and transport without I/O."""
         from .auth_policy import async_provider  # noqa: PLC0415
@@ -205,7 +195,7 @@ class AsyncClientCredentialsProvider(_AsyncTokens):
         grant = ClientCredentialsGrant(client_auth_method, scopes, audience)
         authentication = client_authentication(client_id, client_auth_method, client_secret, async_provider)
         endpoint = AsyncTokenEndpoint(
-            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
+            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, http_client
         )
         super().__init__(AsyncTokens(resolved, grant, endpoint))
 
@@ -234,7 +224,7 @@ class RefreshTokenProvider(_Tokens):
         scopes: tuple[str, ...] = (),
         audience: str | None = None,
         options: OAuthProviderOptions | None = None,
-        token_transport: TokenTransport | Unset = UNSET,
+        http_client: httpx2.Client | None = None,
     ) -> None:
         """Validate the endpoint, client authentication, token set, callback, scopes, audience, and transport."""
         from .auth_policy import sync_provider  # noqa: PLC0415
@@ -246,7 +236,7 @@ class RefreshTokenProvider(_Tokens):
         _callback(on_token_refreshed, asynchronous=False)
         authentication = client_authentication(client_id, client_auth_method, client_secret, sync_provider)
         endpoint = TokenEndpoint(
-            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
+            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, http_client
         )
         super().__init__(SyncTokens(resolved, grant, endpoint, on_token_refreshed))
 
@@ -272,7 +262,7 @@ class AsyncRefreshTokenProvider(_AsyncTokens):
         scopes: tuple[str, ...] = (),
         audience: str | None = None,
         options: OAuthProviderOptions | None = None,
-        token_transport: AsyncTokenTransport | Unset = UNSET,
+        http_client: httpx2.AsyncClient | None = None,
     ) -> None:
         """Validate the endpoint, client authentication, token set, callback, scopes, audience, and transport."""
         from .auth_policy import async_provider  # noqa: PLC0415
@@ -284,6 +274,6 @@ class AsyncRefreshTokenProvider(_AsyncTokens):
         _callback(on_token_refreshed, asynchronous=True)
         authentication = client_authentication(client_id, client_auth_method, client_secret, async_provider)
         endpoint = AsyncTokenEndpoint(
-            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
+            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, http_client
         )
         super().__init__(AsyncTokens(resolved, grant, endpoint, on_token_refreshed))

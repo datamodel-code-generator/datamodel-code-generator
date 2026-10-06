@@ -10,7 +10,6 @@ import httpx2
 from tests.data.python.client_pagination import Harness
 from tests.data.python.client_runtime import (
     Exchange,
-    arecord,
     describe,
     failing,
     json_response,
@@ -248,8 +247,6 @@ def _creates(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
         step(lines, label, lambda: helper.start(body=body))
     lines.append("options")
     for label, settings in (
-        ("no session send slot", {"session_options": harness.session(max_network_sends=0)}),
-        ("no call send slot", {"options": harness.request(max_network_sends=0)}),
         ("poll options of another type", {"poll_options": harness.session()}),
         ("fixed idempotency key", {"options": harness.request(idempotency_key=harness.options.IdempotencyKey.new())}),
         ("patched written header", {"options": harness.request(headers=[("x-trace", "mine")])}),
@@ -374,18 +371,10 @@ def _limits(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) ->
     step(lines, "first poll", handle.status)
     step(lines, "poll past the limit", handle.status)
     step(lines, "wait past the limit", handle.wait)
-    exchange.respond(job("queued", 202), job("queued"))
-    handle = helper.start(body=body, session_options=harness.session(max_network_sends=2))
-    step(lines, "poll", handle.status)
-    step(lines, "poll without a send slot", handle.status)
-    exchange.respond(job("queued", 202), job("done"))
-    handle = helper.start(body=body, session_options=harness.session(max_network_sends=2))
-    step(lines, "success", handle.status)
-    step(lines, "fetch without a send slot", handle.wait)
 
 
 def _failures(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Keep a handle pending through transport errors and cancellation, and retry only a failed result fetch."""
+    """Keep a handle pending through transport errors, and retry only a failed result fetch."""
     helper = api.protocols.jobs.run
     body = harness.body
     once = harness.request(retry=harness.options.RetryOptions(max_retries=0))
@@ -396,20 +385,6 @@ def _failures(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) 
     step(lines, "poll again", handle.status)
     step(lines, "failed fetch", handle.wait)
     step(lines, "fetch again", handle.wait)
-    lines.append(f"  progress {dict(handle.progress)!r}")
-    token = harness.options.CancelToken()
-    exchange.respond(job("queued", 202))
-    handle = helper.start(
-        body=body, options=harness.request(cancel_token=token), poll_options=harness.polls(interval=30)
-    )
-    token.cancel()
-    step(lines, "cancelled wait", handle.status)
-    lines.append(f"  progress {dict(handle.progress)!r}")
-    token = harness.options.CancelToken()
-    exchange.respond(job("queued", 202))
-    handle = helper.start(body=body, options=harness.request(cancel_token=token))
-    token.cancel()
-    step(lines, "poll refused before sending", handle.status)
     lines.append(f"  progress {dict(handle.progress)!r}")
     lines.append("server delay of a failed result fetch")
     exchange.respond(job("queued", 202), job("done"), json_response(503, {"message": "busy"}, **{"Retry-After": "30"}))
@@ -498,10 +473,6 @@ async def _async_polling(harness: Polling, lines: list[str]) -> None:
         async with await api.protocols.jobs.inline.start(body=body) as immediate:
             await astep(lines, "immediate wait", immediate.wait)
         await astep(lines, "wait after the block", immediate.wait)
-        unbudgeted = harness.session(max_network_sends=0)
-        await arecord(
-            lines, "start without a session send slot", lambda: helper.start(body=body, session_options=unbudgeted)
-        )
         lines.append("async concurrent steps")
         exchange.respond(job("queued", 202))
         handle = await helper.start(body=body, poll_options=harness.polls(interval=30))
@@ -552,7 +523,7 @@ async def _async_polling(harness: Polling, lines: list[str]) -> None:
 
 
 async def _async_closing(harness: Polling, lines: list[str]) -> None:
-    """Stop a wait when the client closes, naming the helper's session, and refuse later polls of its handles."""
+    """Leave a wait running when the client closes, stop it by cancelling its task, and refuse later polls."""
     exchange = Exchange(lines)
     lines.append("async client closing during a wait")
     async with exchange.async_client() as native:
@@ -562,6 +533,11 @@ async def _async_closing(harness: Polling, lines: list[str]) -> None:
         waiting = asyncio.create_task(handle.status())
         await asyncio.sleep(0)
         await api.aclose()
-        await astep(lines, "wait while the client closes", lambda: waiting)
+        lines.append(f"  wait done after the client closed: {waiting.done()}")
+        waiting.cancel()
+        try:
+            await waiting
+        except asyncio.CancelledError:
+            lines.append("  wait cancelled")
         await astep(lines, "status after the client closed", handle.status)
         lines.append(f"  progress {dict(handle.progress)!r}")

@@ -8,7 +8,6 @@ whose outcome is unknown is settled by probing the server's offset instead of se
 from __future__ import annotations
 
 import threading
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
 from io import SEEK_END
@@ -18,14 +17,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, 
 from typing_extensions import Self, TypeVar
 
 from ..client.bodies import AsyncBodyFactory, BodyFactory
-from ..client.errors import (
-    BudgetExceededError,
-    DeliveryState,
-    HTTPStatusError,
-    ProtocolConfigurationError,
-    TransportError,
-    UnexpectedStatusError,
-)
+from ..client.errors import APIConnectionError, APIStatusError, ConfigurationError, DeliveryState, is_transport
 from ..client.options import RequestOptions
 from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
 from ..model_codecs.errors import CodecError
@@ -35,7 +27,6 @@ from .errors import (
     NonResumableSourceError,
     ProtocolDataError,
     ProtocolStateError,
-    SessionLimitError,
     UploadDeliveryUnknownError,
     UploadExpiredError,
     UploadOffsetError,
@@ -59,7 +50,7 @@ from .sources import UploadProgress
 from .values import MISSING, RepeatedValueError, selected, server_expiry
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Generator, Iterator
+    from collections.abc import AsyncIterator, Callable, Iterator
     from datetime import datetime
     from types import TracebackType
 
@@ -70,7 +61,7 @@ if TYPE_CHECKING:
     from ..client.timing import Deadline
     from ..model_codecs.media import JSONValue
     from .pagination import PageBinding
-    from .records import ParameterTarget, ProtocolProgress, Selector
+    from .records import ParameterTarget, Selector
     from .references import OperationRef
     from .writes import Targeted
 
@@ -105,7 +96,7 @@ class _Phase(Enum):
 _PHASES: Final = MappingProxyType({phase.value: phase for phase in _Phase})
 
 
-def _unreplayed(call: OperationPlan[T, object]) -> OperationPlan[T, object]:
+def _unreplayed(call: OperationPlan[T]) -> OperationPlan[T]:
     """Return an append that shared retries never send again once it may have been delivered.
 
     An operation retried only while it was proven unsent stays as declared; any other is never retried, so an unknown
@@ -136,12 +127,12 @@ class UploadPlan(Generic[T, C]):
 
     helper_id: str
     operation: OperationRef
-    create: OperationPlan[C, object]
+    create: OperationPlan[C]
     probe_operation: OperationRef
-    probe: OperationPlan[object, object]
+    probe: OperationPlan[object]
     remote_offset: Selector
     append_operation: OperationRef
-    append: OperationPlan[object, object]
+    append: OperationPlan[object]
     offset: ParameterTarget
     max_chunk_bytes: int
     partial_commit: bool
@@ -156,7 +147,7 @@ class UploadPlan(Generic[T, C]):
     checksum_encoding: Literal["base64", "hex"] = "base64"
     checksum_prefix: bool = False
     completion_operation: OperationRef | None = None
-    completion: OperationPlan[T, object] | None = None
+    completion: OperationPlan[T] | None = None
     completion_bindings: tuple[PageBinding, ...] = ()
     size_position: int | None = field(init=False)
     probed: Targeted[object] = field(init=False)
@@ -205,7 +196,6 @@ class _Limits:
     max_uncertain_probes: int = 3
     total_timeout: float | None = None
     deadline: Deadline | None = None
-    max_network_sends: int | None = 10000
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -217,10 +207,8 @@ def _invalid(
     plan: UploadPlan[Any, Any],
     path: tuple[str, ...],
     condition: Literal["invalid_value", "wrong_capability"] = "invalid_value",
-) -> ProtocolConfigurationError:
-    return ProtocolConfigurationError(
-        field_path=path, condition=condition, helper_id=plan.helper_id, operation=plan.operation
-    )
+) -> ConfigurationError:
+    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id, operation=plan.operation)
 
 
 def _limits(
@@ -261,7 +249,6 @@ def _limits(
         max_uncertain_probes=layered(kinds, "max_uncertain_probes", _DEFAULTS.max_uncertain_probes),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
-        max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
         clock=core.clock,
     )
@@ -496,14 +483,6 @@ class _Upload(Generic[T]):
             complete=self._phase is _Phase.COMPLETE,
         )
 
-    def _counters(self) -> ProtocolProgress:
-        session = self._session
-        return MappingProxyType({
-            "confirmed_bytes": self._confirmed,
-            "network_send_count": session.network_send_count,
-            "network_send_budget_used": session.network_send_budget_used,
-        })
-
     def _state_error(self, action: str, state: str) -> ProtocolStateError:
         plan = self._plan
         return ProtocolStateError(
@@ -513,38 +492,6 @@ class _Upload(Generic[T]):
             operation=plan.operation,
             parent_session_id=self._session.session_id,
         )
-
-    @contextmanager
-    def _mapped(self, *, created: bool = True) -> Generator[None, None, None]:
-        """Raise a child call's refusal for want of a session send slot as the session's limit error."""
-        try:
-            yield
-        except BudgetExceededError as error:
-            if error.budget_kind != "parent_network":
-                raise
-            plan = self._plan
-            raise SessionLimitError(
-                kind="network_sends",
-                limit=error.limit,
-                progress=self._counters(),
-                resume_state=self._checkpoint() if created else None,
-                helper_id=plan.helper_id,
-                operation=plan.operation,
-                operation_id=error.operation_id,
-                call_id=error.call_id,
-                parent_session_id=error.parent_session_id,
-                info=error.info,
-                cause=error,
-                resource_attempt_count=error.resource_attempt_count,
-                redirect_count=error.redirect_count,
-                auth_exchange_count=error.auth_exchange_count,
-                network_send_count=error.network_send_count,
-                network_send_budget_used=error.network_send_budget_used,
-                auth_exchange_budget_used=error.auth_exchange_budget_used,
-                auth_refresh_ids=error.auth_refresh_ids,
-                auth_refresh_pending=error.auth_refresh_pending,
-                wire_send_count=error.wire_send_count,
-            ) from None
 
     def _enter(self, action: str) -> None:
         """Take the handle for one step, refusing a concurrent step, a closed handle, and a changed source."""
@@ -861,7 +808,7 @@ def _refused(error: BaseException) -> bool:
     A 502 or 504 proves nothing: a gateway answers with it when the server behind it may have applied the call.
     """
     return (
-        isinstance(error, (HTTPStatusError, UnexpectedStatusError))
+        isinstance(error, APIStatusError)
         and not _MIN_SUCCESS <= (status := error.info.status_code) <= _MAX_SUCCESS
         and status not in _GATEWAY_STATUSES
     )
@@ -869,7 +816,7 @@ def _refused(error: BaseException) -> bool:
 
 def _probed_again(error: Exception) -> bool:
     """Return whether a probe failed in a way another probe may settle: a transport error or an error status."""
-    return isinstance(error, (TransportError, HTTPStatusError, UnexpectedStatusError))
+    return is_transport(error) or isinstance(error, APIStatusError)
 
 
 def _session(limits: _Limits) -> OperationSession:
@@ -878,7 +825,6 @@ def _session(limits: _Limits) -> OperationSession:
     return OperationSession(
         total_timeout=limits.total_timeout,
         deadline=limits.deadline,
-        max_network_sends=limits.max_network_sends,
         clock=limits.clock,
     )
 
@@ -909,35 +855,33 @@ class UploadHandle(_Upload[T]):
     def _create(self, arguments: tuple[object, ...], body: object, media_type: str | None) -> None:
         """Send the create request as the session's first child call and keep what it gives."""
         core, plan = self._core, self._plan
-        with self._mapped(created=False):
-            self._bound, self._expires_at = core.execute_page(
-                plan,
-                plan.create,
-                lambda: (arguments, body, None),
-                self._created,
-                body=body,
-                media_type=media_type,
-                options=self._limits.options,
-                session=self._session,
-                max_page_bytes=None,
-            )
+        self._bound, self._expires_at = core.execute_page(
+            plan,
+            plan.create,
+            lambda: (arguments, body, None),
+            self._created,
+            body=body,
+            media_type=media_type,
+            options=self._limits.options,
+            session=self._session,
+            max_page_bytes=None,
+        )
         self._settle(0)
 
     def _probe(self) -> tuple[int, ResponseInfo]:
         """Probe the server's offset once."""
         plan = self._plan
-        with self._mapped():
-            return self._core.execute_page(
-                plan,
-                plan.probed.call,
-                self._probe_request,
-                self._offered,
-                body=UNSET,
-                media_type=None,
-                options=self._limits.options,
-                session=self._session,
-                max_page_bytes=None,
-            )
+        return self._core.execute_page(
+            plan,
+            plan.probed.call,
+            self._probe_request,
+            self._offered,
+            body=UNSET,
+            media_type=None,
+            options=self._limits.options,
+            session=self._session,
+            max_page_bytes=None,
+        )
 
     def _append(self) -> None:
         """Append the chunk holding the confirmed offset until the server confirms all of it."""
@@ -948,27 +892,26 @@ class UploadHandle(_Upload[T]):
             payload = BodyFactory(_Factory(unconfirmed), content_length=len(unconfirmed))
             self._sending(end)
             try:
-                with self._mapped():
-                    self._core.execute_page(
-                        self._plan,
-                        self._plan.appended.call,
-                        self._append_request(payload, unconfirmed),
-                        _ignored,
-                        body=payload,
-                        media_type=None,
-                        options=self._limits.options,
-                        session=self._session,
-                        max_page_bytes=None,
-                    )
+                self._core.execute_page(
+                    self._plan,
+                    self._plan.appended.call,
+                    self._append_request(payload, unconfirmed),
+                    _ignored,
+                    body=payload,
+                    media_type=None,
+                    options=self._limits.options,
+                    session=self._session,
+                    max_page_bytes=None,
+                )
             except Exception as error:
-                if not isinstance(error, TransportError) or (delivery := error.delivery_state) not in _UNKNOWN:
+                if not is_transport(error) or (delivery := error.delivery_state) not in _UNKNOWN:
                     raise
                 if self._uncertain(error, delivery, end):
                     return
                 continue
             self._settle(end)
 
-    def _uncertain(self, error: TransportError, delivery: DeliveryState, end: int) -> bool:
+    def _uncertain(self, error: APIConnectionError, delivery: DeliveryState, end: int) -> bool:
         """Probe after an append of unknown outcome; return whether its chunk is confirmed, raising when unsettled."""
         failures: list[BaseException] = []
         for _ in range(self._limits.max_uncertain_probes):
@@ -989,23 +932,22 @@ class UploadHandle(_Upload[T]):
         assert completed is not None
         self._completing()
         try:
-            with self._mapped():
-                try:
-                    self._core.execute_page(
-                        plan,
-                        completed.call,
-                        self._completion_request,
-                        self._completed,
-                        body=UNSET,
-                        media_type=None,
-                        options=self._limits.options,
-                        session=self._session,
-                        max_page_bytes=None,
-                        failed=self._completion_observed,
-                    )
-                except BaseException as error:
-                    self._completion_failed(error)
-                    raise
+            try:
+                self._core.execute_page(
+                    plan,
+                    completed.call,
+                    self._completion_request,
+                    self._completed,
+                    body=UNSET,
+                    media_type=None,
+                    options=self._limits.options,
+                    session=self._session,
+                    max_page_bytes=None,
+                    failed=self._completion_observed,
+                )
+            except BaseException as error:
+                self._completion_failed(error)
+                raise
         except Exception as error:
             if (failure := self._completion_error(error)) is error:
                 raise
@@ -1087,35 +1029,33 @@ class AsyncUploadHandle(_Upload[T]):
     async def _create(self, arguments: tuple[object, ...], body: object, media_type: str | None) -> None:
         """Send the create request as the session's first child call and keep what it gives."""
         core, plan = self._core, self._plan
-        with self._mapped(created=False):
-            self._bound, self._expires_at = await core.execute_page(
-                plan,
-                plan.create,
-                lambda: (arguments, body, None),
-                self._created,
-                body=body,
-                media_type=media_type,
-                options=self._limits.options,
-                session=self._session,
-                max_page_bytes=None,
-            )
+        self._bound, self._expires_at = await core.execute_page(
+            plan,
+            plan.create,
+            lambda: (arguments, body, None),
+            self._created,
+            body=body,
+            media_type=media_type,
+            options=self._limits.options,
+            session=self._session,
+            max_page_bytes=None,
+        )
         self._settle(0)
 
     async def _probe(self) -> tuple[int, ResponseInfo]:
         """Probe the server's offset once."""
         plan = self._plan
-        with self._mapped():
-            return await self._core.execute_page(
-                plan,
-                plan.probed.call,
-                self._probe_request,
-                self._offered,
-                body=UNSET,
-                media_type=None,
-                options=self._limits.options,
-                session=self._session,
-                max_page_bytes=None,
-            )
+        return await self._core.execute_page(
+            plan,
+            plan.probed.call,
+            self._probe_request,
+            self._offered,
+            body=UNSET,
+            media_type=None,
+            options=self._limits.options,
+            session=self._session,
+            max_page_bytes=None,
+        )
 
     async def _append(self) -> None:
         """Append the chunk holding the confirmed offset until the server confirms all of it."""
@@ -1126,27 +1066,26 @@ class AsyncUploadHandle(_Upload[T]):
             payload = AsyncBodyFactory(_AsyncFactory(unconfirmed), content_length=len(unconfirmed))
             self._sending(end)
             try:
-                with self._mapped():
-                    await self._core.execute_page(
-                        self._plan,
-                        self._plan.appended.call,
-                        self._append_request(payload, unconfirmed),
-                        _ignored,
-                        body=payload,
-                        media_type=None,
-                        options=self._limits.options,
-                        session=self._session,
-                        max_page_bytes=None,
-                    )
+                await self._core.execute_page(
+                    self._plan,
+                    self._plan.appended.call,
+                    self._append_request(payload, unconfirmed),
+                    _ignored,
+                    body=payload,
+                    media_type=None,
+                    options=self._limits.options,
+                    session=self._session,
+                    max_page_bytes=None,
+                )
             except Exception as error:
-                if not isinstance(error, TransportError) or (delivery := error.delivery_state) not in _UNKNOWN:
+                if not is_transport(error) or (delivery := error.delivery_state) not in _UNKNOWN:
                     raise
                 if await self._uncertain(error, delivery, end):
                     return
                 continue
             self._settle(end)
 
-    async def _uncertain(self, error: TransportError, delivery: DeliveryState, end: int) -> bool:
+    async def _uncertain(self, error: APIConnectionError, delivery: DeliveryState, end: int) -> bool:
         """Probe after an append of unknown outcome; return whether its chunk is confirmed, raising when unsettled."""
         failures: list[BaseException] = []
         for _ in range(self._limits.max_uncertain_probes):
@@ -1167,23 +1106,22 @@ class AsyncUploadHandle(_Upload[T]):
         assert completed is not None
         self._completing()
         try:
-            with self._mapped():
-                try:
-                    await self._core.execute_page(
-                        plan,
-                        completed.call,
-                        self._completion_request,
-                        self._completed,
-                        body=UNSET,
-                        media_type=None,
-                        options=self._limits.options,
-                        session=self._session,
-                        max_page_bytes=None,
-                        failed=self._completion_observed,
-                    )
-                except BaseException as error:
-                    self._completion_failed(error)
-                    raise
+            try:
+                await self._core.execute_page(
+                    plan,
+                    completed.call,
+                    self._completion_request,
+                    self._completed,
+                    body=UNSET,
+                    media_type=None,
+                    options=self._limits.options,
+                    session=self._session,
+                    max_page_bytes=None,
+                    failed=self._completion_observed,
+                )
+            except BaseException as error:
+                self._completion_failed(error)
+                raise
         except Exception as error:
             if (failure := self._completion_error(error)) is error:
                 raise
@@ -1388,7 +1326,7 @@ def _checked(
     Read values that make a path segment a dot segment raise ProtocolDataError, as if a server gave them; any other
     refusal of a saved value makes the checkpoint malformed.
     """
-    from ..client.errors import RequestEncodingError  # noqa: PLC0415 - Only a resume checks saved values.
+    from ..client.errors import DecodeError  # noqa: PLC0415 - Only a resume checks saved values.
 
     probe, append, completion = saved.bound
     offsets = _written(plan, 0, b"")
@@ -1403,7 +1341,7 @@ def _checked(
         arguments, body = targeted.request((*values, *extra))
         try:
             core.checked_page(targeted.call, _fixed(arguments, body if payload is None else payload), None, options)
-        except (RequestEncodingError, ProtocolDataError, CodecError):
+        except (DecodeError, ProtocolDataError, CodecError):
             raise _resume_error(plan, "malformed") from None
 
 

@@ -39,7 +39,7 @@ def sockets(
         since=since,
         ws_options=WSOptions(open_timeout=1, idle_timeout=None, compression="deflate"),
         options=RequestOptions(),
-        session_options=SessionOptions(max_network_sends=2),
+        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(session, WebSocketSession[ClientMessage, ServerMessage])
     session.send(message)

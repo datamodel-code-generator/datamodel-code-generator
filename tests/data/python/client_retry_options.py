@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, get_type_hints
 from uuid import UUID
 
 from tests.data.python.client_runtime import Exchange, arecord, describe, raw_response, record, run
-from tests.data.python.client_transports import Adapter
 from tests.data.python.fixture_native import NativeFixture
 from tests.data.python.fixture_server import FixtureServer, _contexts
 
@@ -80,7 +79,7 @@ def _invalid_values(options: ModuleType, lines: list[str]) -> None:
                     f"{owner.__name__} {name} {value!r}",
                     lambda owner=owner, name=name, value=value: owner(**{name: value}),
                 )
-    for owner, name in ((options.RetryOptions, "jitter"), (options.TransportOptions, "retry_owner")):
+    for owner, name in ((options.RetryOptions, "jitter"),):
         for value in (None, [], "automatic"):
             record(
                 lines,
@@ -166,11 +165,8 @@ def _key_value(options: ModuleType, errors: ModuleType, lines: list[str], value:
         lines.extend((
             f"  key value {value!r} ! {describe(error)}",
             (
-                f"  rejected key attempts={error.resource_attempt_count} redirects={error.redirect_count}"
-                f" auth={error.auth_exchange_count} sends={error.network_send_count}"
-                f" budget={error.network_send_budget_used} auth_budget={error.auth_exchange_budget_used}"
-                f" refresh_ids={error.auth_refresh_ids} pending={error.auth_refresh_pending}"
-                f" wire={error.wire_send_count} info={error.info}"
+                f"  rejected key attempts={error.attempt_count} elapsed={error.elapsed}"
+                f" request={error.request_id} info={error.info}"
             ),
         ))
         return
@@ -263,7 +259,6 @@ def _records(options: ModuleType, lines: list[str]) -> None:
             max_connections=0,
             max_keepalive_connections=0,
             keepalive_expiry=0,
-            retry_owner="transport",
         ),
     )
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -316,10 +311,7 @@ def _records(options: ModuleType, lines: list[str]) -> None:
     ))
     for owner in (options.ClientOptions, options.RequestOptions):
         value = owner()
-        omitted = tuple(
-            getattr(value, name) is options.UNSET
-            for name in ("retry", "redirects", "idempotency_key", "max_network_sends")
-        )
+        omitted = tuple(getattr(value, name) is options.UNSET for name in ("retry", "redirects", "idempotency_key"))
         lines.append(f"  option omitted {owner.__name__}={omitted}")
 
 
@@ -391,9 +383,9 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     with (
         exchange.client() as native,
         package.Client(http_client=native, options=client) as api,
-        api.with_options(options.RequestOptions(retry=options.RetryOptions(max_retries=2))) as first,
-        first.with_options(options.RequestOptions(retry=options.RetryOptions(max_retry_after=None))) as view,
     ):
+        first = api.with_options(options.RequestOptions(retry=options.RetryOptions(max_retries=2)))
+        view = first.with_options(options.RequestOptions(retry=options.RetryOptions(max_retry_after=None)))
         record(
             lines,
             "retry nested client/view/view/call",
@@ -409,13 +401,13 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             http_client=native, options=options.ClientOptions(retry=options.RetryOptions(max_delay=20))
         ) as api,
     ):
-        with api.with_options(options.RequestOptions(retry=options.RetryOptions(initial_delay=10))) as view:
-            record(lines, "partial delay inherits larger maximum", view.retry.get_safe)
-            record(
-                lines,
-                "invalid delay after request merge",
-                lambda: view.retry.get_safe(options=options.RequestOptions(retry=options.RetryOptions(max_delay=5))),
-            )
+        view = api.with_options(options.RequestOptions(retry=options.RetryOptions(initial_delay=10)))
+        record(lines, "partial delay inherits larger maximum", view.retry.get_safe)
+        record(
+            lines,
+            "invalid delay after request merge",
+            lambda: view.retry.get_safe(options=options.RequestOptions(retry=options.RetryOptions(max_delay=5))),
+        )
         record(
             lines,
             "invalid delay after view merge",
@@ -439,24 +431,18 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
         retry=options.RetryOptions(max_retries=0, initial_delay=0, max_delay=0, jitter="none"),
         redirects=options.RedirectOptions(max_redirects=2),
     )
-    with (
-        exchange.client() as native,
-        package.Client(http_client=native, options=client) as api,
-        api.with_options(options.RequestOptions(redirects=options.RedirectOptions(enabled=True))) as view,
-    ):
+    with exchange.client() as native, package.Client(http_client=native, options=client) as api:
+        view = api.with_options(options.RequestOptions(redirects=options.RedirectOptions(enabled=True)))
         record(
             lines,
-            "derived cap uses final retry and redirect fields",
+            "redirects and a retry within the final fields",
             lambda: (
                 (
                     response := view.retry.with_response.get_safe(
                         options=options.RequestOptions(retry=options.RetryOptions(max_retries=1))
                     )
                 ).data,
-                response.info.resource_attempt_count,
-                response.info.redirect_count,
-                response.info.network_send_count,
-                response.info.network_send_budget_used,
+                response.info.attempt_count,
             ),
         )
     lines.append(f"  merged redirect pending responses={len(exchange.responders)}")
@@ -474,11 +460,8 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             allowed_origins=("https://other.example.com",),
         ),
     )
-    with (
-        exchange.client() as native,
-        package.Client(http_client=native, options=client) as api,
-        api.with_options(options.RequestOptions(redirects=options.RedirectOptions(enabled=True))) as view,
-    ):
+    with exchange.client() as native, package.Client(http_client=native, options=client) as api:
+        view = api.with_options(options.RequestOptions(redirects=options.RedirectOptions(enabled=True)))
         record(
             lines,
             "redirect nested permissions",
@@ -488,44 +471,6 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             ),
         )
     lines.append(f"  merged redirect permissions pending responses={len(exchange.responders)}")
-
-
-def _budgets(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
-    for label, inherited, retries, cap in (
-        ("derived defaults", options.UNSET, options.UNSET, options.UNSET),
-        ("derived disabled retry", options.UNSET, 0, options.UNSET),
-        ("explicit one inherited", 1, 4, options.UNSET),
-        ("uncapped inherited", None, 1, options.UNSET),
-        ("zero override", None, 2, 0),
-        ("seven inherited", 7, 9, options.UNSET),
-        ("explicit call replaces one", 1, 2, None),
-    ):
-        exchange = Exchange(lines)
-        exchange.respond(*(raw_response(503, b"unavailable", "text/plain") for _ in range(12)))
-        client = options.ClientOptions(
-            max_network_sends=inherited,
-            retry=options.RetryOptions(initial_delay=0, max_delay=0, jitter="none"),
-        )
-        with (
-            exchange.client() as native,
-            package.Client(http_client=native, options=client) as api,
-            api.with_options(options.RequestOptions(max_network_sends=options.UNSET)) as view,
-        ):
-            try:
-                view.retry.get_safe(
-                    options=options.RequestOptions(
-                        max_network_sends=cap, retry=options.RetryOptions(max_retries=retries)
-                    )
-                )
-            except errors.SDKError as error:
-                lines.append(
-                    f"  budget {label}={type(error).__name__} attempts={error.resource_attempt_count}"
-                    f" sends={error.network_send_count} used={error.network_send_budget_used}"
-                    f" stop={getattr(error, 'retry_stop_reason', None)}"
-                )
-            else:
-                lines.append(f"  budget {label}=unexpected success")
-        lines.append(f"  budget {label} arrivals={12 - len(exchange.responders)}")
 
 
 def _vendor_headers(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -543,11 +488,8 @@ def _vendor_headers(package: ModuleType, options: ModuleType, lines: list[str]) 
             raw_response(200, b"accepted", "text/plain"),
         )
         client = options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_delay=0, jitter="none"))
-        with (
-            exchange.client() as native,
-            package.Client(http_client=native, options=client) as api,
-            api.with_options(options.RequestOptions(retry=configured)) as view,
-        ):
+        with exchange.client() as native, package.Client(http_client=native, options=client) as api:
+            view = api.with_options(options.RequestOptions(retry=configured))
             record(
                 lines,
                 f"vendor {label}",
@@ -624,11 +566,10 @@ def _key_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> No
     with (
         exchange.client() as native,
         package.Client(
-            http_client=native,
-            options=options.ClientOptions(idempotency_key=key, retry=client.retry),
+            http_client=native, options=options.ClientOptions(idempotency_key=key, retry=client.retry)
         ) as api,
-        api.with_options(options.RequestOptions()) as view,
     ):
+        view = api.with_options(options.RequestOptions())
         record(
             lines,
             "caller key inherited and retained through retry",
@@ -644,8 +585,8 @@ def _key_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> No
         package.Client(
             http_client=native, options=options.ClientOptions(idempotency_key=options.IdempotencyKey("unused"))
         ) as api,
-        api.with_options(options.RequestOptions(idempotency_key=None)) as view,
     ):
+        view = api.with_options(options.RequestOptions(idempotency_key=None))
         record(
             lines,
             "view clears caller key",
@@ -723,7 +664,6 @@ def _key_wire(package: ModuleType, options: ModuleType, lines: list[str], *, asy
 
 
 def _transports(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    transport_module = importlib.import_module(f"{package.__name__}.transports")
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     changes = (
         ("verify", False),
@@ -746,14 +686,6 @@ def _transports(package: ModuleType, options: ModuleType, lines: list[str]) -> N
                     options=options.ClientOptions(transport=options.TransportOptions(**{name: value})),
                 ).close(),
             )
-            record(
-                lines,
-                f"adapter transport conflict {name}",
-                lambda name=name, value=value: package.Client(
-                    transport_adapter=Adapter(transport_module, lines),
-                    options=options.ClientOptions(transport=options.TransportOptions(**{name: value})),
-                ).close(),
-            )
         defaults = options.TransportOptions(
             verify=True,
             ssl_context=None,
@@ -763,45 +695,12 @@ def _transports(package: ModuleType, options: ModuleType, lines: list[str]) -> N
             max_connections=100,
             max_keepalive_connections=20,
             keepalive_expiry=5,
-            retry_owner="sdk",
         )
         record(
             lines,
             "borrowed accepts explicit construction defaults",
             lambda: package.Client(http_client=native, options=options.ClientOptions(transport=defaults)).close(),
         )
-        record(
-            lines,
-            "adapter accepts explicit construction defaults",
-            lambda: package.Client(
-                transport_adapter=Adapter(transport_module, lines), options=options.ClientOptions(transport=defaults)
-            ).close(),
-        )
-        transport_owned = options.ClientOptions(transport=options.TransportOptions(retry_owner="transport"))
-        record(
-            lines,
-            "borrowed native rejects transport retry owner",
-            lambda: package.Client(http_client=native, options=transport_owned).close(),
-        )
-        record(
-            lines,
-            "owned native rejects transport retry owner",
-            lambda: package.Client(http_client=native, http_client_ownership="owned", options=transport_owned).close(),
-        )
-    record(lines, "SDK native rejects transport retry owner", lambda: package.Client(options=transport_owned).close())
-    record(
-        lines,
-        "adapter accepts transport retry owner",
-        lambda: package.Client(transport_adapter=Adapter(transport_module, lines), options=transport_owned).close(),
-    )
-    record(
-        lines,
-        "owned adapter accepts transport retry owner",
-        lambda: package.Client(
-            transport_adapter=transport_module.OwnedTransportAdapter(Adapter(transport_module, lines)),
-            options=transport_owned,
-        ).close(),
-    )
 
     arrivals: list[tuple[str, str]] = []
 
@@ -846,7 +745,6 @@ def retry_options(package: ModuleType, lines: list[str]) -> None:
     _records(options, lines)
     _imports(package, lines)
     _merges(package, options, lines)
-    _budgets(package, options, errors, lines)
     _vendor_headers(package, options, lines)
     _key_calls(package, options, lines)
     _key_wire(package, options, lines, asynchronous=False)

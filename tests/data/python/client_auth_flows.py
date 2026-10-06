@@ -41,40 +41,14 @@ def _bearer(auth: ModuleType, value: str = "token", **fields: object) -> object:
 def _failure(error: BaseException) -> tuple[object, ...]:
     return (
         type(error).__name__,
-        getattr(error, "condition", None),
-        getattr(error, "callback", None),
+        getattr(error, "reason", None),
         getattr(error, "retry_stop_reason", None),
         type(getattr(error, "cause", None)).__name__,
         tuple(type(item).__name__ for item in getattr(error, "secondary_errors", ())),
-        getattr(error, "network_send_count", None),
+        getattr(error, "attempt_count", None),
         getattr(getattr(error, "delivery_state", None), "value", None),
         len(getattr(error, "body_bytes", b"") or b""),
     )
-
-
-def _cleanup(error: BaseException) -> tuple[object, ...]:
-    return (
-        type(error).__name__,
-        getattr(error, "pending_calls", None),
-        getattr(error, "pending_providers", None),
-        type(getattr(error, "cause", None)).__name__,
-    )
-
-
-def _closed(close: Callable[[], object]) -> tuple[object, ...]:
-    try:
-        close()
-    except Exception as error:  # noqa: BLE001
-        return _cleanup(error)
-    return ("closed",)
-
-
-async def _aclosed(close: Callable[[], Any]) -> tuple[object, ...]:
-    try:
-        await close()
-    except Exception as error:  # noqa: BLE001
-        return _cleanup(error)
-    return ("closed",)
 
 
 def _outcome(call: Callable[[], object]) -> tuple[object, ...]:
@@ -296,61 +270,6 @@ class _AsyncHook(_Hook):
         _Hook.on_event(self, event)
 
 
-class _Owned:
-    """A closeable provider that counts its closes and fails them when told to."""
-
-    def __init__(self, auth: ModuleType, failure: Exception | None = None) -> None:
-        self.auth = auth
-        self.failure = failure
-        self.closes = 0
-
-    def get(self, context: object) -> object:
-        del context
-        return _bearer(self.auth)
-
-    def close(self) -> None:
-        self.closes += 1
-        if self.failure is not None:
-            raise self.failure
-
-
-class _AsyncOwned:
-    """An asynchronous closeable provider whose token request, outlasting a cancellation, and close wait for the test."""
-
-    def __init__(
-        self,
-        auth: ModuleType,
-        failure: Exception | None = None,
-        *,
-        getting: asyncio.Event | None = None,
-        closing: asyncio.Event | None = None,
-    ) -> None:
-        self.auth = auth
-        self.failure = failure
-        self.getting = getting
-        self.closing = closing
-        self.gets = 0
-        self.closes = 0
-
-    async def get(self, context: object) -> object:
-        del context
-        self.gets += 1
-        if (getting := self.getting) is not None:
-            try:
-                await getting.wait()
-            except asyncio.CancelledError:
-                await getting.wait()
-                raise
-        return _bearer(self.auth)
-
-    async def aclose(self) -> None:
-        self.closes += 1
-        if self.closing is not None:
-            await self.closing.wait()
-        if self.failure is not None:
-            raise self.failure
-
-
 class _Offset(tzinfo):
     def utcoffset(self, dt: datetime | None) -> timedelta:
         del dt
@@ -494,7 +413,7 @@ def _placement(package: ModuleType, auth: ModuleType, options: ModuleType, lines
 def _environment(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
     provider = auth.EnvironmentCredentialProvider("DCG_AUTH_FLOWS_TOKEN", kind="bearer")
     context = auth.CredentialContext(
-        scheme="bearer", required_scopes=(), audience=None, origin=_ORIGIN, deadline=None, cancel_token=None
+        scheme="bearer", required_scopes=(), audience=None, origin=_ORIGIN, deadline=None
     )
     os.environ["DCG_AUTH_FLOWS_TOKEN"] = "first"
     try:
@@ -1165,64 +1084,63 @@ async def _ahooks(package: ModuleType, auth: ModuleType, options: ModuleType, li
         lines.append(f"    callbacks={credentials.calls} events={hook.names}")
 
 
+class _Lifetime:
+    """A provider with a close method, which only its caller may call."""
+
+    def __init__(self, auth: ModuleType) -> None:
+        self.auth = auth
+        self.closes = 0
+
+    def get(self, context: object) -> object:
+        del context
+        return _bearer(self.auth)
+
+    def close(self) -> None:
+        self.closes += 1
+
+
+class _AsyncLifetime(_Lifetime):
+    async def get(self, context: object) -> object:  # ty: ignore[invalid-method-override]
+        return _Lifetime.get(self, context)
+
+    async def aclose(self) -> None:
+        self.closes += 1
+
+
 def _ownership(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    owned = auth.OwnedCredentialProvider
-    failing, closing, late = _Owned(auth, RuntimeError("close failed")), _Owned(auth), _Owned(auth)
+    provider = _Lifetime(auth)
     exchange = Exchange(lines)
+    exchange.respond(_ok(), _ok())
     with exchange.client() as native:
         api = package.Client(
-            http_client=native,
-            options=options.ClientOptions(
-                auth=auth.AuthConfig({"bearer": owned(failing), "bearer_alias": owned(closing)})
-            ),
+            http_client=native, options=options.ClientOptions(auth=auth.AuthConfig({"bearer": provider}))
         )
-        lines.append(f"  close with a failing owned provider = {_closed(api.close)}")
-        adopting = options.RequestOptions(auth=auth.AuthConfig({"bearer": owned(late)}))
-        record(lines, "adopt after close", lambda: _outcome(lambda: api.with_options(adopting)))
-        lines.append(f"  close again = {_closed(api.close)}")
-    lines.append(f"    closes={failing.closes, closing.closes, late.closes}")
-    adopted = _Owned(auth)
-    with exchange.client() as native:
-        api = package.Client(http_client=native)
-        view = api.with_options(options.RequestOptions())
-        view.close()
-        adopting = options.RequestOptions(auth=auth.AuthConfig({"bearer": owned(adopted)}))
-        record(lines, "adopt through a closed view", lambda: _outcome(lambda: view.with_options(adopting)))
-        lines.append(f"  close root = {_closed(api.close)}")
-    lines.append(f"    adopted closes={adopted.closes}")
+        view = api.with_options(options.RequestOptions(auth=auth.AuthConfig({"bearer_alias": provider})))
+        lines.append(f"  root call = {_outcome(api.auth.with_response.bearer)}")
+        api.close()
+        api.close()
+        lines.append(f"  call after close = {_outcome(view.auth.with_response.bearer)}")
+        lines.append(
+            f"    provider closes={provider.closes} borrowed closed={native.is_closed} view close={hasattr(view, 'close')}"
+        )
 
 
 async def _aownership(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    owned = auth.OwnedCredentialProvider
-    failing = _AsyncOwned(auth, RuntimeError("aclose failed"))
-    closing = asyncio.Event()
-    slow = _AsyncOwned(auth, closing=closing)
-    getting = asyncio.Event()
-    held = _AsyncOwned(auth, getting=getting)
+    provider = _AsyncLifetime(auth)
     exchange = Exchange(lines)
     exchange.respond(_ok())
     async with exchange.async_client() as native:
-
-        def client(provider: _AsyncOwned) -> Any:
-            return package.AsyncClient(
-                http_client=native,
-                options=options.ClientOptions(auth=auth.AuthConfig({"bearer": owned(provider)}), cleanup_timeout=0.05),
-            )
-
-        lines.append(f"  async aclose with a failing owned provider = {await _aclosed(client(failing).aclose)}")
-        api = client(slow)
-        lines.append(f"  async aclose outlived by an owned provider = {await _aclosed(api.aclose)}")
-        closing.set()
-        lines.append(f"  async aclose once the provider closed = {await _aclosed(api.aclose)}")
-        api = client(held)
-        call = asyncio.create_task(_aoutcome(api.auth.with_response.bearer))
-        while not held.gets:
-            await asyncio.sleep(0)
-        lines.append(f"  async aclose during a call outlasting it = {await _aclosed(api.aclose)}")
-        getting.set()
-        lines.append(f"  async outlasting call = {await call}")
-        lines.append(f"  async aclose once the call ended = {await _aclosed(api.aclose)}")
-    lines.append(f"    closes={failing.closes, slow.closes, held.closes}")
+        api = package.AsyncClient(
+            http_client=native, options=options.ClientOptions(auth=auth.AuthConfig({"bearer": provider}))
+        )
+        view = api.with_options(options.RequestOptions(auth=auth.AuthConfig({"bearer_alias": provider})))
+        lines.append(f"  async root call = {await _aoutcome(api.auth.with_response.bearer)}")
+        await api.aclose()
+        await api.aclose()
+        lines.append(f"  async call after close = {await _aoutcome(view.auth.with_response.bearer)}")
+        lines.append(
+            f"    provider closes={provider.closes} borrowed closed={native.is_closed} view close={hasattr(view, 'aclose')}"
+        )
 
 
 def _moved(location: str) -> Callable[[Any], Any]:

@@ -3,24 +3,20 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import datetime  # noqa: TC003 - Public annotations support get_type_hints().
 from enum import Enum
-from typing import ClassVar, Final, Generic, Literal, TypeAlias, get_args
+from typing import ClassVar, Final, Literal, TypeAlias, TypeGuard, get_args
 
-from typing_extensions import TypeIs, TypeVar
+from typing_extensions import TypedDict, TypeIs, Unpack
 
-from ..model_codecs.unset import UNSET, Unset
 from ..protocols.references import OperationRef
 from .responses import HeadersView, Response, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 
-E_co = TypeVar("E_co", covariant=True, default=object)
-T_co = TypeVar("T_co", covariant=True, default=object)
-
 RetryStopReason: TypeAlias = Literal[
+    "unknown_delivery",
     "status_not_retryable",
     "transport_not_retryable",
     "auth_unrefreshable",
-    "retry_owned_by_transport",
     "operation_never",
     "server_forbids_retry",
     "disabled",
@@ -28,8 +24,6 @@ RetryStopReason: TypeAlias = Literal[
     "auth_recovery_exhausted",
     "body_not_replayable",
     "unsafe_operation",
-    "network_budget_exhausted",
-    "parent_budget_exhausted",
     "server_delay_exceeds_limit",
     "deadline_insufficient",
     "client_closed",
@@ -42,6 +36,16 @@ DeadlinePhase: TypeAlias = Literal[
     "encode", "auth", "limiter", "sleep", "send", "decode", "stream", "cleanup", "unknown"
 ]
 AuthPhase: TypeAlias = Literal["connect", "read", "write", "pool", "validate", "unknown"]
+AuthReason: TypeAlias = Literal[
+    "provider_failed",
+    "provider_closed",
+    "token_expired",
+    "invalid_expiry",
+    "oauth_error",
+    "timeout",
+    "reauthorization_required",
+    "signing_failed",
+]
 OAuthErrorCode: TypeAlias = Literal[
     "invalid_request",
     "invalid_client",
@@ -49,17 +53,6 @@ OAuthErrorCode: TypeAlias = Literal[
     "unauthorized_client",
     "unsupported_grant_type",
     "invalid_scope",
-]
-AuthTimeoutKind: TypeAlias = Literal["phase", "provider"]
-ReauthorizationCondition: TypeAlias = Literal["invalid_grant", "no_refresh_token"]
-_ProtocolCondition: TypeAlias = Literal[
-    "unknown_field",
-    "invalid_value",
-    "missing_metadata",
-    "missing_adapter",
-    "wrong_capability",
-    "security_partition",
-    "binding_mismatch",
 ]
 _StoreAction: TypeAlias = Literal[
     "get",
@@ -72,6 +65,7 @@ _ACRONYM: Final = re.compile(r"([A-Z]+)([A-Z][a-z])")
 OAUTH_ERROR_CODES: Final[tuple[str, ...]] = get_args(OAuthErrorCode)
 MIN_STATUS: Final = 100
 MAX_STATUS: Final = 599
+_SERVER_ERROR: Final = 500
 _CAMEL: Final = re.compile(r"([a-z0-9])([A-Z])")
 
 
@@ -83,107 +77,94 @@ class DeliveryState(Enum):
     RESPONSE_STARTED = "RESPONSE_STARTED"
 
 
+class _CallMetadata(TypedDict, total=False):
+    delivery_state: DeliveryState | None
+    operation_id: str | None
+    call_id: str | None
+    parent_session_id: str | None
+    cause: BaseException | None
+    secondary_errors: tuple[BaseException, ...]
+    attempt_count: int
+    elapsed: float
+    completed_result: Response[object] | None
+
+
+class ErrorMetadata(_CallMetadata, total=False):
+    """The call metadata every SDK error accepts beside its own fields."""
+
+    info: ResponseInfo | None
+
+
+def _delivery_default(metadata: _CallMetadata, state: DeliveryState) -> None:
+    """Give an error without a delivery state, whether absent or None, its constructor's default."""
+    if metadata.get("delivery_state") is None:
+        metadata["delivery_state"] = state
+
+
 class SDKError(Exception):
-    """Base of every exception the client raises, with the identifiers and metadata of the failed call."""
+    """Base of every exception the client raises, with the identifiers and measurements of the failed call.
 
-    __slots__ = ("_counters",)
+    `reason` is a stable snake_case symbol; a success that a later hook failure interrupted stays in
+    `completed_result`.
+    """
 
-    _counters: tuple[int, int, int, int, int, int, tuple[str, ...], int, int | None]
     _reason_code: ClassVar[str | None] = None
 
     def __init__(  # noqa: PLR0913
         self,
         *,
+        reason: str | None = None,
+        delivery_state: DeliveryState | None = None,
         operation_id: str | None = None,
         call_id: str | None = None,
         parent_session_id: str | None = None,
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
+        attempt_count: int = 0,
+        elapsed: float = 0.0,
+        completed_result: Response[object] | None = None,
     ) -> None:
-        """Keep the call identifiers, the response metadata when one arrived, and the original cause."""
+        """Keep the call identifiers, the response metadata when one arrived, and the original cause.
+
+        Without a delivery state, an error with a response is RESPONSE_STARTED and one without is NOT_SENT until the
+        call that publishes it gives its own.
+        """
         super().__init__()
+        self.reason = reason
+        self.delivery_state = (
+            _error_delivery(delivery_state)
+            if delivery_state is not None
+            else DeliveryState.NOT_SENT
+            if info is None
+            else DeliveryState.RESPONSE_STARTED
+        )
         self.operation_id = operation_id
         self.call_id = call_id
         self.parent_session_id = parent_session_id
         self.info = info
         self.cause = cause
         self.secondary_errors = tuple(secondary_errors)
-
-        set_error_counters(
-            self,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
+        self.attempt_count = error_count(attempt_count, "attempt_count") if info is None else info.attempt_count
+        self.elapsed = error_time(elapsed, "elapsed") if info is None else info.elapsed
+        self.completed_result = completed_result
 
     @property
-    def resource_attempt_count(self) -> int:
-        """Return the resource attempts started."""
-        return self._counters[0]
-
-    @property
-    def redirect_count(self) -> int:
-        """Return the redirect hops followed."""
-        return self._counters[1]
-
-    @property
-    def auth_exchange_count(self) -> int:
-        """Return the authentication exchanges sent."""
-        return self._counters[2]
-
-    @property
-    def network_send_count(self) -> int:
-        """Return the transport sends started."""
-        return self._counters[3]
-
-    @property
-    def network_send_budget_used(self) -> int:
-        """Return the network send slots reserved."""
-        return self._counters[4]
-
-    @property
-    def auth_exchange_budget_used(self) -> int:
-        """Return the authentication exchange slots reserved."""
-        return self._counters[5]
-
-    @property
-    def auth_refresh_ids(self) -> tuple[str, ...]:
-        """Return the related authentication refresh identifiers."""
-        return self._counters[6]
-
-    @property
-    def auth_refresh_pending(self) -> int:
-        """Return the related authentication refreshes still pending."""
-        return self._counters[7]
-
-    @property
-    def wire_send_count(self) -> int | None:
-        """Return the wire sends observed, or None without sufficient adapter evidence."""
-        return self._counters[8]
+    def request_id(self) -> str | None:
+        """Return the request identifier the response carried, or None without one."""
+        return None if self.info is None else self.info.request_id
 
     @property
     def reason_code(self) -> str:
-        """Return the snake_case name of the exception class."""
-        return self._reason_code or _CAMEL.sub(r"\1_\2", _ACRONYM.sub(r"\1_\2", type(self).__name__)).lower()
+        """Return the class's fixed code, the stable reason, or the snake_case name of the exception class."""
+        return (
+            self._reason_code
+            or self.reason
+            or _CAMEL.sub(r"\1_\2", _ACRONYM.sub(r"\1_\2", type(self).__name__)).lower()
+        )
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return (("operation_id", self.operation_id), ("call_id", self.call_id))
+        return (("operation_id", self.operation_id), ("call_id", self.call_id), ("reason", self.reason))
 
     def __str__(self) -> str:
         """Name the class and safe call metadata only."""
@@ -209,41 +190,28 @@ def add_secondary(error: BaseException, *failures: BaseException) -> None:
             error.__dict__["__notes__"] = [note]
 
 
+def kept_primary(primary: BaseException, failure: BaseException) -> BaseException:
+    """Return what propagates after a cleanup failure.
+
+    An interruption replaces an ordinary error, names it in a note, and links it as its cause unless it has one; any
+    other failure stays beside the error already propagating.
+    """
+    if isinstance(primary, Exception) and not isinstance(failure, Exception):
+        add_secondary(failure, primary)
+        if failure.__cause__ is None:
+            failure.__cause__ = primary
+        return failure
+    add_secondary(primary, failure)
+    return primary
+
+
 def _is_notes(value: object) -> TypeIs[list[object]]:
     return isinstance(value, list)
 
 
-def set_error_counters(  # noqa: PLR0913
-    error: SDKError,
-    *,
-    resource_attempt_count: int = 0,
-    redirect_count: int = 0,
-    auth_exchange_count: int = 0,
-    network_send_count: int = 0,
-    network_send_budget_used: int = 0,
-    auth_exchange_budget_used: int = 0,
-    auth_refresh_ids: tuple[str, ...] = (),
-    auth_refresh_pending: int = 0,
-    wire_send_count: int | None = None,
-) -> None:
-    """Finalize an error's readonly counter snapshot before publishing it."""
-    counters = (
-        error_count(resource_attempt_count, "resource_attempt_count"),
-        error_count(redirect_count, "redirect_count"),
-        error_count(auth_exchange_count, "auth_exchange_count"),
-        error_count(network_send_count, "network_send_count"),
-        error_count(network_send_budget_used, "network_send_budget_used"),
-        error_count(auth_exchange_budget_used, "auth_exchange_budget_used"),
-        _error_ids(auth_refresh_ids),
-        error_count(auth_refresh_pending, "auth_refresh_pending"),
-        _error_optional_count(wire_send_count, "wire_send_count"),
-    )
-    object.__setattr__(error, "_counters", counters)  # noqa: PLC2801 - Finalize the readonly snapshot.
-
-
 def _condition(value: object) -> str:
     if not isinstance(value, str) or not _CONDITION.fullmatch(value):
-        msg = "A condition must be an SDK-defined lowercase symbol"
+        msg = "A reason must be an SDK-defined lowercase symbol"
         raise ValueError(msg)
     return value
 
@@ -289,10 +257,6 @@ def error_count(value: object, field: str) -> int:
     return value
 
 
-def _error_optional_count(value: object, field: str) -> int | None:
-    return None if value is None else error_count(value, field)
-
-
 def _error_delivery(value: object) -> DeliveryState:
     if not isinstance(value, DeliveryState):
         msg = "delivery_state must be a DeliveryState"
@@ -303,20 +267,6 @@ def _error_delivery(value: object) -> DeliveryState:
 def is_sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
     """Return whether a value is a tuple or a list."""
     return isinstance(value, (tuple, list))
-
-
-def _error_ids(value: object) -> tuple[str, ...]:
-    if is_sequence(value) and len(identifiers := tuple(item for item in value if isinstance(item, str))) == len(value):
-        return identifiers
-    msg = "auth_refresh_ids must contain only strings"
-    raise ValueError(msg)
-
-
-def _error_expiry(value: object) -> datetime | None:
-    if value is None or isinstance(value, datetime):
-        return value
-    msg = "expires_at must be a datetime or None"
-    raise ValueError(msg)
 
 
 def error_string(value: object, field: str, *, optional: bool = False) -> None:
@@ -335,1154 +285,136 @@ def _protocol_context(helper_id: object, operation: object) -> None:
 
 
 class ConfigurationError(SDKError):
-    """A setting or argument the client rejected before sending anything."""
-
-    _shows_field_path: ClassVar[bool] = True
+    """A setting, argument, or call the client refused: invalid options, a closed client, or a forbidden redirect."""
 
     def __init__(  # noqa: PLR0913
         self,
         *,
-        field_path: tuple[str, ...] = (),
-        condition: str = "invalid_value",
+        field_path: tuple[str | int, ...] = (),
+        reason: str = "invalid_value",
         source_uri: str | None = None,
         source_pointer: str | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep where the setting lives and which rule it broke."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.field_path = tuple(field_path)
-        self.condition = _condition(condition)
-        self.source_uri = source_uri
-        self.source_pointer = source_pointer
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        path = (("field_path", ".".join(self.field_path) or None),) if self._shows_field_path else ()
-        return (*super()._details(), *path, ("condition", self.condition))
-
-
-class AuthConfigurationError(ConfigurationError):
-    """Authentication settings are invalid before credential acquisition or sending."""
-
-    _shows_field_path = False
-
-
-class SigningConfigurationError(ConfigurationError):
-    """Signing metadata or body capabilities cannot satisfy the configured signer."""
-
-    _shows_field_path = False
-
-
-class ProtocolConfigurationError(ConfigurationError):
-    """Missing or inconsistent helper configuration, rejected before the helper performs I/O."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        field_path: tuple[str, ...],
-        condition: _ProtocolCondition,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
-        source_uri: str | None = None,
-        source_pointer: str | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
+        **metadata: Unpack[ErrorMetadata],
     ) -> None:
-        """Keep the configuration location, safe rejection category, and helper context."""
-        error_choice(
-            condition,
-            (
-                "unknown_field",
-                "invalid_value",
-                "missing_metadata",
-                "missing_adapter",
-                "wrong_capability",
-                "security_partition",
-                "binding_mismatch",
-            ),
-            "condition",
-        )
+        """Keep where the setting lives, which rule it broke, and the helper that refused it."""
         _protocol_context(helper_id, operation)
-        super().__init__(
-            field_path=field_path,
-            condition=condition,
-            source_uri=source_uri,
-            source_pointer=source_pointer,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
+        super().__init__(reason=_condition(reason), **metadata)
+        self.reason: str = reason
+        self.field_path = tuple(field_path)
+        self.source_uri = source_uri
+        self.source_pointer = source_pointer
         self.helper_id = helper_id
         self.operation = operation
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return tuple((name, value) for name, value in super()._details() if name != "field_path")
+        return (*super()._details(), ("field_path", ".".join(map(str, self.field_path)) or None))
 
 
-class RequestEncodingError(SDKError):
-    """An argument that its declared wire form cannot carry; the location never includes the value."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        location: tuple[str | int, ...] = (),
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the argument path that failed."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.location = tuple(location)
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("location", ".".join(map(str, self.location)) or None))
-
-
-BodySourceKind: TypeAlias = Literal["bytes", "file", "stream", "factory", "multipart"]
-
-
-class BodyNotReplayableError(SDKError):
-    """A body that cannot be sent again: a one-shot source already read, or one another call is reading."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        source_kind: BodySourceKind,
-        condition: Literal["one_shot", "consumed", "same_attempt", "concurrent", "digest_unavailable", "not_seekable"],
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the kind of body source and why it cannot be sent."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.source_kind: BodySourceKind = source_kind
-        self.condition = condition
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("source_kind", self.source_kind), ("condition", self.condition))
-
-
-class BodyChangedError(SDKError):
-    """A body that differs from what its source declared or first showed; its bytes are never sent again."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        source_kind: Literal["file", "factory", "multipart"],
-        check: Literal["stat", "length", "fingerprint", "digest"],
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the kind of body source and the check that found the difference."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.source_kind: Literal["file", "factory", "multipart"] = source_kind
-        self.check = check
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("source_kind", self.source_kind), ("check", self.check))
-
-
-class BodyFactoryError(SDKError):
-    """A body factory, file, or stream that failed while it was opened or read; the cause is its exception."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        attempt_index: int | None = None,
-        hop_index: int | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the attempt and redirect hop whose body failed."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.attempt_index = attempt_index
-        self.hop_index = hop_index
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("attempt_index", self.attempt_index), ("hop_index", self.hop_index))
-
-
-class SigningExecutionError(SDKError):
-    """A signing callback failed before the request was sent."""
-
-    __slots__ = ("_signer_index",)
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        signer_index: int | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the signer position and original callback failure without retaining signing inputs."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._signer_index = _error_optional_count(signer_index, "signer_index")
-
-    @property
-    def signer_index(self) -> int | None:
-        """Return the failed signer's zero-based position, when known."""
-        return self._signer_index
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("signer_index", self.signer_index))
-
-
-class AuthRefreshError(SDKError):
-    """Credential acquisition failed with safe provider state and observed delivery evidence."""
-
-    __slots__ = ("_delivery_state", "_phase")
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: AuthPhase = "unknown",
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the delivery evidence and the phase without exposing credential material."""
-        error_choice(phase, get_args(AuthPhase), "phase")
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._delivery_state = _error_delivery(delivery_state)
-        self._phase: AuthPhase = phase
-
-    @property
-    def delivery_state(self) -> DeliveryState:
-        """Return the observed delivery evidence for credential acquisition."""
-        return self._delivery_state
-
-    @property
-    def phase(
-        self,
-    ) -> AuthPhase:
-        """Return the credential acquisition phase that failed."""
-        return self._phase
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (
-            *super()._details(),
-            ("delivery_state", self.delivery_state.value),
-            ("phase", self.phase),
-        )
-
-
-class AuthProviderExecutionError(AuthRefreshError):
-    """An application credential provider raised an ordinary callback failure."""
-
-    __slots__ = ("_callback",)
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        callback: Literal["get", "invalidate", "refresh"],
-        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: AuthPhase = "unknown",
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Identify the failed callback while preserving its exact exception as the cause."""
-        error_choice(callback, ("get", "invalidate", "refresh"), "callback")
-        super().__init__(
-            delivery_state=delivery_state,
-            phase=phase,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._callback: Literal["get", "invalidate", "refresh"] = callback
-
-    @property
-    def callback(self) -> Literal["get", "invalidate", "refresh"]:
-        """Return the provider callback category that failed."""
-        return self._callback
-
-
-class TokenExpiredError(AuthRefreshError):
-    """Credential material has expired or carries an invalid expiry declaration."""
-
-    __slots__ = ("_condition", "_expires_at")
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        condition: Literal["expired", "nonpositive_expiry", "invalid_expiry"],
-        expires_at: datetime | None = None,
-        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: AuthPhase = "unknown",
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the expiry category and an actual datetime, never an invalid raw expiry value."""
-        error_choice(condition, ("expired", "nonpositive_expiry", "invalid_expiry"), "condition")
-        super().__init__(
-            delivery_state=delivery_state,
-            phase=phase,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._condition: Literal["expired", "nonpositive_expiry", "invalid_expiry"] = condition
-        self._expires_at = _error_expiry(expires_at)
-
-    @property
-    def condition(self) -> Literal["expired", "nonpositive_expiry", "invalid_expiry"]:
-        """Return the safe symbol identifying the expiry defect."""
-        return self._condition
-
-    @property
-    def expires_at(self) -> datetime | None:
-        """Return the declared expiry when it was a valid datetime."""
-        return self._expires_at
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("condition", self.condition))
-
-
-class OAuthExchangeError(AuthRefreshError):
-    """A token endpoint rejected an exchange, or an exchange failed where the SDK may try again later."""
-
-    __slots__ = ("_oauth_error", "_status_code")
-
-    _reason_code = "oauth_exchange_error"
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        status_code: int | None = None,
-        oauth_error: OAuthErrorCode | None = None,
-        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: AuthPhase = "unknown",
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the obtained status and the standard OAuth error code, never the endpoint's descriptions."""
-        if status_code is not None:
-            _error_status(status_code)
-        if oauth_error is not None:
-            error_choice(oauth_error, OAUTH_ERROR_CODES, "oauth_error")
-        super().__init__(
-            delivery_state=delivery_state,
-            phase=phase,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._status_code = status_code
-        self._oauth_error: OAuthErrorCode | None = oauth_error
-
-    @property
-    def status_code(self) -> int | None:
-        """Return the token endpoint's status, or None without an HTTP response."""
-        return self._status_code
-
-    @property
-    def oauth_error(
-        self,
-    ) -> OAuthErrorCode | None:
-        """Return the standard OAuth error code, or None without one."""
-        return self._oauth_error
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("status_code", self.status_code), ("oauth_error", self.oauth_error))
-
-
-class AuthTimeoutError(AuthRefreshError):
-    """A token endpoint exchange ran out of time before anything was sent, or its provider session expired."""
-
-    __slots__ = ("_effective_timeout", "_timeout_kind")
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        effective_timeout: float,
-        timeout_kind: AuthTimeoutKind,
-        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: AuthPhase = "unknown",
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the timeout that fired and whether it bounded one phase or the whole provider session."""
-        seconds = error_time(effective_timeout, "effective_timeout")
-        error_choice(timeout_kind, get_args(AuthTimeoutKind), "timeout_kind")
-        super().__init__(
-            delivery_state=delivery_state,
-            phase=phase,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._effective_timeout = seconds
-        self._timeout_kind: AuthTimeoutKind = timeout_kind
-
-    @property
-    def effective_timeout(self) -> float:
-        """Return the timeout in seconds that fired."""
-        return self._effective_timeout
-
-    @property
-    def timeout_kind(self) -> AuthTimeoutKind:
-        """Return whether one phase or the whole provider session timed out."""
-        return self._timeout_kind
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("timeout_kind", self.timeout_kind))
-
-
-class AuthReauthorizationRequiredError(AuthRefreshError):
-    """The credential cannot be renewed without a new authorization by its owner."""
-
-    __slots__ = ("_condition",)
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        condition: ReauthorizationCondition,
-        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: AuthPhase = "unknown",
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep why a new authorization is required."""
-        error_choice(condition, get_args(ReauthorizationCondition), "condition")
-        super().__init__(
-            delivery_state=delivery_state,
-            phase=phase,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._condition: ReauthorizationCondition = condition
-
-    @property
-    def condition(self) -> ReauthorizationCondition:
-        """Return why a new authorization is required."""
-        return self._condition
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("condition", self.condition))
-
-
-class AuthProviderClosedError(AuthRefreshError):
-    """The provider is closed and cannot supply credentials."""
-
-    __slots__ = ()
-
-
-class TransportError(SDKError):
+class APIConnectionError(SDKError):
     """A classified I/O failure of the HTTP transport, with how far the request got."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
-        delivery_state: DeliveryState,
-        phase: IOPhase = "unknown",
+        phase: IOPhase | DeadlinePhase = "unknown",
+        reason: str | None = None,
         retry_stop_reason: RetryStopReason | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
+        **metadata: Unpack[ErrorMetadata],
     ) -> None:
-        """Keep the delivery evidence and the I/O phase that failed."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.delivery_state = delivery_state
-        self.phase: IOPhase = phase
-        self.retry_stop_reason = retry_stop_reason
+        """Keep the delivery evidence and the phase that failed; without evidence the request may have been sent."""
+        _delivery_default(metadata, DeliveryState.MAYBE_SENT)
+        super().__init__(reason=reason, **metadata)
+        self.phase: IOPhase | DeadlinePhase = phase
+        self.retry_stop_reason: RetryStopReason | None = retry_stop_reason
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("delivery_state", self.delivery_state.value), ("phase", self.phase))
 
 
-class PhaseTimeoutError(TransportError):
-    """An I/O phase exceeded its own timeout before the logical deadline."""
+class APITimeoutError(APIConnectionError):
+    """An I/O phase exceeded its own timeout, or the call or stream exhausted its monotonic deadline.
 
-    __slots__ = ("_effective_timeout",)
+    A phase timeout keeps the cap that expired in `effective_timeout`; a deadline keeps its absolute monotonic
+    `deadline_at` and the reason `deadline_exceeded`.
+    """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
-        effective_timeout: float,
-        phase: Literal["connect", "read", "write", "pool"],
-        delivery_state: DeliveryState,
+        phase: IOPhase | DeadlinePhase = "unknown",
+        effective_timeout: float | None = None,
+        deadline_at: float | None = None,
+        reason: str | None = None,
         retry_stop_reason: RetryStopReason | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
+        **metadata: Unpack[ErrorMetadata],
     ) -> None:
-        """Keep the expired phase cap, delivery evidence, and native timeout cause."""
-        error_choice(phase, ("connect", "read", "write", "pool"), "phase")
-        super().__init__(
-            delivery_state=_error_delivery(delivery_state),
-            phase=phase,
-            retry_stop_reason=retry_stop_reason,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._effective_timeout = error_time(effective_timeout, "effective_timeout")
-
-    @property
-    def effective_timeout(self) -> float:
-        """Return the configured phase cap that expired, in seconds."""
-        return self._effective_timeout
+        """Keep the expired phase cap or deadline beside the delivery evidence."""
+        if reason == "deadline_exceeded" and deadline_at is None:
+            msg = "A deadline_exceeded timeout needs its deadline_at"
+            raise ValueError(msg)
+        super().__init__(phase=phase, reason=reason, retry_stop_reason=retry_stop_reason, **metadata)
+        self.effective_timeout = None if effective_timeout is None else error_time(effective_timeout, "timeout")
+        self.deadline_at = None if deadline_at is None else error_time(deadline_at, "deadline_at", nonnegative=False)
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("effective_timeout", self.effective_timeout))
 
 
-class DeadlineExceededError(SDKError):
-    """The call or stream exhausted its monotonic total budget."""
-
-    __slots__ = ("_deadline_at", "_delivery_state", "_elapsed", "_phase")
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        deadline_at: float,
-        elapsed: float,
-        delivery_state: DeliveryState,
-        phase: DeadlinePhase = "unknown",
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the absolute expiry, elapsed time, interrupted activity, and delivery evidence."""
-        error_choice(
-            phase, ("encode", "auth", "limiter", "sleep", "send", "decode", "stream", "cleanup", "unknown"), "phase"
-        )
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._deadline_at = error_time(deadline_at, "deadline_at", nonnegative=False)
-        self._elapsed = error_time(elapsed, "elapsed")
-        self._delivery_state = _error_delivery(delivery_state)
-        self._phase: DeadlinePhase = phase
-
-    @property
-    def deadline_at(self) -> float:
-        """Return the absolute monotonic deadline in seconds."""
-        return self._deadline_at
-
-    @property
-    def elapsed(self) -> float:
-        """Return the elapsed duration before the failure in seconds."""
-        return self._elapsed
-
-    @property
-    def delivery_state(self) -> DeliveryState:
-        """Return the request's delivery evidence at termination."""
-        return self._delivery_state
-
-    @property
-    def phase(self) -> DeadlinePhase:
-        """Return the activity interrupted by the deadline."""
-        return self._phase
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (
-            *super()._details(),
-            ("delivery_state", self.delivery_state.value),
-            ("phase", self.phase),
-        )
+def is_deadline(error: object) -> TypeGuard[APITimeoutError]:
+    """Return whether an error is an exhausted call or stream deadline rather than an I/O failure."""
+    return isinstance(error, APITimeoutError) and error.deadline_at is not None
 
 
-class RequestCancelledError(SDKError):
-    """An explicit cancellation token stopped the call; native cancellation keeps its original type."""
-
-    __slots__ = ("_delivery_state", "_source")
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        source: Literal["cancel_token", "parent_cancel_token"],
-        delivery_state: DeliveryState,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the observed token source and request delivery evidence."""
-        error_choice(source, ("cancel_token", "parent_cancel_token"), "source")
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._source: Literal["cancel_token", "parent_cancel_token"] = source
-        self._delivery_state = _error_delivery(delivery_state)
-
-    @property
-    def source(self) -> Literal["cancel_token", "parent_cancel_token"]:
-        """Return the explicit token source that requested cancellation."""
-        return self._source
-
-    @property
-    def delivery_state(self) -> DeliveryState:
-        """Return the request's delivery evidence at cancellation."""
-        return self._delivery_state
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("source", self.source), ("delivery_state", self.delivery_state.value))
+def is_phase_timeout(error: object) -> TypeGuard[APITimeoutError]:
+    """Return whether an error is an I/O phase that exceeded its own timeout."""
+    return isinstance(error, APITimeoutError) and error.deadline_at is None
 
 
-class BudgetExceededError(SDKError):
-    """The call could not reserve a network send within its configured budget."""
-
-    __slots__ = ("_budget_kind", "_limit", "_used")
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        budget_kind: Literal["network", "parent_network"],
-        limit: int,
-        used: int,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the exhausted budget and how many slots were already consumed."""
-        error_choice(budget_kind, ("network", "parent_network"), "budget_kind")
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._budget_kind: Literal["network", "parent_network"] = budget_kind
-        self._limit = error_count(limit, "limit")
-        self._used = error_count(used, "used")
-
-    @property
-    def budget_kind(self) -> Literal["network", "parent_network"]:
-        """Return the network budget that refused admission."""
-        return self._budget_kind
-
-    @property
-    def limit(self) -> int:
-        """Return the configured number of available sends."""
-        return self._limit
-
-    @property
-    def used(self) -> int:
-        """Return the send slots already reserved before this admission."""
-        return self._used
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("budget_kind", self.budget_kind), ("limit", self.limit), ("used", self.used))
+def is_transport(error: object) -> TypeGuard[APIConnectionError]:
+    """Return whether an error is a classified I/O failure of the transport, a phase timeout included."""
+    return isinstance(error, APIConnectionError) and not is_deadline(error)
 
 
-class LimiterExecutionError(SDKError):
-    """An application limiter failed while acquiring or releasing a permit."""
-
-    __slots__ = ("_action",)
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        action: Literal["acquire", "release"],
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the failing callback category without exposing the callback's values."""
-        error_choice(action, ("acquire", "release"), "action")
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._action: Literal["acquire", "release"] = action
-
-    @property
-    def action(self) -> Literal["acquire", "release"]:
-        """Return whether acquisition or release failed."""
-        return self._action
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("action", self.action))
+def is_http_error(error: object) -> TypeGuard[APIStatusError]:
+    """Return whether an error is a final 4xx or 5xx response rather than an unexpected status."""
+    return isinstance(error, APIStatusError) and error.reason != "unexpected_status"
 
 
-class HTTPStatusError(SDKError, Generic[E_co]):
-    """A final 4xx or 5xx response, with its bounded body and the decoded error payload when one is declared."""
+def is_client_closed(error: object) -> TypeGuard[ConfigurationError]:
+    """Return whether an error refused a call because its client or view is closing or closed."""
+    return isinstance(error, ConfigurationError) and error.reason == "client_closed"
+
+
+_CALL_STATES: Final = frozenset({"client_closed", "redirect_refused", "response_consumed"})
+
+
+def is_auth_classified(error: object) -> bool:
+    """Return whether a credential or signing callback's failure is already classified.
+
+    It is when the callback raised an auth failure, or a refused setting rather than the state of a call it made.
+    """
+    return isinstance(error, AuthError) or (isinstance(error, ConfigurationError) and error.reason not in _CALL_STATES)
+
+
+def is_hook_failure(error: object) -> TypeGuard[SDKError]:
+    """Return whether an error is a hook's failure, which stops the call."""
+    return type(error) is SDKError and error.reason == "hook_failed"
+
+
+def redirect_refused(**metadata: Unpack[ErrorMetadata]) -> ConfigurationError:
+    """Return the failure of a redirect that cannot be followed safely; no redirect body is retained."""
+    _delivery_default(metadata, DeliveryState.RESPONSE_STARTED)
+    return ConfigurationError(field_path=("redirects",), reason="redirect_refused", **metadata)
+
+
+class APIStatusError(SDKError):
+    """A final status the operation does not declare as a success, with its bounded body.
+
+    `body` is the payload decoded with the operation's declared error schema for the status, or the bounded raw bytes
+    when none is declared or it did not decode; the decode failure is then the cause.
+    """
 
     info: ResponseInfo
 
@@ -1490,56 +422,20 @@ class HTTPStatusError(SDKError, Generic[E_co]):
         self,
         *,
         info: ResponseInfo,
-        error_data: E_co | None = None,
-        error_decoded: bool = False,
+        body: object = None,
         body_bytes: bytes = b"",
         truncated: bool = False,
-        error_decode_error: BaseException | None = None,
+        reason: str | None = None,
         retry_stop_reason: RetryStopReason | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
+        **metadata: Unpack[_CallMetadata],
     ) -> None:
-        """Keep the response metadata, the bounded body, and the error payload or why it did not decode."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._error_data = error_data
-        self.error_decoded = error_decoded
+        """Keep the response metadata, the decoded or raw body, and the bounded body bytes."""
+        _delivery_default(metadata, DeliveryState.RESPONSE_STARTED)
+        super().__init__(info=info, reason=reason, **metadata)
+        self.body = body
         self.body_bytes = body_bytes
         self.truncated = truncated
-        self.error_decode_error = error_decode_error
-        self.retry_stop_reason = retry_stop_reason
-
-    @property
-    def error_data(self) -> E_co | None:
-        """Return the decoded error payload, or None when none was declared or decoded."""
-        return self._error_data
+        self.retry_stop_reason: RetryStopReason | None = retry_stop_reason
 
     @property
     def status_code(self) -> int:
@@ -1560,361 +456,191 @@ class HTTPStatusError(SDKError, Generic[E_co]):
         )
 
 
-class UnexpectedStatusError(SDKError):
-    """A final status the operation does not declare as a success or an error, such as an undeclared 3xx."""
+class BadRequestError(APIStatusError):
+    """A final 400 response."""
 
-    info: ResponseInfo
+
+class AuthenticationError(APIStatusError):
+    """A final 401 response."""
+
+
+class PermissionDeniedError(APIStatusError):
+    """A final 403 response."""
+
+
+class NotFoundError(APIStatusError):
+    """A final 404 response."""
+
+
+class ConflictError(APIStatusError):
+    """A final 409 response."""
+
+
+class UnprocessableEntityError(APIStatusError):
+    """A final 422 response."""
+
+
+class RateLimitError(APIStatusError):
+    """A final 429 response."""
+
+
+class InternalServerError(APIStatusError):
+    """A final 5xx response."""
+
+
+_STATUS_ERRORS: Final[dict[int, type[APIStatusError]]] = {
+    400: BadRequestError,
+    401: AuthenticationError,
+    403: PermissionDeniedError,
+    404: NotFoundError,
+    409: ConflictError,
+    422: UnprocessableEntityError,
+    429: RateLimitError,
+}
+
+
+def status_error(status: int) -> type[APIStatusError]:
+    """Return the exception class of a final status that the operation does not declare as a success."""
+    return InternalServerError if status >= _SERVER_ERROR else _STATUS_ERRORS.get(status, APIStatusError)
+
+
+class AuthError(SDKError):
+    """Credential acquisition, a token exchange, or request signing failed; no credential material is kept.
+
+    An OAuth rejection keeps the token endpoint's status and its standard error code, an expired token its expiry,
+    and a timeout the cap that fired.
+    """
 
     def __init__(  # noqa: PLR0913
         self,
         *,
-        info: ResponseInfo,
-        body_bytes: bytes = b"",
-        truncated: bool = False,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
+        reason: AuthReason,
+        phase: AuthPhase = "unknown",
+        status_code: int | None = None,
+        oauth_error: OAuthErrorCode | None = None,
+        expires_at: datetime | None = None,
+        effective_timeout: float | None = None,
+        **metadata: Unpack[ErrorMetadata],
     ) -> None:
-        """Keep the response metadata and the bounded body."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.body_bytes = body_bytes
-        self.truncated = truncated
-
-    @property
-    def status_code(self) -> int:
-        """Return the final status code."""
-        return self.info.status_code
-
-    @property
-    def headers(self) -> HeadersView:
-        """Return the final response headers."""
-        return self.info.headers
+        """Keep why credentials failed and the phase, never the provider's descriptions or secrets."""
+        error_choice(reason, get_args(AuthReason), "reason")
+        error_choice(phase, get_args(AuthPhase), "phase")
+        if status_code is not None:
+            _error_status(status_code)
+        if oauth_error is not None:
+            error_choice(oauth_error, OAUTH_ERROR_CODES, "oauth_error")
+        _delivery_default(metadata, DeliveryState.MAYBE_SENT)
+        super().__init__(reason=reason, **metadata)
+        self.reason: AuthReason = reason
+        self.phase: AuthPhase = phase
+        self.status_code = status_code
+        self.oauth_error: OAuthErrorCode | None = oauth_error
+        self.expires_at = expires_at
+        self.effective_timeout = None if effective_timeout is None else error_time(effective_timeout, "timeout")
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return (("status_code", self.info.status_code), *super()._details(), ("request_id", self.info.request_id))
+        return (
+            *super()._details(),
+            ("delivery_state", self.delivery_state.value),
+            ("phase", self.phase),
+            ("status_code", self.status_code),
+            ("oauth_error", self.oauth_error),
+        )
 
 
-class ResponseDecodeError(SDKError):
-    """A successful response whose body could not become the declared value."""
+class DecodeError(SDKError):
+    """A request argument its declared wire form cannot carry, or a response that cannot become its declared value.
 
-    info: ResponseInfo
+    `location` names the failing argument path or header, never its value; a response keeps its bounded body.
+    """
 
     def __init__(  # noqa: PLR0913
         self,
         *,
-        info: ResponseInfo,
+        reason: str,
+        direction: Literal["request", "response"] = "response",
+        location: tuple[str | int, ...] = (),
         body_bytes: bytes = b"",
         truncated: bool = False,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
+        media_type: str | None = None,
+        limit: int | None = None,
+        observed: int | None = None,
+        **metadata: Unpack[ErrorMetadata],
     ) -> None:
-        """Keep the response metadata, bounded body, and decode cause without its traceback."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=None if cause is None else cause.with_traceback(None),
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
+        """Keep which rule the body broke and where, with the bounded body of a response."""
+        super().__init__(reason=_condition(reason), **metadata)
+        self.reason: str = reason
+        self.direction: Literal["request", "response"] = direction
+        self.location = tuple(location)
         self.body_bytes = body_bytes
         self.truncated = truncated
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (("status_code", self.info.status_code), *super()._details(), ("request_id", self.info.request_id))
-
-
-class UnexpectedMediaTypeError(ResponseDecodeError):
-    """A successful response without a Content-Type, or with one the operation does not declare."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        info: ResponseInfo,
-        actual_media_type: str | None,
-        expected_media_types: tuple[str, ...],
-        body_bytes: bytes = b"",
-        truncated: bool = False,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the received media type and the declared ones."""
-        super().__init__(
-            info=info,
-            body_bytes=body_bytes,
-            truncated=truncated,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.actual_media_type = actual_media_type
-        self.expected_media_types = tuple(expected_media_types)
-
-
-class BodyProtocolError(ResponseDecodeError):
-    """A body where none is allowed, a missing body, or broken framing."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        info: ResponseInfo,
-        condition: Literal["forbidden_body", "missing_body", "invalid_framing", "invalid_part"],
-        body_bytes: bytes = b"",
-        truncated: bool = False,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep which structural rule the response broke."""
-        super().__init__(
-            info=info,
-            body_bytes=body_bytes,
-            truncated=truncated,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.condition = condition
-
-
-class DecodeError(ResponseDecodeError):
-    """A body that is not valid JSON, text, or the syntax of its media type."""
-
-
-class ResponseValidationError(ResponseDecodeError):
-    """A syntactically valid body that the schema or the native model rejects; nothing falls back to raw data."""
-
-
-class ResponseHeaderDecodeError(ResponseDecodeError):
-    """A declared response header that is missing, repeated, or invalid; no body is involved."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        info: ResponseInfo,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the response metadata and the cause, with an empty body."""
-        super().__init__(
-            info=info,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-
-
-class ResponseTooLargeError(SDKError):
-    """A body larger than its buffer limit; nothing is retried."""
-
-    info: ResponseInfo
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        info: ResponseInfo,
-        representation: Literal["decoded", "content_coded"],
-        limit: int,
-        observed_bytes: int,
-        body_prefix: bytes = b"",
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the limit, how many bytes arrived, and the bounded prefix."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.representation = representation
+        self.media_type = media_type
         self.limit = limit
-        self.observed_bytes = observed_bytes
-        self.body_prefix = body_prefix
+        self.observed = observed
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        if (info := self.info) is None:
+            return (*super()._details(), ("location", ".".join(map(str, self.location)) or None))
+        return (
+            ("status_code", info.status_code),
+            *super()._details(),
+            ("location", ".".join(map(str, self.location)) or None),
+            ("request_id", info.request_id),
+        )
+
+
+def body_failure(reason: str, cause: BaseException | None = None) -> DecodeError:
+    """Return the failure of a request body that cannot be sent: changed, already read, or without its digest."""
+    return DecodeError(reason=reason, direction="request", location=("body",), cause=cause)
+
+
+def too_large(info: ResponseInfo, limit: int, observed: int, operation_id: str | None = None) -> DecodeError:
+    """Return the failure of a body larger than its buffer limit; nothing is retried."""
+    return DecodeError(
+        reason="response_too_large",
+        info=info,
+        limit=limit,
+        observed=observed,
+        operation_id=operation_id,
+        call_id=info.call_id,
+        delivery_state=DeliveryState.RESPONSE_STARTED,
+    )
+
+
+def response_failure(
+    info: ResponseInfo,
+    reason: str,
+    body: bytes = b"",
+    cause: BaseException | None = None,
+    *,
+    media_type: str | None = None,
+) -> DecodeError:
+    """Return the decode failure of a received response, keeping its metadata and bounded body."""
+    return DecodeError(
+        reason=reason,
+        info=info,
+        body_bytes=body,
+        call_id=info.call_id,
+        cause=cause,
+        delivery_state=DeliveryState.RESPONSE_STARTED,
+        media_type=media_type,
+    )
 
 
 class ProtocolError(SDKError):
-    """Base of failures in received protocol data, such as a content coding that does not decode."""
+    """Base of failures in received protocol data of a helper."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
+        reason: str | None = None,
+        **metadata: Unpack[ErrorMetadata],
     ) -> None:
         """Keep the helper context beside the shared call metadata."""
         _protocol_context(helper_id, operation)
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
+        super().__init__(reason=reason, **metadata)
         self.helper_id = helper_id
         self.operation = operation
 
@@ -1944,42 +670,10 @@ class ProtocolSizeError(ProtocolError):
         unit: Literal["bytes", "items"],
         helper_id: str | None = None,
         operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
+        **metadata: Unpack[ErrorMetadata],
     ) -> None:
         """Keep which record overflowed, its limit, and how much arrived."""
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
+        super().__init__(helper_id=helper_id, operation=operation, **metadata)
         self.kind = kind
         self.limit = limit
         self.observed = observed
@@ -1992,18 +686,13 @@ class ProtocolSizeError(ProtocolError):
 class WebhookVerificationError(ProtocolError):
     """A webhook signature or authenticated fact that verification rejected before decoding its event."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         condition: Literal["malformed_signature", "invalid_signature", "missing_key", "timestamp_window"],
         helper_id: str | None = None,
         operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
+        **metadata: Unpack[ErrorMetadata],
     ) -> None:
         """Keep only the safe rejection category and shared context, never signature or key material."""
         error_choice(
@@ -2011,16 +700,7 @@ class WebhookVerificationError(ProtocolError):
             ("malformed_signature", "invalid_signature", "missing_key", "timestamp_window"),
             "condition",
         )
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
+        super().__init__(helper_id=helper_id, operation=operation, **metadata)
         self.condition = condition
 
     def _details(self) -> tuple[tuple[str, object], ...]:
@@ -2030,41 +710,19 @@ class WebhookVerificationError(ProtocolError):
 class ProtocolStoreError(ProtocolError):
     """A helper store operation that failed; the original cause and entry identity remain available."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         action: _StoreAction,
         entry_id: str | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
+        **metadata: Unpack[ErrorMetadata],
     ) -> None:
         """Keep the store action and private entry identity alongside the helper context."""
-        error_choice(
-            action,
-            (
-                "get",
-                "set",
-                "delete",
-            ),
-            "action",
-        )
+        error_choice(action, get_args(_StoreAction), "action")
         error_string(entry_id, "entry_id", optional=True)
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
+        super().__init__(helper_id=helper_id, operation=operation, **metadata)
         self.action = action
         self.entry_id = entry_id
 
@@ -2075,48 +733,16 @@ class ProtocolStoreError(ProtocolError):
 class UnsupportedContentCodingError(ProtocolError):
     """A response content coding that no decoder handles; its name stays out of the message."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         coding: str,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
+        **metadata: Unpack[ErrorMetadata],
     ) -> None:
         """Keep the coding the response named."""
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
+        super().__init__(helper_id=helper_id, operation=operation, **metadata)
         self.coding = coding
 
 
@@ -2133,21 +759,7 @@ class DecompressionLimitError(ProtocolSizeError):
         observed: int,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
+        **metadata: Unpack[ErrorMetadata],
     ) -> None:
         """Keep the decoding layer, its encoded bytes so far, and the ratio its limit came from."""
         super().__init__(
@@ -2157,457 +769,8 @@ class DecompressionLimitError(ProtocolSizeError):
             unit="bytes",
             helper_id=helper_id,
             operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
+            **metadata,
         )
         self.layer = layer
         self.encoded_bytes = encoded_bytes
         self.max_ratio = max_ratio
-
-
-class RedirectPolicyError(SDKError):
-    """A redirect that cannot be followed safely; no redirect body is retained."""
-
-    __slots__ = ("_delivery_state",)
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        delivery_state: DeliveryState,
-        body_available: Literal[False] = False,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep delivery evidence, obtained response metadata, and the original failure."""
-        if body_available is not False:
-            msg = "body_available must be False"
-            raise ValueError(msg)
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._delivery_state = _error_delivery(delivery_state)
-
-    @property
-    def delivery_state(self) -> DeliveryState:
-        """Return how far the request progressed before redirect handling stopped."""
-        return self._delivery_state
-
-    @property
-    def body_available(self) -> Literal[False]:
-        """Return False: redirect policy failures never retain a response body."""
-        return False
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("delivery_state", self.delivery_state.value))
-
-
-class AdapterContractError(SDKError):
-    """A transport that broke its contract, such as handing over a body something already read; nothing is retried."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep how far the request got."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.delivery_state = delivery_state
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("delivery_state", self.delivery_state.value))
-
-
-class AdapterExecutionError(SDKError):
-    """A transport adapter that failed outside its classified I/O errors, such as a programming error; no retry."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep how far the request got."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.delivery_state = delivery_state
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("delivery_state", self.delivery_state.value))
-
-
-class ClientClosedError(SDKError):
-    """A call to a client or view that is closing or closed, including one it stopped while running."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        state: Literal["CLOSING", "CLOSED"],
-        owner: Literal["client", "view"] = "client",
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the state of the client or view that refused the call."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.state = state
-        self.owner = owner
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("state", self.state), ("owner", self.owner))
-
-
-class CleanupError(SDKError):
-    """A close that ran out of its cleanup time or failed to release something; closing again waits again."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        pending_calls: int = 0,
-        pending_leases: int = 0,
-        pending_providers: int = 0,
-        timeout: float | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep what is still unfinished and the cleanup time that ran out."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.pending_calls = pending_calls
-        self.pending_leases = pending_leases
-        self.pending_providers = pending_providers
-        self.timeout = timeout
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (
-            *super()._details(),
-            ("pending_calls", self.pending_calls),
-            ("pending_leases", self.pending_leases),
-            ("timeout", self.timeout),
-        )
-
-
-class UnsupportedAsyncBackendError(SDKError):
-    """An async client awaited outside asyncio, or on another event loop than its first call's; nothing is sent."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        detected_backend: str | None = None,
-        expected_backend: Literal["asyncio"] = "asyncio",
-        loop_mismatch: bool = False,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the backend found, the one required, and whether only the event loop differs."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.detected_backend = detected_backend
-        self.expected_backend = expected_backend
-        self.loop_mismatch = loop_mismatch
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("loop_mismatch", self.loop_mismatch))
-
-
-class ResponseConsumedError(SDKError):
-    """A read of a streaming response that its earlier read, iteration, close, or failure already ruled out."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        state: Literal["streaming", "consumed", "closed", "failed"],
-        action: Literal["read", "text", "json", "iter_bytes", "iter_raw_bytes", "stream_to"],
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the state of the response and the action it refused."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.state = state
-        self.action = action
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("state", self.state), ("action", self.action))
-
-
-class HookExecutionError(SDKError, Generic[T_co]):
-    """A hook failed on an event, so the call sent nothing more; a success it had decoded stays available.
-
-    `sent` tells whether the call reached its transport at least once.
-    """
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        event_name: str,
-        sent: bool,
-        delivery_state: DeliveryState,
-        completed_result: Response[T_co] | Unset = UNSET,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep the event whose hook failed, how far the call got, and the success it completed, if any."""
-        super().__init__(
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.event_name = event_name
-        self.sent = sent
-        self.delivery_state = delivery_state
-        self.completed_result = completed_result
-
-    @property
-    def has_completed_result(self) -> bool:
-        """Return whether the call decoded its success before the hook failed."""
-        return not isinstance(self.completed_result, Unset)
-
-    def require_result(self) -> Response[T_co]:
-        """Return the success the call decoded before the hook failed, or raise ResultUnavailableError."""
-        if isinstance(result := self.completed_result, Unset):
-            raise ResultUnavailableError(operation_id=self.operation_id, call_id=self.call_id)
-        return result
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("event_name", self.event_name), ("sent", self.sent))
-
-
-class ResultUnavailableError(SDKError):
-    """No success was decoded before the hook failure, so there is none to require."""

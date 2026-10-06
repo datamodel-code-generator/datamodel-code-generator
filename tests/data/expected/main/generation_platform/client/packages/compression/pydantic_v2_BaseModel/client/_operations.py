@@ -17,54 +17,21 @@ from ._runtime.client.operations import (
     model_branch,
 )
 from ._runtime.model_codecs.parameters import ParameterPlan
-from .types.checks import (
-    CheckStatusErrorData,
-    CheckStatusHTTPError,
-    CheckStatusResponse,
-    CreateCheckErrorData,
-    CreateCheckHTTPError,
-    CreateCheckResponse,
-)
-from .types.events import (
-    ReopenEventsErrorData,
-    ReopenEventsHTTPError,
-    ReopenEventsResponse,
-    WatchErrorData,
-    WatchHTTPError,
-    WatchResponse,
-)
+from .types.checks import CheckStatusResponse, CreateCheckResponse
+from .types.events import ReopenEventsResponse, WatchResponse
 from .types.items import (
-    CreateItemErrorData,
-    CreateItemHTTPError,
     CreateItemResponse,
-    CreateNoteErrorData,
-    CreateNoteHTTPError,
     CreateNoteResponse,
-    FeedErrorData,
-    FeedHTTPError,
     FeedResponse,
-    ListItemsErrorData,
-    ListItemsHTTPError,
     ListItemsResponse,
-    PutBlobErrorData,
-    PutBlobHTTPError,
     PutBlobResponse,
-    SearchErrorData,
-    SearchHTTPError,
     SearchResponse,
 )
-from .types.jobs import (
-    CreateJobErrorData,
-    CreateJobHTTPError,
-    CreateJobResponse,
-    GetJobErrorData,
-    GetJobHTTPError,
-    GetJobResponse,
-)
+from .types.jobs import CreateJobResponse, GetJobResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
-OPERATION_0: Final[OperationPlan[CreateItemResponse, CreateItemErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[CreateItemResponse]] = OperationPlan(
     operation_id='createItem',
     method='POST',
     path='/items',
@@ -72,7 +39,6 @@ OPERATION_0: Final[OperationPlan[CreateItemResponse, CreateItemErrorData]] = Ope
     responses=ResponseDecoder(
         (model_branch('201', 'application/json', 'json', model_bindings.codec_1),),
         (),
-        CreateItemHTTPError,
     ),
     body=RequestBody(
         media=(
@@ -87,7 +53,7 @@ OPERATION_0: Final[OperationPlan[CreateItemResponse, CreateItemErrorData]] = Ope
     accepted_content_encodings=('gzip',),
 )
 
-OPERATION_1: Final[OperationPlan[ListItemsResponse, ListItemsErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[ListItemsResponse]] = OperationPlan(
     operation_id='listItems',
     method='GET',
     path='/items',
@@ -95,7 +61,6 @@ OPERATION_1: Final[OperationPlan[ListItemsResponse, ListItemsErrorData]] = Opera
     responses=ResponseDecoder(
         (model_branch('200', 'application/json', 'json', model_bindings.codec_3),),
         (),
-        ListItemsHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -111,12 +76,12 @@ OPERATION_1: Final[OperationPlan[ListItemsResponse, ListItemsErrorData]] = Opera
     accepted_content_encodings=('gzip',),
 )
 
-OPERATION_2: Final[OperationPlan[CreateNoteResponse, CreateNoteErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[CreateNoteResponse]] = OperationPlan(
     operation_id='createNote',
     method='POST',
     path='/notes',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), CreateNoteHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -130,12 +95,12 @@ OPERATION_2: Final[OperationPlan[CreateNoteResponse, CreateNoteErrorData]] = Ope
     ),
 )
 
-OPERATION_3: Final[OperationPlan[PutBlobResponse, PutBlobErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[PutBlobResponse]] = OperationPlan(
     operation_id='putBlob',
     method='PUT',
     path='/blobs',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), PutBlobHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -154,7 +119,7 @@ OPERATION_3: Final[OperationPlan[PutBlobResponse, PutBlobErrorData]] = Operation
     accepted_content_encodings=('gzip',),
 )
 
-OPERATION_4: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[SearchResponse]] = OperationPlan(
     operation_id='search',
     method='POST',
     path='/search',
@@ -162,7 +127,6 @@ OPERATION_4: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
     responses=ResponseDecoder(
         (model_branch('200', 'application/json', 'json', model_bindings.codec_8),),
         (),
-        SearchHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -189,7 +153,7 @@ OPERATION_4: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
     accepted_content_encodings=('gzip',),
 )
 
-OPERATION_5: Final[OperationPlan[FeedResponse, FeedErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[FeedResponse]] = OperationPlan(
     operation_id='feed',
     method='POST',
     path='/feed',
@@ -197,7 +161,6 @@ OPERATION_5: Final[OperationPlan[FeedResponse, FeedErrorData]] = OperationPlan(
     responses=ResponseDecoder(
         (model_branch('200', 'application/json', 'json', model_bindings.codec_10),),
         (),
-        FeedHTTPError,
     ),
     body=RequestBody(
         media=(
@@ -213,7 +176,7 @@ OPERATION_5: Final[OperationPlan[FeedResponse, FeedErrorData]] = OperationPlan(
     accepted_content_encodings=('gzip',),
 )
 
-OPERATION_6: Final[OperationPlan[CreateJobResponse, CreateJobErrorData]] = OperationPlan(
+OPERATION_6: Final[OperationPlan[CreateJobResponse]] = OperationPlan(
     operation_id='createJob',
     method='POST',
     path='/jobs',
@@ -221,7 +184,6 @@ OPERATION_6: Final[OperationPlan[CreateJobResponse, CreateJobErrorData]] = Opera
     responses=ResponseDecoder(
         (model_branch('202', 'application/json', 'json', model_bindings.codec_12),),
         (),
-        CreateJobHTTPError,
     ),
     body=RequestBody(
         media=(
@@ -237,7 +199,7 @@ OPERATION_6: Final[OperationPlan[CreateJobResponse, CreateJobErrorData]] = Opera
     accepted_content_encodings=('gzip',),
 )
 
-OPERATION_7: Final[OperationPlan[GetJobResponse, GetJobErrorData]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[GetJobResponse]] = OperationPlan(
     operation_id='getJob',
     method='GET',
     path='/jobs/{jobId}',
@@ -245,7 +207,6 @@ OPERATION_7: Final[OperationPlan[GetJobResponse, GetJobErrorData]] = OperationPl
     responses=ResponseDecoder(
         (model_branch('200', 'application/json', 'json', model_bindings.codec_14),),
         (),
-        GetJobHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -260,7 +221,7 @@ OPERATION_7: Final[OperationPlan[GetJobResponse, GetJobErrorData]] = OperationPl
     ),
 )
 
-OPERATION_8: Final[OperationPlan[CreateCheckResponse, CreateCheckErrorData]] = OperationPlan(
+OPERATION_8: Final[OperationPlan[CreateCheckResponse]] = OperationPlan(
     operation_id='createCheck',
     method='POST',
     path='/checks',
@@ -268,11 +229,10 @@ OPERATION_8: Final[OperationPlan[CreateCheckResponse, CreateCheckErrorData]] = O
     responses=ResponseDecoder(
         (model_branch('202', 'application/json', 'json', model_bindings.codec_15),),
         (),
-        CreateCheckHTTPError,
     ),
 )
 
-OPERATION_9: Final[OperationPlan[CheckStatusResponse, CheckStatusErrorData]] = OperationPlan(
+OPERATION_9: Final[OperationPlan[CheckStatusResponse]] = OperationPlan(
     operation_id='checkStatus',
     method='POST',
     path='/checks/status',
@@ -280,7 +240,6 @@ OPERATION_9: Final[OperationPlan[CheckStatusResponse, CheckStatusErrorData]] = O
     responses=ResponseDecoder(
         (model_branch('200', 'application/json', 'json', model_bindings.codec_17),),
         (),
-        CheckStatusHTTPError,
     ),
     body=RequestBody(
         media=(
@@ -296,7 +255,7 @@ OPERATION_9: Final[OperationPlan[CheckStatusResponse, CheckStatusErrorData]] = O
     accepted_content_encodings=('gzip',),
 )
 
-OPERATION_10: Final[OperationPlan[ReopenEventsResponse, ReopenEventsErrorData]] = OperationPlan(
+OPERATION_10: Final[OperationPlan[ReopenEventsResponse]] = OperationPlan(
     operation_id='reopenEvents',
     method='GET',
     path='/events',
@@ -304,7 +263,6 @@ OPERATION_10: Final[OperationPlan[ReopenEventsResponse, ReopenEventsErrorData]] 
     responses=ResponseDecoder(
         (model_branch('200', 'text/event-stream', 'text', model_bindings.codec_19),),
         (),
-        ReopenEventsHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -319,7 +277,7 @@ OPERATION_10: Final[OperationPlan[ReopenEventsResponse, ReopenEventsErrorData]] 
     ),
 )
 
-OPERATION_11: Final[OperationPlan[WatchResponse, WatchErrorData]] = OperationPlan(
+OPERATION_11: Final[OperationPlan[WatchResponse]] = OperationPlan(
     operation_id='watch',
     method='POST',
     path='/events',
@@ -327,7 +285,6 @@ OPERATION_11: Final[OperationPlan[WatchResponse, WatchErrorData]] = OperationPla
     responses=ResponseDecoder(
         (model_branch('200', 'text/event-stream', 'text', model_bindings.codec_22),),
         (),
-        WatchHTTPError,
     ),
     parameters=(
         ParameterSpec(

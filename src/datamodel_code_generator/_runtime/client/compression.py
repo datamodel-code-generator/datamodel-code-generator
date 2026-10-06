@@ -11,6 +11,7 @@ import zlib
 from typing import TYPE_CHECKING, Final
 
 from .bodies import EncodedAttempt
+from .body_sources import RequestCoding
 from .coding import CHUNK
 
 if TYPE_CHECKING:
@@ -145,3 +146,6 @@ class AsyncGzipSource:
     async def aclose(self) -> None:
         """Release the wrapped source."""
         await self._source.aclose()
+
+
+GZIP: Final = RequestCoding("gzip", gzipped_attempt, GzipSource, AsyncGzipSource)

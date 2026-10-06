@@ -64,7 +64,7 @@ def summary(page: Any) -> str:
     info = page.response
     return (
         f"[{','.join(item_id(item) for item in page.items)}] continuation={page.continuation!r} "
-        f"status={info.status_code} sends={info.network_send_count}"
+        f"status={info.status_code} attempts={info.attempt_count}"
     )
 
 

@@ -7,20 +7,19 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from types import MappingProxyType
-from typing import Generic, Literal, Protocol, TypeAlias, TypeVar, final
+from typing import Literal, Protocol, TypeAlias, final
 
 from typing_extensions import TypeIs
 
 from ..model_codecs.unset import UNSET, Unset
-from .errors import AuthConfigurationError, ConfigurationError, SigningConfigurationError
+from .errors import ConfigurationError
 from .responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
 from .scopes import scope_tuple
-from .timing import CancelToken, Deadline
+from .timing import Deadline
 
 __all__ = (
     "AccessToken",
     "ApiKeyCredential",
-    "AsyncCloseableCredentialProvider",
     "AsyncCredentialProvider",
     "AsyncEnvironmentCredentialProvider",
     "AsyncRefreshableTokenProvider",
@@ -30,13 +29,11 @@ __all__ = (
     "AuthConfig",
     "BasicCredential",
     "BearerCredential",
-    "CloseableCredentialProvider",
     "CredentialContext",
     "CredentialMaterial",
     "CredentialProvider",
     "CredentialProviderInput",
     "EnvironmentCredentialProvider",
-    "OwnedCredentialProvider",
     "RefreshableTokenProvider",
     "RequestSigner",
     "SignatureFields",
@@ -51,7 +48,7 @@ __all__ = (
 def checked_type(value: object, types: tuple[type[object], ...], path: tuple[str, ...]) -> None:
     """Refuse an auth value of another type at its field path."""
     if not isinstance(value, types):
-        raise AuthConfigurationError(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
 
 
 def checked_scopes(value: object, name: str) -> tuple[str, ...]:
@@ -59,22 +56,20 @@ def checked_scopes(value: object, name: str) -> tuple[str, ...]:
     try:
         return scope_tuple(value)
     except ValueError:
-        raise AuthConfigurationError(field_path=(name,), condition="invalid_scope") from None
+        raise ConfigurationError(field_path=(name,), reason="invalid_scope") from None
 
 
 def _sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
     return isinstance(value, (tuple, list))
 
 
-def _strings(
-    value: object, path: tuple[str, ...], error_type: type[ConfigurationError] = AuthConfigurationError
-) -> tuple[str, ...]:
+def _strings(value: object, path: tuple[str, ...]) -> tuple[str, ...]:
     if not _sequence(value):
-        raise error_type(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
     result: list[str] = []
     for item in value:
         if not isinstance(item, str):
-            raise error_type(field_path=path, condition="invalid_type")
+            raise ConfigurationError(field_path=path, reason="invalid_type")
         result.append(item)
     return tuple(result)
 
@@ -144,7 +139,7 @@ class BearerCredential:
 
 def _refresh_token(value: object) -> None:
     if value is not None and (not isinstance(value, str) or not value):
-        raise AuthConfigurationError(field_path=("refresh_token",), condition="invalid_value")
+        raise ConfigurationError(field_path=("refresh_token",), reason="invalid_value")
 
 
 @final
@@ -173,7 +168,6 @@ class CredentialContext:
     audience: str | None = field(repr=False)
     origin: str = field(repr=False)
     deadline: Deadline | None = field(repr=False)
-    cancel_token: CancelToken | None = field(repr=False)
 
     def __post_init__(self) -> None:
         """Freeze requirements and retain the caller's exact deadline and cancellation references."""
@@ -181,7 +175,6 @@ class CredentialContext:
         checked_type(self.audience, (str, type(None)), ("audience",))
         checked_type(self.origin, (str,), ("origin",))
         checked_type(self.deadline, (Deadline, type(None)), ("deadline",))
-        checked_type(self.cancel_token, (CancelToken, type(None)), ("cancel_token",))
         object.__setattr__(self, "required_scopes", checked_scopes(self.required_scopes, "required_scopes"))
 
 
@@ -233,39 +226,7 @@ class AsyncRefreshableTokenProvider(AsyncCredentialProvider, Protocol):
         ...
 
 
-class CloseableCredentialProvider(CredentialProvider, Protocol):
-    """A synchronous provider whose close capability permits explicit ownership transfer."""
-
-    def close(self) -> None:
-        """Close the provider and its owned resources."""
-        ...
-
-
-class AsyncCloseableCredentialProvider(AsyncCredentialProvider, Protocol):
-    """An asynchronous provider whose close capability permits explicit ownership transfer."""
-
-    async def aclose(self) -> None:
-        """Close the provider and its owned resources."""
-        ...
-
-
-_CloseableProvider: TypeAlias = CloseableCredentialProvider | AsyncCloseableCredentialProvider
-ProviderT_co = TypeVar("ProviderT_co", bound=_CloseableProvider, covariant=True)
-
-
-@dataclass(frozen=True, slots=True)
-class OwnedCredentialProvider(Generic[ProviderT_co]):
-    """A readonly provider reference whose ownership is transferred to the root client."""
-
-    provider: ProviderT_co = field(repr=False)
-
-
-CredentialProviderInput: TypeAlias = (
-    CredentialProvider
-    | AsyncCredentialProvider
-    | OwnedCredentialProvider[CloseableCredentialProvider]
-    | OwnedCredentialProvider[AsyncCloseableCredentialProvider]
-)
+CredentialProviderInput: TypeAlias = CredentialProvider | AsyncCredentialProvider
 
 
 @dataclass(frozen=True, slots=True)
@@ -280,9 +241,9 @@ class SignerCapabilities:
     def __post_init__(self) -> None:
         """Copy declared collections without choosing destinations or invoking a signer."""
         for name in ("allowed_origins", "managed_headers", "managed_query"):
-            object.__setattr__(self, name, _strings(getattr(self, name), (name,), SigningConfigurationError))
+            object.__setattr__(self, name, _strings(getattr(self, name), (name,)))
         if type(self.requires_body_digest) is not bool:
-            raise SigningConfigurationError(field_path=("requires_body_digest",), condition="invalid_type")
+            raise ConfigurationError(field_path=("requires_body_digest",), reason="invalid_type")
 
 
 @dataclass(frozen=True, slots=True)
@@ -301,14 +262,14 @@ class SigningInput:
 
 def _signature_pairs(value: object, name: str) -> tuple[tuple[str, str], ...]:
     if not _sequence(value):
-        raise SigningConfigurationError(field_path=(name,), condition="invalid_type")
+        raise ConfigurationError(field_path=(name,), reason="invalid_type")
     pairs: list[tuple[str, str]] = []
     for item in value:
-        match _strings(item, (name,), SigningConfigurationError):
+        match _strings(item, (name,)):
             case first, second:
                 pairs.append((first, second))
             case _:
-                raise SigningConfigurationError(field_path=(name,), condition="invalid_value")
+                raise ConfigurationError(field_path=(name,), reason="invalid_value")
     return tuple(pairs)
 
 
@@ -355,12 +316,8 @@ def _mapping(value: object) -> TypeIs[Mapping[object, object]]:
     return isinstance(value, Mapping)
 
 
-def _owned(value: object) -> TypeIs[OwnedCredentialProvider[_CloseableProvider]]:
-    return isinstance(value, OwnedCredentialProvider)
-
-
 def _provider(value: object) -> TypeIs[CredentialProviderInput]:
-    return _owned(value) or callable(getattr(value, "get", None))
+    return callable(getattr(value, "get", None))
 
 
 def _signer(value: object) -> TypeIs[RequestSigner | AsyncRequestSigner]:
@@ -370,11 +327,11 @@ def _signer(value: object) -> TypeIs[RequestSigner | AsyncRequestSigner]:
 def _credentials(value: object) -> Mapping[str, CredentialProviderInput]:
     path = ("auth", "credentials")
     if not _mapping(value):
-        raise AuthConfigurationError(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
     result: dict[str, CredentialProviderInput] = {}
     for name, provider in value.items():
         if not isinstance(name, str) or not _provider(provider):
-            raise AuthConfigurationError(field_path=path, condition="invalid_type")
+            raise ConfigurationError(field_path=path, reason="invalid_type")
         result[name] = provider
     return MappingProxyType(result)
 
@@ -382,18 +339,18 @@ def _credentials(value: object) -> Mapping[str, CredentialProviderInput]:
 def _signers(value: object) -> tuple[RequestSigner | AsyncRequestSigner, ...]:
     path = ("auth", "signers")
     if not _sequence(value):
-        raise AuthConfigurationError(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
     result: list[RequestSigner | AsyncRequestSigner] = []
     for signer in value:
         if not _signer(signer):
-            raise AuthConfigurationError(field_path=path, condition="invalid_type")
+            raise ConfigurationError(field_path=path, reason="invalid_type")
         result.append(signer)
     return tuple(result)
 
 
 def _count(value: object, path: tuple[str, ...]) -> None:
     if type(value) is not int or value < 0:
-        raise AuthConfigurationError(field_path=path, condition="out_of_range")
+        raise ConfigurationError(field_path=path, reason="out_of_range")
 
 
 @dataclass(frozen=True, slots=True)
@@ -406,7 +363,6 @@ class AuthConfig:
     send_on_anonymous: bool = field(default=False, kw_only=True)
     anonymous_schemes: tuple[str, ...] = field(default=(), kw_only=True, repr=False)
     signers: tuple[RequestSigner | AsyncRequestSigner, ...] = field(default=(), kw_only=True, repr=False)
-    _owned_providers: tuple[_CloseableProvider, ...] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         """Freeze configuration and collect owned identities without callbacks or mode conversion."""
@@ -418,24 +374,12 @@ class AuthConfig:
         if not isinstance(self.selection, Unset):
             _count(self.selection, ("auth", "selection"))
         checked_type(self.send_on_anonymous, (bool,), ("auth", "send_on_anonymous"))
-        owned: list[_CloseableProvider] = []
-        identities: set[int] = set()
-        for configured in credentials.values():
-            if _owned(configured) and (identity := id(provider := configured.provider)) not in identities:
-                identities.add(identity)
-                owned.append(provider)
-        object.__setattr__(self, "_owned_providers", tuple(owned))
-
-
-def owned_providers(config: AuthConfig) -> tuple[_CloseableProvider, ...]:
-    """Return the configuration's precomputed owned providers in declaration order."""
-    return config._owned_providers  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 def _material(value: object) -> CredentialMaterial:
     if isinstance(value, (ApiKeyCredential, BasicCredential, BearerCredential)):
         return value
-    raise AuthConfigurationError(field_path=("material",), condition="invalid_type")
+    raise ConfigurationError(field_path=("material",), reason="invalid_type")
 
 
 class _StaticCredentials:
@@ -502,18 +446,18 @@ class _EnvironmentCredentials:
     def __init__(self, variable_name: str, *, kind: Literal["api_key", "bearer"] = "api_key") -> None:
         checked_type(variable_name, (str,), ("variable_name",))
         if not variable_name or "=" in variable_name or "\0" in variable_name:
-            raise AuthConfigurationError(field_path=("variable_name",), condition="invalid_value")
+            raise ConfigurationError(field_path=("variable_name",), reason="invalid_value")
         match kind:
             case "api_key" | "bearer":
                 self._kind = kind
             case _:
-                raise AuthConfigurationError(field_path=("kind",), condition="invalid_value")
+                raise ConfigurationError(field_path=("kind",), reason="invalid_value")
         self._variable_name = variable_name
         self._last: tuple[str, TokenVersion] | None = None
 
     def _read(self) -> CredentialMaterial:
         if (value := os.environ.get(self._variable_name)) is None:
-            raise AuthConfigurationError(field_path=("variable_name",), condition="missing_value")
+            raise ConfigurationError(field_path=("variable_name",), reason="missing_value")
         if self._kind == "api_key":
             return ApiKeyCredential(value)
         if (last := self._last) is None or last[0] != value:

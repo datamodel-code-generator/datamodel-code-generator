@@ -395,7 +395,7 @@ class _Webhooks:
             window = (
                 "The verifier is called once, synchronously in both functions, and must authenticate the whole raw "
                 "body and every fact it returns; a result that is not a VerifiedSignature, lacks a fact this helper "
-                "requires, returns one it does not declare, or has a naive timestamp raises AdapterContractError "
+                "requires, returns one it does not declare, or has a naive timestamp raises ConfigurationError "
                 f"before decoding. {window}"
             )
         return [_Webhooks.function(module, event, key, window, asynchronous=mode) for mode in (False, True)]

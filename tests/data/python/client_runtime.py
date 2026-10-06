@@ -32,18 +32,14 @@ _ERROR_FIELDS: Final = (
     "delivery_state",
     "phase",
     "status_code",
-    "error_decoded",
-    "error_data",
-    "error_decode_error",
+    "body",
     "body_bytes",
     "truncated",
-    "actual_media_type",
-    "expected_media_types",
-    "representation",
+    "media_type",
     "kind",
     "unit",
     "limit",
-    "observed_bytes",
+    "observed",
     "coding",
     "cause",
 )
@@ -59,6 +55,10 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
         case.get("model"),
         case.get("config"),
     )
+
+
+class Stop(BaseException):
+    """An interruption that is not an Exception, as KeyboardInterrupt is."""
 
 
 class Exchange:

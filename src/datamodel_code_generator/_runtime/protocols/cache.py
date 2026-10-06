@@ -14,15 +14,16 @@ from hashlib import sha256
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
 from uuid import uuid4
 
+import httpx2
 from typing_extensions import TypeVar
 
 from ..client.client import stored_value
-from ..client.errors import ProtocolConfigurationError, add_secondary
+from ..client.errors import ConfigurationError, add_secondary
 from ..client.media import normalized
+from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
-from ..client.transports import PreparedRequest
 from ..model_codecs.unset import UNSET, Unset
 from .caches import CacheEntry, CacheResult, CacheSource
 from .errors import CacheProtocolError, CacheStoreError, CacheValidatorConflictError
@@ -32,7 +33,6 @@ from .records import canonical_json
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from ..client.bodies import EncodedAttempt
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.operations import OperationPlan
     from .caches import AsyncCacheStore, CacheStore
@@ -102,7 +102,7 @@ class CachePlan(Generic[T]):
 
     helper_id: str
     operation: OperationRef
-    call: OperationPlan[T, object]
+    call: OperationPlan[T]
     validator: Literal["etag", "last_modified", "both"]
     authenticated: bool
     fingerprint: str
@@ -131,6 +131,7 @@ class _Received(Generic[T]):
     headers: HeadersView
     source: CacheSource
     received: HeadersView
+    redirected: bool
 
 
 def _option(layers: tuple[object, ...], name: str, default: V) -> V:
@@ -250,7 +251,7 @@ class _Fetch(Generic[T]):
             prepared.credential_headers,
         )
         credentials, partition = prepared.credentials, prepared.partition
-        headers = self.request.headers
+        headers = HeadersView(request_fields(self.request))
         if (refused := next((name for name in _REFUSED if name in headers), None)) is not None:
             raise _invalid(plan, ("headers", refused))
         self.directives = _requested(plan, headers.get_all("cache-control"))
@@ -292,7 +293,7 @@ class _Fetch(Generic[T]):
         self.entry, plan = entry, self.plan
         if entry is None or entry.schema_fingerprint != plan.fingerprint or entry.status_code not in plan.statuses:
             return None
-        headers = self.request.headers
+        headers = HeadersView(request_fields(self.request))
         if entry.vary_values != tuple(headers.get_all(name) for name in entry.vary):
             return None
         for header, stored in _VALIDATORS:
@@ -337,47 +338,45 @@ class _Fetch(Generic[T]):
             elapsed=0.0,
             content_type=content,
             request_id=request_id,
-            resource_attempt_count=0,
-            network_send_count=0,
-            network_send_budget_used=0,
-            wire_send_count=0,
+            attempt_count=0,
         )
 
-    def conditional(self, entry: CacheEntry | None) -> PreparedRequest[EncodedAttempt]:
+    def conditional(self, entry: CacheEntry | None) -> httpx2.Request:
         """Return the request to send, adding the validator of a usable stale entry the caller did not give."""
         request = self.request
         self.requested_at = self.clock.time()
         validator = None if entry is None else _validator(self.plan, entry.headers)
         if validator is None or validator[0] in request.headers:
             return request
-        return PreparedRequest(
-            method=request.method,
-            url=request.url,
-            headers=HeadersView((*request.headers.items(), validator)),
-            body=request.body,
+        return httpx2.Request(
+            request.method,
+            request.url,
+            headers=wire_fields((*request_fields(request), validator)),
+            content=request.content,
+            extensions=dict(request.extensions),
         )
 
     @staticmethod
-    def modified(response: Response[T], body: bytes) -> tuple[Response[T], _Received[T]]:
+    def modified(response: Response[T], body: bytes, redirected: bool) -> tuple[Response[T], _Received[T]]:  # noqa: FBT001
         """Keep a decoded network response with its body and the headers an entry of it stores."""
         received = response.info.headers
         return response, _Received(
-            response, body, HeadersView(_without(received, _UNSTORED, len(body))), "network", received
+            response, body, HeadersView(_without(received, _UNSTORED, len(body))), "network", received, redirected
         )
 
-    def not_modified(self, info: ResponseInfo) -> tuple[Response[T], _Received[T]]:
+    def not_modified(self, info: ResponseInfo, redirected: bool) -> tuple[Response[T], _Received[T]]:  # noqa: FBT001
         """Decode the looked-up representation a 304 validates, with its headers merged, or refuse the 304.
 
         A 304 needs a usable entry, the request URL itself rather than a redirect's, and no validator other than the
         entry's; a strong and a weak ETag of the same opaque tag match.
         """
         entry, plan = self.usable, self.plan
-        if entry is None or info.redirect_count or not _validates(entry.headers, info.headers):
+        if entry is None or redirected or not _validates(entry.headers, info.headers):
             raise CacheProtocolError(helper_id=plan.helper_id, operation=plan.operation, info=info)
         headers = _merged(entry.headers, info.headers, len(entry.body))
         merged = self.info(entry.status_code, headers, info)
         response = Response(data=stored_value(plan.call, merged, entry.body, self.settings), info=merged)
-        return response, _Received(response, entry.body, headers, "revalidated", info.headers)
+        return response, _Received(response, entry.body, headers, "revalidated", info.headers, redirected)
 
     def stored(self, received: _Received[T]) -> dict[str, Any] | None:
         """Return the fields of the entry a response becomes including its plain Vary values, or None to store nothing.
@@ -416,7 +415,7 @@ class _Fetch(Generic[T]):
         names = tuple(sorted(self.implicit.union(vary)))
         return {
             "vary": names,
-            "vary_values": tuple(self.request.headers.get_all(name) for name in names),
+            "vary_values": tuple(tuple(self.request.headers.get_list(name)) for name in names),
             "status_code": received.response.info.status_code,
             "headers": headers,
             "body": received.body,
@@ -433,7 +432,7 @@ class _Fetch(Generic[T]):
         usable = self.usable
         return (
             received.response.info.status_code in self.plan.statuses
-            and not received.response.info.redirect_count
+            and not received.redirected
             and len(received.body) <= self.max_entry_bytes
             and "set-cookie" not in received.headers
             and (received.source == "network" or usable is None or vary == _vary(usable.headers))
@@ -472,13 +471,11 @@ def _configuration(
     plan: CachePlan[T],
     path: tuple[str, ...],
     condition: Literal["invalid_value", "binding_mismatch", "security_partition", "missing_adapter"],
-) -> ProtocolConfigurationError:
-    return ProtocolConfigurationError(
-        field_path=path, condition=condition, helper_id=plan.helper_id, operation=plan.operation
-    )
+) -> ConfigurationError:
+    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id, operation=plan.operation)
 
 
-def _invalid(plan: CachePlan[T], path: tuple[str, ...]) -> ProtocolConfigurationError:
+def _invalid(plan: CachePlan[T], path: tuple[str, ...]) -> ConfigurationError:
     return _configuration(plan, path, "invalid_value")
 
 

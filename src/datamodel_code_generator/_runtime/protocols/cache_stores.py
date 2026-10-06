@@ -5,14 +5,14 @@ from __future__ import annotations
 from collections import OrderedDict
 from threading import Lock
 
-from ..client.errors import ProtocolConfigurationError
+from ..client.errors import ConfigurationError
 from .caches import CacheEntry
 from .options import positive_count
 
 
 def _key(value: object) -> bytes:
     if not isinstance(value, bytes):
-        raise ProtocolConfigurationError(field_path=("key",), condition="invalid_value")
+        raise ConfigurationError(field_path=("key",), reason="invalid_value")
     return value
 
 
@@ -37,7 +37,7 @@ class _Entries:
     def set(self, key: object, entry: object) -> None:
         key = _key(key)
         if not isinstance(entry, CacheEntry):
-            raise ProtocolConfigurationError(field_path=("entry",), condition="invalid_value")
+            raise ConfigurationError(field_path=("entry",), reason="invalid_value")
         with self._lock:
             self._entries[key] = entry
             self._entries.move_to_end(key)

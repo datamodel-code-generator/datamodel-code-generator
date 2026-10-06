@@ -2,33 +2,17 @@
 """The types of the documents operations."""
 
 from ._operations import (
-    ReadDocumentErrorData,
-    ReadDocumentHTTPError,
     ReadDocumentResponse,
-    ReplaceNoteErrorData,
-    ReplaceNoteHTTPError,
     ReplaceNoteResponse,
-    StoreDocumentErrorData,
-    StoreDocumentHTTPError,
     StoreDocumentResponse,
-    StoreNoteErrorData,
-    StoreNoteHTTPError,
     StoreNoteResponse,
     decode_read_document_header,
 )
 
 __all__ = [
-    'ReadDocumentErrorData',
-    'ReadDocumentHTTPError',
     'ReadDocumentResponse',
-    'ReplaceNoteErrorData',
-    'ReplaceNoteHTTPError',
     'ReplaceNoteResponse',
-    'StoreDocumentErrorData',
-    'StoreDocumentHTTPError',
     'StoreDocumentResponse',
-    'StoreNoteErrorData',
-    'StoreNoteHTTPError',
     'StoreNoteResponse',
     'decode_read_document_header',
 ]

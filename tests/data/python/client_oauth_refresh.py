@@ -1,4 +1,4 @@
-"""Refresh a token set over TLS, through generated clients, and from injected transports and secrets."""
+"""Refresh a token set over TLS, through generated clients, and from scripted transports and secrets."""
 
 from __future__ import annotations
 
@@ -10,14 +10,14 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Final
 from urllib.parse import parse_qs
 
+import httpx2
+
 from tests.data.python.client_oauth import (
     LIMIT,
-    Adapter,
-    AsyncAdapter,
-    AsyncResponse,
     AsyncSecret,
     Caller,
     Response,
+    Script,
     Secret,
     failure_line,
     json_reply,
@@ -42,7 +42,6 @@ def _context(auth: ModuleType, *scopes: str, audience: str | None = None) -> Any
         audience=audience,
         origin="https://api.example.com",
         deadline=None,
-        cancel_token=None,
     )
 
 
@@ -90,8 +89,8 @@ async def _aoutcome(call: Callable[[], Any]) -> str:
     return _material(result) if hasattr(result, "token") else repr(result)
 
 
-def _reply(responses: ModuleType, payload: object, status: int = 200) -> Response:
-    return Response(responses, status, json.dumps(payload).encode())
+def _reply(payload: object, status: int = 200) -> Response:
+    return Response(status, json.dumps(payload).encode())
 
 
 class _Once(Secret):
@@ -104,16 +103,16 @@ class _Once(Secret):
             self.failure = None
 
 
-class _Sent(Adapter):
-    """An injected token transport recording the refresh token of every request it receives."""
+class _Sent(Script):
+    """A scripted token transport recording the refresh token of every request it receives."""
 
-    def __init__(self, transports: ModuleType, *replies: object, **settings: Any) -> None:
-        super().__init__(transports, *replies, **settings)
+    def __init__(self, *replies: object, **settings: Any) -> None:
+        super().__init__(*replies, **settings)
         self.refresh_tokens: list[str] = []
 
-    def send(self, request: Any, context: object) -> object:
-        self.refresh_tokens.extend(parse_qs(request.body.content.decode())["refresh_token"])
-        return super().send(request, context)
+    def handle_request(self, request: httpx2.Request) -> httpx2.Response:
+        self.refresh_tokens.extend(parse_qs(request.read().decode())["refresh_token"])
+        return super().handle_request(request)
 
 
 class _Saved:
@@ -147,7 +146,7 @@ def _async_saved(saved: list[str]) -> Callable[[Any], Any]:
     return save
 
 
-def _configuration(auth: ModuleType, transports: ModuleType, lines: list[str]) -> None:
+def _configuration(auth: ModuleType, lines: list[str]) -> None:
     """Refuse invalid token sets, callbacks, client authentication, scopes, and audiences without I/O."""
     provider, async_provider = auth.RefreshTokenProvider, auth.AsyncRefreshTokenProvider
     tokens = _tokens(auth)
@@ -198,9 +197,9 @@ def _configuration(auth: ModuleType, transports: ModuleType, lines: list[str]) -
             lambda: async_provider(_TOKEN, client_id="c", token_set=tokens, client_secret=secret),
         ),
         (
-            "sync transport of an async provider",
+            "sync client of an async provider",
             lambda: async_provider(
-                _TOKEN, client_id="c", token_set=tokens, client_auth_method="none", token_transport=Adapter(transports)
+                _TOKEN, client_id="c", token_set=tokens, client_auth_method="none", http_client=Script().client()
             ),
         ),
         (
@@ -215,8 +214,9 @@ def _configuration(auth: ModuleType, transports: ModuleType, lines: list[str]) -
     )
     for label, call in cases:
         lines.append(f"  {label} = {_outcome(call)}")
-    adapter = Adapter(transports)
-    with provider(_TOKEN, client_id="c", token_set=tokens, client_auth_method="none", token_transport=adapter) as idle:
+    script = Script()
+    native = script.client()
+    with provider(_TOKEN, client_id="c", token_set=tokens, client_auth_method="none", http_client=native) as idle:
         for label, call in (
             ("context type", lambda: idle.get(None)),
             ("audience of another resource", lambda: idle.get(_context(auth, audience="api"))),
@@ -224,9 +224,10 @@ def _configuration(auth: ModuleType, transports: ModuleType, lines: list[str]) -
             ("get", lambda: idle.get(_context(auth))),
         ):
             lines.append(f"  {label} = {_outcome(call)}")
-    lines.append(f"  sends before close = {adapter.sends}")
+    lines.append(f"  sends before close = {script.sends}")
     for label, call in (("get after close", lambda: idle.get(_context(auth))), ("close again", idle.close)):
         lines.append(f"  {label} = {_outcome(call)}")
+    lines.append(f"    borrowed client closed = {native.is_closed}")
 
 
 def _wire(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> int:
@@ -350,23 +351,21 @@ def _generated(
         )
 
 
-def _expiry(
-    package: ModuleType, auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
-) -> None:
+def _expiry(package: ModuleType, auth: ModuleType, lines: list[str]) -> None:
     """Renew a token a tenth of its lifetime early, but serve one without a refresh token until it expires."""
     now = time.monotonic()
     timed = auth.OAuthProviderOptions(
         clock=importlib.import_module(f"{package.__name__}.options").Clock(monotonic=lambda: now)
     )
     for refresh in ("refresh-1", None):
-        adapter = _Sent(transports, _reply(responses, _ROTATED))
+        script = _Sent(_reply(_ROTATED))
         with auth.RefreshTokenProvider(
             _TOKEN,
             client_id="c",
             token_set=_tokens(auth, refresh=refresh, minutes=100 / 60),
             client_auth_method="none",
             options=timed,
-            token_transport=adapter,
+            http_client=script.client(),
         ) as family:
             start = now
             first = family.get(_context(auth))
@@ -379,94 +378,84 @@ def _expiry(
             now = start + 101
             lines.append(
                 f"    after 101s = {_outcome(lambda family=family: family.get(_context(auth)))}"
-                f" sent={adapter.refresh_tokens}"
+                f" sent={script.refresh_tokens}"
             )
 
 
-def _faults(
-    auth: ModuleType, transports: ModuleType, responses: ModuleType, errors: ModuleType, lines: list[str]
-) -> None:
+def _faults(auth: ModuleType, lines: list[str]) -> None:
     """Keep the token set of a refresh that failed, so the next call sends the same refresh token again."""
-    read = errors.PhaseTimeoutError(
-        effective_timeout=15.0, delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read"
-    )
-    unsent = errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("s"))
 
-    def provider(adapter: Adapter, *, client_secret: object = secret, **arguments: Any) -> Any:
+    def provider(script: _Sent, *, client_secret: object = secret, **arguments: Any) -> Any:
         return auth.RefreshTokenProvider(
             _TOKEN,
             client_id="c",
             token_set=arguments.pop("token_set", _tokens(auth, minutes=-1)),
             client_secret=client_secret,
-            token_transport=adapter,
+            http_client=script.client(),
             **arguments,
         )
 
-    rotated = _reply(responses, _ROTATED)
-    for label, adapter, settings in (
-        ("connect failure proven unsent", _Sent(transports, unsent, rotated, evidence=True), {}),
-        ("phase timeout after sending", _Sent(transports, read, rotated), {}),
-        ("adapter failure", _Sent(transports, RuntimeError("adapter"), rotated), {}),
+    rotated = _reply(_ROTATED)
+    for label, script, settings in (
+        ("connect failure proven unsent", _Sent(httpx2.ConnectError("refused"), rotated), {}),
+        ("phase timeout after sending", _Sent(httpx2.ReadTimeout("read"), rotated), {}),
+        ("transport failure", _Sent(RuntimeError("transport"), rotated), {}),
         (
             "secret failure",
-            _Sent(transports, rotated),
+            _Sent(rotated),
             {"client_secret": _Once(auth.ApiKeyCredential("s"), failure=RuntimeError("secret"))},
         ),
     ):
-        with provider(adapter, **settings) as family:
+        with provider(script, **settings) as family:
             lines.append(f"  {label} = {_outcome(lambda family=family: family.get(_context(auth)))}")
             lines.append(f"    later get = {_outcome(lambda family=family: family.get(_context(auth)))}")
-            lines.append(f"    refresh tokens sent = {adapter.refresh_tokens}")
-    adapter = _Sent(transports, KeyboardInterrupt(), rotated)
-    with provider(adapter) as family:
+            lines.append(f"    refresh tokens sent = {script.refresh_tokens}")
+    script = _Sent(KeyboardInterrupt(), rotated)
+    with provider(script) as family:
         try:
             family.get(_context(auth))
         except KeyboardInterrupt:
             lines.append("  interrupted send = KeyboardInterrupt")
-        lines.append(f"    later get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
+        lines.append(f"    later get = {_outcome(lambda: family.get(_context(auth)))} sent={script.refresh_tokens}")
     saved = _Saved(failure=RuntimeError("storage"))
-    adapter = _Sent(transports, rotated, _reply(responses, {**_ROTATED, "refresh_token": "refresh-3"}))
-    with provider(adapter, on_token_refreshed=saved) as family:
+    script = _Sent(rotated, _reply({**_ROTATED, "refresh_token": "refresh-3"}))
+    with provider(script, on_token_refreshed=saved) as family:
         lines.append(f"  callback failure = {_outcome(lambda: family.get(_context(auth)))}")
         current = family.get(_context(auth))
         lines.append(f"    refreshed token stays current = {_material(current)}")
         family.invalidate(current.version)
         lines.append(f"    next refresh = {_outcome(lambda: family.get(_context(auth)))}")
-        lines.append(f"    callback calls = {saved.saved} sent={adapter.refresh_tokens}")
+        lines.append(f"    callback calls = {saved.saved} sent={script.refresh_tokens}")
     gate = threading.Event()
-    adapter = _Sent(transports, rotated, gate=gate)
-    with provider(adapter) as family:
+    script = _Sent(rotated, gate=gate)
+    with provider(script) as family:
         first = Caller(lambda: family.get(_context(auth)), _outcome)
         first.start()
-        adapter.entered.wait(LIMIT)
+        script.entered.wait(LIMIT)
         second = Caller(lambda: family.get(_context(auth)), _outcome)
         second.start()
         gate.set()
         for caller in (first, second):
             caller.join(LIMIT)
         lines.append(
-            f"  one refresh for concurrent callers = {first.line} / {second.line} sent={adapter.refresh_tokens}"
+            f"  one refresh for concurrent callers = {first.line} / {second.line} sent={script.refresh_tokens}"
         )
-    adapter = _Sent(transports)
-    with provider(adapter, token_set=_tokens(auth, refresh=None)) as family:
+    script = _Sent()
+    with provider(script, token_set=_tokens(auth, refresh=None)) as family:
         current = family.get(_context(auth))
         lines.append(f"  without a refresh token = {_material(current)}")
         family.invalidate(current.version)
-        lines.append(f"    get once invalidated = {_outcome(lambda: family.get(_context(auth)))} sends={adapter.sends}")
-    with provider(_Sent(transports), token_set=_tokens(auth, refresh=None)) as family:
+        lines.append(f"    get once invalidated = {_outcome(lambda: family.get(_context(auth)))} sends={script.sends}")
+    with provider(_Sent(), token_set=_tokens(auth, refresh=None)) as family:
         lines.append(f"  forced refresh without a refresh token = {_outcome(lambda: family.refresh(_context(auth)))}")
-    with provider(_Sent(transports), token_set=_tokens(auth, audience="api"), audience="api") as family:
+    with provider(_Sent(), token_set=_tokens(auth, audience="api"), audience="api") as family:
         lines.append(f"  token for the configured audience = {_outcome(lambda: family.get(_context(auth)))}")
 
 
-async def _async(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+async def _async(auth: ModuleType, lines: list[str]) -> None:
     """Refresh an asyncio token set, hand it to a coroutine callback, and require reauthorization on invalid_grant."""
-    adapter = AsyncAdapter(
-        transports,
-        AsyncResponse(responses, 200, json.dumps(_ROTATED).encode()),
-        AsyncResponse(responses, 400, json.dumps({"error": "invalid_grant"}).encode()),
-    )
+    script = Script(_reply(_ROTATED), _reply({"error": "invalid_grant"}, 400))
     saved: list[str] = []
     family = auth.AsyncRefreshTokenProvider(
         _TOKEN,
@@ -474,7 +463,7 @@ async def _async(auth: ModuleType, transports: ModuleType, responses: ModuleType
         token_set=_tokens(auth, minutes=-1),
         client_auth_method="none",
         on_token_refreshed=_async_saved(saved),
-        token_transport=adapter,
+        http_client=script.async_client(),
     )
     async with family:
         first = await family.get(_context(auth))
@@ -482,7 +471,7 @@ async def _async(auth: ModuleType, transports: ModuleType, responses: ModuleType
         lines.append(f"    cached = {await family.get(_context(auth)) is first}")
         await family.invalidate(first.version)
         lines.append(f"    invalid grant = {await _aoutcome(lambda: family.refresh(_context(auth)))}")
-        lines.append(f"    callback calls = {saved} sends={adapter.sends}")
+        lines.append(f"    callback calls = {saved} sends={script.sends}")
     lines.append(f"    get after close = {await _aoutcome(lambda: family.get(_context(auth)))}")
     async with auth.AsyncRefreshTokenProvider(
         _TOKEN,
@@ -490,7 +479,7 @@ async def _async(auth: ModuleType, transports: ModuleType, responses: ModuleType
         token_set=_tokens(auth, minutes=-1),
         client_auth_method="none",
         on_token_refreshed=_failing_save,
-        token_transport=AsyncAdapter(transports, AsyncResponse(responses, 200, json.dumps(_ROTATED).encode())),
+        http_client=Script(_reply(_ROTATED)).async_client(),
     ) as failing:
         lines.append(f"  async callback failure = {await _aoutcome(lambda: failing.get(_context(auth)))}")
         lines.append(f"    refreshed token stays current = {await _aoutcome(lambda: failing.get(_context(auth)))}")
@@ -498,18 +487,11 @@ async def _async(auth: ModuleType, transports: ModuleType, responses: ModuleType
 
 def oauth_refresh(package: ModuleType, lines: list[str]) -> None:
     """Exercise token set refreshes, the refresh callback, and failures in both execution modes."""
-    auth, options, transports, responses, errors = (
-        importlib.import_module(f"{package.__name__}.{name}")
-        for name in ("auth", "options", "transports", "responses", "errors")
-    )
-    _configuration(auth, transports, lines)
+    auth, options = (importlib.import_module(f"{package.__name__}.{name}") for name in ("auth", "options"))
+    _configuration(auth, lines)
     port = _wire(package, auth, options, lines)
-    _expiry(package, auth, transports, responses, lines)
-    _faults(auth, transports, responses, errors, lines)
-
-    async def flows() -> None:
-        await _async(auth, transports, responses, lines)
-
-    run(flows)
+    _expiry(package, auth, lines)
+    _faults(auth, lines)
+    run(lambda: _async(auth, lines))
     for index, line in enumerate(lines):
         lines[index] = line.replace(f":{port}", ":<port>")

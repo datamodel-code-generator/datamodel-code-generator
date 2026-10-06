@@ -5,4 +5,4 @@
   > GET https://search.example.com/search
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   search all = FieldSearchGetResponse(root=[])
-  search with a query patch ! ConfigurationError: ConfigurationError(operation_id='search', call_id='<call>', field_path='query', condition='conflicts_with_querystring') [operation_id='search', field_path=('query',), condition='conflicts_with_querystring'] configuration_error
+  search with a query patch ! ConfigurationError: ConfigurationError(operation_id='search', call_id='<call>', reason='conflicts_with_querystring', field_path='query') [operation_id='search', field_path=('query',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_querystring

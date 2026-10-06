@@ -9,9 +9,10 @@ from pathlib import Path
 from ssl import SSLContext, create_default_context
 from typing import BinaryIO, Literal
 
+import httpx2
 from typing_extensions import assert_type
 
-from pets import AsyncClient, Client
+from pets import AsyncClient, AsyncClientView, Client, ClientView
 from pets.auth import OAuthProviderOptions
 from pets.bodies import (
     AsyncBinaryBody,
@@ -34,20 +35,21 @@ from pets.bodies import (
 )
 from pets.model_codecs import JSONValue
 from pets.errors import (
-    BudgetExceededError,
-    DeadlineExceededError,
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    AuthError,
+    AuthReason,
+    ConfigurationError,
+    DecodeError,
     DeliveryState,
-    HookExecutionError,
-    LimiterExecutionError,
-    PhaseTimeoutError,
-    RedirectPolicyError,
-    RequestCancelledError,
+    NotFoundError,
+    RetryStopReason,
     SDKError,
 )
 from pets.hooks import AsyncLimiter, AsyncPermit, CallEvent, Limiter, LimiterContext, Permit
 from pets.options import (
     UNSET,
-    CancelToken,
     ClientOptions,
     Clock,
     Deadline,
@@ -60,18 +62,8 @@ from pets.options import (
     Unset,
 )
 from pets.responses import AsyncRawResponse, HeadersView, RawResponse, Response, ResponseInfo
-from pets.transports import (
-    AsyncTransportResponse,
-    AttemptIOContext,
-    OwnedTransportAdapter,
-    PreparedRequest,
-    TransportCapabilities,
-    TransportResponse,
-)
 from pets.types.pets import (
     CreatePetResponse,
-    ListPetsErrorData,
-    ListPetsHTTPError,
     ListPetsResponse,
     decode_list_pets_header,
 )
@@ -105,8 +97,13 @@ def call(
     client.pets.photos.upload(pet_id=photo, body=b"\x00")
     try:
         client.pets.list_pets(x_trace=trace)
-    except ListPetsHTTPError as error:
-        assert_type(error.error_data, ListPetsErrorData | None)
+    except NotFoundError as error:
+        assert_type(error.body, object)
+        assert_type(error.status_code, int)
+        assert_type(error.headers, HeadersView)
+        assert_type(error.request_id, str | None)
+    except APIStatusError as error:
+        assert_type(error.body_bytes, bytes)
 
 
 async def call_async(client: AsyncClient, trace: FieldPetsGetHeaderXTraceParameter) -> None:
@@ -235,46 +232,12 @@ async def multipart_async(client: AsyncClient) -> None:
     await client.request_raw("POST", "https://example.com/forms", body=body)
 
 
-class Adapter:
-    """A synchronous transport adapter, structurally."""
-
-    @property
-    def capabilities(self) -> TransportCapabilities:
-        return TransportCapabilities(internal_retry_limit=0, delivery_evidence=False, http_versions=("HTTP/1.1",))
-
-    def send(self, request: PreparedRequest[BodyAttempt], context: AttemptIOContext) -> TransportResponse:
-        raise NotImplementedError
-
-    def close(self) -> None:
-        pass
-
-
-class AsyncAdapter:
-    """An async transport adapter, structurally."""
-
-    @property
-    def capabilities(self) -> TransportCapabilities:
-        return TransportCapabilities(internal_retry_limit=None, delivery_evidence=True, http_versions=("HTTP/2",))
-
-    async def send(
-        self, request: PreparedRequest[AsyncBodyAttempt], context: AttemptIOContext
-    ) -> AsyncTransportResponse:
-        raise NotImplementedError
-
-    async def aclose(self) -> None:
-        pass
-
-
 def transports() -> None:
-    borrowed = Client(transport_adapter=Adapter())
-    assert_type(borrowed.with_options(RequestOptions(cleanup_timeout=1.0)), Client)
-    owned = OwnedTransportAdapter(Adapter())
-    assert_type(owned, OwnedTransportAdapter[Adapter])
-    Client(transport_adapter=owned)
-    assert_type(
-        AsyncClient(transport_adapter=OwnedTransportAdapter(AsyncAdapter())).with_options(RequestOptions()),
-        AsyncClient,
-    )
+    with httpx2.Client() as native:
+        borrowed = Client(http_client=native)
+        assert_type(borrowed.with_options(RequestOptions(total_timeout=1.0)), ClientView)
+        borrowed.close()
+    assert_type(AsyncClient(http_client=httpx2.AsyncClient()).with_options(RequestOptions()), AsyncClientView)
 
 
 class Tracer:
@@ -292,57 +255,47 @@ def hooks(client: Client, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
     Client(options=options)
     try:
         client.pets.get_pet(pet_id=pet, options=RequestOptions(hooks=(), context={"retry": 2}))
-    except HookExecutionError as error:
-        assert_type(error.require_result().info.status_code, int)
-        assert_type(error.has_completed_result, bool)
+    except SDKError as error:
+        assert_type(error.completed_result, Response[object] | None)
+        assert_type(error.reason, str | None)
 
 
-def timing_options(client: Client, context: AttemptIOContext) -> None:
+def timing_options(client: Client) -> None:
     deadline = Deadline.after(60)
-    token = CancelToken()
     assert_type(deadline.at, float)
     assert_type(deadline.remaining(), float)
     assert_type(deadline.clock, Clock)
     clock = Clock(monotonic=lambda: 0.0, random=lambda: 0.5)
     assert_type(Deadline.after(1, clock=clock), Deadline)
     assert_type(OAuthProviderOptions(clock=clock).clock, Clock)
-    assert_type(token.cancelled, bool)
-    assert_type(context.deadline, Deadline | None)
-    assert_type(context.cancel_token, CancelToken | None)
     phases = TimeoutOptions(connect=1, read=None, write=UNSET, pool=0)
     assert_type(phases.read, float | Unset | None)
     configured = ClientOptions(
         timeout=phases,
         total_timeout=None,
         deadline=deadline,
-        cancel_token=token,
-        max_network_sends=1,
         stream_idle_timeout=60,
         stream_total_timeout=None,
-        cleanup_timeout=5,
         clock=clock,
     )
     assert_type(configured.clock, Clock | Unset)
     assert_type(configured.timeout, TimeoutOptions | Unset | None)
     assert_type(configured.total_timeout, float | Unset | None)
     assert_type(configured.deadline, Deadline | Unset | None)
-    assert_type(configured.cancel_token, CancelToken | Unset | None)
     assert_type(configured.limiter, Limiter | AsyncLimiter | Unset | None)
-    assert_type(configured.max_network_sends, int | Unset | None)
     assert_type(configured.stream_idle_timeout, float | Unset | None)
     assert_type(configured.stream_total_timeout, float | Unset | None)
     Client(options=configured)
-    assert_type(client.with_options(RequestOptions(timeout=None, total_timeout=0, max_network_sends=None)), Client)
-    client.with_options(RequestOptions(deadline=None, cancel_token=None, limiter=None))
-    token.cancel()
+    assert_type(client.with_options(RequestOptions(timeout=None, total_timeout=0)), ClientView)
+    client.with_options(RequestOptions(deadline=None, limiter=None))
 
 
 def read_with_budget(client: Client, url: str) -> bytes:
     deadline = Deadline.after(10)
     options = RequestOptions(total_timeout=20, deadline=deadline, timeout=TimeoutOptions(read=3))
-    with client.with_options(options) as view:
-        response = view.request_raw("GET", url, options=RequestOptions(timeout=TimeoutOptions(connect=2)))
-        return response.read()
+    view = client.with_options(options)
+    response = view.request_raw("GET", url, options=RequestOptions(timeout=TimeoutOptions(connect=2)))
+    return response.read()
 
 
 class SteppedClock:
@@ -361,16 +314,6 @@ def instant_retries(url: str) -> Client:
     stepped = SteppedClock()
     clock = Clock(monotonic=stepped, random=lambda: 0.5)
     return Client(options=ClientOptions(base_url=url, retry=RetryOptions(), hooks=(stepped,), clock=clock))
-
-
-def cancel_before_send(client: Client, url: str) -> int:
-    token = CancelToken()
-    token.cancel()
-    try:
-        client.request_raw("GET", url, options=RequestOptions(cancel_token=token))
-    except RequestCancelledError as error:
-        return error.network_send_count
-    raise RuntimeError("The cancelled call unexpectedly completed")
 
 
 def download(client: Client, url: str, destination: BinaryIO) -> None:
@@ -405,13 +348,13 @@ class SemaphoreLimiter:
 
 async def read_limited(client: AsyncClient, urls: tuple[str, ...]) -> tuple[bytes, ...]:
     limiter: AsyncLimiter = SemaphoreLimiter(4)
-    async with client.with_options(RequestOptions(limiter=limiter)) as view:
+    view = client.with_options(RequestOptions(limiter=limiter))
 
-        async def read(url: str) -> bytes:
-            response = await view.request_raw("GET", url)
-            return await response.read()
+    async def read(url: str) -> bytes:
+        response = await view.request_raw("GET", url)
+        return await response.read()
 
-        return tuple(await asyncio.gather(*(read(url) for url in urls)))
+    return tuple(await asyncio.gather(*(read(url) for url in urls)))
 
 
 def limiter_contract(limiter: Limiter, context: LimiterContext) -> None:
@@ -420,7 +363,6 @@ def limiter_contract(limiter: Limiter, context: LimiterContext) -> None:
     assert_type(context.call_id, str)
     assert_type(context.parent_session_id, str | None)
     assert_type(context.remaining_timeout, float | None)
-    assert_type(context.cancel_token, CancelToken | None)
     permit = limiter.acquire(context)
     assert_type(permit, Permit)
     permit.release()
@@ -434,50 +376,30 @@ async def async_limiter_contract(limiter: AsyncLimiter, context: LimiterContext)
     AsyncClient(options=ClientOptions(limiter=limiter))
 
 
-def error_counters(error: SDKError, event: CallEvent, info: ResponseInfo) -> None:
-    assert_type(error.resource_attempt_count, int)
-    assert_type(error.redirect_count, int)
-    assert_type(error.auth_exchange_count, int)
-    assert_type(error.network_send_count, int)
-    assert_type(error.network_send_budget_used, int)
-    assert_type(error.auth_exchange_budget_used, int)
-    assert_type(error.auth_refresh_ids, tuple[str, ...])
-    assert_type(error.auth_refresh_pending, int)
-    assert_type(error.wire_send_count, int | None)
-    assert_type(event.resource_attempt_count, int)
-    assert_type(event.network_send_count, int)
-    assert_type(event.network_send_budget_used, int)
-    assert_type(event.auth_refresh_ids, tuple[str, ...])
-    assert_type(info.resource_attempt_count, int)
-    assert_type(info.network_send_count, int)
-    assert_type(info.network_send_budget_used, int)
-    assert_type(info.wire_send_count, int | None)
-    phase = PhaseTimeoutError(effective_timeout=1, phase="connect", delivery_state=DeliveryState.NOT_SENT)
-    assert_type(phase.effective_timeout, float)
-    deadline = DeadlineExceededError(deadline_at=0, elapsed=1, delivery_state=DeliveryState.NOT_SENT)
-    assert_type(deadline.deadline_at, float)
-    assert_type(deadline.elapsed, float)
-    cancelled = RequestCancelledError(source="cancel_token", delivery_state=DeliveryState.NOT_SENT)
-    assert_type(cancelled.source, Literal["cancel_token", "parent_cancel_token"])
-    budget = BudgetExceededError(budget_kind="network", limit=0, used=0)
-    assert_type(budget.limit, int)
-    assert_type(budget.used, int)
-    limiter = LimiterExecutionError(action="release")
-    assert_type(limiter.action, Literal["acquire", "release"])
-    PhaseTimeoutError(
-        effective_timeout=0.5,
-        phase="read",
-        delivery_state=DeliveryState.RESPONSE_STARTED,
-        resource_attempt_count=1,
-        network_send_count=1,
-        network_send_budget_used=1,
-        auth_refresh_ids=(),
-        wire_send_count=None,
-    )
-    redirect = RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info, body_available=False)
-    assert_type(redirect.body_available, Literal[False])
+def error_measurements(error: SDKError, event: CallEvent, info: ResponseInfo) -> None:
+    assert_type(error.attempt_count, int)
+    assert_type(error.elapsed, float)
+    assert_type(error.request_id, str | None)
+    assert_type(error.delivery_state, DeliveryState)
+    assert_type(event.attempt_count, int)
+    assert_type(info.attempt_count, int)
+    assert_type(info.elapsed, float)
+    phase = APITimeoutError(effective_timeout=1, phase="connect", delivery_state=DeliveryState.NOT_SENT)
+    assert_type(phase.effective_timeout, float | None)
+    deadline = APITimeoutError(reason="deadline_exceeded", deadline_at=0, delivery_state=DeliveryState.NOT_SENT)
+    assert_type(deadline.deadline_at, float | None)
+    connection: APIConnectionError = deadline
+    assert_type(connection.retry_stop_reason, RetryStopReason | None)
+    auth = AuthError(reason="oauth_error", status_code=400, oauth_error="invalid_grant")
+    assert_type(auth.reason, AuthReason)
+    assert_type(auth.status_code, int | None)
+    decoded = DecodeError(reason="unencodable", direction="request", location=("body", 0))
+    assert_type(decoded.location, tuple[str | int, ...])
+    redirect = ConfigurationError(field_path=("redirects",), reason="redirect_refused", info=info)
     assert_type(redirect.delivery_state, DeliveryState)
     assert_type(redirect.info, ResponseInfo | None)
+    status = NotFoundError(info=info, body=b"", body_bytes=b"")
+    assert_type(status.retry_stop_reason, RetryStopReason | None)
 
 
 def retry_options(client: Client) -> None:
@@ -515,7 +437,7 @@ def fetch_with_retries(client: Client, url: str) -> bytes:
     return client.request_raw("GET", url, options=options).read()
 
 
-def keyed_view(client: Client, value: str) -> Client:
+def keyed_view(client: Client, value: str) -> ClientView:
     key = IdempotencyKey(value)
     return client.with_options(RequestOptions(idempotency_key=key))
 
@@ -551,10 +473,8 @@ def transport_options(context: SSLContext) -> None:
         max_connections=50,
         max_keepalive_connections=10,
         keepalive_expiry=5,
-        retry_owner="sdk",
     )
     assert_type(transport.verify, bool | Unset)
     assert_type(transport.ssl_context, SSLContext | None)
-    assert_type(transport.retry_owner, Literal["sdk", "transport"])
     Client(options=ClientOptions(transport=transport))
     AsyncClient(options=ClientOptions(transport=TransportOptions(verify=True)))

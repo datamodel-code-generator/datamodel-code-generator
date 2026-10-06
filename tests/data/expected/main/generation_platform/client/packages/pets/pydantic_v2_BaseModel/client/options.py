@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from ._runtime.client.options import (
-    CancelToken,
     ClientOptions,
     Clock,
     Deadline,
@@ -21,7 +20,6 @@ from ._runtime.client.options import (
 from ._runtime.model_codecs.unset import UNSET, Unset
 
 __all__ = [
-    "CancelToken",
     "ClientOptions",
     "Clock",
     "Deadline",

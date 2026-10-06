@@ -22,35 +22,19 @@ from ._runtime.client.operations import (
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.default import (
-    CreateOwnerErrorData,
-    CreateOwnerHTTPError,
     CreateOwnerResponse,
-    CreatePetErrorData,
-    CreatePetHTTPError,
     CreatePetResponse,
-    LogVisitErrorData,
-    LogVisitHTTPError,
     LogVisitResponse,
-    PutLabelsErrorData,
-    PutLabelsHTTPError,
     PutLabelsResponse,
-    PutPhotoErrorData,
-    PutPhotoHTTPError,
     PutPhotoResponse,
-    ReplacePetErrorData,
-    ReplacePetHTTPError,
     ReplacePetResponse,
-    SetOwnerErrorData,
-    SetOwnerHTTPError,
     SetOwnerResponse,
-    UpdatePetErrorData,
-    UpdatePetHTTPError,
     UpdatePetResponse,
 )
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
-OPERATION_0: Final[OperationPlan[CreatePetResponse, CreatePetErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     operation_id='createPet',
     method='POST',
     path='/pets',
@@ -58,7 +42,6 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse, CreatePetErrorData]] = Opera
     responses=ResponseDecoder(
         (model_branch('201', 'application/json', 'json', model_bindings.codec_3),),
         (),
-        CreatePetHTTPError,
     ),
     parameters=(
         ParameterSpec(
@@ -110,12 +93,12 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse, CreatePetErrorData]] = Opera
     ),
 )
 
-OPERATION_1: Final[OperationPlan[UpdatePetResponse, UpdatePetErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[UpdatePetResponse]] = OperationPlan(
     operation_id='updatePet',
     method='PATCH',
     path='/pets/{petId}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), UpdatePetHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -150,12 +133,12 @@ OPERATION_1: Final[OperationPlan[UpdatePetResponse, UpdatePetErrorData]] = Opera
     ),
 )
 
-OPERATION_2: Final[OperationPlan[LogVisitResponse, LogVisitErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[LogVisitResponse]] = OperationPlan(
     operation_id='logVisit',
     method='POST',
     path='/pets/{petId}/visits',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), LogVisitHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -191,12 +174,12 @@ OPERATION_2: Final[OperationPlan[LogVisitResponse, LogVisitErrorData]] = Operati
     ),
 )
 
-OPERATION_3: Final[OperationPlan[SetOwnerResponse, SetOwnerErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[SetOwnerResponse]] = OperationPlan(
     operation_id='setOwner',
     method='PUT',
     path='/pets/{petId}/owner',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), SetOwnerHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -221,12 +204,12 @@ OPERATION_3: Final[OperationPlan[SetOwnerResponse, SetOwnerErrorData]] = Operati
     ),
 )
 
-OPERATION_4: Final[OperationPlan[CreateOwnerResponse, CreateOwnerErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[CreateOwnerResponse]] = OperationPlan(
     operation_id='createOwner',
     method='POST',
     path='/owners',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), CreateOwnerHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     body=RequestBody(
         media=(
             BodyMedia(
@@ -250,12 +233,12 @@ OPERATION_4: Final[OperationPlan[CreateOwnerResponse, CreateOwnerErrorData]] = O
     ),
 )
 
-OPERATION_5: Final[OperationPlan[PutLabelsResponse, PutLabelsErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[PutLabelsResponse]] = OperationPlan(
     operation_id='putLabels',
     method='PUT',
     path='/pets/{petId}/labels',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), PutLabelsHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -281,12 +264,12 @@ OPERATION_5: Final[OperationPlan[PutLabelsResponse, PutLabelsErrorData]] = Opera
     ),
 )
 
-OPERATION_6: Final[OperationPlan[PutPhotoResponse, PutPhotoErrorData]] = OperationPlan(
+OPERATION_6: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
     operation_id='putPhoto',
     method='PUT',
     path='/pets/{petId}/photo',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), PutPhotoHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
@@ -316,12 +299,12 @@ OPERATION_6: Final[OperationPlan[PutPhotoResponse, PutPhotoErrorData]] = Operati
     ),
 )
 
-OPERATION_7: Final[OperationPlan[ReplacePetResponse, ReplacePetErrorData]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[ReplacePetResponse]] = OperationPlan(
     operation_id='replacePet',
     method='PUT',
     path='/pets/{petId}/records',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((empty_branch('204'),), (), ReplacePetHTTPError),
+    responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(

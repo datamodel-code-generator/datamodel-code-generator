@@ -104,7 +104,7 @@ def _described(event: Any) -> str:
         f"phase={event.phase}",
         f"path={event.path}",
         f"origin={event.origin}",
-        f"counts={event.attempts}/{event.sends}",
+        f"attempts={event.attempt_count}",
         f"request_id={event.request_id}",
         f"timed={event.duration is not None}",
         f"context={dict(event.context)}",
@@ -138,7 +138,7 @@ def hooks(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(json_response(404, {"code": 7, "message": "gone"}))
         record(lines, "get missing", lambda: api.pets.get_pet(pet_id=pet))
         record(lines, "list of a trace its codec refuses", lambda: api.pets.list_pets(x_trace=object()))
-        exchange.respond(_refusing)
+        exchange.respond(_refusing, _refusing, _refusing)
         record(lines, "get of a refused connection", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(_interrupting)
         try:
@@ -177,18 +177,16 @@ def _failing(  # noqa: PLR0913, PLR0917
 
 
 def _outcome(call: Callable[[], object], errors: ModuleType) -> str:
-    """Describe a HookExecutionError's facts and whether its completed success can be required."""
+    """Describe a hook failure's facts and the success it completed, if any."""
     try:
         call()
-    except errors.HookExecutionError as error:
-        try:
-            result = f"required {error.require_result().data!r}"
-        except errors.ResultUnavailableError as missing:
-            result = f"required nothing: {type(missing).__name__}"
+    except errors.SDKError as error:
+        completed = error.completed_result
+        result = "completed nothing" if completed is None else f"completed {completed.data!r}"
         causes = [type(item).__name__ for item in error.secondary_errors]
         return (
-            f"{error} event={error.event_name} sent={error.sent} delivery={error.delivery_state.value} "
-            f"completed={error.has_completed_result} cause={error.cause} secondary={causes} {result}"
+            f"{error} code={error.reason_code} delivery={error.delivery_state.value} "
+            f"cause={error.cause} secondary={causes} {result}"
         )
     return "no error"
 
@@ -209,7 +207,7 @@ def _raw(api: Any, exchange: Exchange, lines: list[str], options: ModuleType, pe
     trace = object()
     record(lines, "raw list of a trace its codec refuses", lambda: api.pets.with_raw_response.list_pets(x_trace=trace))
     record(lines, "raw request to no URL", lambda: api.request_raw("GET", "not a url"))
-    exchange.respond(_refusing)
+    exchange.respond(_refusing, _refusing, _refusing)
     record(lines, "raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
 
 
@@ -285,7 +283,7 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
         await arecord(lines, "async hook failing on headers and every end", lambda: noisy.pets.get_pet(pet_id=pet))
         await arecord(lines, "async raw list of a trace its codec refuses", lambda: api.pets.with_raw_response.list_pets(x_trace=object()))
         await arecord(lines, "async raw request to no URL", lambda: api.request_raw("GET", "not a url"))
-        exchange.respond(_refusing)
+        exchange.respond(_refusing, _refusing, _refusing)
         await arecord(lines, "async raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
         exchange.respond(_cancelling)
         try:
@@ -297,9 +295,11 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
             ended = api.with_options(options.RequestOptions(hooks=(AsyncRecorder(lines, "j", failing_ends),)))
             try:
                 await ended.pets.get_pet(pet_id=pet)
-            except errors.HookExecutionError as error:
+            except errors.SDKError as error:
                 causes = [type(item).__name__ for item in error.secondary_errors]
-                lines.append(f"  async success ending in {label}: {error} {causes} {error.require_result().data!r}")
+                completed = error.completed_result
+                data = None if completed is None else completed.data
+                lines.append(f"  async success ending in {label}: {error} {causes} {data!r}")
         exchange.respond(json_response(200, _PET))
         kept = api.with_options(options.RequestOptions(hooks=(AsyncRecorder(lines, "k", ("call_end",)),)))
         await arecord(lines, "async raw get whose hook fails", lambda: kept.pets.with_raw_response.get_pet(pet_id=pet))

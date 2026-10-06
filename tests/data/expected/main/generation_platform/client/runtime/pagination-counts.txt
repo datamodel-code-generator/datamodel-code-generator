@@ -8,16 +8,16 @@
   literal offsets ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing has_more [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more')] protocol_data_error
+  missing has_more [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/has_more'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  literal offsets past the page limit ['1', '2'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [kind='pages', limit=1] session_limit_error
+  literal offsets past the page limit ['1', '2'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?offset=2&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   literal offset pages ['[1]', '[2]']
-  literal offset progress {'pages': 2, 'items': 2, 'network_send_count': 2, 'network_send_budget_used': 2}
+  literal offset progress {'pages': 2, 'items': 2}
   > POST https://api.example.com/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
   > POST https://api.example.com/searches
@@ -33,10 +33,10 @@
   query start near the total ['1', '2']
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  query start page = [1] continuation=Continuation(kind='offset') status=200 sends=1
+  query start page = [1] continuation=Continuation(kind='offset') status=200 attempts=1
   > GET https://api.example.com/users?offset=42&limit=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  query start next page = [2] continuation=None status=200 sends=1
+  query start next page = [2] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users
@@ -69,7 +69,7 @@
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   integral number start ['1', '2']
-  fractional number start [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='position')] protocol_data_error
+  fractional number start [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=ParameterTarget(location='query', name='position'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
   > GET https://api.example.com/users?page=3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?page=4
@@ -94,13 +94,13 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?offset=1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  empty page before the total ['1'] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='inconsistent') [operation_id='listUsers', condition='inconsistent', location=BodySelector(pointer='/data')] protocol_data_error
+  empty page before the total ['1'] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='inconsistent') [operation_id='listUsers', condition='inconsistent', location=BodySelector(pointer='/data'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  negative total [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/total')] protocol_data_error
+  negative total [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/total'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing total [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/total')] protocol_data_error
+  missing total [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/total'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?offset=11
@@ -110,13 +110,13 @@
   offsets from the first position ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  string has_more [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/more')] protocol_data_error
+  string has_more [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/more'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  null has_more [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/more')] protocol_data_error
+  null has_more [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/more'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing untyped has_more [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/more')] protocol_data_error
+  missing untyped has_more [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/more'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users
@@ -124,10 +124,10 @@
   header page numbers ['1', '2']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  capitalized has_more header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=HeaderSelector(name='X-Has-More', occurrence='single')] protocol_data_error
+  capitalized has_more header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=HeaderSelector(name='X-Has-More', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing has_more header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='X-Has-More', occurrence='single')] protocol_data_error
+  missing has_more header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='X-Has-More', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?page=2
@@ -135,16 +135,16 @@
   page numbers ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  signed total header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=HeaderSelector(name='x-total-count', occurrence='single')] protocol_data_error
+  signed total header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=HeaderSelector(name='x-total-count', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  spelled total header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=HeaderSelector(name='x-total-count', occurrence='single')] protocol_data_error
+  spelled total header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=HeaderSelector(name='x-total-count', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  huge total header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=HeaderSelector(name='x-total-count', occurrence='single')] protocol_data_error
+  huge total header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=HeaderSelector(name='x-total-count', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing total header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='x-total-count', occurrence='single')] protocol_data_error
+  missing total header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='x-total-count', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?page=3
@@ -152,22 +152,22 @@
   page numbers ended by an empty page ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  fractional total [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count')] protocol_data_error
+  fractional total [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  boolean total [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count')] protocol_data_error
+  boolean total [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  null total [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count')] protocol_data_error
+  null total [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='null') [operation_id='listUsers', condition='null', location=BodySelector(pointer='/count'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  first counted page = [1,2] continuation=Continuation(kind='offset') status=200 sends=1
+  first counted page = [1,2] continuation=Continuation(kind='offset') status=200 attempts=1
   > GET https://api.example.com/users?offset=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  next counted page = [3] continuation=None status=200 sends=1
+  next counted page = [3] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  next counted page again = [3] continuation=None status=200 sends=1
+  next counted page again = [3] continuation=None status=200 attempts=1
   after the last counted page = None
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -176,8 +176,8 @@
   async literal offsets ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async first page number = [1] continuation=Continuation(kind='page') status=200 sends=1
+  async first page number = [1] continuation=Continuation(kind='page') status=200 attempts=1
   > GET https://api.example.com/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async next page number = [2] continuation=None status=200 sends=1
+  async next page number = [2] continuation=None status=200 attempts=1
   async after the last page number = None

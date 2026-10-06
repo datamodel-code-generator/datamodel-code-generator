@@ -27,7 +27,7 @@ def uploads(client: Client, version: FieldFilesPostHeaderTusResumableParameter, 
         tus_resumable=version,
         upload_options=UploadOptions(chunk_bytes=4, max_parts=None),
         options=RequestOptions(),
-        session_options=SessionOptions(max_network_sends=5),
+        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(handle, UploadHandle[None])
     progress = handle.advance()

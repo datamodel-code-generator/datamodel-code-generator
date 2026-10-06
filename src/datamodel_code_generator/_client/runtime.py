@@ -1,9 +1,8 @@
-"""Declare the runtime modules a client package copies from its helpers and model backend, and what it exports.
+"""Declare the runtime modules a client package copies from its capabilities, and what it exports.
 
-The copy set never follows the modules' imports: each capability names every module it needs, including those its
-modules import only for annotations or inside functions, so that the package type-checks as copied. The core client
-imports the OAuth providers and the request encoder inside functions, so every package copies them; the security
-schemes choose only the credentials and flows the package exports.
+The capabilities are the security schemes, the helpers, and the model codec kinds. The copy set never follows the
+modules' imports: each capability names every module it needs, including those its modules import only for
+annotations or inside functions, so that the package type-checks as copied.
 """
 
 from __future__ import annotations
@@ -35,32 +34,24 @@ _CORE: Final = (
     "client/client.py",
     "client/codecs.py",
     "client/coding.py",
-    "client/compression.py",
     "client/disk.py",
     "client/errors.py",
     "client/events.py",
-    "client/evidence.py",
-    "client/grants.py",
     "client/hooks.py",
-    "client/lifecycle.py",
     "client/logical.py",
     "client/media.py",
     "client/multipart.py",
     "client/native.py",
-    "client/oauth.py",
     "client/operations.py",
     "client/options.py",
     "client/paths.py",
     "client/raw.py",
     "client/redirects.py",
-    "client/refresh.py",
     "client/responses.py",
     "client/retry.py",
     "client/scopes.py",
     "client/security.py",
-    "client/tasks.py",
     "client/timing.py",
-    "client/transports.py",
     "client/urls.py",
     "model_codecs/errors.py",
     "model_codecs/media.py",
@@ -78,6 +69,7 @@ _CORE: Final = (
     "protocols/sources.py",
     "protocols/websocket_types.py",
 )
+_OAUTH: Final = ("client/grants.py", "client/oauth.py", "client/refresh.py")
 _PAGES: Final = ("protocols/links.py", "protocols/pagination.py", "protocols/values.py", "protocols/writes.py")
 _HELPERS: Final[dict[Helper, tuple[str, ...]]] = {
     "pagination": _PAGES,
@@ -87,7 +79,7 @@ _HELPERS: Final[dict[Helper, tuple[str, ...]]] = {
     "cache": ("protocols/cache.py", "protocols/cache_stores.py"),
     "websocket": ("protocols/websocket.py", "protocols/websocket_connectors.py", "protocols/websocket_native.py"),
     "webhooks": ("protocols/values.py", "protocols/webhook_events.py", "protocols/webhooks.py"),
-    "compression": (),
+    "compression": ("client/compression.py",),
 }
 _VERIFIED: Final = ("protocols/signatures.py", "protocols/verification.py", "protocols/webhook_keys.py")
 _SIGNATURES: Final[dict[str, tuple[str, ...]]] = {
@@ -143,6 +135,8 @@ class Capabilities:
         modules = {*_CORE, *(module for kind in self.backends for module in _BACKENDS[kind])}
         modules.update(module for helper in self.helpers for module in _HELPERS[helper])
         modules.update(module for kind in self.signatures for module in _SIGNATURES.get(kind, _VERIFIED))
+        if self.oauth:
+            modules.update(_OAUTH)
         if self.keywords:
             modules.add("client/arguments.py")
         return tuple(sorted(modules))

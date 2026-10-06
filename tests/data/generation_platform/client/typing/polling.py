@@ -28,7 +28,7 @@ def operations(client: Client, job: JobRequest) -> None:
         body=job,
         poll_options=PollOptions(max_polls=3, interval=0.5),
         options=RequestOptions(),
-        session_options=SessionOptions(max_network_sends=5),
+        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(handle, LroHandle[GetReportResponse, GetJobResponse])
     snapshot = handle.status()
@@ -71,7 +71,7 @@ def checkpoints(client: Client, job: JobRequest, state: ResumeState) -> None:
         state,
         poll_options=PollOptions(max_polls=2),
         options=RequestOptions(),
-        session_options=SessionOptions(max_network_sends=5),
+        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(resumed.wait(), GetReportResponse)
     tracked = client.protocols.jobs.tracked.start(body=job)

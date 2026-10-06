@@ -27,7 +27,6 @@ class _Connection:
     def __init__(self, harness: _Harness, *, frames: tuple[object, ...] = (), **failures: object) -> None:
         self.harness = harness
         self.lines = harness.lines
-        self.abort_lines = self.lines
         self.frames = list(frames)
         self.failures = failures
         self.handshake_headers: Any = harness.responses.HeadersView((("x-socket", "1"),))
@@ -65,8 +64,8 @@ class _Connection:
             raise item
         return item
 
-    def ping(self, payload: bytes, *, deadline: object, check: object = None) -> float:
-        self.lines.append(f"    connection ping {payload!r} deadline={deadline is not None} polled={check is not None}")
+    def ping(self, payload: bytes, *, deadline: object) -> float:
+        self.lines.append(f"    connection ping {payload!r} deadline={deadline is not None}")
         self._fail("ping")
         return 0.25
 
@@ -76,7 +75,7 @@ class _Connection:
         self._fail("close")
 
     def abort(self) -> None:
-        self.abort_lines.append("    connection abort")
+        self.lines.append("    connection abort")
         self.closed.set()
 
 
@@ -149,7 +148,7 @@ class _SendEpisode:
             message = f"socket fixture {name} gate was not signalled before its watchdog"
             raise RuntimeError(message)
 
-    async def run(self, session: Any, now: list[float] | None = None, *, compete: bool = True) -> None:
+    async def run(self, session: Any, now: list[float] | None = None) -> None:
         connection, lines = self.connection, self.connection.lines
         second: asyncio.Task[Any] | None = None
         try:
@@ -165,8 +164,6 @@ class _SendEpisode:
                 if self.turn_resume is not None:
                     await self.turn_resume.wait()
                 now[0] = 20.0
-            elif compete:
-                await arecord(lines, "async send that waits too long", lambda: session.send("second"))
         except BaseException as error:
             self.primary = error
             if isinstance(error, asyncio.CancelledError) and not self.body_stops:
@@ -184,8 +181,6 @@ class _SendEpisode:
                     error = self.outcomes[task][1]
                     if error is not None and (name in {"entry", "release"} or not isinstance(error, Exception)):
                         raise error
-        if connection.abort_lines is not lines:
-            lines.extend(connection.abort_lines)
         label = "async send holding the turn past its cap" if now is not None else "async send stopped at its timeout"
         record(lines, label, lambda: self.replay(first))
         if second is not None:
@@ -274,30 +269,27 @@ class _Connector:
         self.queue: list[object] = []
         self.verbose = False
 
-    def opened(self, request: Any, context: Any, options: Any, transport: Any) -> Any:
+    def opened(self, request: Any, deadline: Any, options: Any, transport: Any) -> Any:
         if self.verbose:
             headers = [(name, value) for name, value in request.headers.items() if name.lower() != "user-agent"]
             self.lines.append(
                 f"    open {request.url} {headers} subprotocols={request.subprotocols} {request!r} "
-                f"{options!r} {transport!r}"
+                f"deadline={deadline is not None} {options!r} {transport!r}"
             )
-        item = self.queue.pop(0)
-        if callable(item) and not isinstance(item, (BaseException, _Connection)):
-            item = item(context)
-        if isinstance(item, BaseException):
+        if isinstance(item := self.queue.pop(0), BaseException):
             raise item
         return item
 
-    def open(self, request: Any, *, context: Any, options: Any, transport: Any) -> Any:
-        return self.opened(request, context, options, transport)
+    def open(self, request: Any, *, deadline: Any, options: Any, transport: Any) -> Any:
+        return self.opened(request, deadline, options, transport)
 
     def close(self) -> None:
         self.lines.append("    connector closed")
 
 
 class _AsyncConnector(_Connector):
-    async def open(self, request: Any, *, context: Any, options: Any, transport: Any) -> Any:  # ty: ignore[invalid-method-override]
-        return self.opened(request, context, options, transport)
+    async def open(self, request: Any, *, deadline: Any, options: Any, transport: Any) -> Any:  # ty: ignore[invalid-method-override]
+        return self.opened(request, deadline, options, transport)
 
 
 class _Harness:
@@ -337,7 +329,7 @@ class _Harness:
 
     def transport_error(self, delivery: str) -> Any:
         errors = self.errors
-        return errors.TransportError(delivery_state=errors.DeliveryState[delivery], phase="write")
+        return errors.APIConnectionError(delivery_state=errors.DeliveryState[delivery], phase="write")
 
 
 def socket_connectors(package: ModuleType, lines: list[str]) -> None:
@@ -352,8 +344,8 @@ def socket_connectors(package: ModuleType, lines: list[str]) -> None:
         _receive_failures(harness, connector, api)
         _queued_sends(harness, connector, api)
         _held_receives(harness, connector, api)
-        _cancelled(harness, connector)
     _default_transport(harness, connector)
+    _expired_close(harness, connector)
     lines.append("  borrowed connector left open")
     run(lambda: _async_connectors(harness))
     run(lambda: _stopped_turn(harness))
@@ -420,6 +412,18 @@ def _default_transport(harness: _Harness, connector: _Connector) -> None:
         connector.verbose = False
 
 
+def _expired_close(harness: _Harness, connector: _Connector) -> None:
+    """Fail a receive whose connection closed once the session's deadline passed on the client's clock."""
+    lines, options, now = harness.lines, harness.options, [0.0]
+    clock = options.Clock(monotonic=lambda: now[0])
+    with harness.package.Client(options=harness.client(connector, clock=clock)) as api:
+        closed = harness.errors.WebSocketClosedError(code=1000, reason="", clean=True)
+        connector.queue.append(_Connection(harness, receive=lambda: now.__setitem__(0, 20.0), frames=(closed,)))
+        session = api.protocols.feed.text.connect(options=options.RequestOptions(stream_total_timeout=10))
+        record(lines, "server closed after the session's deadline", session.receive)
+        lines.append(f"    {session!r}")
+
+
 async def _construct(package: ModuleType, harness: _Harness) -> Any:  # noqa: RUF029
     return package.AsyncClient(options=harness.client(_Connector(harness)))
 
@@ -457,26 +461,17 @@ def _contract(harness: _Harness, connector: _Connector, api: Any) -> None:
 
 
 def _handshake_failures(harness: _Harness, connector: _Connector, api: Any) -> None:
-    """Map what a connector raises or returns: statuses, broken evidence, bad headers, and unclassified failures."""
+    """Map what a connector raises or returns: statuses, bad headers, and unclassified failures."""
     lines = harness.lines
     chat = api.protocols.rooms.chat
-
-    def broken(failure: object) -> Callable[[Any], object]:
-        def open_(context: Any) -> object:
-            context.trace.phase_started("teleport")
-            return failure
-
-        return open_
 
     bad_headers = _Connection(harness)
     bad_headers.handshake_headers = {"x-socket": "1"}
     bad_subprotocol = _Connection(harness, subprotocol=b"chat.v2")
     for label, items in (
         ("terminal status", (harness.rejected(503),)),
-        ("broken evidence with a status", (broken(harness.rejected(503)),)),
         ("refusal with 101", (harness.rejected(101),)),
         ("refusal with 103", (harness.rejected(103),)),
-        ("broken evidence with a connection", (broken(_Connection(harness)),)),
         ("headers of another type", (bad_headers,)),
         ("subprotocol of another type", (bad_subprotocol,)),
         ("unclassified failure", (RuntimeError("connector bug"),)),
@@ -486,20 +481,15 @@ def _handshake_failures(harness: _Harness, connector: _Connector, api: Any) -> N
         if session is not None:
             session.close()
     options = harness.options
-    handshake_record(
-        lines,
-        "no call send slot",
-        lambda: chat.connect(room=harness.room, options=options.RequestOptions(max_network_sends=0)),
-    )
     connector.queue.clear()
     for delivery in ("MAYBE_SENT", "RESPONSE_STARTED", "NOT_SENT"):
         for kind in ("timeout", "transport"):
             failure = (
-                harness.errors.PhaseTimeoutError(
+                harness.errors.APITimeoutError(
                     phase="connect", effective_timeout=5, delivery_state=harness.errors.DeliveryState[delivery]
                 )
                 if kind == "timeout"
-                else harness.errors.TransportError(phase="read", delivery_state=harness.errors.DeliveryState[delivery])
+                else harness.errors.APIConnectionError(phase="read", delivery_state=harness.errors.DeliveryState[delivery])
             )
             sentinel = _Connection(harness, subprotocol="chat.v2")
             connector.queue.extend((failure, sentinel))
@@ -511,24 +501,15 @@ def _handshake_failures(harness: _Harness, connector: _Connector, api: Any) -> N
                 ),
             )
             if session is not None:
-                lines.append(
-                    f"    attempts={session.response.resource_attempt_count} "
-                    f"sends={session.response.network_send_count} "
-                    f"wire={session.response.wire_send_count}"
-                )
+                lines.append(f"    attempts={session.response.attempt_count}")
                 session.close()
             lines.append(f"    sentinel pending={sentinel in connector.queue}")
             connector.queue.clear()
     for label, request, parent in (
         ("retry disabled", options.RequestOptions(retry=options.RetryOptions(max_retries=0)), None),
-        (
-            "parent exhausted",
-            options.RequestOptions(retry=options.RetryOptions(max_retries=1)),
-            options.SessionOptions(max_network_sends=1),
-        ),
     ):
         connector.queue.append(
-            harness.errors.PhaseTimeoutError(
+            harness.errors.APITimeoutError(
                 phase="connect", effective_timeout=5, delivery_state=harness.errors.DeliveryState.NOT_SENT
             )
         )
@@ -606,7 +587,8 @@ def _queued_sends(harness: _Harness, connector: _Connector, api: Any) -> None:
 
 
 def _held_receives(harness: _Harness, connector: _Connector, api: Any) -> None:
-    """End a receive waiting on a connection that its own close, or its client's, closes underneath it."""
+    """End a receive waiting on a connection that its session's close closes underneath it, which its client's close
+    leaves open."""
     lines, errors = harness.lines, harness.errors
     ended = errors.WebSocketClosedError(code=1000, reason="", clean=True)
     for label, hold, iterated in (
@@ -626,7 +608,7 @@ def _held_receives(harness: _Harness, connector: _Connector, api: Any) -> None:
         session.close()
         waiting.join(5)
         lines.append(f"  {label}: {outcome[0]}")
-    closing = harness.package.Client(options=harness.client(connector, cleanup_timeout=0.05))
+    closing = harness.package.Client(options=harness.client(connector))
     connection = _Connection(harness)
     connection.hold = errors.WebSocketClosedError(code=1001, reason="", clean=True)
     connector.queue.append(connection)
@@ -636,8 +618,10 @@ def _held_receives(harness: _Harness, connector: _Connector, api: Any) -> None:
     waiting.start()
     connection.entered.wait(5)
     record(lines, "client close with a receive waiting", closing.close)
+    lines.append(f"  connection left open by the client's close: {not connection.closed.is_set()}")
+    session.close()
     waiting.join(5)
-    lines.append(f"  receive the client's close ended: {outcome[0]}")
+    lines.append(f"  receive the session's close ended after the client's close: {outcome[0]}")
 
 
 async def _messages(session: Any) -> list[object]:
@@ -650,32 +634,6 @@ def _outcome(call: Callable[[], object]) -> str:
     except Exception as error:  # noqa: BLE001
         return f"{type(error).__name__} {getattr(error, 'state', '')}".strip()
     return "returned"
-
-
-def _cancelled(harness: _Harness, connector: _Connector) -> None:
-    """Stop a synchronous queued send and receive at the cancel token's interval."""
-    lines, options = harness.lines, harness.options
-    token = options.CancelToken()
-    with harness.package.Client(options=harness.client(connector, cancel_token=token)) as api:
-        connection = _Connection(harness)
-        connection.blocked = threading.Event()
-        connector.queue.append(connection)
-        session = api.protocols.feed.text.connect()
-        first = threading.Thread(target=session.send, args=("first",))
-        first.start()
-        connection.blocked.wait(5)
-        connection.blocked = None
-        token.cancel()
-        record(lines, "send cancelled while it waits", lambda: session.send("second"))
-        connection.released.set()
-        first.join(5)
-        session.close()
-    token = options.CancelToken()
-    with harness.package.Client(options=harness.client(connector, cancel_token=token)) as api:
-        connector.queue.append(_Connection(harness, receive=token.cancel))
-        session = api.protocols.feed.text.connect()
-        record(lines, "receive cancelled at the token interval", session.receive)
-        session.close()
 
 
 async def _stopped_turn(harness: _Harness) -> None:
@@ -710,11 +668,11 @@ async def _async_connectors(harness: _Harness) -> None:
         for delivery in ("MAYBE_SENT", "RESPONSE_STARTED", "NOT_SENT"):
             for kind in ("timeout", "transport"):
                 failure = (
-                    errors.PhaseTimeoutError(
+                    errors.APITimeoutError(
                         phase="connect", effective_timeout=5, delivery_state=errors.DeliveryState[delivery]
                     )
                     if kind == "timeout"
-                    else errors.TransportError(phase="read", delivery_state=errors.DeliveryState[delivery])
+                    else errors.APIConnectionError(phase="read", delivery_state=errors.DeliveryState[delivery])
                 )
                 sentinel = _AsyncConnection(harness)
                 connector.queue.extend((failure, sentinel))
@@ -726,24 +684,15 @@ async def _async_connectors(harness: _Harness) -> None:
                     ),
                 )
                 if session is not None:
-                    lines.append(
-                        f"    attempts={session.response.resource_attempt_count} "
-                        f"sends={session.response.network_send_count} "
-                        f"wire={session.response.wire_send_count}"
-                    )
+                    lines.append(f"    attempts={session.response.attempt_count}")
                     await session.aclose()
                 lines.append(f"    sentinel pending={sentinel in connector.queue}")
                 connector.queue.clear()
         for label, request, parent in (
             ("async retry disabled", options.RequestOptions(retry=options.RetryOptions(max_retries=0)), None),
-            (
-                "async parent exhausted",
-                options.RequestOptions(retry=options.RetryOptions(max_retries=1)),
-                options.SessionOptions(max_network_sends=1),
-            ),
         ):
             connector.queue.append(
-                errors.PhaseTimeoutError(
+                errors.APITimeoutError(
                     phase="connect", effective_timeout=5, delivery_state=errors.DeliveryState.NOT_SENT
                 )
             )
@@ -777,13 +726,6 @@ async def _async_connectors(harness: _Harness) -> None:
         connector.queue.append(_AsyncConnection(harness, close=OSError("close failed")))
         session = await api.protocols.feed.text.connect()
         await arecord(lines, "async failing close", session.aclose)
-        connection = _AsyncConnection(harness)
-        connection.blocked = threading.Event()
-        connection.gated = True
-        connector.queue.append(connection)
-        session = await api.protocols.feed.text.connect(ws_options=harness.protocols.WSOptions(send_timeout=0.05))
-        connection.abort_lines = []
-        await _owned_sends(connection, session)
         for label, frames in (
             ("async receive at the connection's deadline", (TimeoutError(),)),
             ("async server closed", (errors.WebSocketClosedError(code=1000, reason="", clean=True),)),
@@ -796,12 +738,8 @@ async def _async_connectors(harness: _Harness) -> None:
         bad_headers.handshake_headers = {"x-socket": "1"}
         connector.queue.append(bad_headers)
         await arecord(lines, "async headers of another type", api.protocols.feed.text.connect)
-        options = harness.options
-        await arecord(
-            lines,
-            "async no call send slot",
-            lambda: api.protocols.feed.text.connect(options=options.RequestOptions(max_network_sends=0)),
-        )
+        connector.queue.append(harness.rejected(103))
+        await handshake_arecord(lines, "async refusal with 103", api.protocols.feed.text.connect)
         connection = _AsyncConnection(harness)
         connection.hold = harness.transport_error("RESPONSE_STARTED")
         connector.queue.append(connection)
@@ -831,6 +769,25 @@ async def _async_connectors(harness: _Harness) -> None:
         await episode.terminal((sending,), [], "send")
         cancelled = episode.outcomes[sending][1]
         lines.append(f"  async send cancelled by its task {type(cancelled).__name__} {session!r}")
+        connection = _AsyncConnection(harness)
+        connection.blocked = threading.Event()
+        connector.queue.append(connection)
+        session = await api.protocols.feed.text.connect(ws_options=harness.protocols.WSOptions(send_timeout=0.05))
+        holding = asyncio.create_task(session.send("first"))
+        while not connection.blocked.is_set():  # noqa: ASYNC110
+            await asyncio.sleep(0)
+        await arecord(lines, "async send that waits too long for its turn", lambda: session.send("second"))
+        lines.append(f"    {session!r}")
+        holding.cancel()
+        await _SendEpisode(connection).terminal((holding,), [], "send")
+        connection = _AsyncConnection(harness)
+        connection.blocked = threading.Event()
+        connector.queue.append(connection)
+        session = await api.protocols.feed.text.connect(
+            options=harness.options.RequestOptions(stream_total_timeout=0.05)
+        )
+        await arecord(lines, "async send cut by the session deadline", lambda: session.send("first"))
+        lines.append(f"    {session!r}")
 
 
 def socket_connector_outcomes(package: ModuleType, lines: list[str]) -> None:
@@ -865,7 +822,7 @@ async def _connector_outcomes(harness: _Harness, vectors: list[dict[str, Any]]) 
             )
             if vector.get("closed_session"):
                 await session.aclose()
-            owner = asyncio.create_task(episode.run(session, now, compete=False))
+            owner = asyncio.create_task(episode.run(session, now))
             parent = asyncio.create_task(episode.join(owner, episode.parent_stops, "parent"))
             prior = RuntimeError("existing parent cause")
             driver_error: Exception | None = None

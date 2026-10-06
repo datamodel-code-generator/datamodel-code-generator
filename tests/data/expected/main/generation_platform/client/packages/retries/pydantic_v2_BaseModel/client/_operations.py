@@ -16,38 +16,20 @@ from ._runtime.client.operations import (
 )
 from ._runtime.client.retry import IdempotencyPlan
 from .types.retry import (
-    GetKeyedSafeErrorData,
-    GetKeyedSafeHTTPError,
     GetKeyedSafeResponse,
-    GetNeverErrorData,
-    GetNeverHTTPError,
     GetNeverResponse,
-    GetSafeErrorData,
-    GetSafeHTTPError,
     GetSafeResponse,
-    GetVendorErrorData,
-    GetVendorHTTPError,
     GetVendorResponse,
-    PostIdempotentErrorData,
-    PostIdempotentHTTPError,
     PostIdempotentResponse,
-    PostKeyedErrorData,
-    PostKeyedHTTPError,
     PostKeyedResponse,
-    PostKeyOnlyErrorData,
-    PostKeyOnlyHTTPError,
     PostKeyOnlyResponse,
-    PostNeverErrorData,
-    PostNeverHTTPError,
     PostNeverResponse,
-    PostUnsafeErrorData,
-    PostUnsafeHTTPError,
     PostUnsafeResponse,
 )
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
-OPERATION_0: Final[OperationPlan[GetSafeResponse, GetSafeErrorData]] = OperationPlan(
+OPERATION_0: Final[OperationPlan[GetSafeResponse]] = OperationPlan(
     operation_id='getSafe',
     method='GET',
     path='/safe',
@@ -58,11 +40,10 @@ OPERATION_0: Final[OperationPlan[GetSafeResponse, GetSafeErrorData]] = Operation
             model_branch('default', 'text/plain', 'text', model_bindings.codec_1),
         ),
         (model_branch('default', 'text/plain', 'text', model_bindings.codec_1),),
-        GetSafeHTTPError,
     ),
 )
 
-OPERATION_1: Final[OperationPlan[PostUnsafeResponse, PostUnsafeErrorData]] = OperationPlan(
+OPERATION_1: Final[OperationPlan[PostUnsafeResponse]] = OperationPlan(
     operation_id='postUnsafe',
     method='POST',
     path='/unsafe',
@@ -73,7 +54,6 @@ OPERATION_1: Final[OperationPlan[PostUnsafeResponse, PostUnsafeErrorData]] = Ope
             model_branch('default', 'text/plain', 'text', model_bindings.codec_3),
         ),
         (model_branch('default', 'text/plain', 'text', model_bindings.codec_3),),
-        PostUnsafeHTTPError,
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -81,7 +61,7 @@ OPERATION_1: Final[OperationPlan[PostUnsafeResponse, PostUnsafeErrorData]] = Ope
     ),
 )
 
-OPERATION_2: Final[OperationPlan[PostIdempotentResponse, PostIdempotentErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[PostIdempotentResponse]] = OperationPlan(
     operation_id='postIdempotent',
     method='POST',
     path='/idempotent',
@@ -92,7 +72,6 @@ OPERATION_2: Final[OperationPlan[PostIdempotentResponse, PostIdempotentErrorData
             model_branch('default', 'text/plain', 'text', model_bindings.codec_5),
         ),
         (model_branch('default', 'text/plain', 'text', model_bindings.codec_5),),
-        PostIdempotentHTTPError,
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -101,7 +80,7 @@ OPERATION_2: Final[OperationPlan[PostIdempotentResponse, PostIdempotentErrorData
     retry_safety='idempotent',
 )
 
-OPERATION_3: Final[OperationPlan[PostKeyedResponse, PostKeyedErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[PostKeyedResponse]] = OperationPlan(
     operation_id='postKeyed',
     method='POST',
     path='/keyed',
@@ -112,7 +91,6 @@ OPERATION_3: Final[OperationPlan[PostKeyedResponse, PostKeyedErrorData]] = Opera
             model_branch('default', 'text/plain', 'text', model_bindings.codec_7),
         ),
         (model_branch('default', 'text/plain', 'text', model_bindings.codec_7),),
-        PostKeyedHTTPError,
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -121,7 +99,7 @@ OPERATION_3: Final[OperationPlan[PostKeyedResponse, PostKeyedErrorData]] = Opera
     idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
 )
 
-OPERATION_4: Final[OperationPlan[PostKeyOnlyResponse, PostKeyOnlyErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[PostKeyOnlyResponse]] = OperationPlan(
     operation_id='postKeyOnly',
     method='POST',
     path='/key-only',
@@ -132,7 +110,6 @@ OPERATION_4: Final[OperationPlan[PostKeyOnlyResponse, PostKeyOnlyErrorData]] = O
             model_branch('default', 'text/plain', 'text', model_bindings.codec_9),
         ),
         (model_branch('default', 'text/plain', 'text', model_bindings.codec_9),),
-        PostKeyOnlyHTTPError,
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -141,7 +118,7 @@ OPERATION_4: Final[OperationPlan[PostKeyOnlyResponse, PostKeyOnlyErrorData]] = O
     idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
 )
 
-OPERATION_5: Final[OperationPlan[GetNeverResponse, GetNeverErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[GetNeverResponse]] = OperationPlan(
     operation_id='getNever',
     method='GET',
     path='/never',
@@ -152,12 +129,11 @@ OPERATION_5: Final[OperationPlan[GetNeverResponse, GetNeverErrorData]] = Operati
             model_branch('default', 'text/plain', 'text', model_bindings.codec_11),
         ),
         (model_branch('default', 'text/plain', 'text', model_bindings.codec_11),),
-        GetNeverHTTPError,
     ),
     retry_safety='never',
 )
 
-OPERATION_6: Final[OperationPlan[PostNeverResponse, PostNeverErrorData]] = OperationPlan(
+OPERATION_6: Final[OperationPlan[PostNeverResponse]] = OperationPlan(
     operation_id='postNever',
     method='POST',
     path='/never',
@@ -168,7 +144,6 @@ OPERATION_6: Final[OperationPlan[PostNeverResponse, PostNeverErrorData]] = Opera
             model_branch('default', 'text/plain', 'text', model_bindings.codec_13),
         ),
         (model_branch('default', 'text/plain', 'text', model_bindings.codec_13),),
-        PostNeverHTTPError,
     ),
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
@@ -177,7 +152,7 @@ OPERATION_6: Final[OperationPlan[PostNeverResponse, PostNeverErrorData]] = Opera
     retry_safety='never',
 )
 
-OPERATION_7: Final[OperationPlan[GetVendorResponse, GetVendorErrorData]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[GetVendorResponse]] = OperationPlan(
     operation_id='getVendor',
     method='GET',
     path='/vendor',
@@ -188,13 +163,12 @@ OPERATION_7: Final[OperationPlan[GetVendorResponse, GetVendorErrorData]] = Opera
             model_branch('default', 'text/plain', 'text', model_bindings.codec_15),
         ),
         (model_branch('default', 'text/plain', 'text', model_bindings.codec_15),),
-        GetVendorHTTPError,
     ),
     retry_after_ms_header='X-Retry-In-Ms',
     should_retry_header='X-Retry-Permitted',
 )
 
-OPERATION_8: Final[OperationPlan[GetKeyedSafeResponse, GetKeyedSafeErrorData]] = OperationPlan(
+OPERATION_8: Final[OperationPlan[GetKeyedSafeResponse]] = OperationPlan(
     operation_id='getKeyedSafe',
     method='GET',
     path='/keyed-safe',
@@ -205,7 +179,6 @@ OPERATION_8: Final[OperationPlan[GetKeyedSafeResponse, GetKeyedSafeErrorData]] =
             model_branch('default', 'text/plain', 'text', model_bindings.codec_17),
         ),
         (model_branch('default', 'text/plain', 'text', model_bindings.codec_17),),
-        GetKeyedSafeHTTPError,
     ),
     idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
 )
