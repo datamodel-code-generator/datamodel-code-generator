@@ -92,8 +92,8 @@ delivery IDs, namespaces, operation references, entry IDs, and causes; callers m
 Generated packages also expose the shared contracts of the pagination, polling, stream, WebSocket, cache, upload, and
 webhook helpers they declare, and copy only the runtime modules those helpers, the declared security schemes, and the
 model backend need. Records, options, cache stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions`
-and `SessionOptions` come from `pkg.options` when a helper is declared; exceptions come from `pkg.errors`, each with the
-helper that raises it. These imports need no HTTP library and start no threads. A client that uses no
+and `SessionOptions` come from `pkg.options` when a pagination, polling, stream, WebSocket, cache, or upload helper is
+declared; exceptions come from `pkg.errors`, each with the helper that raises it. These imports need no HTTP library and start no threads. A client that uses no
 protocol settings
 loads none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
 helpers that use these contracts are still being implemented; constructing a record or option sends nothing.

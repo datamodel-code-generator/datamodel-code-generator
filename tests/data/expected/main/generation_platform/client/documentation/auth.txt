@@ -584,11 +584,11 @@ def bearer_options(token: str) -> RequestOptions:
     return RequestOptions(auth=AuthConfig({"bearer": StaticTokenProvider(AccessToken(token, scopes=None))}))
 ```
 
-Use the API's declared scheme name in place of `bearer`, and pass the options to an operation requiring it.
-Async clients use `AsyncStaticTokenProvider` or another async provider. API keys use `ApiKeyCredential`; Basic uses
-`BasicCredential` with UTF-8. OAuth2/OpenID Connect declarations accept preobtained bearer material without discovery
-or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called;
-its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
+Use the API's declared scheme name in place of `bearer`, and pass the options to an operation requiring it. Async
+clients use `AsyncStaticTokenProvider` or another async provider. API keys use `ApiKeyCredential`. Basic uses
+`BasicCredential` with UTF-8. OAuth2/OpenID Connect declarations accept preobtained bearer material without discovery or
+token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called; its
+async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
 Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
@@ -622,12 +622,12 @@ request URL, which the `httpx2` logger records at INFO level. Causes are retaine
 their potentially sensitive messages.
 
 OAuth providers exchange tokens without redirects or retries, through a token transport of their own that must verify
-TLS; a `TokenSet` omits its tokens from repr. `ClientCredentialsProvider` and `AsyncClientCredentialsProvider` acquire
-a client's own token when a call first needs it, and `RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep a
-`TokenSet` current with its refresh token. The call needing a new token requests it inline under the provider's lock,
-which concurrent callers wait for; a refresh token provider hands each refreshed token set to `on_token_refreshed`, and
-the SDK persists nothing. Basic charset overrides, resource audience metadata, and generated OAuth factories are not
-available yet. Providers are explicit.
+TLS; a `TokenSet` omits its tokens from repr. `ClientCredentialsProvider` and `AsyncClientCredentialsProvider` acquire a
+client's own token when a call first needs it. `RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep a `TokenSet`
+current with its refresh token, and hand each refreshed token set to `on_token_refreshed`. The call needing a new token
+requests it inline under the provider's lock, which concurrent callers wait for, and the SDK persists nothing. Basic
+charset overrides, resource audience metadata, and generated OAuth factories are not available yet. Providers are
+explicit.
 
 ## Counters and cleanup
 

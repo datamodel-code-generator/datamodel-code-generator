@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass, replace
 from functools import cached_property
 from pathlib import PurePosixPath
+from textwrap import fill
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_generation import RenderedFile
@@ -152,6 +153,11 @@ def __dir__() -> list[str]:
 '''
 
 
+def _paragraph(*sentences: str) -> str:
+    """Return sentences as one paragraph of the runtime reference, wrapped at its width."""
+    return fill(" ".join(sentences), 120)
+
+
 def _options(capabilities: Capabilities) -> str:
     """Return the options module: the client and call settings, and the helper settings a helper declares."""
     protocols = capabilities.protocols
@@ -206,6 +212,43 @@ _CREDENTIAL_NAMES: Final[dict[Security, tuple[str, ...]]] = {
     ),
     "client_credentials": ("ApiKeyCredential",),
     "refresh_token": ("ApiKeyCredential",),
+}
+_SIGNERS_ONLY: Final = "This API declares no security scheme, so an `AuthConfig` carries only signers."
+_SCHEME_NAME: Final = (
+    "Use the API's declared scheme name in place of `{}`, and pass the options to an operation requiring it."
+)
+_ENVIRONMENT: Final = (
+    '`EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called; its async '
+    "counterpart has the same explicit selection. Imports and constructors do not discover environment secrets."
+)
+_UNAVAILABLE: Final = (
+    "Basic charset overrides, resource audience metadata, and generated OAuth factories are not available yet. "
+    "Providers are explicit."
+)
+_CLIENT_CREDENTIALS: Final = (
+    "`ClientCredentialsProvider` and `AsyncClientCredentialsProvider` acquire a client's own token when a call first "
+    "needs it."
+)
+_REFRESH_TOKENS: Final = (
+    "`RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep a `TokenSet` current with its refresh token, and hand "
+    "each refreshed token set to `on_token_refreshed`."
+)
+_AUTH_EXAMPLES: Final[dict[Security, tuple[str, str, str]]] = {
+    "bearer": (
+        "AccessToken, AuthConfig, StaticTokenProvider",
+        "bearer_options(token: str)",
+        "StaticTokenProvider(AccessToken(token, scopes=None))",
+    ),
+    "api_key": (
+        "ApiKeyCredential, AuthConfig, StaticCredentialProvider",
+        "key_options(key: str)",
+        "StaticCredentialProvider(ApiKeyCredential(key))",
+    ),
+    "basic": (
+        "AuthConfig, BasicCredential, StaticCredentialProvider",
+        "basic_options(username: str, password: str)",
+        "StaticCredentialProvider(BasicCredential(username, password))",
+    ),
 }
 _OAUTH_NAMES: Final[dict[Security, tuple[str, ...]]] = {
     "client_credentials": ("AsyncClientCredentialsProvider", "ClientCredentialsProvider"),
@@ -3217,8 +3260,68 @@ reference for their limits."""
 ```
 """
 
-    def runtime_documentation(self) -> str:
+    def _credentials_runtime(self, capabilities: Capabilities) -> str:
+        """Show how to pass a credential of the first declared scheme kind, and name each declared kind's values."""
+        security = capabilities.security
+        package = self.config.package
+        sentences = [
+            text
+            for kind, text in (
+                ("bearer", "Async clients use `AsyncStaticTokenProvider` or another async provider."),
+                ("api_key", "API keys use `ApiKeyCredential`."),
+                ("basic", "Basic uses `BasicCredential` with UTF-8."),
+            )
+            if kind in security
+        ]
+        if "bearer" in security:
+            sentences.append(
+                "OAuth2/OpenID Connect declarations accept preobtained bearer material without discovery or token HTTP."
+            )
+        elif security:
+            sentences.insert(0, "Async clients use `AsyncStaticCredentialProvider` or another async provider.")
+        sentences.append(_ENVIRONMENT)
+        if (example := next((kind for kind in _AUTH_EXAMPLES if kind in security), None)) is None:
+            return "\n" + _paragraph(_SIGNERS_ONLY, *sentences)
+        imports, signature, provider = _AUTH_EXAMPLES[example]
+        return f"""
+```python
+from {package}.auth import {imports}
+from {package}.options import RequestOptions
+
+
+def {signature} -> RequestOptions:
+    return RequestOptions(auth=AuthConfig({{"{example}": {provider}}}))
+```
+
+{_paragraph(_SCHEME_NAME.format(example), *sentences)}"""
+
+    @staticmethod
+    def _oauth_runtime(capabilities: Capabilities) -> str:
+        """Describe the token exchanges of the declared OAuth flows, or nothing without one."""
+        security = capabilities.security
+        if not capabilities.oauth:
+            return _paragraph(_UNAVAILABLE)
+        flows = [
+            text
+            for kind, text in (
+                ("client_credentials", _CLIENT_CREDENTIALS),
+                ("refresh_token", _REFRESH_TOKENS),
+            )
+            if kind in security
+        ]
+        return _paragraph(
+            "OAuth providers exchange tokens without redirects or retries, through a token transport of their own that "
+            "must verify TLS; a `TokenSet` omits its tokens from repr.",
+            *flows,
+            "The call needing a new token requests it inline under the provider's lock, which concurrent callers wait "
+            "for, and the SDK persists nothing.",
+            _UNAVAILABLE,
+        )
+
+    def runtime_documentation(self, capabilities: Capabilities) -> str:
         """Render public runtime settings and their resource and delivery obligations."""
+        oauth = capabilities.oauth
+        clock = "`OAuthProviderOptions(clock=...)` does so for a provider, and " if oauth else ""
         return f"""# Runtime reference
 
 Import `Client` and `AsyncClient` from `{self.config.package}` and the records below from
@@ -3252,7 +3355,7 @@ the relative total timeout wins. `CancelToken` is thread-safe and remains cancel
 DNS, I/O, and cleanup are cooperative and may return after a deadline. Async SDK waits enforce their budgets.
 Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
 `ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
-`OAuthProviderOptions(clock=...)` does so for a provider, and `Deadline.after(seconds, clock=...)` creates a deadline
+{clock}`Deadline.after(seconds, clock=...)` creates a deadline
 on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
 
 ## Retry decisions and delays
@@ -3329,21 +3432,7 @@ Import `AuthConfig`, credential values, providers, and signers from `{self.confi
 Required security cannot become anonymous. AND requires all schemes; OR picks the first fully available declared
 alternative unless `selection` chooses its index, which applies only to operations declaring several alternatives.
 That choice stays fixed through a call and its retries.
-
-```python
-from {self.config.package}.auth import AccessToken, AuthConfig, StaticTokenProvider
-from {self.config.package}.options import RequestOptions
-
-
-def bearer_options(token: str) -> RequestOptions:
-    return RequestOptions(auth=AuthConfig({{"bearer": StaticTokenProvider(AccessToken(token, scopes=None))}}))
-```
-
-Use the API's declared scheme name in place of `bearer`, and pass the options to an operation requiring it.
-Async clients use `AsyncStaticTokenProvider` or another async provider. API keys use `ApiKeyCredential`; Basic uses
-`BasicCredential` with UTF-8. OAuth2/OpenID Connect declarations accept preobtained bearer material without discovery
-or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called;
-its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
+{self._credentials_runtime(capabilities)}
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
 Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
@@ -3376,13 +3465,7 @@ Credential/signature values do not appear in repr or hook events. Query credenti
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
 their potentially sensitive messages.
 
-OAuth providers exchange tokens without redirects or retries, through a token transport of their own that must verify
-TLS; a `TokenSet` omits its tokens from repr. `ClientCredentialsProvider` and `AsyncClientCredentialsProvider` acquire
-a client's own token when a call first needs it, and `RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep a
-`TokenSet` current with its refresh token. The call needing a new token requests it inline under the provider's lock,
-which concurrent callers wait for; a refresh token provider hands each refreshed token set to `on_token_refreshed`, and
-the SDK persists nothing. Basic charset overrides, resource audience metadata, and generated OAuth factories are not
-available yet. Providers are explicit.
+{self._oauth_runtime(capabilities)}
 
 ## Counters and cleanup
 
@@ -3860,5 +3943,5 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             *(self.file(path, "runtime", text, verbatim=True) for path, text in runtime),
             *helpers,
             RenderedFile(path=documentation / "README.md", kind="readme", text=self.readme()),
-            RenderedFile(path=reference, kind="documentation", text=self.runtime_documentation()),
+            RenderedFile(path=reference, kind="documentation", text=self.runtime_documentation(capabilities)),
         )
