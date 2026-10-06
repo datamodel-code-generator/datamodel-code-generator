@@ -801,10 +801,12 @@ async def _async_codings(package: ModuleType, exchange: Exchange, lines: list[st
             _coded("gzip, deflate", zlib.compress(gzip.compress(_PET, mtime=0))),
             _coded("identity", _PET),
             _coded("gzip", gzip.compress(_PET, mtime=0)[:-4]),
+            injected(lambda _: httpx2.Response(200, json={"id": 3, "name": "fox"})),
         )
         await arecord(lines, "async coding stacked", lambda: api.pets.get_pet(pet_id=pet))
         await arecord(lines, "async coding identity", lambda: api.pets.get_pet(pet_id=pet))
         await arecord(lines, "async coding truncated", lambda: api.pets.get_pet(pet_id=pet))
+        await arecord(lines, "async coding pre-read", lambda: api.pets.get_pet(pet_id=pet))
 
 
 BACKENDS: Final = (

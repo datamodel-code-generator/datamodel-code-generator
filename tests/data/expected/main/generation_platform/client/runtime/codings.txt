@@ -73,3 +73,6 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async coding truncated ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async coding pre-read ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')] api_connection_error

@@ -37,6 +37,7 @@
   async full disk room 1 OSError secondary [] then b'pong' ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
   async file object write OSError secondary [] then b'pong'
   async file object broken read APIConnectionError secondary []
+  async download past its stream deadline APITimeoutError deadline_exceeded stream status 200 ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin']
   async saved after close True ['coded.bin', 'empty.bin', 'held.bin', 'identity.bin', 'saved.bin']
   async stopped cancelled CancelledError ['target.bin'] b'old'
   async stopped read timeout APITimeoutError secondary [] ['target.bin'] b'old'

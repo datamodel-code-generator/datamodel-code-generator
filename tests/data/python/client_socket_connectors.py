@@ -345,6 +345,7 @@ def socket_connectors(package: ModuleType, lines: list[str]) -> None:
         _queued_sends(harness, connector, api)
         _held_receives(harness, connector, api)
     _default_transport(harness, connector)
+    _expired_close(harness, connector)
     lines.append("  borrowed connector left open")
     run(lambda: _async_connectors(harness))
     run(lambda: _stopped_turn(harness))
@@ -409,6 +410,18 @@ def _default_transport(harness: _Harness, connector: _Connector) -> None:
         connector.queue.append(_Connection(harness))
         api.protocols.feed.text.connect().close()
         connector.verbose = False
+
+
+def _expired_close(harness: _Harness, connector: _Connector) -> None:
+    """Fail a receive whose connection closed once the session's deadline passed on the client's clock."""
+    lines, options, now = harness.lines, harness.options, [0.0]
+    clock = options.Clock(monotonic=lambda: now[0])
+    with harness.package.Client(options=harness.client(connector, clock=clock)) as api:
+        closed = harness.errors.WebSocketClosedError(code=1000, reason="", clean=True)
+        connector.queue.append(_Connection(harness, receive=lambda: now.__setitem__(0, 20.0), frames=(closed,)))
+        session = api.protocols.feed.text.connect(options=options.RequestOptions(total_timeout=10))
+        record(lines, "server closed after the session's deadline", session.receive)
+        lines.append(f"    {session!r}")
 
 
 async def _construct(package: ModuleType, harness: _Harness) -> Any:  # noqa: RUF029
@@ -725,6 +738,8 @@ async def _async_connectors(harness: _Harness) -> None:
         bad_headers.handshake_headers = {"x-socket": "1"}
         connector.queue.append(bad_headers)
         await arecord(lines, "async headers of another type", api.protocols.feed.text.connect)
+        connector.queue.append(harness.rejected(103))
+        await handshake_arecord(lines, "async refusal with 103", api.protocols.feed.text.connect)
         connection = _AsyncConnection(harness)
         connection.hold = harness.transport_error("RESPONSE_STARTED")
         connector.queue.append(connection)
@@ -754,6 +769,17 @@ async def _async_connectors(harness: _Harness) -> None:
         await episode.terminal((sending,), [], "send")
         cancelled = episode.outcomes[sending][1]
         lines.append(f"  async send cancelled by its task {type(cancelled).__name__} {session!r}")
+        connection = _AsyncConnection(harness)
+        connection.blocked = threading.Event()
+        connector.queue.append(connection)
+        session = await api.protocols.feed.text.connect(ws_options=harness.protocols.WSOptions(send_timeout=0.05))
+        holding = asyncio.create_task(session.send("first"))
+        while not connection.blocked.is_set():  # noqa: ASYNC110
+            await asyncio.sleep(0)
+        await arecord(lines, "async send that waits too long for its turn", lambda: session.send("second"))
+        lines.append(f"    {session!r}")
+        holding.cancel()
+        await _SendEpisode(connection).terminal((holding,), [], "send")
 
 
 def socket_connector_outcomes(package: ModuleType, lines: list[str]) -> None:

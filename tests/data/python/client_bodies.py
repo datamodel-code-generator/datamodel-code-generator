@@ -85,11 +85,12 @@ def _chunks(chunks: tuple[object, ...]) -> Iterator[object]:
 
 
 class Chunks:
-    """Chunks that raise any exception among them and record their close."""
+    """Chunks that raise any exception among them, record their close, and may fail to close."""
 
-    def __init__(self, lines: list[str], chunks: tuple[object, ...]) -> None:
+    def __init__(self, lines: list[str], chunks: tuple[object, ...], closing: BaseException | None = None) -> None:
         self.lines = lines
         self.chunks = chunks
+        self.closing = closing
 
     def __iter__(self) -> Iterator[object]:
         return _chunks(self.chunks)
@@ -100,6 +101,8 @@ class Chunks:
 
     def close(self) -> None:
         self.lines.append("  chunks closed")
+        if self.closing is not None:
+            raise self.closing
 
     async def aclose(self) -> None:
         self.lines.append("  async chunks closed")
@@ -335,6 +338,18 @@ def _streams(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
         )
     except Stop:
         lines.append("  interrupted owned stream propagated")
+    failing = (b"x", RuntimeError("stream failed"))
+    upload(
+        "failing owned stream that fails to close",
+        stream_body(Chunks(lines, failing, RuntimeError("close failed")), ownership="owned"),
+        secondaries=True,
+    )
+    try:
+        api.pets.photos.upload(
+            pet_id=_photo(package), body=stream_body(Chunks(lines, failing, Stop()), ownership="owned")
+        )
+    except Stop:
+        lines.append("  failing owned stream close interruption propagated")
 
 
 def _factories(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:

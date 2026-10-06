@@ -515,6 +515,7 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
             lines.append(f"  async consumed to existing {drained} {failed} {_files(directory)}")
         await _opening_faults(api, exchange, lines, directory)
         await _disk_failures(api, exchange, lines, directory)
+    await _late_download(package, http, exchange, lines, directory)
     await saved.stream_to(directory / "saved.bin")
     lines.append(
         f"  async saved after close {(directory / 'saved.bin').read_bytes() == _DATA[: _CHUNK + 5]} {_files(directory)}"
@@ -583,6 +584,24 @@ async def _disk_failures(api: Any, exchange: Exchange, lines: list[str], directo
     exchange.respond(injected(lambda _: httpx2.Response(200, stream=_Broken(threading.Event()))))
     async with streaming.request_raw("GET", _URL) as response:
         lines.append(f"  async file object broken read {await aoutcome(lambda: response.stream_to(io.BytesIO()))}")
+
+
+async def _late_download(
+    package: ModuleType, http: httpx2.AsyncClient, exchange: Exchange, lines: list[str], directory: Path
+) -> None:
+    """Refuse a download to a path whose stream's total time passed on the client's clock, before any disk work."""
+    options, now = _modules(package)[0], [0.0]
+    settings = options.ClientOptions(clock=options.Clock(monotonic=lambda: now[0]))
+    async with package.AsyncClient(http_client=http, options=settings) as api:
+        exchange.respond(_body())
+        limit = options.RequestOptions(stream_total_timeout=5)
+        async with api.with_streaming_response.request_raw("GET", _URL, options=limit) as response:
+            now[0] = 10.0
+            try:
+                await response.stream_to(directory / "late.bin")
+            except Exception as error:  # noqa: BLE001
+                late = f"{type(error).__name__} {error.reason} {error.phase} status {error.info.status_code}"
+        lines.append(f"  async download past its stream deadline {late} {_files(directory)}")
 
 
 async def _mid_body(task: asyncio.Task[None]) -> None:

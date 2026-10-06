@@ -223,6 +223,16 @@ def _interruptions(package: ModuleType, lines: list[str]) -> None:
                     f"  stream interruption {action} original"
                     f" {error is (body.cleanup if action == 'close' else body.original)} released {body.closes}"
                 )
+        body = _StoppedBody(httpx2.ReadError("read"), _Stop("close"))
+        exchange.respond(_answer(body))
+        try:
+            with api.with_streaming_response.request_raw("GET", "https://example.com/interruption") as raw:
+                raw.read()
+        except _Stop as error:
+            lines.append(
+                f"  stream close interruption over a read failure {error is body.cleanup}"
+                f" {error.__notes__} released {body.closes}"
+            )
 
 
 def _http2(package: ModuleType, lines: list[str]) -> None:
@@ -371,6 +381,16 @@ async def _async_interruptions(package: ModuleType, lines: list[str]) -> None:
                     f"  async stream interruption {action} original"
                     f" {error is (body.cleanup if action == 'aclose' else body.original)} released {body.closes}"
                 )
+        body = _StoppedBody(httpx2.ReadError("read"), _Stop("close"))
+        exchange.respond(_answer(body))
+        try:
+            async with api.with_streaming_response.request_raw("GET", "https://example.com/interruption") as raw:
+                await raw.read()
+        except _Stop as error:
+            lines.append(
+                f"  async stream close interruption over a read failure {error is body.cleanup}"
+                f" {error.__notes__} released {body.closes}"
+            )
         gated = _StoppedBody(_Stop("read"), None, gated=True)
         exchange.respond(_answer(gated))
         async with api.with_streaming_response.request_raw("GET", "https://example.com/cleanup-cancel") as response:

@@ -50,6 +50,10 @@
   stream that is not iterable ! SDKError: SDKError(operation_id='uploadPhoto', call_id='<call>', reason='body_factory_failed') [operation_id='uploadPhoto', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TypeError("'int' object is not iterable")] body_factory_failed
   chunks closed
   interrupted owned stream propagated
+  chunks closed
+  failing owned stream that fails to close: SDKError secondary ['RuntimeError']
+  chunks closed
+  failing owned stream close interruption propagated
   factory declares 4 image/png b'f'
   factory <call> 0 0 True
   > PUT https://api.example.com/v1/pets/1/photo
