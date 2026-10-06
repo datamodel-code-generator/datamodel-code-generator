@@ -21,7 +21,7 @@ from .auth import (
     TokenSet,
     TokenVersion,
 )
-from .errors import AuthConfigurationError
+from .errors import ConfigurationError
 from .options import OAuthProviderOptions
 
 if TYPE_CHECKING:
@@ -58,14 +58,14 @@ def _options(options: object) -> OAuthProviderOptions:
     if options is None:
         return OAuthProviderOptions()
     if not isinstance(options, OAuthProviderOptions):
-        raise AuthConfigurationError(field_path=("options",), condition="invalid_type")
+        raise ConfigurationError(field_path=("options",), reason="invalid_type")
     return options
 
 
 def _callback(value: object, *, asynchronous: bool) -> None:
     """Refuse a token callback that is not callable, or not a coroutine function exactly when the provider is async."""
     if value is not None and (not callable(value) or inspect.iscoroutinefunction(value) != asynchronous):
-        raise AuthConfigurationError(field_path=("on_token_refreshed",), condition="invalid_mode")
+        raise ConfigurationError(field_path=("on_token_refreshed",), reason="invalid_mode")
 
 
 class _Tokens:
@@ -89,7 +89,7 @@ class _Tokens:
         self._tokens.invalidate(version)
 
     def close(self) -> None:
-        """Close the token transport the provider owns; later calls raise AuthProviderClosedError."""
+        """Close the token transport the provider owns; later calls raise the provider_closed AuthError."""
         self._tokens.close()
 
     def __enter__(self) -> Self:
@@ -122,7 +122,7 @@ class _AsyncTokens:
         self._tokens.invalidate(version)
 
     async def aclose(self) -> None:
-        """Close the token transport the provider owns; later calls raise AuthProviderClosedError."""
+        """Close the token transport the provider owns; later calls raise the provider_closed AuthError."""
         await self._tokens.aclose()
 
     async def __aenter__(self) -> Self:

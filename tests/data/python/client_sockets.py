@@ -299,14 +299,11 @@ def _refusals(harness: _Harness, api: Any) -> None:
         server.play(*plays)
         session = record(lines, label, lambda arguments=arguments: chat.connect(room=harness.room(), **arguments))
         if session is not None:
-            lines.append(
-                f"    attempts {session.response.resource_attempt_count} redirects {session.response.redirect_count}"
-            )
+            lines.append(f"    attempts {session.response.attempt_count}")
             lines.extend(f"    iterated {_message(message)}" for message in session)
         harness.report(*plays)
     for label, call in (
         ("managed header", lambda: chat.connect(room=harness.room(), options=options.RequestOptions(headers=(("Upgrade", "h2c"),)))),
-        ("no send slot", lambda: chat.connect(room=harness.room(), session_options=options.SessionOptions(max_network_sends=0))),
         ("options of another type", lambda: chat.connect(room=harness.room(), ws_options=options.RequestOptions())),
         ("request options of another type", lambda: chat.connect(room=harness.room(), options=harness.ws())),
         ("session options of another type", lambda: chat.connect(room=harness.room(), session_options=harness.ws())),
@@ -655,7 +652,6 @@ def _handshakes(harness: _Harness) -> None:
                 )
         limiter = _SemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
         for label, settings, arguments in (
-            ("refused retry exhausts session budget", {}, {"session_options": options.SessionOptions(max_network_sends=1)}),
             ("refused retry with failed permit release", {"limiter": limiter}, {}),
         ):
             with harness.package.Client(options=harness.client(url, **settings)) as api:
@@ -801,7 +797,6 @@ async def _async_refused(harness: _Harness) -> None:
         limiter = _AsyncSemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
         for label, settings, arguments in (
             ("async refused connection", {}, {}),
-            ("async refused retry exhausts session budget", {}, {"session_options": options.SessionOptions(max_network_sends=1)}),
             ("async refused retry with failed permit release", {"limiter": limiter}, {}),
         ):
             async with harness.package.AsyncClient(options=harness.client(url, **settings)) as api:

@@ -189,12 +189,12 @@ class _Harness:
     def interrupted(self) -> Any:
         """Return the transport failure of a connection broken while its body streams."""
         errors = self.errors
-        return errors.TransportError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="read")
+        return errors.APIConnectionError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="read")
 
     def idle(self) -> Any:
         """Return the failure of a read that waited longer than its phase cap."""
         errors = self.errors
-        return errors.PhaseTimeoutError(
+        return errors.APITimeoutError(
             effective_timeout=1, phase="read", delivery_state=errors.DeliveryState.RESPONSE_STARTED
         )
 
@@ -438,25 +438,8 @@ def _limits(harness: _Harness, api: Any, adapter: _Feed) -> None:
             "reconnecting",
             lambda: protocols.events.messages.open(stream_options=harness.protocols.StreamOptions(reconnect=True)),
         ),
-        (
-            "no send slot",
-            lambda: protocols.events.messages.open(session_options=options.SessionOptions(max_network_sends=0)),
-        ),
-        (
-            "call without a send slot",
-            lambda: protocols.events.messages.open(options=options.RequestOptions(max_network_sends=0)),
-        ),
     ):
         record(lines, label, call)
-    adapter.replies.append(harness.reply((), status=302, media=None, headers=(("location", "/events?moved=1"),)))
-    redirects = options.RequestOptions(redirects=options.RedirectOptions(enabled=True))
-    record(
-        lines,
-        "redirect without a session send slot",
-        lambda: protocols.events.messages.open(
-            options=redirects, session_options=options.SessionOptions(max_network_sends=1)
-        ),
-    )
 
 
 def _opens(harness: _Harness, api: Any, adapter: _Feed) -> None:
@@ -474,7 +457,7 @@ def _opens(harness: _Harness, api: Any, adapter: _Feed) -> None:
         record(lines, label, helper.open)
     retry = options.RequestOptions(retry=options.RetryOptions(initial_delay=0, jitter="none"))
     stream = helper.open(topic=harness.topic("news"), options=retry)
-    lines.append(f"  retried {stream.response.status_code} sends={stream.response.network_send_count}")
+    lines.append(f"  retried {stream.response.status_code} attempts={stream.response.attempt_count}")
     lines.append(f"    progress {dict(stream.progress)}")
     _drained(lines, "retried stream", stream)
 
@@ -534,28 +517,9 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
         await arecord(lines, "async after the end", lambda: anext(stream))
         await stream.aclose()
         await arecord(lines, "async options of another type", lambda: protocols.events.messages.open(options=1))
-        options = harness.options
-        adapter.replies.extend((
-            harness.reply((b'data: {"text": "a"}\n\n' * 2,), response=AsyncResponse),
-            harness.reply(
-                (), status=302, media=None, headers=(("location", "/events?moved=1"),), response=AsyncResponse
-            ),
-        ))
+        adapter.replies.append(harness.reply((b'data: {"text": "a"}\n\n' * 2,), response=AsyncResponse))
         async with await protocols.events.messages.open() as stream:
             lines.append(f"  async left early {_event(await anext(stream))}")
-        await arecord(
-            lines,
-            "async call without a send slot",
-            lambda: protocols.events.messages.open(options=options.RequestOptions(max_network_sends=0)),
-        )
-        await arecord(
-            lines,
-            "async redirect without a session send slot",
-            lambda: protocols.events.messages.open(
-                options=options.RequestOptions(redirects=options.RedirectOptions(enabled=True)),
-                session_options=options.SessionOptions(max_network_sends=1),
-            ),
-        )
 
 
 class _Paced(httpx2.SyncByteStream):

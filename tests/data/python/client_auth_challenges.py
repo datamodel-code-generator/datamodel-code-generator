@@ -168,7 +168,6 @@ def auth_challenges(package: ModuleType, lines: list[str]) -> None:
                 "server false before disabled", "vendor_auth", 401, {"X-Retry-Permitted": "false"},
                 options.RequestOptions(retry=options.RetryOptions(max_retries=0)), options.UNSET,
             ),
-            ("network unavailable", "bearer", 401, {}, options.RequestOptions(max_network_sends=1), options.UNSET),
             ("server delay capped", "bearer", 401, {"Retry-After": "61"}, options.RequestOptions(), options.UNSET),
         ):
             provider = _Refreshing(auth)

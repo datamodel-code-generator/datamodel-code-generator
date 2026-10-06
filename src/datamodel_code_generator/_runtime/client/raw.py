@@ -21,14 +21,15 @@ from ..model_codecs.media import json_value
 from .coding import CHUNK, ContentDecoder
 from .errors import (
     CleanupError,
+    ConfigurationError,
     DecodeError,
     DeliveryState,
     ProtocolError,
-    ResponseConsumedError,
-    ResponseTooLargeError,
     SDKError,
     add_secondary,
     is_http_error,
+    response_failure,
+    too_large,
 )
 from .lifecycle import cleanup_secondary
 from .media import charset
@@ -119,17 +120,10 @@ def _commit(temporary: Path, path: Path, *, overwrite: bool) -> None:
 class _Budget:
     """Count the bytes of one representation against its limit, refusing the chunk that passes it."""
 
-    __slots__ = ("info", "limit", "operation_id", "representation", "size")
+    __slots__ = ("info", "limit", "operation_id", "size")
 
-    def __init__(
-        self,
-        limit: int | None,
-        representation: Literal["decoded", "content_coded"],
-        info: ResponseInfo,
-        operation_id: str | None,
-    ) -> None:
+    def __init__(self, limit: int | None, info: ResponseInfo, operation_id: str | None) -> None:
         self.limit = limit
-        self.representation: Literal["decoded", "content_coded"] = representation
         self.info = info
         self.operation_id = operation_id
         self.size = 0
@@ -137,14 +131,7 @@ class _Budget:
     def spend(self, amount: int) -> None:
         self.size += amount
         if self.limit is not None and self.size > self.limit:
-            raise ResponseTooLargeError(
-                info=self.info,
-                representation=self.representation,
-                limit=self.limit,
-                observed_bytes=self.size,
-                operation_id=self.operation_id,
-                call_id=self.info.call_id,
-            )
+            raise too_large(self.info, self.limit, self.size, self.operation_id)
 
 
 def _refuse_existing(path: Path, *, overwrite: bool) -> None:
@@ -323,8 +310,12 @@ class _Raw(Generic[SourceT, HandleT]):
                 reported: Literal["streaming", "consumed", "closed", "failed"] = state
             case _:
                 reported = "streaming"
-        return ResponseConsumedError(
-            state=reported, action=action, operation_id=self._operation_id, call_id=self._info.call_id, info=self._info
+        return ConfigurationError(
+            field_path=("response", action, reported),
+            reason="response_consumed",
+            operation_id=self._operation_id,
+            call_id=self._info.call_id,
+            info=self._info,
         )
 
     def _enter(self) -> ContentDecoder:
@@ -354,8 +345,8 @@ class _Raw(Generic[SourceT, HandleT]):
         if self._state not in {"open", "buffered"}:
             raise self._consumed(action="stream_to")
 
-    def _budget(self, limit: int | None, representation: Literal["decoded", "content_coded"]) -> _Budget:
-        return _Budget(limit, representation, self._info, self._operation_id)
+    def _budget(self, limit: int | None) -> _Budget:
+        return _Budget(limit, self._info, self._operation_id)
 
     def _check(self) -> None:
         """Observe cancellation, client closing, and the active acquisition or stream deadline."""
@@ -378,9 +369,9 @@ class _Raw(Generic[SourceT, HandleT]):
             raise self._undecodable(body, error) from None
 
     def _undecodable(self, body: bytes, cause: BaseException) -> DecodeError:
-        return DecodeError(
-            info=self._info, body_bytes=body, operation_id=self._operation_id, call_id=self._info.call_id, cause=cause
-        )
+        error = response_failure(self._info, "invalid_syntax", body, cause)
+        error.operation_id = self._operation_id
+        return error
 
     def _saved_failure(self) -> BaseException:
         """Return the typed failure of a buffered response from its bounded error prefix."""
@@ -594,7 +585,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         """Read the body into memory; an identity body is kept once, as it arrived."""
         limit = self._limits.max_response_bytes
         raw: list[bytes] = []
-        budget = self._budget(limit, "decoded")
+        budget = self._budget(limit)
         try:
             decoder = self._enter()
             decoded = raw if decoder.identity else []
@@ -627,7 +618,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
 
     def _recorded(self, parts: list[bytes], limit: int | None) -> Iterator[bytes]:
         """Yield the coded chunks while keeping them, refusing more coded bytes than the buffer holds."""
-        budget = self._budget(limit, "content_coded")
+        budget = self._budget(limit)
         for chunk in self._chunks():
             budget.spend(len(chunk))
             parts.append(chunk)
@@ -645,7 +636,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         raise self._consumed(action=action)
 
     def _stream(self, *, decoded: bool, held: bool = False) -> Generator[bytes, None, None]:
-        budget = self._budget(self._limits.max_stream_bytes, "decoded" if decoded else "content_coded")
+        budget = self._budget(self._limits.max_stream_bytes)
         try:
             source = self._chunks()
             for chunk in ContentDecoder(self._info, self._operation_id).decoded(source) if decoded else source:
@@ -925,7 +916,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         """Read the body into memory; an identity body is kept once, as it arrived."""
         limit = self._limits.max_response_bytes
         raw: list[bytes] = []
-        budget = self._budget(limit, "decoded")
+        budget = self._budget(limit)
         try:
             decoder = self._enter()
             decoded = raw if decoder.identity else []
@@ -959,7 +950,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
 
     async def _recorded(self, parts: list[bytes], limit: int | None) -> AsyncIterator[bytes]:
         """Yield the coded chunks while keeping them, refusing more coded bytes than the buffer holds."""
-        budget = self._budget(limit, "content_coded")
+        budget = self._budget(limit)
         async for chunk in self._chunks():
             budget.spend(len(chunk))
             parts.append(chunk)
@@ -977,7 +968,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         raise self._consumed(action=action)
 
     async def _stream(self, *, decoded: bool, held: bool = False) -> AsyncGenerator[bytes, None]:
-        budget = self._budget(self._limits.max_stream_bytes, "decoded" if decoded else "content_coded")
+        budget = self._budget(self._limits.max_stream_bytes)
         try:
             source = self._chunks()
             async for chunk in ContentDecoder(self._info, self._operation_id).adecoded(source) if decoded else source:

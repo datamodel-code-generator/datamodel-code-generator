@@ -44,24 +44,24 @@ from .coding import ContentDecoder
 from .errors import (
     AdapterContractError,
     AdapterExecutionError,
+    APIConnectionError,
     APIStatusError,
     CleanupError,
     ConfigurationError,
+    DecodeError,
     DeliveryState,
-    HookExecutionError,
-    LimiterExecutionError,
-    PhaseTimeoutError,
-    ProtocolConfigurationError,
     ProtocolError,
     ProtocolSizeError,
-    RedirectPolicyError,
-    RequestEncodingError,
-    ResponseTooLargeError,
     SDKError,
-    TransportError,
     UnsupportedAsyncBackendError,
     add_secondary,
+    is_hook_failure,
     is_http_error,
+    is_phase_timeout,
+    is_redirect_refused,
+    is_transport,
+    redirect_refused,
+    too_large,
 )
 from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
@@ -264,9 +264,6 @@ def _layered(
         deadline=settings.deadline if isinstance(layer.deadline, Unset) else layer.deadline,
         cancel_token=settings.cancel_token if isinstance(layer.cancel_token, Unset) else layer.cancel_token,
         limiter=settings.limiter if isinstance(layer.limiter, Unset) else layer.limiter,
-        max_network_sends=(
-            settings.max_network_sends if isinstance(layer.max_network_sends, Unset) else layer.max_network_sends
-        ),
         stream_idle_timeout=(
             settings.stream_idle_timeout if isinstance(layer.stream_idle_timeout, Unset) else layer.stream_idle_timeout
         ),
@@ -330,7 +327,7 @@ def _client_settings(options: object) -> Settings:
             return _layered(settings, options)
         case _:
             pass
-    raise ConfigurationError(field_path=("options",), condition="invalid_type")
+    raise ConfigurationError(field_path=("options",), reason="invalid_type")
 
 
 def _patched(
@@ -405,7 +402,7 @@ def _unframed(
     for patch in patches:
         for name, value in patch:
             if (condition := _conflict(name, value, media_type, accept)) is not None:
-                raise ConfigurationError(field_path=("headers", name), condition=condition, operation_id=operation_id)
+                raise ConfigurationError(field_path=("headers", name), reason=condition, operation_id=operation_id)
 
 
 def _conflict(name: str, value: str | None, media_type: str | None, accept: str | None) -> str | None:
@@ -431,25 +428,27 @@ def _relabels(value: str | None, media_type: str | None) -> bool:
 def _server_url(operation: OperationPlan[object], selection: ServerSelection) -> str:
     operation_id = operation.operation_id
     if selection.index >= len(operation.servers):
-        raise ConfigurationError(field_path=("server", "index"), condition="out_of_range", operation_id=operation_id)
+        raise ConfigurationError(field_path=("server", "index"), reason="out_of_range", operation_id=operation_id)
     server = operation.servers[selection.index]
     declared = {variable.name: variable for variable in server.variables}
     if not selection.variables.keys() <= declared.keys():
-        raise ConfigurationError(field_path=("server", "variables"), condition="undeclared", operation_id=operation_id)
+        raise ConfigurationError(field_path=("server", "variables"), reason="undeclared", operation_id=operation_id)
     values: dict[str, str] = {}
     for name, variable in declared.items():
         values[name] = value = selection.variables.get(name, variable.default)
         if variable.enum and value not in variable.enum:
             raise ConfigurationError(
-                field_path=("server", "variables", name), condition="not_allowed", operation_id=operation_id
+                field_path=("server", "variables", name), reason="not_allowed", operation_id=operation_id
             )
     return checked_base_url(PLACEHOLDER.sub(lambda match: values[match[1]], server.url), ("server",)).rstrip("/")
 
 
 def _encoding_error(
-    operation: OperationPlan[object], location: tuple[str, str], error: BaseException | None = None
-) -> RequestEncodingError:
-    return RequestEncodingError(location=location, operation_id=operation.operation_id, cause=error)
+    operation: OperationPlan[object], location: tuple[str | int, ...], error: BaseException | None = None
+) -> DecodeError:
+    return DecodeError(
+        reason="unencodable", direction="request", location=location, operation_id=operation.operation_id, cause=error
+    )
 
 
 def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
@@ -504,9 +503,9 @@ def _parameter(spec: ParameterSpec, value: object) -> object:
     return encode_parameter(spec.plan, spec.dump(value))
 
 
-def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ProtocolConfigurationError:
-    return ProtocolConfigurationError(
-        field_path=path, condition="wrong_capability", helper_id=plan.helper_id, operation=plan.operation
+def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ConfigurationError:
+    return ConfigurationError(
+        field_path=path, reason="wrong_capability", helper_id=plan.helper_id, operation=plan.operation
     )
 
 
@@ -611,15 +610,7 @@ def _info(status: int, headers: HeadersView, request_id_header: str | None, call
         status_code=status,
         headers=headers,
         call_id=call.call_id,
-        resource_attempt_count=call.resource_attempt_count,
-        redirect_count=call.redirect_count,
-        auth_exchange_count=call.auth_exchange_count,
-        network_send_count=call.network_send_count,
-        network_send_budget_used=call.network_send_budget_used,
-        wire_send_count=call.wire_send_count,
-        auth_exchange_budget_used=call.auth_exchange_budget_used,
-        auth_refresh_ids=call.auth_refresh_ids,
-        auth_refresh_pending=call.auth_refresh_pending,
+        attempt_count=call.attempt_count,
         elapsed=call.monotonic() - call.started,
         content_type=None if content_type is None else normalized(content_type),
         request_id=None if request_id_header is None else headers.get(request_id_header),
@@ -645,13 +636,13 @@ def _context(call: _Call) -> BodyAttemptContext:
 def _checked_raw(method: object, url: object) -> tuple[str, str]:
     """Normalize the raw method and validate its native URL before sending."""
     if not isinstance(method, str) or not _TOKEN.fullmatch(method):
-        raise ConfigurationError(field_path=("method",), condition="invalid_value")
+        raise ConfigurationError(field_path=("method",), reason="invalid_value")
     if not isinstance(url, str):
-        raise ConfigurationError(field_path=("url",), condition="invalid_url")
+        raise ConfigurationError(field_path=("url",), reason="invalid_url")
     try:
         target = absolute_target(url)
     except URLValidationError as error:
-        raise ConfigurationError(field_path=("url",), condition="invalid_url", cause=error) from None
+        raise ConfigurationError(field_path=("url",), reason="invalid_url", cause=error) from None
     return method.upper(), target.url
 
 
@@ -697,14 +688,7 @@ def _completed(
 ) -> Response[T]:
     if body.overflow:
         assert settings.max_response_bytes is not None
-        raise ResponseTooLargeError(
-            info=info,
-            representation="decoded",
-            limit=settings.max_response_bytes,
-            observed_bytes=body.size,
-            operation_id=operation_id,
-            call_id=info.call_id,
-        )
+        raise too_large(info, settings.max_response_bytes, body.size, operation_id)
     if (problem := body.problem) is not None and body.success:
         raise problem
     truncated = body.truncated or problem is not None
@@ -741,7 +725,7 @@ def _page(  # noqa: PLR0913
                 operation=plan.operation,
                 info=info,
             )
-        raise ResponseTooLargeError(info=info, representation="decoded", limit=limit, observed_bytes=body.size)
+        raise too_large(info, limit, body.size)
     if (problem := body.problem) is not None and body.success:
         raise problem
     content = body.content
@@ -777,8 +761,8 @@ class CacheRequest:
     credential_headers: frozenset[str]
 
 
-def _retry_error(error: BaseException) -> TypeGuard[APIStatusError | TransportError]:
-    return is_http_error(error) or isinstance(error, TransportError)
+def _retry_error(error: BaseException) -> TypeGuard[APIStatusError | APIConnectionError]:
+    return is_http_error(error) or is_transport(error)
 
 
 _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
@@ -796,7 +780,7 @@ def _compressed(
     ):
         return request, False
     if request.headers.get_all("content-encoding"):
-        raise ConfigurationError(field_path=("headers", "Content-Encoding"), condition="managed")
+        raise ConfigurationError(field_path=("headers", "Content-Encoding"), reason="managed")
     from .compression import gzipped_attempt  # noqa: PLC0415 - Only a declared body loads the encoder.
 
     body = None if request.body is None else gzipped_attempt(request.body, partial(call.check, "encode"))
@@ -969,9 +953,9 @@ def _auth_failed(call: _Call) -> bool:
 
 def _usable_credentials(call: _Call) -> None:
     if call.auth is not None and _expired_credentials(call):
-        from .errors import TokenExpiredError  # noqa: PLC0415
+        from .errors import AuthError  # noqa: PLC0415
 
-        raise TokenExpiredError(condition="expired", delivery_state=_delivery(call))
+        raise AuthError(reason="token_expired", delivery_state=_delivery(call))
 
 
 class _Call(LogicalCallContext):
@@ -1038,11 +1022,11 @@ class _Call(LogicalCallContext):
         self.received_wall_time = 0.0
         self.response_transferred = False
 
-    def bind(self, capabilities: TransportCapabilities) -> None:
+    def bind(self) -> None:
         """Validate operation-bound controls before hooks, encoding, and any send."""
         operation = self.operation
         if self.idempotency is None and isinstance(self.key, IdempotencyKey):
-            raise ConfigurationError(field_path=("idempotency_key",), condition="not_declared")
+            raise ConfigurationError(field_path=("idempotency_key",), reason="not_declared")
         retry = self.settings.retry
         if (
             retry.retry_after_ms_header is not UNSET
@@ -1064,10 +1048,8 @@ class _Call(LogicalCallContext):
                 )
             except URLValidationError as error:
                 raise ConfigurationError(
-                    field_path=("redirects", "allowed_origins"), condition="invalid_value", cause=error
+                    field_path=("redirects", "allowed_origins"), reason="invalid_value", cause=error
                 ) from None
-        if capabilities.delivery_evidence and capabilities.internal_retry_limit == 0:
-            self.wire_send_count = 0
 
     def prepared(self, request: PreparedRequest[EncodedAttempt]) -> PreparedRequest[EncodedAttempt]:
         """Retain the original method and attach the call's sole declared idempotency key."""
@@ -1082,7 +1064,7 @@ class _Call(LogicalCallContext):
             return request
         name = self.idempotency.header_name
         if request.headers.get_all(name):
-            raise ConfigurationError(field_path=("headers", name), condition="managed")
+            raise ConfigurationError(field_path=("headers", name), reason="managed")
         if not isinstance(self.key, IdempotencyKey):
             return request
         return PreparedRequest(
@@ -1104,7 +1086,7 @@ class _Call(LogicalCallContext):
     def retry(
         self,
         info: ResponseInfo | None,
-        error: TransportError | None,
+        error: APIConnectionError | None,
         *,
         replayable: bool,
         retry_owner: Literal["sdk", "transport"],
@@ -1148,9 +1130,8 @@ class _Call(LogicalCallContext):
                 retry_safety=self.retry_safety,
                 idempotency=self.idempotency if isinstance(self.key, IdempotencyKey) else None,
                 delivery_state=self.delivery_state,
-                resource_attempt_count=self.resource_attempt_count,
+                attempt_count=self.attempt_count,
                 body_replayable=replayable,
-                network_available=self.send_limit is None or self.network_send_budget_used < self.send_limit,
                 server_hint=hint,
                 proven_not_sent=self.trace.proven_not_sent,
             ),
@@ -1248,7 +1229,7 @@ class _Call(LogicalCallContext):
                 current_origin=self.current_origin,
                 initial_origin=self.initial_origin,
                 allowed_origins=self.allowed_origins,
-                redirect_count=self.redirect_count,
+                redirects_followed=self.redirects_followed,
                 visited=visited,
                 retry_safety=self.retry_safety,
                 idempotency=self.idempotency if isinstance(self.key, IdempotencyKey) else None,
@@ -1256,8 +1237,6 @@ class _Call(LogicalCallContext):
             ),
             redirects,
         )
-        if self.send_limit is not None and self.network_send_budget_used >= self.send_limit:
-            raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info)
         url = target.url
         if self.auth is not None:
             from .auth_policy import strip_managed_query  # noqa: PLC0415
@@ -1267,7 +1246,7 @@ class _Call(LogicalCallContext):
         if target.cross_origin:
             headers, url = _uncredentialed(headers, url, schemes)
         if url != target.url and (target.method, url) in visited:
-            raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info)
+            raise redirect_refused(info=info)
         if target.drop_body:
             headers = tuple(
                 (name, value)
@@ -1346,29 +1325,12 @@ class _SessionCall(_Call):
             self.url = hop.url
         return hop
 
-    def retry(
-        self,
-        info: ResponseInfo | None,
-        error: TransportError | None,
-        *,
-        replayable: bool,
-        retry_owner: Literal["sdk", "transport"],
-    ) -> RetryDelay | None:
-        """Plan a retry as an ordinary call does, refusing it when the session cannot pay for its sends."""
-        planned = super().retry(info, error, replayable=replayable, retry_owner=retry_owner)
-        if planned is None:
-            return None
-        if not self.parent.room():
-            self.stop_reason = "parent_budget_exhausted"
-            return None
-        return planned
-
 
 class _SocketCall(_SessionCall):
     """The handshake of a WebSocket helper: a session child call whose open has one cap for all of its phases.
 
     The cap is the least of the open timeout and the connect, read, and write timeouts, bounded by the deadline, so a
-    cap the deadline binds ends the call with DeadlineExceededError. WebSockets have no pool.
+    cap the deadline binds ends the call with its deadline APITimeoutError. WebSockets have no pool.
     """
 
     __slots__ = ("open_timeout",)
@@ -1399,7 +1361,7 @@ class _SocketCall(_SessionCall):
     def retry(
         self,
         info: ResponseInfo | None,
-        error: TransportError | None,
+        error: APIConnectionError | None,
         *,
         replayable: bool,
         retry_owner: Literal["sdk", "transport"],
@@ -1511,7 +1473,9 @@ class _Core(Generic[AdapterT, HandleT]):
         settings = self._call_settings(options, None)
         return settings.headers, settings.query
 
-    def reconnects_after(self, error: TransportError, options: RequestOptions | None, operation_id: str | None) -> bool:
+    def reconnects_after(
+        self, error: APIConnectionError, options: RequestOptions | None, operation_id: str | None
+    ) -> bool:
         """Return whether a transport failure reading a stream's body is one an automatic reconnection may follow.
 
         It is a read-phase failure the shared retry classification retries. A read timeout qualifies only when the
@@ -1519,7 +1483,7 @@ class _Core(Generic[AdapterT, HandleT]):
         """
         if error.phase != "read" or transport_retry_reason(error, AttemptTrace(clock=self.clock)) is None:
             return False
-        if not isinstance(error, PhaseTimeoutError):
+        if not is_phase_timeout(error):
             return True
         settings = self._call_settings(options, operation_id)
         read, idle = settings.stream_read_timeout, settings.stream_idle_timeout
@@ -1583,7 +1547,7 @@ class _Core(Generic[AdapterT, HandleT]):
     def view(self, options: object) -> Self:
         """Return a view with the options layered on these, sharing the transport and counting its calls here too."""
         if not isinstance(options, RequestOptions):
-            raise ConfigurationError(field_path=("options",), condition="invalid_type")
+            raise ConfigurationError(field_path=("options",), reason="invalid_type")
         settings = self._call_settings(options, None)
         view = type(self)(self._shared, settings, self._scope.view(), owned=False)
         if not isinstance(options.auth, Unset) and options.auth is not None:
@@ -1633,11 +1597,11 @@ class _Core(Generic[AdapterT, HandleT]):
         selected = call.failure(error, delivery_state=delivery)
         if not isinstance(selected, Exception):
             return selected
-        if isinstance(selected, PhaseTimeoutError):
+        if is_phase_timeout(selected):
             return call.timeout_failure(selected, selected.phase, selected.delivery_state)
-        if isinstance(selected, TransportError) and isinstance(selected.cause, httpx2.TimeoutException):
+        if is_transport(selected) and isinstance(selected.cause, httpx2.TimeoutException):
             return call.timeout_failure(selected.cause, selected.phase, selected.delivery_state)
-        if isinstance(selected, TransportError) and call.streaming:
+        if is_transport(selected) and call.streaming:
             selected.retry_stop_reason = "transport_not_retryable"
         if isinstance(selected, SDKError):
             return selected
@@ -1725,7 +1689,7 @@ class _Core(Generic[AdapterT, HandleT]):
         if not isinstance(options, RequestOptions):
             if (closed := self._scope.closing()) is not None:
                 raise closed
-            raise ConfigurationError(field_path=("options",), condition="invalid_type", operation_id=operation_id)
+            raise ConfigurationError(field_path=("options",), reason="invalid_type", operation_id=operation_id)
         if not isinstance(options.auth, Unset) and options.auth is not None:
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
@@ -1739,9 +1703,9 @@ class _Core(Generic[AdapterT, HandleT]):
         security = None if operation is None else operation.security
         if config is None:
             if security is not None and security.alternatives and all(security.alternatives):
-                from .errors import AuthConfigurationError  # noqa: PLC0415
+                from .errors import ConfigurationError  # noqa: PLC0415
 
-                raise AuthConfigurationError(field_path=("auth",), condition="missing_credentials")
+                raise ConfigurationError(field_path=("auth",), reason="missing_credentials")
             return None
         from .auth_policy import bind_async_auth, bind_auth  # noqa: PLC0415
 
@@ -1854,7 +1818,7 @@ class _Core(Generic[AdapterT, HandleT]):
             return "&".join(pairs)
         if any(spec.plan.location == "querystring" for spec in operation.parameters):
             raise ConfigurationError(
-                field_path=("query",), condition="conflicts_with_querystring", operation_id=operation.operation_id
+                field_path=("query",), reason="conflicts_with_querystring", operation_id=operation.operation_id
             )
         return _query(self._settings.query, pairs, call)
 
@@ -2019,7 +1983,7 @@ class _Core(Generic[AdapterT, HandleT]):
         try:
             wire = media.dump(body)
         except request_errors(media.codec) as error:
-            raise RequestEncodingError(location=("body",), operation_id=operation.operation_id, cause=error) from None
+            raise _encoding_error(operation, ("body",), error) from None
         return saved, (wire, media.media_type, None if sent == media.media_type else sent)
 
     @staticmethod
@@ -2032,7 +1996,7 @@ class _Core(Generic[AdapterT, HandleT]):
 
         Each value is validated against its schema and built into its native value, and a concrete media type is
         selected as a call's is; a value that does not fit, or a concrete type that selects another declared media,
-        raises RequestEncodingError.
+        raises a request DecodeError.
         """
         restored = tuple(
             value if isinstance(value, Unset) else _coded(operation, spec, partial(spec.restored, value))
@@ -2043,11 +2007,11 @@ class _Core(Generic[AdapterT, HandleT]):
         wire, declared, concrete = body
         media_type = declared if concrete is None else concrete
         if (media := request.selected(operation.operation_id, media_type)[0]).media_type != declared:
-            raise RequestEncodingError(location=("body",), operation_id=operation.operation_id)
+            raise _encoding_error(operation, ("body",))
         try:
             return restored, media.restored(wire), media_type
         except request_errors(media.codec) as error:
-            raise RequestEncodingError(location=("body",), operation_id=operation.operation_id, cause=error) from None
+            raise _encoding_error(operation, ("body",), error) from None
 
     def checked_page(
         self,
@@ -2084,7 +2048,7 @@ class _Core(Generic[AdapterT, HandleT]):
         """Encode some arguments of a helper's request, by position, as its call encodes them, sending nothing.
 
         Arguments a later response gives are left out, even required ones; one that does not fit raises
-        RequestEncodingError.
+        a request DecodeError.
         """
         self._call_settings(options, operation.operation_id)
         for position, value in given.items():
@@ -2134,13 +2098,13 @@ class _Core(Generic[AdapterT, HandleT]):
 
 def _ownership(http_client: object, ownership: object, transport_adapter: object) -> None:
     if ownership not in _OWNERSHIPS:
-        raise ConfigurationError(field_path=("http_client_ownership",), condition="invalid_value")
+        raise ConfigurationError(field_path=("http_client_ownership",), reason="invalid_value")
     if isinstance(transport_adapter, Unset):
         return
     if not isinstance(http_client, Unset):
-        raise ConfigurationError(field_path=("transport_adapter",), condition="conflicts_with_http_client")
+        raise ConfigurationError(field_path=("transport_adapter",), reason="conflicts_with_http_client")
     if ownership == "owned":
-        raise ConfigurationError(field_path=("http_client_ownership",), condition="conflicts_with_transport_adapter")
+        raise ConfigurationError(field_path=("http_client_ownership",), reason="conflicts_with_transport_adapter")
 
 
 def _declared(adapter: object) -> None:
@@ -2151,7 +2115,7 @@ def _declared(adapter: object) -> None:
 def _transport(options: ClientOptions | None, http_client: object, adapter: object) -> ResolvedTransportOptions:
     resolved = resolve_transport_options(UNSET if options is None else options.transport)
     if resolved.retry_owner == "transport" and isinstance(adapter, Unset):
-        raise ConfigurationError(field_path=("transport", "retry_owner"), condition="requires_adapter")
+        raise ConfigurationError(field_path=("transport", "retry_owner"), reason="requires_adapter")
     if not isinstance(http_client, Unset) or not isinstance(adapter, Unset):
         for name in (
             "verify",
@@ -2164,7 +2128,7 @@ def _transport(options: ClientOptions | None, http_client: object, adapter: obje
             "keepalive_expiry",
         ):
             if getattr(resolved, name) != getattr(DEFAULT_TRANSPORT, name):
-                raise ConfigurationError(field_path=("transport", name), condition="injected_transport")
+                raise ConfigurationError(field_path=("transport", name), reason="injected_transport")
     return resolved
 
 
@@ -2188,7 +2152,7 @@ def _adapter(
             _declared(adapter)
             return adapter, owned
         case _:
-            raise ConfigurationError(field_path=("transport_adapter",), condition="invalid_type")
+            raise ConfigurationError(field_path=("transport_adapter",), reason="invalid_type")
     match http_client:
         case httpx2.Client():
             return Httpx2Transport(http_client), ownership == "owned"
@@ -2196,7 +2160,7 @@ def _adapter(
             return Httpx2Transport(native_client(transport), trusted_default=True, http2=transport.http2), True
         case _:
             pass
-    raise ConfigurationError(field_path=("http_client",), condition="invalid_type")
+    raise ConfigurationError(field_path=("http_client",), reason="invalid_type")
 
 
 def _async_adapter(
@@ -2219,7 +2183,7 @@ def _async_adapter(
             _declared(adapter)
             return adapter, owned
         case _:
-            raise ConfigurationError(field_path=("transport_adapter",), condition="invalid_type")
+            raise ConfigurationError(field_path=("transport_adapter",), reason="invalid_type")
     match http_client:
         case httpx2.AsyncClient():
             return AsyncHttpx2Transport(http_client), ownership == "owned"
@@ -2229,7 +2193,7 @@ def _async_adapter(
             ), True
         case _:
             pass
-    raise ConfigurationError(field_path=("http_client",), condition="invalid_type")
+    raise ConfigurationError(field_path=("http_client",), reason="invalid_type")
 
 
 def _released(close: Callable[[], None], operation_id: str | None, call_id: str) -> None:
@@ -2371,30 +2335,30 @@ def _release_permit(permit: Permit) -> None:
     try:
         permit.release()
     except Exception as error:  # noqa: BLE001
-        raise LimiterExecutionError(action="release", cause=error) from None
+        raise SDKError(reason="limiter_failed", cause=error) from None
 
 
 async def _arelease_permit(permit: AsyncPermit) -> None:
     try:
         await permit.release()
     except Exception as error:  # noqa: BLE001
-        raise LimiterExecutionError(action="release", cause=error) from None
+        raise SDKError(reason="limiter_failed", cause=error) from None
 
 
 def _acquire(limiter: Limiter | AsyncLimiter, call: LogicalCallContext, url: str, events: CallEvents | None) -> Permit:
     """Acquire a mode-correct permit, leaving all post-acquisition work to its owner."""
     call.check("limiter")
     if not _is_limiter(limiter):
-        raise ConfigurationError(field_path=("limiter",), condition="async_limiter")
+        raise ConfigurationError(field_path=("limiter",), reason="async_limiter")
     if events is not None:
         events.origin = _limiter_context(call, url).origin
         events.emit(events.event("limiter_wait"))
     try:
         permit = limiter.acquire(_limiter_context(call, url))
     except Exception as error:  # noqa: BLE001
-        raise LimiterExecutionError(action="acquire", cause=error) from None
+        raise SDKError(reason="limiter_failed", cause=error) from None
     if not _is_permit(permit):
-        raise LimiterExecutionError(action="acquire", cause=TypeError("Expected a synchronous Permit"))
+        raise SDKError(reason="limiter_failed", cause=TypeError("Expected a synchronous Permit"))
     return permit
 
 
@@ -2404,16 +2368,16 @@ async def _aacquire(
     """Acquire an async permit in the caller's task, which a stop of the call interrupts."""
     call.check("limiter")
     if not _is_async_limiter(limiter):
-        raise ConfigurationError(field_path=("limiter",), condition="sync_limiter")
+        raise ConfigurationError(field_path=("limiter",), reason="sync_limiter")
     if events is not None:
         events.origin = _limiter_context(call, url).origin
         await events.aemit(events.event("limiter_wait"))
     try:
         permit = await limiter.acquire(_limiter_context(call, url))
     except Exception as error:  # noqa: BLE001
-        raise LimiterExecutionError(action="acquire", cause=error) from None
+        raise SDKError(reason="limiter_failed", cause=error) from None
     if not _is_async_permit(permit):
-        raise LimiterExecutionError(action="acquire", cause=TypeError("Expected an asynchronous Permit"))
+        raise SDKError(reason="limiter_failed", cause=TypeError("Expected an asynchronous Permit"))
     return permit
 
 
@@ -2728,14 +2692,15 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         operation: OperationPlan[T],
         request: PreparedRequest[EncodedAttempt],
         settings: Settings,
-        modified: Callable[[Response[T], bytes], tuple[Response[T], R]],
-        not_modified: Callable[[ResponseInfo], tuple[Response[T], R]],
+        modified: Callable[[Response[T], bytes, bool], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo, bool], tuple[Response[T], R]],
         options: RequestOptions | None,
     ) -> R:
         """Send a cache fetch's prepared request as one logical call, building what its response gives.
 
         A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
-        operation's calls decode it and given to `modified` with its body after content decoding.
+        operation's calls decode it and given to `modified` with its body after content decoding. Both learn whether
+        the response answered a redirect.
         """
         call = _Call(settings, self._scope, operation)
         events = call.events = self._started(call, operation.path, options)
@@ -2745,9 +2710,13 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             received = self._read(response, info, decoder, call)
             call.check("decode")
             built = (
-                not_modified(info)
+                not_modified(info, call.redirects_followed > 0)
                 if info.status_code == _NOT_MODIFIED
-                else modified(_completed(decoder, info, received, call.settings, call.operation_id), received.content)
+                else modified(
+                    _completed(decoder, info, received, call.settings, call.operation_id),
+                    received.content,
+                    call.redirects_followed > 0,
+                )
             )
             call.check("decode")
             return built
@@ -3021,7 +2990,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 else None
             )
             call.check("encode")
-            call.bind(adapter.capabilities)
+            call.bind()
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
                 self._bind_auth(call)
             if (events := call.events) is not None:
@@ -3074,7 +3043,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         while True:
             response: TransportResponse | None = None
             info: ResponseInfo | None = None
-            sends_before = call.network_send_count
+            sends_before = call.sends
             call.response_transferred = False
             try:
                 response = self._send(request, source, call, adapter)
@@ -3114,7 +3083,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 call.retry_blocked |= not _discarded(closing.close, failure)
             except BaseException as error:  # noqa: BLE001
                 failure = self._exchange_failure(error, response, call, info)
-                if not isinstance(failure, TransportError) or call.network_send_count == sends_before:
+                if not is_transport(failure) or call.sends == sends_before:
                     raise call.stopped(failure) from None
                 planned = call.retry(
                     info,
@@ -3168,11 +3137,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             failure.info = info
         if response is not None and not call.response_transferred:
             call.retry_blocked |= not _discarded(response.close, failure)
-        if (
-            isinstance(failure, RedirectPolicyError)
-            and info is None
-            and (head := response_head(call.trace)) is not None
-        ):
+        if is_redirect_refused(failure) and info is None and (head := response_head(call.trace)) is not None:
             call.delivery_state = DeliveryState.RESPONSE_STARTED
             failure.info = info = _info(head.status_code, head.headers, call.request_id_header, call)
             if events is not None:
@@ -3314,7 +3279,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
             )
-            fields = sign_request(signer.signer, signing, signer_index=signer.index)
+            fields = sign_request(signer.signer, signing, _delivery(call))
             call.check("auth")
             request = apply_signature(request, fields, signer.capabilities)
         return request
@@ -3334,9 +3299,9 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             with _auth_work(call):
                 invalidate_credential(bound.credentials[rejected[0]], rejected[1])
-        except HookExecutionError:
-            raise
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
+            if is_hook_failure(error):
+                raise
             call.check("auth")
             call.retry_blocked = True
             auth.secondary_errors = (*auth.secondary_errors, error)
@@ -3386,10 +3351,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             call.admit_send(redirect=call.hop_index != 0)
             if events is not None:
                 events.sending()
-            try:
-                response = adapter.send(request, io)
-            finally:
-                call.observe_send(trace)
+            response = adapter.send(request, io)
         except BaseException as error:  # noqa: BLE001
             failure = self._send_failure(error, attempt, permit, call)
             raise failure from None
@@ -3447,7 +3409,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         """Release all pre-response resources while preserving the original primary failure."""
         events = call.events
         failure = self._failure(error, call, _delivery(call))
-        if isinstance(failure, TransportError):
+        if is_transport(failure):
             call.delivery_state = failure.delivery_state
             if events is not None:
                 events.delivery = failure.delivery_state
@@ -3710,14 +3672,15 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         operation: OperationPlan[T],
         request: PreparedRequest[EncodedAttempt],
         settings: Settings,
-        modified: Callable[[Response[T], bytes], tuple[Response[T], R]],
-        not_modified: Callable[[ResponseInfo], tuple[Response[T], R]],
+        modified: Callable[[Response[T], bytes, bool], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo, bool], tuple[Response[T], R]],
         options: RequestOptions | None,
     ) -> R:
         """Send a cache fetch's prepared request as one logical asyncio call, building what its response gives.
 
         A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
-        operation's calls decode it and given to `modified` with its body after content decoding.
+        operation's calls decode it and given to `modified` with its body after content decoding. Both learn whether
+        the response answered a redirect.
         """
         call = _Call(settings, self._scope, operation)
         self._running(call.operation_id, call.call_id)
@@ -3728,9 +3691,13 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             received = await self._read(response, info, decoder, call)
             call.check("decode")
             built = (
-                not_modified(info)
+                not_modified(info, call.redirects_followed > 0)
                 if info.status_code == _NOT_MODIFIED
-                else modified(_completed(decoder, info, received, call.settings, call.operation_id), received.content)
+                else modified(
+                    _completed(decoder, info, received, call.settings, call.operation_id),
+                    received.content,
+                    call.redirects_followed > 0,
+                )
             )
             call.check("decode")
             return built
@@ -4008,7 +3975,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 else None
             )
             call.check("encode")
-            call.bind(adapter.capabilities)
+            call.bind()
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
                 self._bind_auth(call)
             if (events := call.events) is not None:
@@ -4061,7 +4028,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         while True:
             response: AsyncTransportResponse | None = None
             info: ResponseInfo | None = None
-            sends_before = call.network_send_count
+            sends_before = call.sends
             call.response_transferred = False
             try:
                 response = await self._send(request, source, call, adapter)
@@ -4101,7 +4068,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 await call.cleanup(closing.aclose, error=failure)
             except BaseException as error:  # noqa: BLE001
                 failure = await self._exchange_failure(error, response, call, info)
-                if not isinstance(failure, TransportError) or call.network_send_count == sends_before:
+                if not is_transport(failure) or call.sends == sends_before:
                     raise call.stopped(failure) from None
                 planned = call.retry(
                     info,
@@ -4155,11 +4122,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             failure.info = info
         if response is not None and not call.response_transferred:
             await call.cleanup(response.aclose, error=failure)
-        if (
-            isinstance(failure, RedirectPolicyError)
-            and info is None
-            and (head := response_head(call.trace)) is not None
-        ):
+        if is_redirect_refused(failure) and info is None and (head := response_head(call.trace)) is not None:
             call.delivery_state = DeliveryState.RESPONSE_STARTED
             failure.info = info = _info(head.status_code, head.headers, call.request_id_header, call)
             if events is not None:
@@ -4304,7 +4267,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
             )
-            fields = await asign_request(signer.signer, signing, signer_index=signer.index)
+            fields = await asign_request(signer.signer, signing, _delivery(call))
             call.check("auth")
             request = apply_signature(request, fields, signer.capabilities)
         return request
@@ -4324,9 +4287,9 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         try:
             async with _aauth_work(call):
                 await ainvalidate_credential(bound.credentials[rejected[0]], rejected[1])
-        except HookExecutionError:
-            raise
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
+            if is_hook_failure(error):
+                raise
             call.check("auth")
             call.retry_blocked = True
             auth.secondary_errors = (*auth.secondary_errors, error)
@@ -4376,10 +4339,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             call.admit_send(redirect=call.hop_index != 0)
             if events is not None:
                 events.sending()
-            try:
-                response = await adapter.send(request, io)
-            finally:
-                call.observe_send(trace)
+            response = await adapter.send(request, io)
         except BaseException as error:  # noqa: BLE001
             failure = await self._send_failure(error, attempt, permit, call)
             raise failure from None
@@ -4437,7 +4397,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         """Release all pre-response resources while preserving the original primary failure."""
         events = call.events
         failure = self._failure(error, call, _delivery(call))
-        if isinstance(failure, TransportError):
+        if is_transport(failure):
             call.delivery_state = failure.delivery_state
             if events is not None:
                 events.delivery = failure.delivery_state

@@ -9,7 +9,6 @@ from __future__ import annotations
 import re
 import threading
 from collections.abc import Mapping
-from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 from enum import Enum
@@ -19,13 +18,7 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
 from typing_extensions import Self, TypeVar
 
-from ..client.errors import (
-    BudgetExceededError,
-    ProtocolConfigurationError,
-    ProtocolSizeError,
-    RequestEncodingError,
-    SDKError,
-)
+from ..client.errors import ConfigurationError, DecodeError, ProtocolSizeError, SDKError
 from ..client.options import RequestOptions
 from ..client.paths import dot_segment, path_segments
 from ..client.responses import ResponseInfo
@@ -58,7 +51,7 @@ from .resume import state_text as _text
 from .values import MISSING, Missing, RepeatedValueError, resolve, selected, written
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Sequence
+    from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Sequence
     from types import TracebackType
 
     from ..client.client import AsyncClientCore, ClientCore
@@ -393,7 +386,6 @@ class _Limits:
     max_cursor_bytes: int = 64 * 1024
     total_timeout: float | None = None
     deadline: Deadline | None = None
-    max_network_sends: int | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -401,9 +393,9 @@ class _Limits:
 _DEFAULTS: Final = _Limits()
 
 
-def _invalid(plan: PaginationPlan[T, P], path: tuple[str, ...]) -> ProtocolConfigurationError:
-    return ProtocolConfigurationError(
-        field_path=path, condition="invalid_value", helper_id=plan.helper_id, operation=plan.operation
+def _invalid(plan: PaginationPlan[T, P], path: tuple[str, ...]) -> ConfigurationError:
+    return ConfigurationError(
+        field_path=path, reason="invalid_value", helper_id=plan.helper_id, operation=plan.operation
     )
 
 
@@ -447,7 +439,6 @@ def _limits(
         max_cursor_bytes=layered(kinds, "max_cursor_bytes", _DEFAULTS.max_cursor_bytes),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
-        max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
         clock=core.clock,
     )
@@ -681,13 +672,10 @@ class _Walk(Generic[T, P]):
         self.paths: dict[str, str] | None = None
 
     def progress(self) -> ProtocolProgress:
-        """Return the pages fetched, the items delivered, and the session's sends so far."""
-        session = self.session
+        """Return the pages fetched and the items delivered so far."""
         return MappingProxyType({
             "pages": 0 if (link := self.link) is None else link.index + 1,
             "items": self.delivered,
-            "network_send_count": 0 if session is None else session.network_send_count,
-            "network_send_budget_used": 0 if session is None else session.network_send_budget_used,
         })
 
     def callers(self) -> dict[str, str]:
@@ -720,28 +708,12 @@ class _Walk(Generic[T, P]):
         """Return the identifier of the walk's session once it started."""
         return None if (session := self.session) is None else session.session_id
 
-    def limit(
-        self,
-        limit: int,
-        kind: Literal["items", "pages", "network_sends"],
-        refused: BudgetExceededError | None = None,
-        remaining: int = 0,
-    ) -> SessionLimitError:
-        """Return the error of a session limit reached while pages remain, with the child call a send was refused.
+    def limit(self, limit: int, kind: Literal["items", "pages"], remaining: int = 0) -> SessionLimitError:
+        """Return the error of a session limit reached while pages remain.
 
         It keeps a checkpoint of the walk with the items of its last page left, when the call can be checkpointed.
         """
         plan = self.plan
-        if refused is None:
-            return SessionLimitError(
-                kind=kind,
-                limit=limit,
-                progress=self.progress(),
-                resume_state=self.resumable(remaining),
-                helper_id=plan.helper_id,
-                operation=plan.operation,
-                parent_session_id=self.session_id(),
-            )
         return SessionLimitError(
             kind=kind,
             limit=limit,
@@ -749,20 +721,7 @@ class _Walk(Generic[T, P]):
             resume_state=self.resumable(remaining),
             helper_id=plan.helper_id,
             operation=plan.operation,
-            operation_id=refused.operation_id,
-            call_id=refused.call_id,
-            parent_session_id=refused.parent_session_id,
-            info=refused.info,
-            cause=refused,
-            resource_attempt_count=refused.resource_attempt_count,
-            redirect_count=refused.redirect_count,
-            auth_exchange_count=refused.auth_exchange_count,
-            network_send_count=refused.network_send_count,
-            network_send_budget_used=refused.network_send_budget_used,
-            auth_exchange_budget_used=refused.auth_exchange_budget_used,
-            auth_refresh_ids=refused.auth_refresh_ids,
-            auth_refresh_pending=refused.auth_refresh_pending,
-            wire_send_count=refused.wire_send_count,
+            parent_session_id=self.session_id(),
         )
 
     def state_error(self, action: str, state: str) -> ProtocolStateError:
@@ -812,11 +771,8 @@ class _Walk(Generic[T, P]):
             session = self.session = OperationSession(
                 total_timeout=limits.total_timeout,
                 deadline=limits.deadline,
-                max_network_sends=limits.max_network_sends,
                 clock=limits.clock,
             )
-        if (limit := session.send_limit) is not None and session.network_send_budget_used >= limit:
-            raise self.limit(limit, "network_sends")
         return session
 
     def operation(self) -> OperationPlan[P]:
@@ -1042,16 +998,6 @@ class _Walk(Generic[T, P]):
         object.__setattr__(page, "_link", link)  # noqa: PLC2801 - Link the sealed page once, as its helper fetched it.
         return page
 
-    @contextmanager
-    def mapped(self) -> Generator[None, None, None]:
-        """Raise a child call's refusal for want of a session send slot as the session's limit error."""
-        try:
-            yield
-        except BudgetExceededError as error:
-            if error.budget_kind != "parent_network":
-                raise
-            raise self.limit(error.limit, "network_sends", error) from None
-
     def checkpoint(self, remaining: int) -> ResumeState:
         """Return a checkpoint of the walk, with the given number of its last page's items left to deliver.
 
@@ -1104,8 +1050,8 @@ def _page_link(plan: PaginationPlan[T, P], page: object) -> _Link:
     """Return the link of a page this helper fetched, refusing any other page."""
     link = page._link if isinstance(page, Page) else None  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     if link is None or link.fingerprint != plan.fingerprint:
-        raise ProtocolConfigurationError(
-            field_path=("page",), condition="binding_mismatch", helper_id=plan.helper_id, operation=plan.operation
+        raise ConfigurationError(
+            field_path=("page",), reason="binding_mismatch", helper_id=plan.helper_id, operation=plan.operation
         )
     return link
 
@@ -1185,7 +1131,7 @@ def _checked(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> tuple[str
     """
     try:
         return core.checked_page(walk.operation(), walk.next_request, walk.request.media_type, walk.limits.options)
-    except (RequestEncodingError, ProtocolDataError, CodecError):
+    except (DecodeError, ProtocolDataError, CodecError):
         raise _MalformedError from None
 
 
@@ -1459,8 +1405,7 @@ class Pager(_Traversal[T, P]):
     def _fetch(self, session: OperationSession) -> Page[T, P]:
         walk = self._walk
         try:
-            with walk.mapped():
-                return walk.record(*_fetch(self._core, walk, session))
+            return walk.record(*_fetch(self._core, walk, session))
         except BaseException:
             self._state = _State.FAILED
             raise
@@ -1531,8 +1476,7 @@ class AsyncPager(_Traversal[T, P]):
     async def _fetch(self, session: OperationSession) -> Page[T, P]:
         walk = self._walk
         try:
-            with walk.mapped():
-                return walk.record(*await _afetch(self._core, walk, session))
+            return walk.record(*await _afetch(self._core, walk, session))
         except BaseException:
             self._state = _State.FAILED
             raise
@@ -1628,8 +1572,7 @@ def first_page(  # noqa: PLR0913
     walk = _Walk(plan, _Request(arguments, body, media_type), limits, core)
     if (session := walk.ready()) is None:
         raise walk.limit(0, "items")
-    with walk.mapped():
-        return walk.record(*_fetch(core, walk, session))
+    return walk.record(*_fetch(core, walk, session))
 
 
 async def afirst_page(  # noqa: PLR0913
@@ -1648,8 +1591,7 @@ async def afirst_page(  # noqa: PLR0913
     walk = _Walk(plan, _Request(arguments, body, media_type), limits, core)
     if (session := walk.ready()) is None:
         raise walk.limit(0, "items")
-    with walk.mapped():
-        return walk.record(*await _afetch(core, walk, session))
+    return walk.record(*await _afetch(core, walk, session))
 
 
 def iterate_pages(  # noqa: PLR0913
@@ -1702,8 +1644,7 @@ def following_page(  # noqa: PLR0913
     walk = _Walk(plan, link.request, limits, core, link)
     if (session := walk.ready()) is None:
         return None
-    with walk.mapped():
-        return walk.record(*_fetch(core, walk, session))
+    return walk.record(*_fetch(core, walk, session))
 
 
 async def afollowing_page(  # noqa: PLR0913
@@ -1724,8 +1665,7 @@ async def afollowing_page(  # noqa: PLR0913
     walk = _Walk(plan, link.request, limits, core, link)
     if (session := walk.ready()) is None:
         return None
-    with walk.mapped():
-        return walk.record(*await _afetch(core, walk, session))
+    return walk.record(*await _afetch(core, walk, session))
 
 
 def resume_pages(  # noqa: PLR0913

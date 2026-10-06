@@ -421,7 +421,7 @@ def _metadata_categories(
 ) -> None:
     errors = importlib.import_module(f"{package.__name__}.errors")
     attempt = _Metadata()
-    attempt.primary = errors.TransportError(phase="read", delivery_state=errors.DeliveryState.MAYBE_SENT)
+    attempt.primary = errors.APIConnectionError(phase="read", delivery_state=errors.DeliveryState.MAYBE_SENT)
     factory = _Factory((attempt,))
     replies.reset(200)
     try:
@@ -456,7 +456,7 @@ async def _async_metadata_categories(
 ) -> None:
     errors = importlib.import_module(f"{package.__name__}.errors")
     attempt = _Metadata()
-    attempt.primary = errors.TransportError(phase="read", delivery_state=errors.DeliveryState.MAYBE_SENT)
+    attempt.primary = errors.APIConnectionError(phase="read", delivery_state=errors.DeliveryState.MAYBE_SENT)
     factory = _Factory((attempt,))
     replies.reset(200)
     try:
@@ -855,7 +855,7 @@ def _file_metadata_errors(
 ) -> None:
     errors = importlib.import_module(f"{package.__name__}.errors")
     for entry in (False, True):
-        primary = errors.PhaseTimeoutError(
+        primary = errors.APITimeoutError(
             phase="read", effective_timeout=1, delivery_state=errors.DeliveryState.NOT_SENT
         )
         file = _SDKFile(primary, armed=entry)
@@ -872,7 +872,7 @@ def _file_metadata_errors(
                 f"  SDK file {'capture' if entry else 'rewind'} {type(error).__name__} cause={error.cause is primary}"
                 f" failed_calls={file.failed_calls} closes={file.closes} sends={len(replies.requests)}"
             )
-    primary = errors.TransportError(phase="read", delivery_state=errors.DeliveryState.MAYBE_SENT)
+    primary = errors.APIConnectionError(phase="read", delivery_state=errors.DeliveryState.MAYBE_SENT)
     file = _SDKFile(primary, armed=True)
     context = bodies.BodyAttemptContext(call_id="direct", attempt_index=2, hop_index=1, remaining_timeout=None)
     try:
@@ -880,7 +880,7 @@ def _file_metadata_errors(
     except Exception as error:  # noqa: BLE001
         lines.append(
             f"  direct SDK file metadata {type(error).__name__} cause={error.cause is primary}"
-            f" context={(error.attempt_index, error.hop_index)} failed_calls={file.failed_calls}"
+            f" reason={error.reason_code} failed_calls={file.failed_calls}"
         )
     file.close()
 
@@ -890,7 +890,7 @@ async def _async_file_metadata_errors(
 ) -> None:
     errors = importlib.import_module(f"{package.__name__}.errors")
     for entry in (False, True):
-        primary = errors.PhaseTimeoutError(
+        primary = errors.APITimeoutError(
             phase="read", effective_timeout=1, delivery_state=errors.DeliveryState.NOT_SENT
         )
         file = _SDKFile(primary, armed=entry)

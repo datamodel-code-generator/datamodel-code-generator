@@ -4,18 +4,18 @@
   form = FieldFormsPostResponse(name='a b', count=2)
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
-  form invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitForm', call_id='<call>') [operation_id='submitForm', body_bytes=b'count=many', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] decode_error
+  form invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitForm', call_id='<call>', reason='invalid_syntax') [operation_id='submitForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=many', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_syntax
   > POST https://media.example.com/api/pairs
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 11] b'a=1&a=2&b=+'
   pairs = (('a', '1'), ('a', '2'), ('b', ' '))
   > POST https://media.example.com/api/pairs
     [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  pairs invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitPairs', call_id='<call>') [operation_id='submitPairs', body_bytes=b'a=%zz', truncated=False, cause=WireValidationError('A percent sign must start a percent-encoded octet at /')] decode_error
-  pairs body ! RequestEncodingError: RequestEncodingError(operation_id='submitPairs', call_id='<call>', location='body') [operation_id='submitPairs', location=('body',), cause=ParameterEncodingError('Form data must be a tuple of name and value string pairs')] request_encoding_error
+  pairs invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitPairs', call_id='<call>', reason='invalid_syntax') [operation_id='submitPairs', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'a=%zz', truncated=False, cause=WireValidationError('A percent sign must start a percent-encoded octet at /')] invalid_syntax
+  pairs body ! DecodeError: DecodeError(operation_id='submitPairs', call_id='<call>', reason='unencodable', location='body') [operation_id='submitPairs', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('Form data must be a tuple of name and value string pairs')] unencodable
   > POST https://media.example.com/api/searches
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 120] b'term=a+b&filter%5Bname%5D=x%20y&filter%5Bmin%5D=2&tags=a%7Cb&ids=1,2&meta=%7B%22city%22%3A%22Oslo%22%7D&path=/a?b&page=2'
   search = None
-  search of an extra named as another member ! RequestEncodingError: RequestEncodingError(operation_id='submitSearch', call_id='<call>', location='body') [operation_id='submitSearch', location=('body',), cause=ParameterEncodingError('Two URL-encoded form members write the same name')] request_encoding_error
+  search of an extra named as another member ! DecodeError: DecodeError(operation_id='submitSearch', call_id='<call>', reason='unencodable', location='body') [operation_id='submitSearch', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('Two URL-encoded form members write the same name')] unencodable
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 11] b'{"x":[1,2]}'
   store = {'stored': True}
@@ -27,13 +27,13 @@
   store text of a charset named in capitals = 'café'
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store moved ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=1 validation error for Draft
+  store moved ! DecodeError: DecodeError(status_code=302, operation_id='storeDocument', call_id='<call>', reason='invalid_value') [operation_id='storeDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=1 validation error for Draft
 secret
   Field required [type=missing, input_value={'id': 1, 'title': 't'}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/<version>/v/missing] response_validation_error
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store moved invalid ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"title":5}', truncated=False, cause=3 validation errors for Draft
+  store moved invalid ! DecodeError: DecodeError(status_code=302, operation_id='storeDocument', call_id='<call>', reason='invalid_value') [operation_id='storeDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"title":5}', truncated=False, cause=3 validation errors for Draft
 id
   Field required [type=missing, input_value={'title': 5}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing
@@ -42,29 +42,29 @@ title
     For further information visit https://errors.pydantic.dev/<version>/v/string_type
 secret
   Field required [type=missing, input_value={'title': 5}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/<version>/v/missing] response_validation_error
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store failed ! InternalServerError: InternalServerError(status_code=500, operation_id='storeDocument', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='storeDocument', status_code=500, body='down', body_bytes=b'down', truncated=False] internal_server_error
+  store failed ! InternalServerError: InternalServerError(status_code=500, operation_id='storeDocument', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='storeDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body='down', body_bytes=b'down', truncated=False] internal_server_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store syntax ! DecodeError: DecodeError(status_code=200, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'\xff', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] decode_error
+  store syntax ! DecodeError: DecodeError(status_code=200, operation_id='storeDocument', call_id='<call>', reason='invalid_syntax') [operation_id='storeDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'\xff', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] invalid_syntax
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/json, content-length: 1] b'1'
-  store narrowed ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, actual_media_type='application/json'] unexpected_media_type_error
-  store value ! RequestEncodingError: RequestEncodingError(operation_id='storeDocument', call_id='<call>', location='body') [operation_id='storeDocument', location=('body',), cause=TypeError('Object of type set is not JSON serializable')] request_encoding_error
+  store narrowed ! DecodeError: DecodeError(status_code=302, operation_id='storeDocument', call_id='<call>', reason='unexpected_media_type') [operation_id='storeDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"title":"t"}', truncated=False, media_type='application/json'] unexpected_media_type
+  store value ! DecodeError: DecodeError(operation_id='storeDocument', call_id='<call>', reason='unencodable', location='body') [operation_id='storeDocument', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('Object of type set is not JSON serializable')] unencodable
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
-  read ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=1 validation error for Draft
+  read ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', call_id='<call>', reason='invalid_value') [operation_id='readDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=1 validation error for Draft
 secret
   Field required [type=missing, input_value={'id': 1, 'title': 't'}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/<version>/v/missing] response_validation_error
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
-  read header ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'', truncated=False, cause=1 validation error for Draft
+  read header ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', call_id='<call>', reason='invalid_header', location='header.X-Draft') [operation_id='readDocument', location=('header', 'X-Draft'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for Draft
 secret
   Field required [type=missing, input_value={'id': 1, 'title': 'h'}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/<version>/v/missing] response_header_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_header
   > POST https://media.example.com/api/notes
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 3] b'[1]'
   note = None
@@ -74,8 +74,8 @@ secret
   > PUT https://media.example.com/api/notes
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 1] b'n'
   note replace text = None
-  note replace value ! RequestEncodingError: RequestEncodingError(operation_id='replaceNote', call_id='<call>', location='body') [operation_id='replaceNote', location=('body',), cause=ParameterEncodingError('A text body must be a string')] request_encoding_error
-  store file of a media range ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
+  note replace value ! DecodeError: DecodeError(operation_id='replaceNote', call_id='<call>', reason='unencodable', location='body') [operation_id='replaceNote', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A text body must be a string')] unencodable
+  store file of a media range ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='media_type') [operation_id='storeFile', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: image/png, content-length: 4] b'\x89PNG'
   store png = None
@@ -88,13 +88,13 @@ secret
   > PUT https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 1] b'x'
   replace with octets = None
-  store video outside the ranges ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
+  store video outside the ranges ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='media_type') [operation_id='storeFile', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: application/json, content-length: 15] b'{"city":"Oslo"}'
   store file narrowed = b'png'
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: application/json, content-length: 15] b'{"city":"Oslo"}'
-  store file narrowed to another image ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='storeFile', call_id='<call>') [operation_id='storeFile', body_bytes=b'jpeg', truncated=False, actual_media_type='image/jpeg', expected_media_types=('image/png',)] unexpected_media_type_error
+  store file narrowed to another image ! DecodeError: DecodeError(status_code=200, operation_id='storeFile', call_id='<call>', reason='unexpected_media_type') [operation_id='storeFile', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'jpeg', truncated=False, media_type='image/jpeg'] unexpected_media_type
   > PUT https://media.example.com/api/files
     [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   replace file without a body = None
@@ -110,7 +110,7 @@ secret
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   range store_file streaming = b'jpeg'
-  response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
+  response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='storeFile', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   range bodyless = None
@@ -126,25 +126,25 @@ secret
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   async range store_file streaming = b'jpeg'
-  async response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
+  async response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='storeFile', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
 # media dataclasses.dataclass
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
   form = FieldFormsPostResponse(name='a b', count=2)
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
-  form invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitForm', call_id='<call>') [operation_id='submitForm', body_bytes=b'count=many', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] decode_error
+  form invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitForm', call_id='<call>', reason='invalid_syntax') [operation_id='submitForm', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'count=many', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] invalid_syntax
   > POST https://media.example.com/api/pairs
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 11] b'a=1&a=2&b=+'
   pairs = (('a', '1'), ('a', '2'), ('b', ' '))
   > POST https://media.example.com/api/pairs
     [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  pairs invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitPairs', call_id='<call>') [operation_id='submitPairs', body_bytes=b'a=%zz', truncated=False, cause=WireValidationError('A percent sign must start a percent-encoded octet at /')] decode_error
-  pairs body ! RequestEncodingError: RequestEncodingError(operation_id='submitPairs', call_id='<call>', location='body') [operation_id='submitPairs', location=('body',), cause=ParameterEncodingError('Form data must be a tuple of name and value string pairs')] request_encoding_error
+  pairs invalid ! DecodeError: DecodeError(status_code=200, operation_id='submitPairs', call_id='<call>', reason='invalid_syntax') [operation_id='submitPairs', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'a=%zz', truncated=False, cause=WireValidationError('A percent sign must start a percent-encoded octet at /')] invalid_syntax
+  pairs body ! DecodeError: DecodeError(operation_id='submitPairs', call_id='<call>', reason='unencodable', location='body') [operation_id='submitPairs', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('Form data must be a tuple of name and value string pairs')] unencodable
   > POST https://media.example.com/api/searches
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 120] b'term=a+b&filter%5Bname%5D=x%20y&filter%5Bmin%5D=2&tags=a%7Cb&ids=1,2&meta=%7B%22city%22%3A%22Oslo%22%7D&path=/a?b&page=2'
   search = None
-  search of an extra named as another member ! RequestEncodingError: RequestEncodingError(operation_id='submitSearch', call_id='<call>', location='body') [operation_id='submitSearch', location=('body',), cause=ParameterEncodingError('Two URL-encoded form members write the same name')] request_encoding_error
+  search of an extra named as another member ! DecodeError: DecodeError(operation_id='submitSearch', call_id='<call>', reason='unencodable', location='body') [operation_id='submitSearch', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('Two URL-encoded form members write the same name')] unencodable
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 11] b'{"x":[1,2]}'
   store = {'stored': True}
@@ -156,26 +156,26 @@ secret
   store text of a charset named in capitals = 'café'
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store moved ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] response_validation_error
+  store moved ! DecodeError: DecodeError(status_code=302, operation_id='storeDocument', call_id='<call>', reason='invalid_value') [operation_id='storeDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] invalid_value
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store moved invalid ! ResponseValidationError: ResponseValidationError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"title":5}', truncated=False, cause=TypeError("Draft.__init__() missing 2 required positional arguments: 'id' and 'secret'")] response_validation_error
+  store moved invalid ! DecodeError: DecodeError(status_code=302, operation_id='storeDocument', call_id='<call>', reason='invalid_value') [operation_id='storeDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"title":5}', truncated=False, cause=TypeError("Draft.__init__() missing 2 required positional arguments: 'id' and 'secret'")] invalid_value
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store failed ! InternalServerError: InternalServerError(status_code=500, operation_id='storeDocument', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='storeDocument', status_code=500, body='down', body_bytes=b'down', truncated=False] internal_server_error
+  store failed ! InternalServerError: InternalServerError(status_code=500, operation_id='storeDocument', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='storeDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body='down', body_bytes=b'down', truncated=False] internal_server_error
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
-  store syntax ! DecodeError: DecodeError(status_code=200, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'\xff', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] decode_error
+  store syntax ! DecodeError: DecodeError(status_code=200, operation_id='storeDocument', call_id='<call>', reason='invalid_syntax') [operation_id='storeDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'\xff', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] invalid_syntax
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/json, content-length: 1] b'1'
-  store narrowed ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=302, operation_id='storeDocument', call_id='<call>') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, actual_media_type='application/json'] unexpected_media_type_error
-  store value ! RequestEncodingError: RequestEncodingError(operation_id='storeDocument', call_id='<call>', location='body') [operation_id='storeDocument', location=('body',), cause=TypeError('Object of type set is not JSON serializable')] request_encoding_error
+  store narrowed ! DecodeError: DecodeError(status_code=302, operation_id='storeDocument', call_id='<call>', reason='unexpected_media_type') [operation_id='storeDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"title":"t"}', truncated=False, media_type='application/json'] unexpected_media_type
+  store value ! DecodeError: DecodeError(operation_id='storeDocument', call_id='<call>', reason='unencodable', location='body') [operation_id='storeDocument', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('Object of type set is not JSON serializable')] unencodable
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
-  read ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] response_validation_error
+  read ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', call_id='<call>', reason='invalid_value') [operation_id='readDocument', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] invalid_value
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
-  read header ! ResponseHeaderDecodeError: ResponseHeaderDecodeError(status_code=200, operation_id='readDocument', call_id='<call>') [operation_id='readDocument', body_bytes=b'', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] response_header_decode_error
+  read header ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', call_id='<call>', reason='invalid_header', location='header.X-Draft') [operation_id='readDocument', location=('header', 'X-Draft'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] invalid_header
   > POST https://media.example.com/api/notes
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 3] b'[1]'
   note = None
@@ -185,8 +185,8 @@ secret
   > PUT https://media.example.com/api/notes
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 1] b'n'
   note replace text = None
-  note replace value ! RequestEncodingError: RequestEncodingError(operation_id='replaceNote', call_id='<call>', location='body') [operation_id='replaceNote', location=('body',), cause=ParameterEncodingError('A text body must be a string')] request_encoding_error
-  store file of a media range ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
+  note replace value ! DecodeError: DecodeError(operation_id='replaceNote', call_id='<call>', reason='unencodable', location='body') [operation_id='replaceNote', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A text body must be a string')] unencodable
+  store file of a media range ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='media_type') [operation_id='storeFile', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: image/png, content-length: 4] b'\x89PNG'
   store png = None
@@ -199,13 +199,13 @@ secret
   > PUT https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 1] b'x'
   replace with octets = None
-  store video outside the ranges ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
+  store video outside the ranges ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='media_type') [operation_id='storeFile', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: application/json, content-length: 15] b'{"city":"Oslo"}'
   store file narrowed = b'png'
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: application/json, content-length: 15] b'{"city":"Oslo"}'
-  store file narrowed to another image ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='storeFile', call_id='<call>') [operation_id='storeFile', body_bytes=b'jpeg', truncated=False, actual_media_type='image/jpeg', expected_media_types=('image/png',)] unexpected_media_type_error
+  store file narrowed to another image ! DecodeError: DecodeError(status_code=200, operation_id='storeFile', call_id='<call>', reason='unexpected_media_type') [operation_id='storeFile', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'jpeg', truncated=False, media_type='image/jpeg'] unexpected_media_type
   > PUT https://media.example.com/api/files
     [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   replace file without a body = None
@@ -221,7 +221,7 @@ secret
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   range store_file streaming = b'jpeg'
-  response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
+  response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='storeFile', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   range bodyless = None
@@ -237,4 +237,4 @@ secret
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   async range store_file streaming = b'jpeg'
-  async response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
+  async response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='storeFile', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared

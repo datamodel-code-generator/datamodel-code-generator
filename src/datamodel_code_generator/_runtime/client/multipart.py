@@ -22,7 +22,7 @@ from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import Unset
 from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
-from .errors import RequestEncodingError, add_secondary
+from .errors import DecodeError, add_secondary
 from .media import charset, encode_text, most_specific, normalized, with_charset
 from .responses import HeadersView
 
@@ -330,8 +330,9 @@ class _Names:
                 raise _malformed(plan.name, ValueError(_MISSING))
 
 
-def _malformed(name: object, cause: BaseException) -> RequestEncodingError:
-    return RequestEncodingError(location=("body", name if isinstance(name, str) else "?"), cause=cause)
+def _malformed(name: object, cause: BaseException, *, whole: bool = False) -> DecodeError:
+    location = ("body",) if whole else ("body", name if isinstance(name, str) else "?")
+    return DecodeError(reason="unencodable", direction="request", location=location, cause=cause)
 
 
 def multipart_head(
@@ -700,7 +701,7 @@ class MultipartSource:
     ) -> None:
         """Encode the body's fields and file heads for every attempt, refusing a body that is no multipart body."""
         if not is_multipart(body):
-            raise RequestEncodingError(location=("body",), cause=TypeError(_MULTIPART))
+            raise _malformed(None, TypeError(_MULTIPART), whole=True)
         self.body = body
         self.boundary = boundary
         self._pieces = _layout(body.parts, boundary, None if plans is None else _Names(plans, additional))
@@ -708,13 +709,13 @@ class MultipartSource:
     def inputs(self) -> Iterator[SyncBinaryBody]:
         """Yield the once-encoded layout and synchronous file inputs for call-level binding."""
         if not _is_sync(self.body):
-            raise RequestEncodingError(location=("body",), cause=TypeError(_MULTIPART))
+            raise _malformed(None, TypeError(_MULTIPART), whole=True)
         return _inputs(self._pieces, _SYNC)
 
     def ainputs(self) -> Iterator[AsyncBinaryBody]:
         """Yield the once-encoded layout and asynchronous file inputs for call-level binding."""
         if not _is_async(self.body):
-            raise RequestEncodingError(location=("body",), cause=TypeError(_MULTIPART))
+            raise _malformed(None, TypeError(_MULTIPART), whole=True)
         return _inputs(self._pieces, _ASYNC)
 
 

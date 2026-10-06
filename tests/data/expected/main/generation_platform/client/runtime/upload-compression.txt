@@ -12,7 +12,7 @@
   > PATCH https://api.example.com/files/u1
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, upload-checksum: sha1 FrBr2bc4g14tE0/o1ZbpqwCGqYU=, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'89'
   compressed resume = None
-  checkpoint the completed upload ! ProtocolStateError: ProtocolStateError(state='complete', action='checkpoint') [] protocol_state_error
+  checkpoint the completed upload ! ProtocolStateError: ProtocolStateError(state='complete', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   stored u1: 10 bytes, original=True
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -41,7 +41,7 @@
   > PATCH https://api.example.com/files/u3
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, upload-checksum: sha1 FrBr2bc4g14tE0/o1ZbpqwCGqYU=, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'89'
   async compressed resume = None
-  async checkpoint the completed upload ! ProtocolStateError: ProtocolStateError(state='complete', action='checkpoint') [] protocol_state_error
+  async checkpoint the completed upload ! ProtocolStateError: ProtocolStateError(state='complete', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u4

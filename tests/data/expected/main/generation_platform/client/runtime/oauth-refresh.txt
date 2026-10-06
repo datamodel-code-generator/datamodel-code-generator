@@ -1,27 +1,27 @@
 # auth pydantic_v2.BaseModel
   missing token set = TypeError
-  token set type = AuthConfigurationError condition=invalid_type field_path=('token_set',)
-  naive expiry = AuthConfigurationError condition=invalid_value field_path=('token_set', 'access_token', 'expires_at')
-  token type other than Bearer = AuthConfigurationError condition=unsupported_token_type field_path=('token_set', 'access_token', 'token_type')
-  token for another audience = AuthConfigurationError condition=audience_mismatch field_path=('audience',)
-  token for an audience without one configured = AuthConfigurationError condition=audience_mismatch field_path=('audience',)
-  callback that cannot be called = AuthConfigurationError condition=invalid_mode field_path=('on_token_refreshed',)
-  coroutine callback of a sync provider = AuthConfigurationError condition=invalid_mode field_path=('on_token_refreshed',)
-  sync callback of an async provider = AuthConfigurationError condition=invalid_mode field_path=('on_token_refreshed',)
-  public client with a secret = AuthConfigurationError condition=forbidden_value field_path=('client_secret',)
-  missing secret = AuthConfigurationError condition=missing_value field_path=('client_secret',)
-  async secret = AuthConfigurationError condition=invalid_mode field_path=('client_secret',)
-  sync secret of an async provider = AuthConfigurationError condition=invalid_mode field_path=('client_secret',)
-  sync transport of an async provider = AuthConfigurationError condition=invalid_mode field_path=('token_transport',)
-  lone scope string = AuthConfigurationError condition=invalid_scope field_path=('scopes',)
-  empty audience = AuthConfigurationError condition=invalid_value field_path=('audience',)
-  options type = AuthConfigurationError condition=invalid_type field_path=('options',)
-  context type = AuthConfigurationError condition=invalid_type field_path=('context',)
-  audience of another resource = AuthConfigurationError condition=audience_mismatch field_path=('audience',)
-  invalidate with another type = AuthConfigurationError condition=invalid_type field_path=('version',)
+  token set type = ConfigurationError reason=invalid_type delivery_state=NOT_SENT field_path=('token_set',)
+  naive expiry = ConfigurationError reason=invalid_value delivery_state=NOT_SENT field_path=('token_set', 'access_token', 'expires_at')
+  token type other than Bearer = ConfigurationError reason=unsupported_token_type delivery_state=NOT_SENT field_path=('token_set', 'access_token', 'token_type')
+  token for another audience = ConfigurationError reason=audience_mismatch delivery_state=NOT_SENT field_path=('audience',)
+  token for an audience without one configured = ConfigurationError reason=audience_mismatch delivery_state=NOT_SENT field_path=('audience',)
+  callback that cannot be called = ConfigurationError reason=invalid_mode delivery_state=NOT_SENT field_path=('on_token_refreshed',)
+  coroutine callback of a sync provider = ConfigurationError reason=invalid_mode delivery_state=NOT_SENT field_path=('on_token_refreshed',)
+  sync callback of an async provider = ConfigurationError reason=invalid_mode delivery_state=NOT_SENT field_path=('on_token_refreshed',)
+  public client with a secret = ConfigurationError reason=forbidden_value delivery_state=NOT_SENT field_path=('client_secret',)
+  missing secret = ConfigurationError reason=missing_value delivery_state=NOT_SENT field_path=('client_secret',)
+  async secret = ConfigurationError reason=invalid_mode delivery_state=NOT_SENT field_path=('client_secret',)
+  sync secret of an async provider = ConfigurationError reason=invalid_mode delivery_state=NOT_SENT field_path=('client_secret',)
+  sync transport of an async provider = ConfigurationError reason=invalid_mode delivery_state=NOT_SENT field_path=('token_transport',)
+  lone scope string = ConfigurationError reason=invalid_scope delivery_state=NOT_SENT field_path=('scopes',)
+  empty audience = ConfigurationError reason=invalid_value delivery_state=NOT_SENT field_path=('audience',)
+  options type = ConfigurationError reason=invalid_type delivery_state=NOT_SENT field_path=('options',)
+  context type = ConfigurationError reason=invalid_type delivery_state=NOT_SENT field_path=('context',)
+  audience of another resource = ConfigurationError reason=audience_mismatch delivery_state=NOT_SENT field_path=('audience',)
+  invalidate with another type = ConfigurationError reason=invalid_type delivery_state=NOT_SENT field_path=('version',)
   get = access-1 scopes=None expires_in_minutes=60
   sends before close = 0
-  get after close = AuthProviderClosedError delivery_state=NOT_SENT phase=unknown
+  get after close = AuthError reason=provider_closed delivery_state=NOT_SENT phase=unknown
   close again = None
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
@@ -41,43 +41,43 @@
   public client keeping its refresh token = public scopes=None expires_in_minutes=60
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  invalid grant = AuthReauthorizationRequiredError delivery_state=RESPONSE_STARTED phase=unknown condition=invalid_grant
+  invalid grant = AuthError reason=reauthorization_required delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_grant
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
     later get = access-2 scopes=None expires_in_minutes=60
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  rejected scope = OAuthExchangeError delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_scope
+  rejected scope = AuthError reason=oauth_error delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_scope
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
     later get = access-2 scopes=None expires_in_minutes=60
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  rejected client = OAuthExchangeError delivery_state=RESPONSE_STARTED phase=unknown status_code=401 oauth_error=invalid_client
+  rejected client = AuthError reason=oauth_error delivery_state=RESPONSE_STARTED phase=unknown status_code=401 oauth_error=invalid_client
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
     later get = access-2 scopes=None expires_in_minutes=60
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  unauthorized without invalid_client = OAuthExchangeError delivery_state=RESPONSE_STARTED phase=unknown status_code=401
+  unauthorized without invalid_client = AuthError reason=oauth_error delivery_state=RESPONSE_STARTED phase=unknown status_code=401
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
     later get = access-2 scopes=None expires_in_minutes=60
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  unavailable = OAuthExchangeError delivery_state=RESPONSE_STARTED phase=unknown status_code=503
+  unavailable = AuthError reason=oauth_error delivery_state=RESPONSE_STARTED phase=unknown status_code=503
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
     later get = access-2 scopes=None expires_in_minutes=60
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  success without JSON = OAuthExchangeError delivery_state=RESPONSE_STARTED phase=validate status_code=200 cause=ValueError
+  success without JSON = AuthError reason=oauth_error delivery_state=RESPONSE_STARTED phase=validate status_code=200 cause=ValueError
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
     later get = access-2 scopes=None expires_in_minutes=60
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
-  missing access token = OAuthExchangeError delivery_state=RESPONSE_STARTED phase=validate status_code=200 cause=InvalidTokenResponseError
+  missing access token = AuthError reason=oauth_error delivery_state=RESPONSE_STARTED phase=validate status_code=200 cause=InvalidTokenResponseError
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
     later get = access-2 scopes=None expires_in_minutes=60
@@ -93,10 +93,10 @@
   rejected token refreshed = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
   > GET https://api.example.com/oauth/scopes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
-  refreshed narrow grant refused by resource ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False] permission_denied_error
+  refreshed narrow grant refused by resource ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False] permission_denied_error
   > GET https://api.example.com/oauth/scopes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
-  403 leaves the refreshed grant unchanged ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False] permission_denied_error
+  403 leaves the refreshed grant unchanged ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False] permission_denied_error
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
   > GET https://api.example.com/oauth/read
@@ -104,22 +104,22 @@
   expired narrow grant refreshed and accepted = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
   > GET https://api.example.com/oauth/scopes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
-  write operation refused by resource ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False] permission_denied_error
+  write operation refused by resource ! PermissionDeniedError: PermissionDeniedError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=403, body=b'forbidden', body_bytes=b'forbidden', truncated=False] permission_denied_error
     token_requests=2 resource_arrivals=7 refreshed_grants=('read',)
   lifetime 100s with refresh token refresh-1 after 95s = access-2 scopes=None expires_in_minutes=60 same=None
     after 101s = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
   lifetime 100s with refresh token None after 95s = access-1 scopes=None expires_in_minutes=2 same=True
-    after 101s = AuthReauthorizationRequiredError delivery_state=NOT_SENT phase=unknown condition=no_refresh_token sent=[]
-  connect failure proven unsent = OAuthExchangeError delivery_state=NOT_SENT phase=connect cause=TransportError
+    after 101s = AuthError reason=reauthorization_required delivery_state=NOT_SENT phase=unknown sent=[]
+  connect failure proven unsent = AuthError reason=oauth_error delivery_state=NOT_SENT phase=connect cause=APIConnectionError
     later get = access-2 scopes=None expires_in_minutes=60
     refresh tokens sent = ['refresh-1', 'refresh-1']
-  phase timeout after sending = AuthTimeoutError delivery_state=MAYBE_SENT phase=read timeout_kind=phase cause=PhaseTimeoutError
+  phase timeout after sending = AuthError reason=timeout delivery_state=MAYBE_SENT phase=read effective_timeout=15.0 cause=APITimeoutError
     later get = access-2 scopes=None expires_in_minutes=60
     refresh tokens sent = ['refresh-1', 'refresh-1']
-  adapter failure = OAuthExchangeError delivery_state=MAYBE_SENT phase=unknown cause=RuntimeError
+  adapter failure = AuthError reason=oauth_error delivery_state=MAYBE_SENT phase=unknown cause=RuntimeError
     later get = access-2 scopes=None expires_in_minutes=60
     refresh tokens sent = ['refresh-1', 'refresh-1']
-  secret failure = AuthProviderExecutionError delivery_state=NOT_SENT phase=unknown callback=get cause=RuntimeError
+  secret failure = AuthError reason=provider_failed delivery_state=NOT_SENT phase=unknown cause=RuntimeError
     later get = access-2 scopes=None expires_in_minutes=60
     refresh tokens sent = ['refresh-1']
   interrupted send = KeyboardInterrupt
@@ -130,13 +130,13 @@
     callback calls = ['TokenSet() access=access-2 refresh=refresh-2', 'TokenSet() access=access-2 refresh=refresh-3'] sent=['refresh-1', 'refresh-2']
   one refresh for concurrent callers = access-2 scopes=None expires_in_minutes=60 / access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
   without a refresh token = access-1 scopes=None expires_in_minutes=60
-    get once invalidated = AuthReauthorizationRequiredError delivery_state=NOT_SENT phase=unknown condition=no_refresh_token sends=0
-  forced refresh without a refresh token = AuthReauthorizationRequiredError delivery_state=NOT_SENT phase=unknown condition=no_refresh_token
+    get once invalidated = AuthError reason=reauthorization_required delivery_state=NOT_SENT phase=unknown sends=0
+  forced refresh without a refresh token = AuthError reason=reauthorization_required delivery_state=NOT_SENT phase=unknown
   token for the configured audience = access-1 scopes=None expires_in_minutes=60
   async refresh = access-2 scopes=None expires_in_minutes=60
     cached = True
-    invalid grant = AuthReauthorizationRequiredError delivery_state=RESPONSE_STARTED phase=unknown condition=invalid_grant
+    invalid grant = AuthError reason=reauthorization_required delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_grant
     callback calls = ['TokenSet() access=access-2 refresh=refresh-2'] sends=2
-    get after close = AuthProviderClosedError delivery_state=NOT_SENT phase=unknown
+    get after close = AuthError reason=provider_closed delivery_state=NOT_SENT phase=unknown
   async callback failure = RuntimeError
     refreshed token stays current = access-2 scopes=None expires_in_minutes=60

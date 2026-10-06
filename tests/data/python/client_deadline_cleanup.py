@@ -104,13 +104,7 @@ class _Event(Protocol):
     def outcome(self) -> str | None: ...
 
     @property
-    def network_send_count(self) -> int: ...
-
-    @property
-    def resource_attempt_count(self) -> int: ...
-
-    @property
-    def network_send_budget_used(self) -> int: ...
+    def attempt_count(self) -> int: ...
 
 
 class _FaultHook:
@@ -137,9 +131,7 @@ class _FaultHook:
             self.name,
             name,
             event.outcome,
-            event.resource_attempt_count,
-            event.network_send_count,
-            event.network_send_budget_used,
+            event.attempt_count,
         ))
         try:
             if name == self.pause:
@@ -177,7 +169,7 @@ class _TerminalHook:
 
     async def on_event(self, event: _Event) -> None:
         name = event.name
-        self.events.append((name, event.outcome, event.network_send_count))
+        self.events.append((name, event.outcome, event.attempt_count))
         if name == "attempt_end":
             self.started.set()
             await self.proceed.wait()
@@ -406,17 +398,15 @@ def _stream_error(package: ModuleType, lines: list[str]) -> None:
     try:
         with api.with_streaming_response.request_raw("GET", "https://close.example/"):
             pass
-    except errors.HookExecutionError as error:
+    except errors.SDKError as error:
         record(
             lines,
-            "stream end error counters",
+            "stream end error measurements",
             lambda error=error: (
-                error.resource_attempt_count,
-                error.network_send_count,
-                error.network_send_budget_used,
-                error.wire_send_count,
-                error.info.network_send_count,
-                error.has_completed_result,
+                error.reason_code,
+                error.attempt_count,
+                error.info.attempt_count,
+                error.completed_result is not None,
             ),
         )
     api.close()
@@ -435,17 +425,15 @@ async def _async_stream_error(
     try:
         async with api.with_streaming_response.request_raw("GET", "https://close.example/"):
             pass
-    except errors.HookExecutionError as error:
+    except errors.SDKError as error:
         record(
             lines,
-            "async stream end error counters",
+            "async stream end error measurements",
             lambda error=error: (
-                error.resource_attempt_count,
-                error.network_send_count,
-                error.network_send_budget_used,
-                error.wire_send_count,
-                error.info.network_send_count,
-                error.has_completed_result,
+                error.reason_code,
+                error.attempt_count,
+                error.info.attempt_count,
+                error.completed_result is not None,
             ),
         )
     await api.aclose()
@@ -497,9 +485,7 @@ async def _terminal_native(
                     type(error).__name__,
                     error.args,
                     getattr(error, "cause", None) is before if isinstance(before, RuntimeError) else error is expected,
-                    getattr(error, "resource_attempt_count", None),
-                    getattr(error, "network_send_count", None),
-                    getattr(error, "network_send_budget_used", None),
+                    getattr(error, "attempt_count", None),
                     tuple(type(failure).__name__ for failure in getattr(error, "secondary_errors", ())),
                     tuple(getattr(error, "__notes__", ())),
                 ),
@@ -544,9 +530,7 @@ async def _capped_hooks(
                 f"{label} result",
                 lambda error=error: (
                     type(error).__name__,
-                    getattr(error, "resource_attempt_count", None),
-                    getattr(error, "network_send_count", None),
-                    getattr(error, "network_send_budget_used", None),
+                    getattr(error, "attempt_count", None),
                     tuple(type(item).__name__ for item in getattr(error, "secondary_errors", ())),
                 ),
             )
@@ -564,7 +548,7 @@ async def _capped_hooks(
                 (
                     type(error).__name__,
                     type(getattr(error, "cause", None)).__name__,
-                    getattr(error, "network_send_count", None),
+                    getattr(error, "attempt_count", None),
                     tuple(type(nested).__name__ for nested in getattr(error, "secondary_errors", ())),
                 )
                 for error in getattr(failures[0], "secondary_errors", ())
@@ -577,7 +561,7 @@ async def _capped_hooks(
                 (
                     type(error).__name__,
                     type(getattr(error, "cause", None)).__name__,
-                    getattr(error, "network_send_count", None),
+                    getattr(error, "attempt_count", None),
                 )
                 for error in getattr(getattr(failures[0], "cause", None), "secondary_errors", ())
             ),
@@ -611,9 +595,7 @@ async def _stream_cancel(
                 "stream cancellation result",
                 lambda error=error: (
                     type(error).__name__,
-                    getattr(error, "resource_attempt_count", None),
-                    getattr(error, "network_send_count", None),
-                    getattr(error, "network_send_budget_used", None),
+                    getattr(error, "attempt_count", None),
                     tuple(type(failure).__name__ for failure in getattr(error, "secondary_errors", ())),
                 ),
             )

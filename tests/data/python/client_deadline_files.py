@@ -277,7 +277,7 @@ async def _preparation(
                     failures[0].args if isinstance(failures[0], asyncio.CancelledError) else (),
                     tuple(type(item).__name__ for item in getattr(failures[0], "secondary_errors", ())),
                     tuple(getattr(failures[0], "__notes__", ())),
-                    getattr(failures[0], "network_send_count", None),
+                    getattr(failures[0], "attempt_count", None),
                     all(
                         item is not failures[0] and getattr(item, "cause", None) is not failures[0]
                         for item in getattr(failures[0], "secondary_errors", ())
@@ -927,8 +927,8 @@ async def _direct_cancellation(package: ModuleType, lines: list[str]) -> None:
         while True:
             try:
                 return await body(context)
-            except errors.BodyNotReplayableError as error:
-                if error.condition != "concurrent":
+            except errors.DecodeError as error:
+                if error.reason != "body_in_use":
                     raise
             await asyncio.sleep(0)
 

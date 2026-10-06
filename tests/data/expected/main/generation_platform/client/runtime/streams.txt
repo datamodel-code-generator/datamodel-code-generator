@@ -6,7 +6,7 @@
     3 message id=None retry=1500 data=Message{'text': '�'} raw='\n{"text": "�"}'
   < closed
     end
-    response 200 progress {'reconnects': 0, 'network_send_count': 1, 'network_send_budget_used': 1}
+    response 200 progress {'reconnects': 0}
   > GET https://api.example.com/events accept=text/event-stream
   in one chunk
     1 message id='7' retry=None data=Message{'text': 'multi'} raw='{"text":\n"multi"}'
@@ -26,7 +26,7 @@
   > GET https://api.example.com/events accept=text/event-stream
   byte order mark prefix at the end
   < closed
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=0, buffered_bytes=1) [operation_id='streamEvents', condition='eof'] incomplete_frame_error
+    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=0, buffered_bytes=1) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
   > GET https://api.example.com/events accept=text/event-stream
   empty body
   < closed
@@ -35,12 +35,12 @@
   cut line at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=7) [operation_id='streamEvents', condition='eof'] incomplete_frame_error
+    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=7) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
   > GET https://api.example.com/events accept=text/event-stream
   cut frame at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=20) [operation_id='streamEvents', condition='eof'] incomplete_frame_error
+    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=20) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
   > GET https://api.example.com/events accept=text/event-stream
   comment before EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -50,7 +50,7 @@
   EOF before the sentinel
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='eof', sequence=1) [operation_id='streamFeed', condition='eof'] stream_interrupted_error
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='eof', sequence=1) [operation_id='streamFeed', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] stream_interrupted_error
   > POST https://api.example.com/feed accept=text/event-stream
   sentinel
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -72,8 +72,8 @@
   > GET https://api.example.com/events accept=text/event-stream
   before the error 1 created id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
   < closed
-  error event error {'message': 'boom'} 2 StreamRemoteError: StreamRemoteError(operation_id='streamEvents', call_id='<call>', sequence=2) [operation_id='streamEvents'] stream_remote_error
-  after the error ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [] protocol_state_error
+  error event error {'message': 'boom'} 2 StreamRemoteError: StreamRemoteError(operation_id='streamEvents', call_id='<call>', sequence=2) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] stream_remote_error
+  after the error ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   > GET https://api.example.com/events accept=text/event-stream
   body discriminator
     1 message id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
@@ -86,47 +86,47 @@
   > GET https://api.example.com/events accept=text/event-stream
   missing discriminator
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='missing', sequence=1, truncated=False) [operation_id='streamEvents', condition='missing', location=BodySelector(pointer='/type'), truncated=False] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='missing', sequence=1, truncated=False) [operation_id='streamEvents', condition='missing', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   null discriminator
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='null', sequence=1, truncated=False) [operation_id='streamEvents', condition='null', location=BodySelector(pointer='/type'), truncated=False] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='null', sequence=1, truncated=False) [operation_id='streamEvents', condition='null', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   number discriminator
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='type', sequence=1, truncated=False) [operation_id='streamEvents', condition='type', location=BodySelector(pointer='/type'), truncated=False] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='type', sequence=1, truncated=False) [operation_id='streamEvents', condition='type', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   unknown discriminator
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', location=BodySelector(pointer='/type'), truncated=False] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   mapped event failing its type
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Created
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=1 validation error for Created
 id
   Field required [type=missing, input_value={'type': 'created'}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   malformed discriminator JSON
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   not JSON
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=1 validation error for Message
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=1 validation error for Message
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
     For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   refused by its type
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=1 validation error for Message
 text
   Input should be a valid string [type=string_type, input_value=5, input_type=int]
     For further information visit https://errors.pydantic.dev/<version>/v/string_type] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   refused natively
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=1 validation error for Message
 text
   Field required [type=missing, input_value={}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] stream_decode_error
@@ -139,11 +139,11 @@ text
   > GET https://api.example.com/events accept=text/event-stream
   line over the limit
   < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=19) [operation_id='streamEvents', kind='line', unit='bytes', limit=12] protocol_size_error
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=19) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=12, observed=19] protocol_size_error
   > GET https://api.example.com/events accept=text/event-stream
   event over the limit
   < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='event', limit=20, observed=23) [operation_id='streamEvents', kind='event', unit='bytes', limit=20] protocol_size_error
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='event', limit=20, observed=23) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='event', unit='bytes', limit=20, observed=23] protocol_size_error
   > GET https://api.example.com/events accept=text/event-stream
   event at the limit
     1 message id=None retry=None data=Message{'text': 'abc'} raw='{"text":\n"abc"}'
@@ -152,46 +152,41 @@ text
   > GET https://api.example.com/events accept=text/event-stream
   comment over the default limit
   < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=31) [operation_id='streamEvents', kind='line', unit='bytes', limit=12] protocol_size_error
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=31) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=12, observed=31] protocol_size_error
   > GET https://api.example.com/events accept=text/event-stream
   line a later chunk ends over the limit
   < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=19) [operation_id='streamEvents', kind='line', unit='bytes', limit=12] protocol_size_error
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=19) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=12, observed=19] protocol_size_error
   > GET https://api.example.com/events accept=text/event-stream
   line a later chunk extends over the limit
   < closed
-    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=13) [operation_id='streamEvents', kind='line', unit='bytes', limit=12] protocol_size_error
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=13) [operation_id='streamEvents', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='line', unit='bytes', limit=12, observed=13] protocol_size_error
   > GET https://api.example.com/events accept=text/event-stream
   line just under the limit, one byte at a time
     1 message id=None retry=None data=Message{'text': 'drip'} raw='{"text": "drip"}'
   < closed
     end
-  stream options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('stream_options',), condition='invalid_value'] protocol_configuration_error
-  options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
-  session options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('session_options',), condition='invalid_value'] protocol_configuration_error
-  reconnecting ! ProtocolConfigurationError: ProtocolConfigurationError(condition='missing_metadata') [field_path=('stream_options', 'reconnect'), condition='missing_metadata'] protocol_configuration_error
-  no send slot ! SessionLimitError: SessionLimitError(operation_id='streamEvents', kind='network_sends', limit=0) [operation_id='streamEvents', kind='network_sends', limit=0] session_limit_error
-  call without a send slot ! BudgetExceededError: BudgetExceededError(operation_id='streamEvents', call_id='<call>', budget_kind='network', limit=0, used=0) [operation_id='streamEvents', limit=0] budget_exceeded_error
+  stream options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='stream_options') [field_path=('stream_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  session options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session_options') [field_path=('session_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  reconnecting ! ConfigurationError: ConfigurationError(reason='missing_metadata', field_path='stream_options.reconnect') [field_path=('stream_options', 'reconnect'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_metadata
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  redirect without a session send slot ! SessionLimitError: SessionLimitError(operation_id='streamEvents', call_id='<call>', kind='network_sends', limit=1) [operation_id='streamEvents', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error
+  declared error status ! NotFoundError: NotFoundError(status_code=404, operation_id='streamEvents', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail": "missing"}', truncated=False] not_found_error
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  declared error status ! NotFoundError: NotFoundError(status_code=404, operation_id='streamEvents', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='streamEvents', status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail": "missing"}', truncated=False] not_found_error
+  no content ! DecodeError: DecodeError(status_code=204, operation_id='streamEvents', call_id='<call>', reason='unexpected_media_type') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] unexpected_media_type
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  no content ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=204, operation_id='streamEvents', call_id='<call>') [operation_id='streamEvents', body_bytes=b'', truncated=False, expected_media_types=('text/event-stream',)] unexpected_media_type_error
+  undeclared success status ! APIStatusError: APIStatusError(status_code=201, operation_id='streamEvents', call_id='<call>', reason='unexpected_status') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=201, body=b'', body_bytes=b'', truncated=False] unexpected_status
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  undeclared success status ! APIStatusError: APIStatusError(status_code=201, operation_id='streamEvents', call_id='<call>', reason='unexpected_status') [operation_id='streamEvents', status_code=201, body=b'', body_bytes=b'', truncated=False] unexpected_status
-  > GET https://api.example.com/events accept=text/event-stream
-  < closed
-  no media type ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='streamEvents', call_id='<call>') [operation_id='streamEvents', body_bytes=b'', truncated=False, expected_media_types=('text/event-stream',)] unexpected_media_type_error
+  no media type ! DecodeError: DecodeError(status_code=200, operation_id='streamEvents', call_id='<call>', reason='unexpected_media_type') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] unexpected_media_type
   > GET https://api.example.com/events?topic=news accept=text/event-stream
   < closed
   > GET https://api.example.com/events?topic=news accept=text/event-stream
-  retried 200 sends=2
-    progress {'reconnects': 0, 'network_send_count': 2, 'network_send_budget_used': 2}
+  retried 200 attempts=2
+    progress {'reconnects': 0}
   retried stream
     1 message id=None retry=None data=Message{'text': 'retried'} raw='{"text": "retried"}'
   < closed
@@ -199,7 +194,7 @@ text
   > GET https://api.example.com/events accept=text/event-stream
   first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-  after close ! ProtocolStateError: ProtocolStateError(state='closed', action='next') [] protocol_state_error
+  after close ! ProtocolStateError: ProtocolStateError(state='closed', action='next') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
   close again = None
   > GET https://api.example.com/events accept=text/event-stream
     concurrent next: ProtocolStateError secondary []
@@ -210,15 +205,15 @@ text
   broken connection
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', cause=TransportError()] stream_interrupted_error
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
   > GET https://api.example.com/events accept=text/event-stream
   read phase timeout
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! PhaseTimeoutError: PhaseTimeoutError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] api_timeout_error
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  another media type ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='streamEvents', call_id='<call>') [operation_id='streamEvents', body_bytes=b'', truncated=False, actual_media_type='application/json', expected_media_types=('text/event-stream',)] unexpected_media_type_error
+  another media type ! DecodeError: DecodeError(status_code=200, operation_id='streamEvents', call_id='<call>', reason='unexpected_media_type') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, media_type='application/json'] unexpected_media_type
   > GET https://api.example.com/events accept=text/event-stream
   hooked end at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -236,18 +231,18 @@ text
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
     hook stream_end outcome=error
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=7) [operation_id='streamEvents', condition='eof'] incomplete_frame_error
+    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=7) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
   > POST https://api.example.com/feed accept=text/event-stream
   hooked EOF before the sentinel
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
     hook stream_end outcome=error
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='eof', sequence=1) [operation_id='streamFeed', condition='eof'] stream_interrupted_error
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='eof', sequence=1) [operation_id='streamFeed', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] stream_interrupted_error
   > GET https://api.example.com/events accept=text/event-stream
   hooked undecodable event
   < closed
     hook stream_end outcome=error
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=1 validation error for Message
 text
   Field required [type=missing, input_value={}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] stream_decode_error
@@ -278,29 +273,25 @@ text
   > GET https://api.example.com/events accept=text/event-stream
   async malformed discriminator JSON
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   async cut frame
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=9) [operation_id='streamEvents', condition='eof'] incomplete_frame_error
+    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=9) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
   > GET https://api.example.com/events accept=text/event-stream
   async broken connection
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', cause=TransportError()] stream_interrupted_error
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=APIConnectionError()] stream_interrupted_error
   > GET https://api.example.com/events accept=text/event-stream
   < closed
   async data [{'text': 'a'}, {'text': 'a'}]
   async after the end ! StopAsyncIteration:  []
-  async options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
+  async options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   > GET https://api.example.com/events accept=text/event-stream
   async left early 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-  async call without a send slot ! BudgetExceededError: BudgetExceededError(operation_id='streamEvents', call_id='<call>', budget_kind='network', limit=0, used=0) [operation_id='streamEvents', limit=0] budget_exceeded_error
-  > GET https://api.example.com/events accept=text/event-stream
-  < closed
-  async redirect without a session send slot ! SessionLimitError: SessionLimitError(operation_id='streamEvents', call_id='<call>', kind='network_sends', limit=1) [operation_id='streamEvents', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error
   > GET https://api.example.com/events accept=text/event-stream
   async hooked end at EOF
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -318,18 +309,18 @@ text
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
     hook stream_end outcome=error
-    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=7) [operation_id='streamEvents', condition='eof'] incomplete_frame_error
+    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=7) [operation_id='streamEvents', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] incomplete_frame_error
   > POST https://api.example.com/feed accept=text/event-stream
   async hooked EOF before the sentinel
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
     hook stream_end outcome=error
-    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='eof', sequence=1) [operation_id='streamFeed', condition='eof'] stream_interrupted_error
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='eof', sequence=1) [operation_id='streamFeed', condition='eof', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] stream_interrupted_error
   > GET https://api.example.com/events accept=text/event-stream
   async hooked undecodable event
   < closed
     hook stream_end outcome=error
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, truncated=False, cause=1 validation error for Message
 text
   Field required [type=missing, input_value={}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] stream_decode_error

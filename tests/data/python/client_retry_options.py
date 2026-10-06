@@ -166,11 +166,8 @@ def _key_value(options: ModuleType, errors: ModuleType, lines: list[str], value:
         lines.extend((
             f"  key value {value!r} ! {describe(error)}",
             (
-                f"  rejected key attempts={error.resource_attempt_count} redirects={error.redirect_count}"
-                f" auth={error.auth_exchange_count} sends={error.network_send_count}"
-                f" budget={error.network_send_budget_used} auth_budget={error.auth_exchange_budget_used}"
-                f" refresh_ids={error.auth_refresh_ids} pending={error.auth_refresh_pending}"
-                f" wire={error.wire_send_count} info={error.info}"
+                f"  rejected key attempts={error.attempt_count} elapsed={error.elapsed}"
+                f" request={error.request_id} info={error.info}"
             ),
         ))
         return
@@ -318,7 +315,7 @@ def _records(options: ModuleType, lines: list[str]) -> None:
         value = owner()
         omitted = tuple(
             getattr(value, name) is options.UNSET
-            for name in ("retry", "redirects", "idempotency_key", "max_network_sends")
+            for name in ("retry", "redirects", "idempotency_key")
         )
         lines.append(f"  option omitted {owner.__name__}={omitted}")
 
@@ -446,17 +443,14 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     ):
         record(
             lines,
-            "derived cap uses final retry and redirect fields",
+            "redirects and a retry within the final fields",
             lambda: (
                 (
                     response := view.retry.with_response.get_safe(
                         options=options.RequestOptions(retry=options.RetryOptions(max_retries=1))
                     )
                 ).data,
-                response.info.resource_attempt_count,
-                response.info.redirect_count,
-                response.info.network_send_count,
-                response.info.network_send_budget_used,
+                response.info.attempt_count,
             ),
         )
     lines.append(f"  merged redirect pending responses={len(exchange.responders)}")
@@ -488,44 +482,6 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             ),
         )
     lines.append(f"  merged redirect permissions pending responses={len(exchange.responders)}")
-
-
-def _budgets(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
-    for label, inherited, retries, cap in (
-        ("derived defaults", options.UNSET, options.UNSET, options.UNSET),
-        ("derived disabled retry", options.UNSET, 0, options.UNSET),
-        ("explicit one inherited", 1, 4, options.UNSET),
-        ("uncapped inherited", None, 1, options.UNSET),
-        ("zero override", None, 2, 0),
-        ("seven inherited", 7, 9, options.UNSET),
-        ("explicit call replaces one", 1, 2, None),
-    ):
-        exchange = Exchange(lines)
-        exchange.respond(*(raw_response(503, b"unavailable", "text/plain") for _ in range(12)))
-        client = options.ClientOptions(
-            max_network_sends=inherited,
-            retry=options.RetryOptions(initial_delay=0, max_delay=0, jitter="none"),
-        )
-        with (
-            exchange.client() as native,
-            package.Client(http_client=native, options=client) as api,
-            api.with_options(options.RequestOptions(max_network_sends=options.UNSET)) as view,
-        ):
-            try:
-                view.retry.get_safe(
-                    options=options.RequestOptions(
-                        max_network_sends=cap, retry=options.RetryOptions(max_retries=retries)
-                    )
-                )
-            except errors.SDKError as error:
-                lines.append(
-                    f"  budget {label}={type(error).__name__} attempts={error.resource_attempt_count}"
-                    f" sends={error.network_send_count} used={error.network_send_budget_used}"
-                    f" stop={getattr(error, 'retry_stop_reason', None)}"
-                )
-            else:
-                lines.append(f"  budget {label}=unexpected success")
-        lines.append(f"  budget {label} arrivals={12 - len(exchange.responders)}")
 
 
 def _vendor_headers(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -846,7 +802,6 @@ def retry_options(package: ModuleType, lines: list[str]) -> None:
     _records(options, lines)
     _imports(package, lines)
     _merges(package, options, lines)
-    _budgets(package, options, errors, lines)
     _vendor_headers(package, options, lines)
     _key_calls(package, options, lines)
     _key_wire(package, options, lines, asynchronous=False)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pets.errors import ProtocolConfigurationError, WebhookVerificationError
+from pets.errors import ConfigurationError, WebhookVerificationError
 from pets.protocols import (
     KeySet,
     OperationRef,
@@ -30,7 +30,7 @@ def wrong_records(signature: VerifiedSignature, event: VerifiedWebhook[str]) -> 
     WebhookOptions(max_keys=None)  # error
     WebhookOptions(max_keys=1.5)  # error
     OperationRef("/webhooks/event/post", pointer="/webhooks/event/post")  # error
-    ProtocolConfigurationError(field_path=("keys",), condition="missing")  # error
-    ProtocolConfigurationError(field_path=("keys",), condition="invalid_value", operation="event")  # error
+    ConfigurationError(field_path=("keys",), condition="missing")  # error
+    ConfigurationError(field_path=("keys",), reason="invalid_value", operation="event")  # error
     WebhookVerificationError(condition="bad_key")  # error
     del wrong_event

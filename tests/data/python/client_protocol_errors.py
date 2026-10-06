@@ -11,17 +11,6 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 _SECRET: Final = "private-protocol-marker"
-_COUNTERS: Final = {
-    "resource_attempt_count": 2,
-    "redirect_count": 1,
-    "auth_exchange_count": 1,
-    "network_send_count": 3,
-    "network_send_budget_used": 4,
-    "auth_exchange_budget_used": 1,
-    "auth_refresh_ids": ("refresh-1",),
-    "auth_refresh_pending": 1,
-    "wire_send_count": 3,
-}
 _CLASSES: Final = (
     "ProtocolDataError",
     "ProtocolStateError",
@@ -133,7 +122,6 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
             info=info,
             cause=cause,
             secondary_errors=secondary,
-            **_COUNTERS,
         )
         secondary.clear()
         retained = all(getattr(error, key) is value or getattr(error, key) == value for key, value in fields.items())
@@ -149,9 +137,9 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
             f"    context={error.helper_id == secret}/{error.operation is operation}/{error.info is info}/"
             f"{error.cause is cause}/{error.secondary_errors == (cleanup,)} "
             f"call={error.operation_id}/{error.call_id}/{error.parent_session_id}",
-            f"    counters={tuple(getattr(error, key) for key in _COUNTERS)}",
+            f"    measurements={(error.attempt_count, error.elapsed, error.request_id)}",
             f"    hints={hints['operation'] == protocols.OperationRef | None}/{hints['helper_id'] == str | None}/"
-            f"{hints['info'] == responses.ResponseInfo | None} "
+            f"{hints.get('info') == responses.ResponseInfo | None} "
             f"retained={retained} progress copied={getattr(error, 'progress', {}) != {} or progress is None}",
             f"    str={error} repr={error!r} secret={secret in text} progress shown={'progress' in text}",
         ))
@@ -174,7 +162,7 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
 
 def _progress(errors: ModuleType, protocols: ModuleType, resume: object, lines: list[str]) -> None:
     """Copy progress into a read-only mapping of the declared keys."""
-    source = {"pages": 1, "items": 0, "network_send_count": 2}
+    source = {"pages": 1, "items": 0, "polls": 2}
     error = errors.SessionLimitError(kind="items", limit=0, progress=source, resume_state=resume)
     source["pages"] = 9
     hints = get_type_hints(errors.SessionLimitError.__init__)
@@ -222,8 +210,8 @@ def _defaults(errors: ModuleType, snapshot: object, lines: list[str]) -> None:
     for label, create in (
         ("data", lambda: errors.ProtocolDataError()),
         ("state", lambda: errors.ProtocolStateError(state="finished", action="wait")),
-        ("session limit", lambda: errors.SessionLimitError(kind="network_sends", limit=0, progress={})),
-        ("resume exhausted", lambda: errors.StreamResumeExhaustedError(kind="network_sends", limit=16, progress={})),
+        ("session limit", lambda: errors.SessionLimitError(kind="pages", limit=0, progress={})),
+        ("resume exhausted", lambda: errors.StreamResumeExhaustedError(kind="reconnects", limit=16, progress={})),
         ("resume", lambda: errors.ResumeStateError(condition="malformed")),
         ("cycle", lambda: errors.PaginationCycleError(page_index=0, first_seen_page_index=0)),
         ("polling", lambda: errors.PollingStateError()),
@@ -247,8 +235,8 @@ def _defaults(errors: ModuleType, snapshot: object, lines: list[str]) -> None:
             error.secondary_errors,
             getattr(error, "location", "-"),
             getattr(error, "resume_state", "-"),
-            error.network_send_count,
-            error.wire_send_count,
+            error.attempt_count,
+            error.request_id,
         )
         lines.append(f"  {label} defaults: {defaults!r} {error}")
 
@@ -260,10 +248,10 @@ def _choices(errors: ModuleType, lines: list[str]) -> None:
         (
             "SessionLimitError",
             "kind",
-            ("network_sends", "pages", "items", "polls", "reconnects", "parts"),
+            ("pages", "items", "polls", "reconnects", "parts"),
             {"limit": 1, "progress": {}},
         ),
-        ("StreamResumeExhaustedError", "kind", ("reconnects", "network_sends"), {"limit": 1, "progress": {}}),
+        ("StreamResumeExhaustedError", "kind", ("reconnects",), {"limit": 1, "progress": {}}),
         (
             "ResumeStateError",
             "condition",
@@ -381,7 +369,7 @@ def _rejections(
         )),
         ("delivery unknown not sent", lambda: errors.DeliveryUnknownError(delivery_state=errors.DeliveryState.NOT_SENT)),
         ("context helper", lambda: errors.ProtocolStateError(state="s", action="a", helper_id=1)),
-        ("context counters", lambda: errors.ProtocolStateError(state="s", action="a", network_send_count=-1)),
+        ("context measurements", lambda: errors.ProtocolStateError(state="s", action="a", attempt_count=1)),
         ("positional message", lambda: errors.ProtocolStateError(secret, state="s", action="a")),
         ("readonly reason", lambda: setattr(errors.ResumeStateError(condition="expired"), "reason_code", "changed")),
     ):

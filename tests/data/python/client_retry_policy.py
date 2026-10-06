@@ -25,7 +25,7 @@ class _Events:
         self.values.append(
             tuple(
                 getattr(event, name)
-                for name in ("name", "attempt_index", "status", "sent", "outcome", "retry_reason", "attempts", "sends")
+                for name in ("name", "attempt_index", "status", "sent", "outcome", "retry_reason", "attempt_count")
             )
         )
 
@@ -105,9 +105,7 @@ def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tupl
         return (
             type(error).__name__,
             getattr(error, "retry_stop_reason", None),
-            getattr(error, "resource_attempt_count", None),
-            getattr(error, "network_send_count", None),
-            getattr(error, "network_send_budget_used", None),
+            getattr(error, "attempt_count", None),
             getattr(error, "body_bytes", None),
             getattr(error, "body", None),
             getattr(error, "field_path", None),
@@ -117,9 +115,7 @@ def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tupl
     info = getattr(value, "info", None)
     return (
         getattr(value, "data", None),
-        getattr(info, "resource_attempt_count", None),
-        getattr(info, "network_send_count", None),
-        getattr(info, "network_send_budget_used", None),
+        getattr(info, "attempt_count", None),
     )
 
 
@@ -150,8 +146,7 @@ def _gates(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 options.RequestOptions(retry=options.RetryOptions(max_retries=0)),
             ),
             ("disabled", "get_safe", (503,), options.RequestOptions(retry=options.RetryOptions(max_retries=0))),
-            ("unsafe before network", "post_unsafe", (503,), options.RequestOptions(max_network_sends=1)),
-            ("safe network exhausted", "get_safe", (503,), options.RequestOptions(max_network_sends=1)),
+            ("unsafe", "post_unsafe", (503,), options.RequestOptions()),
             ("declared idempotent", "post_idempotent", (503, 200), options.RequestOptions()),
             (
                 "explicit statuses replace",
@@ -368,7 +363,7 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
         lines.append(
             f"    uuid4={parsed is not None and parsed.version == 4} "
             f"canonical={parsed is not None and str(parsed) == wire_key} "
-            f"counts={raw.info.resource_attempt_count}/{raw.info.network_send_count} "
+            f"attempts={raw.info.attempt_count} "
             f"retries={sum(event[0] == 'retry_scheduled' for event in events.values)} "
             f"unused={len(exchange.responders)}"
         )
@@ -391,9 +386,9 @@ def _fault_gates(package: ModuleType, options: ModuleType, lines: list[str]) -> 
     ):
         state = errors.DeliveryState.NOT_SENT if declared_unsent else errors.DeliveryState.MAYBE_SENT
         failure = (
-            errors.PhaseTimeoutError(phase=phase, delivery_state=state, effective_timeout=0.01, cause=cause)
+            errors.APITimeoutError(phase=phase, delivery_state=state, effective_timeout=0.01, cause=cause)
             if phase == "pool"
-            else errors.TransportError(phase=phase, delivery_state=state, cause=cause)
+            else errors.APIConnectionError(phase=phase, delivery_state=state, cause=cause)
         )
         adapter = _FaultAdapter(transports, failure)
         configured = options.ClientOptions(
@@ -566,7 +561,7 @@ def _frozen_retries(package: ModuleType, options: ModuleType, lines: list[str]) 
     with exchange.client() as native, package.Client(http_client=native, options=_frozen(options)) as api:
         exchange.respond(_response(503), _response(503), _response(200))
         response = record(lines, "retries on a frozen clock", api.retry.with_response.get_safe)
-        lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'resource_attempt_count', None)}")
+        lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'attempt_count', None)}")
 
 
 async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -582,13 +577,13 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
         exchange.respond(_response(503), _response(200))
         response = await arecord(lines, "async retry", api.retry.with_response.get_safe)
         info = getattr(response, "info", None)
-        counts = tuple(getattr(info, name, None) for name in ("resource_attempt_count", "network_send_count"))
+        counts = tuple(getattr(info, name, None) for name in ("attempt_count", "request_id"))
         lines.append(f"    counts={counts!r} events={events.values!r}")
         events.values.clear()
         async with package.AsyncClient(http_client=native, options=_frozen(options)) as frozen:
             exchange.respond(_response(503), _response(503), _response(200))
             response = await arecord(lines, "async retries on a frozen clock", frozen.retry.with_response.get_safe)
-            lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'resource_attempt_count', None)}")
+            lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'attempt_count', None)}")
         exchange.respond(
             _response(503),
             lambda request: _response(200, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
@@ -600,7 +595,7 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
         lines.append(
             f"    uuid4={parsed is not None and parsed.version == 4} "
             f"canonical={parsed is not None and str(parsed) == wire_key} "
-            f"counts={raw.info.resource_attempt_count}/{raw.info.network_send_count} "
+            f"attempts={raw.info.attempt_count} "
             f"retries={sum(event[0] == 'retry_scheduled' for event in events.values)} "
             f"unused={len(exchange.responders)}"
         )

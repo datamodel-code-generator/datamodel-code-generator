@@ -53,7 +53,6 @@
     "retries_per_page": 2,
     "explicit_pages": 2,
     "explicit_items": 100000,
-    "explicit_sends": 3,
     "total_timeout": 300,
     "clock_step": 301
   },

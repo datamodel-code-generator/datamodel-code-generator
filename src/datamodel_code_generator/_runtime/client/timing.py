@@ -28,7 +28,7 @@ def finite_number(value: object) -> float | None:
 def seconds(value: object, path: tuple[str, ...]) -> float:
     """Validate and normalize a finite nonnegative duration at its option path."""
     if (number := finite_number(value)) is None or number < 0:
-        raise ConfigurationError(field_path=path, condition="out_of_range")
+        raise ConfigurationError(field_path=path, reason="out_of_range")
     return number
 
 
@@ -38,13 +38,13 @@ _seconds = seconds
 def checked_count(value: object, path: tuple[str, ...], *, minimum: int = 0, maximum: int | None = None) -> None:
     """Refuse an option count that is not an integer in its range, including booleans."""
     if type(value) is not int or value < minimum or (maximum is not None and value > maximum):
-        raise ConfigurationError(field_path=path, condition="out_of_range")
+        raise ConfigurationError(field_path=path, reason="out_of_range")
 
 
 def checked_instance(value: object, kinds: tuple[type, ...], path: tuple[str, ...]) -> None:
     """Refuse an option value of another type."""
     if not isinstance(value, kinds):
-        raise ConfigurationError(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
 
 
 def _random() -> float:
@@ -73,7 +73,7 @@ class Clock:
         """Refuse a source that cannot be called."""
         for name in ("monotonic", "time", "random"):
             if not callable(getattr(self, name)):
-                raise ConfigurationError(field_path=("clock", name), condition="invalid_type")
+                raise ConfigurationError(field_path=("clock", name), reason="invalid_type")
 
 
 SYSTEM_CLOCK: Final = Clock()
@@ -183,12 +183,9 @@ class SessionOptions:
 
     total_timeout: float | Unset | None = UNSET
     deadline: Deadline | Unset | None = UNSET
-    max_network_sends: int | Unset | None = UNSET
 
     def __post_init__(self) -> None:
-        """Refuse booleans, negative or nonfinite durations, negative counts, and deadlines of other types."""
+        """Refuse booleans, negative or nonfinite durations, and deadlines of other types."""
         if (timeout := self.total_timeout) is not None and not isinstance(timeout, Unset):
             object.__setattr__(self, "total_timeout", seconds(timeout, ("session_options", "total_timeout")))
         checked_instance(self.deadline, (Deadline, Unset, type(None)), ("session_options", "deadline"))
-        if (sends := self.max_network_sends) is not None and not isinstance(sends, Unset):
-            checked_count(sends, ("session_options", "max_network_sends"))

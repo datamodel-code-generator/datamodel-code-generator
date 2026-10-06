@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from pets.errors import ProtocolConfigurationError
+from pets.errors import ConfigurationError
 from pets.options import UNSET, Unset
 from pets.protocols import (
     KeySet,
@@ -60,7 +60,7 @@ def contracts(now: datetime, limits: ResolvedWebhookOptions) -> None:
     assert_type(limits.past_tolerance, float)
     operation = OperationRef(pointer="/webhooks/event/post")
     assert_type(operation.document, str | None)
-    failure = ProtocolConfigurationError(field_path=("keys",), condition="invalid_value", operation=operation)
+    failure = ConfigurationError(field_path=("keys",), reason="invalid_value", operation=operation)
     assert_type(failure.operation, OperationRef | None)
 
 

@@ -220,17 +220,6 @@ def _errors(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) ->
     again = helper.resume(state, poll_options=harness.polls(max_polls=1))
     step(lines, "resumed at the same limit polls afresh", again.status)
     lines.append(f"  resumed progress {dict(again.progress)!r}")
-    exchange.respond(job("queued", 202), job("queued"))
-    budget = helper.start(body=body, session_options=harness.session(max_network_sends=2))
-    step(lines, "poll", budget.status)
-    state = _kept(lines, "send limit", _failure(budget.status))
-    exchange.respond(job("done"), report(8))
-    step(lines, "resumed in a new session", helper.resume(state).wait)
-    _kept(
-        lines,
-        "create without a send slot",
-        _failure(lambda: helper.start(body=body, session_options=harness.session(max_network_sends=0))),
-    )
 
 
 def _refusals(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -320,9 +309,6 @@ def _cancels(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
     missing = helper.start(body=body)
     step(lines, "poll without a cancel value", missing.status)
     lines.append(f"  progress {dict(missing.progress)!r}")
-    exchange.respond(_tracked("queued", 202))
-    unbudgeted = helper.start(body=body, session_options=harness.session(max_network_sends=1))
-    _kept(lines, "cancel without a send slot", _failure(unbudgeted.cancel_remote))
     exports = api.protocols.exports.run
     exchange.respond(raw_response(202, **{"Operation-Id": "e1"}), raw_response(204))
     handle = exports.start()
@@ -418,9 +404,3 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         await astep(lines, "resumed cancel", resumed.cancel_remote)
         await astep(lines, "close", handle.aclose)
         await astep(lines, "cancel after close", handle.cancel_remote)
-        exchange.respond(_tracked("queued", 202))
-        unbudgeted = await tracked.start(body=body, session_options=harness.session(max_network_sends=1))
-        try:
-            await unbudgeted.cancel_remote()
-        except Exception as error:  # ruff: ignore[blind-except]
-            _kept(lines, "async cancel without a send slot", error)

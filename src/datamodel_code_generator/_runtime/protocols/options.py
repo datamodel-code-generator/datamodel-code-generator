@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Final, Literal, cast
 
 from typing_extensions import TypeIs, TypeVar
 
-from ..client.errors import ProtocolConfigurationError, is_sequence
+from ..client.errors import ConfigurationError, is_sequence
 from ..client.timing import SessionOptions
 from ..model_codecs.unset import UNSET, Unset
 from .caches import AsyncCacheStore, CacheStore  # noqa: TC001 - Public annotations support get_type_hints().
@@ -88,7 +88,7 @@ def layered(layers: tuple[object, ...], name: str, default: V) -> V:
 def positive_count(value: object, name: str, *, allow_zero: bool = False) -> None:
     """Validate a positive integer, or a nonnegative one, at a public configuration boundary."""
     if type(value) is not int or value < (0 if allow_zero else 1):
-        raise ProtocolConfigurationError(field_path=(name,), condition="invalid_value")
+        raise ConfigurationError(field_path=(name,), reason="invalid_value")
 
 
 def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> None:
@@ -100,7 +100,7 @@ def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> No
             return
         case _:
             pass
-    raise ProtocolConfigurationError(field_path=(name,), condition="invalid_value")
+    raise ConfigurationError(field_path=(name,), reason="invalid_value")
 
 
 def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...]) -> None:
@@ -113,12 +113,12 @@ def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...
 
 def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:
     if not isinstance(value, kinds):
-        raise ProtocolConfigurationError(field_path=(name,), condition="invalid_value")
+        raise ConfigurationError(field_path=(name,), reason="invalid_value")
 
 
 def _partition(value: object) -> None:
     if not isinstance(value, str) or not value or _CONTROL.search(value):
-        raise ProtocolConfigurationError(field_path=("credential_partition",), condition="invalid_value")
+        raise ConfigurationError(field_path=("credential_partition",), reason="invalid_value")
 
 
 def _origins(value: object) -> tuple[Origin, ...]:
@@ -126,7 +126,7 @@ def _origins(value: object) -> tuple[Origin, ...]:
         origins = tuple(item for item in value if isinstance(item, Origin))
         if len(origins) == len(value) == len(set(origins)):
             return origins
-    raise ProtocolConfigurationError(field_path=("allowed_origins",), condition="invalid_value")
+    raise ConfigurationError(field_path=("allowed_origins",), reason="invalid_value")
 
 
 def _is_helper_name(value: object) -> TypeIs[str]:
@@ -216,7 +216,7 @@ class WSOptions:
         """Reject booleans as limits, other compressions, and forbidden None or zero."""
         check_limits(self, _WS)
         if not isinstance(self.compression, Unset) and self.compression not in {None, "deflate"}:
-            raise ProtocolConfigurationError(field_path=("compression",), condition="invalid_value")
+            raise ConfigurationError(field_path=("compression",), reason="invalid_value")
 
 
 def _context(value: object, name: str) -> None:
@@ -252,7 +252,7 @@ def valid_proxy(value: object) -> bool:
 
 def _proxy(value: object) -> None:
     if value is not None and not isinstance(value, Unset) and not valid_proxy(value):
-        raise ProtocolConfigurationError(field_path=("proxy",), condition="invalid_value")
+        raise ConfigurationError(field_path=("proxy",), reason="invalid_value")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -283,7 +283,7 @@ class WebSocketTransportOptions:
             and not isinstance(context, Unset)
             and not (isinstance(proxy, str) and proxy.lower().startswith("https:"))
         ):
-            raise ProtocolConfigurationError(field_path=("proxy_ssl_context",), condition="invalid_value")
+            raise ConfigurationError(field_path=("proxy_ssl_context",), reason="invalid_value")
 
 
 def resolved_transport(options: WebSocketTransportOptions | Unset) -> ResolvedWebSocketTransportOptions:
@@ -330,24 +330,24 @@ class ProtocolSecurityContext:
 
 def _helper_defaults(value: object) -> Mapping[str, ProtocolDefaults]:
     if not _is_mapping(value):
-        raise ProtocolConfigurationError(field_path=("defaults",), condition="invalid_value")
+        raise ConfigurationError(field_path=("defaults",), reason="invalid_value")
     defaults: dict[str, ProtocolDefaults] = {}
     for name, item in value.items():
         if not _is_helper_name(name):
-            raise ProtocolConfigurationError(field_path=("defaults",), condition="invalid_value")
+            raise ConfigurationError(field_path=("defaults",), reason="invalid_value")
         if not isinstance(item, ProtocolDefaults):
-            raise ProtocolConfigurationError(field_path=("defaults", name), condition="invalid_value")
+            raise ConfigurationError(field_path=("defaults", name), reason="invalid_value")
         defaults[name] = item
     return MappingProxyType(defaults)
 
 
 def _stores(value: object, field: str) -> Mapping[str, object]:
     if not _is_mapping(value):
-        raise ProtocolConfigurationError(field_path=(field,), condition="invalid_value")
+        raise ConfigurationError(field_path=(field,), reason="invalid_value")
     stores: dict[str, object] = {}
     for name, store in value.items():
         if not _is_helper_name(name):
-            raise ProtocolConfigurationError(field_path=(field,), condition="invalid_value")
+            raise ConfigurationError(field_path=(field,), reason="invalid_value")
         stores[name] = store
     return MappingProxyType(stores)
 
@@ -408,14 +408,14 @@ class ProtocolClientOptions:
             and not isinstance(connector, Unset)
             and not callable(getattr(connector, "open", None))
         ):
-            raise ProtocolConfigurationError(field_path=("websocket_connector",), condition="wrong_capability")
+            raise ConfigurationError(field_path=("websocket_connector",), reason="wrong_capability")
         _instance(self.websocket_transport, (WebSocketTransportOptions, Unset), "websocket_transport")
 
 
 def checked_connector(connector: WebSocketConnector | AsyncWebSocketConnector, *, asynchronous: bool) -> None:
     """Refuse a WebSocket connector whose `open` is a coroutine function for a synchronous client, or the reverse."""
     if inspect.iscoroutinefunction(connector.open) is not asynchronous:
-        raise ProtocolConfigurationError(field_path=("protocols", "websocket_connector"), condition="wrong_capability")
+        raise ConfigurationError(field_path=("protocols", "websocket_connector"), reason="wrong_capability")
 
 
 _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
@@ -437,15 +437,11 @@ def checked_defaults(defaults: Mapping[str, ProtocolDefaults], helpers: tuple[tu
     kinds = dict(helpers)
     for name, item in defaults.items():
         if (kind := kinds.get(name)) is None:
-            raise ProtocolConfigurationError(field_path=("protocols", "defaults", name), condition="unknown_field")
+            raise ConfigurationError(field_path=("protocols", "defaults", name), reason="unknown_field")
         if not isinstance(item.options, (Unset, _KIND_OPTIONS[kind])):
-            raise ProtocolConfigurationError(
-                field_path=("protocols", "defaults", name, "options"), condition="invalid_value"
-            )
+            raise ConfigurationError(field_path=("protocols", "defaults", name, "options"), reason="invalid_value")
         if kind == "cache" and not isinstance(item.session, Unset):
-            raise ProtocolConfigurationError(
-                field_path=("protocols", "defaults", name, "session"), condition="invalid_value"
-            )
+            raise ConfigurationError(field_path=("protocols", "defaults", name, "session"), reason="invalid_value")
 
 
 def checked_stores(
@@ -462,9 +458,7 @@ def checked_stores(
     kinds = dict(helpers)
     for name, store in stores.items():
         if kinds.get(name) != "cache":
-            raise ProtocolConfigurationError(field_path=("protocols", "cache_stores", name), condition="unknown_field")
+            raise ConfigurationError(field_path=("protocols", "cache_stores", name), reason="unknown_field")
         methods = [getattr(store, method, None) for method in _CACHE_METHODS]
         if not all(callable(method) and iscoroutinefunction(method) == asynchronous for method in methods):
-            raise ProtocolConfigurationError(
-                field_path=("protocols", "cache_stores", name), condition="wrong_capability"
-            )
+            raise ConfigurationError(field_path=("protocols", "cache_stores", name), reason="wrong_capability")

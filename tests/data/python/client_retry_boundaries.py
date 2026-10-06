@@ -150,7 +150,7 @@ def _configuration(package: ModuleType, options: ModuleType, lines: list[str]) -
 
 def _presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
     for stage in ("call_start", "retry_scheduled"):
-        failure = errors.PhaseTimeoutError(
+        failure = errors.APITimeoutError(
             effective_timeout=1.0, phase="read", delivery_state=errors.DeliveryState.NOT_SENT
         )
         limiter, events, exchange = _ShapeLimiter(_SemaphoreLimiter(), failure), _Events(), Exchange([])
@@ -181,7 +181,7 @@ def _uncapped(
     package: ModuleType, options: ModuleType, errors: ModuleType, transports: ModuleType, lines: list[str]
 ) -> None:
     for phase in ("read", "unknown"):
-        failure = errors.TransportError(
+        failure = errors.APIConnectionError(
             delivery_state=errors.DeliveryState.MAYBE_SENT,
             phase=phase,
             cause=httpx2.ReadTimeout("adapter timeout"),
@@ -276,7 +276,7 @@ async def _async(
 
 async def _async_presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
     for stage in ("call_start", "retry_scheduled"):
-        failure = errors.PhaseTimeoutError(
+        failure = errors.APITimeoutError(
             effective_timeout=1.0, phase="read", delivery_state=errors.DeliveryState.NOT_SENT
         )
         limiter, events, exchange = _ShapeLimiter(_AsyncSemaphoreLimiter(), failure), _Events(), Exchange([])

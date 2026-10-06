@@ -25,16 +25,15 @@ from .errors import (
     MIN_STATUS,
     OAUTH_ERROR_CODES,
     AdapterContractError,
-    AuthConfigurationError,
-    AuthProviderClosedError,
-    AuthProviderExecutionError,
-    AuthRefreshError,
+    AuthError,
+    ConfigurationError,
     DeliveryState,
+    IOPhase,
     OAuthErrorCode,
-    PhaseTimeoutError,
-    TokenExpiredError,
-    TransportError,
     UnsupportedAsyncBackendError,
+    is_auth_classified,
+    is_phase_timeout,
+    is_transport,
 )
 from .scopes import scope_tuple
 from .timing import ResolvedTimeoutOptions, absolute_deadline, finite_number, on_clock
@@ -96,17 +95,17 @@ def endpoint_url(value: object, name: str, *, allow_insecure_loopback: bool) -> 
     from .urls import URLValidationError, canonical_origin, origin_text  # noqa: PLC0415
 
     if not isinstance(value, str):
-        raise AuthConfigurationError(field_path=(name,), condition="invalid_type")
+        raise ConfigurationError(field_path=(name,), reason="invalid_type")
     if "#" in value or _UNSAFE.search(value):
-        raise AuthConfigurationError(field_path=(name,), condition="invalid_url")
+        raise ConfigurationError(field_path=(name,), reason="invalid_url")
     try:
         urlsplit(value)
         origin = canonical_origin(value)
     except (URLValidationError, ValueError):
-        raise AuthConfigurationError(field_path=(name,), condition="invalid_url") from None
+        raise ConfigurationError(field_path=(name,), reason="invalid_url") from None
     scheme, host, _ = origin
     if scheme == "http" and not (allow_insecure_loopback and host in _LOOPBACK):
-        raise AuthConfigurationError(field_path=(name,), condition="insecure_url")
+        raise ConfigurationError(field_path=(name,), reason="insecure_url")
     return Endpoint(value, origin_text(origin))
 
 
@@ -149,17 +148,17 @@ def client_authentication(
 ) -> ClientAuthentication[SecretT]:
     """Validate the client identity, and that a secret provider of the flow's mode exists when the method sends one."""
     if not isinstance(client_id, str) or not _VSCHAR.fullmatch(client_id):
-        raise AuthConfigurationError(field_path=("client_id",), condition="invalid_value")
+        raise ConfigurationError(field_path=("client_id",), reason="invalid_value")
     if not isinstance(method, str) or not _is_method(method):
-        raise AuthConfigurationError(field_path=("client_auth_method",), condition="invalid_value")
+        raise ConfigurationError(field_path=("client_auth_method",), reason="invalid_value")
     if method == "none":
         if secret is not None:
-            raise AuthConfigurationError(field_path=("client_secret",), condition="forbidden_value")
+            raise ConfigurationError(field_path=("client_secret",), reason="forbidden_value")
         return ClientAuthentication(client_id, method, None)
     if secret is None:
-        raise AuthConfigurationError(field_path=("client_secret",), condition="missing_value")
+        raise ConfigurationError(field_path=("client_secret",), reason="missing_value")
     if not accepts(secret):
-        raise AuthConfigurationError(field_path=("client_secret",), condition="invalid_mode")
+        raise ConfigurationError(field_path=("client_secret",), reason="invalid_mode")
     return ClientAuthentication(client_id, method, secret)
 
 
@@ -172,17 +171,17 @@ def token_transport_options(transport: TransportOptions, token_transport: object
 
     resolved = resolve_transport_options(transport)
     if not resolved.verify:
-        raise AuthConfigurationError(field_path=("options", "transport", "verify"), condition="insecure_transport")
+        raise ConfigurationError(field_path=("options", "transport", "verify"), reason="insecure_transport")
     if (context := resolved.ssl_context) is not None and (
         context.verify_mode != ssl.CERT_REQUIRED or not context.check_hostname
     ):
-        raise AuthConfigurationError(field_path=("options", "transport", "ssl_context"), condition="insecure_transport")
+        raise ConfigurationError(field_path=("options", "transport", "ssl_context"), reason="insecure_transport")
     if resolved.retry_owner != "sdk":
-        raise AuthConfigurationError(field_path=("options", "transport", "retry_owner"), condition="transport_retries")
+        raise ConfigurationError(field_path=("options", "transport", "retry_owner"), reason="transport_retries")
     if resolved.http2 and importlib.util.find_spec("h2") is None:
-        raise AuthConfigurationError(field_path=("options", "transport", "http2"), condition="unavailable")
+        raise ConfigurationError(field_path=("options", "transport", "http2"), reason="unavailable")
     if not isinstance(token_transport, Unset) and resolved != DEFAULT_TRANSPORT:
-        raise AuthConfigurationError(field_path=("options", "transport"), condition="injected_transport")
+        raise ConfigurationError(field_path=("options", "transport"), reason="injected_transport")
     return resolved
 
 
@@ -198,12 +197,12 @@ def injected_adapter(
     if isinstance(adapter, Unset):
         return None, True
     if not accepts(adapter):
-        raise AuthConfigurationError(field_path=("token_transport",), condition="invalid_mode")
+        raise ConfigurationError(field_path=("token_transport",), reason="invalid_mode")
     capabilities = getattr(adapter, "capabilities", None)
     if not isinstance(capabilities, TransportCapabilities):
-        raise AuthConfigurationError(field_path=("token_transport",), condition="invalid_capabilities")
+        raise ConfigurationError(field_path=("token_transport",), reason="invalid_capabilities")
     if capabilities.internal_retry_limit != 0:
-        raise AuthConfigurationError(field_path=("token_transport",), condition="transport_retries")
+        raise ConfigurationError(field_path=("token_transport",), reason="transport_retries")
     return adapter, owned
 
 
@@ -225,14 +224,14 @@ def _secret_value(value: object) -> str:
         return value.value
     if inspect.iscoroutine(value):
         value.close()
-    raise AuthConfigurationError(field_path=("client_secret",), condition="invalid_material")
+    raise ConfigurationError(field_path=("client_secret",), reason="invalid_material")
 
 
 def _provider_failure(error: Exception) -> Exception:
     """Keep classified auth failures of the secret provider and wrap any other exception it raised."""
-    if isinstance(error, (AuthConfigurationError, AuthRefreshError)):
+    if is_auth_classified(error):
         return error
-    return AuthProviderExecutionError(callback="get", delivery_state=DeliveryState.NOT_SENT, cause=error)
+    return AuthError(reason="provider_failed", delivery_state=DeliveryState.NOT_SENT, cause=error)
 
 
 def token_request(
@@ -453,17 +452,21 @@ def _claimed(error: BaseException, trace: AttemptTrace, *, trusted: bool) -> Del
     """Return how far a failed send provably got: an adapter without delivery evidence cannot prove NOT_SENT."""
     if trace.response_started:
         return DeliveryState.RESPONSE_STARTED
-    if isinstance(error, TransportError) and (trusted or error.delivery_state is not DeliveryState.NOT_SENT):
+    if is_transport(error) and (trusted or error.delivery_state is not DeliveryState.NOT_SENT):
         return error.delivery_state
     return DeliveryState.NOT_SENT if trace.proven_not_sent else DeliveryState.MAYBE_SENT
 
 
 def _timed_out(error: BaseException) -> bool:
-    if isinstance(error, PhaseTimeoutError):
+    if is_phase_timeout(error):
         return True
     import httpx2  # noqa: PLC0415
 
-    return isinstance(error, TransportError) and isinstance(error.cause, httpx2.TimeoutException)
+    return is_transport(error) and isinstance(error.cause, httpx2.TimeoutException)
+
+
+def _is_io_phase(value: str) -> TypeIs[IOPhase]:
+    return value in _PHASES
 
 
 def _failed(
@@ -474,7 +477,7 @@ def _failed(
     status: int | None = None,
 ) -> Exchanged:
     """Classify a failure by its delivery and whether the session, or one phase's cap, ran out of time."""
-    phase = error.phase if isinstance(error, TransportError) else "unknown"
+    phase: IOPhase = error.phase if is_transport(error) and _is_io_phase(error.phase) else "unknown"
     outcome: Outcome = "unsent" if delivery is DeliveryState.NOT_SENT else "lost"
     if not _timed_out(error) or (phase == "unknown" and session.deadline.remaining() > 0):
         return Exchanged(outcome, delivery, status, cause=error, phase=phase)
@@ -577,7 +580,7 @@ class TokenEndpoint:
 
     def _open(self) -> None:
         if self.closed:
-            raise AuthProviderClosedError(delivery_state=DeliveryState.NOT_SENT)
+            raise AuthError(reason="provider_closed", delivery_state=DeliveryState.NOT_SENT)
 
     def prepare(self) -> None:
         """Create the SDK-owned transport once, before any exchange consumes its credential, unless already closed."""
@@ -670,7 +673,7 @@ class AsyncTokenEndpoint:
 
     def _open(self) -> None:
         if self.closed:
-            raise AuthProviderClosedError(delivery_state=DeliveryState.NOT_SENT)
+            raise AuthError(reason="provider_closed", delivery_state=DeliveryState.NOT_SENT)
 
     def bind(self) -> None:
         """Refuse a caller outside asyncio or on another event loop than the one the endpoint belongs to."""
@@ -773,16 +776,16 @@ def response_scopes(value: object) -> tuple[str, ...]:
     return scope_tuple(atoms)
 
 
-def _invalid_expiry() -> TokenExpiredError:
-    return TokenExpiredError(condition="invalid_expiry", delivery_state=DeliveryState.RESPONSE_STARTED)
+def _invalid_expiry() -> AuthError:
+    return AuthError(reason="invalid_expiry", delivery_state=DeliveryState.RESPONSE_STARTED)
 
 
 def _expiry(value: object, received: datetime) -> datetime:
-    """Map a present expires_in to an expiry at receipt; a nonpositive or invalid value is a TokenExpiredError."""
+    """Map a present expires_in to an expiry at receipt; a nonpositive or invalid value is an invalid expiry."""
     if (number := finite_number(value)) is None:
         raise _invalid_expiry()
     if number <= 0:
-        raise TokenExpiredError(condition="nonpositive_expiry", delivery_state=DeliveryState.RESPONSE_STARTED)
+        raise _invalid_expiry()
     try:
         return received + timedelta(seconds=number)
     except OverflowError:

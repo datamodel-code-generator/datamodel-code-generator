@@ -11,7 +11,7 @@ from functools import partial
 from time import monotonic
 from typing import TYPE_CHECKING, Generic, Literal, Protocol, TypeAlias, TypeVar
 
-from .errors import CleanupError, ClientClosedError, add_secondary
+from .errors import CleanupError, ConfigurationError, add_secondary
 from .tasks import TaskInterruptionError, task_failure, task_result
 
 if TYPE_CHECKING:
@@ -33,10 +33,10 @@ class CleanupOwner(Protocol):
     streaming: bool
 
 
-def _closed(state: State, owner: Literal["client", "view"]) -> ClientClosedError | None:
+def _closed(state: State, owner: Literal["client", "view"]) -> ConfigurationError | None:
     match state:
         case "CLOSING" | "CLOSED":
-            return ClientClosedError(state=state, owner=owner)
+            return ConfigurationError(field_path=(owner, state.lower()), reason="client_closed")
         case _:
             pass
     return None
@@ -186,7 +186,7 @@ class Scope(Generic[HandleT]):
         """Return the scope of a new view of the same owner."""
         return Scope(self.owner or self)
 
-    def closing(self) -> ClientClosedError | None:
+    def closing(self) -> ConfigurationError | None:
         """Return the error a call or handle meets when its owner or this view is closing, else None."""
         owner = self.owner
         if self.state == "OPEN" and (owner is None or owner.state == "OPEN"):
@@ -226,7 +226,7 @@ class Scope(Generic[HandleT]):
                 scope.settle()
 
     def admit(self, accept: Callable[[], None] | None = None) -> None:
-        """Count a new call, or raise ClientClosedError when closing."""
+        """Count a new call, or raise the client_closed ConfigurationError when closing."""
         with self.lock:
             if (error := self.closing()) is not None:
                 raise error

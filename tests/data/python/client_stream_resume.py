@@ -358,12 +358,12 @@ def _ineligible(resumes: _Resumes, api: Any) -> None:
         lines, "read timeout tied with the idle limit", helper.open(options=level, stream_options=resumes.reconnect)
     )
     errors = harness.errors
-    undecodable = errors.TransportError(
+    undecodable = errors.APIConnectionError(
         delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="read", cause=httpx2.DecodingError("bad coding")
     )
     resumes.reply(first, undecodable)
     _drained(lines, "read failure classified as not retryable", helper.open(stream_options=resumes.reconnect))
-    resumes.reply(first, errors.TransportError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="write"))
+    resumes.reply(first, errors.APIConnectionError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="write"))
     _drained(lines, "failure outside the read phase", helper.open(stream_options=resumes.reconnect))
     resumes.reply(first, Stop())
     stream = helper.open(stream_options=resumes.reconnect)
@@ -413,20 +413,6 @@ def _budgets(resumes: _Resumes, api: Any) -> None:
     never = harness.protocols.StreamOptions(reconnect=True, max_reconnects=0)
     resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', cut)
     _drained(lines, "no reconnection allowed", helper.open(stream_options=never))
-    unlimited = harness.protocols.StreamOptions(reconnect=True, max_reconnects=None)
-    one_send = harness.options.SessionOptions(max_network_sends=1)
-    resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', cut)
-    _drained(lines, "no send slot left", helper.open(stream_options=unlimited, session_options=one_send))
-    two_sends = harness.options.SessionOptions(max_network_sends=2)
-    resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', cut)
-    resumes.redirect()
-    stream = helper.open(stream_options=resumes.reconnect, options=resumes.redirects(), session_options=two_sends)
-    _drained(lines, "reopen redirected past the sends", stream)
-    resumes.reply(b'event: created\nid: 1\ndata: {"id": "1"}\n\n', cut, headers=_TRACKED)
-    resumes.redirect()
-    tracked = api.protocols.events.tracked
-    stream = tracked.open(stream_options=resumes.reconnect, options=resumes.redirects(), session_options=two_sends)
-    _refused(lines, "another reopen operation redirected past the sends", stream)
 
 
 def _waits(resumes: _Resumes, api: Any) -> None:
@@ -625,15 +611,6 @@ def _refusals(resumes: _Resumes, api: Any) -> None:
         lambda: api.protocols.records.all.resume(_crafted(harness, other, _replaced(other, cursor={"a": 1}))),
     )
     _cursor_refusals(resumes, api)
-    nothing = options.SessionOptions(max_network_sends=0)
-    record(lines, "resume without send slots", lambda: helper.resume(state, session_options=nothing))
-    one = options.SessionOptions(max_network_sends=1)
-    resumes.redirect()
-    record(
-        lines,
-        "resume redirected past the sends",
-        lambda: helper.resume(state, options=resumes.redirects(), session_options=one),
-    )
     resumes.reply(*_events('id: 2\ndata: {"text": "b"}\n\n'))
     _drained(lines, "resume after the refusals", helper.resume(state))
 
@@ -697,12 +674,6 @@ async def _async_resume(package: ModuleType, lines: list[str]) -> None:
         resumes.reply(b'retry: 70000\nid: 1\ndata: {"text": "a"}\n\n', cut)
         stream = await helper.open(stream_options=patient, session_options=short)
         await _adrained(lines, "async past the deadline", stream)
-        two_sends = harness.options.SessionOptions(max_network_sends=2)
-        resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', cut)
-        resumes.redirect()
-        redirects = resumes.redirects()
-        stream = await helper.open(stream_options=resumes.reconnect, options=redirects, session_options=two_sends)
-        await _adrained(lines, "async reopen redirected past the sends", stream)
         resumes.reply(b'id: 5 \ndata: {"text": "a"}\n\n', cut)
         stream = await helper.open(stream_options=resumes.reconnect)
         try:
@@ -717,13 +688,6 @@ async def _async_resume(package: ModuleType, lines: list[str]) -> None:
             await anext(stream)
         except Stop:
             lines.append("  async stopped ! Stop")
-        one = harness.options.SessionOptions(max_network_sends=1)
-        resumes.redirect()
-        await arecord(
-            lines,
-            "async resume redirected past the sends",
-            lambda: helper.resume(state, options=redirects, session_options=one),
-        )
         await _async_tracked(resumes, api.protocols.events.tracked)
 
 
@@ -851,23 +815,6 @@ def _write_guards(package: ModuleType, lines: list[str]) -> None:
             )
     with package.Client(transport_adapter=resumes.adapter, options=resumes.client_options()) as api:
         _cleared_guards(resumes, api)
-        resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', headers=_TRACKED)
-        stream = api.protocols.events.tracked.open()
-        next(stream)
-        state = stream.checkpoint()
-        stream.close()
-        _guarded(
-            lines,
-            "tracked zero-budget resume",
-            lambda: api.protocols.events.tracked.resume(
-                state, session_options=options.SessionOptions(max_network_sends=0)
-            ),
-        )
-        _guarded(
-            lines,
-            "tracked zero-budget open",
-            lambda: api.protocols.events.tracked.open(session_options=options.SessionOptions(max_network_sends=0)),
-        )
         resumes.reply(b'event: tick\ndata: {"seq": 1}\n\n', b"data: [DONE]\n\n")
         query = resumes.harness.models.FeedQuery(topic="t")
         with api.protocols.feed.ticks.open(
@@ -1012,23 +959,6 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
             await stream.aclose()
             resumes.reply()
             await (await helper.resume(state, options=patch)).aclose()
-        resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', headers=_TRACKED)
-        stream = await api.protocols.events.tracked.open()
-        await anext(stream)
-        state = stream.checkpoint()
-        await stream.aclose()
-        await _aguarded(
-            lines,
-            "tracked zero-budget resume",
-            lambda: api.protocols.events.tracked.resume(
-                state, session_options=options.SessionOptions(max_network_sends=0)
-            ),
-        )
-        await _aguarded(
-            lines,
-            "tracked zero-budget open",
-            lambda: api.protocols.events.tracked.open(session_options=options.SessionOptions(max_network_sends=0)),
-        )
         patch = options.RequestOptions(query=(("tag", "kept"),))
         resumes.reply(b'{"id": "r1", "text": "a"}\n', media=_NDJSON)
         async with await api.protocols.records.all.open(options=patch) as stream:

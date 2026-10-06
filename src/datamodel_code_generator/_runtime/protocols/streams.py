@@ -23,14 +23,13 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 from typing_extensions import Self, TypeVar
 
 from ..client.errors import (
-    BudgetExceededError,
-    PhaseTimeoutError,
-    ProtocolConfigurationError,
+    APIConnectionError,
+    ConfigurationError,
+    DecodeError,
     ProtocolError,
     ProtocolSizeError,
-    RequestEncodingError,
-    TransportError,
-    set_error_counters,
+    is_phase_timeout,
+    is_transport,
 )
 from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held
@@ -111,7 +110,7 @@ _CR: Final = 0x0D
 _LF: Final = 0x0A
 _COLON: Final = 0x3A
 _STATE: Final = frozenset({"cursor", "bound", "arguments", "body", "expires_at"})
-_ENCODING_ERRORS: Final = (RequestEncodingError, ParameterEncodingError)
+_ENCODING_ERRORS: Final = (DecodeError, ParameterEncodingError)
 
 
 @final
@@ -492,7 +491,6 @@ class _Limits:
     max_event_bytes: int = 1048576
     total_timeout: float | None = None
     deadline: Deadline | None = None
-    max_network_sends: int | None = 16
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -502,10 +500,8 @@ _DEFAULTS: Final = _Limits()
 
 def _invalid(
     plan: EventPlan[T], path: tuple[str, ...], condition: Literal["invalid_value", "missing_metadata"]
-) -> ProtocolConfigurationError:
-    return ProtocolConfigurationError(
-        field_path=path, condition=condition, helper_id=plan.helper_id, operation=plan.operation
-    )
+) -> ConfigurationError:
+    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id, operation=plan.operation)
 
 
 def _limits(
@@ -549,7 +545,6 @@ def _limits(
         max_event_bytes=layered(kinds, "max_event_bytes", _DEFAULTS.max_event_bytes),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
-        max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
         clock=core.clock,
     )
@@ -577,74 +572,17 @@ def _unpatched(
                 raise _invalid(plan, ("options", "query", name), "invalid_value")
 
 
-def _progress(session: OperationSession, reconnects: int = 0) -> ProtocolProgress:
+def _progress(reconnects: int = 0) -> ProtocolProgress:
     return MappingProxyType({
         "reconnects": reconnects,
-        "network_send_count": session.network_send_count,
-        "network_send_budget_used": session.network_send_budget_used,
     })
 
 
-def _session(
-    plan: EventPlan[T], limits: _Limits, operation: OperationRef, operation_id: str | None
-) -> OperationSession:
-    """Start the stream's session, refusing to open the stream when the session has no send slot."""
+def _session(limits: _Limits) -> OperationSession:
+    """Start the stream's session."""
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only an open loads the call runtime.
 
-    session = OperationSession(
-        total_timeout=limits.total_timeout,
-        deadline=limits.deadline,
-        max_network_sends=limits.max_network_sends,
-        clock=limits.clock,
-    )
-    if (limit := session.send_limit) is not None and limit <= 0:
-        raise SessionLimitError(
-            kind="network_sends",
-            limit=limit,
-            progress=_progress(session),
-            helper_id=plan.helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            parent_session_id=session.session_id,
-        )
-    return session
-
-
-def _refused(  # noqa: PLR0913
-    plan: EventPlan[T],
-    operation: OperationRef,
-    progress: ProtocolProgress,
-    error: BudgetExceededError,
-    *,
-    error_type: type[SessionLimitError] = SessionLimitError,
-    resume_state: ResumeState | None = None,
-) -> SessionLimitError:
-    """Return the session's limit error for an open or reopen whose retries its session had no send slot for.
-
-    It names the operation sent, the helper's for an open and the reopen operation for a reopen.
-    """
-    return error_type(
-        kind="network_sends",
-        limit=error.limit,
-        progress=progress,
-        resume_state=resume_state,
-        helper_id=plan.helper_id,
-        operation=operation,
-        operation_id=error.operation_id,
-        call_id=error.call_id,
-        parent_session_id=error.parent_session_id,
-        info=error.info,
-        cause=error,
-        resource_attempt_count=error.resource_attempt_count,
-        redirect_count=error.redirect_count,
-        auth_exchange_count=error.auth_exchange_count,
-        network_send_count=error.network_send_count,
-        network_send_budget_used=error.network_send_budget_used,
-        auth_exchange_budget_used=error.auth_exchange_budget_used,
-        auth_refresh_ids=error.auth_refresh_ids,
-        auth_refresh_pending=error.auth_refresh_pending,
-        wire_send_count=error.wire_send_count,
-    )
+    return OperationSession(total_timeout=limits.total_timeout, deadline=limits.deadline, clock=limits.clock)
 
 
 @dataclass(frozen=True, slots=True)
@@ -797,9 +735,9 @@ def _reopen_request(
     """
     sent = _written(resume, (UNSET,) * len(resume.call.parameters), UNSET, position.bound, position.cursor)[0]
     if (unsaved := core.unsaved_argument(resume.call, _wires(sent))) is not None:
-        raise ProtocolConfigurationError(
+        raise ConfigurationError(
             field_path=("arguments", *unsaved),
-            condition="wrong_capability",
+            reason="wrong_capability",
             helper_id=plan.helper_id,
             operation=resume.operation,
             operation_id=resume.call.operation_id,
@@ -854,7 +792,7 @@ def _fitting(
     """Refuse a saved cursor or binding value that does not fit where the reopen writes it or that is never saved.
 
     The values are written into the saved request's wire values as a reopen writes them, and the request is built again
-    from them as a saved request is, its body validated whole; a value that does not fit raises RequestEncodingError.
+    from them as a saved request is, its body validated whole; a value that does not fit raises a request DecodeError.
     """
     call = resume.call
     arguments: tuple[object, ...] = (UNSET,) * len(call.parameters)
@@ -967,7 +905,7 @@ class _Events(Generic[T]):
     @property
     def progress(self) -> ProtocolProgress:
         """Return the reconnections so far, none without resume metadata, and the session's sends."""
-        return _progress(self._session, self._reconnects)
+        return _progress(self._reconnects)
 
     def checkpoint(self) -> ResumeState:
         """Return a checkpoint the helper's `resume` reopens the stream from, sending nothing.
@@ -1079,22 +1017,20 @@ class _Events(Generic[T]):
         reconnection: a transport one only after a read-phase failure the shared retry classification retries. One
         that does not keeps a checkpoint as its resume state, and so does one whose longest wait, the retry backoff's
         cap and at least the last reconnection time, is longer than allowed; the wait itself draws its jitter below
-        that cap. A stream out of reconnects or send slots raises StreamResumeExhaustedError.
+        that cap. A stream out of reconnects raises StreamResumeExhaustedError.
         """
         if not isinstance(failure, StreamInterruptedError) or (resume := self._resume) is None:
             return None
-        limits, session, client = self._limits, self._session, self._client
+        limits, client = self._limits, self._client
         reason: Literal["transport_interruption", "incomplete_eof"] | None = "incomplete_eof"
         if failure.condition == "transport":
             cause = failure.cause
-            reason = "transport_interruption" if isinstance(cause, TransportError) and self._retryable(cause) else None
+            reason = "transport_interruption" if is_transport(cause) and self._retryable(cause) else None
         if not (limits.reconnect and self._cursored and reason in resume.reconnect_on):
             failure.resume_state = self._resumable()
             return None
         if (cap := limits.max_reconnects) is not None and self._reconnects >= cap:
-            raise self._exhausted(cap, failure, kind="reconnects")
-        if (slots := session.send_limit) is not None and session.network_send_budget_used >= slots:
-            raise self._exhausted(slots, failure, kind="network_sends")
+            raise self._exhausted(cap, failure)
         backoff_cap, backoff = client.reconnect_backoff(limits.options, resume.call.operation_id, self._cap)
         retry = (self._frames.retry or 0) / 1000
         if (allowed := limits.max_reconnect_wait) is not None and max(backoff_cap, retry) > allowed:
@@ -1136,28 +1072,11 @@ class _Events(Generic[T]):
         refused.__context__ = failure
         return refused
 
-    def _exhausted(
-        self,
-        limit: int,
-        failure: StreamInterruptedError,
-        refused: BudgetExceededError | None = None,
-        *,
-        kind: Literal["reconnects", "network_sends"],
-    ) -> SessionLimitError:
-        """Return the error of a reconnection out of budget, keeping a checkpoint and the interruption or refusal."""
-        progress, resume_state = self.progress, self._resumable()
-        if refused is not None:
-            return _refused(
-                self._plan,
-                cast("StreamResumePlan", self._resume).operation,
-                progress,
-                refused,
-                error_type=StreamResumeExhaustedError,
-                resume_state=resume_state,
-            )
+    def _exhausted(self, limit: int, failure: StreamInterruptedError) -> SessionLimitError:
+        """Return the error of a reconnection out of reconnects, keeping a checkpoint and the interruption."""
         return self._stamped(
             StreamResumeExhaustedError(
-                kind=kind, limit=limit, progress=progress, resume_state=resume_state, cause=failure
+                kind="reconnects", limit=limit, progress=self.progress, resume_state=self._resumable(), cause=failure
             )
         )
 
@@ -1205,7 +1124,7 @@ class _Events(Generic[T]):
         )
 
     def _stamped(self, error: ProtocolErrorT) -> ProtocolErrorT:
-        """Give a failure of the stream the helper's context, the stream call's identity, and its counters."""
+        """Give a failure of the stream the helper's context, the stream call's identity, and its measurements."""
         info = self._info
         error.helper_id = self._plan.helper_id
         error.operation = self._operation
@@ -1213,18 +1132,7 @@ class _Events(Generic[T]):
         error.operation_id = self._operation_id
         error.call_id = info.call_id
         error.parent_session_id = self._session.session_id
-        set_error_counters(
-            error,
-            resource_attempt_count=info.resource_attempt_count,
-            redirect_count=info.redirect_count,
-            auth_exchange_count=info.auth_exchange_count,
-            network_send_count=info.network_send_count,
-            network_send_budget_used=info.network_send_budget_used,
-            auth_exchange_budget_used=info.auth_exchange_budget_used,
-            auth_refresh_ids=info.auth_refresh_ids,
-            auth_refresh_pending=info.auth_refresh_pending,
-            wire_send_count=info.wire_send_count,
-        )
+        error.attempt_count, error.elapsed = info.attempt_count, info.elapsed
         return error
 
     def _frame(self, chunk: bytes | None = None, *, last: bool = False) -> _Frame | None:
@@ -1269,13 +1177,13 @@ class _Events(Generic[T]):
         """
         if isinstance(error, StreamDecodeError):
             return error.with_traceback(None)
-        if not isinstance(error, TransportError) or (
-            isinstance(error, PhaseTimeoutError) and (self._resume is None or not self._retryable(error))
+        if not is_transport(error) or (
+            is_phase_timeout(error) and (self._resume is None or not self._retryable(error))
         ):
             return error
         return self._stamped(StreamInterruptedError(condition="transport", sequence=self._delivered, cause=error))
 
-    def _retryable(self, error: TransportError) -> bool:
+    def _retryable(self, error: APIConnectionError) -> bool:
         """Return whether a transport failure reading the body is one an automatic reconnection may follow."""
         return self._client.reconnects_after(error, self._limits.options, self._operation_id)
 
@@ -1447,11 +1355,9 @@ class EventStream(_Events[T]):
         request = _reopen_request(self._client, self._plan, resume, self._position())
         try:
             response = _sent(self._core, resume.reopened, request, self._limits, self._session, resume.media)
-        except BudgetExceededError as error:
-            if error.budget_kind != "parent_network":
-                raise
-            raise self._exhausted(error.limit, reconnect.failure, error, kind="network_sends") from None
         except _ENCODING_ERRORS as error:
+            if isinstance(error, DecodeError) and error.direction != "request":
+                raise
             refused = self._unencodable(error, reconnect.failure)
         else:
             _accepted(response, self._reopened)
@@ -1574,11 +1480,9 @@ class AsyncEventStream(_Events[T]):
         request = _reopen_request(self._client, self._plan, resume, self._position())
         try:
             response = await _asent(self._core, resume.reopened, request, self._limits, self._session, resume.media)
-        except BudgetExceededError as error:
-            if error.budget_kind != "parent_network":
-                raise
-            raise self._exhausted(error.limit, reconnect.failure, error, kind="network_sends") from None
         except _ENCODING_ERRORS as error:
+            if isinstance(error, DecodeError) and error.direction != "request":
+                raise
             refused = self._unencodable(error, reconnect.failure)
         else:
             await _aaccepted(response, self._reopened)
@@ -1749,7 +1653,7 @@ def _restored(
             media_type,
             limits.options,
         )
-    except (RequestEncodingError, ProtocolDataError, CodecError):
+    except (DecodeError, ProtocolDataError, CodecError):
         raise _resume_error(plan, "malformed") from None
     return resume, position
 
@@ -1787,7 +1691,7 @@ def _restore(
         require_state(fields["arguments"] == [] and fields["body"] == [])
     try:
         _fitting(core, resume, fields, bound, cursor)
-    except RequestEncodingError:
+    except DecodeError:
         raise MalformedStateError from None
     if (selector := _dotted(resume, bound, given)) is not None:
         raise ProtocolDataError(
@@ -1818,14 +1722,9 @@ def open_events(  # noqa: PLR0913
     A helper declaring resumption first reads the bindings' values and the server's expiry from the response.
     """
     limits = _limits(core, plan, stream_options, options, session_options)
-    session = _session(plan, limits, plan.operation, plan.call.operation_id)
+    session = _session(limits)
     given = (arguments, body, media_type)
-    try:
-        response = _sent(core, plan.call, given, limits, session, plan.media)
-    except BudgetExceededError as error:
-        if error.budget_kind != "parent_network":
-            raise
-        raise _refused(plan, plan.operation, _progress(session), error) from None
+    response = _sent(core, plan.call, given, limits, session, plan.media)
     position = (
         _START
         if (resume := plan.resume) is None
@@ -1847,14 +1746,9 @@ async def aopen_events(  # noqa: PLR0913
 ) -> AsyncEventStream[T]:
     """Open a helper's stream with asyncio, returning once its response is a declared success, as `open_events` does."""
     limits = _limits(core, plan, stream_options, options, session_options)
-    session = _session(plan, limits, plan.operation, plan.call.operation_id)
+    session = _session(limits)
     given = (arguments, body, media_type)
-    try:
-        response = await _asent(core, plan.call, given, limits, session, plan.media)
-    except BudgetExceededError as error:
-        if error.budget_kind != "parent_network":
-            raise
-        raise _refused(plan, plan.operation, _progress(session), error) from None
+    response = await _asent(core, plan.call, given, limits, session, plan.media)
     position = (
         _START
         if (resume := plan.resume) is None
@@ -1880,13 +1774,8 @@ def resume_events(  # noqa: PLR0913
     limits = _limits(core, plan, stream_options, options, session_options)
     resume, position = _restored(core, plan, state, limits)
     request = _reopen_request(core, plan, resume, position)
-    session = _session(plan, limits, resume.operation, resume.call.operation_id)
-    try:
-        response = _sent(core, resume.reopened, request, limits, session, resume.media)
-    except BudgetExceededError as error:
-        if error.budget_kind != "parent_network":
-            raise
-        raise _refused(plan, resume.operation, _progress(session, position.reconnects), error) from None
+    session = _session(limits)
+    response = _sent(core, resume.reopened, request, limits, session, resume.media)
     position = _accepted(response, partial(_resumed, plan, resume, position))
     return EventStream(core, plan, limits, session, response, position=position, reopened=True)
 
@@ -1904,12 +1793,7 @@ async def aresume_events(  # noqa: PLR0913
     limits = _limits(core, plan, stream_options, options, session_options)
     resume, position = _restored(core, plan, state, limits)
     request = _reopen_request(core, plan, resume, position)
-    session = _session(plan, limits, resume.operation, resume.call.operation_id)
-    try:
-        response = await _asent(core, resume.reopened, request, limits, session, resume.media)
-    except BudgetExceededError as error:
-        if error.budget_kind != "parent_network":
-            raise
-        raise _refused(plan, resume.operation, _progress(session, position.reconnects), error) from None
+    session = _session(limits)
+    response = await _asent(core, resume.reopened, request, limits, session, resume.media)
     position = await _aaccepted(response, partial(_resumed, plan, resume, position))
     return AsyncEventStream(core, plan, limits, session, response, position=position, reopened=True)

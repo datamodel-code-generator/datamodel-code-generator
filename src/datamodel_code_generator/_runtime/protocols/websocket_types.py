@@ -109,8 +109,8 @@ class WebSocketConnection(Protocol):
 
     A method whose deadline passes first raises TimeoutError and leaves the connection usable, without having sent or
     consumed anything. Once the connection closed, `receive` raises WebSocketClosedError and `send` and `ping` raise it
-    when nothing of theirs was sent. An I/O failure raises TransportError with how far the message got; a message over
-    `max_message_bytes` raises ProtocolSizeError after closing with 1009.
+    when nothing of theirs was sent. An I/O failure raises APIConnectionError with how far the message got; a message
+    over `max_message_bytes` raises ProtocolSizeError after closing with 1009.
     """
 
     @property
@@ -183,7 +183,7 @@ class WebSocketConnector(Protocol):
     """A borrowed opener of WebSocket connections: each open performs at most one handshake.
 
     It follows no redirect and retries, authenticates, and reconnects nothing itself. A response other than 101 raises
-    HandshakeResponse; any other failure raises the client's TransportError, ConfigurationError, or one of their
+    HandshakeResponse; any other failure raises the client's APIConnectionError, ConfigurationError, or one of their
     WebSocket subclasses with how far the handshake got.
     """
 

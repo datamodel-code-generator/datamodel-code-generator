@@ -278,7 +278,7 @@ class TransportAdapter(Protocol):
     """Send one prepared request and return its response once the headers arrived."""
 
     def send(self, request: PreparedRequest[BodyAttempt], context: AttemptIOContext) -> TransportResponse:
-        """Send the request; raise the client's TransportError for a classified I/O failure."""
+        """Send the request; raise the client's APIConnectionError for a classified I/O failure."""
         ...
 
     def close(self) -> None:
@@ -297,7 +297,7 @@ class AsyncTransportAdapter(Protocol):
     async def send(
         self, request: PreparedRequest[AsyncBodyAttempt], context: AttemptIOContext
     ) -> AsyncTransportResponse:
-        """Send the request; raise the client's TransportError for a classified I/O failure."""
+        """Send the request; raise the client's APIConnectionError for a classified I/O failure."""
         ...
 
     async def aclose(self) -> None:

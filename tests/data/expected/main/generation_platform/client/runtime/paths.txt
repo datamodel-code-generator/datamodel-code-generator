@@ -1,6 +1,6 @@
 # paths pydantic_v2.BaseModel
-  get_archive {'name': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getArchive', call_id='<call>', location='path.name') [operation_id='getArchive', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  get_archive {'name': '..'} ! RequestEncodingError: RequestEncodingError(operation_id='getArchive', call_id='<call>', location='path.name') [operation_id='getArchive', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_archive {'name': '.'} ! DecodeError: DecodeError(operation_id='getArchive', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getArchive', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  get_archive {'name': '..'} ! DecodeError: DecodeError(operation_id='getArchive', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getArchive', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/archive/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_archive {'name': '...'} = None
@@ -31,43 +31,43 @@
   > GET https://api.example.com/v1/files/.json
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_file {'name': ''} = None
-  get_pair {'first': '.', 'second': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getPair', call_id='<call>', location='path.first') [operation_id='getPair', location=('path', 'first'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  get_pair {'first': '', 'second': '..'} ! RequestEncodingError: RequestEncodingError(operation_id='getPair', call_id='<call>', location='path.second') [operation_id='getPair', location=('path', 'second'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_pair {'first': '.', 'second': '.'} ! DecodeError: DecodeError(operation_id='getPair', call_id='<call>', reason='unencodable', location='path.first') [operation_id='getPair', location=('path', 'first'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  get_pair {'first': '', 'second': '..'} ! DecodeError: DecodeError(operation_id='getPair', call_id='<call>', reason='unencodable', location='path.second') [operation_id='getPair', location=('path', 'second'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/pairs/.a
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_pair {'first': '.', 'second': 'a'} = None
-  get_pair {'first': '', 'second': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getPair', call_id='<call>', location='path.second') [operation_id='getPair', location=('path', 'second'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_pair {'first': '', 'second': '.'} ! DecodeError: DecodeError(operation_id='getPair', call_id='<call>', reason='unencodable', location='path.second') [operation_id='getPair', location=('path', 'second'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/pairs/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_pair {'first': '..', 'second': '.'} = None
-  get_reserved {'name': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getReserved', call_id='<call>', location='path.name') [operation_id='getReserved', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  get_reserved {'name': '..'} ! RequestEncodingError: RequestEncodingError(operation_id='getReserved', call_id='<call>', location='path.name') [operation_id='getReserved', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_reserved {'name': '.'} ! DecodeError: DecodeError(operation_id='getReserved', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReserved', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  get_reserved {'name': '..'} ! DecodeError: DecodeError(operation_id='getReserved', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReserved', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_reserved {'name': '...'} = None
   > GET https://api.example.com/v1/reserved/.a
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_reserved {'name': '.a'} = None
-  get_reserved {'name': '%2e'} ! RequestEncodingError: RequestEncodingError(operation_id='getReserved', call_id='<call>', location='path.name') [operation_id='getReserved', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_reserved {'name': '%2e'} ! DecodeError: DecodeError(operation_id='getReserved', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReserved', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved/
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_reserved {'name': ''} = None
-  get_reserved {'name': '%2E.'} ! RequestEncodingError: RequestEncodingError(operation_id='getReserved', call_id='<call>', location='path.name') [operation_id='getReserved', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_reserved {'name': '%2E.'} ! DecodeError: DecodeError(operation_id='getReserved', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReserved', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved/%2e%2f
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_reserved {'name': '%2e%2f'} = None
   > GET https://api.example.com/v1/reserved/a%2F..
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_reserved {'name': 'a/..'} = None
-  get_list {'names': ['.']} ! RequestEncodingError: RequestEncodingError(operation_id='getList', call_id='<call>', location='path.names') [operation_id='getList', location=('path', 'names'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  get_list {'names': ['..']} ! RequestEncodingError: RequestEncodingError(operation_id='getList', call_id='<call>', location='path.names') [operation_id='getList', location=('path', 'names'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_list {'names': ['.']} ! DecodeError: DecodeError(operation_id='getList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  get_list {'names': ['..']} ! DecodeError: DecodeError(operation_id='getList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/lists/.,.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_list {'names': ['.', '.']} = None
   > GET https://api.example.com/v1/lists/..,
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_list {'names': ['..', '']} = None
-  get_label {'name': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getLabel', call_id='<call>', location='path.name') [operation_id='getLabel', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_label {'name': '.'} ! DecodeError: DecodeError(operation_id='getLabel', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getLabel', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/labels/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_label {'name': '..'} = None
@@ -80,13 +80,13 @@
   > GET https://api.example.com/v1/labels/.%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_label {'name': '%2e'} = None
-  get_label {'name': ''} ! RequestEncodingError: RequestEncodingError(operation_id='getLabel', call_id='<call>', location='path.name') [operation_id='getLabel', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  get_label_list {'names': ['', '']} ! RequestEncodingError: RequestEncodingError(operation_id='getLabelList', call_id='<call>', location='path.names') [operation_id='getLabelList', location=('path', 'names'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_label {'name': ''} ! DecodeError: DecodeError(operation_id='getLabel', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getLabel', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  get_label_list {'names': ['', '']} ! DecodeError: DecodeError(operation_id='getLabelList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getLabelList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/label-lists/.a.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_label_list {'names': ['a', '']} = None
-  get_label_list {'names': ['.']} ! RequestEncodingError: RequestEncodingError(operation_id='getLabelList', call_id='<call>', location='path.names') [operation_id='getLabelList', location=('path', 'names'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
-  get_label_list {'names': ['']} ! RequestEncodingError: RequestEncodingError(operation_id='getLabelList', call_id='<call>', location='path.names') [operation_id='getLabelList', location=('path', 'names'), cause=ParameterEncodingError('An empty delimited value cannot be distinguished from an empty container')] request_encoding_error
+  get_label_list {'names': ['.']} ! DecodeError: DecodeError(operation_id='getLabelList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getLabelList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
+  get_label_list {'names': ['']} ! DecodeError: DecodeError(operation_id='getLabelList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getLabelList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('An empty delimited value cannot be distinguished from an empty container')] unencodable
   > GET https://api.example.com/v1/matrix/;name=.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_matrix {'name': '.'} = None
@@ -111,7 +111,7 @@
   > GET https://api.example.com/v1/matrix-lists/;names
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_matrix_list {'names': ['']} = None
-  get_reserved_label {'name': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getReservedLabel', call_id='<call>', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_reserved_label {'name': '.'} ! DecodeError: DecodeError(operation_id='getReservedLabel', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved-labels/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_reserved_label {'name': '..'} = None
@@ -121,33 +121,33 @@
   > GET https://api.example.com/v1/reserved-labels/..a
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_reserved_label {'name': '.a'} = None
-  get_reserved_label {'name': '%2e'} ! RequestEncodingError: RequestEncodingError(operation_id='getReservedLabel', call_id='<call>', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  get_reserved_label {'name': ''} ! RequestEncodingError: RequestEncodingError(operation_id='getReservedLabel', call_id='<call>', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_reserved_label {'name': '%2e'} ! DecodeError: DecodeError(operation_id='getReservedLabel', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  get_reserved_label {'name': ''} ! DecodeError: DecodeError(operation_id='getReservedLabel', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved-labels/.%2E.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_reserved_label {'name': '%2E.'} = None
-  get_reserved_label_list {'names': ['%2e']} ! RequestEncodingError: RequestEncodingError(operation_id='getReservedLabelList', call_id='<call>', location='path.names') [operation_id='getReservedLabelList', location=('path', 'names'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_reserved_label_list {'names': ['%2e']} ! DecodeError: DecodeError(operation_id='getReservedLabelList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getReservedLabelList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved-label-lists/.%2e.a
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_reserved_label_list {'names': ['%2e', 'a']} = None
   > GET https://api.example.com/v1/reserved-label-lists/..%2E
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_reserved_label_list {'names': ['', '%2E']} = None
-  get_dotted {'first': '', 'second': ''} ! RequestEncodingError: RequestEncodingError(operation_id='getDotted', call_id='<call>', location='path.first') [operation_id='getDotted', location=('path', 'first'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_dotted {'first': '', 'second': ''} ! DecodeError: DecodeError(operation_id='getDotted', call_id='<call>', reason='unencodable', location='path.first') [operation_id='getDotted', location=('path', 'first'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/dotted/a.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_dotted {'first': 'a', 'second': ''} = None
-  get_dotted {'first': '', 'second': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getDotted', call_id='<call>', location='path.second') [operation_id='getDotted', location=('path', 'second'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  get_dotted {'first': '.', 'second': ''} ! RequestEncodingError: RequestEncodingError(operation_id='getDotted', call_id='<call>', location='path.first') [operation_id='getDotted', location=('path', 'first'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_dotted {'first': '', 'second': '.'} ! DecodeError: DecodeError(operation_id='getDotted', call_id='<call>', reason='unencodable', location='path.second') [operation_id='getDotted', location=('path', 'second'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  get_dotted {'first': '.', 'second': ''} ! DecodeError: DecodeError(operation_id='getDotted', call_id='<call>', reason='unencodable', location='path.first') [operation_id='getDotted', location=('path', 'first'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/dotted/%252e.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_dotted {'first': '%2e', 'second': ''} = None
   > GET https://api.example.com/v1/static/a
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_static {'name': 'a'} = None
-  get_static {'name': '..'} ! RequestEncodingError: RequestEncodingError(operation_id='getStatic', call_id='<call>', location='path.name') [operation_id='getStatic', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  async get_archive {'name': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getArchive', call_id='<call>', location='path.name') [operation_id='getArchive', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  async get_archive {'name': '..'} ! RequestEncodingError: RequestEncodingError(operation_id='getArchive', call_id='<call>', location='path.name') [operation_id='getArchive', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  get_static {'name': '..'} ! DecodeError: DecodeError(operation_id='getStatic', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getStatic', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  async get_archive {'name': '.'} ! DecodeError: DecodeError(operation_id='getArchive', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getArchive', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  async get_archive {'name': '..'} ! DecodeError: DecodeError(operation_id='getArchive', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getArchive', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/archive/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_archive {'name': '...'} = None
@@ -178,43 +178,43 @@
   > GET https://api.example.com/v1/files/.json
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_file {'name': ''} = None
-  async get_pair {'first': '.', 'second': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getPair', call_id='<call>', location='path.first') [operation_id='getPair', location=('path', 'first'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  async get_pair {'first': '', 'second': '..'} ! RequestEncodingError: RequestEncodingError(operation_id='getPair', call_id='<call>', location='path.second') [operation_id='getPair', location=('path', 'second'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_pair {'first': '.', 'second': '.'} ! DecodeError: DecodeError(operation_id='getPair', call_id='<call>', reason='unencodable', location='path.first') [operation_id='getPair', location=('path', 'first'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  async get_pair {'first': '', 'second': '..'} ! DecodeError: DecodeError(operation_id='getPair', call_id='<call>', reason='unencodable', location='path.second') [operation_id='getPair', location=('path', 'second'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/pairs/.a
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_pair {'first': '.', 'second': 'a'} = None
-  async get_pair {'first': '', 'second': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getPair', call_id='<call>', location='path.second') [operation_id='getPair', location=('path', 'second'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_pair {'first': '', 'second': '.'} ! DecodeError: DecodeError(operation_id='getPair', call_id='<call>', reason='unencodable', location='path.second') [operation_id='getPair', location=('path', 'second'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/pairs/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_pair {'first': '..', 'second': '.'} = None
-  async get_reserved {'name': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getReserved', call_id='<call>', location='path.name') [operation_id='getReserved', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  async get_reserved {'name': '..'} ! RequestEncodingError: RequestEncodingError(operation_id='getReserved', call_id='<call>', location='path.name') [operation_id='getReserved', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_reserved {'name': '.'} ! DecodeError: DecodeError(operation_id='getReserved', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReserved', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  async get_reserved {'name': '..'} ! DecodeError: DecodeError(operation_id='getReserved', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReserved', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_reserved {'name': '...'} = None
   > GET https://api.example.com/v1/reserved/.a
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_reserved {'name': '.a'} = None
-  async get_reserved {'name': '%2e'} ! RequestEncodingError: RequestEncodingError(operation_id='getReserved', call_id='<call>', location='path.name') [operation_id='getReserved', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_reserved {'name': '%2e'} ! DecodeError: DecodeError(operation_id='getReserved', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReserved', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved/
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_reserved {'name': ''} = None
-  async get_reserved {'name': '%2E.'} ! RequestEncodingError: RequestEncodingError(operation_id='getReserved', call_id='<call>', location='path.name') [operation_id='getReserved', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_reserved {'name': '%2E.'} ! DecodeError: DecodeError(operation_id='getReserved', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReserved', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved/%2e%2f
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_reserved {'name': '%2e%2f'} = None
   > GET https://api.example.com/v1/reserved/a%2F..
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_reserved {'name': 'a/..'} = None
-  async get_list {'names': ['.']} ! RequestEncodingError: RequestEncodingError(operation_id='getList', call_id='<call>', location='path.names') [operation_id='getList', location=('path', 'names'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  async get_list {'names': ['..']} ! RequestEncodingError: RequestEncodingError(operation_id='getList', call_id='<call>', location='path.names') [operation_id='getList', location=('path', 'names'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_list {'names': ['.']} ! DecodeError: DecodeError(operation_id='getList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  async get_list {'names': ['..']} ! DecodeError: DecodeError(operation_id='getList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/lists/.,.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_list {'names': ['.', '.']} = None
   > GET https://api.example.com/v1/lists/..,
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_list {'names': ['..', '']} = None
-  async get_label {'name': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getLabel', call_id='<call>', location='path.name') [operation_id='getLabel', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_label {'name': '.'} ! DecodeError: DecodeError(operation_id='getLabel', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getLabel', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/labels/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_label {'name': '..'} = None
@@ -227,13 +227,13 @@
   > GET https://api.example.com/v1/labels/.%252e
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_label {'name': '%2e'} = None
-  async get_label {'name': ''} ! RequestEncodingError: RequestEncodingError(operation_id='getLabel', call_id='<call>', location='path.name') [operation_id='getLabel', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  async get_label_list {'names': ['', '']} ! RequestEncodingError: RequestEncodingError(operation_id='getLabelList', call_id='<call>', location='path.names') [operation_id='getLabelList', location=('path', 'names'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_label {'name': ''} ! DecodeError: DecodeError(operation_id='getLabel', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getLabel', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  async get_label_list {'names': ['', '']} ! DecodeError: DecodeError(operation_id='getLabelList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getLabelList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/label-lists/.a.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_label_list {'names': ['a', '']} = None
-  async get_label_list {'names': ['.']} ! RequestEncodingError: RequestEncodingError(operation_id='getLabelList', call_id='<call>', location='path.names') [operation_id='getLabelList', location=('path', 'names'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
-  async get_label_list {'names': ['']} ! RequestEncodingError: RequestEncodingError(operation_id='getLabelList', call_id='<call>', location='path.names') [operation_id='getLabelList', location=('path', 'names'), cause=ParameterEncodingError('An empty delimited value cannot be distinguished from an empty container')] request_encoding_error
+  async get_label_list {'names': ['.']} ! DecodeError: DecodeError(operation_id='getLabelList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getLabelList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] unencodable
+  async get_label_list {'names': ['']} ! DecodeError: DecodeError(operation_id='getLabelList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getLabelList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('An empty delimited value cannot be distinguished from an empty container')] unencodable
   > GET https://api.example.com/v1/matrix/;name=.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_matrix {'name': '.'} = None
@@ -258,7 +258,7 @@
   > GET https://api.example.com/v1/matrix-lists/;names
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_matrix_list {'names': ['']} = None
-  async get_reserved_label {'name': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getReservedLabel', call_id='<call>', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_reserved_label {'name': '.'} ! DecodeError: DecodeError(operation_id='getReservedLabel', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved-labels/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_reserved_label {'name': '..'} = None
@@ -268,28 +268,28 @@
   > GET https://api.example.com/v1/reserved-labels/..a
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_reserved_label {'name': '.a'} = None
-  async get_reserved_label {'name': '%2e'} ! RequestEncodingError: RequestEncodingError(operation_id='getReservedLabel', call_id='<call>', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  async get_reserved_label {'name': ''} ! RequestEncodingError: RequestEncodingError(operation_id='getReservedLabel', call_id='<call>', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_reserved_label {'name': '%2e'} ! DecodeError: DecodeError(operation_id='getReservedLabel', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  async get_reserved_label {'name': ''} ! DecodeError: DecodeError(operation_id='getReservedLabel', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getReservedLabel', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved-labels/.%2E.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_reserved_label {'name': '%2E.'} = None
-  async get_reserved_label_list {'names': ['%2e']} ! RequestEncodingError: RequestEncodingError(operation_id='getReservedLabelList', call_id='<call>', location='path.names') [operation_id='getReservedLabelList', location=('path', 'names'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_reserved_label_list {'names': ['%2e']} ! DecodeError: DecodeError(operation_id='getReservedLabelList', call_id='<call>', reason='unencodable', location='path.names') [operation_id='getReservedLabelList', location=('path', 'names'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/reserved-label-lists/.%2e.a
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_reserved_label_list {'names': ['%2e', 'a']} = None
   > GET https://api.example.com/v1/reserved-label-lists/..%2E
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_reserved_label_list {'names': ['', '%2E']} = None
-  async get_dotted {'first': '', 'second': ''} ! RequestEncodingError: RequestEncodingError(operation_id='getDotted', call_id='<call>', location='path.first') [operation_id='getDotted', location=('path', 'first'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_dotted {'first': '', 'second': ''} ! DecodeError: DecodeError(operation_id='getDotted', call_id='<call>', reason='unencodable', location='path.first') [operation_id='getDotted', location=('path', 'first'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/dotted/a.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_dotted {'first': 'a', 'second': ''} = None
-  async get_dotted {'first': '', 'second': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getDotted', call_id='<call>', location='path.second') [operation_id='getDotted', location=('path', 'second'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
-  async get_dotted {'first': '.', 'second': ''} ! RequestEncodingError: RequestEncodingError(operation_id='getDotted', call_id='<call>', location='path.first') [operation_id='getDotted', location=('path', 'first'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_dotted {'first': '', 'second': '.'} ! DecodeError: DecodeError(operation_id='getDotted', call_id='<call>', reason='unencodable', location='path.second') [operation_id='getDotted', location=('path', 'second'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  async get_dotted {'first': '.', 'second': ''} ! DecodeError: DecodeError(operation_id='getDotted', call_id='<call>', reason='unencodable', location='path.first') [operation_id='getDotted', location=('path', 'first'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/dotted/%252e.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_dotted {'first': '%2e', 'second': ''} = None
   > GET https://api.example.com/v1/static/a
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_static {'name': 'a'} = None
-  async get_static {'name': '..'} ! RequestEncodingError: RequestEncodingError(operation_id='getStatic', call_id='<call>', location='path.name') [operation_id='getStatic', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async get_static {'name': '..'} ! DecodeError: DecodeError(operation_id='getStatic', call_id='<call>', reason='unencodable', location='path.name') [operation_id='getStatic', location=('path', 'name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable

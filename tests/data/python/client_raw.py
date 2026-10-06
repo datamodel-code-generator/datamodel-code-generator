@@ -369,9 +369,9 @@ def _until_closing(api: Any, pet: object, errors: ModuleType) -> None:
     while True:
         try:
             api.pets.get_pet(pet_id=pet, options="refused only once closing")
-        except errors.ClientClosedError:
-            return
-        except errors.ConfigurationError:
+        except errors.ConfigurationError as error:
+            if error.reason == "client_closed":
+                return
             if time.monotonic() > deadline:
                 msg = "The client never started closing"
                 raise TimeoutError(msg) from None

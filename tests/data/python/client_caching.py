@@ -49,7 +49,7 @@ def shown(result: Any) -> str:
     info = result.response
     return (
         f"{result.source} {_data(result.data)} status={info.status_code} network={result.network_status} "
-        f"sends={info.network_send_count} attempts={info.resource_attempt_count} type={info.content_type} "
+        f"attempts={info.attempt_count} type={info.content_type} "
         f"request_id={info.request_id} headers={list(info.headers)}"
     )
 
@@ -720,7 +720,7 @@ def _settings(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
             lambda client=client, protocol=protocol: client(options=options.ClientOptions(protocols=protocol)),
         )
     for label, defaults in (
-        ("session defaults", protocols.ProtocolDefaults(session=options.SessionOptions(max_network_sends=1))),
+        ("session defaults", protocols.ProtocolDefaults(session=options.SessionOptions(total_timeout=1))),
         ("pagination defaults", protocols.ProtocolDefaults(options=protocols.PaginationOptions(max_pages=1))),
     ):
         protocol = options.ProtocolClientOptions(defaults={"users.profile": defaults})

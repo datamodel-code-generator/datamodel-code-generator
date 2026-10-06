@@ -164,7 +164,7 @@ def _errors(package: ModuleType, lines: list[str]) -> None:
     error = errors.SDKError()
     lines.append(
         f"  error bare {error} {error.reason_code} "
-        f"{errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT)}"
+        f"{errors.APIConnectionError(delivery_state=errors.DeliveryState.NOT_SENT)}"
     )
 
 

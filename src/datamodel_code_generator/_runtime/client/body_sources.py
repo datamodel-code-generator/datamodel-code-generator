@@ -22,7 +22,7 @@ from .bodies import (
     update_file_digest,
 )
 from .coding import CHUNK
-from .errors import RequestEncodingError
+from .errors import DecodeError
 from .multipart import (
     AsyncMultipartAttempt,
     MultipartAttempt,
@@ -113,7 +113,9 @@ class BodyBindings:
                 self._history = {}
             source = bind_factory(body, self._history)
         else:
-            raise RequestEncodingError(
+            raise DecodeError(
+                reason="unencodable",
+                direction="request",
                 location=("body",),
                 cause=TypeError(
                     "A body must be bytes or a file, stream, factory, or multipart body of the client's mode"
@@ -164,7 +166,9 @@ class AsyncBodyBindings:
                 self._history = {}
             source = bind_async_factory(body, self._history, self.cleanup)
         else:
-            raise RequestEncodingError(
+            raise DecodeError(
+                reason="unencodable",
+                direction="request",
                 location=("body",),
                 cause=TypeError(
                     "A body must be bytes or a file, stream, factory, or multipart body of the client's mode"

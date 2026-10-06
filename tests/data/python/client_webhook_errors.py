@@ -30,10 +30,10 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
     cases = (
         ("ProtocolError", {}),
         (
-            "ProtocolConfigurationError",
+            "ConfigurationError",
             {
                 "field_path": (secret,),
-                "condition": "binding_mismatch",
+                "reason": "binding_mismatch",
                 "source_uri": f"https://example.com/{secret}",
                 "source_pointer": f"/{secret}",
             },
@@ -76,7 +76,7 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
             ),
             (
                 f"    hints={hints['operation'] == protocols.OperationRef | None}/"
-                f"{hints['helper_id'] == str | None}/{hints['info'] == responses.ResponseInfo | None} "
+                f"{hints['helper_id'] == str | None}/{hints.get('info') == responses.ResponseInfo | None} "
                 f"retained={all(getattr(error, key) == value for key, value in fields.items())}"
             ),
             f"    str={error} repr={error!r} secret={secret in str(error) or secret in repr(error)}",
@@ -85,7 +85,7 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
         ("protocol defaults", errors.ProtocolError),
         (
             "configuration defaults",
-            lambda: errors.ProtocolConfigurationError(field_path=(), condition="invalid_value"),
+            lambda: errors.ConfigurationError(field_path=(), reason="invalid_value"),
         ),
         ("verification defaults", lambda: errors.WebhookVerificationError(condition="missing_key")),
         ("store defaults", lambda: errors.ProtocolStoreError(action="get")),
@@ -111,8 +111,8 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
         "security_partition",
         "binding_mismatch",
     ):
-        error = errors.ProtocolConfigurationError(field_path=(), condition=condition)
-        lines.append(f"  configuration condition: {error.condition}")
+        error = errors.ConfigurationError(field_path=(), reason=condition)
+        lines.append(f"  configuration reason: {error.reason}")
     for condition in ("malformed_signature", "invalid_signature", "missing_key", "timestamp_window"):
         error = errors.WebhookVerificationError(condition=condition)
         lines.append(f"  verification condition: {error.condition}")
@@ -124,20 +124,20 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
         error = errors.ProtocolStoreError(action=action)
         lines.append(f"  store action: {error.action} entry={error.entry_id}")
     field_path = [secret]
-    error = errors.ProtocolConfigurationError(field_path=field_path, condition="invalid_value")
+    error = errors.ConfigurationError(field_path=field_path, reason="invalid_value")
     field_path.clear()
     lines.append(f"  copied configuration path: {error.field_path == (secret,)}")
     for label, create in (
-        ("configuration missing path", lambda: errors.ProtocolConfigurationError(condition="invalid_value")),
-        ("configuration missing condition", lambda: errors.ProtocolConfigurationError(field_path=())),
+        ("configuration missing path", lambda: errors.ConfigurationError(reason="invalid_value")),
+        ("configuration missing reason", lambda: errors.ConfigurationError(field_path=())),
         (
-            "configuration condition unknown",
-            lambda: errors.ProtocolConfigurationError(field_path=(), condition="private-webhook-marker"),
+            "configuration reason unknown",
+            lambda: errors.ConfigurationError(field_path=(), reason="private-webhook-marker"),
         ),
-        ("configuration condition type", lambda: errors.ProtocolConfigurationError(field_path=(), condition=3)),
+        ("configuration reason type", lambda: errors.ConfigurationError(field_path=(), reason=3)),
         (
             "configuration helper type",
-            lambda: errors.ProtocolConfigurationError(field_path=(), condition="invalid_value", helper_id=3),
+            lambda: errors.ConfigurationError(field_path=(), reason="invalid_value", helper_id=3),
         ),
         ("helper type", lambda: errors.ProtocolError(helper_id=3)),
         ("operation type", lambda: errors.ProtocolError(operation="private-webhook-marker")),

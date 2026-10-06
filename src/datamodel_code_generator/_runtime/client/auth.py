@@ -12,7 +12,7 @@ from typing import Generic, Literal, Protocol, TypeAlias, TypeVar, final
 from typing_extensions import TypeIs
 
 from ..model_codecs.unset import UNSET, Unset
-from .errors import AuthConfigurationError, ConfigurationError, SigningConfigurationError
+from .errors import ConfigurationError
 from .responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
 from .scopes import scope_tuple
 from .timing import CancelToken, Deadline
@@ -51,7 +51,7 @@ __all__ = (
 def checked_type(value: object, types: tuple[type[object], ...], path: tuple[str, ...]) -> None:
     """Refuse an auth value of another type at its field path."""
     if not isinstance(value, types):
-        raise AuthConfigurationError(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
 
 
 def checked_scopes(value: object, name: str) -> tuple[str, ...]:
@@ -59,22 +59,20 @@ def checked_scopes(value: object, name: str) -> tuple[str, ...]:
     try:
         return scope_tuple(value)
     except ValueError:
-        raise AuthConfigurationError(field_path=(name,), condition="invalid_scope") from None
+        raise ConfigurationError(field_path=(name,), reason="invalid_scope") from None
 
 
 def _sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
     return isinstance(value, (tuple, list))
 
 
-def _strings(
-    value: object, path: tuple[str, ...], error_type: type[ConfigurationError] = AuthConfigurationError
-) -> tuple[str, ...]:
+def _strings(value: object, path: tuple[str, ...]) -> tuple[str, ...]:
     if not _sequence(value):
-        raise error_type(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
     result: list[str] = []
     for item in value:
         if not isinstance(item, str):
-            raise error_type(field_path=path, condition="invalid_type")
+            raise ConfigurationError(field_path=path, reason="invalid_type")
         result.append(item)
     return tuple(result)
 
@@ -144,7 +142,7 @@ class BearerCredential:
 
 def _refresh_token(value: object) -> None:
     if value is not None and (not isinstance(value, str) or not value):
-        raise AuthConfigurationError(field_path=("refresh_token",), condition="invalid_value")
+        raise ConfigurationError(field_path=("refresh_token",), reason="invalid_value")
 
 
 @final
@@ -280,9 +278,9 @@ class SignerCapabilities:
     def __post_init__(self) -> None:
         """Copy declared collections without choosing destinations or invoking a signer."""
         for name in ("allowed_origins", "managed_headers", "managed_query"):
-            object.__setattr__(self, name, _strings(getattr(self, name), (name,), SigningConfigurationError))
+            object.__setattr__(self, name, _strings(getattr(self, name), (name,)))
         if type(self.requires_body_digest) is not bool:
-            raise SigningConfigurationError(field_path=("requires_body_digest",), condition="invalid_type")
+            raise ConfigurationError(field_path=("requires_body_digest",), reason="invalid_type")
 
 
 @dataclass(frozen=True, slots=True)
@@ -301,14 +299,14 @@ class SigningInput:
 
 def _signature_pairs(value: object, name: str) -> tuple[tuple[str, str], ...]:
     if not _sequence(value):
-        raise SigningConfigurationError(field_path=(name,), condition="invalid_type")
+        raise ConfigurationError(field_path=(name,), reason="invalid_type")
     pairs: list[tuple[str, str]] = []
     for item in value:
-        match _strings(item, (name,), SigningConfigurationError):
+        match _strings(item, (name,)):
             case first, second:
                 pairs.append((first, second))
             case _:
-                raise SigningConfigurationError(field_path=(name,), condition="invalid_value")
+                raise ConfigurationError(field_path=(name,), reason="invalid_value")
     return tuple(pairs)
 
 
@@ -370,11 +368,11 @@ def _signer(value: object) -> TypeIs[RequestSigner | AsyncRequestSigner]:
 def _credentials(value: object) -> Mapping[str, CredentialProviderInput]:
     path = ("auth", "credentials")
     if not _mapping(value):
-        raise AuthConfigurationError(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
     result: dict[str, CredentialProviderInput] = {}
     for name, provider in value.items():
         if not isinstance(name, str) or not _provider(provider):
-            raise AuthConfigurationError(field_path=path, condition="invalid_type")
+            raise ConfigurationError(field_path=path, reason="invalid_type")
         result[name] = provider
     return MappingProxyType(result)
 
@@ -382,18 +380,18 @@ def _credentials(value: object) -> Mapping[str, CredentialProviderInput]:
 def _signers(value: object) -> tuple[RequestSigner | AsyncRequestSigner, ...]:
     path = ("auth", "signers")
     if not _sequence(value):
-        raise AuthConfigurationError(field_path=path, condition="invalid_type")
+        raise ConfigurationError(field_path=path, reason="invalid_type")
     result: list[RequestSigner | AsyncRequestSigner] = []
     for signer in value:
         if not _signer(signer):
-            raise AuthConfigurationError(field_path=path, condition="invalid_type")
+            raise ConfigurationError(field_path=path, reason="invalid_type")
         result.append(signer)
     return tuple(result)
 
 
 def _count(value: object, path: tuple[str, ...]) -> None:
     if type(value) is not int or value < 0:
-        raise AuthConfigurationError(field_path=path, condition="out_of_range")
+        raise ConfigurationError(field_path=path, reason="out_of_range")
 
 
 @dataclass(frozen=True, slots=True)
@@ -435,7 +433,7 @@ def owned_providers(config: AuthConfig) -> tuple[_CloseableProvider, ...]:
 def _material(value: object) -> CredentialMaterial:
     if isinstance(value, (ApiKeyCredential, BasicCredential, BearerCredential)):
         return value
-    raise AuthConfigurationError(field_path=("material",), condition="invalid_type")
+    raise ConfigurationError(field_path=("material",), reason="invalid_type")
 
 
 class _StaticCredentials:
@@ -502,18 +500,18 @@ class _EnvironmentCredentials:
     def __init__(self, variable_name: str, *, kind: Literal["api_key", "bearer"] = "api_key") -> None:
         checked_type(variable_name, (str,), ("variable_name",))
         if not variable_name or "=" in variable_name or "\0" in variable_name:
-            raise AuthConfigurationError(field_path=("variable_name",), condition="invalid_value")
+            raise ConfigurationError(field_path=("variable_name",), reason="invalid_value")
         match kind:
             case "api_key" | "bearer":
                 self._kind = kind
             case _:
-                raise AuthConfigurationError(field_path=("kind",), condition="invalid_value")
+                raise ConfigurationError(field_path=("kind",), reason="invalid_value")
         self._variable_name = variable_name
         self._last: tuple[str, TokenVersion] | None = None
 
     def _read(self) -> CredentialMaterial:
         if (value := os.environ.get(self._variable_name)) is None:
-            raise AuthConfigurationError(field_path=("variable_name",), condition="missing_value")
+            raise ConfigurationError(field_path=("variable_name",), reason="missing_value")
         if self._kind == "api_key":
             return ApiKeyCredential(value)
         if (last := self._last) is None or last[0] != value:

@@ -337,7 +337,7 @@ class _Harness:
 
     def transport_error(self, delivery: str) -> Any:
         errors = self.errors
-        return errors.TransportError(delivery_state=errors.DeliveryState[delivery], phase="write")
+        return errors.APIConnectionError(delivery_state=errors.DeliveryState[delivery], phase="write")
 
 
 def socket_connectors(package: ModuleType, lines: list[str]) -> None:
@@ -486,20 +486,15 @@ def _handshake_failures(harness: _Harness, connector: _Connector, api: Any) -> N
         if session is not None:
             session.close()
     options = harness.options
-    handshake_record(
-        lines,
-        "no call send slot",
-        lambda: chat.connect(room=harness.room, options=options.RequestOptions(max_network_sends=0)),
-    )
     connector.queue.clear()
     for delivery in ("MAYBE_SENT", "RESPONSE_STARTED", "NOT_SENT"):
         for kind in ("timeout", "transport"):
             failure = (
-                harness.errors.PhaseTimeoutError(
+                harness.errors.APITimeoutError(
                     phase="connect", effective_timeout=5, delivery_state=harness.errors.DeliveryState[delivery]
                 )
                 if kind == "timeout"
-                else harness.errors.TransportError(phase="read", delivery_state=harness.errors.DeliveryState[delivery])
+                else harness.errors.APIConnectionError(phase="read", delivery_state=harness.errors.DeliveryState[delivery])
             )
             sentinel = _Connection(harness, subprotocol="chat.v2")
             connector.queue.extend((failure, sentinel))
@@ -511,24 +506,15 @@ def _handshake_failures(harness: _Harness, connector: _Connector, api: Any) -> N
                 ),
             )
             if session is not None:
-                lines.append(
-                    f"    attempts={session.response.resource_attempt_count} "
-                    f"sends={session.response.network_send_count} "
-                    f"wire={session.response.wire_send_count}"
-                )
+                lines.append(f"    attempts={session.response.attempt_count}")
                 session.close()
             lines.append(f"    sentinel pending={sentinel in connector.queue}")
             connector.queue.clear()
     for label, request, parent in (
         ("retry disabled", options.RequestOptions(retry=options.RetryOptions(max_retries=0)), None),
-        (
-            "parent exhausted",
-            options.RequestOptions(retry=options.RetryOptions(max_retries=1)),
-            options.SessionOptions(max_network_sends=1),
-        ),
     ):
         connector.queue.append(
-            harness.errors.PhaseTimeoutError(
+            harness.errors.APITimeoutError(
                 phase="connect", effective_timeout=5, delivery_state=harness.errors.DeliveryState.NOT_SENT
             )
         )
@@ -710,11 +696,11 @@ async def _async_connectors(harness: _Harness) -> None:
         for delivery in ("MAYBE_SENT", "RESPONSE_STARTED", "NOT_SENT"):
             for kind in ("timeout", "transport"):
                 failure = (
-                    errors.PhaseTimeoutError(
+                    errors.APITimeoutError(
                         phase="connect", effective_timeout=5, delivery_state=errors.DeliveryState[delivery]
                     )
                     if kind == "timeout"
-                    else errors.TransportError(phase="read", delivery_state=errors.DeliveryState[delivery])
+                    else errors.APIConnectionError(phase="read", delivery_state=errors.DeliveryState[delivery])
                 )
                 sentinel = _AsyncConnection(harness)
                 connector.queue.extend((failure, sentinel))
@@ -726,24 +712,15 @@ async def _async_connectors(harness: _Harness) -> None:
                     ),
                 )
                 if session is not None:
-                    lines.append(
-                        f"    attempts={session.response.resource_attempt_count} "
-                        f"sends={session.response.network_send_count} "
-                        f"wire={session.response.wire_send_count}"
-                    )
+                    lines.append(f"    attempts={session.response.attempt_count}")
                     await session.aclose()
                 lines.append(f"    sentinel pending={sentinel in connector.queue}")
                 connector.queue.clear()
         for label, request, parent in (
             ("async retry disabled", options.RequestOptions(retry=options.RetryOptions(max_retries=0)), None),
-            (
-                "async parent exhausted",
-                options.RequestOptions(retry=options.RetryOptions(max_retries=1)),
-                options.SessionOptions(max_network_sends=1),
-            ),
         ):
             connector.queue.append(
-                errors.PhaseTimeoutError(
+                errors.APITimeoutError(
                     phase="connect", effective_timeout=5, delivery_state=errors.DeliveryState.NOT_SENT
                 )
             )
@@ -796,12 +773,6 @@ async def _async_connectors(harness: _Harness) -> None:
         bad_headers.handshake_headers = {"x-socket": "1"}
         connector.queue.append(bad_headers)
         await arecord(lines, "async headers of another type", api.protocols.feed.text.connect)
-        options = harness.options
-        await arecord(
-            lines,
-            "async no call send slot",
-            lambda: api.protocols.feed.text.connect(options=options.RequestOptions(max_network_sends=0)),
-        )
         connection = _AsyncConnection(harness)
         connection.hold = harness.transport_error("RESPONSE_STARTED")
         connector.queue.append(connection)

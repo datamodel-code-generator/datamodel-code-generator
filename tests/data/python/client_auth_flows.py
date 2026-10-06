@@ -41,12 +41,11 @@ def _bearer(auth: ModuleType, value: str = "token", **fields: object) -> object:
 def _failure(error: BaseException) -> tuple[object, ...]:
     return (
         type(error).__name__,
-        getattr(error, "condition", None),
-        getattr(error, "callback", None),
+        getattr(error, "reason", None),
         getattr(error, "retry_stop_reason", None),
         type(getattr(error, "cause", None)).__name__,
         tuple(type(item).__name__ for item in getattr(error, "secondary_errors", ())),
-        getattr(error, "network_send_count", None),
+        getattr(error, "attempt_count", None),
         getattr(getattr(error, "delivery_state", None), "value", None),
         len(getattr(error, "body_bytes", b"") or b""),
     )

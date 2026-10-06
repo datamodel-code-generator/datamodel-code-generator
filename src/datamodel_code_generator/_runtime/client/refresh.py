@@ -13,15 +13,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 from .auth import BearerCredential, CredentialContext, TokenSet, TokenVersion, checked_scopes
-from .errors import (
-    AuthConfigurationError,
-    AuthProviderClosedError,
-    AuthReauthorizationRequiredError,
-    AuthTimeoutError,
-    DeliveryState,
-    OAuthExchangeError,
-    TokenExpiredError,
-)
+from .errors import AuthError, ConfigurationError, DeliveryState
 from .oauth import Session, receipt, token_material
 
 if TYPE_CHECKING:
@@ -66,32 +58,32 @@ def published(access: AccessToken, received: datetime, at: float, *, renewable: 
 def checked_audience(audience: object) -> str | None:
     """Refuse a fixed audience that is neither None nor a nonempty string."""
     if audience is not None and (not isinstance(audience, str) or not audience):
-        raise AuthConfigurationError(field_path=("audience",), condition="invalid_value")
+        raise ConfigurationError(field_path=("audience",), reason="invalid_value")
     return audience
 
 
 def checked_context(context: object, audience: str | None) -> CredentialContext:
     """Refuse a context of another type or one requiring an audience other than the configured one."""
     if not isinstance(context, CredentialContext):
-        raise AuthConfigurationError(field_path=("context",), condition="invalid_type")
+        raise ConfigurationError(field_path=("context",), reason="invalid_type")
     if context.audience is not None and context.audience != audience:
-        raise AuthConfigurationError(field_path=("audience",), condition="audience_mismatch")
+        raise ConfigurationError(field_path=("audience",), reason="audience_mismatch")
     return context
 
 
 def checked_token_set(value: object, audience: str | None) -> TokenSet:
     """Refuse a token set whose access token has a naive expiry, another type than Bearer, or another audience."""
     if not isinstance(value, TokenSet):
-        raise AuthConfigurationError(field_path=("token_set",), condition="invalid_type")
+        raise ConfigurationError(field_path=("token_set",), reason="invalid_type")
     access = value.access_token
     if (expires_at := access.expires_at) is not None and expires_at.utcoffset() is None:
-        raise AuthConfigurationError(field_path=("token_set", "access_token", "expires_at"), condition="invalid_value")
+        raise ConfigurationError(field_path=("token_set", "access_token", "expires_at"), reason="invalid_value")
     if access.token_type.lower() != "bearer":
-        raise AuthConfigurationError(
-            field_path=("token_set", "access_token", "token_type"), condition="unsupported_token_type"
+        raise ConfigurationError(
+            field_path=("token_set", "access_token", "token_type"), reason="unsupported_token_type"
         )
     if access.audience is not None and access.audience != audience:
-        raise AuthConfigurationError(field_path=("audience",), condition="audience_mismatch")
+        raise ConfigurationError(field_path=("audience",), reason="audience_mismatch")
     return value
 
 
@@ -102,23 +94,24 @@ def exchange_error(exchanged: Exchanged, cause: BaseException | None = None) -> 
         phase: Literal["validate", "unknown"] = (
             "validate" if exchanged.outcome in {"success", "malformed_response"} else "unknown"
         )
-        return OAuthExchangeError(
+        return AuthError(
+            reason="oauth_error",
             status_code=exchanged.status_code,
             oauth_error=exchanged.oauth_error,
             delivery_state=delivery,
             phase=phase,
             cause=exchanged.cause if cause is None else cause,
         )
-    if (timeout_kind := exchanged.timeout_kind) is not None:
+    if exchanged.timeout_kind is not None:
         assert exchanged.timeout is not None
-        return AuthTimeoutError(
+        return AuthError(
+            reason="timeout",
             effective_timeout=exchanged.timeout,
-            timeout_kind=timeout_kind,
             delivery_state=delivery,
             phase=exchanged.phase,
             cause=exchanged.cause,
         )
-    return OAuthExchangeError(delivery_state=delivery, phase=exchanged.phase, cause=exchanged.cause)
+    return AuthError(reason="oauth_error", delivery_state=delivery, phase=exchanged.phase, cause=exchanged.cause)
 
 
 class ClientCredentialsGrant:
@@ -129,7 +122,7 @@ class ClientCredentialsGrant:
     def __init__(self, method: object, scopes: object, audience: object) -> None:
         """Refuse public clients, then validate the requested scopes and the fixed audience."""
         if method == "none":
-            raise AuthConfigurationError(field_path=("client_auth_method",), condition="invalid_value")
+            raise ConfigurationError(field_path=("client_auth_method",), reason="invalid_value")
         self.scopes = checked_scopes(scopes, "scopes")
         self.audience = checked_audience(audience)
         self.form = (
@@ -172,7 +165,7 @@ class RefreshTokenGrant:
     def request(self) -> tuple[tuple[str, str], ...]:
         """Return the form refreshing the current token set, or refuse one without a refresh token."""
         if (refresh_token := self.token_set.refresh_token) is None:
-            raise AuthReauthorizationRequiredError(condition="no_refresh_token", delivery_state=DeliveryState.NOT_SENT)
+            raise AuthError(reason="reauthorization_required", delivery_state=DeliveryState.NOT_SENT)
         return (("grant_type", "refresh_token"), ("refresh_token", refresh_token))
 
     def answered(self, exchanged: Exchanged) -> tuple[Published, TokenSet]:
@@ -182,7 +175,12 @@ class RefreshTokenGrant:
         replaces; invalid_grant requires a new authorization.
         """
         if exchanged.outcome == "rejected" and exchanged.oauth_error == "invalid_grant":
-            raise AuthReauthorizationRequiredError(condition="invalid_grant", delivery_state=exchanged.delivery)
+            raise AuthError(
+                reason="reauthorization_required",
+                status_code=exchanged.status_code,
+                oauth_error="invalid_grant",
+                delivery_state=exchanged.delivery,
+            )
         if exchanged.outcome != "success":
             raise exchange_error(exchanged)
         used = self.token_set
@@ -199,7 +197,7 @@ def _access(exchanged: Exchanged, scopes: tuple[str, ...] | None) -> tuple[Acces
     assert exchanged.received is not None
     try:
         return token_material(exchanged.fields, exchanged.received, scopes)
-    except (ValueError, TokenExpiredError) as cause:
+    except (ValueError, AuthError) as cause:
         raise exchange_error(exchanged, cause) from None
 
 
@@ -231,7 +229,7 @@ class _Tokens:
         A forced caller uses only material that replaced the version it saw before waiting.
         """
         if closed:
-            raise AuthProviderClosedError(delivery_state=DeliveryState.NOT_SENT)
+            raise AuthError(reason="provider_closed", delivery_state=DeliveryState.NOT_SENT)
         if (cache := self._cache) is None:
             return None
         if force:
@@ -264,7 +262,7 @@ class _Tokens:
     def invalidate(self, version: object) -> None:
         """Forget the current material if it is the version a resource rejected; another version stays usable."""
         if not isinstance(version, TokenVersion):
-            raise AuthConfigurationError(field_path=("version",), condition="invalid_type")
+            raise ConfigurationError(field_path=("version",), reason="invalid_type")
         if (cache := self._cache) is not None and cache.material.version is version:
             self._cache = None
 
@@ -295,9 +293,7 @@ class SyncTokens(_Tokens):
         checked, seen = self.seen(context)
         wait = -1.0 if (deadline := checked.deadline) is None else min(deadline.remaining(), threading.TIMEOUT_MAX)
         if not self._lock.acquire(timeout=wait):
-            raise AuthTimeoutError(
-                effective_timeout=wait, timeout_kind="provider", delivery_state=DeliveryState.NOT_SENT
-            )
+            raise AuthError(reason="timeout", effective_timeout=wait, delivery_state=DeliveryState.NOT_SENT)
         try:
             endpoint = self._endpoint
             if (material := self.current(closed=endpoint.closed, force=force, seen=seen)) is not None:
@@ -317,7 +313,7 @@ class SyncTokens(_Tokens):
             self._lock.release()
 
     def close(self) -> None:
-        """Close an owned token transport; later calls raise AuthProviderClosedError."""
+        """Close an owned token transport; later calls raise the provider_closed AuthError."""
         self._endpoint.close()
 
 
@@ -362,6 +358,6 @@ class AsyncTokens(_Tokens):
             return material
 
     async def aclose(self) -> None:
-        """Close an owned token transport; later calls raise AuthProviderClosedError."""
+        """Close an owned token transport; later calls raise the provider_closed AuthError."""
         self._endpoint.bind()
         await self._endpoint.aclose()

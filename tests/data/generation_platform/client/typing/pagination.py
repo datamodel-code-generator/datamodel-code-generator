@@ -30,7 +30,7 @@ def pages(client: Client, query: UserQuery) -> None:
     pager = helper.iterate(
         pagination_options=PaginationOptions(max_items=10),
         options=RequestOptions(),
-        session_options=SessionOptions(max_network_sends=5),
+        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(pager, Pager[User, ListUsersResponse])
     items: Iterator[User] = pager
@@ -64,7 +64,7 @@ def checkpoints(client: Client, limit: SessionLimitError, cycle: PaginationCycle
         import_state(exported),
         pagination_options=PaginationOptions(max_items=10),
         options=RequestOptions(),
-        session_options=SessionOptions(max_network_sends=5),
+        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(resumed, Pager[User, ListUsersResponse])
     assert_type(limit.resume_state, ResumeState | None)

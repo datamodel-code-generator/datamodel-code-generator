@@ -8,12 +8,12 @@ from typing import BinaryIO
 from pets import AsyncClient, Client
 from pets.auth import OAuthProviderOptions
 from pets.errors import (
-    BudgetExceededError,
-    DeadlineExceededError,
+    APIStatusError,
+    APITimeoutError,
+    AuthError,
+    ConfigurationError,
+    DecodeError,
     DeliveryState,
-    LimiterExecutionError,
-    PhaseTimeoutError,
-    RedirectPolicyError,
     RequestCancelledError,
     SDKError,
 )
@@ -122,7 +122,6 @@ def misuse_timing(deadline: Deadline, token: CancelToken, phase: TimeoutOptions,
     RequestOptions(total_timeout="soon")  # error
     RequestOptions(deadline=60)  # error
     RequestOptions(cancel_token=True)  # error
-    RequestOptions(max_network_sends=0.5)  # error
     RequestOptions(stream_idle_timeout="forever")  # error
     RequestOptions(stream_total_timeout="forever")  # error
     deadline.at = 0  # error
@@ -148,17 +147,16 @@ def misuse_limiters(sync: Limiter, asynchronous: AsyncLimiter, permit: Permit, a
 
 def misuse_deadline_errors(error: SDKError) -> None:
     state = DeliveryState.NOT_SENT
-    PhaseTimeoutError(effective_timeout=1, phase="unknown", delivery_state=state)  # error
-    DeadlineExceededError(deadline_at=0, elapsed=1, phase="connect", delivery_state=state)  # error
+    APITimeoutError(effective_timeout="1", delivery_state=state)  # error
     RequestCancelledError(source="asyncio", delivery_state=state)  # error
-    BudgetExceededError(budget_kind="auth", limit=1, used=0)  # error
-    LimiterExecutionError(action="wait")  # error
-    SDKError(network_send_count="one")  # error
-    error.network_send_count = 0  # error
-    error.wire_send_count = 0  # error
+    AuthError(reason="expired")  # error
+    DecodeError(direction="request")  # error
+    APIStatusError(body=b"")  # error
+    SDKError(attempt_count="one")  # error
+    error.attempt_count = "zero"  # error
 
 
-def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: RedirectPolicyError) -> None:
+def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: ConfigurationError) -> None:
     RetryOptions(max_retries=None)  # error
     RetryOptions(jitter="equal")  # error
     RetryOptions(statuses=[429, 503])  # error
@@ -182,10 +180,8 @@ def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: Redirec
         call_id=info.call_id,
         elapsed=0,
         content_type=None,
-        wire_send_count="one",  # error
+        attempt_count="one",  # error
     )
-    info.wire_send_count = 1  # error
-    RedirectPolicyError()  # error
-    RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, body_available=True)  # error
-    error.body_available = False  # error
-    error.delivery_state = DeliveryState.NOT_SENT  # error
+    info.attempt_count = 1  # error
+    ConfigurationError(field_path=("redirects",), reason="redirect_refused", body_available=False)  # error
+    error.delivery_state = "NOT_SENT"  # error

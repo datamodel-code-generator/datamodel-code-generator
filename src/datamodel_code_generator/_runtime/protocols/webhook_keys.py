@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Final, final
 
-from ..client.errors import ProtocolConfigurationError
+from ..client.errors import ConfigurationError
 from .records import Sealed
 
 __all__ = ("HmacKey", "checked_key_id")
@@ -19,7 +19,7 @@ def checked_key_id(value: object) -> str:
         msg = "id must be a string"
         raise TypeError(msg)
     if not value or _FORBIDDEN.search(value):
-        raise ProtocolConfigurationError(field_path=("id",), condition="invalid_value")
+        raise ConfigurationError(field_path=("id",), reason="invalid_value")
     return value
 
 

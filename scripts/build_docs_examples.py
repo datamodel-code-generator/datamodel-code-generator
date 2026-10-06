@@ -218,20 +218,28 @@ def _file_example(
 
 def render_webhook_error_fields() -> str:
     """Render the kept webhook exception fields from their constructor annotations."""
+    from inspect import Parameter, signature  # ruff: ignore[import-outside-top-level]
     from typing import get_type_hints  # ruff: ignore[import-outside-top-level]
 
     from datamodel_code_generator._runtime.client.errors import (  # ruff: ignore[import-outside-top-level, import-private-name]
-        ProtocolConfigurationError,
+        ConfigurationError,
         WebhookVerificationError,
     )
 
     rows = ["", "| Exception | Direct base | Fields |", "|---|---|---|"]
     for error, field_names in (
-        (ProtocolConfigurationError, ("field_path", "condition")),
+        (ConfigurationError, ("field_path", "reason")),
         (WebhookVerificationError, ("condition",)),
     ):
-        hints = get_type_hints(error.__init__)
-        annotations = ", ".join(f"`{name}: {str(hints[name]).removeprefix('typing.')}`" for name in field_names)
+        hints, parameters = get_type_hints(error.__init__), signature(error.__init__).parameters
+        fields = []
+        for name in field_names:
+            hint = hints[name]
+            text = hint.__name__ if isinstance(hint, type) else str(hint).removeprefix("typing.")
+            default = parameters[name].default
+            shown = f"{name}: {text}" if default is Parameter.empty else f"{name}: {text} = {default!r}"
+            fields.append(f"`{shown}`".replace("|", "\\|"))
+        annotations = ", ".join(fields)
         rows.append(f"| `{error.__name__}` | `{error.__bases__[0].__name__}` | {annotations} |")
     return "\n".join(rows) + "\n"
 

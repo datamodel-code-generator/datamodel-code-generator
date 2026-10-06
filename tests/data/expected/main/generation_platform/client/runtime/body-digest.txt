@@ -33,15 +33,15 @@
     signed=[('PUT', 0, 0, 'digest0', True, True), ('PUT', 1, 0, 'digest0', True, True), ('PUT', 1, 1, 'digest0', True, True)]
     wire=[('PUT', b'/signed', 7, True), ('PUT', b'/signed', 7, True), ('PUT', b'/hop-1', 7, True)] pending=0
     contexts=[(0, 0), (1, 0), (1, 1)] attempts=[(1, 1), (1, 1), (1, 1)]
-  fingerprint is not a digest ! SigningConfigurationError: SigningConfigurationError(operation_id='signed_body', call_id='<call>', condition='digest_unavailable') [operation_id='signed_body', field_path=('body', 'sha256'), condition='digest_unavailable'] signing_configuration_error
+  fingerprint is not a digest ! ConfigurationError: ConfigurationError(operation_id='signed_body', call_id='<call>', reason='digest_unavailable', field_path='body.sha256') [operation_id='signed_body', field_path=('body', 'sha256'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] digest_unavailable
     signed=[]
     wire=[] pending=1
     factories=0
-  invalid digest bytes 0 ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
-  invalid digest bytes 31 ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
-  invalid digest bytes 33 ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
-  invalid digest str 32 ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
-  invalid digest bytearray 32 ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
+  invalid digest bytes 0 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='sha256') [field_path=('sha256',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  invalid digest bytes 31 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='sha256') [field_path=('sha256',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  invalid digest bytes 33 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='sha256') [field_path=('sha256',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  invalid digest str 32 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='sha256') [field_path=('sha256',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  invalid digest bytearray 32 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='sha256') [field_path=('sha256',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   factory without required digest = b'ok'
     signed=[('PUT', 0, 0, None, True, True)]
     wire=[('PUT', b'/signed', 7, None)] pending=0
@@ -58,26 +58,26 @@
     signed=[('POST', 0, 0, 'digest0', True, True), ('POST', 1, 0, 'digest0', True, True), ('POST', 1, 1, 'digest0', True, True)]
     wire=[('POST', b'/signed-multipart', 72298, True), ('POST', b'/signed-multipart', 72298, True), ('POST', b'/hop-1', 72298, True)] pending=0
     stable_body=True stable_type=True
-  part digest is not multipart digest ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+  part digest is not multipart digest ! DecodeError: DecodeError(operation_id='signed_multipart', call_id='<call>', reason='digest_unavailable', location='body') [operation_id='signed_multipart', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] digest_unavailable
     signed=[]
     wire=[] pending=1
     factories=0
   multipart factory without required digest = b'ok'
     signed=[('POST', 0, 0, None, True, True)]
     wire=[('POST', b'/signed-multipart', 176, None)] pending=0
-  unsupported body stream ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_body', call_id='<call>', source_kind='stream', condition='digest_unavailable') [operation_id='signed_body', condition='digest_unavailable'] body_not_replayable_error
+  unsupported body stream ! DecodeError: DecodeError(operation_id='signed_body', call_id='<call>', reason='digest_unavailable', location='body') [operation_id='signed_body', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] digest_unavailable
     signed=[]
     wire=[] pending=1
     begins=0 stream_closes=1 file_reads=[] file_closes=0
-  unsupported body file ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_body', call_id='<call>', source_kind='file', condition='not_seekable') [operation_id='signed_body', condition='not_seekable'] body_not_replayable_error
+  unsupported body file ! DecodeError: DecodeError(operation_id='signed_body', call_id='<call>', reason='digest_unavailable', location='body') [operation_id='signed_body', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] digest_unavailable
     signed=[]
     wire=[] pending=1
     begins=0 stream_closes=0 file_reads=[] file_closes=1
-  unsupported multipart stream ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+  unsupported multipart stream ! DecodeError: DecodeError(operation_id='signed_multipart', call_id='<call>', reason='digest_unavailable', location='body') [operation_id='signed_multipart', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] digest_unavailable
     signed=[]
     wire=[] pending=1
     begins=0 stream_closes=1 file_reads=[] file_closes=0
-  unsupported multipart file ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+  unsupported multipart file ! DecodeError: DecodeError(operation_id='signed_multipart', call_id='<call>', reason='digest_unavailable', location='body') [operation_id='signed_multipart', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] digest_unavailable
     signed=[]
     wire=[] pending=1
     begins=0 stream_closes=0 file_reads=[] file_closes=1
@@ -89,23 +89,23 @@
     signed=[('PUT', 0, 0, None, True, True)]
     wire=[('PUT', b'/signed', 3, None)] pending=0
     reads=[65536, 65536] borrowed_open=True
-  descriptor lookup fails before hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('descriptor lost')] body_factory_error secondary=[]
+  descriptor lookup fails before hashing ! SDKError: SDKError(operation_id='signed_body', call_id='<call>', reason='body_factory_failed') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('descriptor lost')] body_factory_failed secondary=[]
     signed=[]
     wire=[] pending=1
     offset=7 reads=0
-  seek back fails after hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('seek failed')] body_factory_error secondary=[]
+  seek back fails after hashing ! SDKError: SDKError(operation_id='signed_body', call_id='<call>', reason='body_factory_failed') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('seek failed')] body_factory_failed secondary=[]
     signed=[]
     wire=[] pending=1
     offset=65556 reads=3
-  read and seek back fail while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('read failed')] body_factory_error secondary=['BodyFactoryError()']
+  read and seek back fail while hashing ! SDKError: SDKError(operation_id='signed_body', call_id='<call>', reason='body_factory_failed') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('read failed')] body_factory_failed secondary=['SDKError()']
     signed=[]
     wire=[] pending=1
     offset=7 reads=0
-  deadline while hashing ! DeadlineExceededError: DeadlineExceededError(operation_id='signed_body', call_id='<call>', delivery_state='NOT_SENT', phase='auth') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='auth'] deadline_exceeded_error secondary=[]
+  deadline while hashing ! APITimeoutError: APITimeoutError(operation_id='signed_body', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='auth') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='auth'] deadline_exceeded secondary=[]
     signed=[]
     wire=[] pending=1
     offset=7 reads=1
-  descriptor lost while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError(9, 'descriptor lost')] body_factory_error secondary=[]
+  descriptor lost while hashing ! SDKError: SDKError(operation_id='signed_body', call_id='<call>', reason='body_factory_failed') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError(9, 'descriptor lost')] body_factory_failed secondary=[]
     signed=[]
     wire=[] pending=1
     offset=0
@@ -143,11 +143,11 @@
     signed=[('PUT', 0, 0, 'digest0', True, True), ('PUT', 1, 0, 'digest0', True, True), ('PUT', 1, 1, 'digest0', True, True)]
     wire=[('PUT', b'/signed', 7, True), ('PUT', b'/signed', 7, True), ('PUT', b'/hop-1', 7, True)] pending=0
     contexts=[(0, 0), (1, 0), (1, 1)] attempts=[(1, 1), (1, 1), (1, 1)]
-  async missing factory digest ! SigningConfigurationError: SigningConfigurationError(operation_id='signed_body', call_id='<call>', condition='digest_unavailable') [operation_id='signed_body', field_path=('body', 'sha256'), condition='digest_unavailable'] signing_configuration_error
+  async missing factory digest ! ConfigurationError: ConfigurationError(operation_id='signed_body', call_id='<call>', reason='digest_unavailable', field_path='body.sha256') [operation_id='signed_body', field_path=('body', 'sha256'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] digest_unavailable
     signed=[]
     wire=[] pending=1
     factories=0
-  async invalid digest ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
+  async invalid digest ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='sha256') [field_path=('sha256',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   async factory without required digest = b'ok'
     signed=[('PUT', 0, 0, None, True, True)]
     wire=[('PUT', b'/signed', 7, None)] pending=0
@@ -163,26 +163,26 @@
     signed=[('POST', 0, 0, 'digest0', True, True), ('POST', 1, 0, 'digest0', True, True), ('POST', 1, 1, 'digest0', True, True)]
     wire=[('POST', b'/signed-multipart', 72298, True), ('POST', b'/signed-multipart', 72298, True), ('POST', b'/hop-1', 72298, True)] pending=0
     stable_body=True stable_type=True
-  async part digest is not multipart digest ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+  async part digest is not multipart digest ! DecodeError: DecodeError(operation_id='signed_multipart', call_id='<call>', reason='digest_unavailable', location='body') [operation_id='signed_multipart', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] digest_unavailable
     signed=[]
     wire=[] pending=1
     factories=0
   async multipart factory without required digest = b'ok'
     signed=[('POST', 0, 0, None, True, True)]
     wire=[('POST', b'/signed-multipart', 176, None)] pending=0
-  async unsupported body stream ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_body', call_id='<call>', source_kind='stream', condition='digest_unavailable') [operation_id='signed_body', condition='digest_unavailable'] body_not_replayable_error
+  async unsupported body stream ! DecodeError: DecodeError(operation_id='signed_body', call_id='<call>', reason='digest_unavailable', location='body') [operation_id='signed_body', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] digest_unavailable
     signed=[]
     wire=[] pending=1
     begins=0 stream_closes=1 file_reads=[] file_closes=0
-  async unsupported body file ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_body', call_id='<call>', source_kind='file', condition='not_seekable') [operation_id='signed_body', condition='not_seekable'] body_not_replayable_error
+  async unsupported body file ! DecodeError: DecodeError(operation_id='signed_body', call_id='<call>', reason='digest_unavailable', location='body') [operation_id='signed_body', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] digest_unavailable
     signed=[]
     wire=[] pending=1
     begins=0 stream_closes=0 file_reads=[] file_closes=1
-  async unsupported multipart stream ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+  async unsupported multipart stream ! DecodeError: DecodeError(operation_id='signed_multipart', call_id='<call>', reason='digest_unavailable', location='body') [operation_id='signed_multipart', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] digest_unavailable
     signed=[]
     wire=[] pending=1
     begins=0 stream_closes=1 file_reads=[] file_closes=0
-  async unsupported multipart file ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+  async unsupported multipart file ! DecodeError: DecodeError(operation_id='signed_multipart', call_id='<call>', reason='digest_unavailable', location='body') [operation_id='signed_multipart', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False] digest_unavailable
     signed=[]
     wire=[] pending=1
     begins=0 stream_closes=0 file_reads=[] file_closes=1
@@ -194,23 +194,23 @@
     signed=[('PUT', 0, 0, None, True, True)]
     wire=[('PUT', b'/signed', 3, None)] pending=0
     reads=[65536, 65536] borrowed_open=True
-  async descriptor lookup fails before hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('descriptor lost')] body_factory_error secondary=[]
+  async descriptor lookup fails before hashing ! SDKError: SDKError(operation_id='signed_body', call_id='<call>', reason='body_factory_failed') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('descriptor lost')] body_factory_failed secondary=[]
     signed=[]
     wire=[] pending=1
     offset=7 reads=0
-  async seek back fails after hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('seek failed')] body_factory_error secondary=[]
+  async seek back fails after hashing ! SDKError: SDKError(operation_id='signed_body', call_id='<call>', reason='body_factory_failed') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('seek failed')] body_factory_failed secondary=[]
     signed=[]
     wire=[] pending=1
     offset=65556 reads=3
-  async read and seek back fail while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('read failed')] body_factory_error secondary=['BodyFactoryError()']
+  async read and seek back fail while hashing ! SDKError: SDKError(operation_id='signed_body', call_id='<call>', reason='body_factory_failed') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('read failed')] body_factory_failed secondary=['SDKError()']
     signed=[]
     wire=[] pending=1
     offset=7 reads=0
-  async deadline while hashing ! DeadlineExceededError: DeadlineExceededError(operation_id='signed_body', call_id='<call>', delivery_state='NOT_SENT', phase='auth') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='auth'] deadline_exceeded_error secondary=[]
+  async deadline while hashing ! APITimeoutError: APITimeoutError(operation_id='signed_body', call_id='<call>', reason='deadline_exceeded', delivery_state='NOT_SENT', phase='auth') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='auth'] deadline_exceeded secondary=[]
     signed=[]
     wire=[] pending=1
     offset=7 reads=1
-  async descriptor lost while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError(9, 'descriptor lost')] body_factory_error secondary=[]
+  async descriptor lost while hashing ! SDKError: SDKError(operation_id='signed_body', call_id='<call>', reason='body_factory_failed') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError(9, 'descriptor lost')] body_factory_failed secondary=[]
     signed=[]
     wire=[] pending=1
     offset=0

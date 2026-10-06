@@ -46,8 +46,7 @@ class _Events:
                     "attempt_index",
                     "status",
                     "sent",
-                    "attempts",
-                    "sends",
+                    "attempt_count",
                     "retry_reason",
                     "outcome",
                 )
@@ -149,8 +148,7 @@ def _error(error: BaseException) -> tuple[object, ...]:
     return (
         type(error).__name__,
         getattr(error, "retry_stop_reason", None),
-        getattr(error, "resource_attempt_count", None),
-        getattr(error, "network_send_count", None),
+        getattr(error, "attempt_count", None),
         getattr(error, "phase", None),
         tuple(type(item).__name__ for item in getattr(error, "secondary_errors", ())),
     )
@@ -164,8 +162,7 @@ def _capture(call: Callable[[], object]) -> tuple[object, ...]:
     info = getattr(result, "info", None)
     return (
         getattr(result, "data", result),
-        getattr(info, "resource_attempt_count", None),
-        getattr(info, "network_send_count", None),
+        getattr(info, "attempt_count", None),
     )
 
 
@@ -177,8 +174,7 @@ async def _acapture(call: Callable[[], Awaitable[object]]) -> tuple[object, ...]
     info = getattr(result, "info", None)
     return (
         getattr(result, "data", result),
-        getattr(info, "resource_attempt_count", None),
-        getattr(info, "network_send_count", None),
+        getattr(info, "attempt_count", None),
     )
 
 
@@ -209,7 +205,7 @@ def retry_calls(package: ModuleType, lines: list[str]) -> None:
         record(
             lines,
             "buffered raw retry",
-            lambda: (saved.read(), saved.info.resource_attempt_count, saved.info.network_send_count),
+            lambda: (saved.read(), saved.info.attempt_count),
         )
         record(lines, "buffered raw repeated status", lambda: (saved.raise_for_status(), saved.raise_for_status()))
         record(lines, "buffered read failed response closes", lambda body=body: body.closes)
@@ -363,7 +359,7 @@ def _handles(package: ModuleType, options: ModuleType, lines: list[str]) -> None
 def _presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     bodies, errors = (importlib.import_module(f"{package.__name__}.{name}") for name in ("bodies", "errors"))
     for stage in ("call_start", "retry_scheduled"):
-        failure = errors.PhaseTimeoutError(
+        failure = errors.APITimeoutError(
             effective_timeout=1.0, phase="read", delivery_state=errors.DeliveryState.NOT_SENT
         )
         file = _RewindFile(failure)
@@ -440,8 +436,7 @@ async def _async_calls(package: ModuleType, options: ModuleType, lines: list[str
                     f"async {label} read retry",
                     lambda saved=saved: (
                         saved.body_bytes,
-                        saved.info.resource_attempt_count,
-                        saved.info.network_send_count,
+                        saved.info.attempt_count,
                     ),
                 )
             else:
@@ -582,7 +577,7 @@ async def _async_handles(package: ModuleType, options: ModuleType, lines: list[s
 async def _async_presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     bodies, errors = (importlib.import_module(f"{package.__name__}.{name}") for name in ("bodies", "errors"))
     for stage in ("call_start", "retry_scheduled"):
-        failure = errors.PhaseTimeoutError(
+        failure = errors.APITimeoutError(
             effective_timeout=1.0, phase="read", delivery_state=errors.DeliveryState.NOT_SENT
         )
         file = _RewindFile(failure)

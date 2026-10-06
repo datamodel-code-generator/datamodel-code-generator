@@ -64,7 +64,7 @@ def _header(value: str | Unset | None, declared: str | None, name: str) -> str |
     if isinstance(value, Unset):
         return declared
     if value is not None and (declared is None or value.lower() != declared.lower()):
-        raise ConfigurationError(field_path=("retry", name), condition="invalid_value")
+        raise ConfigurationError(field_path=("retry", name), reason="invalid_value")
     return value
 
 
@@ -117,9 +117,8 @@ class RetryState:
     retry_safety: Literal["method_default", "idempotent", "never"]
     idempotency: IdempotencyPlan | None
     delivery_state: DeliveryState
-    resource_attempt_count: int
+    attempt_count: int
     body_replayable: bool
-    network_available: bool
     server_hint: bool | None
     proven_not_sent: bool = False
 
@@ -177,7 +176,7 @@ def retry_stop(
     """Return the first failed retry gate, after termination precedence has been checked."""
     if (stop := _policy_stop(state, retry, retry_owner)) is not None:
         return stop
-    if state.resource_attempt_count >= 1 + retry.max_retries:
+    if state.attempt_count >= 1 + retry.max_retries:
         return "max_retries_exhausted"
     if state.reason == "auth_invalid_token" and auth_recovery_used:
         return "auth_recovery_exhausted"
@@ -185,13 +184,11 @@ def retry_stop(
 
 
 def _replay_stop(state: RetryState) -> RetryStopReason | None:
-    """Return why the request cannot be sent again: its body, its safety, or the network budget."""
+    """Return why the request cannot be sent again: its body or its safety."""
     if not state.body_replayable:
         return "body_not_replayable"
     if not (replay_safe(state.method, state.retry_safety, state.idempotency) or state.proven_not_sent):
         return "unsafe_operation"
-    if not state.network_available:
-        return "network_budget_exhausted"
     return None
 
 
