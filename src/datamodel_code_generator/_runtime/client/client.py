@@ -17,7 +17,6 @@ from contextlib import (
 )
 from dataclasses import dataclass, replace
 from functools import partial
-from itertools import chain
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar, cast
 from urllib.parse import quote, unquote_plus, urlsplit
 
@@ -550,14 +549,12 @@ def _pairs(fragments: tuple[ParameterFragment, ...]) -> Iterator[str]:
 
 
 class _Body:
-    __slots__ = ("chunks", "limit", "overflow", "problem", "raw", "remaining", "size", "success", "truncated")
+    __slots__ = ("chunks", "limit", "overflow", "problem", "size", "success", "truncated")
 
     def __init__(self, limit: int | None, *, success: bool) -> None:
         self.limit = limit
         self.success = success
         self.chunks: list[bytes] = []
-        self.raw: list[bytes] = []
-        self.remaining: Iterator[bytes] | AsyncIterator[bytes] | None = None
         self.size = 0
         self.truncated = False
         self.overflow = False
@@ -950,7 +947,6 @@ class _Call(LogicalCallContext):
         "previous_cap",
         "raw_response",
         "received_at",
-        "received_body",
         "received_wall_time",
         "request_id_header",
         "response_transferred",
@@ -975,7 +971,6 @@ class _Call(LogicalCallContext):
         self.key = IdempotencyKey.new() if self.idempotency is not None and isinstance(key, Unset) else key
         self.last_failure: BaseException | None = None
         self.last_info: ResponseInfo | None = None
-        self.received_body: _Body | None = None
         self.raw_response = False
         self.retry_headers = EMPTY_RETRY_HEADERS
         self.allowed_origins = _EMPTY_ORIGINS
@@ -2147,27 +2142,6 @@ async def _read_async_chunks(chunks: AsyncIterable[bytes], call: LogicalCallCont
     call.check("send")
 
 
-def _status_bytes(chunks: Iterable[bytes], received: _Body, *, raw: bool) -> Iterator[bytes]:
-    """Retain only the bounded wire prefix of an error read, alongside its decoded prefix."""
-    remaining = received.limit
-    for chunk in chunks:
-        if not received.success:
-            assert remaining is not None
-            received.raw.append(chunk if raw else chunk[:remaining])
-            remaining = max(0, remaining - len(chunk))
-        yield chunk
-
-
-async def _async_status_bytes(chunks: AsyncIterable[bytes], received: _Body, *, raw: bool) -> AsyncIterator[bytes]:
-    remaining = received.limit
-    async for chunk in chunks:
-        if not received.success:
-            assert remaining is not None
-            received.raw.append(chunk if raw else chunk[:remaining])
-            remaining = max(0, remaining - len(chunk))
-        yield chunk
-
-
 class ClientCore(_Core["httpx2.Client", "RawResponse"]):
     """Run the calls of a synchronous client and its views through one transport adapter."""
 
@@ -2650,7 +2624,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 raise
         return result
 
-    def _exchange(  # noqa: PLR0915
+    def _exchange(
         self,
         original: httpx2.Request,
         source: BodySource | None,
@@ -2697,25 +2671,14 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                     call.hop_index += 1
                     call.delivery_state = DeliveryState.NOT_SENT
                     continue
-                planned = None
-                if info.status_code >= _ERROR_STATUS:
-                    received = self._read(response, info, call.decoder, call)
-                    call.check("decode")
-                    failure = call.decoder.failure(
-                        info,
-                        received.content,
-                        truncated=received.truncated or received.problem is not None,
-                        problem=received.problem,
-                    )
-                    planned = self._status_plan(info, source, call)
-                    if planned is None:
-                        call.received_body = received
+                planned = self._status_plan(info, source, call)
                 if planned is None:
                     result = receive(response, info)
                     closing, response = response, None
                     if not call.response_transferred:
                         self._close_response(closing, call)
                     return result
+                failure = call.decoder.failure(info, b"", truncated=True)
                 closing, response = response, None
                 self._close_response(closing, call, failure)
             except BaseException as error:  # noqa: BLE001
@@ -2799,18 +2762,13 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 else (response.close,),
             )
 
-        received, call.received_body = call.received_body, None
-        source: Callable[[], Iterator[bytes]] = partial(response_bytes, response)
-        if received is not None and received.remaining is not None:
-            source = partial(chain, received.raw, cast("Iterator[bytes]", received.remaining))
-
         handle = RawResponse(
             info,
             call.decoder,
             call.settings,
             call.operation_id,
             lambda error: self._failure(error, call, DeliveryState.RESPONSE_STARTED),
-            source=source,
+            source=partial(response_bytes, response),
             close=release,
             events=call.events if stream else None,
             call=call,
@@ -2818,9 +2776,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             status_secondary_errors=() if call.auth is None else call.auth.secondary_errors,
         )
         call.response_transferred = True
-        if received is not None and received.remaining is None:
-            handle.buffered_status(received.content, b"".join(received.raw))
-        elif not stream:
+        if not stream:
             handle.read()
         return handle
 
@@ -3075,21 +3031,13 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         decoder: ResponseDecoder[object],
         call: LogicalCallContext,
     ) -> _Body:
-        if isinstance(call, _Call) and call.received_body is not None:
-            received, call.received_body = call.received_body, None
-            return received
         received = _received(decoder, info.status_code, call.settings)
-        raw = isinstance(call, _Call) and call.raw_response
-        source = response_bytes(response)
-        received.remaining = source if raw else None
-        chunks = ContentDecoder(info, call.operation_id).decoded(_status_bytes(source, received, raw=raw))
+        chunks = ContentDecoder(info, call.operation_id).decoded(response_bytes(response))
         try:
             for chunk in chunks:
                 call.check("send")
                 if not received.add(chunk):
                     break
-            else:
-                received.remaining = None
         except ProtocolError as error:
             received.problem = error
         return received
@@ -3591,7 +3539,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 raise
         return result
 
-    async def _exchange(  # noqa: PLR0915
+    async def _exchange(
         self,
         original: httpx2.Request,
         source: AsyncBodySource | None,
@@ -3638,25 +3586,14 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                     call.hop_index += 1
                     call.delivery_state = DeliveryState.NOT_SENT
                     continue
-                planned = None
-                if info.status_code >= _ERROR_STATUS:
-                    received = await self._read(response, info, call.decoder, call)
-                    call.check("decode")
-                    failure = call.decoder.failure(
-                        info,
-                        received.content,
-                        truncated=received.truncated or received.problem is not None,
-                        problem=received.problem,
-                    )
-                    planned = await self._status_plan(info, source, call)
-                    if planned is None:
-                        call.received_body = received
+                planned = await self._status_plan(info, source, call)
                 if planned is None:
                     result = await receive(response, info)
                     closing, response = response, None
                     if not call.response_transferred:
                         await self._close_response(closing, call)
                     return result
+                failure = call.decoder.failure(info, b"", truncated=True)
                 closing, response = response, None
                 await self._close_response(closing, call, failure)
             except BaseException as error:  # noqa: BLE001
@@ -3742,25 +3679,13 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 else (response.aclose,),
             )
 
-        received, call.received_body = call.received_body, None
-
-        async def chunks() -> AsyncIterator[bytes]:
-            if received is not None and received.remaining is not None:
-                for chunk in received.raw:
-                    yield chunk
-                async for chunk in cast("AsyncIterator[bytes]", received.remaining):
-                    yield chunk
-            else:
-                async for chunk in async_response_bytes(response):
-                    yield chunk
-
         handle = AsyncRawResponse(
             info,
             call.decoder,
             call.settings,
             call.operation_id,
             lambda error: self._failure(error, call, DeliveryState.RESPONSE_STARTED),
-            source=chunks,
+            source=partial(async_response_bytes, response),
             close=release,
             events=call.events if stream else None,
             call=call,
@@ -3768,9 +3693,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             status_secondary_errors=() if call.auth is None else call.auth.secondary_errors,
         )
         call.response_transferred = True
-        if received is not None and received.remaining is None:
-            await handle.buffered_status(received.content, b"".join(received.raw))
-        elif not stream:
+        if not stream:
             await handle.read()
         return handle
 
@@ -4030,21 +3953,13 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         decoder: ResponseDecoder[object],
         call: LogicalCallContext,
     ) -> _Body:
-        if isinstance(call, _Call) and call.received_body is not None:
-            received, call.received_body = call.received_body, None
-            return received
         received = _received(decoder, info.status_code, call.settings)
-        raw = isinstance(call, _Call) and call.raw_response
-        source = async_response_bytes(response)
-        received.remaining = source if raw else None
-        chunks = ContentDecoder(info, call.operation_id).adecoded(_async_status_bytes(source, received, raw=raw))
+        chunks = ContentDecoder(info, call.operation_id).adecoded(async_response_bytes(response))
         try:
             async for chunk in chunks:
                 call.check("send")
                 if not received.add(chunk):
                     break
-            else:
-                received.remaining = None
         except ProtocolError as error:
             received.problem = error
         return received

@@ -243,10 +243,6 @@ class _Raw(Generic[SourceT, HandleT]):
         self._raw = self._body = b""
         self._state: State = "open"
 
-    def _save_status(self, body: bytes, raw: bytes) -> None:
-        self._body = body
-        self._raw = raw
-
     @property
     def info(self) -> ResponseInfo:
         """Return the response metadata."""
@@ -334,11 +330,7 @@ class _Raw(Generic[SourceT, HandleT]):
     def _saved_failure(self) -> BaseException:
         """Return the typed failure of a buffered response from its bounded error prefix."""
         limit, body = self._limits.max_error_body_bytes, self._body
-        error = self._decoder.failure(
-            self._info,
-            body[:limit],
-            truncated=len(body) > limit,
-        )
+        error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit)
         if is_http_error(error):
             error.retry_stop_reason = self._retry_stop_reason
             for secondary in self._status_secondary_errors:
@@ -413,11 +405,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     """A raw response of a synchronous client: buffered, or a streaming handle whose body is read at most once."""
 
     __slots__ = ("_close",)
-
-    def buffered_status(self, body: bytes, raw: bytes) -> None:
-        """Retain a bounded status read and release the native response once."""
-        self._save_status(body, raw)
-        self._end("buffered")
 
     def __init__(  # noqa: PLR0913
         self,
@@ -645,8 +632,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     def _end(self, state: State, error: BaseException | None = None) -> None:
         """Enter a final state, releasing the native connection once.
 
-        A
-        handed-over stream then reports its end to its call's hooks.
+        A handed-over stream then reports its end to its call's hooks.
         """
         self._state = state
         close, self._close = self._close, None
@@ -687,11 +673,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     """A raw response of an asyncio client: buffered, or a streaming handle whose body is read at most once."""
 
     __slots__ = ("_close",)
-
-    async def buffered_status(self, body: bytes, raw: bytes) -> None:
-        """Retain a bounded status read and release the native response once."""
-        self._save_status(body, raw)
-        await self._end("buffered")
 
     def __init__(  # noqa: PLR0913
         self,
