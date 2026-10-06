@@ -1,7 +1,7 @@
 # auth pydantic_v2.BaseModel
   bodyless = b'ok'
-    signed=[('PUT', 0, 0, 'digest0', True, True)]
-    wire=[('PUT', b'/signed', 0, True)] pending=0
+    signed=[('PUT', 0, 0, None, True, True)]
+    wire=[('PUT', b'/signed', 0, None)] pending=0
   empty = b'ok'
     signed=[('PUT', 0, 0, 'digest0', True, True)]
     wire=[('PUT', b'/signed', 0, True)] pending=0
@@ -110,8 +110,8 @@
     wire=[] pending=1
     offset=0
   async bodyless = b'ok'
-    signed=[('PUT', 0, 0, 'digest0', True, True)]
-    wire=[('PUT', b'/signed', 0, True)] pending=0
+    signed=[('PUT', 0, 0, None, True, True)]
+    wire=[('PUT', b'/signed', 0, None)] pending=0
   async empty = b'ok'
     signed=[('PUT', 0, 0, 'digest0', True, True)]
     wire=[('PUT', b'/signed', 0, True)] pending=0

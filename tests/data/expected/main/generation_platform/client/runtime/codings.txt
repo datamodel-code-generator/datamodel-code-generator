@@ -40,7 +40,7 @@
   coding bomb = 'DecompressionLimitError layer=0 ratio=100.0 over=True'
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  coding pre-read ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')] api_connection_error
+  coding pre-read ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   coding chunked = 4000
@@ -53,19 +53,23 @@
   coding error ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  coding error truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{"code": 7, "message": "boom"}', body_bytes=b'{"code": 7, "message": "boom"}', truncated=True, cause=ProtocolDataError()] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  coding redirect ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{"code": 7, "message": "boom"}', body_bytes=b'{"code": 7, "message": "boom"}', truncated=True, cause=ProtocolDataError()] internal_server_error
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  coding error truncated ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{"code": 7, "message": "boom"}', body_bytes=b'{"code": 7, "message": "boom"}', truncated=True, cause=ProtocolDataError()] internal_server_error
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  coding redirect ! APIStatusError: APIStatusError(status_code=302, operation_id='listPets', call_id='<call>', reason='unexpected_status') [operation_id='listPets', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=302, body=b'', body_bytes=b'', truncated=True, cause=UnsupportedContentCodingError()] unexpected_status
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  coding bodyless ! InternalServerError: InternalServerError(status_code=500, call_id='<call>') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=500, body=b'{"code": 7, "message": "boom"}', body_bytes=b'{"code": 7, "message": "boom"}', truncated=True, cause=ProtocolDataError()] internal_server_error
+  coding bodyless = None
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async coding stacked ! APIStatusError: APIStatusError(status_code=302, operation_id='getPet', call_id='<call>', reason='unexpected_status') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=302, body=b'', body_bytes=b'', truncated=True, cause=UnsupportedContentCodingError()] unexpected_status
+  async coding stacked = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async coding identity ! APIStatusError: APIStatusError(status_code=204, operation_id='getPet', call_id='<call>', reason='unexpected_status') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
+  async coding identity = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async coding truncated = Pet(id=3, name='fox', tag=None)
+  async coding truncated ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error

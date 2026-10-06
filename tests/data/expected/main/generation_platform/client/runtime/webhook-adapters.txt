@@ -35,41 +35,41 @@
   offset clock = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
   verifier timestamp with an offset = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
   control: a kept contract decodes the body = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error warnings []
-  mapping result = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  None result = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  missing timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  missing delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  empty delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  integer delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  bytes delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  text timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  date timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  naive timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  empty matched key id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  integer matched key id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  coroutine result = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  undeclared timestamp = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  undeclared delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
+  mapping result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  None result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  missing timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  missing delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  empty delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  integer delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  bytes delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  text timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  date timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  naive timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  empty matched key id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  integer matched key id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  coroutine result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  undeclared timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  undeclared delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
   control: no facts declared or returned = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error warnings []
-  result subclass changing between reads = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  result spoofing its class = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  str subclass delivery id = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  empty str subclass claiming to be nonempty = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
-  matched key id whose truth test raises = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result warnings []
+  result subclass changing between reads = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  result spoofing its class = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  str subclass delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  empty str subclass claiming to be nonempty = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
+  matched key id whose truth test raises = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error warnings []
   +09:00 timestamp = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
   +09:00 timestamp async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
   offset changing from +09:00 to UTC = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
   offset changing from +09:00 to UTC async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
   offset changing from +09:00 to naive = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
   offset changing from +09:00 to naive async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' offset reads=1
-  naive offset = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  naive offset async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  offset raising = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  offset raising async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  offset beyond a day = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  offset beyond a day async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None offset reads=1
-  datetime subclass overriding its offset = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None
-  datetime subclass overriding its offset async = ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None
+  naive offset = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  naive offset async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  offset raising = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  offset raising async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  offset beyond a day = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  offset beyond a day async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None offset reads=1
+  datetime subclass overriding its offset = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None
+  datetime subclass overriding its offset async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None
   verification error propagated=True calls=1 cause=None
   verification error async propagated=True calls=1 cause=None
   programmer error propagated=True calls=1 cause=None
@@ -108,7 +108,7 @@
   verify not callable ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
   marker event ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error context=None
   marker JSON ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error context=None
-  marker result ! ConfigurationError: ConfigurationError(reason='invalid_result', field_path='verifier') [field_path=('verifier',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_result context=None
+  marker result ! AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None
   marker window ! WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error context=None
   marker unsigned ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/meta/type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error context=None
   markers shown=[]

@@ -1658,12 +1658,14 @@ class _Core(Generic[AdapterT, HandleT]):
         accept: str | None,
         narrowed: bool,
         url: str | None = None,
+        checked: Callable[[HeadersView], None] | None = None,
     ) -> tuple[httpx2.Request, object]:
         """Return a call's request, and its body input when that builds its own attempts or else UNSET.
 
         Header patches apply in layers: the client's and views' over the generated headers, the parameters' over those,
         and the call's last; the body's media type and a narrowed Accept stay as the call chose them. A `url` a server
-        gave replaces the one the operation's path and query build, without the query patches.
+        gave replaces the one the operation's path and query build, without the query patches. `checked` sees the
+        headers before the native request adds its own.
         """
         request = _parameters(operation, arguments)
         encoded = None if operation.body is None else operation.body.encode(operation.operation_id, body, media_type)
@@ -1696,6 +1698,8 @@ class _Core(Generic[AdapterT, HandleT]):
             accept=accept if narrowed else None,
             operation_id=operation.operation_id,
         )
+        if checked is not None:
+            checked(prepared)
         if encoded is not None:
             attempt, deferred = _encoded(encoded.content, encoded.media_type)
         return _request(method=operation.method, url=url, headers=prepared, body=attempt), deferred
@@ -2555,7 +2559,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         result: RawResponse | None = None
 
         def prepare() -> tuple[httpx2.Request, object]:
-            request, deferred = self._prepare(
+            return self._prepare(
                 operation,
                 arguments,
                 call.settings,
@@ -2564,9 +2568,8 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
                 options=options,
                 accept=None,
                 narrowed=False,
+                checked=check,
             )
-            check(HeadersView(request.headers.multi_items()))
-            return request, deferred
 
         def receive(response: httpx2.Response, info: ResponseInfo) -> RawResponse:
             return self._raw_response(response, info, call, stream=True)
@@ -3495,7 +3498,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         result: AsyncRawResponse | None = None
 
         def prepare() -> tuple[httpx2.Request, object]:
-            request, deferred = self._prepare(
+            return self._prepare(
                 operation,
                 arguments,
                 call.settings,
@@ -3504,9 +3507,8 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 options=options,
                 accept=None,
                 narrowed=False,
+                checked=check,
             )
-            check(HeadersView(request.headers.multi_items()))
-            return request, deferred
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> AsyncRawResponse:
             return await self._raw_response(response, info, call, stream=True)
