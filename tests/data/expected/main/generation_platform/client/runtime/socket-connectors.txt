@@ -21,7 +21,7 @@
   session WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2') headers [('x-socket', '1')]
     received 1
     connection send text=True b'{"text":"hi"}' deadline=True
-    connection ping b'probe' deadline=True polled=True
+    connection ping b'probe' deadline=True
     ping PingReceipt(latency=0.25)
     connection close 1002 '' timeout=5.0
   feed message of another type ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='roomSocket', condition='malformed', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
@@ -85,13 +85,13 @@
   unclassified receive failure ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown', cause=RuntimeError('receive bug')] api_connection_error
     connection abort
   message over the limit ! ProtocolSizeError: ProtocolSizeError(operation_id='feedSocket', call_id='<call>', kind='message', limit=8, observed=9) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, kind='message', unit='bytes', limit=8, observed=9] protocol_size_error
-    connection ping b'' deadline=True polled=True
+    connection ping b'' deadline=True
     connection close 1001 '' timeout=5.0
   ping timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=20.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
-    connection ping b'' deadline=True polled=True
+    connection ping b'' deadline=True
     connection close 1001 '' timeout=5.0
   closed before the ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
-    connection ping b'' deadline=True polled=True
+    connection ping b'' deadline=True
     connection abort
   transport failure while pinging ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] api_connection_error
     connection close 1000 '' timeout=5.0
@@ -120,7 +120,7 @@
   borrowed connector left open
   async session AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2') received 1
     connection send text=True b'{"text":"hi"}' deadline=True
-    connection ping b'' deadline=True polled=False
+    connection ping b'' deadline=True
     async ping PingReceipt(latency=0.25)
     connection close 1000 '' timeout=5.0
   async initial timeout MAYBE_SENT ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=5.0) [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect'] api_timeout_error
@@ -152,13 +152,13 @@
     connection send text=True b'message' deadline=True
     connection close 1001 '' timeout=5.0
   async closed before sending ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1001, clean=True) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
-    connection ping b'' deadline=True polled=False
+    connection ping b'' deadline=True
     connection close 1001 '' timeout=5.0
   async ping timeout ! APITimeoutError: APITimeoutError(operation_id='feedSocket', call_id='<call>', reason='phase_timeout', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=20.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout
-    connection ping b'' deadline=True polled=False
+    connection ping b'' deadline=True
     connection close 1001 '' timeout=5.0
   async closed before the ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] web_socket_closed_error
-    connection ping b'' deadline=True polled=False
+    connection ping b'' deadline=True
     connection abort
   async transport failure while pinging ! APIConnectionError: APIConnectionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] api_connection_error
     connection close 1000 '' timeout=5.0
