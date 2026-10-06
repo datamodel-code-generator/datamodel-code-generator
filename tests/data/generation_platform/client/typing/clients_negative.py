@@ -139,7 +139,6 @@ def misuse_hooks() -> None:
 def misuse_validation() -> None:
     ValidationOptions(request=None)  # error
     ValidationOptions(response="none")  # error
-    ValidationOptions(arguments="strict")  # error
     RequestOptions(validation="schema")  # error
 
 

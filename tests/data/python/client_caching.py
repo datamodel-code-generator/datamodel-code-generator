@@ -761,7 +761,6 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
     package, protocols, errors = cache.package, cache.protocols, cache.errors
     store = Recording(protocols.MemoryCacheStore(), lines)
     hooks = Events(lines)
-    validated = cache.options.RequestOptions(validation=cache.options.ValidationOptions(arguments="pydantic"))
     settings = cache.options.ClientOptions(
         hooks=(hooks,),
         protocols=cache.options.ProtocolClientOptions(cache_stores={"users.profile": store, "users.listing": store}),
@@ -769,7 +768,7 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
     with package.Client(http_client=native, options=settings) as api:
         helper, twenty = api.protocols.users.profile, cache.user_id(21)
         exchange.respond(user(21, etag='"a"', **{"cache-control": "max-age=0"}), not_modified(etag='"a"'), user(21))
-        fetched(lines, "recorded miss", lambda: helper.fetch(user_id=twenty, options=validated))
+        fetched(lines, "recorded miss", lambda: helper.fetch(user_id=twenty))
         fetched(lines, "recorded revalidation", lambda: helper.fetch(user_id=twenty))
         fetched(lines, "recorded unstored", lambda: helper.fetch(user_id=twenty))
         listing = api.protocols.users.listing

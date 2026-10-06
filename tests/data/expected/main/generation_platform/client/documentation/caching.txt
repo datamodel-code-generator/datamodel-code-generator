@@ -30,7 +30,6 @@
   write client/types/secure/_operations.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
-  write client/_generated/client_checks.py
   write client/_generated/security.py
   write client/_operations.py
   write client/protocols/_plans.py

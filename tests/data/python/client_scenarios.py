@@ -29,7 +29,7 @@ from tests.data.python.client_deadline_options import deadline_options
 from tests.data.python.client_deadline_races import deadline_races
 from tests.data.python.client_deadline_streams import deadline_streams
 from tests.data.python.client_evolution import evolution
-from tests.data.python.client_fields import field_arguments, fields, optional_models
+from tests.data.python.client_fields import fields, optional_models
 from tests.data.python.client_headers import headers
 from tests.data.python.client_hooks import hooks
 from tests.data.python.client_limiter_faults import limiter_faults
@@ -90,7 +90,7 @@ from tests.data.python.client_streams import stream_lifetimes as event_stream_li
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, split_unions, unions
 from tests.data.python.client_uploads import upload_compression, uploads, uploads_oauth
-from tests.data.python.client_validation import arguments, validation
+from tests.data.python.client_validation import validation
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
     webhook_adapters,
@@ -844,13 +844,10 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "evolution-forbid": ("evolution-forbid", ("pydantic_v2.BaseModel", "msgspec.Struct"), evolution),
     "validation": ("validation", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), validation),
     "validation-structural": ("validation-structural", ("dataclasses.dataclass", "typing.TypedDict"), validation),
-    "validation-arguments": ("validation-arguments", ALL_BUT_MSGSPEC, arguments),
-    "validation-arguments-lax": ("validation-arguments-lax", ALL_BUT_MSGSPEC, arguments),
     "evolution-allow": ("evolution-allow", ("pydantic_v2.BaseModel",), evolution),
     "fields": ("fields", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), fields),
     "fields-structural": ("fields-structural", ("dataclasses.dataclass", "typing.TypedDict"), fields),
     "fields-unpack": ("fields-unpack", ("pydantic_v2.BaseModel",), fields),
-    "fields-arguments": ("fields-arguments", ("pydantic_v2.BaseModel", "typing.TypedDict"), field_arguments),
     "fields-optional-models": (
         "fields-optional-models",
         ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"),

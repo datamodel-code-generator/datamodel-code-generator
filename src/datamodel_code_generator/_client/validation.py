@@ -5,14 +5,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final, TypeVar
 
 from datamodel_code_generator._api_types import Diagnostic
-from datamodel_code_generator._runtime.model_codecs.codec import has_models, needs_schema
+from datamodel_code_generator._runtime.model_codecs.codec import needs_schema
 from datamodel_code_generator._target_contract import OperationId
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from datamodel_code_generator._client.config import ClientValidationConfig
-    from datamodel_code_generator._client.plan import ClientPlan
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
     from datamodel_code_generator._target_contract import TypeUseId
@@ -77,57 +76,27 @@ def _refusal(use: TypeUseId, binding: UseBinding, axis: str, mode: str) -> str |
     return None
 
 
-def _unchecked(binding: UseBinding) -> str | None:
-    """Return why Pydantic cannot validate an argument a call takes as a native value, or None when it can."""
-    if binding.backend == "msgspec.Struct" and has_models(binding.type):
-        return "holds msgspec Structs that Pydantic cannot validate"
-    return None
-
-
-def argument_uses(plan: ClientPlan) -> frozenset[TypeUseId]:
-    """Return the uses of the arguments a call takes as native values: its parameters and bodies other than parts."""
-    return frozenset(
-        use.id
-        for spec in plan.operations
-        for use in (
-            *(parameter.use for parameter in spec.parameters),
-            *(media.use for media in (spec.body.media if spec.body is not None else ()) if media.members is None),
-        )
-        if use is not None
-    )
-
-
-def admission_problems(
-    validation: ClientValidationConfig, codecs: CodecPlan, arguments: frozenset[TypeUseId]
-) -> Iterator[Diagnostic]:
+def admission_problems(validation: ClientValidationConfig, codecs: CodecPlan) -> Iterator[Diagnostic]:
     """Yield a diagnostic for each use and allowed mode that the use cannot take.
 
     Response headers are read only by their decoders, which validate against their schemas, and an envelope keeps its
-    strict contract under every mode. Pydantic validates the arguments a call takes as native values.
+    strict contract under every mode.
     """
     axes = (
         ("request", "request_overrides", allowed(validation.request, validation.request_overrides)),
         ("response", "response_overrides", allowed(validation.response, validation.response_overrides)),
-        ("arguments", "argument_overrides", allowed(validation.arguments, validation.argument_overrides)),
     )
     for use, binding in codecs.bindings:
         for axis, overrides, modes in axes:
             for mode in modes:
-                if axis != "arguments":
-                    reason, alternative = _refusal(use, binding, axis, mode), "schema"
-                elif mode == "pydantic" and use in arguments:
-                    reason, alternative = _unchecked(binding), "none"
-                else:
-                    continue
-                if reason is None:
+                if (reason := _refusal(use, binding, axis, mode)) is None:
                     continue
                 yield Diagnostic(
                     code="E_CONFIG_VALUE",
                     severity="error",
                     stage="binding",
                     message=(
-                        f"The {mode!r} {axis} validation cannot take the {_label(use)}, which {reason}; "
-                        f"select {alternative!r}"
+                        f"The {mode!r} {axis} validation cannot take the {_label(use)}, which {reason}; select 'schema'"
                     ),
                     source_pointer=use.use_site.pointer,
                     option_path=_option(axis, overrides, mode, validation),

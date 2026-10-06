@@ -63,7 +63,6 @@ if TYPE_CHECKING:
     from ..model_codecs.parameters import ParameterPlan
     from ..model_codecs.values import DecodedValue
     from ..model_codecs.wire import WireValue
-    from .checks import ArgumentCheck
     from .multipart import PartDecoder
     from .options import RequestValidation
     from .responses import ResponseInfo
@@ -216,14 +215,10 @@ class EncodedBody:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class BodyFields:
-    """The field arguments that stand for one media type's body: their positions, wire names, and requiredness.
-
-    A package generated with Pydantic argument validation checks them with the operation's parameters.
-    """
+    """The field arguments that stand for one media type's body: their positions, wire names, and requiredness."""
 
     media_type: str
     fields: tuple[tuple[int, str, bool], ...]
-    check: Callable[[], ArgumentCheck] | None = None
     positions: tuple[int, ...] = field(init=False)
     taken: frozenset[int] = field(init=False)
     required: tuple[int, ...] = field(init=False)
@@ -1004,7 +999,6 @@ class OperationPlan(Generic[T_co, E_co]):
     request_id_header: str | None = None
     response_media_type: str | None = None
     codecs: object = None
-    checks: tuple[tuple[str | None, Callable[[], ArgumentCheck]], ...] = ()
     fields: FieldArguments | None = None
     retry_safety: Literal["method_default", "idempotent", "never"] = "method_default"
     idempotency: IdempotencyPlan | None = None
@@ -1045,29 +1039,3 @@ class OperationPlan(Generic[T_co, E_co]):
             msg = f"{method}() missing required field arguments for {wanted}: {_quoted(fields.names, missing)}"
             raise TypeError(msg)
         return FieldBody(branch, tuple(values[position] for position in branch.positions), selected, sent)
-
-    def checked(
-        self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None
-    ) -> tuple[tuple[object, ...], object]:
-        """Return a call's arguments and body with Pydantic validating each supplied value of its branch.
-
-        The branch is the declared media the body is sent as, or the fields a call gives instead; a call without a
-        body takes any branch's parameters. A branch that takes no argument has no check.
-        """
-        if isinstance(body, FieldBody) and (fielded := body.branch.check) is not None:
-            count = len(arguments)
-            validated = fielded()((*arguments, *body.values), self.operation_id)
-            return validated[:count], FieldBody(body.branch, validated[count:], body.media, body.sent)
-        if not (checks := self.checks):
-            return arguments, body
-        accessor = checks[0][1]
-        if self.body is not None and not isinstance(body, Unset):
-            wanted = self.body.selected(self.operation_id, media_type, self.codecs)[0].media_type
-            if (found := next((check for media, check in checks if media == wanted), None)) is None:
-                return arguments, body
-            accessor = found
-        check = accessor()
-        if len(check.names) == len(arguments):
-            return check(arguments, self.operation_id), body
-        *values, checked = check((*arguments, body), self.operation_id)
-        return tuple(values), checked

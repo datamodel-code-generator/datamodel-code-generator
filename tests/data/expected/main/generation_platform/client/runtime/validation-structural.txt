@@ -136,13 +136,11 @@
   > GET https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   list through its view ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":1,"name":"Mimi","age":1099511627776}]', truncated=False, cause=WireValidationError("The value does not match format 'int32' at /0/age")] response_validation_error
-  client selecting Pydantic arguments ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='not_allowed') [field_path=('validation', 'arguments'), condition='not_allowed'] configuration_error
   view selecting native requests ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='not_allowed') [field_path=('validation', 'request'), condition='not_allowed'] configuration_error
   request mode None ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='invalid_value') [field_path=('validation', 'request'), condition='invalid_value'] configuration_error
   response mode none ! ConfigurationError: ConfigurationError(field_path='validation.response', condition='invalid_value') [field_path=('validation', 'response'), condition='invalid_value'] configuration_error
-  arguments mode of another type ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='invalid_value') [field_path=('validation', 'arguments'), condition='invalid_value'] configuration_error
   validation of another type ! ConfigurationError: ConfigurationError(field_path='validation', condition='invalid_type') [field_path=('validation',), condition='invalid_type'] configuration_error
-  unset = ValidationOptions(request=UNSET, response=UNSET, arguments=UNSET)
+  unset = ValidationOptions(request=UNSET, response=UNSET)
   call selecting native requests ! ConfigurationError: ConfigurationError(operation_id='listPets', field_path='validation.request', condition='not_allowed') [operation_id='listPets', field_path=('validation', 'request'), condition='not_allowed'] configuration_error
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 35] b'{"name":"Mimi","age":1099511627776}'
@@ -292,13 +290,11 @@
   > GET https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   list through its view ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":1,"name":"Mimi","age":1099511627776}]', truncated=False, cause=WireValidationError("The value does not match format 'int32' at /0/age")] response_validation_error
-  client selecting Pydantic arguments ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='not_allowed') [field_path=('validation', 'arguments'), condition='not_allowed'] configuration_error
   view selecting native requests ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='not_allowed') [field_path=('validation', 'request'), condition='not_allowed'] configuration_error
   request mode None ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='invalid_value') [field_path=('validation', 'request'), condition='invalid_value'] configuration_error
   response mode none ! ConfigurationError: ConfigurationError(field_path='validation.response', condition='invalid_value') [field_path=('validation', 'response'), condition='invalid_value'] configuration_error
-  arguments mode of another type ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='invalid_value') [field_path=('validation', 'arguments'), condition='invalid_value'] configuration_error
   validation of another type ! ConfigurationError: ConfigurationError(field_path='validation', condition='invalid_type') [field_path=('validation',), condition='invalid_type'] configuration_error
-  unset = ValidationOptions(request=UNSET, response=UNSET, arguments=UNSET)
+  unset = ValidationOptions(request=UNSET, response=UNSET)
   call selecting native requests ! ConfigurationError: ConfigurationError(operation_id='listPets', field_path='validation.request', condition='not_allowed') [operation_id='listPets', field_path=('validation', 'request'), condition='not_allowed'] configuration_error
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 35] b'{"name":"Mimi","age":1099511627776}'

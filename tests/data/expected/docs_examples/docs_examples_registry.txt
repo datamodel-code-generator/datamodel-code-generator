@@ -54,7 +54,6 @@ python-client.body-fields.overloads: python-client.md
 python-client.body-fields.refusals: python-client.md
 python-client.validation.toml: python-client.md
 python-client.validation.defaults: python-client.md
-python-client.validation.arguments: python-client.md
 python-client.validation.options: python-client.md
 python-client.validation.diagnostics: python-client.md
 cli-reference.typing-customization.use-closed-typed-dict.example: typing-customization.md
