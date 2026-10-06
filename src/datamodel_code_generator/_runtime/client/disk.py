@@ -54,7 +54,7 @@ class DiskWorker:
         loop = asyncio.get_running_loop()
         work = loop.run_in_executor(None, partial(function, *arguments))
         try:
-            return await asyncio.shield(work)
+            await asyncio.wait((work,))
         except asyncio.CancelledError as cancelled:
             await _settled(work)
             if (failure := work.exception()) is not None:
@@ -65,6 +65,7 @@ class DiskWorker:
                 if (failure := discarded.exception()) is not None:
                     add_secondary(cancelled, failure)
             raise
+        return work.result()
 
     def close(self) -> None:
         """Refuse new work."""
