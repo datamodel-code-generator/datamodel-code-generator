@@ -11,7 +11,7 @@ from models import FieldLooseGetQueryCursorParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue, ResponseMedia
+from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.loose import ListLooseResponse
@@ -43,7 +43,7 @@ class LooseResource:
         self,
         *,
         cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLooseResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLooseResponse:
         """Call GET /loose."""
@@ -66,7 +66,7 @@ class LooseWithResponse:
         self,
         *,
         cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLooseResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLooseResponse]:
         """Call GET /loose."""
@@ -89,7 +89,7 @@ class LooseWithRawResponse:
         self,
         *,
         cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLooseResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /loose."""
@@ -112,7 +112,7 @@ class LooseWithStreamingResponse:
         self,
         *,
         cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLooseResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /loose."""

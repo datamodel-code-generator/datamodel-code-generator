@@ -31,7 +31,7 @@ from .._runtime.protocols.pagination import (
     resume_pages,
 )
 from .._runtime.protocols.resume import ResumeState
-from ..model_codecs import ModelValue, RequestMedia
+from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.archive import ListArchiveResponse
 from ..types.labels import ListLabelSetsResponse, ListLabelsResponse
@@ -377,7 +377,7 @@ class UsersSearchPagination:
         *,
         cursor: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
         body: _dcg_type_5 | ModelValue[_dcg_type_5],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -399,7 +399,7 @@ class UsersSearchPagination:
         *,
         cursor: _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
         body: _dcg_type_5 | ModelValue[_dcg_type_5],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

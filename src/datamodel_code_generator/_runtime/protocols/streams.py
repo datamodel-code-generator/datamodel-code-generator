@@ -82,7 +82,6 @@ if TYPE_CHECKING:
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
     from ..client.timing import Clock, Deadline
-    from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
     from .pagination import PageBinding
@@ -90,7 +89,7 @@ if TYPE_CHECKING:
     from .references import OperationRef
     from .writes import ReadPaths, Writes
 
-    _Given: TypeAlias = tuple[tuple[object, ...], object, str | MediaSelector | None]
+    _Given: TypeAlias = tuple[tuple[object, ...], object, str | None]
 
 __all__ = (
     "AsyncEventStream",
@@ -1825,7 +1824,7 @@ def open_events(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     stream_options: object = None,
     options: object = None,
     session_options: object = None,
@@ -1857,7 +1856,7 @@ async def aopen_events(  # noqa: PLR0913
     arguments: tuple[object, ...],
     *,
     body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+    media_type: str | None = None,
     stream_options: object = None,
     options: object = None,
     session_options: object = None,

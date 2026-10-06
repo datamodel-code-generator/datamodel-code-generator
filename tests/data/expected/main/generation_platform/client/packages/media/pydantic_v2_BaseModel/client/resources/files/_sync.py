@@ -12,8 +12,8 @@ from models import FieldFilesPostRequest2 as _dcg_type_1
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...bodies import AsyncBinaryBody, SyncBinaryBody
-from ...model_codecs import ModelValue, RequestMedia, ResponseMedia
+from ...bodies import SyncBinaryBody
+from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.files import ReplaceFileResponse, StoreFileResponse
@@ -46,7 +46,7 @@ class FilesResource:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
+        media_type: Literal['application/json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse: ...
@@ -55,8 +55,8 @@ class FilesResource:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_0 | None: ...
     @overload
@@ -64,8 +64,8 @@ class FilesResource:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
+        media_type: Literal['application/json'],
+        response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> bytes | None: ...
     @overload
@@ -73,8 +73,8 @@ class FilesResource:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: ResponseMedia[StoreFileResponse],
+        media_type: Literal['application/json'],
+        response_media_type: str,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse: ...
     @overload
@@ -82,7 +82,7 @@ class FilesResource:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
+        media_type: str,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse: ...
@@ -91,8 +91,8 @@ class FilesResource:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
+        media_type: str,
+        response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_0 | None: ...
     @overload
@@ -100,8 +100,8 @@ class FilesResource:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
+        media_type: str,
+        response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> bytes | None: ...
     @overload
@@ -109,8 +109,8 @@ class FilesResource:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: ResponseMedia[StoreFileResponse],
+        media_type: str,
+        response_media_type: str,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse: ...
     @overload
@@ -118,7 +118,7 @@ class FilesResource:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
+        media_type: str,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse: ...
@@ -127,8 +127,8 @@ class FilesResource:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
+        media_type: str,
+        response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_0 | None: ...
     @overload
@@ -136,8 +136,8 @@ class FilesResource:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
+        media_type: str,
+        response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> bytes | None: ...
     @overload
@@ -145,16 +145,16 @@ class FilesResource:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: ResponseMedia[StoreFileResponse],
+        media_type: str,
+        response_media_type: str,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse: ...
     def store_file(
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        media_type: str | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse:
         """Call POST /files."""
@@ -172,7 +172,7 @@ class FilesResource:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
+        media_type: str,
         options: RequestOptions | None = None,
     ) -> ReplaceFileResponse: ...
     @overload
@@ -187,7 +187,7 @@ class FilesResource:
         self,
         *,
         body: SyncBinaryBody | Unset = UNSET,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
+        media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceFileResponse:
         """Call PUT /files."""
@@ -212,7 +212,7 @@ class FilesWithResponse:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
+        media_type: Literal['application/json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]: ...
@@ -221,8 +221,8 @@ class FilesWithResponse:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[_dcg_type_0 | None]: ...
     @overload
@@ -230,8 +230,8 @@ class FilesWithResponse:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
+        media_type: Literal['application/json'],
+        response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> Response[bytes | None]: ...
     @overload
@@ -239,8 +239,8 @@ class FilesWithResponse:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: ResponseMedia[StoreFileResponse],
+        media_type: Literal['application/json'],
+        response_media_type: str,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]: ...
     @overload
@@ -248,7 +248,7 @@ class FilesWithResponse:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
+        media_type: str,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]: ...
@@ -257,8 +257,8 @@ class FilesWithResponse:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
+        media_type: str,
+        response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[_dcg_type_0 | None]: ...
     @overload
@@ -266,8 +266,8 @@ class FilesWithResponse:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
+        media_type: str,
+        response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> Response[bytes | None]: ...
     @overload
@@ -275,8 +275,8 @@ class FilesWithResponse:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: ResponseMedia[StoreFileResponse],
+        media_type: str,
+        response_media_type: str,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]: ...
     @overload
@@ -284,7 +284,7 @@ class FilesWithResponse:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
+        media_type: str,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]: ...
@@ -293,8 +293,8 @@ class FilesWithResponse:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_0 | None],
+        media_type: str,
+        response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[_dcg_type_0 | None]: ...
     @overload
@@ -302,8 +302,8 @@ class FilesWithResponse:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['image/png'] | ResponseMedia[bytes | None],
+        media_type: str,
+        response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
     ) -> Response[bytes | None]: ...
     @overload
@@ -311,16 +311,16 @@ class FilesWithResponse:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: ResponseMedia[StoreFileResponse],
+        media_type: str,
+        response_media_type: str,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]: ...
     def store_file(
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        media_type: str | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]:
         """Call POST /files."""
@@ -338,7 +338,7 @@ class FilesWithResponse:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
+        media_type: str,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceFileResponse]: ...
     @overload
@@ -353,7 +353,7 @@ class FilesWithResponse:
         self,
         *,
         body: SyncBinaryBody | Unset = UNSET,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
+        media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceFileResponse]:
         """Call PUT /files."""
@@ -378,8 +378,8 @@ class FilesWithRawResponse:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -387,8 +387,8 @@ class FilesWithRawResponse:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        media_type: str,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -396,16 +396,16 @@ class FilesWithRawResponse:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        media_type: str,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def store_file(
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        media_type: str | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /files."""
@@ -423,7 +423,7 @@ class FilesWithRawResponse:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
+        media_type: str,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -438,7 +438,7 @@ class FilesWithRawResponse:
         self,
         *,
         body: SyncBinaryBody | Unset = UNSET,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
+        media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call PUT /files."""
@@ -463,8 +463,8 @@ class FilesWithStreamingResponse:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        media_type: Literal['application/json'],
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -472,8 +472,8 @@ class FilesWithStreamingResponse:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        media_type: str,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -481,16 +481,16 @@ class FilesWithStreamingResponse:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        media_type: str,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def store_file(
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | SyncBinaryBody | _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | RequestMedia[SyncBinaryBody, AsyncBinaryBody] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
-        response_media_type: Literal['application/json', 'image/png'] | ResponseMedia[_dcg_type_0 | None] | ResponseMedia[bytes | None] | ResponseMedia[StoreFileResponse] | None = None,
+        media_type: str | None = None,
+        response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /files."""
@@ -508,7 +508,7 @@ class FilesWithStreamingResponse:
         self,
         *,
         body: SyncBinaryBody,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody],
+        media_type: str,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -523,7 +523,7 @@ class FilesWithStreamingResponse:
         self,
         *,
         body: SyncBinaryBody | Unset = UNSET,
-        media_type: RequestMedia[SyncBinaryBody, AsyncBinaryBody] | None = None,
+        media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /files."""

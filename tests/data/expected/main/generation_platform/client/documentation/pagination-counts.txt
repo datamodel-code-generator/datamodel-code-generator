@@ -357,13 +357,13 @@
   }
   /selection/selected_operations/0 users.list_users(query:offset=offset, query:page=page, query:limit=limit, query:cursor=cursor, query:position=position, header:X-Page=x_page)
     exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
-    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header
+    exports client.types.users.decode_list_users_header
   /selection/selected_operations/1 searches.search()
     exports client.types.searches.SearchResponse client.types.searches.SearchErrorData client.types.searches.SearchHTTPError
-    exports client.types.searches.SearchRequestCodecs None
+    exports None
   /selection/selected_operations/2 finds.find(querystring:criteria=criteria)
     exports client.types.finds.FindResponse client.types.finds.FindErrorData client.types.finds.FindHTTPError
-    exports client.types.finds.FindRequestCodecs None
+    exports None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md
@@ -739,9 +739,9 @@ cookies commonly carry session state. Pages and items count on from the checkpoi
 while its sends and timeout start afresh. `resume` builds the saved arguments and body as their codecs build a
 caller's, takes literal bindings from the helper, and prepares the request it sends next without sending, with the
 resuming client's own auth. It raises `ResumeStateError` before sending for another helper's checkpoint and a malformed
-state, a value or media type its codec or selector refuses, a saved value that cannot be encoded into a request, and an
-offset or page number other than the one the pages reach included, while a refusal of the resumed call's options is
-raised as the call raises it, and checks the saved continuation as a server's. `SessionLimitError` and
+state, a value its codec refuses, a media type the operation does not declare, a saved value that cannot be encoded into
+a request, and an offset or page number other than the one the pages reach included, while a refusal of the resumed
+call's options is raised as the call raises it, and checks the saved continuation as a server's. `SessionLimitError` and
 `PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state` when the call can be checkpointed.
 `ResumeState.export()` gives the token's JSON, and `import_state` reads it back.
 

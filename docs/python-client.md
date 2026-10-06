@@ -925,7 +925,7 @@ takes the `create` operation's parameters and its body as keywords, never field 
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -2289,7 +2289,7 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
         self,
         *,
         pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_7],
+        response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_7: ...
     @overload
@@ -2297,14 +2297,14 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
         self,
         *,
         pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        response_media_type: Literal['text/plain'] | ResponseMedia[_dcg_type_8],
+        response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_8: ...
     def get_pet(
         self,
         *,
         pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
-        response_media_type: Literal['application/json', 'text/plain'] | ResponseMedia[_dcg_type_7] | ResponseMedia[_dcg_type_8] | None = None,
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
         """Show one pet."""
@@ -2368,7 +2368,7 @@ class Operation2Arguments1(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
     pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
-    response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_7]
+    response_media_type: Literal['application/json']
     options: NotRequired[RequestOptions | None]
 
 
@@ -2376,7 +2376,7 @@ class Operation2Arguments2(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
     pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
-    response_media_type: Literal['text/plain'] | ResponseMedia[_dcg_type_8]
+    response_media_type: Literal['text/plain']
     options: NotRequired[RequestOptions | None]
 
 
@@ -2384,7 +2384,7 @@ class Operation2Arguments3(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
     pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
-    response_media_type: NotRequired[Literal['application/json', 'text/plain'] | ResponseMedia[_dcg_type_7] | ResponseMedia[_dcg_type_8] | None]
+    response_media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     options: NotRequired[RequestOptions | None]
 
 
@@ -2552,7 +2552,7 @@ overload for each field, which that overload requires, and one that takes nothin
         body: _dcg_type_7 | ModelValue[_dcg_type_7],
         name: Unset = UNSET,
         tag: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
     @overload
@@ -2563,7 +2563,7 @@ overload for each field, which that overload requires, and one that takes nothin
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
     @overload
@@ -2574,7 +2574,7 @@ overload for each field, which that overload requires, and one that takes nothin
         body: Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
     @overload
@@ -2595,7 +2595,7 @@ overload for each field, which that overload requires, and one that takes nothin
         body: _dcg_type_7 | ModelValue[_dcg_type_7] | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse:
         """Call PATCH /pets/{petId}."""
@@ -2679,9 +2679,9 @@ Generated clients send and read model values through their model backend, with n
   whose encoded text is non-empty, with a `ParameterEncodingError` cause, before anything is sent: URL normalization in
   clients, proxies, and servers would remove the segment and send the call to another resource, and encoding the dots
   does not prevent it. `...` and `.a` are sent as they are, and a dot segment the path template spells is not refused.
-- **Strict records.** A `ModelValue` or `ModelInput` passed as an argument, the `RequestCodecs` factories, the header
-  decoders, and a response the package returns as `DecodedValue` keep their strict schema validation. Read a body
-  without any model with `with_raw_response` or `with_streaming_response` instead.
+- **Strict records.** A `ModelValue` or `ModelInput` passed as an argument, the header decoders, and a response the
+  package returns as `DecodedValue` keep their strict schema validation. Read a body without any model with
+  `with_raw_response` or `with_streaming_response` instead.
 
 A response whose union members only their schemas tell apart, such as two object models read by a stdlib dataclass or
 TypedDict converter, cannot be converted, so generation fails with `E_CONFIG_VALUE` naming the use, unless the union's

@@ -13,7 +13,7 @@ from models import Kind as _dcg_type_1
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import ModelValue, RequestMedia
+from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse as RawResponse_1
 from ...responses import Response
@@ -49,7 +49,7 @@ class DefaultResource:
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
         kind: Unset = UNSET,
         name: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -59,7 +59,7 @@ class DefaultResource:
         body: Unset = UNSET,
         kind: typing.Literal[_dcg_type_1.cat],
         name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def raw(
@@ -68,7 +68,7 @@ class DefaultResource:
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
         kind: typing.Literal[_dcg_type_1.cat] | Unset = UNSET,
         name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /cats."""
@@ -96,7 +96,7 @@ class DefaultWithResponse:
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
         kind: Unset = UNSET,
         name: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[RawResponse]: ...
     @overload
@@ -106,7 +106,7 @@ class DefaultWithResponse:
         body: Unset = UNSET,
         kind: typing.Literal[_dcg_type_1.cat],
         name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[RawResponse]: ...
     def raw(
@@ -115,7 +115,7 @@ class DefaultWithResponse:
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
         kind: typing.Literal[_dcg_type_1.cat] | Unset = UNSET,
         name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[RawResponse]:
         """Call POST /cats."""
@@ -143,7 +143,7 @@ class DefaultWithRawResponse:
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
         kind: Unset = UNSET,
         name: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse_1: ...
     @overload
@@ -153,7 +153,7 @@ class DefaultWithRawResponse:
         body: Unset = UNSET,
         kind: typing.Literal[_dcg_type_1.cat],
         name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse_1: ...
     def raw(
@@ -162,7 +162,7 @@ class DefaultWithRawResponse:
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
         kind: typing.Literal[_dcg_type_1.cat] | Unset = UNSET,
         name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse_1:
         """Call POST /cats."""
@@ -190,7 +190,7 @@ class DefaultWithStreamingResponse:
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
         kind: Unset = UNSET,
         name: Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse_1]: ...
     @overload
@@ -200,7 +200,7 @@ class DefaultWithStreamingResponse:
         body: Unset = UNSET,
         kind: typing.Literal[_dcg_type_1.cat],
         name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse_1]: ...
     def raw(
@@ -209,7 +209,7 @@ class DefaultWithStreamingResponse:
         body: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
         kind: typing.Literal[_dcg_type_1.cat] | Unset = UNSET,
         name: str | Unset = UNSET,
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse_1]:
         """Call POST /cats."""

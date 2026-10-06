@@ -81,7 +81,6 @@ from tests.data.python.client_runtime import (
     request_body,
     run,
 )
-from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_socket_connectors import socket_connector_outcomes, socket_connectors
 from tests.data.python.client_sockets import sockets
@@ -187,11 +186,10 @@ def _lifecycle(package: ModuleType, lines: list[str]) -> None:
 
 def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     (types,) = _modules(package, "types.pets")
-    codecs = types.ListPetsRequestCodecs
     limit = argument(package, "listPets", "query", "limit", 5)
     labels = argument(package, "listPets", "query", "tags", ["a b", "c"])
     trace = argument(package, "listPets", "header", "X-Trace", "t1")
-    session = codecs.parameter(location="cookie", name="session").from_wire("s1")
+    session = argument(package, "listPets", "cookie", "session", "s1")
     headers = {"X-Rate": "10", "X-Next": "abc", "X-Request-Id": "req-1"}
     pets = [{"id": 1, "name": "cat", "tag": None}]
     exchange.respond(json_response(200, pets, **headers))
@@ -254,12 +252,9 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     record(lines, "list missing", lambda: api.pets.list_pets(x_trace=options.UNSET))
     record(lines, "list invalid", lambda: api.pets.list_pets(x_trace=_trace(package, "line\nbreak")))
     record(lines, "list options", lambda: api.pets.list_pets(x_trace=trace, options="fast"))
-    record(lines, "list codec", lambda: codecs.parameter(location="query", name="missing"))
 
 
 def _create_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    (types,) = _modules(package, "types.pets")
-    codecs = types.CreatePetRequestCodecs
     text = request_body(package, "createPet", "text/plain", "bird")
     created = {"id": 2, "name": "dog"}
     exchange.respond(json_response(201, created), json_response(201, created), json_response(201, created))
@@ -276,8 +271,6 @@ def _create_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
     record(lines, "create invalid body", lambda: api.pets.create_pet(body=object(), media_type="application/json"))
     exchange.respond(json_response(422, {"code": 22}))
     record(lines, "create rejected", lambda: api.pets.create_pet(body=native, media_type="application/json"))
-    record(lines, "create codec default", codecs.body)
-    record(lines, "create codec media", lambda: codecs.body(media_type="text/csv"))
 
 
 def _get_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -319,6 +312,7 @@ def _upload(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
     record(lines, "upload empty", lambda: api.pets.photos.upload(pet_id=pet))
     record(lines, "upload text", lambda: api.pets.photos.upload(pet_id=pet, body="text"))
     record(lines, "upload media", lambda: api.pets.photos.upload(pet_id=pet, media_type="application/octet-stream"))
+    _range_responses(api.pets.photos, exchange, lines, "upload", {"pet_id": pet})
 
 
 def _servers(package: ModuleType, api_options: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -398,13 +392,14 @@ def pets(package: ModuleType, lines: list[str]) -> None:
     _errors(package, lines)
     _lifecycle(package, lines)
     run(lambda: _async_pets(package, exchange, lines))
+    run(lambda: _async_range_responses(package, lines, "pets"))
 
 
 async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
     (options,) = _modules(package, "options")
     http = exchange.async_client()
     trace, pet = _trace(package), _pet(package, "getPet")
-    (types,) = _modules(package, "types.pets")
+    (_types,) = _modules(package, "types.pets")
     text = request_body(package, "createPet", "text/plain", "dog")
     async with package.AsyncClient(
         http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
@@ -446,7 +441,7 @@ def _async_invalid(package: ModuleType) -> Callable[[], Any]:
 
 def media(package: ModuleType, lines: list[str]) -> None:
     """Send forms, pairs, documents, and notes, and decode forms, texts, envelopes, and object headers."""
-    forms, documents = _modules(package, "types.forms", "types.documents")
+    _, documents = _modules(package, "types.forms", "types.documents")
     exchange = Exchange(lines)
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         form = request_body(package, "submitForm", None, {"name": "a b", "count": 2, "labels": ["x", "y"]})
@@ -463,25 +458,123 @@ def media(package: ModuleType, lines: list[str]) -> None:
         record(lines, "pairs", lambda: api.forms.submit_pairs(body=(("a", "1"), ("a", "2"), ("b", " "))))
         record(lines, "pairs invalid", api.forms.submit_pairs)
         record(lines, "pairs body", lambda: api.forms.submit_pairs(body=[("a", "1")]))
-        search = request_body(package, "submitSearch", None, {
-            "term": "a b",
-            "filter": {"name": "x y", "min": 2},
-            "tags": ["a", "b"],
-            "ids": [1, 2],
-            "meta": {"city": "Oslo"},
-            "path": "/a?b",
-            "extra": {"page": "2"},
-        })
+        search = request_body(
+            package,
+            "submitSearch",
+            None,
+            {
+                "term": "a b",
+                "filter": {"name": "x y", "min": 2},
+                "tags": ["a", "b"],
+                "ids": [1, 2],
+                "meta": {"city": "Oslo"},
+                "path": "/a?b",
+                "extra": {"page": "2"},
+            },
+        )
         exchange.respond(raw_response(204))
         record(lines, "search", lambda: api.forms.submit_search(body=search))
         clash = request_body(package, "submitSearch", None, {"term": "a", "extra": {"term": "b"}})
         record(lines, "search of an extra named as another member", lambda: api.forms.submit_search(body=clash))
         _documents(package, api, exchange, lines, documents)
+        _files(package, api, exchange, lines)
+        _range_responses(api.files, exchange, lines, "store_file", {"body": b"image", "media_type": "image/jpeg"})
+        exchange.respond(raw_response(204))
+        record(
+            lines,
+            "range bodyless",
+            lambda: api.files.store_file(body=b"image", media_type="image/jpeg", response_media_type="image/jpeg"),
+        )
+    run(lambda: _async_range_responses(package, lines, "media"))
+
+
+def _files(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Send concrete media types within declared ranges, never a range, and narrow a response to one concrete type.
+
+    A concrete type goes to its most specific declaration, whose encoding it takes, and text takes its named charset.
+    """
+    address = request_body(package, "storeFile", "application/json", {"city": "Oslo"})
+    record(lines, "store file of a media range", lambda: api.files.store_file(body=address, media_type="image/*"))
+    csv = request_body(package, "storeFile", "text/*", "a,b")
+    exchange.respond(raw_response(204), raw_response(204), raw_response(204), raw_response(204))
+    record(lines, "store png", lambda: api.files.store_file(body=b"\x89PNG", media_type="image/png"))
+    record(lines, "store pdf", lambda: api.files.store_file(body=b"%PDF", media_type="application/pdf"))
+    record(lines, "store csv in UTF-16", lambda: api.files.store_file(body=csv, media_type="text/csv; charset=utf-16"))
+    record(
+        lines, "replace with octets", lambda: api.files.replace_file(body=b"x", media_type="application/octet-stream")
+    )
+    record(lines, "store video outside the ranges", lambda: api.files.store_file(body=b"x", media_type="video/mp4"))
+    exchange.respond(raw_response(201, b"png", "image/png"), raw_response(200, b"jpeg", "image/jpeg"))
+    for label in ("store file narrowed", "store file narrowed to another image"):
+        record(
+            lines,
+            label,
+            lambda: api.files.store_file(body=address, media_type="application/json", response_media_type="image/png"),
+        )
+    exchange.respond(raw_response(204))
+    record(lines, "replace file without a body", api.files.replace_file)
+
+
+def _range_responses(resource: Any, exchange: Exchange, lines: list[str], name: str, arguments: dict[str, Any]) -> None:
+    """Select a concrete image through a range declaration in every synchronous view."""
+    for view in (resource, resource.with_response):
+        exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+        record(
+            lines,
+            f"range {name} {type(view).__name__}",
+            lambda view=view: getattr(view, name)(**arguments, response_media_type="image/jpeg"),
+        )
+    exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+    record(
+        lines,
+        f"range {name} raw",
+        lambda: getattr(resource.with_raw_response, name)(**arguments, response_media_type="image/jpeg").read(),
+    )
+    exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+    with getattr(resource.with_streaming_response, name)(**arguments, response_media_type="image/jpeg") as response:
+        record(lines, f"range {name} streaming", response.read)
+    record(
+        lines,
+        f"response wildcard rejected {name}",
+        lambda: getattr(resource, name)(**arguments, response_media_type="image/*"),
+    )
+
+
+async def _async_range_responses(package: ModuleType, lines: list[str], case: str) -> None:
+    """Select concrete image responses through each asyncio view using the existing HTTPS recipes."""
+    exchange = Exchange(lines)
+    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+        if case == "pets":
+            resource, name, arguments = api.pets.photos, "upload", {"pet_id": _pet(package, "uploadPhoto")}
+        else:
+            resource, name, arguments = api.files, "store_file", {"body": b"image", "media_type": "image/jpeg"}
+        for view in (resource, resource.with_response):
+            exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+            await arecord(
+                lines,
+                f"async range {name} {type(view).__name__}",
+                lambda view=view: getattr(view, name)(**arguments, response_media_type="image/jpeg"),
+            )
+
+        async def raw() -> bytes:
+            response = await getattr(resource.with_raw_response, name)(**arguments, response_media_type="image/jpeg")
+            return await response.read()
+
+        exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+        await arecord(lines, f"async range {name} raw", raw)
+        exchange.respond(raw_response(200, b"jpeg", "image/jpeg"))
+        async with getattr(resource.with_streaming_response, name)(
+            **arguments, response_media_type="image/jpeg"
+        ) as response:
+            await arecord(lines, f"async range {name} streaming", response.read)
+        await arecord(
+            lines,
+            f"async response wildcard rejected {name}",
+            lambda: getattr(resource, name)(**arguments, response_media_type="image/*"),
+        )
 
 
 def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[str], documents: ModuleType) -> None:
-    codecs = documents.StoreDocumentRequestCodecs
-    draft = codecs.body(media_type="application/vnd.api+json").from_wire({"title": "t", "secret": "s"})
     for label, responder, call in (
         ("store", json_response(200, {"stored": True}), lambda: api.documents.store_document(body={"x": [1, 2]})),
         (
@@ -493,11 +586,6 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             "store text of a charset named in capitals",
             raw_response(200, "caf\xe9".encode("latin-1"), "text/plain; CHARSET=latin-1"),
             lambda: api.documents.store_document(body="note", media_type="text/plain; charset=utf-16"),
-        ),
-        (
-            "store draft",
-            raw_response(202),
-            lambda: api.documents.store_document(body=draft, media_type="application/vnd.api+json"),
         ),
         ("store moved", json_response(302, {"id": 1, "title": "t"}), lambda: api.documents.store_document(body=1)),
         ("store moved invalid", json_response(302, {"title": 5}), lambda: api.documents.store_document(body=1)),
@@ -516,8 +604,6 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
         exchange.respond(responder)
         record(lines, label, call)
     record(lines, "store value", lambda: api.documents.store_document(body={1, 2}))
-    record(lines, "store codec", codecs.body)
-    record(lines, "store codec media", lambda: codecs.body(media_type="application/json"))
     read = argument(package, "readDocument", "path", "id", {"key": "a/b"})
     exchange.respond(
         raw_response(200, b'{"id":1,"title":"t"}', "application/vnd.api+json", **{"X-Draft": "id,1,title,h"})
@@ -538,12 +624,18 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
 
 def querystring(package: ModuleType, lines: list[str]) -> None:
     """Send a whole query through one querystring parameter, which no query patch may add to."""
-    types, options = _modules(package, "types.default", "options")
+    _types, options = _modules(package, "types.default", "options")
     exchange = Exchange(lines)
-    criteria = argument(package, "search", "querystring", "criteria", {
-        "term": "a b",
-        "page": 2,
-    })
+    criteria = argument(
+        package,
+        "search",
+        "querystring",
+        "criteria",
+        {
+            "term": "a b",
+            "page": 2,
+        },
+    )
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         exchange.respond(json_response(200, ["a"]), json_response(200, []))
         record(lines, "search", lambda: api.default.search(criteria=criteria))
@@ -704,7 +796,9 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         record(lines, "coding error truncated", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding redirect", lambda: api.pets.list_pets(x_trace=trace))
         record(
-            lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DELETE /pets/{petId}"))
+            lines,
+            "coding bodyless",
+            lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DELETE /pets/{petId}")),
         )
     run(lambda: _async_codings(package, exchange, lines))
 
@@ -780,7 +874,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
     "multipart-split": ("multipart-split", STRUCTURAL, split_parts),
-    "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
     "signatures": ("pets", BACKENDS, signatures),

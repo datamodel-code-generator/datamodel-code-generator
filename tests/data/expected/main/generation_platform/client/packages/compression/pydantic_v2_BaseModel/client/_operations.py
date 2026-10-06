@@ -21,57 +21,45 @@ from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.checks import (
     CheckStatusErrorData,
     CheckStatusHTTPError,
-    CheckStatusRequestCodecs,
     CheckStatusResponse,
     CreateCheckErrorData,
     CreateCheckHTTPError,
-    CreateCheckRequestCodecs,
     CreateCheckResponse,
 )
 from .types.events import (
     ReopenEventsErrorData,
     ReopenEventsHTTPError,
-    ReopenEventsRequestCodecs,
     ReopenEventsResponse,
     WatchErrorData,
     WatchHTTPError,
-    WatchRequestCodecs,
     WatchResponse,
 )
 from .types.items import (
     CreateItemErrorData,
     CreateItemHTTPError,
-    CreateItemRequestCodecs,
     CreateItemResponse,
     CreateNoteErrorData,
     CreateNoteHTTPError,
-    CreateNoteRequestCodecs,
     CreateNoteResponse,
     FeedErrorData,
     FeedHTTPError,
-    FeedRequestCodecs,
     FeedResponse,
     ListItemsErrorData,
     ListItemsHTTPError,
-    ListItemsRequestCodecs,
     ListItemsResponse,
     PutBlobErrorData,
     PutBlobHTTPError,
-    PutBlobRequestCodecs,
     PutBlobResponse,
     SearchErrorData,
     SearchHTTPError,
-    SearchRequestCodecs,
     SearchResponse,
 )
 from .types.jobs import (
     CreateJobErrorData,
     CreateJobHTTPError,
-    CreateJobRequestCodecs,
     CreateJobResponse,
     GetJobErrorData,
     GetJobHTTPError,
-    GetJobRequestCodecs,
     GetJobResponse,
 )
 
@@ -105,7 +93,6 @@ OPERATION_0: Final[OperationPlan[CreateItemResponse, CreateItemErrorData]] = Ope
         default='application/json',
     ),
     accepted_content_encodings=('gzip',),
-    codecs=CreateItemRequestCodecs,
 )
 
 OPERATION_1: Final[OperationPlan[ListItemsResponse, ListItemsErrorData]] = OperationPlan(
@@ -137,7 +124,6 @@ OPERATION_1: Final[OperationPlan[ListItemsResponse, ListItemsErrorData]] = Opera
         ),
     ),
     accepted_content_encodings=('gzip',),
-    codecs=ListItemsRequestCodecs,
 )
 
 OPERATION_2: Final[OperationPlan[CreateNoteResponse, CreateNoteErrorData]] = OperationPlan(
@@ -157,7 +143,6 @@ OPERATION_2: Final[OperationPlan[CreateNoteResponse, CreateNoteErrorData]] = Ope
         default='application/json',
         required=True,
     ),
-    codecs=CreateNoteRequestCodecs,
 )
 
 OPERATION_3: Final[OperationPlan[PutBlobResponse, PutBlobErrorData]] = OperationPlan(
@@ -182,7 +167,6 @@ OPERATION_3: Final[OperationPlan[PutBlobResponse, PutBlobErrorData]] = Operation
         default='application/octet-stream',
     ),
     accepted_content_encodings=('gzip',),
-    codecs=PutBlobRequestCodecs,
 )
 
 OPERATION_4: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPlan(
@@ -225,7 +209,6 @@ OPERATION_4: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
         required=True,
     ),
     accepted_content_encodings=('gzip',),
-    codecs=SearchRequestCodecs,
 )
 
 OPERATION_5: Final[OperationPlan[FeedResponse, FeedErrorData]] = OperationPlan(
@@ -257,7 +240,6 @@ OPERATION_5: Final[OperationPlan[FeedResponse, FeedErrorData]] = OperationPlan(
         required=True,
     ),
     accepted_content_encodings=('gzip',),
-    codecs=FeedRequestCodecs,
 )
 
 OPERATION_6: Final[OperationPlan[CreateJobResponse, CreateJobErrorData]] = OperationPlan(
@@ -289,7 +271,6 @@ OPERATION_6: Final[OperationPlan[CreateJobResponse, CreateJobErrorData]] = Opera
         required=True,
     ),
     accepted_content_encodings=('gzip',),
-    codecs=CreateJobRequestCodecs,
 )
 
 OPERATION_7: Final[OperationPlan[GetJobResponse, GetJobErrorData]] = OperationPlan(
@@ -320,7 +301,6 @@ OPERATION_7: Final[OperationPlan[GetJobResponse, GetJobErrorData]] = OperationPl
             encoder=Encoder(model_bindings.codec_13, model_bindings.CONTEXT_13),
         ),
     ),
-    codecs=GetJobRequestCodecs,
 )
 
 OPERATION_8: Final[OperationPlan[CreateCheckResponse, CreateCheckErrorData]] = OperationPlan(
@@ -340,7 +320,6 @@ OPERATION_8: Final[OperationPlan[CreateCheckResponse, CreateCheckErrorData]] = O
         (),
         CreateCheckHTTPError,
     ),
-    codecs=CreateCheckRequestCodecs,
 )
 
 OPERATION_9: Final[OperationPlan[CheckStatusResponse, CheckStatusErrorData]] = OperationPlan(
@@ -372,7 +351,6 @@ OPERATION_9: Final[OperationPlan[CheckStatusResponse, CheckStatusErrorData]] = O
         required=True,
     ),
     accepted_content_encodings=('gzip',),
-    codecs=CheckStatusRequestCodecs,
 )
 
 OPERATION_10: Final[OperationPlan[ReopenEventsResponse, ReopenEventsErrorData]] = OperationPlan(
@@ -403,7 +381,6 @@ OPERATION_10: Final[OperationPlan[ReopenEventsResponse, ReopenEventsErrorData]] 
             encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
         ),
     ),
-    codecs=ReopenEventsRequestCodecs,
 )
 
 OPERATION_11: Final[OperationPlan[WatchResponse, WatchErrorData]] = OperationPlan(
@@ -446,5 +423,4 @@ OPERATION_11: Final[OperationPlan[WatchResponse, WatchErrorData]] = OperationPla
         required=True,
     ),
     accepted_content_encodings=('gzip',),
-    codecs=WatchRequestCodecs,
 )

@@ -21,8 +21,8 @@ from typing_extensions import Never
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...bodies import AsyncMultipartBody, FormData, MultipartBody, MultipartData
-from ...model_codecs import ModelValue, RequestMedia, ResponseMedia, WireValue
+from ...bodies import AsyncMultipartBody, FormData, MultipartData
+from ...model_codecs import ModelValue, WireValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.forms import (
@@ -73,8 +73,8 @@ class AsyncFormsResource:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
-        response_media_type: Literal['application/x-www-form-urlencoded'] | ResponseMedia[SubmitFormResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitFormResponse:
         """Call POST /forms."""
@@ -91,7 +91,7 @@ class AsyncFormsResource:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitProfileResponse:
         """Call POST /profiles."""
@@ -106,7 +106,7 @@ class AsyncFormsResource:
     async def read_profile(
         self,
         *,
-        response_media_type: Literal['multipart/form-data'] | ResponseMedia[ReadProfileResponse] | None = None,
+        response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadProfileResponse:
         """Call GET /profiles."""
@@ -121,7 +121,7 @@ class AsyncFormsResource:
         self,
         *,
         body: _dcg_type_2 | ModelValue[_dcg_type_2],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAnythingResponse:
         """Call POST /anything."""
@@ -137,7 +137,7 @@ class AsyncFormsResource:
         self,
         *,
         body: AsyncMultipartBody[str] | Unset = UNSET,
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str], AsyncMultipartBody[str]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitPartsResponse:
         """Call POST /attachments."""
@@ -160,20 +160,20 @@ class AsyncFormsResource:
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed'] | ResponseMedia[MultipartData[bytes]],
+        response_media_type: Literal['multipart/mixed'],
         options: RequestOptions | None = None,
     ) -> MultipartData[bytes]: ...
     @overload
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/form-data'] | ResponseMedia[_dcg_type_3],
+        response_media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> _dcg_type_3: ...
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | ResponseMedia[MultipartData[bytes]] | ResponseMedia[_dcg_type_3] | None = None,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadPartsResponse:
         """Call GET /attachments."""
@@ -188,8 +188,8 @@ class AsyncFormsResource:
         self,
         *,
         body: FormData | Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[FormData, FormData] | None = None,
-        response_media_type: Literal['application/x-www-form-urlencoded'] | ResponseMedia[SubmitPairsResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitPairsResponse:
         """Call POST /pairs."""
@@ -206,7 +206,7 @@ class AsyncFormsResource:
         self,
         *,
         body: AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]], AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitUploadResponse:
         """Call POST /uploads."""
@@ -221,7 +221,7 @@ class AsyncFormsResource:
     async def read_upload(
         self,
         *,
-        response_media_type: Literal['multipart/form-data'] | ResponseMedia[ReadUploadResponse] | None = None,
+        response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadUploadResponse:
         """Call GET /uploads."""
@@ -237,7 +237,7 @@ class AsyncFormsResource:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]],
+        media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse: ...
     @overload
@@ -245,7 +245,7 @@ class AsyncFormsResource:
         self,
         *,
         body: _dcg_type_4 | ModelValue[_dcg_type_4],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse: ...
     @overload
@@ -260,7 +260,7 @@ class AsyncFormsResource:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        media_type: Literal['multipart/form-data', 'application/json'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
+        media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse:
         """Call POST /avatars."""
@@ -276,7 +276,7 @@ class AsyncFormsResource:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str]] | Unset = UNSET,
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitScansResponse:
         """Call POST /scans."""
@@ -292,7 +292,7 @@ class AsyncFormsResource:
         self,
         *,
         body: AsyncMultipartBody[Never],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[Never], AsyncMultipartBody[Never]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitPhotosResponse:
         """Call POST /photos."""
@@ -308,7 +308,7 @@ class AsyncFormsResource:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str]],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitLabelsResponse:
         """Call POST /labels."""
@@ -324,7 +324,7 @@ class AsyncFormsResource:
         self,
         *,
         body: _dcg_type_5 | ModelValue[_dcg_type_5],
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitSearchResponse:
         """Call POST /searches."""
@@ -340,7 +340,7 @@ class AsyncFormsResource:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue], AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitCoverResponse:
         """Call POST /covers."""
@@ -356,7 +356,7 @@ class AsyncFormsResource:
         self,
         *,
         body: _dcg_type_7 | ModelValue[_dcg_type_7],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitCardResponse:
         """Call POST /cards."""
@@ -372,7 +372,7 @@ class AsyncFormsResource:
         self,
         *,
         body: _dcg_type_8 | ModelValue[_dcg_type_8],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitStickersResponse:
         """Call POST /stickers."""
@@ -388,7 +388,7 @@ class AsyncFormsResource:
         self,
         *,
         body: AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue], AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAlbumResponse:
         """Call POST /albums."""
@@ -412,8 +412,8 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
-        response_media_type: Literal['application/x-www-form-urlencoded'] | ResponseMedia[SubmitFormResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitFormResponse]:
         """Call POST /forms."""
@@ -430,7 +430,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitProfileResponse]:
         """Call POST /profiles."""
@@ -445,7 +445,7 @@ class AsyncFormsWithResponse:
     async def read_profile(
         self,
         *,
-        response_media_type: Literal['multipart/form-data'] | ResponseMedia[ReadProfileResponse] | None = None,
+        response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadProfileResponse]:
         """Call GET /profiles."""
@@ -460,7 +460,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: _dcg_type_2 | ModelValue[_dcg_type_2],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAnythingResponse]:
         """Call POST /anything."""
@@ -476,7 +476,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: AsyncMultipartBody[str] | Unset = UNSET,
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str], AsyncMultipartBody[str]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitPartsResponse]:
         """Call POST /attachments."""
@@ -499,20 +499,20 @@ class AsyncFormsWithResponse:
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed'] | ResponseMedia[MultipartData[bytes]],
+        response_media_type: Literal['multipart/mixed'],
         options: RequestOptions | None = None,
     ) -> Response[MultipartData[bytes]]: ...
     @overload
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/form-data'] | ResponseMedia[_dcg_type_3],
+        response_media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> Response[_dcg_type_3]: ...
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | ResponseMedia[MultipartData[bytes]] | ResponseMedia[_dcg_type_3] | None = None,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadPartsResponse]:
         """Call GET /attachments."""
@@ -527,8 +527,8 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: FormData | Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[FormData, FormData] | None = None,
-        response_media_type: Literal['application/x-www-form-urlencoded'] | ResponseMedia[SubmitPairsResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitPairsResponse]:
         """Call POST /pairs."""
@@ -545,7 +545,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]], AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitUploadResponse]:
         """Call POST /uploads."""
@@ -560,7 +560,7 @@ class AsyncFormsWithResponse:
     async def read_upload(
         self,
         *,
-        response_media_type: Literal['multipart/form-data'] | ResponseMedia[ReadUploadResponse] | None = None,
+        response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadUploadResponse]:
         """Call GET /uploads."""
@@ -576,7 +576,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]],
+        media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]: ...
     @overload
@@ -584,7 +584,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: _dcg_type_4 | ModelValue[_dcg_type_4],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]: ...
     @overload
@@ -599,7 +599,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        media_type: Literal['multipart/form-data', 'application/json'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
+        media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]:
         """Call POST /avatars."""
@@ -615,7 +615,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str]] | Unset = UNSET,
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitScansResponse]:
         """Call POST /scans."""
@@ -631,7 +631,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: AsyncMultipartBody[Never],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[Never], AsyncMultipartBody[Never]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitPhotosResponse]:
         """Call POST /photos."""
@@ -647,7 +647,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str]],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitLabelsResponse]:
         """Call POST /labels."""
@@ -663,7 +663,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: _dcg_type_5 | ModelValue[_dcg_type_5],
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitSearchResponse]:
         """Call POST /searches."""
@@ -679,7 +679,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue], AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitCoverResponse]:
         """Call POST /covers."""
@@ -695,7 +695,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: _dcg_type_7 | ModelValue[_dcg_type_7],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitCardResponse]:
         """Call POST /cards."""
@@ -711,7 +711,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: _dcg_type_8 | ModelValue[_dcg_type_8],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitStickersResponse]:
         """Call POST /stickers."""
@@ -727,7 +727,7 @@ class AsyncFormsWithResponse:
         self,
         *,
         body: AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue], AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAlbumResponse]:
         """Call POST /albums."""
@@ -751,8 +751,8 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
-        response_media_type: Literal['application/x-www-form-urlencoded'] | ResponseMedia[SubmitFormResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /forms."""
@@ -769,7 +769,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /profiles."""
@@ -784,7 +784,7 @@ class AsyncFormsWithRawResponse:
     async def read_profile(
         self,
         *,
-        response_media_type: Literal['multipart/form-data'] | ResponseMedia[ReadProfileResponse] | None = None,
+        response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /profiles."""
@@ -799,7 +799,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: _dcg_type_2 | ModelValue[_dcg_type_2],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /anything."""
@@ -815,7 +815,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: AsyncMultipartBody[str] | Unset = UNSET,
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str], AsyncMultipartBody[str]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /attachments."""
@@ -830,7 +830,7 @@ class AsyncFormsWithRawResponse:
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | ResponseMedia[MultipartData[bytes]] | ResponseMedia[_dcg_type_3] | None = None,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /attachments."""
@@ -845,8 +845,8 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: FormData | Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[FormData, FormData] | None = None,
-        response_media_type: Literal['application/x-www-form-urlencoded'] | ResponseMedia[SubmitPairsResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /pairs."""
@@ -863,7 +863,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]], AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /uploads."""
@@ -878,7 +878,7 @@ class AsyncFormsWithRawResponse:
     async def read_upload(
         self,
         *,
-        response_media_type: Literal['multipart/form-data'] | ResponseMedia[ReadUploadResponse] | None = None,
+        response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /uploads."""
@@ -894,7 +894,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]],
+        media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     @overload
@@ -902,7 +902,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: _dcg_type_4 | ModelValue[_dcg_type_4],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     @overload
@@ -917,7 +917,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        media_type: Literal['multipart/form-data', 'application/json'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
+        media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /avatars."""
@@ -933,7 +933,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str]] | Unset = UNSET,
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /scans."""
@@ -949,7 +949,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: AsyncMultipartBody[Never],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[Never], AsyncMultipartBody[Never]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /photos."""
@@ -965,7 +965,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str]],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /labels."""
@@ -981,7 +981,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: _dcg_type_5 | ModelValue[_dcg_type_5],
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /searches."""
@@ -997,7 +997,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue], AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /covers."""
@@ -1013,7 +1013,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: _dcg_type_7 | ModelValue[_dcg_type_7],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /cards."""
@@ -1029,7 +1029,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: _dcg_type_8 | ModelValue[_dcg_type_8],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /stickers."""
@@ -1045,7 +1045,7 @@ class AsyncFormsWithRawResponse:
         self,
         *,
         body: AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue], AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /albums."""
@@ -1069,8 +1069,8 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: _dcg_type_0 | ModelValue[_dcg_type_0],
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
-        response_media_type: Literal['application/x-www-form-urlencoded'] | ResponseMedia[SubmitFormResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /forms."""
@@ -1087,7 +1087,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: _dcg_type_1 | ModelValue[_dcg_type_1],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /profiles."""
@@ -1102,7 +1102,7 @@ class AsyncFormsWithStreamingResponse:
     def read_profile(
         self,
         *,
-        response_media_type: Literal['multipart/form-data'] | ResponseMedia[ReadProfileResponse] | None = None,
+        response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /profiles."""
@@ -1117,7 +1117,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: _dcg_type_2 | ModelValue[_dcg_type_2],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /anything."""
@@ -1133,7 +1133,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: AsyncMultipartBody[str] | Unset = UNSET,
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str], AsyncMultipartBody[str]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /attachments."""
@@ -1148,7 +1148,7 @@ class AsyncFormsWithStreamingResponse:
     def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | ResponseMedia[MultipartData[bytes]] | ResponseMedia[_dcg_type_3] | None = None,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /attachments."""
@@ -1163,8 +1163,8 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: FormData | Unset = UNSET,
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[FormData, FormData] | None = None,
-        response_media_type: Literal['application/x-www-form-urlencoded'] | ResponseMedia[SubmitPairsResponse] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /pairs."""
@@ -1181,7 +1181,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]], AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /uploads."""
@@ -1196,7 +1196,7 @@ class AsyncFormsWithStreamingResponse:
     def read_upload(
         self,
         *,
-        response_media_type: Literal['multipart/form-data'] | ResponseMedia[ReadUploadResponse] | None = None,
+        response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /uploads."""
@@ -1212,7 +1212,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]],
+        media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     @overload
@@ -1220,7 +1220,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: _dcg_type_4 | ModelValue[_dcg_type_4],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]],
+        media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     @overload
@@ -1235,7 +1235,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
-        media_type: Literal['multipart/form-data', 'application/json'] | RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
+        media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /avatars."""
@@ -1251,7 +1251,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str]] | Unset = UNSET,
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /scans."""
@@ -1267,7 +1267,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: AsyncMultipartBody[Never],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[Never], AsyncMultipartBody[Never]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /photos."""
@@ -1283,7 +1283,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str]],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /labels."""
@@ -1299,7 +1299,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: _dcg_type_5 | ModelValue[_dcg_type_5],
-        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /searches."""
@@ -1315,7 +1315,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue], AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /covers."""
@@ -1331,7 +1331,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: _dcg_type_7 | ModelValue[_dcg_type_7],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /cards."""
@@ -1347,7 +1347,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: _dcg_type_8 | ModelValue[_dcg_type_8],
-        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /stickers."""
@@ -1363,7 +1363,7 @@ class AsyncFormsWithStreamingResponse:
         self,
         *,
         body: AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue], AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue]] | None = None,
+        media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /albums."""

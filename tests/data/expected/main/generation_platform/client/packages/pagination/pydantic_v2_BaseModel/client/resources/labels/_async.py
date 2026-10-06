@@ -12,7 +12,7 @@ from models import FieldLabelsGetQueryAfterParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue, ResponseMedia
+from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.labels import ListLabelSetsResponse, ListLabelsResponse
@@ -44,7 +44,7 @@ class AsyncLabelsResource:
         self,
         *,
         after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelsResponse:
         """Call GET /labels."""
@@ -59,7 +59,7 @@ class AsyncLabelsResource:
         self,
         *,
         after: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelSetsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelSetsResponse:
         """Call GET /label-sets."""
@@ -82,7 +82,7 @@ class AsyncLabelsWithResponse:
         self,
         *,
         after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelsResponse]:
         """Call GET /labels."""
@@ -97,7 +97,7 @@ class AsyncLabelsWithResponse:
         self,
         *,
         after: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelSetsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelSetsResponse]:
         """Call GET /label-sets."""
@@ -120,7 +120,7 @@ class AsyncLabelsWithRawResponse:
         self,
         *,
         after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /labels."""
@@ -135,7 +135,7 @@ class AsyncLabelsWithRawResponse:
         self,
         *,
         after: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelSetsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /label-sets."""
@@ -158,7 +158,7 @@ class AsyncLabelsWithStreamingResponse:
         self,
         *,
         after: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /labels."""
@@ -173,7 +173,7 @@ class AsyncLabelsWithStreamingResponse:
         self,
         *,
         after: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | ResponseMedia[ListLabelSetsResponse] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /label-sets."""

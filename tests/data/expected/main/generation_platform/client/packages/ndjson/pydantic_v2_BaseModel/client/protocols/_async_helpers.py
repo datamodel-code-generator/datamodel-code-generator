@@ -14,7 +14,7 @@ from models import SearchQuery as _dcg_type_4
 
 from .._runtime.client.client import AsyncClientCore
 from .._runtime.protocols.streams import AsyncEventStream, UnknownEvent, aopen_events
-from ..model_codecs import ModelValue, RequestMedia
+from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from . import StreamOptions, _plans
 
@@ -162,7 +162,7 @@ class AsyncSearchAllNdjson:
         self,
         *,
         body: _dcg_type_4 | ModelValue[_dcg_type_4],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
+        media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

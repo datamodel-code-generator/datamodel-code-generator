@@ -4,11 +4,9 @@
 from ._operations import (
     LookupErrorData,
     LookupHTTPError,
-    LookupRequestCodecs,
     LookupResponse,
     SearchErrorData,
     SearchHTTPError,
-    SearchRequestCodecs,
     SearchResponse,
     decode_search_header,
 )
@@ -16,11 +14,9 @@ from ._operations import (
 __all__ = [
     'LookupErrorData',
     'LookupHTTPError',
-    'LookupRequestCodecs',
     'LookupResponse',
     'SearchErrorData',
     'SearchHTTPError',
-    'SearchRequestCodecs',
     'SearchResponse',
     'decode_search_header',
 ]

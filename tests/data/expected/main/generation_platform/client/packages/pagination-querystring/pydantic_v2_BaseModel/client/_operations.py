@@ -19,11 +19,9 @@ from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.default import (
     LookupErrorData,
     LookupHTTPError,
-    LookupRequestCodecs,
     LookupResponse,
     SearchErrorData,
     SearchHTTPError,
-    SearchRequestCodecs,
     SearchResponse,
 )
 
@@ -58,7 +56,6 @@ OPERATION_0: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
             encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
         ),
     ),
-    codecs=SearchRequestCodecs,
 )
 
 OPERATION_1: Final[OperationPlan[LookupResponse, LookupErrorData]] = OperationPlan(
@@ -88,5 +85,4 @@ OPERATION_1: Final[OperationPlan[LookupResponse, LookupErrorData]] = OperationPl
             encoder=Encoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
         ),
     ),
-    codecs=LookupRequestCodecs,
 )

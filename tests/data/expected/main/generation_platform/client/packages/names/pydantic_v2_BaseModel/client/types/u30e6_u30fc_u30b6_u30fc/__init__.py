@@ -4,13 +4,11 @@
 from ._operations import (
     HttpGetUsersErrorData,
     HttpGetUsersHTTPError,
-    HttpGetUsersRequestCodecs,
     HttpGetUsersResponse,
 )
 
 __all__ = [
     'HttpGetUsersErrorData',
     'HttpGetUsersHTTPError',
-    'HttpGetUsersRequestCodecs',
     'HttpGetUsersResponse',
 ]

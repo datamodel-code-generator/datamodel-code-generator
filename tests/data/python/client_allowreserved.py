@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 import sys
 from functools import partial
@@ -10,7 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from tests.data.python.client_generation import SOURCE, Modules, generate_client, render_client
-from tests.data.python.client_runtime import _CALL_ID, Exchange, arecord, raw_response, record, run
+from tests.data.python.client_runtime import _CALL_ID, Exchange, arecord, argument, raw_response, record, run
 from tests.data.python.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
@@ -47,11 +46,9 @@ def reserved_version_report(case: str, version: str, backends: Sequence[str], ro
 
 
 def _arguments(package: ModuleType, vector: dict[str, Any]) -> dict[str, object]:
-    """Construct public parameter snapshots with each generated backend's request codec."""
-    types = importlib.import_module(f"{package.__name__}.types.wire")
-    codec = getattr(types, f"{''.join(part.title() for part in vector['method'].split('_'))}RequestCodecs")
+    """Construct native parameters with the shared generated-client argument builder."""
     return {
-        item["argument"]: codec.parameter(location=item["location"], name=item["name"]).from_wire(item["value"])
+        item["argument"]: argument(package, vector["operation"], item["location"], item["name"], item["value"])
         for item in vector["parameters"]
     }
 

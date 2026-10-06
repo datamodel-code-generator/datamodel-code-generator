@@ -18,39 +18,30 @@ from ._runtime.client.retry import IdempotencyPlan
 from .types.retry import (
     GetKeyedSafeErrorData,
     GetKeyedSafeHTTPError,
-    GetKeyedSafeRequestCodecs,
     GetKeyedSafeResponse,
     GetNeverErrorData,
     GetNeverHTTPError,
-    GetNeverRequestCodecs,
     GetNeverResponse,
     GetSafeErrorData,
     GetSafeHTTPError,
-    GetSafeRequestCodecs,
     GetSafeResponse,
     GetVendorErrorData,
     GetVendorHTTPError,
-    GetVendorRequestCodecs,
     GetVendorResponse,
     PostIdempotentErrorData,
     PostIdempotentHTTPError,
-    PostIdempotentRequestCodecs,
     PostIdempotentResponse,
     PostKeyedErrorData,
     PostKeyedHTTPError,
-    PostKeyedRequestCodecs,
     PostKeyedResponse,
     PostKeyOnlyErrorData,
     PostKeyOnlyHTTPError,
-    PostKeyOnlyRequestCodecs,
     PostKeyOnlyResponse,
     PostNeverErrorData,
     PostNeverHTTPError,
-    PostNeverRequestCodecs,
     PostNeverResponse,
     PostUnsafeErrorData,
     PostUnsafeHTTPError,
-    PostUnsafeRequestCodecs,
     PostUnsafeResponse,
 )
 
@@ -86,7 +77,6 @@ OPERATION_0: Final[OperationPlan[GetSafeResponse, GetSafeErrorData]] = Operation
         ),
         GetSafeHTTPError,
     ),
-    codecs=GetSafeRequestCodecs,
 )
 
 OPERATION_1: Final[OperationPlan[PostUnsafeResponse, PostUnsafeErrorData]] = OperationPlan(
@@ -123,7 +113,6 @@ OPERATION_1: Final[OperationPlan[PostUnsafeResponse, PostUnsafeErrorData]] = Ope
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
         default='application/octet-stream',
     ),
-    codecs=PostUnsafeRequestCodecs,
 )
 
 OPERATION_2: Final[OperationPlan[PostIdempotentResponse, PostIdempotentErrorData]] = OperationPlan(
@@ -161,7 +150,6 @@ OPERATION_2: Final[OperationPlan[PostIdempotentResponse, PostIdempotentErrorData
         default='application/octet-stream',
     ),
     retry_safety='idempotent',
-    codecs=PostIdempotentRequestCodecs,
 )
 
 OPERATION_3: Final[OperationPlan[PostKeyedResponse, PostKeyedErrorData]] = OperationPlan(
@@ -199,7 +187,6 @@ OPERATION_3: Final[OperationPlan[PostKeyedResponse, PostKeyedErrorData]] = Opera
         default='application/octet-stream',
     ),
     idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
-    codecs=PostKeyedRequestCodecs,
 )
 
 OPERATION_4: Final[OperationPlan[PostKeyOnlyResponse, PostKeyOnlyErrorData]] = OperationPlan(
@@ -237,7 +224,6 @@ OPERATION_4: Final[OperationPlan[PostKeyOnlyResponse, PostKeyOnlyErrorData]] = O
         default='application/octet-stream',
     ),
     idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
-    codecs=PostKeyOnlyRequestCodecs,
 )
 
 OPERATION_5: Final[OperationPlan[GetNeverResponse, GetNeverErrorData]] = OperationPlan(
@@ -271,7 +257,6 @@ OPERATION_5: Final[OperationPlan[GetNeverResponse, GetNeverErrorData]] = Operati
         GetNeverHTTPError,
     ),
     retry_safety='never',
-    codecs=GetNeverRequestCodecs,
 )
 
 OPERATION_6: Final[OperationPlan[PostNeverResponse, PostNeverErrorData]] = OperationPlan(
@@ -309,7 +294,6 @@ OPERATION_6: Final[OperationPlan[PostNeverResponse, PostNeverErrorData]] = Opera
         default='application/octet-stream',
     ),
     retry_safety='never',
-    codecs=PostNeverRequestCodecs,
 )
 
 OPERATION_7: Final[OperationPlan[GetVendorResponse, GetVendorErrorData]] = OperationPlan(
@@ -344,7 +328,6 @@ OPERATION_7: Final[OperationPlan[GetVendorResponse, GetVendorErrorData]] = Opera
     ),
     retry_after_ms_header='X-Retry-In-Ms',
     should_retry_header='X-Retry-Permitted',
-    codecs=GetVendorRequestCodecs,
 )
 
 OPERATION_8: Final[OperationPlan[GetKeyedSafeResponse, GetKeyedSafeErrorData]] = OperationPlan(
@@ -378,5 +361,4 @@ OPERATION_8: Final[OperationPlan[GetKeyedSafeResponse, GetKeyedSafeErrorData]] =
         GetKeyedSafeHTTPError,
     ),
     idempotency=IdempotencyPlan(header_name='Idempotency-Key'),
-    codecs=GetKeyedSafeRequestCodecs,
 )

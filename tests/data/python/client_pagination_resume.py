@@ -335,7 +335,7 @@ def _body(harness: Harness, operation_id: str, wire: object) -> object:
 
 
 def _requests(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Save encoded arguments and selected media, and refuse cookies."""
+    """Save encoded arguments and a concrete media type sent, and refuse cookies."""
     protocols = harness.protocols
     helper = api.protocols.users.all
     limit = harness.argument("listUsers", "query", "limit", 2)
@@ -349,16 +349,14 @@ def _requests(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     lines.append(f"  cookie limit ! {describe(error)} {_resume_state(error)}")
     searches = api.protocols.searches.all
     record(lines, "body its codec refuses", searches.iterate(body=5).checkpoint)
-    types = importlib.import_module(f"{harness.package.__name__}.types.searches")
-    selector = types.SearchRequestCodecs.select_request_media(
-        declared_media="application/json", concrete_media="application/json; charset=utf-8"
-    )
     exchange.respond(user_page("1", next_cursor="c1"), user_page("2"))
-    selected = searches.iterate(body=_body(harness, "search", {"query": "a"}), media_type=selector)
-    _taken(lines, "selected media first", selected, 1)
-    state = selected.checkpoint()
-    _saved(lines, "selected media", state)
-    drained(lines, "resumed selected media", searches.resume(state))
+    concrete = searches.iterate(
+        body=_body(harness, "search", {"query": "a"}), media_type="application/json; charset=utf-8"
+    )
+    _taken(lines, "concrete media first", concrete, 1)
+    state = concrete.checkpoint()
+    _saved(lines, "concrete media", state)
+    drained(lines, "resumed concrete media", searches.resume(state))
     record(lines, "not a state", lambda: helper.resume(b"state"))
     record(lines, "another helper's state", lambda: api.protocols.users.snapshot.resume(helper.iterate().checkpoint()))
 
@@ -455,7 +453,8 @@ def _validated(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
     saved = searches.iterate(body=_body(harness, "search", {"query": "a"})).checkpoint()
     for label, path, value in (
         ("body its schema refuses", ("body", 0), {"query": 5, "extra": "x"}),
-        ("media type its selector refuses", ("body", 2), "text/plain"),
+        ("concrete media type outside its declared one", ("body", 2), "text/plain"),
+        ("concrete media type of another declared one", ("body",), [{"query": "a"}, "text/plain", "application/json"]),
         ("unparsable media type", ("body", 2), "%%%"),
         ("media type with a line break", ("body", 2), "application/json\r\nX-Injected: 1"),
     ):
