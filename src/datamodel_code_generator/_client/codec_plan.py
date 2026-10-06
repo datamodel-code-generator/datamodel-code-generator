@@ -339,7 +339,9 @@ class _Planner:
         models = [
             member.symbol
             for member, shape in shapes
-            if isinstance(member, GeneratedSymbolType) and isinstance(shape, Class) and member.symbol in self.models
+            if isinstance(member, GeneratedSymbolType)
+            and isinstance(shape, Class)
+            and (member.symbol in self.models or member.symbol in self.building)
         ]
         model_shapes = [Class(GeneratedSymbolType(symbol)) for symbol in models]
         kinds: dict[JSONKind, Shape] = {}
