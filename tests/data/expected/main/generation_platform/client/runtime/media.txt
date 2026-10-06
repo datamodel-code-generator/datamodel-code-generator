@@ -92,7 +92,7 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   range store_file streaming = b'jpeg'
-  response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
+  response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='storeFile', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   range bodyless = None
@@ -108,7 +108,7 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   async range store_file streaming = b'jpeg'
-  async response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
+  async response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='storeFile', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
 # media dataclasses.dataclass
   > POST https://media.example.com/api/forms
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
@@ -203,7 +203,7 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   range store_file streaming = b'jpeg'
-  response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
+  response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='storeFile', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   range bodyless = None
@@ -219,4 +219,4 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/jpeg, content-type: image/jpeg, content-length: 5] b'image'
   async range store_file streaming = b'jpeg'
-  async response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='response_media_type', condition='undeclared') [operation_id='storeFile', field_path=('response_media_type',), condition='undeclared'] configuration_error
+  async response wildcard rejected store_file ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', reason='undeclared', field_path='response_media_type') [operation_id='storeFile', field_path=('response_media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] undeclared
