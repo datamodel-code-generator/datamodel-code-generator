@@ -16,7 +16,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['write']
+  14 runtime modules ['write']
 publish
 remove server/routers/store.py
 render
@@ -35,7 +35,7 @@ render
   unchanged target server/py.typed (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['unchanged']
+  14 runtime modules ['unchanged']
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is excluded by exclude_tags 'store': Orders move to their own service
 restore server/routers/store.py
 render
@@ -55,7 +55,7 @@ render
   delete target server/routers/store.py (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['unchanged']
+  14 runtime modules ['unchanged']
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is excluded by exclude_tags 'store': Orders move to their own service
 publish
 {
@@ -315,5 +315,5 @@ render
   unchanged target server/py.typed (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  13 runtime modules ['unchanged']
+  14 runtime modules ['unchanged']
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is excluded by exclude_tags 'store': Orders move to their own service

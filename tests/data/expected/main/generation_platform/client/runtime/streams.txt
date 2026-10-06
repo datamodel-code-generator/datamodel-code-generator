@@ -105,7 +105,7 @@
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Created
 id
   Field required [type=missing, input_value={'type': 'created'}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.12/v/missing] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   malformed discriminator JSON
   < closed
@@ -115,21 +115,21 @@ id
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=1 validation error for Message
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
-    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   refused by its type
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
 text
   Input should be a valid string [type=string_type, input_value=5, input_type=int]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/string_type] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   refused natively
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
 text
   Field required [type=missing, input_value={}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.12/v/missing] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   < closed
   large event raw prefix 65536 truncated=True
@@ -250,7 +250,7 @@ text
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
 text
   Field required [type=missing, input_value={}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.12/v/missing] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   hooked early close after 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
@@ -332,7 +332,7 @@ text
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=1 validation error for Message
 text
   Field required [type=missing, input_value={}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.12/v/missing] stream_decode_error
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   async hooked early close after 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed

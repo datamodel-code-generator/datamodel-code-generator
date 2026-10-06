@@ -30,7 +30,8 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Iterator
     from typing import Any, Protocol
 
-    from ..model_codecs.media import JSONValue, LexicalKind
+    from ..model_codecs.media import LexicalKind
+    from ..model_codecs.plain import JSONValue
     from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, SyncBinaryBody
 
     class PartCodec(Protocol):

@@ -15,7 +15,7 @@ from typing_extensions import TypeAliasType, TypeIs
 if TYPE_CHECKING:
     from typing import TypeAlias
 
-    from .media import JSONValue as NativeJSON
+    from .plain import JSONValue as NativeJSON
 
     JSONScalar: TypeAlias = bool | str | int | float | Decimal | None
     JSONValue: TypeAlias = JSONScalar | list["JSONValue"] | tuple["JSONValue", ...] | dict[str, "JSONValue"]
