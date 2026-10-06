@@ -216,7 +216,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 8] b'original'
   > GET https://api.example.com/done
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  unsent 303 hop never resends an unsafe POST = ('APIConnectionError', <DeliveryState.NOT_SENT: 'NOT_SENT'>, None, None, 1, 'ConnectError')
+  unsent 303 hop never resends an unsafe POST = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'ConnectError')
     unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, authorization: original-secret, proxy-authorization: proxy-secret, cookie: private=1] b''
