@@ -11,16 +11,15 @@ from models import FieldOwnersPostRequest as _dcg_type_10
 from models import FieldPetsPetIdLabelsPutPathPetIdParameter as _dcg_type_11
 from models import FieldPetsPetIdOwnerPutPathPetIdParameter as _dcg_type_9
 from models import FieldPetsPetIdPatchPathPetIdParameter as _dcg_type_5
-from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_14
-from models import FieldPetsPetIdRecordsPutPathPetIdParameter as _dcg_type_15
+from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_13
+from models import FieldPetsPetIdRecordsPutPathPetIdParameter as _dcg_type_14
 from models import FieldPetsPetIdVisitsPostPathPetIdParameter as _dcg_type_7
 from models import FieldPetsPostQueryTagParameter as _dcg_type_0
-from models import FieldSearchPostRequest as _dcg_type_13
 from models import Kind as _dcg_type_3
 from models import Labels as _dcg_type_12
 from models import NewPet as _dcg_type_1
 from models import Owner as _dcg_type_4
-from models import Pet as _dcg_type_16
+from models import Pet as _dcg_type_15
 from models import PetForm as _dcg_type_2
 from models import PetPatch as _dcg_type_6
 from models import Visit as _dcg_type_8
@@ -28,7 +27,7 @@ from models import Visit as _dcg_type_8
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncMultipartBody
-from ...model_codecs import WireValue
+from ...model_codecs import JSONValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.default import (
@@ -38,7 +37,6 @@ from ...types.default import (
     PutLabelsResponse,
     PutPhotoResponse,
     ReplacePetResponse,
-    SearchPetsResponse,
     SetOwnerResponse,
     UpdatePetResponse,
 )
@@ -346,53 +344,17 @@ class AsyncDefaultResource:
             options=options,
         )).data
 
-    @overload
-    async def search_pets(
-        self,
-        *,
-        body: _dcg_type_13,
-        media_type: Literal['application/json'],
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> SearchPetsResponse: ...
-    @overload
-    async def search_pets(
-        self,
-        *,
-        body: str,
-        media_type: Literal['text/plain'],
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> SearchPetsResponse: ...
-    async def search_pets(
-        self,
-        *,
-        body: _dcg_type_13 | str,
-        media_type: Literal['application/json', 'text/plain'] | None = None,
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> SearchPetsResponse:
-        """Call POST /search."""
-        return (await self._core.execute(
-            _operations.OPERATION_6,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
-
     async def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14,
-        body: AsyncMultipartBody[str | WireValue],
+        pet_id: _dcg_type_13,
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutPhotoResponse:
         """Call PUT /pets/{petId}/photo."""
         return (await self._core.execute(
-            _operations.OPERATION_7,
+            _operations.OPERATION_6,
             (pet_id,),
             body=body,
             media_type=media_type,
@@ -403,8 +365,8 @@ class AsyncDefaultResource:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16,
+        pet_id: _dcg_type_14,
+        body: _dcg_type_15,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -414,7 +376,7 @@ class AsyncDefaultResource:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
+        pet_id: _dcg_type_14,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -424,8 +386,8 @@ class AsyncDefaultResource:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16 | Unset = UNSET,
+        pet_id: _dcg_type_14,
+        body: _dcg_type_15 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -433,7 +395,7 @@ class AsyncDefaultResource:
     ) -> ReplacePetResponse:
         """Call PUT /pets/{petId}/records."""
         return (await self._core.execute(
-            _operations.OPERATION_8,
+            _operations.OPERATION_7,
             (pet_id,),
             body=body,
             fields=(name, tag),
@@ -729,53 +691,17 @@ class AsyncDefaultWithResponse:
             options=options,
         )
 
-    @overload
-    async def search_pets(
-        self,
-        *,
-        body: _dcg_type_13,
-        media_type: Literal['application/json'],
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> Response[SearchPetsResponse]: ...
-    @overload
-    async def search_pets(
-        self,
-        *,
-        body: str,
-        media_type: Literal['text/plain'],
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> Response[SearchPetsResponse]: ...
-    async def search_pets(
-        self,
-        *,
-        body: _dcg_type_13 | str,
-        media_type: Literal['application/json', 'text/plain'] | None = None,
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> Response[SearchPetsResponse]:
-        """Call POST /search."""
-        return await self._core.execute(
-            _operations.OPERATION_6,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )
-
     async def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14,
-        body: AsyncMultipartBody[str | WireValue],
+        pet_id: _dcg_type_13,
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutPhotoResponse]:
         """Call PUT /pets/{petId}/photo."""
         return await self._core.execute(
-            _operations.OPERATION_7,
+            _operations.OPERATION_6,
             (pet_id,),
             body=body,
             media_type=media_type,
@@ -786,8 +712,8 @@ class AsyncDefaultWithResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16,
+        pet_id: _dcg_type_14,
+        body: _dcg_type_15,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -797,7 +723,7 @@ class AsyncDefaultWithResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
+        pet_id: _dcg_type_14,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -807,8 +733,8 @@ class AsyncDefaultWithResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16 | Unset = UNSET,
+        pet_id: _dcg_type_14,
+        body: _dcg_type_15 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -816,7 +742,7 @@ class AsyncDefaultWithResponse:
     ) -> Response[ReplacePetResponse]:
         """Call PUT /pets/{petId}/records."""
         return await self._core.execute(
-            _operations.OPERATION_8,
+            _operations.OPERATION_7,
             (pet_id,),
             body=body,
             fields=(name, tag),
@@ -1112,53 +1038,17 @@ class AsyncDefaultWithRawResponse:
             options=options,
         )
 
-    @overload
-    async def search_pets(
-        self,
-        *,
-        body: _dcg_type_13,
-        media_type: Literal['application/json'],
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> AsyncRawResponse: ...
-    @overload
-    async def search_pets(
-        self,
-        *,
-        body: str,
-        media_type: Literal['text/plain'],
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> AsyncRawResponse: ...
-    async def search_pets(
-        self,
-        *,
-        body: _dcg_type_13 | str,
-        media_type: Literal['application/json', 'text/plain'] | None = None,
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> AsyncRawResponse:
-        """Call POST /search."""
-        return await self._core.execute_raw(
-            _operations.OPERATION_6,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )
-
     async def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14,
-        body: AsyncMultipartBody[str | WireValue],
+        pet_id: _dcg_type_13,
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call PUT /pets/{petId}/photo."""
         return await self._core.execute_raw(
-            _operations.OPERATION_7,
+            _operations.OPERATION_6,
             (pet_id,),
             body=body,
             media_type=media_type,
@@ -1169,8 +1059,8 @@ class AsyncDefaultWithRawResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16,
+        pet_id: _dcg_type_14,
+        body: _dcg_type_15,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1180,7 +1070,7 @@ class AsyncDefaultWithRawResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
+        pet_id: _dcg_type_14,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -1190,8 +1080,8 @@ class AsyncDefaultWithRawResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16 | Unset = UNSET,
+        pet_id: _dcg_type_14,
+        body: _dcg_type_15 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1199,7 +1089,7 @@ class AsyncDefaultWithRawResponse:
     ) -> AsyncRawResponse:
         """Call PUT /pets/{petId}/records."""
         return await self._core.execute_raw(
-            _operations.OPERATION_8,
+            _operations.OPERATION_7,
             (pet_id,),
             body=body,
             fields=(name, tag),
@@ -1495,53 +1385,17 @@ class AsyncDefaultWithStreamingResponse:
             options=options,
         )
 
-    @overload
-    def search_pets(
-        self,
-        *,
-        body: _dcg_type_13,
-        media_type: Literal['application/json'],
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
-    @overload
-    def search_pets(
-        self,
-        *,
-        body: str,
-        media_type: Literal['text/plain'],
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
-    def search_pets(
-        self,
-        *,
-        body: _dcg_type_13 | str,
-        media_type: Literal['application/json', 'text/plain'] | None = None,
-        response_media_type: Literal['application/json'] | None = None,
-        options: RequestOptions | None = None,
-    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /search."""
-        return self._core.stream(
-            _operations.OPERATION_6,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )
-
     def put_photo(
         self,
         *,
-        pet_id: _dcg_type_14,
-        body: AsyncMultipartBody[str | WireValue],
+        pet_id: _dcg_type_13,
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call PUT /pets/{petId}/photo."""
         return self._core.stream(
-            _operations.OPERATION_7,
+            _operations.OPERATION_6,
             (pet_id,),
             body=body,
             media_type=media_type,
@@ -1552,8 +1406,8 @@ class AsyncDefaultWithStreamingResponse:
     def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16,
+        pet_id: _dcg_type_14,
+        body: _dcg_type_15,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1563,7 +1417,7 @@ class AsyncDefaultWithStreamingResponse:
     def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
+        pet_id: _dcg_type_14,
         body: Unset = UNSET,
         name: str,
         tag: str | None | Unset = UNSET,
@@ -1573,8 +1427,8 @@ class AsyncDefaultWithStreamingResponse:
     def replace_pet(
         self,
         *,
-        pet_id: _dcg_type_15,
-        body: _dcg_type_16 | Unset = UNSET,
+        pet_id: _dcg_type_14,
+        body: _dcg_type_15 | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1582,7 +1436,7 @@ class AsyncDefaultWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call PUT /pets/{petId}/records."""
         return self._core.stream(
-            _operations.OPERATION_8,
+            _operations.OPERATION_7,
             (pet_id,),
             body=body,
             fields=(name, tag),

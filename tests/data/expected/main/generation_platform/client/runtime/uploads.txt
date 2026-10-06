@@ -273,7 +273,10 @@ probe responses without a usable offset
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
   > GET https://api.example.com/files/u23/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  advance with a null offset ! DecodeError: DecodeError(status_code=200, operation_id='getFileStatus', call_id='<call>', reason='invalid_value') [operation_id='getFileStatus', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"offset":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.int_type) at /offset')] invalid_value
+  advance with a null offset ! DecodeError: DecodeError(status_code=200, operation_id='getFileStatus', call_id='<call>', reason='invalid_value') [operation_id='getFileStatus', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"offset":null}', truncated=False, cause=1 validation error for Status
+offset
+  Input should be a valid integer [type=int_type, input_value=None, input_type=NoneType]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_type] invalid_value
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u24

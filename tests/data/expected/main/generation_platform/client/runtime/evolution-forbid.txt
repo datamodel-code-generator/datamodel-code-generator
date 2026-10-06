@@ -7,19 +7,37 @@
   order without its optional members = Order(id=1, status=<Status.closed: 'closed'>, note=None, channel=None, payment=None)
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order with a member added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","priority":2}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.extra_forbidden) at /priority')] invalid_value
+  order with a member added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","priority":2}', truncated=False, cause=1 validation error for Order
+priority
+  Extra inputs are not permitted [type=extra_forbidden, input_value=2, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden] invalid_value
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a status added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"archived"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.enum) at /status')] invalid_value
+  order of a status added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"archived"}', truncated=False, cause=1 validation error for Order
+status
+  Input should be 'open' or 'closed' [type=enum, input_value='archived', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/enum] invalid_value
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a payment kind added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","payment":{"kind":"crypto"}}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.union_tag_invalid) at /payment')] invalid_value
+  order of a payment kind added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","payment":{"kind":"crypto"}}', truncated=False, cause=1 validation error for Order
+payment
+  Input tag 'crypto' found using 'kind' does not match any of the expected tags: 'card', 'transfer' [type=union_tag_invalid, input_value={'kind': 'crypto'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/union_tag_invalid] invalid_value
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a card with a transfer's members ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","payment":{"kind":"card","iban":"X"}}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /payment')] invalid_value
+  order of a card with a transfer's members ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","payment":{"kind":"card","iban":"X"}}', truncated=False, cause=2 validation errors for Order
+payment.card.last4
+  Field required [type=missing, input_value={'kind': 'card', 'iban': 'X'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing
+payment.card.iban
+  Extra inputs are not permitted [type=extra_forbidden, input_value='X', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden] invalid_value
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a status that changed its type ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":3}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.enum) at /status')] invalid_value
+  order of a status that changed its type ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":3}', truncated=False, cause=1 validation error for Order
+status
+  Input should be 'open' or 'closed' [type=enum, input_value=3, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/enum] invalid_value
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   order of a status added since, read raw = {'id': 1, 'status': 'archived'}
@@ -28,7 +46,13 @@
   problem ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] conflict_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem that changed its shape ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body=b'{"message":"gone"}', body_bytes=b'{"message":"gone"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /code')] conflict_error
+  problem that changed its shape ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body=b'{"message":"gone"}', body_bytes=b'{"message":"gone"}', truncated=False, cause=2 validation errors for Problem
+code
+  Field required [type=missing, input_value={'message': 'gone'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing
+message
+  Extra inputs are not permitted [type=extra_forbidden, input_value='gone', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden] conflict_error
 # evolution-forbid msgspec.Struct
   > GET https://evolution.example.com/orders/1?view=brief
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -38,19 +62,19 @@
   order without its optional members = Order(id=1, status=<Status.closed: 'closed'>, note=UNSET, channel=UNSET, payment=UNSET)
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order with a member added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","priority":2}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /')] invalid_value
+  order with a member added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","priority":2}', truncated=False, cause=ValidationError('Object contains unknown field `priority`')] invalid_value
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a status added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"archived"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /status')] invalid_value
+  order of a status added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"archived"}', truncated=False, cause=ValidationError("Invalid enum value 'archived' - at `$.status`")] invalid_value
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a payment kind added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","payment":{"kind":"crypto"}}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /payment/kind')] invalid_value
+  order of a payment kind added since ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","payment":{"kind":"crypto"}}', truncated=False, cause=ValidationError("Invalid value 'crypto' - at `$.payment.kind`")] invalid_value
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a card with a transfer's members ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","payment":{"kind":"card","iban":"X"}}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /payment')] invalid_value
+  order of a card with a transfer's members ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":"open","payment":{"kind":"card","iban":"X"}}', truncated=False, cause=ValidationError('Object contains unknown field `iban` - at `$.payment`')] invalid_value
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a status that changed its type ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":3}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /status')] invalid_value
+  order of a status that changed its type ! DecodeError: DecodeError(status_code=200, operation_id='getOrder', call_id='<call>', reason='invalid_value') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"id":1,"status":3}', truncated=False, cause=ValidationError('Expected `str`, got `int` - at `$.status`')] invalid_value
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   order of a status added since, read raw = {'id': 1, 'status': 'archived'}
@@ -59,4 +83,4 @@
   problem ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] conflict_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem that changed its shape ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body=b'{"message":"gone"}', body_bytes=b'{"message":"gone"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /')] conflict_error
+  problem that changed its shape ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=409, body=b'{"message":"gone"}', body_bytes=b'{"message":"gone"}', truncated=False, cause=ValidationError('Object contains unknown field `message`')] conflict_error

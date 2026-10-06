@@ -11,15 +11,16 @@ from __future__ import annotations
 import os
 import re
 from collections.abc import Mapping
+from functools import partial
 from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, TypeVar, cast
 
 from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
-from ..model_codecs.media import decode_json, encode_json, issue, media_kind, normalize_media_type, typed
+from ..model_codecs.media import issue, json_value, media_kind, normalize_media_type, plain, typed
+from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import Unset
-from ..model_codecs.wire import checked_wire, freeze_wire, thaw_wire
 from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
 from .errors import DecodeError, add_secondary
 from .media import charset, encode_text, most_specific, normalized, with_charset
@@ -27,16 +28,21 @@ from .responses import HeadersView
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Iterator
-    from typing import Protocol
+    from typing import Any, Protocol
 
-    from ..model_codecs.wire import JSONValue, WireValue
+    from ..model_codecs.media import JSONValue, LexicalKind
     from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, SyncBinaryBody
 
-    class PartEncoder(Protocol):
-        """The encoder of a member's values, as the generated operation registry binds it."""
+    class PartCodec(Protocol):
+        """The codec of a sent member's values, as the generated operation registry binds it."""
 
-        def encode(self, value: object) -> WireValue:
-            """Return a value's wire value."""
+        def dump(self, value: Any) -> object:
+            """Return the JSON value of a value."""
+            ...
+
+        @property
+        def errors(self) -> tuple[type[Exception], ...]:
+            """Return the failures of the codec's backend."""
             ...
 
 
@@ -50,11 +56,24 @@ ContentT_co = TypeVar("ContentT_co", bound="SyncBinaryBody | AsyncBinaryBody", c
 
 if TYPE_CHECKING:
 
-    class ValueDecoder(Protocol[T_co]):
-        """The decoder of a received member's values, through its converter alone."""
+    class ValueCodec(Protocol[T_co]):
+        """The codec of a received member's values."""
 
-        def convert(self, wire: WireValue) -> T_co:
-            """Construct the value of a wire value through its converter alone."""
+        def decode(self, content: bytes) -> T_co:
+            """Return the value of received JSON bytes."""
+            ...
+
+        def convert(self, value: object) -> T_co:
+            """Return the value of a parsed text value."""
+            ...
+
+        @property
+        def errors(self) -> tuple[type[Exception], ...]:
+            """Return the failures of the codec's backend."""
+            ...
+
+        def malformed(self, error: Exception) -> bool:
+            """Return whether a failure of the codec's backend is received bytes that are not JSON."""
             ...
 
 
@@ -209,9 +228,9 @@ else:
 
 
 class PartPlan:
-    """How one form-data member is sent or read: its kind, repeats, files, requiredness, encoder, and media types.
+    """How one form-data member is sent or read: its kind, repeats, files, requiredness, codec, and media types.
 
-    A received part is read in its lexical kind, or as JSON. A sent value is encoded by the encoder, when the member
+    A received part is read in its lexical kind, or as JSON. A sent value is encoded by the codec, when the member
     has one, and each item of a repeated member becomes its own part; a file member repeats as FileParts. The media
     types of the member's encoding bound the media type a part names, and the first concrete one is its default. A
     member whose encoding gives a query style writes a part for each name and value that style gives its value. A
@@ -219,8 +238,8 @@ class PartPlan:
     """
 
     __slots__ = (
+        "codec",
         "content_types",
-        "encoder",
         "excluded",
         "file",
         "kind",
@@ -239,18 +258,18 @@ class PartPlan:
         file: bool = False,
         required: bool = False,
         excluded: bool = False,
-        encoder: PartEncoder | None = None,
+        codec: PartCodec | None = None,
         content_types: tuple[str, ...] = (),
         style: ParameterPlan | None = None,
     ) -> None:
-        """Keep the member's name, kind, repeats, files, requiredness, exclusion, encoder, media, and style."""
+        """Keep the member's name, kind, repeats, files, requiredness, exclusion, codec, media, and style."""
         self.name = name
         self.kind: PartKind = kind
         self.repeated = repeated
         self.file = file
         self.required = required
         self.excluded = excluded
-        self.encoder = encoder
+        self.codec = codec
         self.content_types = content_types
         self.style = style
 
@@ -348,7 +367,7 @@ def _quoted(text: str) -> str:
     return text.replace('"', "%22").replace("\r", "%0D").replace("\n", "%0A")
 
 
-def multipart_member(value: WireValue, media_type: str | None = None) -> tuple[bytes, str | None]:
+def multipart_member(value: JSONValue, media_type: str | None = None) -> tuple[bytes, str | None]:
     """Return a part's bytes and media type: a string as it is, another scalar as JSON text, the rest as JSON.
 
     A JSON media type writes any value as JSON, and a text one, the only other an encoding gives, a scalar as text in
@@ -358,23 +377,23 @@ def multipart_member(value: WireValue, media_type: str | None = None) -> tuple[b
         match value:
             case str():
                 return value.encode(), None
-            case Mapping() | tuple():
-                return encode_json(value), "application/json"
+            case Mapping() | list():
+                return _json_bytes(value), "application/json"
             case _:
-                return encode_json(value), None
+                return _json_bytes(value), None
     match media_kind(media_type), value:
         case "json", _:
-            return encode_json(value), media_type
-        case _, Mapping() | tuple():
+            return _json_bytes(value), media_type
+        case _, Mapping() | list():
             raise ParameterEncodingError(_TEXT)
         case _, str():
             return encode_text(value, media_type), media_type
         case _:
-            return encode_text(encode_json(value).decode(), media_type), media_type
+            return encode_text(_json_bytes(value).decode(), media_type), media_type
 
 
 def encode_multipart(
-    value: WireValue,
+    value: JSONValue,
     boundary: str,
     content_types: Mapping[str, str] | None = None,
     styled: Mapping[str, ParameterPlan] | None = None,
@@ -403,7 +422,7 @@ def encode_multipart(
         if styled and owners.setdefault(name, name) != name:
             raise ParameterEncodingError(_CLAIMED)
         declared = None if content_types is None else content_types.get(name)
-        for member in item if isinstance(item, tuple) else (item,):
+        for member in item if isinstance(item, list) else (item,):
             content, media_type = multipart_member(member, declared)
             parts.extend((multipart_head(boundary, name, None, media_type, ()), content, b"\r\n"))
     parts.append(f"--{boundary}--\r\n".encode())
@@ -430,16 +449,20 @@ def _field(part: FieldPart[object], boundary: str, plan: PartPlan, names: _Names
             raise _malformed(part.name, ValueError(_MISSING))
         return None
     try:
-        wire = checked_wire(value) if plan.encoder is None else plan.encoder.encode(value)
+        wire = cast("JSONValue", value if (codec := plan.codec) is None else codec.dump(value))
         if plan.style is not None and names is not None:
             return _styled(part, boundary, part_pairs(plan.style, wire), names)
         if names is not None and names.owners is not None:
             names.claim(part.name, (part.name,))
-        if not plan.repeated or not isinstance(wire, tuple):
+        if not plan.repeated or not isinstance(wire, list):
             return _member(part, boundary, wire, plan)
         return b"".join([_member(part, boundary, item, plan) for item in wire])
-    except (CodecError, TypeError, AttributeError) as error:
+    except _errors(plan) as error:
         raise _malformed(part.name, error) from None
+
+
+def _errors(plan: PartPlan) -> tuple[type[Exception], ...]:
+    return (CodecError, TypeError, AttributeError, *(() if plan.codec is None else plan.codec.errors))
 
 
 def _styled(part: FieldPart[object], boundary: str, pairs: tuple[tuple[str, str], ...], names: _Names) -> bytes:
@@ -457,7 +480,7 @@ def _styled(part: FieldPart[object], boundary: str, pairs: tuple[tuple[str, str]
     ])
 
 
-def _member(part: FieldPart[object], boundary: str, item: WireValue, plan: PartPlan) -> bytes:
+def _member(part: FieldPart[object], boundary: str, item: JSONValue, plan: PartPlan) -> bytes:
     if plan.content_types:
         media_type = plan.media(part.content_type)
         content, shaped = multipart_member(item, media_type)
@@ -858,29 +881,29 @@ def _json_part(part: DecodedPart[bytes]) -> bool:
     return media == "application/json" or media.endswith("+json")
 
 
-def _part_value(part: DecodedPart[bytes], kind: PartKind) -> WireValue:
+def _part_value(part: DecodedPart[bytes], kind: PartKind) -> JSONValue:
     if kind == "json" or _json_part(part):
-        return decode_json(part.value)
-    return typed(part.value.decode(charset(part.content_type or "")), kind)
+        return json_value(part.value)
+    return plain(typed(part.value.decode(charset(part.content_type or "")), kind))
 
 
 def decode_parts(
     parts: tuple[DecodedPart[bytes], ...], plans: tuple[PartPlan, ...], additional: PartPlan | None
-) -> WireValue:
+) -> dict[str, JSONValue]:
     """Read form-data parts into an object by their members' plans, collecting repeated members into arrays."""
     declared = {plan.name: plan for plan in plans}
     result: dict[str, JSONValue] = {}
     for part in parts:
         if part.name is None or (plan := declared.get(part.name, additional)) is None:
             raise issue(code="multipart.undeclared", message="A form-data part is not declared")
-        value = thaw_wire(_part_value(part, plan.kind))
+        value = plain(_part_value(part, plan.kind))
         if part.name not in result:
             result[part.name] = [value] if plan.repeated else value
         elif plan.repeated:
             cast("list[JSONValue]", result[part.name]).append(value)
         else:
             raise issue(code="multipart.duplicate", message="A form-data body repeats a single-valued member")
-    return freeze_wire(result)
+    return result
 
 
 class PartSyntaxError(Exception):
@@ -888,6 +911,15 @@ class PartSyntaxError(Exception):
 
     def __init__(self, cause: BaseException) -> None:
         """Keep the failure of reading the part."""
+        super().__init__()
+        self.cause = cause
+
+
+class PartValueError(Exception):
+    """A received part whose value its member's codec refuses."""
+
+    def __init__(self, cause: BaseException) -> None:
+        """Keep the codec's failure."""
         super().__init__()
         self.cause = cause
 
@@ -935,26 +967,37 @@ def file_part(
     return PartDecoder(name, _content, repeated=repeated, required=required, excluded=excluded)
 
 
-def _wire_part(part: DecodedPart[bytes], kind: PartKind) -> WireValue:
+def _part_text(part: DecodedPart[bytes], kind: LexicalKind) -> object:
     try:
-        return _part_value(part, kind)
+        return plain(typed(part.value.decode(charset(part.content_type or "")), kind))
     except (CodecError, ValueError) as error:
         raise PartSyntaxError(error) from None
+
+
+def _decoded(codec: ValueCodec[T], kind: PartKind, part: DecodedPart[bytes]) -> T:
+    try:
+        if kind == "json" or _json_part(part):
+            return codec.decode(part.value)
+        return codec.convert(plain(_part_text(part, kind)))
+    except codec.errors as error:
+        if codec.malformed(error):
+            raise PartSyntaxError(error) from None
+        raise PartValueError(error) from None
 
 
 def value_part(  # noqa: PLR0913
     name: str,
     kind: PartKind,
-    decode: ValueDecoder[T],
+    codec: ValueCodec[T],
     *,
     repeated: bool = False,
     required: bool = False,
     excluded: bool = False,
 ) -> PartDecoder[T]:
-    """Return how a member's parts are read: in its kind, or as JSON, then converted by its codec."""
+    """Return how a member's parts are read: as JSON, or in its kind, then decoded by its codec."""
     return PartDecoder(
         name,
-        lambda part: decode.convert(_wire_part(part, kind)),
+        partial(_decoded, codec, kind),
         repeated=repeated,
         required=required,
         excluded=excluded,

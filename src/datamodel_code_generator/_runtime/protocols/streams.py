@@ -10,6 +10,7 @@ call enables reconnection.
 
 from __future__ import annotations
 
+import json
 import re
 import threading
 from collections.abc import Mapping
@@ -33,16 +34,8 @@ from ..client.errors import (
 from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
-from ..model_codecs.errors import (
-    CodecBindingError,
-    CodecError,
-    CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
-    ParameterEncodingError,
-    WireValidationError,
-)
-from ..model_codecs.media import decode_json
+from ..model_codecs.errors import CodecError, ParameterEncodingError
+from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET, Unset
 from .errors import (
     MAX_RAW_PREFIX,
@@ -75,13 +68,12 @@ if TYPE_CHECKING:
     from typing import TypeAlias
 
     from ..client.client import AsyncClientCore, ClientCore
-    from ..client.codecs import NativeValue
     from ..client.logical import LogicalCallContext, OperationSession
-    from ..client.operations import OperationPlan
+    from ..client.operations import InboundModelCodec, OperationPlan
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
     from ..client.timing import Clock, Deadline
-    from ..model_codecs.wire import WireValue
+    from ..model_codecs.media import JSONValue
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
     from .pagination import PageBinding
     from .records import BodySelector, HeaderSelector, ProtocolProgress, RequestTarget, Selector
@@ -117,14 +109,6 @@ _BOM: Final = b"\xef\xbb\xbf"
 _CR: Final = 0x0D
 _LF: Final = 0x0A
 _COLON: Final = 0x3A
-_DATA_ERRORS: Final = (
-    CodecBindingError,
-    CodecResourceLimitError,
-    ModelProjectionError,
-    NativeValidationError,
-    ParameterEncodingError,
-    WireValidationError,
-)
 _STATE: Final = frozenset({"cursor", "bound", "arguments", "body", "expires_at"})
 _ENCODING_ERRORS: Final = (DecodeError, ParameterEncodingError)
 
@@ -241,11 +225,11 @@ class EventPlan(Generic[T]):
     call: OperationPlan[object]
     media: str
     fingerprint: str
-    event: NativeValue[T] | None = None
-    routes: tuple[tuple[str, NativeValue[T]], ...] = ()
+    event: InboundModelCodec[T] | None = None
+    routes: tuple[tuple[str, InboundModelCodec[T]], ...] = ()
     discriminator: BodySelector | None = None
     unknown: Callable[[str, str], T] | None = None
-    errors: tuple[tuple[str, NativeValue[object]], ...] = ()
+    errors: tuple[tuple[str, InboundModelCodec[object]], ...] = ()
     completion: Literal["eof", "sentinel", "event_type"] = "eof"
     terminal: str | None = None
     kind: Literal["sse", "ndjson"] = "sse"
@@ -610,12 +594,12 @@ class _Position:
     """
 
     given: _Given | None = None
-    cursor: WireValue = None
+    cursor: JSONValue = None
     cursored: bool = False
     sequence: int = 0
     reconnects: int = 0
     retry_ms: int | None = None
-    bound: tuple[WireValue, ...] = ()
+    bound: tuple[JSONValue, ...] = ()
     expires_at: datetime | None = None
 
 
@@ -638,7 +622,7 @@ def _data_error(
     )
 
 
-def _dotted(resume: StreamResumePlan, bound: tuple[WireValue, ...], given: _Given | None) -> Selector | None:
+def _dotted(resume: StreamResumePlan, bound: tuple[JSONValue, ...], given: _Given | None) -> Selector | None:
     """Return the selector of a read value that makes a path segment of the reopen a dot segment once encoded, or None.
 
     The caller's own path arguments in the segment, which only a reopen of the helper's own operation repeats, are
@@ -651,7 +635,7 @@ def _dotted(resume: StreamResumePlan, bound: tuple[WireValue, ...], given: _Give
     def callers() -> dict[str, str]:
         arguments = () if given is None else given[0]
         return {
-            name: parameters[position].path_text(parameters[position].encode(arguments[position]))
+            name: parameters[position].path_text(parameters[position].dump(arguments[position]))
             for _, parts in resume.dotted
             for name, index, _, position in parts
             if index is None
@@ -673,14 +657,14 @@ def _bound(  # noqa: PLR0913, PLR0917
     operation: OperationRef,
     info: ResponseInfo,
     given: _Given | None,
-    kept: tuple[WireValue, ...] = (),
-) -> tuple[WireValue, ...]:
+    kept: tuple[JSONValue, ...] = (),
+) -> tuple[JSONValue, ...]:
     """Return the values the bindings write: their literals, kept `initial` values, and what a response gives.
 
     A stream response's header or status gives a value; a missing one, a header repeated where one is read, and read
     values that make a path segment of the reopen a dot segment once encoded are refused.
     """
-    values: list[WireValue] = []
+    values: list[JSONValue] = []
     for index, binding in enumerate(resume.bindings):
         if (read := binding.selector) is None:
             values.append(binding.literal)
@@ -700,15 +684,18 @@ def _bound(  # noqa: PLR0913, PLR0917
     return bound
 
 
-def _json(frame: _Frame) -> WireValue | Missing:
-    """Return an event's data parsed as JSON, or MISSING when it is not JSON."""
+def _json(frame: _Frame) -> JSONValue | Missing:
+    """Return an event's data parsed as JSON, or MISSING when it is not JSON.
+
+    `int` refuses the NaN and infinity constants, which a saved cursor could not hold.
+    """
     try:
-        return decode_json(frame.body)
-    except _DATA_ERRORS:
+        return cast("JSONValue", json.loads(frame.body, parse_constant=int))
+    except (ValueError, RecursionError):
         return MISSING
 
 
-def _absence(value: WireValue | Missing) -> Literal["missing", "null"]:
+def _absence(value: JSONValue | Missing) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 
@@ -767,8 +754,8 @@ def _written(
     resume: StreamResumePlan,
     arguments: tuple[object, ...],
     body: object,
-    bound: tuple[WireValue, ...],
-    cursor: WireValue,
+    bound: tuple[JSONValue, ...],
+    cursor: JSONValue,
 ) -> tuple[tuple[object, ...], object]:
     """Return a request's arguments and body with each binding's value and then the cursor written.
 
@@ -781,26 +768,26 @@ def _written(
     return written(writes[:-1], (*arguments[:cleared], UNSET, *arguments[cleared + 1 :]), body, bound)
 
 
-def _wire(value: object) -> WireValue:
+def _wire(value: object) -> JSONValue:
     """Return a value written by wire value with its writes applied, or the value itself."""
-    return value.applied(_same) if isinstance(value, Patch) else cast("WireValue", value)
+    return value.applied(_same) if isinstance(value, Patch) else cast("JSONValue", value)
 
 
-def _wires(arguments: tuple[object, ...]) -> tuple[WireValue | Unset, ...]:
+def _wires(arguments: tuple[object, ...]) -> tuple[JSONValue | Unset, ...]:
     """Return arguments written by wire value with their writes applied."""
-    return cast("tuple[WireValue | Unset, ...]", tuple(map(_wire, arguments)))
+    return cast("tuple[JSONValue | Unset, ...]", tuple(map(_wire, arguments)))
 
 
-def _same(value: object) -> WireValue:
-    return cast("WireValue", value)
+def _same(value: object) -> JSONValue:
+    return cast("JSONValue", value)
 
 
 def _fitting(
     core: ClientCore | AsyncClientCore,
     resume: StreamResumePlan,
-    fields: Mapping[str, WireValue],
-    bound: tuple[WireValue, ...],
-    cursor: WireValue,
+    fields: Mapping[str, JSONValue],
+    bound: tuple[JSONValue, ...],
+    cursor: JSONValue,
 ) -> None:
     """Refuse a saved cursor or binding value that does not fit where the reopen writes it or that is never saved.
 
@@ -821,7 +808,7 @@ def _fitting(
     patched, written_body = _written(resume, arguments, body, bound, cursor)
     wire = _wires(patched)
     require_state(core.unsaved_argument(call, wire) is None)
-    saved: tuple[WireValue, str, str | None] | None = None
+    saved: tuple[JSONValue, str, str | None] | None = None
     if not isinstance(written_body, Unset) and (request := call.body) is not None:
         saved = _wire(written_body), declared or request.select(call.operation_id, None).media_type, concrete
     core.restored_request(call, wire, saved)
@@ -894,8 +881,8 @@ class _Events(Generic[T]):
         self._session = session
         self._info = info
         self._prefix = min(limits.max_event_bytes, MAX_RAW_PREFIX)
-        self._routes: Mapping[str, NativeValue[T]] = dict(plan.routes)
-        self._errors: Mapping[str, NativeValue[object]] = dict(plan.errors)
+        self._routes: Mapping[str, InboundModelCodec[T]] = dict(plan.routes)
+        self._errors: Mapping[str, InboundModelCodec[object]] = dict(plan.errors)
         self._lock = threading.Lock()
         self._state = _State.OPEN
         self._given = position.given
@@ -962,17 +949,17 @@ class _Events(Generic[T]):
             )
         except _ENCODING_ERRORS as error:
             raise self._unencodable(error) from None
-        arguments: WireValue = ()
-        body: WireValue = ()
+        arguments: JSONValue = []
+        body: JSONValue = []
         if given is not None:
             from .pagination import saved_request  # noqa: PLC0415 - Only a checkpoint saves a request.
 
             blank = resume.blank
             kept = tuple(UNSET if index in blank else value for index, value in enumerate(given[0]))
             arguments, body = saved_request(*client.saved_request(plan, plan.call, kept, *given[1:], options))
-        state: WireValue = {
+        state: JSONValue = {
             "cursor": self._cursor,
-            "bound": self._bound,
+            "bound": list(self._bound),
             "arguments": arguments,
             "body": body,
             "expires_at": saved_expiry(self._expires_at),
@@ -1002,7 +989,7 @@ class _Events(Generic[T]):
         """Return where the stream stands, which its next reopen continues from."""
         return _Position(given=self._given, cursor=self._cursor, bound=self._bound)
 
-    def _advance(self, resume: StreamResumePlan, frame: _Frame, wire: WireValue | None) -> None:
+    def _advance(self, resume: StreamResumePlan, frame: _Frame, wire: JSONValue | None) -> None:
         """Take the cursor of an event about to be delivered: its event ID, or what the cursor reads from its data.
 
         A missing body cursor keeps the one before under `inherit` and a null one clears it under `clear`; otherwise
@@ -1211,7 +1198,7 @@ class _Events(Generic[T]):
             and (frame.data if plan.completion == "sentinel" else frame.event_type) == plan.terminal
         ):
             return _ENDED
-        wire: WireValue | None = None
+        wire: JSONValue | None = None
         key = frame.event_type
         if (selector := plan.discriminator) is not None:
             wire = self._wire(frame)
@@ -1222,7 +1209,7 @@ class _Events(Generic[T]):
                 raise self._stamped(self._decode_error(frame.body, condition, location=selector))
             key = found
         if (error := self._errors.get(key)) is not None:
-            data = self._decoded(error, frame, wire)
+            data = self._decoded(error, frame)
             raise self._stamped(
                 StreamRemoteError(event_type=frame.event_type or None, data=data, sequence=self._sequence)
             )
@@ -1231,9 +1218,7 @@ class _Events(Generic[T]):
                 raise self._stamped(self._decode_error(frame.body, "value", location=selector))
             value = unknown(key, frame.data)
         else:
-            if wire is None:
-                wire = self._wire(frame)
-            value = self._decoded(decoder, frame, wire)
+            value = self._decoded(decoder, frame)
         if (resume := self._resume) is not None:
             self._advance(resume, frame, wire)
         self._delivered = self._sequence
@@ -1246,22 +1231,21 @@ class _Events(Generic[T]):
             raw_data=frame.data,
         )
 
-    def _wire(self, frame: _Frame) -> WireValue:
+    def _wire(self, frame: _Frame) -> JSONValue:
         """Return an event's data parsed as JSON, raising StreamDecodeError for data that does not parse."""
         data = frame.body
         try:
-            return decode_json(data)
-        except _DATA_ERRORS as error:
+            return json_value(data)
+        except (ValueError, UnicodeDecodeError, RecursionError) as error:
             raise self._stamped(self._decode_error(data, "malformed", cause=error)) from None
 
-    def _decoded(self, decoder: NativeValue[U], frame: _Frame, wire: WireValue | None) -> U:
-        """Return an event's data converted through its converter."""
-        if wire is None:
-            wire = self._wire(frame)
+    def _decoded(self, codec: InboundModelCodec[U], frame: _Frame) -> U:
+        """Return an event's data decoded by its codec, raising StreamDecodeError for data it refuses."""
         try:
-            return decoder.convert(wire)
-        except _DATA_ERRORS as error:
-            raise self._stamped(self._decode_error(frame.body, "value", cause=error)) from None
+            return codec.decode(frame.body)
+        except codec.errors as error:
+            condition: Literal["value", "malformed"] = "malformed" if codec.malformed(error) else "value"
+            raise self._stamped(self._decode_error(frame.body, condition, cause=error)) from None
 
     def _decode_error(
         self,
@@ -1649,7 +1633,7 @@ def _restored(
     if helper != plan.fingerprint:
         raise _resume_error(plan, "fingerprint")
     try:
-        position = _restore(core, plan, resume, decode_json(state_json))
+        position = _restore(core, plan, resume, json_value(state_json))
     except MalformedStateError:
         raise _resume_error(plan, "malformed") from None
     if (expires_at := position.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
@@ -1668,7 +1652,7 @@ def _restored(
 
 
 def _restore(
-    core: ClientCore | AsyncClientCore, plan: EventPlan[T], resume: StreamResumePlan, state: WireValue
+    core: ClientCore | AsyncClientCore, plan: EventPlan[T], resume: StreamResumePlan, state: JSONValue
 ) -> _Position:
     """Return the position a checkpoint's decoded state saved, refusing a state that does not fit the helper.
 
@@ -1677,7 +1661,7 @@ def _restore(
     refused as if a server had just given it, and the caller's first request is built again from its wire values.
     """
     require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
-    fields = cast("Mapping[str, WireValue]", state)
+    fields = cast("Mapping[str, JSONValue]", state)
     cursor = fields["cursor"]
     if resume.cursor is None:
         require_state(cursor is None or (isinstance(cursor, str) and bool(cursor)))
@@ -1697,7 +1681,7 @@ def _restore(
         request = resent(core, plan.call, fields["arguments"], fields["body"])
         given = request.arguments, request.body, request.media_type
     else:
-        require_state(fields["arguments"] == () and fields["body"] == ())
+        require_state(fields["arguments"] == [] and fields["body"] == [])
     try:
         _fitting(core, resume, fields, bound, cursor)
     except DecodeError:

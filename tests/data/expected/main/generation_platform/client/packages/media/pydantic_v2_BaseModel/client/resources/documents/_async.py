@@ -12,7 +12,7 @@ from models import FieldDocumentsIdGetPathIdParameter as _dcg_type_1
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import WireValue
+from ...model_codecs import JSONValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.documents import (
@@ -49,7 +49,7 @@ class AsyncDocumentsResource:
     async def store_document(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'] | None = None,
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -58,16 +58,16 @@ class AsyncDocumentsResource:
     async def store_document(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> WireValue | None | _dcg_type_0: ...
+    ) -> JSONValue | None | _dcg_type_0: ...
     @overload
     async def store_document(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
@@ -89,7 +89,7 @@ class AsyncDocumentsResource:
         media_type: Literal['text/plain; charset=utf-16'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> WireValue | None | _dcg_type_0: ...
+    ) -> JSONValue | None | _dcg_type_0: ...
     @overload
     async def store_document(
         self,
@@ -116,7 +116,7 @@ class AsyncDocumentsResource:
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> WireValue | None | _dcg_type_0: ...
+    ) -> JSONValue | None | _dcg_type_0: ...
     @overload
     async def store_document(
         self,
@@ -129,7 +129,7 @@ class AsyncDocumentsResource:
     async def store_document(
         self,
         *,
-        body: WireValue | str | _dcg_type_0,
+        body: JSONValue | str | _dcg_type_0,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -148,7 +148,7 @@ class AsyncDocumentsResource:
         self,
         *,
         id: _dcg_type_1,
-        filter: WireValue | Unset = UNSET,
+        filter: JSONValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
@@ -164,7 +164,7 @@ class AsyncDocumentsResource:
     async def store_note(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> StoreNoteResponse:
@@ -181,7 +181,7 @@ class AsyncDocumentsResource:
     async def replace_note(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> ReplaceNoteResponse: ...
@@ -204,7 +204,7 @@ class AsyncDocumentsResource:
     async def replace_note(
         self,
         *,
-        body: WireValue | str | Unset = UNSET,
+        body: JSONValue | str | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceNoteResponse:
@@ -229,7 +229,7 @@ class AsyncDocumentsWithResponse:
     async def store_document(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'] | None = None,
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -238,16 +238,16 @@ class AsyncDocumentsWithResponse:
     async def store_document(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[WireValue | None | _dcg_type_0]: ...
+    ) -> Response[JSONValue | None | _dcg_type_0]: ...
     @overload
     async def store_document(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
@@ -269,7 +269,7 @@ class AsyncDocumentsWithResponse:
         media_type: Literal['text/plain; charset=utf-16'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[WireValue | None | _dcg_type_0]: ...
+    ) -> Response[JSONValue | None | _dcg_type_0]: ...
     @overload
     async def store_document(
         self,
@@ -296,7 +296,7 @@ class AsyncDocumentsWithResponse:
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[WireValue | None | _dcg_type_0]: ...
+    ) -> Response[JSONValue | None | _dcg_type_0]: ...
     @overload
     async def store_document(
         self,
@@ -309,7 +309,7 @@ class AsyncDocumentsWithResponse:
     async def store_document(
         self,
         *,
-        body: WireValue | str | _dcg_type_0,
+        body: JSONValue | str | _dcg_type_0,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -328,7 +328,7 @@ class AsyncDocumentsWithResponse:
         self,
         *,
         id: _dcg_type_1,
-        filter: WireValue | Unset = UNSET,
+        filter: JSONValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
@@ -344,7 +344,7 @@ class AsyncDocumentsWithResponse:
     async def store_note(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> Response[StoreNoteResponse]:
@@ -361,7 +361,7 @@ class AsyncDocumentsWithResponse:
     async def replace_note(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[ReplaceNoteResponse]: ...
@@ -384,7 +384,7 @@ class AsyncDocumentsWithResponse:
     async def replace_note(
         self,
         *,
-        body: WireValue | str | Unset = UNSET,
+        body: JSONValue | str | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceNoteResponse]:
@@ -409,7 +409,7 @@ class AsyncDocumentsWithRawResponse:
     async def store_document(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -435,7 +435,7 @@ class AsyncDocumentsWithRawResponse:
     async def store_document(
         self,
         *,
-        body: WireValue | str | _dcg_type_0,
+        body: JSONValue | str | _dcg_type_0,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -454,7 +454,7 @@ class AsyncDocumentsWithRawResponse:
         self,
         *,
         id: _dcg_type_1,
-        filter: WireValue | Unset = UNSET,
+        filter: JSONValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
@@ -470,7 +470,7 @@ class AsyncDocumentsWithRawResponse:
     async def store_note(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -487,7 +487,7 @@ class AsyncDocumentsWithRawResponse:
     async def replace_note(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
@@ -510,7 +510,7 @@ class AsyncDocumentsWithRawResponse:
     async def replace_note(
         self,
         *,
-        body: WireValue | str | Unset = UNSET,
+        body: JSONValue | str | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -535,7 +535,7 @@ class AsyncDocumentsWithStreamingResponse:
     def store_document(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -561,7 +561,7 @@ class AsyncDocumentsWithStreamingResponse:
     def store_document(
         self,
         *,
-        body: WireValue | str | _dcg_type_0,
+        body: JSONValue | str | _dcg_type_0,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -580,7 +580,7 @@ class AsyncDocumentsWithStreamingResponse:
         self,
         *,
         id: _dcg_type_1,
-        filter: WireValue | Unset = UNSET,
+        filter: JSONValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
@@ -596,7 +596,7 @@ class AsyncDocumentsWithStreamingResponse:
     def store_note(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -613,7 +613,7 @@ class AsyncDocumentsWithStreamingResponse:
     def replace_note(
         self,
         *,
-        body: WireValue,
+        body: JSONValue,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
@@ -636,7 +636,7 @@ class AsyncDocumentsWithStreamingResponse:
     def replace_note(
         self,
         *,
-        body: WireValue | str | Unset = UNSET,
+        body: JSONValue | str | Unset = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

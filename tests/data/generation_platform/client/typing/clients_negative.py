@@ -87,10 +87,10 @@ async def misuse_bodies(client: Client, aclient: AsyncClient, file: BinaryIO, ph
 
 def misuse_multipart(client: Client, file: BinaryIO, pet: FieldPetsPetIdFilesPostPathPetIdParameter, files: FieldPetsPetIdFilesGetPathPetIdParameter) -> None:
     from pets.bodies import AsyncFileBody, AsyncMultipartBody, FieldPart, FilePart, MultipartBody, MultipartData
-    from pets.model_codecs import WireValue
+    from pets.model_codecs import JSONValue
 
     MultipartBody[str]((FilePart("f", AsyncFileBody(file)),))  # error
-    client.request_raw("POST", "https://example.com/forms", body=AsyncMultipartBody[WireValue](()))  # error
+    client.request_raw("POST", "https://example.com/forms", body=AsyncMultipartBody[JSONValue](()))  # error
     FieldPart[str]("a", 1)  # error
     parts: MultipartBody[str] = MultipartBody[int](())  # error
     del parts

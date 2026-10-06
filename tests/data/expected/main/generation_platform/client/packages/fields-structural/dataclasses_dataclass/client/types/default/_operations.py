@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from models import FieldSearchPostResponse as _dcg_type_1
 from models import Pet as _dcg_type_0
 
 CreatePetResponse: TypeAlias = _dcg_type_0
@@ -24,9 +23,6 @@ CreateOwnerResponse: TypeAlias = None
 
 
 PutLabelsResponse: TypeAlias = None
-
-
-SearchPetsResponse: TypeAlias = _dcg_type_1
 
 
 PutPhotoResponse: TypeAlias = None

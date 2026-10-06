@@ -399,14 +399,13 @@ def _deep() -> list[object]:
 
 def _canonical(protocols: ModuleType, records: ModuleType, value: object) -> tuple[bytes, bool, bool]:
     """Return a continuation's canonical JSON, whether it survives a decode, and whether resume state shares it."""
-    media = importlib.import_module(records.__name__.replace("protocols.records", "model_codecs.media"))
     encoded = records.continuation_json(protocols.Continuation(kind="cursor", value=value))
     state = protocols.ResumeState(helper="", state=value).export()
-    return encoded, records.canonical_json(media.decode_json(encoded)) == encoded, b'"state":' + encoded + b"," in state
+    return encoded, records.canonical_json(json.loads(encoded)) == encoded, b'"state":' + encoded + b"," in state
 
 
 def _snapshots(protocols: ModuleType, responses: ModuleType, lines: list[str]) -> None:
-    """Freeze the state, keep the data identity, and hide both from the representation."""
+    """Copy the state, keep the data identity, and hide both from the representation."""
     info = responses.ResponseInfo(
         status_code=200,
         headers=responses.HeadersView((("x-state", "secret-header"),)),
@@ -425,7 +424,6 @@ def _snapshots(protocols: ModuleType, responses: ModuleType, lines: list[str]) -
         f"  snapshot state={type(snapshot.state).__name__} {dict(snapshot.state)!r}",
     ))
     record(lines, "snapshot frozen", lambda: setattr(snapshot, "terminal", True))
-    record(lines, "snapshot state frozen", lambda: snapshot.state.__setitem__("status", "done"))
     record(
         lines,
         "snapshot terminal",

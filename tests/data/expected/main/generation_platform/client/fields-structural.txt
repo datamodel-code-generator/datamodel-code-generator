@@ -26,7 +26,8 @@ render dataclasses.dataclass
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-target-manifest.json
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
+  S_OPERATION_EXCLUDED selection /paths/~1search/post: POST /search is excluded by exclude_operations: Stdlib unions need a declared discriminator; native union conversion is covered separately.
 render typing.TypedDict
   write models.py
   write client/__init__.py
@@ -54,4 +55,5 @@ render typing.TypedDict
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-target-manifest.json
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
+  S_OPERATION_EXCLUDED selection /paths/~1search/post: POST /search is excluded by exclude_operations: Stdlib unions need a declared discriminator; native union conversion is covered separately.

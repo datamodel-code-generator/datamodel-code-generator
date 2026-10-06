@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Final, NoReturn
 import httpx2
 import pytest
 
+from tests.data.python.client_regressions import json_error_body
 from tests.data.python.client_runtime import (
     Exchange,
     Injected,
@@ -141,7 +142,7 @@ def raw(package: ModuleType, lines: list[str]) -> None:
 
 def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Keep the body of a raw response in memory, both decoded and as it arrived, within the buffer limit."""
-    _, options, _, types = _modules(package)
+    errors, options, _, types = _modules(package)
     pet, raw = _pet(package), api.pets.with_raw_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
     kept = raw.get_pet(pet_id=pet)
@@ -182,6 +183,19 @@ def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: l
         received = raw.get_pet(pet_id=pet)
         record(lines, f"saved {label} text", received.text)
         record(lines, f"saved {label} json", received.json)
+    body = json_error_body("integer limit")
+    exchange.respond(_streamed(200, (body,)))
+    received = raw.get_pet(pet_id=pet)
+    try:
+        received.json()
+    except errors.DecodeError as error:
+        lines.append(
+            f"  saved integer limit {type(error).__name__} cause={type(error.cause).__name__} "
+            f"body={error.body_bytes == body} info={error.info is received.info} "
+            f"operation={error.operation_id!r} call={bool(error.call_id) and error.call_id == received.info.call_id}"
+        )
+    else:
+        lines.append("  saved integer limit decoded")
     small = options.RequestOptions(max_response_bytes=8)
     for label, responder, limit in (
         ("identity", _streamed(200, (_PET[:8], _PET[8:])), small),
@@ -432,7 +446,7 @@ async def _async_raw(package: ModuleType, lines: list[str]) -> None:
 
 
 async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    _, options, _, _ = _modules(package)
+    errors, options, _, _ = _modules(package)
     pet, raw = _pet(package), api.pets.with_raw_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
     kept = await raw.get_pet(pet_id=pet)
@@ -451,6 +465,19 @@ async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines:
         pet_id=pet, options=options.RequestOptions(max_error_body_bytes=4, retry=options.RetryOptions(max_retries=0))
     )
     await arecord(lines, "async saved status", failed.raise_for_status)
+    body = json_error_body("integer limit")
+    exchange.respond(_streamed(200, (body,)))
+    received = await raw.get_pet(pet_id=pet)
+    try:
+        await received.json()
+    except errors.DecodeError as error:
+        lines.append(
+            f"  async saved integer limit {type(error).__name__} cause={type(error.cause).__name__} "
+            f"body={error.body_bytes == body} info={error.info is received.info} "
+            f"operation={error.operation_id!r} call={bool(error.call_id) and error.call_id == received.info.call_id}"
+        )
+    else:
+        lines.append("  async saved integer limit decoded")
     for label, responder, limit in (
         ("coded", _gzip(200, bytes(100), 100), options.RequestOptions(max_response_bytes=8)),
         ("expanded", _gzip(200, bytes(100), 100), options.RequestOptions(max_response_bytes=50)),

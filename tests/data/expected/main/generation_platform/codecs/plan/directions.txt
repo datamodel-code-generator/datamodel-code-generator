@@ -1,6 +1,0 @@
-# directions
-APIGenerationError
-diagnostic MC_SCHEMA_DIALECT /components/schemas/Item/required: A required property's readOnly or writeOnly annotation is conditional
-diagnostic MC_SCHEMA_DIALECT /components/schemas/Item/properties/both: A property cannot be both read-only and write-only
-diagnostic MC_SCHEMA_DIALECT /components/schemas/Shared/required: The directional required members of a shared schema depend on how it is referenced
-diagnostic MC_SCHEMA_DIALECT /components/schemas/Stamp/required: The directional required members of a shared schema depend on how it is referenced

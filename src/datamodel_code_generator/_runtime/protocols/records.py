@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
+import json
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import FrozenInstanceError, dataclass, field
-from decimal import Decimal
-from typing import Final, Generic, Literal, NoReturn, TypeAlias, final, get_args
+from typing import Final, Generic, Literal, NoReturn, TypeAlias, cast, final, get_args
 
 from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
-from ..model_codecs.errors import CodecResourceLimitError
-from ..model_codecs.media import encode_json
-from ..model_codecs.wire import JSONValue, WireValue, checked_text, checked_wire
+from ..model_codecs.media import (
+    JSONValue,
+    json_value,
+)
 
 __all__ = (
     "BodySelector",
@@ -53,8 +54,11 @@ _OCCURRENCES: Final = ("single", "all")
 _PARAMETER_LOCATIONS: Final = ("path", "query", "header", "cookie")
 _POINTER: Final = re.compile(r"(?:/(?:[^~/]|~[01])*)*")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
-_INTEGER: Final = re.compile(r"-?[0-9]+")
+_SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
 _NESTING: Final = "A wire value must not be nested beyond the interpreter recursion limit"
+_SURROGATES: Final = "A wire string must not contain lone surrogates"
+_KEYS: Final = "A wire object key must be a string"
+_CYCLE: Final = "A wire value must not contain cycles"
 
 
 def record_string(value: object, name: str) -> str:
@@ -67,7 +71,9 @@ def record_string(value: object, name: str) -> str:
 
 def wire_string(value: object, name: str) -> str:
     """Return a record field that must be UTF-8 encodable wire text, refusing lone surrogates with ValueError."""
-    return checked_text(record_string(value, name))
+    if (text := record_string(value, name)).isascii() or _SURROGATE.search(text) is None:
+        return text
+    raise ValueError(_SURROGATES)
 
 
 def record_instance(value: object, kinds: type | tuple[type, ...], message: str) -> None:
@@ -94,38 +100,49 @@ def _choice(value: object, name: str, choices: tuple[str, ...]) -> None:
         raise ValueError(msg)
 
 
-def _canonical(value: WireValue) -> JSONValue:
-    if isinstance(value, tuple):
-        return [_canonical(item) for item in value]
-    if isinstance(value, Mapping):
-        return {key: _canonical(value[key]) for key in sorted(value)}
-    if isinstance(value, float | Decimal):
-        number = Decimal(repr(value)) if isinstance(value, float) else value
-        return int(number) if _INTEGER.fullmatch(str(number)) else number
-    return value
+def _keyed(value: object, active: set[int]) -> None:
+    """Refuse a cycle, and a member name that is no string, which JSON text would silently turn into one."""
+    marker = id(value)
+    if isinstance(value, dict):
+        members = cast("dict[object, object]", value)
+        if any(type(key) is not str for key in members):
+            raise TypeError(_KEYS)
+        items: Iterable[object] = members.values()
+    elif isinstance(value, list | tuple):
+        items = cast("list[object] | tuple[object, ...]", value)
+    else:
+        return
+    if marker in active:
+        raise ValueError(_CYCLE)
+    active.add(marker)
+    for item in items:
+        _keyed(item, active)
+    active.discard(marker)
 
 
-def frozen_wire(value: object) -> WireValue:
-    """Freeze a JSON-domain value, refusing one nested beyond the interpreter recursion limit with ValueError."""
+def _dumped(value: object, *, sort_keys: bool) -> bytes:
     try:
-        return checked_wire(value)
+        _keyed(value, set())
+        text = json.dumps(value, sort_keys=sort_keys, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+        return text.encode()
     except RecursionError:
         raise ValueError(_NESTING) from None
+    except UnicodeEncodeError:
+        raise ValueError(_SURROGATES) from None
+
+
+def plain_copy(value: object) -> JSONValue:
+    """Copy a JSON value through its UTF-8 JSON text, refusing what `canonical_json` refuses."""
+    return json_value(_dumped(value, sort_keys=False))
 
 
 def canonical_json(value: object) -> bytes:
-    """Encode a JSON-domain value compactly, with members sorted by name and one spelling of each number.
+    """Encode a JSON value compactly as UTF-8, with members sorted by name, refusing non-finite numbers.
 
-    A float is written as its shortest decimal, and a number whose decimal has neither a fraction nor an exponent is
-    written as an integer, so decoding the result and encoding it again reproduces the same bytes.
+    A value nested beyond the interpreter recursion limit, a lone surrogate, or an integer over the interpreter's
+    decimal conversion limit raises ValueError, and a value that is not JSON raises TypeError.
     """
-    try:
-        return encode_json(_canonical(checked_wire(value)))
-    except RecursionError:
-        raise ValueError(_NESTING) from None
-    except CodecResourceLimitError:
-        msg = "A wire integer must not exceed the interpreter's decimal conversion limit"
-        raise ValueError(msg) from None
+    return _dumped(value, sort_keys=True)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -241,7 +258,7 @@ class Continuation(Sealed):
     _kind: ContinuationKind
     _json: bytes
 
-    def __init__(self, *, kind: ContinuationKind, value: WireValue) -> None:
+    def __init__(self, *, kind: ContinuationKind, value: JSONValue) -> None:
         """Keep the kind and only the canonical JSON of the value."""
         _choice(kind, "kind", _CONTINUATION_KINDS)
         encoded = canonical_json(value)
@@ -267,14 +284,14 @@ def continuation_json(continuation: Continuation) -> bytes:
 class PollSnapshot(Generic[P_co]):
     """One poll of a long-running operation: its exact state value, whether it is terminal, and the poll data."""
 
-    state: WireValue = field(repr=False)
+    state: JSONValue = field(repr=False)
     terminal: bool
     data: P_co = field(repr=False)
     response: ResponseInfo
 
     def __post_init__(self) -> None:
-        """Freeze the state value and require a boolean terminal flag and the response metadata."""
-        object.__setattr__(self, "state", frozen_wire(self.state))
+        """Copy the state value and require a boolean terminal flag and the response metadata."""
+        object.__setattr__(self, "state", plain_copy(self.state))
         record_instance(self.terminal, bool, "terminal must be a bool")
         record_instance(self.response, ResponseInfo, "response must be a ResponseInfo")
 

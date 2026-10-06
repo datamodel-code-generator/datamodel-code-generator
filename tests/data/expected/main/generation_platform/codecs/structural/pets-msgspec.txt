@@ -1,45 +1,42 @@
-use /paths/~1pets/get parameter query limit: native alias models:FieldPetsGetQueryLimitParameter models=[]
-use /paths/~1pets/get parameter query tags: native alias models:FieldPetsGetQueryTagsParameter models=[]
-use /paths/~1pets/get parameter query filter: native alias models:FieldPetsGetQueryFilterParameter models=[]
-use /paths/~1pets/get response_body 200: native alias models:FieldPetsGetResponse models=[('models:Owner', 'struct', 'ignore', True), ('models:Pet', 'struct', 'ignore', True)]
-use /paths/~1pets/post request_body: native struct models:Pet models=[('models:Owner', 'struct', 'ignore', True), ('models:Pet', 'struct', 'ignore', True)]
-use /paths/~1pets/post response_body 201: native struct models:Pet models=[('models:Owner', 'struct', 'ignore', True), ('models:Pet', 'struct', 'ignore', True)]
-use /paths/~1pets~1lookup/get response_body 200: native alias models:FieldPetsLookupGetResponse models=[('models:Owner', 'struct', 'ignore', True), ('models:Pet', 'struct', 'ignore', True)]
-use /paths/~1pets~1{id}~1photo/get parameter path id: native alias models:FieldPetsIdPhotoGetPathIdParameter models=[]
-use /paths/~1pets~1{id}/patch parameter path id: native alias models:FieldPetsIdPatchPathIdParameter models=[]
-use /paths/~1pets~1{id}/patch request_body: native struct models:PetPatch models=[('models:PetPatch', 'struct', 'ignore', True)]
-use /paths/~1pets~1{id}/patch response_body 200: native struct models:PetPatch models=[('models:PetPatch', 'struct', 'ignore', True)]
-create-server-decode: ModelProjectionError The native use has an unplanned projection gap at /id
-create-client-from-wire: ModelProjectionError The native use has an unplanned projection gap at /id
-create-client-encode-native: wire={"name":"Mimi","status":"new","password":"pw","visits":0}
-created-client-decode: model Pet(id=1, name='Mimi', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=Owner(name='Ann', e_mail='ann@example.com', phone=UNSET), co_owner=UNSET, born='2020-01-01T00:00:00Z', price=Decimal('1.10'), cost=None, weight=2.0, labels={'a', 'b'}, scores={'x': 1}, visits=0) wire={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com","note":1},"nick_name":null,"hint":"x","born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2,"labels":["b","a"],"scores":{"x":1},"visits":0} presence=['', '/id', '/name', '/status', '/kind', '/owner', '/owner/name', '/owner/e-mail', '/owner/note', '/nick_name', '/hint', '/born', '/price', '/cost', '/weight', '/labels', '/labels/0', '/labels/1', '/scores', '/scores/x', '/visits'] extras={"/owner/note":1,"/nick_name":null,"/hint":"x"}
-created-server-encode-echo: wire={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com"},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2.0,"labels":["a","b"],"scores":{"x":1},"visits":0}
-created-server-encode-snapshot: wire={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com","note":1},"nick_name":null,"hint":"x","born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2,"labels":["b","a"],"scores":{"x":1},"visits":0}
-created-server-omitted: wire={"id":1,"name":"Mimi","status":"new","visits":0}
-created-server-explicit-none: WireValidationError schema.type@/tag
-created-server-presence-none: WireValidationError schema.type@/tag
-created-server-nullable-none: wire={"id":1,"name":"Mimi","status":"new","nick-name":null,"visits":0}
-created-server-too-long: WireValidationError schema.maxLength@/name
-created-server-no-json: ModelProjectionError The value at /tag has no JSON representation
-created-server-plain-dict: ModelProjectionError The value at / does not have its bound shape
-created-server-missing-required: ModelProjectionError The value at / does not have its bound shape
-created-client-decode-bad-price: NativeValidationError native.validation_error@/price['price']
-list-client-decode: model [Pet(id=1, name='A', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0), Pet(id=2, name='B', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels={'a', 'b'}, scores=UNSET, visits=0)] wire=[{"id":1,"name":"A","status":"new","zz":1},{"id":2,"name":"B","status":"new","labels":["b","a"]}] presence=['', '/0', '/0/id', '/0/name', '/0/status', '/0/zz', '/1', '/1/id', '/1/name', '/1/status', '/1/labels', '/1/labels/0', '/1/labels/1'] extras={"/0/zz":1}
-list-server-encode-plain: wire=[{"id":1,"name":"A","status":"new","visits":0},{"id":2,"name":"B","status":"new","labels":["a","b"],"visits":0}]
-lookup-client-decode-map: model {'a': Pet(id=1, name='A', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0)} wire={"a":{"id":1,"name":"A","status":"new"}} presence=['', '/a', '/a/id', '/a/name', '/a/status'] extras={}
-lookup-client-decode-list: model [Pet(id=1, name='A', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0)] wire=[{"id":1,"name":"A","status":"new"}] presence=['', '/0', '/0/id', '/0/name', '/0/status'] extras={}
-lookup-server-encode-map: wire={"a":{"id":1,"name":"A","status":"new","visits":0}}
-lookup-server-encode-list: wire=[{"id":1,"name":"A","status":"new","visits":0}]
-patch-client-encode-native: wire={"name":"B"}
-patch-client-from-wire: model PetPatch(name='B', tag=UNSET) wire={"name":"B"} presence=['', '/name'] extras={}
-patch-client-encode-from-wire: wire={"name":"B"}
-patch-client-snapshot-presence: model PetPatch(name='B', tag=UNSET) wire={"name":"B"} presence=['', '/name'] extras={}
-patch-client-snapshot-delete: CodecBindingError The presence tree does not select existing object members at /
-limit-server-decode: model 5 wire=5 presence=[''] extras={}
-create-client-serialize: wire={"name":"Mimi","status":"new","password":"pw","visits":0}
-created-server-serialize-snapshot: wire={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com","note":1},"nick_name":null,"hint":"x","born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2,"labels":["b","a"],"scores":{"x":1},"visits":0}
-created-client-convert: converted Pet(id=1, name='Mimi', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0)
-created-client-convert-long: converted Pet(id=1, name='far too long a name', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0)
-created-client-convert-type: NativeValidationError native.validation_error@/id['id']
-create-client-serialize-long: wire={"name":"far too long a name","status":"new","visits":0}
-create-client-encode-long: WireValidationError schema.maxLength@/name
+use /paths/~1pets/get parameter query limit: MsgspecCodec
+use /paths/~1pets/get parameter query tags: MsgspecCodec
+use /paths/~1pets/get parameter query filter: MsgspecCodec
+use /paths/~1pets/get response_body 200: MsgspecCodec
+use /paths/~1pets/post request_body: MsgspecCodec
+use /paths/~1pets/post response_body 201: MsgspecCodec
+use /paths/~1pets~1lookup/get response_body 200: MsgspecCodec
+use /paths/~1pets~1{id}~1photo/get parameter path id: MsgspecCodec
+use /paths/~1pets~1{id}/patch parameter path id: MsgspecCodec
+use /paths/~1pets~1{id}/patch request_body: MsgspecCodec
+use /paths/~1pets~1{id}/patch response_body 200: MsgspecCodec
+create-server-decode: ValidationError
+create-client-from-wire: native Pet(id=7, name='Mimi', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0) json={"id":7,"name":"Mimi","status":"new","visits":0}
+create-client-encode-native: json={"id":1,"name":"Mimi","status":"new","password":"pw","visits":0}
+created-client-decode: native Pet(id=1, name='Mimi', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=Owner(name='Ann', e_mail='ann@example.com', phone=UNSET), co_owner=UNSET, born='2020-01-01T00:00:00Z', price=Decimal('1.10'), cost=None, weight=2.0, labels={'a', 'b'}, scores={'x': 1}, visits=0) json={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com"},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2.0,"labels":["a","b"],"scores":{"x":1},"visits":0}
+created-server-encode-echo: json={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com"},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2.0,"labels":["a","b"],"scores":{"x":1},"visits":0}
+created-server-encode-snapshot: json={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com"},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2.0,"labels":["a","b"],"scores":{"x":1},"visits":0}
+created-server-omitted: json={"id":1,"name":"Mimi","status":"new","visits":0}
+created-server-explicit-none: json={"id":1,"name":"Mimi","status":"new","tag":null,"visits":0}
+created-server-nullable-none: json={"id":1,"name":"Mimi","status":"new","nick-name":null,"visits":0}
+created-server-too-long: json={"id":1,"name":"Mimi the cat","status":"new","visits":0}
+created-server-no-json: TypeError
+created-server-plain-dict: json={"id":1,"name":"Mimi","status":"new","unknown":1}
+created-server-missing-required: json={"id":1,"name":"Mimi"}
+created-client-decode-bad-price: ValidationError
+list-client-decode: native [Pet(id=1, name='A', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0), Pet(id=2, name='B', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels={'a', 'b'}, scores=UNSET, visits=0)] json=[{"id":1,"name":"A","status":"new","visits":0},{"id":2,"name":"B","status":"new","labels":["a","b"],"visits":0}]
+list-server-encode-plain: json=[{"id":1,"name":"A","status":"new","visits":0},{"id":2,"name":"B","status":"new","labels":["a","b"],"visits":0}]
+lookup-client-decode-map: native {'a': Pet(id=1, name='A', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0)} json={"a":{"id":1,"name":"A","status":"new","visits":0}}
+lookup-client-decode-list: native [Pet(id=1, name='A', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=UNSET, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0)] json=[{"id":1,"name":"A","status":"new","visits":0}]
+lookup-server-encode-map: json={"a":{"id":1,"name":"A","status":"new","visits":0}}
+lookup-server-encode-list: json=[{"id":1,"name":"A","status":"new","visits":0}]
+patch-client-encode-native: json={"name":"B"}
+patch-client-from-wire: native PetPatch(name='B', tag=UNSET) json={"name":"B"}
+patch-client-encode-from-wire: json={"name":"B"}
+limit-server-decode: native 5 json=5
+create-client-serialize: json={"id":1,"name":"Mimi","status":"new","password":"pw","visits":0}
+created-server-serialize-snapshot: json={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com"},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2.0,"labels":["a","b"],"scores":{"x":1},"visits":0}
+created-client-convert: native Pet(id=1, name='Mimi', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0) json={"id":1,"name":"Mimi","status":"new","kind":"cat","visits":0}
+created-client-convert-long: native Pet(id=1, name='far too long a name', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0) json={"id":1,"name":"far too long a name","status":"new","kind":"cat","visits":0}
+created-client-convert-type: ValidationError
+create-client-serialize-long: json={"id":1,"name":"far too long a name","status":"new","visits":0}
+create-client-encode-long: json={"id":1,"name":"far too long a name","status":"new","visits":0}

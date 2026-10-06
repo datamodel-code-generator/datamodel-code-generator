@@ -11,12 +11,7 @@ from models import FieldLabelsGetResponse200XNextHeader as _dcg_type_1
 from models import LabelList as _dcg_type_2
 
 from ..._generated import model_bindings
-from ..._runtime.client.codecs import (
-    HeaderBranch,
-    ResponseHeaders,
-    native_value,
-    optional_header,
-)
+from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...options import Unset
 from ...responses import ResponseInfo
@@ -39,7 +34,7 @@ _LIST_LABELS_HEADERS: Final[ResponseHeaders[_dcg_type_1, Unset]] = ResponseHeade
                             name='X-Next',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_15, model_bindings.CONTEXT_15),
+                        codec=model_bindings.codec_15,
                         missing=optional_header,
                     ),
                 ),
@@ -76,7 +71,7 @@ _LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[_dcg_type_3, Unset]] = ResponseH
                             name='X-Next',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_18, model_bindings.CONTEXT_18),
+                        codec=model_bindings.codec_18,
                         missing=optional_header,
                     ),
                 ),

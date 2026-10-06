@@ -376,6 +376,8 @@ def _routing(harness: _Harness, api: Any, feed: _Feed) -> None:
     for label in ("missing discriminator", "null discriminator", "number discriminator", "unknown discriminator"):
         _drained(lines, label, tagged.open())
     _drained(lines, "mapped event failing its type", tagged.open())
+    feed.replies.append(harness.reply((b"data: {broken\n\n",)))
+    _drained(lines, "malformed discriminator JSON", tagged.open())
 
 
 def _decoding(harness: _Harness, api: Any, feed: _Feed) -> None:
@@ -506,6 +508,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             harness.reply(_pieces(_FRAMES, 1)),
             harness.reply(_pieces(_TYPED, 5)),
             harness.reply((_TAGGED,)),
+            harness.reply((b"data: {broken\n\n",)),
             harness.reply((b'data: {"text": "a"}\n\n', b"data: cut")),
             harness.reply((b'data: {"text": "a"}\n\n', harness.interrupted())),
             harness.reply((b'data: {"text": "a"}\n\n' * 2,)),
@@ -514,6 +517,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             await _adrained(lines, "async one byte at a time", stream)
         await _adrained(lines, "async event type completion", await protocols.events.typed.open())
         await _adrained(lines, "async body discriminator", await protocols.events.tagged.open())
+        await _adrained(lines, "async malformed discriminator JSON", await protocols.events.tagged.open())
         await _adrained(lines, "async cut frame", await protocols.events.messages.open())
         await _adrained(lines, "async broken connection", await protocols.events.messages.open())
         stream = await protocols.events.messages.open()

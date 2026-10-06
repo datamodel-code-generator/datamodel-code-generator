@@ -1,8 +1,8 @@
-use /paths/~1camels/post request_body: native struct models:Camel msgspec_structural models=[('models:Camel', 'struct', 'ignore', True)]
-use /paths/~1camels/post response_body 200: native struct models:Camel msgspec_structural models=[('models:Camel', 'struct', 'ignore', True)]
-use /paths/~1kebabs/post request_body: native struct models:Kebab msgspec_structural models=[('models:Kebab', 'struct', 'ignore', True)]
-use /paths/~1kebabs/post response_body 200: native struct models:Kebab msgspec_structural models=[('models:Kebab', 'struct', 'ignore', True)]
-camel-server-decode: model Camel(pet_name='Mimi', age=2) wire={"petName":"Mimi","age":2} presence=['', '/petName', '/age'] extras={}
-camel-server-response: wire={"petName":"Mimi","age":2}
-kebab-server-decode: model Kebab(pet_name='Mimi', age=UNSET) wire={"pet-name":"Mimi"} presence=['', '/pet-name'] extras={}
-kebab-server-response: wire={"pet-name":"Mimi"}
+use /paths/~1camels/post request_body: MsgspecCodec
+use /paths/~1camels/post response_body 200: MsgspecCodec
+use /paths/~1kebabs/post request_body: MsgspecCodec
+use /paths/~1kebabs/post response_body 200: MsgspecCodec
+camel-server-decode: ValidationError
+camel-server-response: KeyError
+kebab-server-decode: ValidationError
+kebab-server-response: KeyError

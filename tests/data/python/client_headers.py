@@ -159,3 +159,22 @@ async def _async_headers(package: ModuleType, lines: list[str]) -> None:
 
         await arecord(lines, "async raw headers", raw_call)
     await http.aclose()
+
+
+def native_boundaries(package: ModuleType, lines: list[str]) -> None:
+    """Decode content headers natively and assemble a nullable model body from its fields."""
+    types = importlib.import_module(f"{package.__name__}.types.native_headers")
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        for label, header in (
+            ("duplicate JSON keys", '{"value":"first","value":"last"}'),
+            ("malformed JSON", '{broken'),
+            ("missing required header", None),
+        ):
+            exchange.respond(raw_response(204, **({} if header is None else {"X-Value": header})))
+            info = api.native_headers.with_raw_response.get_values().info
+            record(lines, label, lambda: types.decode_get_values_header(info, name="X-Value"))
+            record(lines, "missing optional JSON header", lambda: types.decode_get_values_header(info, name="X-Optional"))
+        exchange.respond(raw_response(204))
+        record(lines, "nullable model from fields", lambda: api.native_headers.save_value(value="saved"))
+        exchange.responders.clear()

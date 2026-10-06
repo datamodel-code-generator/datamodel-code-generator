@@ -22,7 +22,7 @@ from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import CodecError
-from ..model_codecs.media import decode_json
+from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET
 from .errors import (
     OperationCancelledError,
@@ -54,7 +54,7 @@ from .resume import (
 from .values import MISSING, Missing, RepeatedValueError, resolve, selected, server_expiry
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
     from datetime import datetime
     from types import TracebackType
 
@@ -62,7 +62,7 @@ if TYPE_CHECKING:
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
     from ..client.timing import Clock, Deadline
-    from ..model_codecs.wire import WireValue
+    from ..model_codecs.media import JSONValue
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
     from .pagination import PageBinding
     from .records import ProtocolProgress, Selector
@@ -103,12 +103,12 @@ _KINDS: Final[Mapping[type, str]] = MappingProxyType({
     type(None): "null",
     bool: "boolean",
     str: "string",
-    tuple: "array",
+    list: "array",
 })
 
 
-def _kind(value: WireValue) -> str:
-    """Return the JSON type of a wire value, every number being one type."""
+def _kind(value: JSONValue) -> str:
+    """Return the JSON type of a value, every number being one type."""
     return _KINDS.get(type(value)) or ("object" if isinstance(value, Mapping) else "number")
 
 
@@ -155,12 +155,12 @@ class PollingPlan(Generic[T, P, C]):
     poll_operation: OperationRef
     poll: OperationPlan[P]
     state: Selector
-    pending: tuple[WireValue, ...]
-    succeeded: tuple[WireValue, ...]
+    pending: tuple[JSONValue, ...]
+    succeeded: tuple[JSONValue, ...]
     fingerprint: str
     bindings: tuple[PageBinding, ...] = ()
-    failed: tuple[WireValue, ...] = ()
-    cancelled: tuple[WireValue, ...] = ()
+    failed: tuple[JSONValue, ...] = ()
+    cancelled: tuple[JSONValue, ...] = ()
     inline: Callable[[P], T | None] | None = None
     inline_selector: BodySelector | None = None
     fetch_operation: OperationRef | None = None
@@ -288,11 +288,11 @@ def _limits(
     return limits
 
 
-def _absence(value: WireValue | Missing) -> Literal["missing", "null"]:
+def _absence(value: JSONValue | Missing) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 
-def _literals(bindings: tuple[PageBinding, ...], values: tuple[WireValue, ...]) -> tuple[WireValue, ...]:
+def _literals(bindings: tuple[PageBinding, ...], values: Sequence[JSONValue]) -> tuple[JSONValue, ...]:
     """Return saved binding values with each literal binding's value the plan's, whatever was saved."""
     return tuple(
         value if binding.selector is not None else binding.literal
@@ -301,7 +301,7 @@ def _literals(bindings: tuple[PageBinding, ...], values: tuple[WireValue, ...]) 
 
 
 def _sent(
-    targeted: Targeted[Any], values: tuple[WireValue, ...]
+    targeted: Targeted[Any], values: tuple[JSONValue, ...]
 ) -> Callable[[], tuple[tuple[object, ...], object, None]]:
     """Return the request a targeted operation sends writing the values, whatever the handle holds later."""
     return lambda: (*targeted.request(values), None)
@@ -319,10 +319,10 @@ class _Step(Generic[T, P]):
     phase: _Phase
     not_before: float
     snapshot: PollSnapshot[P] | None = None
-    bound: tuple[WireValue, ...] = ()
+    bound: tuple[JSONValue, ...] = ()
     result: T | Missing = MISSING
-    seed: tuple[WireValue, ...] | None = None
-    cancel: tuple[WireValue, ...] = ()
+    seed: tuple[JSONValue, ...] | None = None
+    cancel: tuple[JSONValue, ...] = ()
     expires_at: datetime | None = None
 
 
@@ -374,9 +374,9 @@ class _Operation(Generic[T, P]):
         self._phase = _Phase.PENDING
         self._closed = False
         self._snapshot: PollSnapshot[P] | None = None
-        self._bound: tuple[WireValue, ...] = ()
-        self._seed: tuple[WireValue, ...] = ()
-        self._cancel: tuple[WireValue, ...] = ()
+        self._bound: tuple[JSONValue, ...] = ()
+        self._seed: tuple[JSONValue, ...] = ()
+        self._cancel: tuple[JSONValue, ...] = ()
         self._result: T | Missing = MISSING
         self._expires_at: datetime | None = None
         self._not_before = 0.0
@@ -414,11 +414,11 @@ class _Operation(Generic[T, P]):
             if (pending := self._phase is _Phase.PENDING) or (
                 self._phase is _Phase.SUCCEEDED and isinstance(self._result, Missing)
             ):
-                state: WireValue = {
+                state: JSONValue = {
                     "phase": "pending" if pending else "fetch",
-                    "bound": self._bound,
-                    "seed": self._seed if pending else (),
-                    "cancel": self._cancel if pending else (),
+                    "bound": list(self._bound),
+                    "seed": list(self._seed) if pending else [],
+                    "cancel": list(self._cancel) if pending else [],
                     "expires_at": saved_expiry(self._expires_at),
                 }
                 return ResumeState(helper=self._plan.fingerprint, state=state)
@@ -523,8 +523,8 @@ class _Operation(Generic[T, P]):
         )
 
     def _selected(
-        self, read: Selector, wire: WireValue, info: ResponseInfo, operation: OperationRef | None
-    ) -> WireValue | Missing:
+        self, read: Selector, wire: JSONValue, info: ResponseInfo, operation: OperationRef | None
+    ) -> JSONValue | Missing:
         """Return what a selector reads from a response, or MISSING, refusing a header selected once it repeats."""
         try:
             return selected(read, wire, info)
@@ -532,8 +532,8 @@ class _Operation(Generic[T, P]):
             raise self._error(info, "malformed", read, operation) from None
 
     def _value(
-        self, binding: PageBinding, wire: WireValue, info: ResponseInfo, operation: OperationRef | None
-    ) -> WireValue:
+        self, binding: PageBinding, wire: JSONValue, info: ResponseInfo, operation: OperationRef | None
+    ) -> JSONValue:
         """Return what a binding writes: its literal or what the response gives, refusing a missing value."""
         if (selector := binding.selector) is None:
             return binding.literal
@@ -545,11 +545,11 @@ class _Operation(Generic[T, P]):
         self,
         targeted: Targeted[Any],
         bindings: tuple[PageBinding, ...],
-        wire: WireValue,
+        wire: JSONValue,
         info: ResponseInfo,
         operation: OperationRef | None,
-        kept: tuple[WireValue, ...] = (),
-    ) -> tuple[WireValue, ...]:
+        kept: tuple[JSONValue, ...] = (),
+    ) -> tuple[JSONValue, ...]:
         """Return the values bindings write: their literals, kept `initial` values, and what the response gives.
 
         A missing value is refused, and so are read values that make a path segment a dot segment once encoded.
@@ -566,7 +566,7 @@ class _Operation(Generic[T, P]):
             raise self._error(info, "value", read, operation)
         return written
 
-    def _expiry(self, wire: WireValue, info: ResponseInfo) -> datetime:
+    def _expiry(self, wire: JSONValue, info: ResponseInfo) -> datetime:
         """Return the server's expiry an accepted create response gives at the helper's declared selector.
 
         It must be a string giving an RFC 3339 date-time with an offset or an HTTP date.
@@ -602,7 +602,7 @@ class _Operation(Generic[T, P]):
         read: Callable[[V], T | None],
         selector: BodySelector | None,
         data: V,
-        wire: WireValue,
+        wire: JSONValue,
         info: ResponseInfo,
         operation: OperationRef | None,
     ) -> T:
@@ -613,7 +613,7 @@ class _Operation(Generic[T, P]):
         return value
 
     def _created(
-        self, data: object, wire: WireValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
+        self, data: object, wire: JSONValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
     ) -> _Step[T, P]:
         """Settle the create response: an accepted status pends, an immediate one carries the result.
 
@@ -643,7 +643,7 @@ class _Operation(Generic[T, P]):
         raise self._error(info, "value", StatusSelector(), plan.operation)
 
     def _polled(
-        self, data: P, wire: WireValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
+        self, data: P, wire: JSONValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
     ) -> _Step[T, P]:
         """Settle one poll by its state; an unknown state raises PollingStateError and success is never inferred.
 
@@ -669,13 +669,13 @@ class _Operation(Generic[T, P]):
                 return _Step(phase, self._after(info), snapshot, polled)
             cancels = self._values(cancel.targeted, cancel.bindings, wire, info, operation, self._cancel)
             return _Step(phase, self._after(info), snapshot, polled, cancel=cancels)
-        bound: tuple[WireValue, ...] = ()
+        bound: tuple[JSONValue, ...] = ()
         result: T | Missing = MISSING
         if phase is _Phase.SUCCEEDED:
             bound, result = self._succeeded(data, wire, info)
         return _Step(phase, self._limits.clock.monotonic(), snapshot, bound, result)
 
-    def _succeeded(self, data: P, wire: WireValue, info: ResponseInfo) -> tuple[tuple[WireValue, ...], T | Missing]:
+    def _succeeded(self, data: P, wire: JSONValue, info: ResponseInfo) -> tuple[tuple[JSONValue, ...], T | Missing]:
         """Return what the result fetch writes after a successful poll, or the result the poll carries itself."""
         plan = self._plan
         operation = plan.poll_operation
@@ -789,14 +789,14 @@ class _Operation(Generic[T, P]):
             ),
         )
 
-    def _dots(self, targeted: Targeted[Any], written: tuple[WireValue, ...]) -> None:
+    def _dots(self, targeted: Targeted[Any], written: tuple[JSONValue, ...]) -> None:
         """Refuse saved values making a path segment a dot segment once encoded, as if a server had just given them."""
         from .writes import dotted_write  # noqa: PLC0415 - A plan loaded the operation runtime.
 
         if (read := dotted_write(targeted, written)) is not None:
             raise self._error(None, "value", read, self._plan.operation)
 
-    def _restore(self, state: WireValue) -> None:
+    def _restore(self, state: JSONValue) -> None:
         """Restore a handle from a checkpoint's decoded state, refusing what does not fit the helper.
 
         A pending handle prepares its poll, the result fetch's saved values, and a remote cancel, and one whose result
@@ -804,7 +804,7 @@ class _Operation(Generic[T, P]):
         """
         plan = self._plan
         require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
-        fields = cast("Mapping[str, WireValue]", state)
+        fields = cast("Mapping[str, JSONValue]", state)
         phase = fields["phase"]
         bound, seed, cancel = state_array(fields["bound"]), state_array(fields["seed"]), state_array(fields["cancel"])
         self._expires_at = state_expiry(fields["expires_at"])
@@ -837,13 +837,13 @@ class _Operation(Generic[T, P]):
 
 
 def _receipt(
-    data: K, _wire: WireValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
+    data: K, _wire: JSONValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
 ) -> CancelReceipt[K]:
     """Return the receipt of a remote cancel request."""
     return CancelReceipt(data=data, response=info)
 
 
-def _kept(data: T, _wire: WireValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]) -> T:
+def _kept(data: T, _wire: JSONValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]) -> T:
     """Return a fetched result as it was decoded."""
     return data
 
@@ -1171,7 +1171,7 @@ def _restored(
         raise _resume_error(plan, "fingerprint")
     handle = make(_session(limits))
     try:
-        handle._restore(decode_json(state_json))  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        handle._restore(json_value(state_json))  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     except MalformedStateError:
         raise _resume_error(plan, "malformed") from None
     if (expires_at := handle._expires_at) is not None and expires_at.timestamp() <= limits.clock.time():  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001

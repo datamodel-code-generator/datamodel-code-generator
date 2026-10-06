@@ -1,0 +1,41 @@
+openapi: 3.1.0
+info: {title: Native boundary contracts, version: '1'}
+servers: [{url: https://api.example.com}]
+paths:
+  /values:
+    get:
+      operationId: getValues
+      tags: [nativeHeaders]
+      responses:
+        '204':
+          description: JSON headers
+          headers:
+            X-Value:
+              required: true
+              content:
+                application/json:
+                  schema: {$ref: '#/components/schemas/Entry'}
+            X-Optional:
+              content:
+                application/json:
+                  schema: {$ref: '#/components/schemas/Entry'}
+    post:
+      operationId: saveValue
+      tags: [nativeHeaders]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - {$ref: '#/components/schemas/Entry'}
+                - {type: 'null'}
+      responses:
+        '204': {description: Saved}
+components:
+  schemas:
+    Entry:
+      type: object
+      required: [value]
+      properties:
+        value: {type: string}

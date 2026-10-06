@@ -10,8 +10,6 @@ from models import ServerMessage as _dcg_type_1
 
 from .. import _operations
 from .._generated import model_bindings
-from .._runtime.client.codecs import native_value
-from .._runtime.client.operations import Encoder
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.websocket import ChannelPlan
 from .._runtime.protocols.websocket_connectors import (
@@ -25,8 +23,8 @@ SOCKET_0: Final[ChannelPlan[_dcg_type_0, _dcg_type_1]] = ChannelPlan(
     call=_operations.OPERATION_0,
     fingerprint='eb202098c6264f2a3c2f2602885dba2b9653862ef831738c97b848024a1018d2',
     connectors=(native_connector, async_native_connector),
-    encoder=Encoder(model_bindings.codec_4, model_bindings.CONTEXT_4),
-    decoder=native_value(model_bindings.codec_5, model_bindings.CONTEXT_5),
+    encoder=model_bindings.codec_4,
+    decoder=model_bindings.codec_5,
     subprotocols=('chat.v2', 'chat.v1'),
     compression=True,
 )

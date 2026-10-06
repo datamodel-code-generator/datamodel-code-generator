@@ -7,7 +7,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from itertools import starmap
-from typing import Final, Literal, TypeAlias
+from typing import Final, Literal, TypeAlias, cast
 from urllib.parse import quote
 
 from .errors import ParameterEncodingError, WireIssue, WireValidationError
@@ -157,22 +157,19 @@ def _member(plan: ParameterPlan, name: str) -> FieldPlan | None:
     return next((item for item in plan.fields if item.name == name), plan.additional)
 
 
-def _entries(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
+def _entries(plan: ParameterPlan, value: JSONValue | WireValue) -> list[_Entry]:
     match plan.shape, value:
         case _, None:
             msg = "JSON null cannot be written by a style-based parameter"
             raise ParameterEncodingError(msg)
         case "scalar", _:
             return [(None, lexical(value, plan.kind))]
-        case "array", tuple():
+        case "array", tuple() | list():
             return [(None, lexical(item, plan.kind)) for item in value]
         case "object", Mapping():
             entries: list[_Entry] = []
             for key, item in value.items():
-                if (declared := _member(plan, key)) is None:
-                    msg = "An object parameter member is not declared"
-                    raise ParameterEncodingError(msg)
-                entries.append((key, lexical(item, declared.kind)))
+                entries.append((key, lexical(item, "string")))
             return entries
         case _:
             msg = "The value does not have the parameter's declared shape"
@@ -284,7 +281,7 @@ def _encode_cookie(plan: ParameterPlan, entries: list[_Entry]) -> list[_Entry]:
     return list(pairs)
 
 
-def _content(plan: ParameterPlan, value: WireValue) -> str:
+def _content(plan: ParameterPlan, value: JSONValue | WireValue) -> str:
     match media_kind(plan.content_media_type or ""), value:
         case "json", _:
             return encode_json(value, ascii_only=plan.location == "header").decode()
@@ -295,7 +292,7 @@ def _content(plan: ParameterPlan, value: WireValue) -> str:
             raise ParameterEncodingError(msg)
 
 
-def _querystring_bytes(plan: ParameterPlan, value: WireValue) -> bytes:
+def _querystring_bytes(plan: ParameterPlan, value: JSONValue | WireValue) -> bytes:
     match media_kind(plan.content_media_type or ""):
         case "form":
             return encode_form(value, plan.fields, plan.additional)
@@ -303,14 +300,14 @@ def _querystring_bytes(plan: ParameterPlan, value: WireValue) -> bytes:
             return quote(_content(plan, value), safe="").encode("ascii")
 
 
-def _encode_querystring(plan: ParameterPlan, value: WireValue) -> bytes:
+def _encode_querystring(plan: ParameterPlan, value: JSONValue | WireValue) -> bytes:
     if raw := _querystring_bytes(plan, value):
         return raw
     msg = "An explicit querystring value cannot encode to an empty query"
     raise ParameterEncodingError(msg)
 
 
-def _style_pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
+def _style_pairs(plan: ParameterPlan, value: JSONValue | WireValue) -> list[_Entry]:
     """Return a style's pairs of a value; an empty array or object writes none, as an omitted value does.
 
     A path segment cannot be omitted, so a path parameter refuses an empty array or object.
@@ -331,7 +328,7 @@ def _style_pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
             return _encode_cookie(plan, entries)
 
 
-def _content_pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
+def _content_pairs(plan: ParameterPlan, value: JSONValue | WireValue) -> list[_Entry]:
     text = _content(plan, value)
     match plan.location:
         case "path":
@@ -342,9 +339,9 @@ def _content_pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
             return [(plan.name, _header_text(text, item=False))]
 
 
-def encode_parameter(plan: ParameterPlan, value: WireValue) -> EncodedParameterContribution:
-    """Encode one validated wire value into its location's ordered raw contribution."""
-    value = freeze_wire(value)
+def encode_parameter(plan: ParameterPlan, value: object) -> EncodedParameterContribution:
+    """Format one native JSON value into its location's ordered raw contribution."""
+    value = cast("JSONValue | WireValue", value)
     if plan.location == "querystring":
         return QueryStringContribution(raw_query=_encode_querystring(plan, value))
     pairs = _pairs(plan, value)
@@ -356,24 +353,24 @@ def encode_parameter(plan: ParameterPlan, value: WireValue) -> EncodedParameterC
     )
 
 
-def path_text(plan: ParameterPlan, value: WireValue) -> str:
+def path_text(plan: ParameterPlan, value: object) -> str:
     """Return the text a path parameter's value substitutes for its placeholder in the path template."""
-    return "".join(text for _, text in _pairs(plan, freeze_wire(value)))
+    return "".join(text for _, text in _pairs(plan, cast("JSONValue | WireValue", value)))
 
 
-def query_pairs(plan: ParameterPlan, value: WireValue) -> tuple[str, ...]:
+def query_pairs(plan: ParameterPlan, value: object) -> tuple[str, ...]:
     """Return a query parameter's ordered name=value pairs as a query or URL-encoded form carries them."""
-    return tuple(f"{key}={text}" for key, text in _pairs(plan, freeze_wire(value)))
+    return tuple(f"{key}={text}" for key, text in _pairs(plan, cast("JSONValue | WireValue", value)))
 
 
-def part_pairs(plan: ParameterPlan, value: WireValue) -> tuple[tuple[str, str], ...]:
+def part_pairs(plan: ParameterPlan, value: object) -> tuple[tuple[str, str], ...]:
     """Return a query parameter's ordered names and values as form-data parts carry them, without percent-encoding."""
-    if not (entries := _entries(plan, freeze_wire(value))):
+    if not (entries := _entries(plan, cast("JSONValue | WireValue", value))):
         return ()
     return tuple((plan.name if key is None else key, text) for key, text in _encode_query(plan, entries, raw=True))
 
 
-def _pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
+def _pairs(plan: ParameterPlan, value: JSONValue | WireValue) -> list[_Entry]:
     return (_style_pairs if plan.content_media_type is None else _content_pairs)(plan, value)
 
 

@@ -165,15 +165,15 @@
   continuation link = Continuation(kind='link')
   canonical string = (b'"secret-cursor"', True, True)
   canonical integer = (b'20', True, True)
-  canonical decimal = (b'1.50', True, True)
+  canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical float = (b'2.5', True, True)
-  canonical large float = (b'1E+16', True, True)
-  canonical small float = (b'1E-7', True, True)
+  canonical large float = (b'1e+16', True, True)
+  canonical small float = (b'1e-07', True, True)
   canonical negative zero float = (b'-0.0', True, True)
   canonical whole float = (b'100.0', True, True)
-  canonical negative zero decimal = (b'0', True, True)
-  canonical exponent decimal = (b'1E+2', True, True)
-  canonical whole decimal = (b'7', True, True)
+  canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical large integer = (b'1180591620717411303424', True, True)
   canonical null = (b'null', True, True)
   canonical boolean = (b'false', True, True)
@@ -181,20 +181,20 @@
   canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
   canonical list = (b'[1,"two"]', True, True)
   canonical tuple = (b'[1,"two"]', True, True)
-  canonical mapping proxy = (b'{"y":true,"z":null}', True, True)
+  canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
   continuation kind token ! ValueError: kind must be one of its declared values []
   continuation kind None ! TypeError: kind must be a string []
   continuation missing value ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'value' []
   continuation missing kind ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'kind' []
-  continuation object value ! TypeError: object is not a JSON value []
-  continuation bytes value ! TypeError: bytes is not a JSON value []
+  continuation object value ! TypeError: Object of type object is not JSON serializable []
+  continuation bytes value ! TypeError: Object of type bytes is not JSON serializable []
   continuation integer key ! TypeError: A wire object key must be a string []
-  continuation nan value ! ValueError: A wire number must be finite []
+  continuation nan value ! ValueError: Out of range float values are not JSON compliant: nan []
   continuation surrogate value ! ValueError: A wire string must not contain lone surrogates []
   continuation cyclic value ! ValueError: A wire value must not contain cycles []
   continuation deeply nested value ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  continuation integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  continuation integral decimal over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  continuation integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
+  continuation integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   continuation extra field ! TypeError: Continuation.__init__() got an unexpected keyword argument 'raw' []
   continuation positional ! TypeError: Continuation.__init__() takes 1 positional argument but 3 were given []
   continuation kind='cursor' repr=Continuation(kind='cursor') str=Continuation(kind='cursor') secret=False
@@ -210,20 +210,19 @@
   continuation after mutation=Continuation(kind='cursor')/b'"secret-cursor"'
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
-  snapshot state=mappingproxy {'status': 'secret-state', 'steps': (1, 2)}
+  snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
   snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
-  snapshot state frozen ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   snapshot terminal = True
   snapshot terminal integer ! TypeError: terminal must be a bool []
   snapshot terminal string ! TypeError: terminal must be a bool []
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
-  snapshot state object ! TypeError: object is not a JSON value []
-  snapshot state nan ! ValueError: A wire number must be finite []
+  snapshot state object ! TypeError: Object of type object is not JSON serializable []
+  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"helper":"helper-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
+  resume export={"helper":"helper-secret","state":{"a":"é","n":1e+100,"z":[1,2.5,null,true]},"version":1}
   resume export stable=True
   resume identity equality=True/False
   resume dict=False public=['export']
@@ -236,9 +235,9 @@
   resume pickle ! TypeError: ResumeState cannot be pickled []
   resume helper None ! TypeError: helper must be a string []
   resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume state integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  resume state object ! TypeError: object is not a JSON value []
-  resume state set ! TypeError: set is not a JSON value []
+  resume state integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
+  resume state object ! TypeError: Object of type object is not JSON serializable []
+  resume state set ! TypeError: Object of type set is not JSON serializable []
   resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
   resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
@@ -246,7 +245,7 @@
   import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import duplicate member ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  import duplicate member = ResumeState(version=1)
   import NaN ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import string input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import bytearray input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
@@ -632,15 +631,15 @@
   continuation link = Continuation(kind='link')
   canonical string = (b'"secret-cursor"', True, True)
   canonical integer = (b'20', True, True)
-  canonical decimal = (b'1.50', True, True)
+  canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical float = (b'2.5', True, True)
-  canonical large float = (b'1E+16', True, True)
-  canonical small float = (b'1E-7', True, True)
+  canonical large float = (b'1e+16', True, True)
+  canonical small float = (b'1e-07', True, True)
   canonical negative zero float = (b'-0.0', True, True)
   canonical whole float = (b'100.0', True, True)
-  canonical negative zero decimal = (b'0', True, True)
-  canonical exponent decimal = (b'1E+2', True, True)
-  canonical whole decimal = (b'7', True, True)
+  canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical large integer = (b'1180591620717411303424', True, True)
   canonical null = (b'null', True, True)
   canonical boolean = (b'false', True, True)
@@ -648,20 +647,20 @@
   canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
   canonical list = (b'[1,"two"]', True, True)
   canonical tuple = (b'[1,"two"]', True, True)
-  canonical mapping proxy = (b'{"y":true,"z":null}', True, True)
+  canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
   continuation kind token ! ValueError: kind must be one of its declared values []
   continuation kind None ! TypeError: kind must be a string []
   continuation missing value ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'value' []
   continuation missing kind ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'kind' []
-  continuation object value ! TypeError: object is not a JSON value []
-  continuation bytes value ! TypeError: bytes is not a JSON value []
+  continuation object value ! TypeError: Object of type object is not JSON serializable []
+  continuation bytes value ! TypeError: Object of type bytes is not JSON serializable []
   continuation integer key ! TypeError: A wire object key must be a string []
-  continuation nan value ! ValueError: A wire number must be finite []
+  continuation nan value ! ValueError: Out of range float values are not JSON compliant: nan []
   continuation surrogate value ! ValueError: A wire string must not contain lone surrogates []
   continuation cyclic value ! ValueError: A wire value must not contain cycles []
   continuation deeply nested value ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  continuation integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  continuation integral decimal over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  continuation integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
+  continuation integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   continuation extra field ! TypeError: Continuation.__init__() got an unexpected keyword argument 'raw' []
   continuation positional ! TypeError: Continuation.__init__() takes 1 positional argument but 3 were given []
   continuation kind='cursor' repr=Continuation(kind='cursor') str=Continuation(kind='cursor') secret=False
@@ -677,20 +676,19 @@
   continuation after mutation=Continuation(kind='cursor')/b'"secret-cursor"'
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
-  snapshot state=mappingproxy {'status': 'secret-state', 'steps': (1, 2)}
+  snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
   snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
-  snapshot state frozen ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   snapshot terminal = True
   snapshot terminal integer ! TypeError: terminal must be a bool []
   snapshot terminal string ! TypeError: terminal must be a bool []
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
-  snapshot state object ! TypeError: object is not a JSON value []
-  snapshot state nan ! ValueError: A wire number must be finite []
+  snapshot state object ! TypeError: Object of type object is not JSON serializable []
+  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"helper":"helper-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
+  resume export={"helper":"helper-secret","state":{"a":"é","n":1e+100,"z":[1,2.5,null,true]},"version":1}
   resume export stable=True
   resume identity equality=True/False
   resume dict=False public=['export']
@@ -703,9 +701,9 @@
   resume pickle ! TypeError: ResumeState cannot be pickled []
   resume helper None ! TypeError: helper must be a string []
   resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume state integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  resume state object ! TypeError: object is not a JSON value []
-  resume state set ! TypeError: set is not a JSON value []
+  resume state integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
+  resume state object ! TypeError: Object of type object is not JSON serializable []
+  resume state set ! TypeError: Object of type set is not JSON serializable []
   resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
   resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
@@ -713,7 +711,7 @@
   import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import duplicate member ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  import duplicate member = ResumeState(version=1)
   import NaN ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import string input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import bytearray input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
@@ -1099,15 +1097,15 @@
   continuation link = Continuation(kind='link')
   canonical string = (b'"secret-cursor"', True, True)
   canonical integer = (b'20', True, True)
-  canonical decimal = (b'1.50', True, True)
+  canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical float = (b'2.5', True, True)
-  canonical large float = (b'1E+16', True, True)
-  canonical small float = (b'1E-7', True, True)
+  canonical large float = (b'1e+16', True, True)
+  canonical small float = (b'1e-07', True, True)
   canonical negative zero float = (b'-0.0', True, True)
   canonical whole float = (b'100.0', True, True)
-  canonical negative zero decimal = (b'0', True, True)
-  canonical exponent decimal = (b'1E+2', True, True)
-  canonical whole decimal = (b'7', True, True)
+  canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical large integer = (b'1180591620717411303424', True, True)
   canonical null = (b'null', True, True)
   canonical boolean = (b'false', True, True)
@@ -1115,20 +1113,20 @@
   canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
   canonical list = (b'[1,"two"]', True, True)
   canonical tuple = (b'[1,"two"]', True, True)
-  canonical mapping proxy = (b'{"y":true,"z":null}', True, True)
+  canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
   continuation kind token ! ValueError: kind must be one of its declared values []
   continuation kind None ! TypeError: kind must be a string []
   continuation missing value ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'value' []
   continuation missing kind ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'kind' []
-  continuation object value ! TypeError: object is not a JSON value []
-  continuation bytes value ! TypeError: bytes is not a JSON value []
+  continuation object value ! TypeError: Object of type object is not JSON serializable []
+  continuation bytes value ! TypeError: Object of type bytes is not JSON serializable []
   continuation integer key ! TypeError: A wire object key must be a string []
-  continuation nan value ! ValueError: A wire number must be finite []
+  continuation nan value ! ValueError: Out of range float values are not JSON compliant: nan []
   continuation surrogate value ! ValueError: A wire string must not contain lone surrogates []
   continuation cyclic value ! ValueError: A wire value must not contain cycles []
   continuation deeply nested value ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  continuation integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  continuation integral decimal over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  continuation integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
+  continuation integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   continuation extra field ! TypeError: Continuation.__init__() got an unexpected keyword argument 'raw' []
   continuation positional ! TypeError: Continuation.__init__() takes 1 positional argument but 3 were given []
   continuation kind='cursor' repr=Continuation(kind='cursor') str=Continuation(kind='cursor') secret=False
@@ -1144,20 +1142,19 @@
   continuation after mutation=Continuation(kind='cursor')/b'"secret-cursor"'
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
-  snapshot state=mappingproxy {'status': 'secret-state', 'steps': (1, 2)}
+  snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
   snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
-  snapshot state frozen ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   snapshot terminal = True
   snapshot terminal integer ! TypeError: terminal must be a bool []
   snapshot terminal string ! TypeError: terminal must be a bool []
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
-  snapshot state object ! TypeError: object is not a JSON value []
-  snapshot state nan ! ValueError: A wire number must be finite []
+  snapshot state object ! TypeError: Object of type object is not JSON serializable []
+  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"helper":"helper-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
+  resume export={"helper":"helper-secret","state":{"a":"é","n":1e+100,"z":[1,2.5,null,true]},"version":1}
   resume export stable=True
   resume identity equality=True/False
   resume dict=False public=['export']
@@ -1170,9 +1167,9 @@
   resume pickle ! TypeError: ResumeState cannot be pickled []
   resume helper None ! TypeError: helper must be a string []
   resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume state integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  resume state object ! TypeError: object is not a JSON value []
-  resume state set ! TypeError: set is not a JSON value []
+  resume state integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
+  resume state object ! TypeError: Object of type object is not JSON serializable []
+  resume state set ! TypeError: Object of type set is not JSON serializable []
   resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
   resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
@@ -1180,7 +1177,7 @@
   import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import duplicate member ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  import duplicate member = ResumeState(version=1)
   import NaN ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import string input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import bytearray input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
@@ -1566,15 +1563,15 @@
   continuation link = Continuation(kind='link')
   canonical string = (b'"secret-cursor"', True, True)
   canonical integer = (b'20', True, True)
-  canonical decimal = (b'1.50', True, True)
+  canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical float = (b'2.5', True, True)
-  canonical large float = (b'1E+16', True, True)
-  canonical small float = (b'1E-7', True, True)
+  canonical large float = (b'1e+16', True, True)
+  canonical small float = (b'1e-07', True, True)
   canonical negative zero float = (b'-0.0', True, True)
   canonical whole float = (b'100.0', True, True)
-  canonical negative zero decimal = (b'0', True, True)
-  canonical exponent decimal = (b'1E+2', True, True)
-  canonical whole decimal = (b'7', True, True)
+  canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical large integer = (b'1180591620717411303424', True, True)
   canonical null = (b'null', True, True)
   canonical boolean = (b'false', True, True)
@@ -1582,20 +1579,20 @@
   canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
   canonical list = (b'[1,"two"]', True, True)
   canonical tuple = (b'[1,"two"]', True, True)
-  canonical mapping proxy = (b'{"y":true,"z":null}', True, True)
+  canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
   continuation kind token ! ValueError: kind must be one of its declared values []
   continuation kind None ! TypeError: kind must be a string []
   continuation missing value ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'value' []
   continuation missing kind ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'kind' []
-  continuation object value ! TypeError: object is not a JSON value []
-  continuation bytes value ! TypeError: bytes is not a JSON value []
+  continuation object value ! TypeError: Object of type object is not JSON serializable []
+  continuation bytes value ! TypeError: Object of type bytes is not JSON serializable []
   continuation integer key ! TypeError: A wire object key must be a string []
-  continuation nan value ! ValueError: A wire number must be finite []
+  continuation nan value ! ValueError: Out of range float values are not JSON compliant: nan []
   continuation surrogate value ! ValueError: A wire string must not contain lone surrogates []
   continuation cyclic value ! ValueError: A wire value must not contain cycles []
   continuation deeply nested value ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  continuation integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  continuation integral decimal over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  continuation integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
+  continuation integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   continuation extra field ! TypeError: Continuation.__init__() got an unexpected keyword argument 'raw' []
   continuation positional ! TypeError: Continuation.__init__() takes 1 positional argument but 3 were given []
   continuation kind='cursor' repr=Continuation(kind='cursor') str=Continuation(kind='cursor') secret=False
@@ -1611,20 +1608,19 @@
   continuation after mutation=Continuation(kind='cursor')/b'"secret-cursor"'
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
-  snapshot state=mappingproxy {'status': 'secret-state', 'steps': (1, 2)}
+  snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
   snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
-  snapshot state frozen ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   snapshot terminal = True
   snapshot terminal integer ! TypeError: terminal must be a bool []
   snapshot terminal string ! TypeError: terminal must be a bool []
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
-  snapshot state object ! TypeError: object is not a JSON value []
-  snapshot state nan ! ValueError: A wire number must be finite []
+  snapshot state object ! TypeError: Object of type object is not JSON serializable []
+  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"helper":"helper-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
+  resume export={"helper":"helper-secret","state":{"a":"é","n":1e+100,"z":[1,2.5,null,true]},"version":1}
   resume export stable=True
   resume identity equality=True/False
   resume dict=False public=['export']
@@ -1637,9 +1633,9 @@
   resume pickle ! TypeError: ResumeState cannot be pickled []
   resume helper None ! TypeError: helper must be a string []
   resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume state integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  resume state object ! TypeError: object is not a JSON value []
-  resume state set ! TypeError: set is not a JSON value []
+  resume state integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
+  resume state object ! TypeError: Object of type object is not JSON serializable []
+  resume state set ! TypeError: Object of type set is not JSON serializable []
   resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
   resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
@@ -1647,7 +1643,7 @@
   import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import duplicate member ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  import duplicate member = ResumeState(version=1)
   import NaN ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import string input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import bytearray input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
@@ -2033,15 +2029,15 @@
   continuation link = Continuation(kind='link')
   canonical string = (b'"secret-cursor"', True, True)
   canonical integer = (b'20', True, True)
-  canonical decimal = (b'1.50', True, True)
+  canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical float = (b'2.5', True, True)
-  canonical large float = (b'1E+16', True, True)
-  canonical small float = (b'1E-7', True, True)
+  canonical large float = (b'1e+16', True, True)
+  canonical small float = (b'1e-07', True, True)
   canonical negative zero float = (b'-0.0', True, True)
   canonical whole float = (b'100.0', True, True)
-  canonical negative zero decimal = (b'0', True, True)
-  canonical exponent decimal = (b'1E+2', True, True)
-  canonical whole decimal = (b'7', True, True)
+  canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
   canonical large integer = (b'1180591620717411303424', True, True)
   canonical null = (b'null', True, True)
   canonical boolean = (b'false', True, True)
@@ -2049,20 +2045,20 @@
   canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True, True)
   canonical list = (b'[1,"two"]', True, True)
   canonical tuple = (b'[1,"two"]', True, True)
-  canonical mapping proxy = (b'{"y":true,"z":null}', True, True)
+  canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
   continuation kind token ! ValueError: kind must be one of its declared values []
   continuation kind None ! TypeError: kind must be a string []
   continuation missing value ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'value' []
   continuation missing kind ! TypeError: Continuation.__init__() missing 1 required keyword-only argument: 'kind' []
-  continuation object value ! TypeError: object is not a JSON value []
-  continuation bytes value ! TypeError: bytes is not a JSON value []
+  continuation object value ! TypeError: Object of type object is not JSON serializable []
+  continuation bytes value ! TypeError: Object of type bytes is not JSON serializable []
   continuation integer key ! TypeError: A wire object key must be a string []
-  continuation nan value ! ValueError: A wire number must be finite []
+  continuation nan value ! ValueError: Out of range float values are not JSON compliant: nan []
   continuation surrogate value ! ValueError: A wire string must not contain lone surrogates []
   continuation cyclic value ! ValueError: A wire value must not contain cycles []
   continuation deeply nested value ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
-  continuation integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  continuation integral decimal over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  continuation integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
+  continuation integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   continuation extra field ! TypeError: Continuation.__init__() got an unexpected keyword argument 'raw' []
   continuation positional ! TypeError: Continuation.__init__() takes 1 positional argument but 3 were given []
   continuation kind='cursor' repr=Continuation(kind='cursor') str=Continuation(kind='cursor') secret=False
@@ -2078,20 +2074,19 @@
   continuation after mutation=Continuation(kind='cursor')/b'"secret-cursor"'
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='call-1', elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
-  snapshot state=mappingproxy {'status': 'secret-state', 'steps': (1, 2)}
+  snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
   snapshot frozen ! FrozenInstanceError: cannot assign to field 'terminal' []
-  snapshot state frozen ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   snapshot terminal = True
   snapshot terminal integer ! TypeError: terminal must be a bool []
   snapshot terminal string ! TypeError: terminal must be a bool []
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
-  snapshot state object ! TypeError: object is not a JSON value []
-  snapshot state nan ! ValueError: A wire number must be finite []
+  snapshot state object ! TypeError: Object of type object is not JSON serializable []
+  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   resume repr=ResumeState(version=1) str=ResumeState(version=1) secret=False
-  resume export={"helper":"helper-secret","state":{"a":"é","n":1E+100,"z":[1,2.5,null,true]},"version":1}
+  resume export={"helper":"helper-secret","state":{"a":"é","n":1e+100,"z":[1,2.5,null,true]},"version":1}
   resume export stable=True
   resume identity equality=True/False
   resume dict=False public=['export']
@@ -2104,9 +2099,9 @@
   resume pickle ! TypeError: ResumeState cannot be pickled []
   resume helper None ! TypeError: helper must be a string []
   resume helper surrogate ! ValueError: A wire string must not contain lone surrogates []
-  resume state integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
-  resume state object ! TypeError: object is not a JSON value []
-  resume state set ! TypeError: set is not a JSON value []
+  resume state integer over conversion limit ! ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit []
+  resume state object ! TypeError: Object of type object is not JSON serializable []
+  resume state set ! TypeError: Object of type set is not JSON serializable []
   resume state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   resume missing state ! TypeError: ResumeState.__init__() missing 1 required keyword-only argument: 'state' []
   resume positional ! TypeError: ResumeState.__init__() takes 1 positional argument but 3 were given []
@@ -2114,7 +2109,7 @@
   import not JSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import invalid UTF-8 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
-  import duplicate member ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
+  import duplicate member = ResumeState(version=1)
   import NaN ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import string input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error
   import bytearray input ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] resume_state_error

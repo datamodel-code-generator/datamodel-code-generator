@@ -27,12 +27,7 @@ from models import FieldUnusedPostResponse as _dcg_type_18
 from models import FieldUnusedPostResponse200XIdempotencyHeader as _dcg_type_19
 
 from ..._generated import model_bindings
-from ..._runtime.client.codecs import (
-    HeaderBranch,
-    ResponseHeaders,
-    native_value,
-    optional_header,
-)
+from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...options import Unset
 from ...responses import ResponseInfo
@@ -55,7 +50,7 @@ _PARAMETER_HEADERS: Final[ResponseHeaders[_dcg_type_1, Unset]] = ResponseHeaders
                             name='X-Idempotency',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                        codec=model_bindings.codec_2,
                         missing=optional_header,
                     ),
                 ),
@@ -92,7 +87,7 @@ _API_KEY_HEADERS: Final[ResponseHeaders[_dcg_type_3, Unset]] = ResponseHeaders(
                             name='X-Idempotency',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_4, model_bindings.CONTEXT_4),
+                        codec=model_bindings.codec_4,
                         missing=optional_header,
                     ),
                 ),
@@ -129,7 +124,7 @@ _BEARER_HEADERS: Final[ResponseHeaders[_dcg_type_5, Unset]] = ResponseHeaders(
                             name='X-Idempotency',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_6, model_bindings.CONTEXT_6),
+                        codec=model_bindings.codec_6,
                         missing=optional_header,
                     ),
                 ),
@@ -166,7 +161,7 @@ _OAUTH_HEADERS: Final[ResponseHeaders[_dcg_type_7, Unset]] = ResponseHeaders(
                             name='X-Idempotency',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_8, model_bindings.CONTEXT_8),
+                        codec=model_bindings.codec_8,
                         missing=optional_header,
                     ),
                 ),
@@ -203,7 +198,7 @@ _OPENID_HEADERS: Final[ResponseHeaders[_dcg_type_9, Unset]] = ResponseHeaders(
                             name='X-Idempotency',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_10, model_bindings.CONTEXT_10),
+                        codec=model_bindings.codec_10,
                         missing=optional_header,
                     ),
                 ),
@@ -240,7 +235,7 @@ _COOKIE_HEADERS: Final[ResponseHeaders[_dcg_type_11, Unset]] = ResponseHeaders(
                             name='X-Idempotency',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_12, model_bindings.CONTEXT_12),
+                        codec=model_bindings.codec_12,
                         missing=optional_header,
                     ),
                 ),
@@ -277,7 +272,7 @@ _QUERY_HEADERS: Final[ResponseHeaders[_dcg_type_13, Unset]] = ResponseHeaders(
                             name='X-Idempotency',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_14, model_bindings.CONTEXT_14),
+                        codec=model_bindings.codec_14,
                         missing=optional_header,
                     ),
                 ),
@@ -314,7 +309,7 @@ _IGNORED_HEADERS: Final[ResponseHeaders[_dcg_type_15, Unset]] = ResponseHeaders(
                             name='X-Idempotency',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_16, model_bindings.CONTEXT_16),
+                        codec=model_bindings.codec_16,
                         missing=optional_header,
                     ),
                 ),
@@ -351,7 +346,7 @@ _DIRECTION_HEADERS: Final[ResponseHeaders[_dcg_type_17, Unset]] = ResponseHeader
                             name='X-Idempotency',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_19, model_bindings.CONTEXT_19),
+                        codec=model_bindings.codec_19,
                         missing=optional_header,
                     ),
                 ),
@@ -388,7 +383,7 @@ _UNUSED_HEADERS: Final[ResponseHeaders[_dcg_type_19, Unset]] = ResponseHeaders(
                             name='X-Idempotency',
                             style='simple',
                         ),
-                        decode=native_value(model_bindings.codec_21, model_bindings.CONTEXT_21),
+                        codec=model_bindings.codec_21,
                         missing=optional_header,
                     ),
                 ),

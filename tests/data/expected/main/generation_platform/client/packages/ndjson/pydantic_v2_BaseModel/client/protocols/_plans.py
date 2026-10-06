@@ -11,7 +11,6 @@ from models import Record as _dcg_type_0
 
 from .. import _operations
 from .._generated import model_bindings
-from .._runtime.client.codecs import native_value
 from .._runtime.protocols.records import BodySelector
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.streams import EventPlan, UnknownEvent, unknown_event
@@ -22,7 +21,7 @@ STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
     call=_operations.OPERATION_0,
     media='application/x-ndjson',
     fingerprint='4afb02180b489b7b7df1be90bc76cb178a7a381f658a94660cf3642d8b5be7c8',
-    event=native_value(model_bindings.codec_4, model_bindings.CONTEXT_4),
+    event=model_bindings.codec_4,
     kind='ndjson',
 )
 
@@ -33,7 +32,7 @@ STREAM_1: Final[EventPlan[_dcg_type_0]] = EventPlan(
     call=_operations.OPERATION_0,
     media='application/x-ndjson',
     fingerprint='f82ea8aaa6d225342763538511ae4385813d6e4b9e4c6f6fb3c8a9cccf8c6ce6',
-    event=native_value(model_bindings.codec_4, model_bindings.CONTEXT_4),
+    event=model_bindings.codec_4,
     kind='ndjson',
     final_line='allow_eof',
 )
@@ -45,15 +44,10 @@ STREAM_2: Final[EventPlan[_dcg_type_1 | _dcg_type_2 | UnknownEvent]] = EventPlan
     call=_operations.OPERATION_0,
     media='application/x-ndjson',
     fingerprint='41ad88f73433682b89058fa6bc220e1eabca5cc8648088ced44c620487dc7d9e',
-    routes=(
-        ('created', native_value(model_bindings.codec_5, model_bindings.CONTEXT_5)),
-        ('deleted', native_value(model_bindings.codec_6, model_bindings.CONTEXT_6)),
-    ),
+    routes=(('created', model_bindings.codec_5), ('deleted', model_bindings.codec_6)),
     discriminator=BodySelector(pointer='/type'),
     unknown=unknown_event,
-    errors=(
-        ('failed', native_value(model_bindings.codec_7, model_bindings.CONTEXT_7)),
-    ),
+    errors=(('failed', model_bindings.codec_7),),
     completion='sentinel',
     terminal='[DONE]',
     kind='ndjson',
@@ -66,7 +60,7 @@ STREAM_3: Final[EventPlan[_dcg_type_0]] = EventPlan(
     call=_operations.OPERATION_1,
     media='application/jsonl; charset=utf-8',
     fingerprint='6cad3748d712b4eeb576ef9d10af3d51b186891d3fdc27659fb77bcea7bc35d7',
-    event=native_value(model_bindings.codec_8, model_bindings.CONTEXT_8),
+    event=model_bindings.codec_8,
     completion='sentinel',
     terminal='[DONE]',
     kind='ndjson',

@@ -33,11 +33,7 @@ _PLAN: Final[AdapterPlan[_dcg_type_0]] = AdapterPlan(
     helper_id='adapted.message',
     timestamp=True,
     delivery_id=True,
-    event=EventDecoder(
-        model_bindings.codec_2,
-        model_bindings.CONTEXT_2,
-        validate=False,
-    ),
+    event=EventDecoder(model_bindings.codec_2),
 )
 
 

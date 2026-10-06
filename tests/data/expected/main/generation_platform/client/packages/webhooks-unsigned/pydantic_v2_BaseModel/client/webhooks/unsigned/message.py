@@ -25,11 +25,7 @@ __all__ = ["decode_unverified"]
 
 _PLAN: Final[EventPlan[_dcg_type_0]] = EventPlan(
     helper_id='unsigned.message',
-    event=EventDecoder(
-        model_bindings.codec_0,
-        model_bindings.CONTEXT_0,
-        validate=False,
-    ),
+    event=EventDecoder(model_bindings.codec_0),
 )
 
 
