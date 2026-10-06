@@ -467,12 +467,21 @@ class AsyncNativeConnection:
         return _closed(error, self._connection.protocol.parser_exc, self._limit)
 
     async def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
-        """Send one message; the client bounds the await by the deadline itself."""
+        """Send one whole message, refusing it when its deadline passed before writing.
+
+        A deadline that passes while the frame drains leaves the message's delivery unknown.
+        """
+        if deadline is not None and deadline.remaining() <= 0:
+            raise TimeoutError
         try:
             with anyio.fail_after(None if deadline is None else max(0.0, deadline.remaining())):
                 await self._connection.send(data, text=text)
         except ConnectionClosed as error:
             raise _undelivered(error, self._closed(error)) from None
+        except TimeoutError as error:
+            raise APITimeoutError(
+                reason="phase_timeout", phase="write", delivery_state=DeliveryState.MAYBE_SENT, cause=error
+            ) from None
 
     async def receive(self, *, deadline: Deadline | None) -> WSFrame:
         """Return the next whole message; the client bounds the await by the deadline itself."""

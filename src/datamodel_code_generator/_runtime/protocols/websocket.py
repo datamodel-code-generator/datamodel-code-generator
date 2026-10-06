@@ -703,14 +703,10 @@ class _Sockets(Generic[SendT, RecvT]):
         """
         if (halt := self._halted()) is not None:
             return halt
-        if timeout is None:
-            deadline = self._call.deadline
+        if timeout is None and (deadline := self._call.deadline) is not None:
             return self._stamped(
                 APITimeoutError(
-                    reason="deadline_exceeded",
-                    deadline_at=None if deadline is None else deadline.at,
-                    phase="stream",
-                    delivery_state=delivery,
+                    reason="deadline_exceeded", deadline_at=deadline.at, phase="stream", delivery_state=delivery
                 )
             )
         return self._stamped(
@@ -940,10 +936,9 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         return error
 
     def _ended(self, closed: WebSocketClosedError) -> BaseException:
-        """End the session at a closed connection, unless the call stopped: cancelled, its client closing, or expired.
+        """End the session at a closed connection, unless the session's deadline already passed.
 
-        A synchronous wait has no guard, so a connection the client's closing closed reports that first. A closure
-        that was not normal ends the session as failed.
+        A closure that was not normal ends the session as failed.
         """
         if (halt := self._halted()) is not None:
             return self._failed(halt)
@@ -994,9 +989,9 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
 class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
     """An asyncio WebSocket session, with the synchronous session's contract.
 
-    Each wait runs under the call's guard in a lane of its own, so the cancel token, the client closing, and the
-    deadline stop only the waiting task. A receive or send they stop drops the connection, since a frame may be half
-    read or written; cancelling a receive's task leaves the session usable, as the library reads whole frames.
+    Each wait runs in a lane of its own, so its deadline stops only the waiting task. A receive or send it stops drops
+    the connection, since a frame may be half read or written; cancelling a receive's task leaves the session usable,
+    as the library reads whole frames.
     """
 
     __slots__ = ("_connection", "_queue", "_response")

@@ -116,6 +116,7 @@ class RetryState:
     retry_safety: Literal["method_default", "idempotent", "never"]
     idempotency: IdempotencyPlan | None
     delivery_state: DeliveryState
+    delivered_before: bool
     attempt_count: int
     body_replayable: bool
     server_hint: bool | None
@@ -185,7 +186,11 @@ def _replay_stop(state: RetryState) -> RetryStopReason | None:
         return "body_not_replayable"
     if not (
         replay_safe(state.method, state.retry_safety, state.idempotency)
-        or (state.failure_kind == "transport" and state.delivery_state is DeliveryState.NOT_SENT)
+        or (
+            state.failure_kind == "transport"
+            and state.delivery_state is DeliveryState.NOT_SENT
+            and not state.delivered_before
+        )
     ):
         return "unsafe_operation"
     return None

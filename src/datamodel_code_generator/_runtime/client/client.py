@@ -66,10 +66,10 @@ from .media import normalized
 from .multipart import MultipartSource, is_multipart, new_boundary, quiet_close
 from .native import (
     async_response_bytes,
-    attempt_timeout,
     native_async_client,
     native_client,
     native_error,
+    native_timeout,
     request_fields,
     response_bytes,
     transport_retry_reason,
@@ -1091,6 +1091,7 @@ class _Call(LogicalCallContext):
                 retry_safety=self.retry_safety,
                 idempotency=self.idempotency if isinstance(self.key, IdempotencyKey) else None,
                 delivery_state=self.delivery_state,
+                delivered_before=self.earlier is not DeliveryState.NOT_SENT,
                 attempt_count=self.attempt_count,
                 body_replayable=replayable,
                 server_hint=hint,
@@ -1156,11 +1157,6 @@ class _Call(LogicalCallContext):
             self.events.prepare(str(original.url), self.attempt_index)
         return frozenset({(original.method, str(original.url))}) if self.settings.redirects.enabled else _EMPTY_VISITED
 
-    @staticmethod
-    def redirect_headers(headers: HeadersView) -> HeadersView:
-        """Return the response headers whose Location a redirect follows."""
-        return headers
-
     def redirected(
         self,
         request: httpx2.Request,
@@ -1181,7 +1177,7 @@ class _Call(LogicalCallContext):
         assert self.current_origin is not None
         target = redirect_target(
             info.status_code,
-            self.redirect_headers(info.headers),
+            info.headers,
             RedirectState(
                 method=request.method,
                 url=str(request.url),
@@ -1229,7 +1225,7 @@ class _SessionCall(_Call):
     It keeps the URL of the hop it sends, credentials excluded, against which a page's relative URLs resolve.
     """
 
-    __slots__ = ("parent", "session", "url")
+    __slots__ = ("session", "url")
 
     def __init__(
         self,
@@ -1240,7 +1236,7 @@ class _SessionCall(_Call):
     ) -> None:
         """Bind the call to its session, ending it no later than the session or a helper's own bound does."""
         super().__init__(settings, operation)
-        self.session = self.parent = session
+        self.session = session
         self.url = ""
         for limit in (session.deadline, None if bound is None else on_clock(bound, settings.clock)):
             if limit is not None and ((deadline := self.deadline) is None or limit.at < deadline.at):
@@ -1512,7 +1508,8 @@ class _Core(Generic[AdapterT, HandleT]):
             )
         )
         if is_phase_timeout(failure) and (
-            expired := call.expired("stream" if call.streaming else "send", cause=failure.cause)
+            expired := call.capped_failure(failure)
+            or call.expired("stream" if call.streaming else "send", cause=failure.cause)
         ):
             return expired
         return call.snapshot_error(failure)
@@ -2162,12 +2159,9 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             self._admitted(call)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            try:
-                if events is not None:
-                    events.ended(failure)
-                raise failure from None
-            finally:
-                call.finish()
+            if events is not None:
+                events.ended(failure)
+            raise failure from None
         return events
 
     @classmethod
@@ -2255,8 +2249,6 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             raise failure from None
         else:
             return result
-        finally:
-            call.finish()
 
     def execute_page(  # noqa: PLR0913
         self,
@@ -2313,8 +2305,6 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             raise failure from None
         else:
             return result
-        finally:
-            call.finish()
 
     def execute_cached(  # noqa: PLR0913, PLR0917
         self,
@@ -2363,8 +2353,6 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             raise failure from None
         else:
             return result
-        finally:
-            call.finish()
 
     def execute_raw(  # noqa: PLR0913
         self,
@@ -2385,6 +2373,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
         of the response media type raises the call's typed failure before the stream is handed over.
         """
         call = self._raw_call(operation, options, session)
+        call.handing_off = stream
         events = call.events = self._started(call, operation.path)
         decoder = operation.responses
         result: RawResponse | None = None
@@ -2430,9 +2419,6 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             raise failure from None
         else:
             return result
-        finally:
-            if not call.streaming:
-                call.finish()
 
     def stream(  # noqa: PLR0913
         self,
@@ -2474,6 +2460,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
     ) -> RawResponse:
         """Execute an unbound raw call with the same resource and retry ownership."""
         call = _Call(self._call_settings(options, None))
+        call.handing_off = stream
         events = call.events = self._started(call, None)
         result: RawResponse | None = None
 
@@ -2502,9 +2489,6 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             raise failure from None
         else:
             return result
-        finally:
-            if not call.streaming:
-                call.finish()
 
     def stream_raw(
         self,
@@ -2574,9 +2558,6 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             raise failure from None
         else:
             return result, call
-        finally:
-            if not call.streaming:
-                call.finish()
 
     def _run(
         self,
@@ -3025,7 +3006,7 @@ class ClientCore(_Core["httpx2.Client", "RawResponse"]):
             request.url,
             headers=wire_fields(headers),
             content=None if attempt is None else _read_chunks(attempt.iter_bytes(), call),
-            extensions={"timeout": attempt_timeout(call.timeout(), call.remaining()).as_dict()},
+            extensions={"timeout": native_timeout(call.timeout())},
         )
         if call.auth is not None:
             outgoing = self._authenticated_request(outgoing, attempt, source, call)
@@ -3075,12 +3056,9 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             self._admitted(call)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            try:
-                if events is not None:
-                    await events.aended(failure, starting=True)
-                raise failure from None
-            finally:
-                call.finish()
+            if events is not None:
+                await events.aended(failure, starting=True)
+            raise failure from None
         return events
 
     @classmethod
@@ -3168,8 +3146,6 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             raise failure from None
         else:
             return result
-        finally:
-            call.finish()
 
     async def execute_page(  # noqa: PLR0913
         self,
@@ -3226,8 +3202,6 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             raise failure from None
         else:
             return result
-        finally:
-            call.finish()
 
     async def execute_cached(  # noqa: PLR0913, PLR0917
         self,
@@ -3276,8 +3250,6 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             raise failure from None
         else:
             return result
-        finally:
-            call.finish()
 
     async def execute_raw(  # noqa: PLR0913
         self,
@@ -3298,6 +3270,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         of the response media type raises the call's typed failure before the stream is handed over.
         """
         call = self._raw_call(operation, options, session)
+        call.handing_off = stream
         events = call.events = await self._started(call, operation.path)
         decoder = operation.responses
         result: AsyncRawResponse | None = None
@@ -3345,9 +3318,6 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             raise failure from None
         else:
             return result
-        finally:
-            if not call.streaming:
-                call.finish()
 
     def stream(  # noqa: PLR0913
         self,
@@ -3389,6 +3359,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
     ) -> AsyncRawResponse:
         """Execute an unbound raw call with the same resource and retry ownership."""
         call = _Call(self._call_settings(options, None))
+        call.handing_off = stream
         events = call.events = await self._started(call, None)
         result: AsyncRawResponse | None = None
 
@@ -3419,9 +3390,6 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             raise failure from None
         else:
             return result
-        finally:
-            if not call.streaming:
-                call.finish()
 
     def stream_raw(
         self,
@@ -3488,9 +3456,6 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             raise failure from None
         else:
             return result, call
-        finally:
-            if not call.streaming:
-                call.finish()
 
     async def _run(
         self,
@@ -3946,7 +3911,7 @@ class AsyncClientCore(_Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             request.url,
             headers=wire_fields(headers),
             content=None if attempt is None else _read_async_chunks(attempt.aiter_bytes(), call),
-            extensions={"timeout": attempt_timeout(call.timeout(), call.remaining()).as_dict()},
+            extensions={"timeout": native_timeout(call.timeout())},
         )
         if call.auth is not None:
             outgoing = await self._authenticated_request(outgoing, attempt, source, call)

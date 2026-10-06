@@ -23,15 +23,9 @@ _PHASES: Final[tuple[tuple[tuple[type[httpx2.TransportError], ...], IOPhase], ..
 )
 
 
-def attempt_timeout(phases: ResolvedTimeoutOptions, remaining: float | None) -> httpx2.Timeout:
-    """Clamp each native phase to the remaining total deadline before send."""
-
-    def cap(value: float | None) -> float | None:
-        return value if remaining is None else remaining if value is None else min(value, remaining)
-
-    return httpx2.Timeout(
-        connect=cap(phases.connect), read=cap(phases.read), write=cap(phases.write), pool=cap(phases.pool)
-    )
+def native_timeout(phases: ResolvedTimeoutOptions) -> dict[str, float | None]:
+    """Return the per-request timeout extension of an attempt's resolved phases."""
+    return {"connect": phases.connect, "read": phases.read, "write": phases.write, "pool": phases.pool}
 
 
 def delivery(error: BaseException, *, send_started: bool, response_started: bool = False) -> DeliveryState:

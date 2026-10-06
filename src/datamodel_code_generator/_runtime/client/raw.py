@@ -672,12 +672,8 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
 
     def _released(self, error: BaseException | None, *, early: bool) -> None:
         """Report a handed-over stream's end after its native connection was released."""
-        try:
-            if (events := self._events) is not None:
-                events.streamed(error, early=early)
-        finally:
-            if self._call.streaming:
-                self._call.finish()
+        if (events := self._events) is not None:
+            events.streamed(error, early=early)
 
 
 class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawResponse"]):
@@ -738,9 +734,8 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     async def stream_to(self, target: str | PathLike[str] | BinaryIO, *, overwrite: bool = False) -> None:
         """Write the decoded body to a file object, or to a path through a temporary file moved there on success.
 
-        A file object is written on the event loop. A path's file is created, written, and moved on a disk thread of
-        the handle, which writes about CHUNK bytes at a time while the next ones are read and stops once the download
-        ends.
+        A file object is written on the event loop. A path's file is created, written about CHUNK bytes at a time, and
+        moved in a thread, one file operation after another.
         """
         if isinstance(target, (str, PathLike)):
             await self._download(Path(target), overwrite=overwrite)
@@ -760,11 +755,11 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             await self._end("failed", error)
 
     async def _download(self, path: Path, *, overwrite: bool) -> None:
-        """Write the body to a path on a disk thread, reading the next chunks while one write runs.
+        """Write the body to a path through a temporary file, one file operation at a time in a thread.
 
-        Opening the file and waiting for a write count against the stream's total limit and the call's deadline, but
-        never against its idle or read limits; the final write and move run to their end. A failure ends the stream
-        and removes the unfinished file before it propagates. Until then the download holds its client's close.
+        Opening the file and each write count against the stream's total limit and the call's deadline, but never
+        against its idle or read limits; the final write and move run to their end. A failure ends the stream and
+        removes the unfinished file before it propagates.
         """
         self._downloadable()
 
@@ -985,9 +980,5 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
 
     async def _released(self, error: BaseException | None, *, early: bool) -> None:
         """Report a handed-over stream's end after its native connection was released."""
-        try:
-            if (events := self._events) is not None:
-                await events.astreamed(error, early=early)
-        finally:
-            if self._call.streaming:
-                self._call.finish()
+        if (events := self._events) is not None:
+            await events.astreamed(error, early=early)

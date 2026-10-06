@@ -30,6 +30,7 @@ T = TypeVar("T")
 ErrorT = TypeVar("ErrorT", bound=SDKError)
 
 _REACHED: Final = (DeliveryState.NOT_SENT, DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED)
+_PHASES: Final = {"connect": 0, "read": 1, "write": 2, "pool": 3}
 
 
 class OperationSession:
@@ -63,7 +64,8 @@ class LogicalCallContext:
                 deadline = absolute_deadline(at, clock=settings.clock)
         self.deadline: Deadline | None = deadline
         self.delivery_state = self.earlier = DeliveryState.NOT_SENT
-        self.finished = self.streaming = self.retry_blocked = False
+        self.streaming = self.retry_blocked = self.handing_off = False
+        self.capped: tuple[bool, ...] = ()
         self.attempt_count = self.sends = 0
         self.redirects_followed = 0
 
@@ -111,16 +113,32 @@ class LogicalCallContext:
         """Return the failure of a total deadline that has passed, or None while time remains."""
         if self.deadline is None or self.monotonic() < self.deadline.at:
             return None
+        return self._deadline_failure(phase, delivery_state, cause)
+
+    def _deadline_failure(
+        self, phase: DeadlinePhase, delivery_state: DeliveryState | None, cause: BaseException | None
+    ) -> APITimeoutError:
+        assert self.deadline is not None
         return self.snapshot_error(
             APITimeoutError(
                 deadline_at=self.deadline.at,
                 elapsed=self.monotonic() - self.started,
                 phase=phase,
-                delivery_state=self.delivery_state if delivery_state is None else delivery_state,
+                delivery_state=self.furthest() if delivery_state is None else delivery_state,
                 cause=cause,
                 reason="deadline_exceeded",
             )
         )
+
+    def capped_failure(self, error: APITimeoutError) -> APITimeoutError | None:
+        """Return the deadline failure of an acquisition's phase timeout whose cap was the time the call had left.
+
+        A tie between a phase's own limit and the time left belongs to the deadline.
+        """
+        index = _PHASES.get(error.phase)
+        if self.streaming or index is None or index >= len(self.capped) or not self.capped[index]:
+            return None
+        return self._deadline_failure("send", None, error.cause)
 
     def check(
         self,
@@ -175,32 +193,34 @@ class LogicalCallContext:
             await anyio.sleep(left)
 
     def timeout(self) -> ResolvedTimeoutOptions:
-        """Clamp every configured native phase once, before constructing this attempt's request."""
+        """Clamp every native phase to the time left once, before this attempt's request, recording the capped phases.
+
+        A call that hands its response over as a stream reads with the smaller of its stream idle limit and an
+        explicit read limit, since its request keeps that read limit for every body read.
+        """
         self.check("send")
         remaining = self.remaining()
         phases = self.settings.timeout
-
-        def cap(value: float | None) -> float | None:
-            return value if remaining is None else remaining if value is None else min(value, remaining)
-
-        return ResolvedTimeoutOptions(
-            connect=cap(phases.connect), read=cap(phases.read), write=cap(phases.write), pool=cap(phases.pool)
+        read = phases.read
+        if self.handing_off:
+            read, idle = self.settings.stream_read_timeout, self.settings.stream_idle_timeout
+            read = idle if read is None else read if idle is None else min(read, idle)
+        limits = (phases.connect, read, phases.write, phases.pool)
+        self.capped = tuple(remaining is not None and (limit is None or remaining <= limit) for limit in limits)
+        connect, read, write, pool = (
+            limit if remaining is None else remaining if limit is None else min(limit, remaining) for limit in limits
         )
+        return ResolvedTimeoutOptions(connect=connect, read=read, write=write, pool=pool)
 
     def handoff(self) -> None:
-        """Begin stream boundary limits without mutating the native request's timeout."""
+        """Start the stream's own limits: its total timeout and its session's deadline replace the acquisition's."""
         self.streaming = True
         self.delivery_state = DeliveryState.RESPONSE_STARTED
-        if (total := self.settings.stream_total_timeout) is not None:
-            at = self.monotonic() + total
-            if self.deadline is None or at < self.deadline.at:
-                self.deadline = absolute_deadline(at, clock=self.settings.clock)
-        if (
-            self.session is not None
-            and (limit := self.session.deadline) is not None
-            and (self.deadline is None or limit.at < self.deadline.at)
-        ):
-            self.deadline = limit
+        total = self.settings.stream_total_timeout
+        deadline = None if total is None else absolute_deadline(self.monotonic() + total, clock=self.settings.clock)
+        if (session := self.session) is not None and (limit := session.deadline) is not None:
+            deadline = limit if deadline is None or limit.at < deadline.at else deadline
+        self.deadline = deadline
 
     def idle(self, started: float, limit: float | None = None) -> None:
         """Raise a read timeout when a handed-over stream's read that began at `started` took its idle limit or more.
@@ -215,10 +235,6 @@ class LogicalCallContext:
                 effective_timeout=limit,
                 delivery_state=DeliveryState.RESPONSE_STARTED,
             )
-
-    def finish(self) -> None:
-        """Mark the call or handed-over stream finished."""
-        self.finished = True
 
     def lane(self, deadline: Deadline | None) -> LogicalCallContext:
         """Give a socket waiter its own boundary deadline, retaining call identity."""

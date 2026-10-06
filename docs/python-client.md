@@ -2741,8 +2741,9 @@ expired. It carries `phase`, `effective_timeout`, `delivery_state`, and the nati
 the total deadline instead raises `APITimeoutError` with the reason `deadline_exceeded`; equal caps favor the deadline.
 That error carries `deadline_at`, the absolute monotonic deadline, `elapsed`, `delivery_state`, and the interrupted
 activity in `phase`. Logical deadlines never retry.
-Phase timeouts can be candidates under the safety, replay, and budget rules below; pool timeouts are excluded unless
-`retry_on_pool_timeout=True` is explicit.
+Connect and pool timeouts can be candidates under the safety, replay, and budget rules below; pool timeouts are
+excluded unless `retry_on_pool_timeout=True` is explicit. A read or write timeout may have reached the server and is
+never resent.
 
 Synchronous total deadlines are cooperative: the client checks them around callbacks and encoding/decoding, and at
 SDK send and chunk boundaries. A blocking callback, DNS resolution, or native socket operation can return after the
@@ -2765,8 +2766,9 @@ scope. Synchronous preparation and callbacks remain cooperative.
 
 A streaming call uses its ordinary call deadline while acquiring the response. After the context manager yields
 the handle, `stream_idle_timeout` and `stream_total_timeout` apply. The completed acquisition's remaining time is
-not carried into the stream's deadline. Each native read keeps the read timeout its request was sent with, the read
-phase limit capped by the time the call had left, and the idle limit is checked when each read returns.
+not carried into the stream's deadline. A streaming request is sent with a read limit of `stream_idle_timeout`, or an
+explicit `TimeoutOptions(read=...)` when that is smaller, capped by the time the call had left, and every body read
+keeps it; the idle limit is also checked when each read returns.
 
 ```python
 from typing import BinaryIO
@@ -2781,7 +2783,8 @@ def download(client: Client, url: str, destination: BinaryIO) -> None:
         response.stream_to(destination)
 ```
 
-Here acquisition has ten seconds, a stalled body read has sixty seconds, and the stream has five minutes after handoff.
+Here acquisition has ten seconds, which also caps how long one body read may stall, and the stream has five minutes
+after handoff.
 Idle expiry raises a read `APITimeoutError` with the reason `phase_timeout`; stream-total expiry raises
 `APITimeoutError` with the reason `deadline_exceeded` and `phase="stream"`. Sync and async streams check both limits at
 SDK chunk boundaries. Always leave the response's context manager, including when abandoning a download early.
@@ -2991,11 +2994,11 @@ body-factory programming errors, cancellation, and logical deadlines never resta
 | `retry_on_pool_timeout` | `False` | Avoid amplifying pool contention unless explicitly enabled |
 
 GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default. POST, PATCH, and other methods require an explicit
-`retry_safety="idempotent"` declaration or a valid server key contract. A native `ConnectError`, `ConnectTimeout`, or
-`PoolTimeout` leaves the request `NOT_SENT` and can permit otherwise unsafe methods; every other failure after the send
-started is `MAYBE_SENT` and is never sent again. `retry_safety="never"` prohibits every resend, including an unsent
-request.
-TLS/certificate and configuration errors, permanent DNS failures, and unclassified failures are not candidates.
+`retry_safety="idempotent"` declaration or a valid server key contract. A native `ConnectError` (TLS and DNS failures
+included), `ConnectTimeout`, or `PoolTimeout` leaves the request `NOT_SENT` and can permit otherwise unsafe methods,
+unless an earlier attempt or redirect hop of the call reached the server; every other failure after the send started
+is `MAYBE_SENT` and is never sent again. `retry_safety="never"` prohibits every resend, including an unsent request.
+Configuration errors and unclassified failures are not candidates.
 
 A server delay is a minimum: the client never shortens it to fit `max_retry_after` or the remaining deadline. A
 valid server veto prevents a retry. Without a valid hint, bounded exponential backoff applies. Retry waits consume the

@@ -148,7 +148,7 @@ def client_authentication(
 
 
 def http_client_options(transport: TransportOptions, http_client: object) -> ResolvedTransportOptions:
-    """Refuse unverified TLS, transport-owned retries, an unavailable HTTP/2, and settings beside an injection."""
+    """Refuse unverified TLS, an unavailable HTTP/2, and transport settings beside an injected client."""
     import importlib.util  # noqa: PLC0415
     import ssl  # noqa: PLC0415
 

@@ -122,7 +122,10 @@ class WebSocketConnection(Protocol):
         ...
 
     def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
-        """Send one message as a text frame, whose bytes are UTF-8, or as a binary one."""
+        """Send one message as a text frame, whose bytes are UTF-8, or as a binary one.
+
+        Raise TimeoutError only when nothing was written; any other failure leaves the message's delivery unknown.
+        """
 
     def receive(self, *, deadline: Deadline | None) -> WSFrame:
         """Return the next whole message."""
@@ -156,7 +159,10 @@ class AsyncWebSocketConnection(Protocol):
         ...
 
     async def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
-        """Send one message as a text frame, whose bytes are UTF-8, or as a binary one."""
+        """Send one message as a text frame, whose bytes are UTF-8, or as a binary one.
+
+        Raise TimeoutError only when nothing was written; any other failure leaves the message's delivery unknown.
+        """
 
     async def receive(self, *, deadline: Deadline | None) -> WSFrame:
         """Return the next whole message."""
