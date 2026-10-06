@@ -94,6 +94,7 @@ V = TypeVar("V")
 ErrorT = TypeVar("ErrorT", bound=SDKError)
 OpenedT = TypeVar("OpenedT")
 
+_NATIVE_FRAMING: Final = frozenset({"host", "content-length", "transfer-encoding"})
 _MANAGED: Final = frozenset({
     "connection",
     "content-length",
@@ -372,7 +373,9 @@ class _Handshakes(Generic[OpenedT]):
     def _request(self, request: httpx2.Request) -> WebSocketOpenRequest:
         return WebSocketOpenRequest(
             url=_socket_url(str(request.url)),
-            headers=HeadersView(request_fields(request)),
+            headers=HeadersView(
+                (name, value) for name, value in request_fields(request) if name.lower() not in _NATIVE_FRAMING
+            ),
             subprotocols=self._plan.subprotocols,
         )
 
