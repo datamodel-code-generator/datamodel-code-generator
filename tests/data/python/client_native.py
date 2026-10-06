@@ -18,7 +18,7 @@ if sys.version_info < (3, 11):
     from exceptiongroup import BaseExceptionGroup
 
 from tests.data.python.client_generation import SOURCE
-from tests.data.python.client_runtime import arecord, record, run
+from tests.data.python.client_runtime import arecord, argument, record, request_body, run
 from tests.data.python.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
@@ -1258,3 +1258,44 @@ def _contract_close(package: ModuleType, lines: list[str], *, asynchronous: bool
                     else:
                         lines.append(f"  {mode} contract close unexpectedly returned")
         lines.append(f"  {mode} contract stream closes={body.closes}")
+
+
+def native_codec_backends(package: ModuleType, lines: list[str]) -> None:
+    """Decode and send fixed pet models through each backend over actual sync and async TLS calls."""
+    options = importlib.import_module(f"{package.__name__}.options")
+    trace = argument(package, "listPets", "header", "X-Trace", "trace")
+    body = request_body(package, "createPet", "application/json", {"name": "dog", "tag": "a"})
+    for asynchronous in (False, True):
+        server = NativeFixture()
+        server.content_type = b"application/json"
+        server.body = b'[{"id":1,"name":"dog","tag":"a"}]'
+        mode = "async" if asynchronous else "sync"
+        try:
+            if asynchronous:
+
+                async def call() -> None:
+                    async with package.AsyncClient(options=_options(options, server)) as api:
+                        await arecord(lines, f"{mode} native decode", lambda: api.pets.list_pets(x_trace=trace))
+                        server.status, server.body = 201, b'{"id":2,"name":"dog","tag":"a"}'
+                        await arecord(
+                            lines,
+                            f"{mode} native encode",
+                            lambda: api.pets.create_pet(body=body, media_type="application/json"),
+                        )
+
+                run(call)
+            else:
+                with package.Client(options=_options(options, server)) as api:
+                    record(lines, f"{mode} native decode", lambda: api.pets.list_pets(x_trace=trace))
+                    server.status, server.body = 201, b'{"id":2,"name":"dog","tag":"a"}'
+                    record(
+                        lines,
+                        f"{mode} native encode",
+                        lambda: api.pets.create_pet(body=body, media_type="application/json"),
+                    )
+            lines.extend(
+                f"  native request {method.decode()} {path.decode()} {content!r}"
+                for method, path, content in server.requests
+            )
+        finally:
+            server.stop()

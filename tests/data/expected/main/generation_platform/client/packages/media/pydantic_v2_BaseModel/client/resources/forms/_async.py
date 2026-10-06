@@ -22,7 +22,7 @@ from typing_extensions import Never
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncMultipartBody, FormData, MultipartData
-from ...model_codecs import WireValue
+from ...model_codecs import JSONValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.forms import (
@@ -236,7 +236,7 @@ class AsyncFormsResource:
     async def submit_avatar(
         self,
         *,
-        body: AsyncMultipartBody[str | WireValue],
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse: ...
@@ -259,7 +259,7 @@ class AsyncFormsResource:
     async def submit_avatar(
         self,
         *,
-        body: AsyncMultipartBody[str | WireValue] | _dcg_type_4 | Unset = UNSET,
+        body: AsyncMultipartBody[str | JSONValue] | _dcg_type_4 | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse:
@@ -339,7 +339,7 @@ class AsyncFormsResource:
     async def submit_cover(
         self,
         *,
-        body: AsyncMultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | WireValue],
+        body: AsyncMultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitCoverResponse:
@@ -387,7 +387,7 @@ class AsyncFormsResource:
     async def submit_album(
         self,
         *,
-        body: AsyncMultipartBody[_dcg_type_9 | str | list[str] | WireValue],
+        body: AsyncMultipartBody[_dcg_type_9 | str | list[str] | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAlbumResponse:
@@ -575,7 +575,7 @@ class AsyncFormsWithResponse:
     async def submit_avatar(
         self,
         *,
-        body: AsyncMultipartBody[str | WireValue],
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]: ...
@@ -598,7 +598,7 @@ class AsyncFormsWithResponse:
     async def submit_avatar(
         self,
         *,
-        body: AsyncMultipartBody[str | WireValue] | _dcg_type_4 | Unset = UNSET,
+        body: AsyncMultipartBody[str | JSONValue] | _dcg_type_4 | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]:
@@ -678,7 +678,7 @@ class AsyncFormsWithResponse:
     async def submit_cover(
         self,
         *,
-        body: AsyncMultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | WireValue],
+        body: AsyncMultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitCoverResponse]:
@@ -726,7 +726,7 @@ class AsyncFormsWithResponse:
     async def submit_album(
         self,
         *,
-        body: AsyncMultipartBody[_dcg_type_9 | str | list[str] | WireValue],
+        body: AsyncMultipartBody[_dcg_type_9 | str | list[str] | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAlbumResponse]:
@@ -893,7 +893,7 @@ class AsyncFormsWithRawResponse:
     async def submit_avatar(
         self,
         *,
-        body: AsyncMultipartBody[str | WireValue],
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
@@ -916,7 +916,7 @@ class AsyncFormsWithRawResponse:
     async def submit_avatar(
         self,
         *,
-        body: AsyncMultipartBody[str | WireValue] | _dcg_type_4 | Unset = UNSET,
+        body: AsyncMultipartBody[str | JSONValue] | _dcg_type_4 | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -996,7 +996,7 @@ class AsyncFormsWithRawResponse:
     async def submit_cover(
         self,
         *,
-        body: AsyncMultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | WireValue],
+        body: AsyncMultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1044,7 +1044,7 @@ class AsyncFormsWithRawResponse:
     async def submit_album(
         self,
         *,
-        body: AsyncMultipartBody[_dcg_type_9 | str | list[str] | WireValue],
+        body: AsyncMultipartBody[_dcg_type_9 | str | list[str] | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1211,7 +1211,7 @@ class AsyncFormsWithStreamingResponse:
     def submit_avatar(
         self,
         *,
-        body: AsyncMultipartBody[str | WireValue],
+        body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
@@ -1234,7 +1234,7 @@ class AsyncFormsWithStreamingResponse:
     def submit_avatar(
         self,
         *,
-        body: AsyncMultipartBody[str | WireValue] | _dcg_type_4 | Unset = UNSET,
+        body: AsyncMultipartBody[str | JSONValue] | _dcg_type_4 | Unset = UNSET,
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -1314,7 +1314,7 @@ class AsyncFormsWithStreamingResponse:
     def submit_cover(
         self,
         *,
-        body: AsyncMultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | WireValue],
+        body: AsyncMultipartBody[str | int | _dcg_type_4 | _dcg_type_6 | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -1362,7 +1362,7 @@ class AsyncFormsWithStreamingResponse:
     def submit_album(
         self,
         *,
-        body: AsyncMultipartBody[_dcg_type_9 | str | list[str] | WireValue],
+        body: AsyncMultipartBody[_dcg_type_9 | str | list[str] | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

@@ -63,7 +63,9 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  decode failure ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'{', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] decode_error
+  decode failure ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'{', truncated=False, cause=1 validation error for Pet
+  Invalid JSON: EOF while parsing an object at line 1 column 1 [type=json_invalid, input_value=b'{', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] decode_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -209,7 +211,9 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async decode failure ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'{', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] decode_error
+  async decode failure ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'{', truncated=False, cause=1 validation error for Pet
+  Invalid JSON: EOF while parsing an object at line 1 column 1 [type=json_invalid, input_value=b'{', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] decode_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''

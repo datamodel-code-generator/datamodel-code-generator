@@ -1,10 +1,6 @@
-use /paths/~1leaves/post request_body: native dataclass models:Leaves models=[('models:Box', 'dataclass', 'ignore', True), ('models:Leaves', 'dataclass', 'ignore', True)]
-use /paths/~1leaves/post response_body 200: native dataclass models:Leaves models=[('models:Box', 'dataclass', 'ignore', True), ('models:Leaves', 'dataclass', 'ignore', True)]
-use /paths/~1records/put request_body: native dataclass models:Record models=[('models:Record', 'dataclass', 'ignore', True)]
-use /paths/~1records/put response_body 200: native dataclass models:Record models=[('models:Record', 'dataclass', 'ignore', True)]
-use /paths/~1keyed/post request_body: native dataclass models:Keyed models=[('models:Keyed', 'dataclass', 'ignore', True), ('models:Record', 'dataclass', 'ignore', True)]
-use /paths/~1keyed/post response_body 200: native dataclass models:Keyed models=[('models:Keyed', 'dataclass', 'ignore', True), ('models:Record', 'dataclass', 'ignore', True)]
-use /paths/~1tickets/post request_body: native dataclass models:Ticket models=[('models:Ticket', 'dataclass', 'ignore', True)]
-use /paths/~1tickets/post response_body 200: native dataclass models:Ticket models=[('models:Ticket', 'dataclass', 'ignore', True)]
-record-client-decode-gap: ModelProjectionError The native use has an unplanned projection gap at /hint
-record-client-decode: model Record(name='a', stamp='s', items=[], note=None, hint='h') wire={"name":"a","stamp":"s","hint":"h"} presence=['', '/name', '/stamp', '/hint'] extras={}
+APIGenerationError
+diagnostic MC_CODEC_UNSUPPORTED /components/schemas/Leaves/properties/span: The dataclasses.dataclass converter has no conversion for the datetime.timedelta type
+diagnostic MC_CODEC_UNSUPPORTED /components/schemas/Leaves/properties/moments/items: The dataclasses.dataclass converter has no conversion for the datetime.timedelta type
+diagnostic MC_CODEC_UNSUPPORTED /paths/~1leaves/post/requestBody: The union members are both JSON strings, which the dataclasses.dataclass converter cannot tell apart
+diagnostic MC_CODEC_UNSUPPORTED /components/schemas/Keyed/properties/by_color: The Color key type has no dataclasses.dataclass conversion
+diagnostic MC_CODEC_UNSUPPORTED /components/schemas/Keyed/properties/by_code: The Code key type has no dataclasses.dataclass conversion

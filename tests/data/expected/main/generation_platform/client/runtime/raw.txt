@@ -24,15 +24,18 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved undecodable text text ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'\xff\xfe', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff\xfe', 0, 1, 'invalid start byte')] decode_error
-  saved undecodable text json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'\xff\xfe', truncated=False, cause=WireValidationError('JSON text must be UTF-8 at /')] decode_error
+  saved undecodable text json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'\xff\xfe', truncated=False, cause=JSONDecodeError('Expecting value: line 1 column 1 (char 0)')] decode_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved latin-1 text text = 'café'
-  saved latin-1 text json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'caf\xe9', truncated=False, cause=WireValidationError('JSON text must be UTF-8 at /')] decode_error
+  saved latin-1 text json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'caf\xe9', truncated=False, cause=UnicodeDecodeError('utf-8', b'caf\xe9', 3, 4, 'unexpected end of data')] decode_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved invalid json text = '{'
-  saved invalid json json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'{', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] decode_error
+  saved invalid json json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'{', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] decode_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved integer limit DecodeError cause=ValueError body=True info=True operation='getPet' call=True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   saved identity ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='decoded', limit=8, observed_bytes=21] response_too_large_error
@@ -260,6 +263,9 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async saved status ! InternalServerError: InternalServerError(status_code=500, operation_id='getPet', call_id='<call>', retry_stop_reason='disabled') [operation_id='getPet', status_code=500, body=b'0123', body_bytes=b'0123', truncated=True] internal_server_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async saved integer limit DecodeError cause=ValueError body=True info=True operation='getPet' call=True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async saved coded ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='content_coded', limit=8, observed_bytes=24] response_too_large_error

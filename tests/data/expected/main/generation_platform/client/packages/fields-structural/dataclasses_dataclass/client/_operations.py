@@ -10,7 +10,6 @@ from ._runtime.client.multipart import PartPlan
 from ._runtime.client.operations import (
     BodyFields,
     BodyMedia,
-    Encoder,
     FieldArguments,
     OperationPlan,
     ParameterSpec,
@@ -29,7 +28,6 @@ from .types.default import (
     PutLabelsResponse,
     PutPhotoResponse,
     ReplacePetResponse,
-    SearchPetsResponse,
     SetOwnerResponse,
     UpdatePetResponse,
 )
@@ -42,14 +40,7 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     path='/pets',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '201',
-                'application/json',
-                'json',
-                model_bindings.codec_3, model_bindings.CONTEXT_3,
-            ),
-        ),
+        (model_branch('201', 'application/json', 'json', model_bindings.codec_3),),
         (),
     ),
     parameters=(
@@ -60,7 +51,7 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            codec=model_bindings.codec_0,
         ),
     ),
     body=RequestBody(
@@ -68,12 +59,12 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                codec=model_bindings.codec_1,
             ),
             BodyMedia(
                 media_type='application/x-www-form-urlencoded',
                 kind='form',
-                encoder=Encoder(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                codec=model_bindings.codec_2,
                 additional=FieldPlan('', 'string'),
             ),
         ),
@@ -117,7 +108,7 @@ OPERATION_1: Final[OperationPlan[UpdatePetResponse]] = OperationPlan(
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_4, model_bindings.CONTEXT_4),
+            codec=model_bindings.codec_4,
         ),
     ),
     body=RequestBody(
@@ -125,7 +116,7 @@ OPERATION_1: Final[OperationPlan[UpdatePetResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_5, model_bindings.CONTEXT_5),
+                codec=model_bindings.codec_5,
             ),
         ),
         default='application/json',
@@ -157,7 +148,7 @@ OPERATION_2: Final[OperationPlan[LogVisitResponse]] = OperationPlan(
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_6, model_bindings.CONTEXT_6),
+            codec=model_bindings.codec_6,
         ),
     ),
     body=RequestBody(
@@ -165,7 +156,7 @@ OPERATION_2: Final[OperationPlan[LogVisitResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_7, model_bindings.CONTEXT_7),
+                codec=model_bindings.codec_7,
             ),
             BodyMedia(media_type='text/plain', kind='text'),
         ),
@@ -198,7 +189,7 @@ OPERATION_3: Final[OperationPlan[SetOwnerResponse]] = OperationPlan(
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_8, model_bindings.CONTEXT_8),
+            codec=model_bindings.codec_8,
         ),
     ),
     body=RequestBody(
@@ -206,7 +197,7 @@ OPERATION_3: Final[OperationPlan[SetOwnerResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_9, model_bindings.CONTEXT_9),
+                codec=model_bindings.codec_9,
             ),
         ),
         default='application/json',
@@ -224,7 +215,7 @@ OPERATION_4: Final[OperationPlan[CreateOwnerResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_10, model_bindings.CONTEXT_10),
+                codec=model_bindings.codec_10,
             ),
         ),
         default='application/json',
@@ -257,7 +248,7 @@ OPERATION_5: Final[OperationPlan[PutLabelsResponse]] = OperationPlan(
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_11, model_bindings.CONTEXT_11),
+            codec=model_bindings.codec_11,
         ),
     ),
     body=RequestBody(
@@ -265,7 +256,7 @@ OPERATION_5: Final[OperationPlan[PutLabelsResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_12, model_bindings.CONTEXT_12),
+                codec=model_bindings.codec_12,
             ),
         ),
         default='application/json',
@@ -273,36 +264,7 @@ OPERATION_5: Final[OperationPlan[PutLabelsResponse]] = OperationPlan(
     ),
 )
 
-OPERATION_6: Final[OperationPlan[SearchPetsResponse]] = OperationPlan(
-    operation_id='searchPets',
-    method='POST',
-    path='/search',
-    servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_14, model_bindings.CONTEXT_14,
-            ),
-        ),
-        (),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                encoder=Encoder(model_bindings.codec_13, model_bindings.CONTEXT_13),
-            ),
-            BodyMedia(media_type='text/plain', kind='text'),
-        ),
-        required=True,
-    ),
-)
-
-OPERATION_7: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
+OPERATION_6: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
     operation_id='putPhoto',
     method='PUT',
     path='/pets/{petId}/photo',
@@ -317,7 +279,7 @@ OPERATION_7: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_15, model_bindings.CONTEXT_15),
+            codec=model_bindings.codec_13,
         ),
     ),
     body=RequestBody(
@@ -327,10 +289,7 @@ OPERATION_7: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
                 kind='multipart',
                 parts=(
                     PartPlan('photo', file=True, required=True),
-                    PartPlan(
-                        'caption',
-                        encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
-                    ),
+                    PartPlan('caption', codec=model_bindings.codec_16),
                 ),
                 additional_part=PartPlan(''),
             ),
@@ -340,7 +299,7 @@ OPERATION_7: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
     ),
 )
 
-OPERATION_8: Final[OperationPlan[ReplacePetResponse]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[ReplacePetResponse]] = OperationPlan(
     operation_id='replacePet',
     method='PUT',
     path='/pets/{petId}/records',
@@ -355,7 +314,7 @@ OPERATION_8: Final[OperationPlan[ReplacePetResponse]] = OperationPlan(
                 required=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_16, model_bindings.CONTEXT_16),
+            codec=model_bindings.codec_14,
         ),
     ),
     body=RequestBody(
@@ -363,7 +322,7 @@ OPERATION_8: Final[OperationPlan[ReplacePetResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_17, model_bindings.CONTEXT_17),
+                codec=model_bindings.codec_15,
             ),
         ),
         default='application/json',

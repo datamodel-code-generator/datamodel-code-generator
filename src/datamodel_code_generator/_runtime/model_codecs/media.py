@@ -8,11 +8,18 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from json.encoder import encode_basestring, encode_basestring_ascii
-from typing import Final, Literal, NoReturn, overload
+from typing import Final, Literal, NoReturn, cast, overload
 from urllib.parse import quote, unquote_to_bytes
 
+from typing_extensions import TypeAliasType
+
 from .errors import CodecResourceLimitError, ParameterEncodingError, WireIssue, WireValidationError
-from .wire import JSONScalar, JSONValue, WireValue, checked_key, checked_scalar, enter, freeze_wire
+from .wire import JSONScalar as WireScalar
+from .wire import JSONValue as WireJSON
+from .wire import WireValue, checked_key, checked_scalar, enter, freeze_wire
+
+JSONValue = TypeAliasType("JSONValue", "bool | int | float | str | list[JSONValue] | dict[str, JSONValue] | None")
+JSONScalar = TypeAliasType("JSONScalar", "bool | int | float | str | None")
 
 LexicalKind = Literal["string", "integer", "number", "boolean"]
 MediaKind = Literal["json", "text", "form", "multipart", "binary"]
@@ -36,6 +43,27 @@ class FieldPlan:
     name: str
     kind: LexicalKind = "string"
     repeated: bool = False
+
+
+def json_bytes(value: object) -> bytes:
+    """Serialize ordinary JSON builtins as compact UTF-8 bytes."""
+    return json.dumps(value, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()
+
+
+def json_value(content: str | bytes) -> JSONValue:
+    """Parse ordinary JSON into its builtin values without model validation."""
+    return cast("JSONValue", json.loads(content))
+
+
+def plain(value: object) -> JSONValue:
+    """Turn parsed form and header containers into builtins a native backend accepts."""
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, Mapping):
+        return {cast("str", key): plain(item) for key, item in cast("Mapping[object, object]", value).items()}
+    if isinstance(value, (list, tuple)):
+        return [plain(item) for item in cast("list[object] | tuple[object, ...]", value)]
+    return cast("JSONValue", value)
 
 
 def issue(*, code: str, message: str) -> WireValidationError:
@@ -92,7 +120,7 @@ class _IntegerLimitError(ValueError):
     pass
 
 
-def _unique_object(pairs: list[tuple[str, JSONValue]]) -> dict[str, JSONValue]:
+def _unique_object(pairs: list[tuple[str, WireJSON]]) -> dict[str, WireJSON]:
     if len(result := dict(pairs)) != len(pairs):
         raise _DuplicateKeyError
     return result
@@ -112,7 +140,7 @@ def _integer(text: str) -> int:
 def decode_json(data: bytes) -> WireValue:
     """Parse UTF-8 JSON text into a wire snapshot, keeping exact number lexemes."""
     try:
-        parsed: JSONValue = json.loads(
+        parsed: WireJSON = json.loads(
             data.decode("utf-8"),
             object_pairs_hook=_unique_object,
             parse_float=Decimal,
@@ -155,15 +183,15 @@ def _nesting_limit() -> CodecResourceLimitError:
 
 
 @overload
-def encode_json(value: JSONValue, *, ascii_only: bool = False) -> bytes: ...
+def encode_json(value: WireJSON, *, ascii_only: bool = False) -> bytes: ...
 @overload
 def encode_json(value: WireValue, *, ascii_only: bool = False) -> bytes: ...
-def encode_json(value: JSONValue | WireValue, *, ascii_only: bool = False) -> bytes:
+def encode_json(value: WireJSON | WireValue, *, ascii_only: bool = False) -> bytes:
     """Serialize a JSON-domain value as compact UTF-8 JSON with exact numbers, checking it while writing."""
     return _json_text(value, encode_basestring_ascii if ascii_only else encode_basestring, set()).encode()
 
 
-def _json_text(value: JSONValue | WireValue, strings: Callable[[str], str], active: set[int]) -> str:
+def _json_text(value: WireJSON | WireValue, strings: Callable[[str], str], active: set[int]) -> str:
     if isinstance(value, (list, tuple)):
         identity = enter(value, active)
         text = f"[{','.join([_json_text(item, strings, active) for item in value])}]"
@@ -177,7 +205,7 @@ def _json_text(value: JSONValue | WireValue, strings: Callable[[str], str], acti
     return _json_scalar(checked_scalar(value), strings)
 
 
-def _json_scalar(value: JSONScalar, strings: Callable[[str], str]) -> str:
+def _json_scalar(value: WireScalar, strings: Callable[[str], str]) -> str:
     match value:
         case None:
             return "null"
@@ -212,22 +240,22 @@ def decode_text(data: bytes, encoding: str = "utf-8") -> str:
         raise issue(code="text.encoding", message=message) from None
 
 
-def lexical(value: WireValue, kind: LexicalKind) -> str:
-    """Render one scalar in the canonical lexical form of its declared kind."""
+def lexical(value: object, kind: LexicalKind) -> str:
+    """Format one native JSON scalar for a parameter or form field."""
     if (text := _lexical_text(value, kind)) is None:
         msg = f"The {type(value).__name__} value does not have the {kind} lexical kind"
         raise ParameterEncodingError(msg)
     return text
 
 
-def _lexical_text(value: WireValue, kind: LexicalKind) -> str | None:
+def _lexical_text(value: object, kind: LexicalKind) -> str | None:
     match value:
         case bool():
-            return ("true" if value else "false") if kind == "boolean" else None
+            return "true" if value else "false"
         case str():
-            return value if kind == "string" else None
+            return value
         case int() | float() | Decimal():
-            return _numeral(value, kind)
+            return _numeral(value, kind) or _numeral(value, "number")
         case _:
             return None
 
@@ -256,7 +284,7 @@ def _integer_text(value: int) -> str:
         raise CodecResourceLimitError(msg) from None
 
 
-def typed(text: str, kind: LexicalKind) -> JSONScalar:
+def typed(text: str, kind: LexicalKind) -> WireScalar:
     """Read one canonical lexical form back into its declared JSON scalar kind."""
     if kind == "string":
         return text
@@ -291,7 +319,7 @@ def form_encode(text: str) -> str:
 
 
 def encode_form(
-    value: WireValue,
+    value: object,
     fields: tuple[FieldPlan, ...],
     additional: FieldPlan | None,
     styled: Mapping[str, Callable[[WireValue], Iterable[str]]] | None = None,
@@ -307,17 +335,14 @@ def encode_form(
     declared = {field.name: field for field in fields}
     pairs: list[str] = []
     owners: dict[str, str] = {}
-    for name, item in value.items():
+    for name, item in cast("Mapping[str, WireJSON | WireValue]", value).items():
         if styled and (style := styled.get(name)) is not None:
-            written = list(style(item))
+            written = list(style(cast("WireValue", item)))
             keys = [percent_decode(pair.partition("=")[0].encode("ascii"), plus=True) for pair in written]
-        elif (field := declared.get(name, additional)) is None:
-            msg = "A URL-encoded form member is not declared"
-            raise ParameterEncodingError(msg)
         else:
-            written = [
-                f"{form_encode(name)}={form_encode(lexical(member, field.kind))}" for member in _members(item, field)
-            ]
+            field = declared.get(name, additional)
+            kind = "string" if field is None else field.kind
+            written = [f"{form_encode(name)}={form_encode(lexical(member, kind))}" for member in _members(item)]
             keys = [name]
         if styled and any(owners.setdefault(key, name) != name for key in keys):
             msg = "Two URL-encoded form members write the same name"
@@ -326,15 +351,8 @@ def encode_form(
     return "&".join(pairs).encode("ascii")
 
 
-def _members(value: WireValue, field: FieldPlan) -> tuple[WireValue, ...]:
-    match value:
-        case tuple() if field.repeated:
-            return value
-        case _ if field.repeated:
-            msg = "A repeated member must be an array"
-            raise ParameterEncodingError(msg)
-        case _:
-            return (value,)
+def _members(value: WireJSON | WireValue) -> tuple[WireJSON | WireValue, ...]:
+    return tuple(value) if isinstance(value, (list, tuple)) else (value,)
 
 
 def split_form(raw: bytes) -> tuple[tuple[bytes, bytes], ...]:
@@ -345,7 +363,7 @@ def split_form(raw: bytes) -> tuple[tuple[bytes, bytes], ...]:
 def decode_form(raw: bytes, fields: tuple[FieldPlan, ...], additional: FieldPlan | None) -> WireValue:
     """Read ordered URL-encoded pairs into a flat object, rejecting duplicate scalars."""
     declared = {field.name: field for field in fields}
-    result: dict[str, JSONValue] = {}
+    result: dict[str, WireJSON] = {}
     for raw_name, raw_value in split_form(raw):
         name = percent_decode(raw_name, plus=True)
         if (field := declared.get(name, additional)) is None:

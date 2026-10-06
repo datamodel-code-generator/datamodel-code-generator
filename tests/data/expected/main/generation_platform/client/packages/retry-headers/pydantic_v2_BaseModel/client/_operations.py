@@ -7,7 +7,6 @@ from typing import Final
 
 from ._generated import model_bindings, security
 from ._runtime.client.operations import (
-    Encoder,
     OperationPlan,
     ParameterSpec,
     ResponseDecoder,
@@ -37,20 +36,13 @@ OPERATION_0: Final[OperationPlan[ParameterResponse]] = OperationPlan(
     path='/parameter',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_1, model_bindings.CONTEXT_1,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_1),),
         (),
     ),
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Request-Key', style='simple'),
-            encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            codec=model_bindings.codec_0,
         ),
     ),
 )
@@ -61,14 +53,7 @@ OPERATION_1: Final[OperationPlan[ApiKeyResponse]] = OperationPlan(
     path='/api-key',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_3, model_bindings.CONTEXT_3,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_3),),
         (),
     ),
     security=security.OPERATION_1,
@@ -80,14 +65,7 @@ OPERATION_2: Final[OperationPlan[BearerResponse]] = OperationPlan(
     path='/bearer',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_5, model_bindings.CONTEXT_5,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_5),),
         (),
     ),
     security=security.OPERATION_2,
@@ -99,14 +77,7 @@ OPERATION_3: Final[OperationPlan[OauthResponse]] = OperationPlan(
     path='/oauth',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_7, model_bindings.CONTEXT_7,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_7),),
         (),
     ),
     security=security.OPERATION_3,
@@ -118,14 +89,7 @@ OPERATION_4: Final[OperationPlan[OpenidResponse]] = OperationPlan(
     path='/openid',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_9, model_bindings.CONTEXT_9,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_9),),
         (),
     ),
     security=security.OPERATION_4,
@@ -137,14 +101,7 @@ OPERATION_5: Final[OperationPlan[CookieResponse]] = OperationPlan(
     path='/cookie',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_11, model_bindings.CONTEXT_11,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_11),),
         (),
     ),
     idempotency=IdempotencyPlan(header_name='session'),
@@ -157,14 +114,7 @@ OPERATION_6: Final[OperationPlan[QueryResponse]] = OperationPlan(
     path='/query',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_13, model_bindings.CONTEXT_13,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_13),),
         (),
     ),
     idempotency=IdempotencyPlan(header_name='token'),
@@ -177,14 +127,7 @@ OPERATION_7: Final[OperationPlan[IgnoredResponse]] = OperationPlan(
     path='/ignored',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_15, model_bindings.CONTEXT_15,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_15),),
         (),
     ),
     idempotency=IdempotencyPlan(header_name='Authorization'),
@@ -196,14 +139,7 @@ OPERATION_8: Final[OperationPlan[DirectionResponse]] = OperationPlan(
     path='/direction',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_18, model_bindings.CONTEXT_18,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_18),),
         (),
     ),
     parameters=(
@@ -213,7 +149,7 @@ OPERATION_8: Final[OperationPlan[DirectionResponse]] = OperationPlan(
                 name='X-Retry-Control',
                 style='simple',
             ),
-            encoder=Encoder(model_bindings.codec_17, model_bindings.CONTEXT_17),
+            codec=model_bindings.codec_17,
         ),
     ),
     request_id_header='X-Idempotency',
@@ -228,14 +164,7 @@ OPERATION_9: Final[OperationPlan[UnusedResponse]] = OperationPlan(
     path='/unused',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'text/plain',
-                'text',
-                model_bindings.codec_20, model_bindings.CONTEXT_20,
-            ),
-        ),
+        (model_branch('200', 'text/plain', 'text', model_bindings.codec_20),),
         (),
     ),
     idempotency=IdempotencyPlan(header_name='X-Auth-Key'),

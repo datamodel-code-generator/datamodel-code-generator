@@ -7,7 +7,6 @@ from typing import Final
 
 from ._generated import model_bindings
 from ._runtime.client.operations import (
-    Encoder,
     OperationPlan,
     ParameterSpec,
     ResponseDecoder,
@@ -105,7 +104,7 @@ OPERATION_0: Final[OperationPlan[ReadSimpleScalarFalseResponse]] = OperationPlan
                 required=True,
                 allow_reserved=True,
             ),
-            encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            codec=model_bindings.codec_0,
         ),
     ),
 )
@@ -124,7 +123,7 @@ OPERATION_1: Final[OperationPlan[ReadSimpleScalarFalseFalseResponse]] = Operatio
                 style='simple',
                 required=True,
             ),
-            encoder=Encoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
+            codec=model_bindings.codec_1,
         ),
     ),
 )
@@ -143,7 +142,7 @@ OPERATION_2: Final[OperationPlan[ReadSimpleScalarFalseAbsentResponse]] = Operati
                 style='simple',
                 required=True,
             ),
-            encoder=Encoder(model_bindings.codec_2, model_bindings.CONTEXT_2),
+            codec=model_bindings.codec_2,
         ),
     ),
 )
@@ -164,7 +163,7 @@ OPERATION_3: Final[OperationPlan[ReadSimpleArrayFalseResponse]] = OperationPlan(
                 allow_reserved=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
+            codec=model_bindings.codec_3,
         ),
     ),
 )
@@ -184,7 +183,7 @@ OPERATION_4: Final[OperationPlan[ReadSimpleArrayFalseFalseResponse]] = Operation
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_4, model_bindings.CONTEXT_4),
+            codec=model_bindings.codec_4,
         ),
     ),
 )
@@ -204,7 +203,7 @@ OPERATION_5: Final[OperationPlan[ReadSimpleArrayFalseAbsentResponse]] = Operatio
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_5, model_bindings.CONTEXT_5),
+            codec=model_bindings.codec_5,
         ),
     ),
 )
@@ -226,7 +225,7 @@ OPERATION_6: Final[OperationPlan[ReadSimpleArrayTrueResponse]] = OperationPlan(
                 allow_reserved=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_6, model_bindings.CONTEXT_6),
+            codec=model_bindings.codec_6,
         ),
     ),
 )
@@ -247,7 +246,7 @@ OPERATION_7: Final[OperationPlan[ReadSimpleArrayTrueFalseResponse]] = OperationP
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_7, model_bindings.CONTEXT_7),
+            codec=model_bindings.codec_7,
         ),
     ),
 )
@@ -268,7 +267,7 @@ OPERATION_8: Final[OperationPlan[ReadSimpleArrayTrueAbsentResponse]] = Operation
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_8, model_bindings.CONTEXT_8),
+            codec=model_bindings.codec_8,
         ),
     ),
 )
@@ -291,7 +290,7 @@ OPERATION_9: Final[OperationPlan[ReadSimpleObjectFalseResponse]] = OperationPlan
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_9, model_bindings.CONTEXT_9),
+            codec=model_bindings.codec_9,
         ),
     ),
 )
@@ -313,7 +312,7 @@ OPERATION_10: Final[OperationPlan[ReadSimpleObjectFalseFalseResponse]] = Operati
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_10, model_bindings.CONTEXT_10),
+            codec=model_bindings.codec_10,
         ),
     ),
 )
@@ -335,7 +334,7 @@ OPERATION_11: Final[OperationPlan[ReadSimpleObjectFalseAbsentResponse]] = Operat
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_11, model_bindings.CONTEXT_11),
+            codec=model_bindings.codec_11,
         ),
     ),
 )
@@ -359,7 +358,7 @@ OPERATION_12: Final[OperationPlan[ReadSimpleObjectTrueResponse]] = OperationPlan
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_12, model_bindings.CONTEXT_12),
+            codec=model_bindings.codec_12,
         ),
     ),
 )
@@ -382,7 +381,7 @@ OPERATION_13: Final[OperationPlan[ReadSimpleObjectTrueFalseResponse]] = Operatio
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_13, model_bindings.CONTEXT_13),
+            codec=model_bindings.codec_13,
         ),
     ),
 )
@@ -405,7 +404,7 @@ OPERATION_14: Final[OperationPlan[ReadSimpleObjectTrueAbsentResponse]] = Operati
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_14, model_bindings.CONTEXT_14),
+            codec=model_bindings.codec_14,
         ),
     ),
 )
@@ -425,7 +424,7 @@ OPERATION_15: Final[OperationPlan[ReadLabelScalarFalseResponse]] = OperationPlan
                 required=True,
                 allow_reserved=True,
             ),
-            encoder=Encoder(model_bindings.codec_15, model_bindings.CONTEXT_15),
+            codec=model_bindings.codec_15,
         ),
     ),
 )
@@ -444,7 +443,7 @@ OPERATION_16: Final[OperationPlan[ReadLabelScalarFalseFalseResponse]] = Operatio
                 style='label',
                 required=True,
             ),
-            encoder=Encoder(model_bindings.codec_16, model_bindings.CONTEXT_16),
+            codec=model_bindings.codec_16,
         ),
     ),
 )
@@ -463,7 +462,7 @@ OPERATION_17: Final[OperationPlan[ReadLabelScalarFalseAbsentResponse]] = Operati
                 style='label',
                 required=True,
             ),
-            encoder=Encoder(model_bindings.codec_17, model_bindings.CONTEXT_17),
+            codec=model_bindings.codec_17,
         ),
     ),
 )
@@ -484,7 +483,7 @@ OPERATION_18: Final[OperationPlan[ReadLabelArrayFalseResponse]] = OperationPlan(
                 allow_reserved=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
+            codec=model_bindings.codec_18,
         ),
     ),
 )
@@ -504,7 +503,7 @@ OPERATION_19: Final[OperationPlan[ReadLabelArrayFalseFalseResponse]] = Operation
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_19, model_bindings.CONTEXT_19),
+            codec=model_bindings.codec_19,
         ),
     ),
 )
@@ -524,7 +523,7 @@ OPERATION_20: Final[OperationPlan[ReadLabelArrayFalseAbsentResponse]] = Operatio
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
+            codec=model_bindings.codec_20,
         ),
     ),
 )
@@ -546,7 +545,7 @@ OPERATION_21: Final[OperationPlan[ReadLabelArrayTrueResponse]] = OperationPlan(
                 allow_reserved=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
+            codec=model_bindings.codec_21,
         ),
     ),
 )
@@ -567,7 +566,7 @@ OPERATION_22: Final[OperationPlan[ReadLabelArrayTrueFalseResponse]] = OperationP
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_22, model_bindings.CONTEXT_22),
+            codec=model_bindings.codec_22,
         ),
     ),
 )
@@ -588,7 +587,7 @@ OPERATION_23: Final[OperationPlan[ReadLabelArrayTrueAbsentResponse]] = Operation
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_23, model_bindings.CONTEXT_23),
+            codec=model_bindings.codec_23,
         ),
     ),
 )
@@ -611,7 +610,7 @@ OPERATION_24: Final[OperationPlan[ReadLabelObjectFalseResponse]] = OperationPlan
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_24, model_bindings.CONTEXT_24),
+            codec=model_bindings.codec_24,
         ),
     ),
 )
@@ -633,7 +632,7 @@ OPERATION_25: Final[OperationPlan[ReadLabelObjectFalseFalseResponse]] = Operatio
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_25, model_bindings.CONTEXT_25),
+            codec=model_bindings.codec_25,
         ),
     ),
 )
@@ -655,7 +654,7 @@ OPERATION_26: Final[OperationPlan[ReadLabelObjectFalseAbsentResponse]] = Operati
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_26, model_bindings.CONTEXT_26),
+            codec=model_bindings.codec_26,
         ),
     ),
 )
@@ -679,7 +678,7 @@ OPERATION_27: Final[OperationPlan[ReadLabelObjectTrueResponse]] = OperationPlan(
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_27, model_bindings.CONTEXT_27),
+            codec=model_bindings.codec_27,
         ),
     ),
 )
@@ -702,7 +701,7 @@ OPERATION_28: Final[OperationPlan[ReadLabelObjectTrueFalseResponse]] = Operation
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_28, model_bindings.CONTEXT_28),
+            codec=model_bindings.codec_28,
         ),
     ),
 )
@@ -725,7 +724,7 @@ OPERATION_29: Final[OperationPlan[ReadLabelObjectTrueAbsentResponse]] = Operatio
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_29, model_bindings.CONTEXT_29),
+            codec=model_bindings.codec_29,
         ),
     ),
 )
@@ -745,7 +744,7 @@ OPERATION_30: Final[OperationPlan[ReadMatrixScalarFalseResponse]] = OperationPla
                 required=True,
                 allow_reserved=True,
             ),
-            encoder=Encoder(model_bindings.codec_30, model_bindings.CONTEXT_30),
+            codec=model_bindings.codec_30,
         ),
     ),
 )
@@ -764,7 +763,7 @@ OPERATION_31: Final[OperationPlan[ReadMatrixScalarFalseFalseResponse]] = Operati
                 style='matrix',
                 required=True,
             ),
-            encoder=Encoder(model_bindings.codec_31, model_bindings.CONTEXT_31),
+            codec=model_bindings.codec_31,
         ),
     ),
 )
@@ -783,7 +782,7 @@ OPERATION_32: Final[OperationPlan[ReadMatrixScalarFalseAbsentResponse]] = Operat
                 style='matrix',
                 required=True,
             ),
-            encoder=Encoder(model_bindings.codec_32, model_bindings.CONTEXT_32),
+            codec=model_bindings.codec_32,
         ),
     ),
 )
@@ -804,7 +803,7 @@ OPERATION_33: Final[OperationPlan[ReadMatrixArrayFalseResponse]] = OperationPlan
                 allow_reserved=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_33, model_bindings.CONTEXT_33),
+            codec=model_bindings.codec_33,
         ),
     ),
 )
@@ -824,7 +823,7 @@ OPERATION_34: Final[OperationPlan[ReadMatrixArrayFalseFalseResponse]] = Operatio
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_34, model_bindings.CONTEXT_34),
+            codec=model_bindings.codec_34,
         ),
     ),
 )
@@ -844,7 +843,7 @@ OPERATION_35: Final[OperationPlan[ReadMatrixArrayFalseAbsentResponse]] = Operati
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_35, model_bindings.CONTEXT_35),
+            codec=model_bindings.codec_35,
         ),
     ),
 )
@@ -866,7 +865,7 @@ OPERATION_36: Final[OperationPlan[ReadMatrixArrayTrueResponse]] = OperationPlan(
                 allow_reserved=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_36, model_bindings.CONTEXT_36),
+            codec=model_bindings.codec_36,
         ),
     ),
 )
@@ -887,7 +886,7 @@ OPERATION_37: Final[OperationPlan[ReadMatrixArrayTrueFalseResponse]] = Operation
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_37, model_bindings.CONTEXT_37),
+            codec=model_bindings.codec_37,
         ),
     ),
 )
@@ -908,7 +907,7 @@ OPERATION_38: Final[OperationPlan[ReadMatrixArrayTrueAbsentResponse]] = Operatio
                 required=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_38, model_bindings.CONTEXT_38),
+            codec=model_bindings.codec_38,
         ),
     ),
 )
@@ -931,7 +930,7 @@ OPERATION_39: Final[OperationPlan[ReadMatrixObjectFalseResponse]] = OperationPla
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_39, model_bindings.CONTEXT_39),
+            codec=model_bindings.codec_39,
         ),
     ),
 )
@@ -953,7 +952,7 @@ OPERATION_40: Final[OperationPlan[ReadMatrixObjectFalseFalseResponse]] = Operati
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_40, model_bindings.CONTEXT_40),
+            codec=model_bindings.codec_40,
         ),
     ),
 )
@@ -975,7 +974,7 @@ OPERATION_41: Final[OperationPlan[ReadMatrixObjectFalseAbsentResponse]] = Operat
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_41, model_bindings.CONTEXT_41),
+            codec=model_bindings.codec_41,
         ),
     ),
 )
@@ -999,7 +998,7 @@ OPERATION_42: Final[OperationPlan[ReadMatrixObjectTrueResponse]] = OperationPlan
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_42, model_bindings.CONTEXT_42),
+            codec=model_bindings.codec_42,
         ),
     ),
 )
@@ -1022,7 +1021,7 @@ OPERATION_43: Final[OperationPlan[ReadMatrixObjectTrueFalseResponse]] = Operatio
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_43, model_bindings.CONTEXT_43),
+            codec=model_bindings.codec_43,
         ),
     ),
 )
@@ -1045,7 +1044,7 @@ OPERATION_44: Final[OperationPlan[ReadMatrixObjectTrueAbsentResponse]] = Operati
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_44, model_bindings.CONTEXT_44),
+            codec=model_bindings.codec_44,
         ),
     ),
 )
@@ -1064,7 +1063,7 @@ OPERATION_45: Final[OperationPlan[ReadQueryScalarFalseTrueResponse]] = Operation
                 style='form',
                 allow_reserved=True,
             ),
-            encoder=Encoder(model_bindings.codec_45, model_bindings.CONTEXT_45),
+            codec=model_bindings.codec_45,
         ),
     ),
 )
@@ -1078,7 +1077,7 @@ OPERATION_46: Final[OperationPlan[ReadQueryScalarFalseFalseResponse]] = Operatio
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form'),
-            encoder=Encoder(model_bindings.codec_46, model_bindings.CONTEXT_46),
+            codec=model_bindings.codec_46,
         ),
     ),
 )
@@ -1092,7 +1091,7 @@ OPERATION_47: Final[OperationPlan[ReadQueryScalarFalseAbsentResponse]] = Operati
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form'),
-            encoder=Encoder(model_bindings.codec_47, model_bindings.CONTEXT_47),
+            codec=model_bindings.codec_47,
         ),
     ),
 )
@@ -1112,7 +1111,7 @@ OPERATION_48: Final[OperationPlan[ReadQueryScalarTrueTrueResponse]] = OperationP
                 explode=True,
                 allow_reserved=True,
             ),
-            encoder=Encoder(model_bindings.codec_48, model_bindings.CONTEXT_48),
+            codec=model_bindings.codec_48,
         ),
     ),
 )
@@ -1126,7 +1125,7 @@ OPERATION_49: Final[OperationPlan[ReadQueryScalarTrueFalseResponse]] = Operation
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', explode=True),
-            encoder=Encoder(model_bindings.codec_49, model_bindings.CONTEXT_49),
+            codec=model_bindings.codec_49,
         ),
     ),
 )
@@ -1140,7 +1139,7 @@ OPERATION_50: Final[OperationPlan[ReadQueryScalarTrueAbsentResponse]] = Operatio
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', explode=True),
-            encoder=Encoder(model_bindings.codec_50, model_bindings.CONTEXT_50),
+            codec=model_bindings.codec_50,
         ),
     ),
 )
@@ -1160,7 +1159,7 @@ OPERATION_51: Final[OperationPlan[ReadQueryArrayFalseTrueResponse]] = OperationP
                 allow_reserved=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_51, model_bindings.CONTEXT_51),
+            codec=model_bindings.codec_51,
         ),
     ),
 )
@@ -1174,7 +1173,7 @@ OPERATION_52: Final[OperationPlan[ReadQueryArrayFalseFalseResponse]] = Operation
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', shape='array'),
-            encoder=Encoder(model_bindings.codec_52, model_bindings.CONTEXT_52),
+            codec=model_bindings.codec_52,
         ),
     ),
 )
@@ -1188,7 +1187,7 @@ OPERATION_53: Final[OperationPlan[ReadQueryArrayFalseAbsentResponse]] = Operatio
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='query', name='q', style='form', shape='array'),
-            encoder=Encoder(model_bindings.codec_53, model_bindings.CONTEXT_53),
+            codec=model_bindings.codec_53,
         ),
     ),
 )
@@ -1209,7 +1208,7 @@ OPERATION_54: Final[OperationPlan[ReadQueryArrayTrueTrueResponse]] = OperationPl
                 allow_reserved=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_54, model_bindings.CONTEXT_54),
+            codec=model_bindings.codec_54,
         ),
     ),
 )
@@ -1229,7 +1228,7 @@ OPERATION_55: Final[OperationPlan[ReadQueryArrayTrueFalseResponse]] = OperationP
                 explode=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_55, model_bindings.CONTEXT_55),
+            codec=model_bindings.codec_55,
         ),
     ),
 )
@@ -1249,7 +1248,7 @@ OPERATION_56: Final[OperationPlan[ReadQueryArrayTrueAbsentResponse]] = Operation
                 explode=True,
                 shape='array',
             ),
-            encoder=Encoder(model_bindings.codec_56, model_bindings.CONTEXT_56),
+            codec=model_bindings.codec_56,
         ),
     ),
 )
@@ -1271,7 +1270,7 @@ OPERATION_57: Final[OperationPlan[ReadQueryObjectFalseTrueResponse]] = Operation
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_57, model_bindings.CONTEXT_57),
+            codec=model_bindings.codec_57,
         ),
     ),
 )
@@ -1292,7 +1291,7 @@ OPERATION_58: Final[OperationPlan[ReadQueryObjectFalseFalseResponse]] = Operatio
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_58, model_bindings.CONTEXT_58),
+            codec=model_bindings.codec_58,
         ),
     ),
 )
@@ -1313,7 +1312,7 @@ OPERATION_59: Final[OperationPlan[ReadQueryObjectFalseAbsentResponse]] = Operati
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_59, model_bindings.CONTEXT_59),
+            codec=model_bindings.codec_59,
         ),
     ),
 )
@@ -1336,7 +1335,7 @@ OPERATION_60: Final[OperationPlan[ReadQueryObjectTrueTrueResponse]] = OperationP
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_60, model_bindings.CONTEXT_60),
+            codec=model_bindings.codec_60,
         ),
     ),
 )
@@ -1358,7 +1357,7 @@ OPERATION_61: Final[OperationPlan[ReadQueryObjectTrueFalseResponse]] = Operation
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_61, model_bindings.CONTEXT_61),
+            codec=model_bindings.codec_61,
         ),
     ),
 )
@@ -1380,7 +1379,7 @@ OPERATION_62: Final[OperationPlan[ReadQueryObjectTrueAbsentResponse]] = Operatio
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_62, model_bindings.CONTEXT_62),
+            codec=model_bindings.codec_62,
         ),
     ),
 )
@@ -1403,7 +1402,7 @@ OPERATION_63: Final[OperationPlan[ReadDeepObjectResponse]] = OperationPlan(
                 fields=(FieldPlan('k', 'string'),),
                 additional=FieldPlan('', 'string'),
             ),
-            encoder=Encoder(model_bindings.codec_63, model_bindings.CONTEXT_63),
+            codec=model_bindings.codec_63,
         ),
     ),
 )
@@ -1417,7 +1416,7 @@ OPERATION_64: Final[OperationPlan[ReadHeadersAndCookiesResponse]] = OperationPla
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Wire', style='simple'),
-            encoder=Encoder(model_bindings.codec_64, model_bindings.CONTEXT_64),
+            codec=model_bindings.codec_64,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -1426,7 +1425,7 @@ OPERATION_64: Final[OperationPlan[ReadHeadersAndCookiesResponse]] = OperationPla
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_65, model_bindings.CONTEXT_65),
+            codec=model_bindings.codec_65,
         ),
     ),
 )
@@ -1445,7 +1444,7 @@ OPERATION_65: Final[OperationPlan[ReadTextResponse]] = OperationPlan(
                 required=True,
                 content_media_type='text/plain',
             ),
-            encoder=Encoder(model_bindings.codec_66, model_bindings.CONTEXT_66),
+            codec=model_bindings.codec_66,
         ),
     ),
 )
@@ -1464,7 +1463,7 @@ OPERATION_66: Final[OperationPlan[ReadJsonResponse]] = OperationPlan(
                 required=True,
                 content_media_type='application/json',
             ),
-            encoder=Encoder(model_bindings.codec_67, model_bindings.CONTEXT_67),
+            codec=model_bindings.codec_67,
         ),
     ),
 )
@@ -1484,7 +1483,7 @@ OPERATION_67: Final[OperationPlan[ReadSuffixResponse]] = OperationPlan(
                 required=True,
                 allow_reserved=True,
             ),
-            encoder=Encoder(model_bindings.codec_68, model_bindings.CONTEXT_68),
+            codec=model_bindings.codec_68,
         ),
     ),
 )
@@ -1504,7 +1503,7 @@ OPERATION_68: Final[OperationPlan[ReadCompositeResponse]] = OperationPlan(
                 required=True,
                 allow_reserved=True,
             ),
-            encoder=Encoder(model_bindings.codec_69, model_bindings.CONTEXT_69),
+            codec=model_bindings.codec_69,
         ),
     ),
 )

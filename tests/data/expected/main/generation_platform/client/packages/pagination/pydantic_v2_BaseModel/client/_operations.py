@@ -8,7 +8,6 @@ from typing import Final
 from ._generated import model_bindings, security
 from ._runtime.client.operations import (
     BodyMedia,
-    Encoder,
     OperationPlan,
     ParameterSpec,
     RequestBody,
@@ -33,22 +32,8 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse]] = OperationPlan(
     path='/users',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_3, model_bindings.CONTEXT_3,
-            ),
-        ),
-        (
-            model_branch(
-                '500',
-                'application/json',
-                'json',
-                model_bindings.codec_5, model_bindings.CONTEXT_5,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_3),),
+        (model_branch('500', 'application/json', 'json', model_bindings.codec_5),),
     ),
     parameters=(
         ParameterSpec(
@@ -59,7 +44,7 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse]] = OperationPlan(
                 explode=True,
                 reserved_names=('limit',),
             ),
-            encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            codec=model_bindings.codec_0,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -70,11 +55,11 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse]] = OperationPlan(
                 kind='integer',
                 reserved_names=('cursor',),
             ),
-            encoder=Encoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
+            codec=model_bindings.codec_1,
         ),
         ParameterSpec(
             plan=ParameterPlan(location='header', name='X-Snapshot', style='simple'),
-            encoder=Encoder(model_bindings.codec_2, model_bindings.CONTEXT_2),
+            codec=model_bindings.codec_2,
         ),
     ),
 )
@@ -85,14 +70,7 @@ OPERATION_1: Final[OperationPlan[SearchUsersResponse]] = OperationPlan(
     path='/users/search',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_8, model_bindings.CONTEXT_8,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_8),),
         (),
     ),
     parameters=(
@@ -103,7 +81,7 @@ OPERATION_1: Final[OperationPlan[SearchUsersResponse]] = OperationPlan(
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_6, model_bindings.CONTEXT_6),
+            codec=model_bindings.codec_6,
         ),
     ),
     body=RequestBody(
@@ -111,7 +89,7 @@ OPERATION_1: Final[OperationPlan[SearchUsersResponse]] = OperationPlan(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_7, model_bindings.CONTEXT_7),
+                codec=model_bindings.codec_7,
             ),
         ),
         default='application/json',
@@ -125,14 +103,7 @@ OPERATION_2: Final[OperationPlan[ListLooseResponse]] = OperationPlan(
     path='/loose',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_10, model_bindings.CONTEXT_10,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_10),),
         (),
     ),
     parameters=(
@@ -144,7 +115,7 @@ OPERATION_2: Final[OperationPlan[ListLooseResponse]] = OperationPlan(
                 explode=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_9, model_bindings.CONTEXT_9),
+            codec=model_bindings.codec_9,
         ),
     ),
 )
@@ -155,14 +126,7 @@ OPERATION_3: Final[OperationPlan[ListNestedResponse]] = OperationPlan(
     path='/nested',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_12, model_bindings.CONTEXT_12,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_12),),
         (),
     ),
     parameters=(
@@ -173,7 +137,7 @@ OPERATION_3: Final[OperationPlan[ListNestedResponse]] = OperationPlan(
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_11, model_bindings.CONTEXT_11),
+            codec=model_bindings.codec_11,
         ),
     ),
 )
@@ -184,14 +148,7 @@ OPERATION_4: Final[OperationPlan[ListLabelsResponse]] = OperationPlan(
     path='/labels',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_14, model_bindings.CONTEXT_14,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_14),),
         (),
     ),
     parameters=(
@@ -202,7 +159,7 @@ OPERATION_4: Final[OperationPlan[ListLabelsResponse]] = OperationPlan(
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_13, model_bindings.CONTEXT_13),
+            codec=model_bindings.codec_13,
         ),
     ),
 )
@@ -213,14 +170,7 @@ OPERATION_5: Final[OperationPlan[ListLabelSetsResponse]] = OperationPlan(
     path='/label-sets',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_17, model_bindings.CONTEXT_17,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_17),),
         (),
     ),
     parameters=(
@@ -231,7 +181,7 @@ OPERATION_5: Final[OperationPlan[ListLabelSetsResponse]] = OperationPlan(
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_16, model_bindings.CONTEXT_16),
+            codec=model_bindings.codec_16,
         ),
     ),
 )
@@ -242,14 +192,7 @@ OPERATION_6: Final[OperationPlan[ListArchiveResponse]] = OperationPlan(
     path='/archive/{cursor}',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_20, model_bindings.CONTEXT_20,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_20),),
         (),
     ),
     parameters=(
@@ -260,7 +203,7 @@ OPERATION_6: Final[OperationPlan[ListArchiveResponse]] = OperationPlan(
                 style='simple',
                 required=True,
             ),
-            encoder=Encoder(model_bindings.codec_19, model_bindings.CONTEXT_19),
+            codec=model_bindings.codec_19,
         ),
     ),
 )
@@ -271,14 +214,7 @@ OPERATION_7: Final[OperationPlan[ListStatusesResponse]] = OperationPlan(
     path='/statuses',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '2XX',
-                'application/json',
-                'json',
-                model_bindings.codec_22, model_bindings.CONTEXT_22,
-            ),
-        ),
+        (model_branch('2XX', 'application/json', 'json', model_bindings.codec_22),),
         (),
     ),
     parameters=(
@@ -290,7 +226,7 @@ OPERATION_7: Final[OperationPlan[ListStatusesResponse]] = OperationPlan(
                 explode=True,
                 kind='integer',
             ),
-            encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
+            codec=model_bindings.codec_21,
         ),
     ),
 )
@@ -301,14 +237,7 @@ OPERATION_8: Final[OperationPlan[ListSecureUsersResponse]] = OperationPlan(
     path='/secure/users',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_24, model_bindings.CONTEXT_24,
-            ),
-        ),
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_24),),
         (),
     ),
     parameters=(
@@ -319,7 +248,7 @@ OPERATION_8: Final[OperationPlan[ListSecureUsersResponse]] = OperationPlan(
                 style='form',
                 explode=True,
             ),
-            encoder=Encoder(model_bindings.codec_23, model_bindings.CONTEXT_23),
+            codec=model_bindings.codec_23,
         ),
     ),
     security=security.OPERATION_8,

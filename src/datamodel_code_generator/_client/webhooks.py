@@ -8,7 +8,7 @@ and a helper without a signature only decodes.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import PurePosixPath
 from textwrap import fill
 from typing import TYPE_CHECKING, Any, Final, NamedTuple
@@ -20,7 +20,6 @@ from datamodel_code_generator._client.render import WIDTH, Module
 from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._openapi_wire_plan import plan_wire
 from datamodel_code_generator._python_layout import Group, layout
-from datamodel_code_generator._runtime.model_codecs.codec import needs_schema
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import OperationId, SourceLocation
 from datamodel_code_generator._target_render import items
@@ -30,10 +29,10 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage, SchemaRef
+    from datamodel_code_generator._client.codec_plan import ClientCodecs
+    from datamodel_code_generator._client.codec_render import UseAccessors
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
-    from datamodel_code_generator._openapi_codec_render import UseAccessors
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
 
 __all__ = (
@@ -111,7 +110,6 @@ class WebhookEvent:
     name: str | None
     use: TypeUseBinding
     schema: Mapping[str, str]
-    validate: bool
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -196,7 +194,7 @@ def webhook_uses(
             problems[helper.name].append(_problem("E_CONFIG_VALUE", "config", at, message))
             return None
         schema = {"document": protocols.documents[reference], "pointer": reference.pointer}
-        return WebhookEvent(name=name, use=use, schema=schema, validate=False)
+        return WebhookEvent(name=name, use=use, schema=schema)
 
     specs: list[WebhookSpec] = []
     for helper in helpers:
@@ -213,17 +211,13 @@ def webhook_uses(
 
 
 def plan_webhooks(
-    events: tuple[WebhookSpec, ...], codecs: CodecPlan, problems: dict[str, list[Diagnostic]]
+    events: tuple[WebhookSpec, ...], codecs: ClientCodecs, problems: dict[str, list[Diagnostic]]
 ) -> tuple[WebhookSpec, ...]:
-    """Plan every webhook helper whose events have native codecs and no other problem, adding the others' problems.
-
-    An event whose union members differ only by their schemas is always validated against its schema.
-    """
-    bindings = dict(codecs.bindings)
+    """Plan every helper whose events have acquired native codecs and no other problem."""
     return tuple(
-        replace(spec, events=tuple(replace(item, validate=needs_schema(bindings[item.use.id])) for item in spec.events))
+        spec
         for spec in events
-        if not problems[spec.helper.name]
+        if not problems[spec.helper.name] and all(event.use.id in codecs for event in spec.events)
     )
 
 
@@ -298,16 +292,8 @@ class _Webhooks:
 
     def decoder(self, module: Module, event: WebhookEvent) -> Group:
         """Return the runtime decoder of one event type."""
-        accessor = self.accessors[event.use.id]
-        bindings = module.local("_generated", "model_bindings")
-        return _call(
-            module.local(_EVENTS, "EventDecoder"),
-            [
-                ("", f"{bindings}.{accessor.codec}"),
-                ("", f"{bindings}.{accessor.context}"),
-                ("validate=", repr(event.validate)),
-            ],
-        )
+        codec = f"{module.local('_generated', 'model_bindings')}.{self.accessors[event.use.id].codec}"
+        return _call(module.local(_EVENTS, "EventDecoder"), [("", codec)])
 
     def event(self, module: Module, spec: WebhookSpec) -> tuple[str, Group]:
         """Return the spelling of a helper's event type, the union of its mapped types, and its decoder."""

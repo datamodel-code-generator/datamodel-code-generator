@@ -77,7 +77,7 @@ from .native import (
     native_client,
     transport_retry_reason,
 )
-from .operations import DATA_ERRORS, ResponseDecoder
+from .operations import ResponseDecoder, request_errors
 from .options import (
     DEFAULT_TRANSPORT,
     ClientOptions,
@@ -138,8 +138,8 @@ if TYPE_CHECKING:
     )
     from typing import Protocol, TypeGuard
 
+    from ..model_codecs.media import JSONValue
     from ..model_codecs.parameters import ParameterFragment, ParameterPlan
-    from ..model_codecs.wire import WireValue
     from ..protocols.options import (
         ProtocolClientOptions,
         ProtocolDefaults,
@@ -452,7 +452,7 @@ def _encoding_error(
     return RequestEncodingError(location=location, operation_id=operation.operation_id, cause=error)
 
 
-def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
+def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
     """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field.
 
     Exploded form and deepObject query parameters send only their property names or bracketed names, including
@@ -495,13 +495,13 @@ def _coded(operation: OperationPlan[object], spec: ParameterSpec, code: Callable
     """Return what coding an argument gives, raising a codec's refusal as the argument's encoding error."""
     try:
         return code()
-    except (*DATA_ERRORS, ValueError, TypeError) as error:
+    except request_errors(spec.codec) as error:
         raise _encoding_error(operation, (spec.plan.location, spec.plan.name), error) from None
 
 
 def _parameter(spec: ParameterSpec, value: object) -> object:
     """Return the contribution of one argument to its request, encoded as a call encodes it."""
-    return encode_parameter(spec.plan, spec.encode(value))
+    return encode_parameter(spec.plan, spec.dump(value))
 
 
 def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ProtocolConfigurationError:
@@ -535,8 +535,8 @@ def _parameters(operation: OperationPlan[object], arguments: tuple[object, ...])
                 raise _encoding_error(operation, (plan.location, plan.name))
             continue
         try:
-            request.add(encode_parameter(plan, spec.encode(value)), plan.name)
-        except (*DATA_ERRORS, ValueError, TypeError) as error:
+            request.add(encode_parameter(plan, spec.dump(value)), plan.name)
+        except request_errors(spec.codec) as error:
             raise _encoding_error(operation, (plan.location, plan.name), error) from None
     return request
 
@@ -725,7 +725,7 @@ def _page(  # noqa: PLR0913
     plan: _PagePlan,
     *,
     page_limited: bool,
-) -> tuple[T, WireValue, bytes]:
+) -> tuple[T, JSONValue, bytes]:
     """Return a page's value, wire value, and body, or raise the error of a page or response over its size limit."""
     settings = call.settings
     if body.overflow:
@@ -771,7 +771,7 @@ class CacheRequest:
     settings: Settings
     request: PreparedRequest[EncodedAttempt]
     url: str
-    credentials: WireValue
+    credentials: object
     partition: str | None
     foreign_auth: bool
     credential_headers: frozenset[str]
@@ -1917,7 +1917,7 @@ class _Core(Generic[AdapterT, HandleT]):
         from .security import secret_names  # noqa: PLC0415 - Only a cache fetch needs the schemes.
 
         names, queries = secret_names(self._shared.security_schemes)
-        credential: WireValue = None
+        credential: object = None
         if bound is not None:
             from .grants import grant_identity  # noqa: PLC0415 - Only an authenticated cache fetch keys its credentials.
 
@@ -1973,7 +1973,7 @@ class _Core(Generic[AdapterT, HandleT]):
         return headers, query
 
     def unsaved_argument(
-        self, operation: OperationPlan[object], saved: Sequence[WireValue | Unset]
+        self, operation: OperationPlan[object], saved: Sequence[JSONValue | Unset]
     ) -> tuple[str, str] | None:
         """Return the location and name of the first given argument a checkpoint never saves, or None.
 
@@ -1998,7 +1998,7 @@ class _Core(Generic[AdapterT, HandleT]):
         body: object,
         media_type: str | None,
         options: RequestOptions | None,
-    ) -> tuple[tuple[WireValue | Unset, ...], tuple[WireValue, str, str | None] | None]:
+    ) -> tuple[tuple[JSONValue | Unset, ...], tuple[JSONValue, str, str | None] | None]:
         """Return the wire values of a helper call's arguments, and of its JSON body with its declared media type.
 
         They are encoded and checked as the call's first request encodes them; a body sent as a concrete media type
@@ -2007,7 +2007,7 @@ class _Core(Generic[AdapterT, HandleT]):
         """
         self._call_settings(options, operation.operation_id)
         saved = tuple(
-            value if isinstance(value, Unset) else _coded(operation, spec, partial(spec.encode, value))
+            value if isinstance(value, Unset) else _coded(operation, spec, partial(spec.dump, value))
             for spec, value in zip(operation.parameters, arguments, strict=True)
         )
         if (unsaved := self.unsaved_argument(operation, saved)) is not None:
@@ -2017,16 +2017,16 @@ class _Core(Generic[AdapterT, HandleT]):
             return saved, None
         media, sent = request.selected(operation.operation_id, media_type)
         try:
-            wire = media.wire(body)
-        except (*DATA_ERRORS, ValueError, TypeError) as error:
+            wire = media.dump(body)
+        except request_errors(media.codec) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation.operation_id, cause=error) from None
         return saved, (wire, media.media_type, None if sent == media.media_type else sent)
 
     @staticmethod
     def restored_request(
         operation: OperationPlan[object],
-        arguments: tuple[WireValue | Unset, ...],
-        body: tuple[WireValue, str, str | None] | None,
+        arguments: tuple[JSONValue | Unset, ...],
+        body: tuple[JSONValue, str, str | None] | None,
     ) -> tuple[tuple[object, ...], object, str | None]:
         """Return the arguments, body, and media type of a request a checkpoint saved, built from their wire values.
 
@@ -2046,7 +2046,7 @@ class _Core(Generic[AdapterT, HandleT]):
             raise RequestEncodingError(location=("body",), operation_id=operation.operation_id)
         try:
             return restored, media.restored(wire), media_type
-        except (*DATA_ERRORS, ValueError, TypeError) as error:
+        except request_errors(media.codec) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation.operation_id, cause=error) from None
 
     def checked_page(
@@ -2076,7 +2076,10 @@ class _Core(Generic[AdapterT, HandleT]):
         return prepared.url, prepared.headers
 
     def checked_arguments(
-        self, operation: OperationPlan[object], given: Mapping[int, WireValue], options: RequestOptions | None
+        self,
+        operation: OperationPlan[object],
+        given: Mapping[int, JSONValue],
+        options: RequestOptions | None,
     ) -> None:
         """Encode some arguments of a helper's request, by position, as its call encodes them, sending nothing.
 
@@ -2666,7 +2669,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         plan: _PagePlan,
         operation: OperationPlan[T],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
-        build: Callable[[T, WireValue, bytes, ResponseInfo, str, frozenset[str]], R],
+        build: Callable[[T, JSONValue, bytes, ResponseInfo, str, frozenset[str]], R],
         *,
         body: object,
         media_type: str | None,
@@ -2874,7 +2877,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: BodyInput[WireValue] | Unset = UNSET,
+        body: BodyInput[JSONValue] | Unset = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> RawResponse:
@@ -2923,7 +2926,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: BodyInput[WireValue] | Unset = UNSET,
+        body: BodyInput[JSONValue] | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
@@ -3647,7 +3650,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         plan: _PagePlan,
         operation: OperationPlan[T],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
-        build: Callable[[T, WireValue, bytes, ResponseInfo, str, frozenset[str]], R],
+        build: Callable[[T, JSONValue, bytes, ResponseInfo, str, frozenset[str]], R],
         *,
         body: object,
         media_type: str | None,
@@ -3860,7 +3863,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[WireValue] | Unset = UNSET,
+        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> AsyncRawResponse:
@@ -3912,7 +3915,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: AsyncBodyInput[WireValue] | Unset = UNSET,
+        body: AsyncBodyInput[JSONValue] | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""

@@ -173,7 +173,9 @@
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: session=secret] b''
   cookie limit ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [kind='pages', limit=1] session_limit_error resume_state=NoneType
-  body its codec refuses ! RequestEncodingError: RequestEncodingError(operation_id='search', location='body') [operation_id='search', location=('body',), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
+  body its codec refuses ! UserWarning: Pydantic serializer warnings:
+  PydanticSerializationUnexpectedValue(Expected `SearchQuery` - serialized value may not be as expected [input_value=5, input_type=int]) []
+  body native serialization refuses ! RequestEncodingError: RequestEncodingError(operation_id='search', location='body') [operation_id='search', location=('body',), cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] request_encoding_error
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json; charset=utf-8, content-length: 13] b'{"query":"a"}'
   concrete media first = ['1']

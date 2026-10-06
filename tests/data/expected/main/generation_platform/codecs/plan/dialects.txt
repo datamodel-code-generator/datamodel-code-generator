@@ -2,9 +2,6 @@
 APIGenerationError
 diagnostic MC_SCHEMA_DIALECT /jsonSchemaDialect: The default schema dialect is not builtin
 diagnostic MC_SCHEMA_DIALECT /components/schemas/Odd/$schema: The schema dialect is not builtin
-diagnostic MC_PATTERN_DIALECT /components/schemas/Odd/properties/look/pattern: The pattern is outside the builtin ECMA-262 Unicode grammar
-diagnostic MC_PATTERN_RESOURCE_LIMIT /components/schemas/Odd/properties/long/pattern: The pattern exceeds a static resource limit
-diagnostic MC_PATTERN_DIALECT /components/schemas/Odd/properties/props/patternProperties/\p{L}: The pattern is outside the builtin ECMA-262 Unicode grammar
 diagnostic MC_SCHEMA_DIALECT /components/schemas/Odd/properties/embedded/$id: Embedded schema resources are not supported
 diagnostic MC_SCHEMA_DIALECT /components/schemas/Odd/properties/anchored/$anchor: Schema anchors in OpenAPI documents are not supported
 diagnostic MC_SCHEMA_DIALECT /components/schemas/Odd/properties/legacyItems/items: Array-form items is not supported

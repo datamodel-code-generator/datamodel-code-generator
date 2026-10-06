@@ -40,7 +40,6 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/data/generation_platform/codecs/typing/negative.py",
         "private-import:tests/data/generation_platform/codecs/typing/positive.py",
         "private-import:tests/data/python/model_codec_reports.py",
-        "private-import:tests/data/python/model_codec_suite.py",
     ),
 }
 FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {

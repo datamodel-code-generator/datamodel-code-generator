@@ -10,16 +10,28 @@
   order with a member added since = Order(id=1, status=Status(root='open'), note=None, channel=None, payment=None, priority=2)
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a status added since ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"archived"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.literal_error) at /status')] response_validation_error
+  order of a status added since ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"archived"}', truncated=False, cause=1 validation error for Order
+status
+  Input should be 'open' or 'closed' [type=literal_error, input_value='archived', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/literal_error] response_validation_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a payment kind added since ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","payment":{"kind":"crypto"}}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.union_tag_invalid) at /payment')] response_validation_error
+  order of a payment kind added since ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","payment":{"kind":"crypto"}}', truncated=False, cause=1 validation error for Order
+payment
+  Input tag 'crypto' found using 'kind' does not match any of the expected tags: 'card', 'transfer' [type=union_tag_invalid, input_value={'kind': 'crypto'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/union_tag_invalid] response_validation_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a card with a transfer's members ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","payment":{"kind":"card","iban":"X"}}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /payment')] response_validation_error
+  order of a card with a transfer's members ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","payment":{"kind":"card","iban":"X"}}', truncated=False, cause=1 validation error for Order
+payment.card.last4
+  Field required [type=missing, input_value={'kind': 'card', 'iban': 'X'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] response_validation_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  order of a status that changed its type ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":3}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.literal_error) at /status')] response_validation_error
+  order of a status that changed its type ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":3}', truncated=False, cause=1 validation error for Order
+status
+  Input should be 'open' or 'closed' [type=literal_error, input_value=3, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/literal_error] response_validation_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   order of a status added since, read raw = {'id': 1, 'status': 'archived'}
@@ -28,4 +40,7 @@
   problem ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, body=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] conflict_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem that changed its shape ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, body=b'{"message":"gone"}', body_bytes=b'{"message":"gone"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /code')] conflict_error
+  problem that changed its shape ! ConflictError: ConflictError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, body=b'{"message":"gone"}', body_bytes=b'{"message":"gone"}', truncated=False, cause=1 validation error for Problem
+code
+  Field required [type=missing, input_value={'message': 'gone'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] conflict_error

@@ -72,10 +72,10 @@ path p simple array/string: ParameterEncodingError An empty array or object cann
 path p label* object/string: ParameterEncodingError An empty array or object cannot fill a path segment
 query q form* array/string: ParameterEncodingError The value does not have the parameter's declared shape
 query q form* array/string: ParameterEncodingError The tuple value does not have the string lexical kind
-query q form* object/string: ParameterEncodingError An object parameter member is not declared
-query q form* scalar/string: ParameterEncodingError The int value does not have the string lexical kind
-query q form* scalar/integer: ParameterEncodingError The Decimal value does not have the integer lexical kind
-query q form* scalar/boolean: ParameterEncodingError The int value does not have the boolean lexical kind
+query q form* object/string: TypeError Unset is not a JSON value
+query q form* scalar/string: ?q=1 => "1"
+query q form* scalar/integer: WireValidationError parameter.lexical
+query q form* scalar/boolean: WireValidationError parameter.lexical
 path p simple array/string: ParameterEncodingError An empty delimited value cannot be distinguished from an empty container
 path p label* array/string: ParameterEncodingError An exploded label value cannot contain its '.' delimiter
 path p label* array/number: ParameterEncodingError An exploded label value cannot contain its '.' delimiter
@@ -92,9 +92,9 @@ query c text/plain scalar/string: ParameterEncodingError The parameter content m
 querystring qs text/plain scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError A URL-encoded form value must be an object
-querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError A URL-encoded form member is not declared
+querystring qs application/x-www-form-urlencoded scalar/string: WireValidationError form.undeclared
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
-querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError A repeated member must be an array
+querystring qs application/x-www-form-urlencoded scalar/string: ?t=x => {"t":["x"]}
 invalid {'location': 'query', 'name': 'q', 'style': 'spaceDelimited', 'shape': 'scalar'}: ValueError query parameter style 'spaceDelimited' has no builtin form for scalar values
 invalid {'location': 'query', 'name': 'q', 'style': 'pipeDelimited', 'explode': True, 'shape': 'array'}: ValueError query parameter style 'pipeDelimited' has no builtin form for array values
 invalid {'location': 'query', 'name': 'q', 'style': 'deepObject', 'explode': False, 'shape': 'object'}: ValueError query parameter style 'deepObject' has no builtin form for object values

@@ -1,0 +1,35 @@
+{
+  "backend": "typing.TypedDict",
+  "package": "native_containers_typeddict",
+  "options": {
+    "output_datetime_class": "datetime",
+    "use_tuple_for_fixed_length_arrays": true,
+    "use_standard_collections": true
+  },
+  "cases": [
+    {
+      "name": "native-pair",
+      "use": "/paths/~1containers/post request_body",
+      "op": "decode",
+      "value": {"pair": ["2024-01-02", "2024-01-03"], "entry": {"wire-name": "kept"}}
+    },
+    {
+      "name": "native-pair-wire",
+      "use": "/paths/~1containers/post response_body 200",
+      "op": "encode",
+      "value": {"result": "native-pair", "attr": "value"}
+    },
+    {
+      "name": "pair-with-extra-item",
+      "use": "/paths/~1containers/post request_body",
+      "op": "decode",
+      "value": {"pair": ["2024-01-02", "2024-01-03", true], "entry": "plain"}
+    },
+    {
+      "name": "pair-with-extra-item-wire",
+      "use": "/paths/~1containers/post response_body 200",
+      "op": "encode",
+      "value": {"result": "pair-with-extra-item", "attr": "value"}
+    }
+  ]
+}

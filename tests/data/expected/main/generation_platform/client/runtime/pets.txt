@@ -36,7 +36,9 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error syntax ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=b'{', body_bytes=b'{', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] internal_server_error
+  list error syntax ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=b'{', body_bytes=b'{', truncated=False, cause=1 validation error for Error
+  Invalid JSON: EOF while parsing an object at line 1 column 1 [type=json_invalid, input_value=b'{', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
@@ -65,10 +67,18 @@
   list success media ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[]', truncated=False, expected_media_types=('application/json',)] unexpected_media_type_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] decode_error
+  list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[', truncated=False, cause=1 validation error for FieldPetsGetResponse
+  Invalid JSON: EOF while parsing a list at line 1 column 1 [type=json_invalid, input_value=b'[', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] decode_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success value ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":"one"}]', truncated=False, cause=NativeValidationError('The native type rejected the value (native.int_parsing) at /0/id')] response_validation_error
+  list success value ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":"one"}]', truncated=False, cause=2 validation errors for FieldPetsGetResponse
+0.id
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='one', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing
+0.name
+  Field required [type=missing, input_value={'id': 'one'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] response_validation_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list success empty ! BodyProtocolError: BodyProtocolError(status_code=204, operation_id='listPets', call_id='<call>') [operation_id='listPets', condition='missing_body', body_bytes=b'', truncated=False] body_protocol_error
@@ -95,7 +105,7 @@
   create without body ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',)] request_encoding_error
   create undeclared media ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='createPet', field_path=('media_type',), condition='undeclared'] configuration_error
   create invalid media ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='createPet', field_path=('media_type',), condition='undeclared'] configuration_error
-  create invalid body ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
+  create invalid body ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] request_encoding_error
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 24] b'{"name":"dog","tag":"x"}'
   create rejected ! UnprocessableEntityError: UnprocessableEntityError(status_code=422, operation_id='createPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createPet', status_code=422, body=Error(code=22, message=None), body_bytes=b'{"code":22}', truncated=False] unprocessable_entity_error
@@ -333,7 +343,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list error syntax ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=b'{', body_bytes=b'{', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] internal_server_error
+  list error syntax ! InternalServerError: InternalServerError(status_code=500, operation_id='listPets', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listPets', status_code=500, body=b'{', body_bytes=b'{', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] internal_server_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
@@ -362,10 +372,10 @@
   list success media ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[]', truncated=False, expected_media_types=('application/json',)] unexpected_media_type_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] decode_error
+  list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[', truncated=False, cause=JSONDecodeError('Expecting value: line 1 column 2 (char 1)')] decode_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success value ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":"one"}]', truncated=False, cause=NativeValidationError('The native type rejected the value (native.int_type) at /0/id')] response_validation_error
+  list success value = [{'id': 'one'}]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list success empty ! BodyProtocolError: BodyProtocolError(status_code=204, operation_id='listPets', call_id='<call>') [operation_id='listPets', condition='missing_body', body_bytes=b'', truncated=False] body_protocol_error
@@ -392,7 +402,7 @@
   create without body ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',)] request_encoding_error
   create undeclared media ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='createPet', field_path=('media_type',), condition='undeclared'] configuration_error
   create invalid media ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='createPet', field_path=('media_type',), condition='undeclared'] configuration_error
-  create invalid body ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
+  create invalid body ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=TypeError('Object of type object is not JSON serializable')] request_encoding_error
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 24] b'{"name":"dog","tag":"x"}'
   create rejected ! UnprocessableEntityError: UnprocessableEntityError(status_code=422, operation_id='createPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='createPet', status_code=422, body={'code': 22}, body_bytes=b'{"code":22}', truncated=False] unprocessable_entity_error

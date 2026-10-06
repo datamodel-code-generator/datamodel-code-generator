@@ -38,13 +38,13 @@ def _total_response(token: bytes, member: str) -> Callable[[httpx2.Request], htt
 
 
 def _value_calls(harness: Harness, api: Any) -> Iterator[tuple[str, Any, dict[str, object]]]:
-    """Yield initial integer and number arguments built from the review's Decimal and exact boundary values."""
+    """Yield initial integer and number arguments built from saved JSON values, including an exact boundary integer."""
     for name, value in (
-        ("offset", Decimal("40.0")),
-        ("position", Decimal("40.0")),
+        ("offset", 40.0),
+        ("position", 40),
         ("position", 40.0),
         ("position", 40.5),
-        ("position", Decimal("9007199254740993.0")),
+        ("position", 9007199254740993),
     ):
         argument = harness.argument("listUsers", "query", name, value)
         helper = api.protocols.users.offsets if name == "offset" else api.protocols.users.positions
@@ -52,7 +52,7 @@ def _value_calls(harness: Harness, api: Any) -> Iterator[tuple[str, Any, dict[st
 
 
 def pagination_count_values(package: ModuleType, lines: list[str]) -> None:
-    """Keep exact numeric totals, reject the same invalid values, and accept integral Decimal starting positions."""
+    """Keep exact numeric totals, reject the same invalid values, and accept integral number starting positions."""
     harness = Harness(package)
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native) as api:

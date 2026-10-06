@@ -1,6 +1,24 @@
-camel [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"petName":"Mimi","age":2} extras={}
-camel-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"petName":"Mimi","age":2}
-camel-required [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: WireValidationError schema.required@/petName
-camel-required-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: WireValidationError schema.required@/petName
-kebab [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"pet-name":"Mimi","age":2} extras={}
-kebab-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"pet-name":"Mimi","age":2}
+camel [pydantic_v2.BaseModel, pydantic_v2.dataclass]: ValidationError missing@['pet_name']
+camel [dataclasses.dataclass]: native Camel(pet_name='Mimi', age=2) json={"petName":"Mimi","age":2}
+camel [typing.TypedDict]: native {'pet_name': 'Mimi', 'age': 2} json={"petName":"Mimi","age":2}
+camel [msgspec.Struct]: ValidationError
+camel-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass]: ValidationError missing@['pet_name']
+camel-echo [dataclasses.dataclass]: native Camel(pet_name='Mimi', age=2) json={"petName":"Mimi","age":2}
+camel-echo [typing.TypedDict]: native {'pet_name': 'Mimi', 'age': 2} json={"petName":"Mimi","age":2}
+camel-echo [msgspec.Struct]: ValidationError
+camel-required [pydantic_v2.BaseModel, pydantic_v2.dataclass]: ValidationError missing@['pet_name']
+camel-required [dataclasses.dataclass]: TypeError
+camel-required [typing.TypedDict]: native {'age': 2} json={"age":2}
+camel-required [msgspec.Struct]: ValidationError
+camel-required-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass]: ValidationError missing@['pet_name']
+camel-required-echo [dataclasses.dataclass]: TypeError
+camel-required-echo [typing.TypedDict]: native {'age': 2} json={"age":2}
+camel-required-echo [msgspec.Struct]: ValidationError
+kebab [pydantic_v2.BaseModel, pydantic_v2.dataclass]: ValidationError missing@['pet_name']
+kebab [dataclasses.dataclass]: native Kebab(pet_name='Mimi', age=2) json={"pet-name":"Mimi","age":2}
+kebab [typing.TypedDict]: native {'pet-name': 'Mimi', 'age': 2} json={"pet-name":"Mimi","age":2}
+kebab [msgspec.Struct]: ValidationError
+kebab-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass]: ValidationError missing@['pet_name']
+kebab-echo [dataclasses.dataclass]: native Kebab(pet_name='Mimi', age=2) json={"pet-name":"Mimi","age":2}
+kebab-echo [typing.TypedDict]: native {'pet-name': 'Mimi', 'age': 2} json={"pet-name":"Mimi","age":2}
+kebab-echo [msgspec.Struct]: ValidationError
