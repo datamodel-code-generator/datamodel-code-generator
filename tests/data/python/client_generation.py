@@ -98,11 +98,11 @@ def _protocols(value: object, root: Path) -> object:
 
 def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
     """Build a client configuration from JSON fixture values; `protocols` names a file, record, or raw value."""
-    values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", "formatter_settings": ".", **values}
+    values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", **values}
     converted: dict[str, Any] = {}
     for key, value in values.items():
         match key:
-            case "output" | "formatter_settings":
+            case "output":
                 converted[key] = root / value
             case "selection":
                 converted[key] = OperationSelection(**{
@@ -113,8 +113,6 @@ def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
                 converted[key] = tuple(ResourceName(**item) if isinstance(item, dict) else item for item in value)
             case "operations" if isinstance(value, list):
                 converted[key] = tuple(_operation(item) for item in value)
-            case "formatters":
-                converted[key] = tuple(value)
             case "protocols":
                 converted[key] = _protocols(value, root)
             case _:
@@ -223,7 +221,7 @@ def _render(
             case _, parts if "_runtime" in parts:
                 continue
             case ".py", parts:
-                modules[parts] = content.decode(case.get("config", {}).get("encoding", "utf-8"))
+                modules[parts] = content.decode(case.get("model", {}).get("encoding", "utf-8"))
             case _:
                 pass
         lines.append(f"  {artifact.action} {path.as_posix()}")
@@ -344,7 +342,7 @@ def client_model_parity_report(case_name: str, root: Path, rendered: dict[str, M
         with _working_directory(case, attempt):
             generate(source, config=model_config(attempt / "models.py", backend, case.get("model", {})))
         ordinary = {path.relative_to(attempt).parts: path.read_bytes() for path in attempt.rglob("*.py")}
-        encoding = case.get("config", {}).get("encoding", "utf-8")
+        encoding = case.get("model", {}).get("encoding", "utf-8")
         target = {parts: content.encode(encoding) for parts, content in rendered.get(name, {}).items()}
         matches.append(bool(ordinary) and ordinary == target)
     return f"{bool(matches) and all(matches)}\n"

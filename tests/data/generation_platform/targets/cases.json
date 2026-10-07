@@ -278,6 +278,7 @@
     "model": {
       "openapi_scopes": ["api"],
       "input_file_type": "openapi",
+      "input_filename": "api.json",
       "allow_private_network": true,
       "allow_remote_refs": true
     },
@@ -458,27 +459,31 @@
   },
   "format": {
     "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
-    "config": {
-      "header": "Example header\n\nSecond line",
-      "include_timestamp": true,
+    "model": {
+      "openapi_scopes": ["api"],
+      "custom_file_header": "# Example header\n#\n# Second line",
+      "custom_file_header_mode": "prepend",
+      "disable_timestamp": false,
+      "formatters": ["builtin"],
       "custom_formatters": ["tests.data.python.custom_formatters.add_comment"],
       "encoding": "latin-1"
     },
     "steps": [
       {"generate": {}},
+      {"show": "models.py"},
       {"show": "server/routers/pets.py"},
-      {"show": "server/__init__.py"}
+      {"show": "server/__init__.py"},
+      {"show": "server/_runtime/model_codecs/unset.py"}
     ]
   },
   "format-errors": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"render": {"config": {"header": "Café 漢", "encoding": "latin-1"}}},
+      {"render": {"model": {"custom_file_header": "# Café 漢", "encoding": "latin-1"}}},
       {"render": {"config": {"templates": "templates/broken"}}},
       {"render": {"config": {"templates": "templates/misplaced"}}},
-      {"render": {"config": {"custom_formatters": ["tests.data.python.custom_formatters.break_syntax"]}}}
+      {"render": {"model": {"custom_formatters": ["tests.data.python.custom_formatters.break_syntax"]}}}
     ]
   },
   "python-floor": {

@@ -1606,6 +1606,33 @@ def _format_deferred_output(
     code_formatter.format_directory(output)
 
 
+def _default_input_filename(input_: _GenerationInput) -> str:
+    """Return the file name a header shows for an input that names none, such as a dict given directly."""
+    match input_:
+        case str():
+            return "<stdin>"
+        case ParseResult():
+            return input_.geturl()
+        case Path():
+            return input_.name
+        case _:
+            pass
+    return getattr(input_, "name", "<dict>")
+
+
+def _read_custom_file_header(
+    custom_file_header: str | None, custom_file_header_path: Path | None, encoding: str
+) -> str | None:
+    """Return the custom file header text, reading `custom_file_header_path` when no text is given."""
+    if custom_file_header is not None or custom_file_header_path is None:
+        return custom_file_header
+    try:
+        return custom_file_header_path.read_text(encoding=encoding)
+    except (OSError, UnicodeDecodeError) as e:
+        msg = f"Unable to read custom file header {custom_file_header_path}: {e}"
+        raise Error(msg) from e
+
+
 def _emit_results(  # noqa: PLR0913
     results: _ParserResults,
     input_: _GenerationInput,
@@ -1619,29 +1646,14 @@ def _emit_results(  # noqa: PLR0913
     allow_empty_api: bool = False,
 ) -> str | GeneratedModules | None:
     if not input_filename:  # pragma: no cover
-        match input_:
-            case str():
-                input_filename = "<stdin>"
-            case ParseResult():
-                input_filename = input_.geturl()
-            case Path():
-                input_filename = input_.name
-            case _:
-                # input_ might be a dict object provided directly, and missing a name field
-                input_filename = getattr(input_, "name", "<dict>")
+        input_filename = _default_input_filename(input_)
     if not results:
         if allow_empty_api:
             return None
         msg = "Models not found in the input data"
         raise Error(msg)
 
-    if custom_file_header is None and (custom_file_header_path := config.custom_file_header_path):
-        try:
-            custom_file_header = custom_file_header_path.read_text(encoding=config.encoding)
-        except (OSError, UnicodeDecodeError) as e:
-            msg = f"Unable to read custom file header {custom_file_header_path}: {e}"
-            raise Error(msg) from e
-
+    custom_file_header = _read_custom_file_header(custom_file_header, config.custom_file_header_path, config.encoding)
     has_custom_file_header = bool(custom_file_header)
     header_prefix, header_suffix = _build_file_header_parts(custom_file_header, config)
 
