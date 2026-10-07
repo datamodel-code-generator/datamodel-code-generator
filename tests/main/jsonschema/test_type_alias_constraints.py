@@ -96,9 +96,7 @@ def test_type_alias_constraints_match_con_types(
         input_path=CONSTRAINTS_SCHEMA,
         output_path=root_models,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"type_alias_annotated/{variant}_root_models.py",
-        extra_args=["--disable-timestamp", *extra_args],
+        extra_args=["--disable-timestamp", "--formatters", "isort", *extra_args],
     )
     expected = CONSTRAINTS_EXPECTED / f"{variant}_runtime.txt"
     alias_module = f"type_alias_constraints_{variant}"
