@@ -9,7 +9,7 @@ import pytest
 
 from datamodel_code_generator import DataModelType
 from tests.conftest import assert_output
-from tests.data.python.client_typing import client_typing_report
+from tests.data.python.client_typing import client_regenerated_typing_report, client_typing_report
 
 EXPECTED = Path(__file__).parents[1] / "data" / "expected" / "main" / "generation_platform" / "client" / "typing"
 ENABLED = "DATAMODEL_CODE_GENERATOR_CLIENT_TYPING_E2E"
@@ -307,3 +307,10 @@ def test_client_typing_media_ranges(case: str, tmp_path: Path) -> None:
         client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, case, (sample,), package_targets=(target,)),
         EXPECTED / f"pydantic_v2-BaseModel-{case}-ranges.txt",
     )
+
+
+def test_client_typing_regenerated_user_code(tmp_path: Path) -> None:
+    """Check user code clean against one API version, then each checker's errors where the next version breaks it."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(client_regenerated_typing_report(tmp_path), EXPECTED / "regenerated-user-code.txt")

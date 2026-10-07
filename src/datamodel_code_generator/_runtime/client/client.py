@@ -200,7 +200,6 @@ _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
 class ClientDefaults:
     """The generated defaults of one client package, its helpers' kinds by name, and its request content coding."""
 
-    user_agent: str | None = None
     security_schemes: tuple[SecuritySchemeEntry, ...] = ()
     helpers: tuple[tuple[str, str], ...] = ()
     request_coding: RequestCoding | None = None
@@ -1370,11 +1369,7 @@ class _Shared(Generic[AdapterT]):
         self.transport = transport
         self.security_schemes = defaults.security_schemes
         self.request_coding = defaults.request_coding
-        self.fixed = (
-            (_ACCEPT_ENCODING,)
-            if defaults.user_agent is None
-            else (("User-Agent", defaults.user_agent), _ACCEPT_ENCODING)
-        )
+        self.fixed: tuple[tuple[str, str], ...] = (_ACCEPT_ENCODING,)
         self.protocols: ProtocolClientOptions | None = None
         self.root_auth: AuthConfig | None = None
         self.socket_connector: object = None

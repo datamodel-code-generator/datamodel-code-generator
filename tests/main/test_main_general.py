@@ -1429,6 +1429,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "snake_case_field",
         "use_frozen_field",
         "use_type_checking_imports",
+        "server_include_request",
     ])
 
 

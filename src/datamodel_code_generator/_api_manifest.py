@@ -27,7 +27,6 @@ if TYPE_CHECKING:
         OperationId,
         SourceDocumentId,
         SourceLocation,
-        TypeUseId,
     )
 
 MANIFEST_NAME: Final = ".dcg-target-manifest.json"
@@ -40,12 +39,6 @@ JSONObject: TypeAlias = "dict[str, JSONValue]"
 _SHA256_HEX_LENGTH: Final = 64
 _HASH_PREFIX: Final = "sha256:"
 _MANIFEST_KEYS: Final = frozenset({"format", "generator", "target", "model", "files"})
-_DECLARED_ROLES: Final = frozenset({
-    "parameter",
-    "response_header",
-    "request_encoding_header",
-    "response_encoding_header",
-})
 
 
 def canonical_bytes(value: JSONValue) -> bytes:
@@ -177,27 +170,6 @@ class DocumentTable:
     def operation(self, operation: OperationId) -> JSONObject:
         """Return the persistent reference of an operation's root use site."""
         return self.source(operation.use_site)
-
-    def use(self, use: TypeUseId) -> JSONObject:
-        """Return the persistent identity of one type use."""
-        from datamodel_code_generator._target_contract import OperationId  # noqa: PLC0415
-
-        owner = use.owner
-        return {
-            "owner": {"kind": "operation", "source": self.operation(owner)}
-            if isinstance(owner, OperationId)
-            else {"kind": "schema", "source": self.source(owner)},
-            "role": use.role,
-            "use_site": self.source(use.use_site),
-            "schema": self.source(use.schema_site),
-            "declaration": self.source(use.declaration.location) if use.role in _DECLARED_ROLES else None,
-            "direction": use.direction,
-            "projection": use.projection,
-            "location": use.location,
-            "name": use.name,
-            "status": use.status,
-            "media": use.media,
-        }
 
 
 def portable(value: object, refer: Callable[[OperationRef | SchemaRef], JSONValue]) -> JSONValue:

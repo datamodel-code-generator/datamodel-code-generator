@@ -39,8 +39,6 @@
   write client/py.typed
   write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
-  S_OPERATION_EXCLUDED selection /paths/~1items~1{id}/get: GET /items/{id} is excluded by exclude_tags 'items': Checked elsewhere
-  S_OPERATION_EXCLUDED selection /paths/~1reports/get: GET /reports is excluded by exclude_tags 'reports': Checked elsewhere
 
 # artifact client/_generated_docs/README.md
 # client
@@ -65,6 +63,29 @@ The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays 
 set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
 
 See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+
+## Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `explicit` |
+| `body_arguments` | `body` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+Each operation method declares its parameters, its body, and its options as keyword arguments.
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+
+## Operations
+
+- `users.get_user`: `GET /users/{userId}`, no request body
+- `users.check_user`: `HEAD /users/{userId}`, no request body
+- `users.rename_user`: `PATCH /users/{userId}`, `body=` only (`application/json`)
+- `users.delete_user`: `DELETE /users/{userId}`, no request body
+- `users.list_users`: `GET /users`, no request body
+- `users.create_user`: `POST /users`, `body=` only (`application/json`)
+- `carts.get_current_cart`: `GET /carts/current`, no request body
+- `secure.get_secure_user`: `GET /secure/users/{userId}`, no request body
 
 ## Selected operation contracts
 
@@ -218,6 +239,30 @@ reference for their limits.
   }
 ]
 ```
+
+## Dependencies
+
+The package needs these distributions at run time:
+
+- `httpx2>=2.13.0`
+- `typing-extensions>=4.16`
+- `pydantic>=2.13.5`
+
+Each generation reports them; add them to your project, for example with `uv add`.
+
+## Capabilities
+
+| Capability | Declared |
+| --- | --- |
+| Security | `bearer` |
+| Helpers | `cache` |
+
+The package copies the runtime modules its capabilities and model backend need:
+
+- `_runtime`: `__init__.py`
+- `_runtime/client`: `__init__.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `coding.py`, `disk.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `redirects.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
+- `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
+- `_runtime/protocols`: `__init__.py`, `cache.py`, `cache_stores.py`, `caches.py`, `errors.py`, `names.py`, `options.py`, `origins.py`, `records.py`, `references.py`, `resume.py`, `sources.py`, `websocket_types.py`
 
 
 # artifact client/_generated_docs/runtime.md

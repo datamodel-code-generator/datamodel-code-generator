@@ -3,9 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
-from pydantic import BaseModel, ConfigDict, RootModel, constr
+from pydantic import BaseModel, RootModel, constr
 
 
 class Item(BaseModel):
@@ -17,61 +15,5 @@ class Account(BaseModel):
     name: str
 
 
-class FieldJsonNullablePostRequest(BaseModel):
-    name: str
-
-
 class FieldTextPostRequest(RootModel[constr(max_length=10)]):
     root: constr(max_length=10)
-
-
-class FieldRawPostRequest(BaseModel):
-    pass
-
-
-class FieldFormPostRequest(BaseModel):
-    name: constr(max_length=20)
-    count: int | None = 1
-    tags: list[str] | None = None
-
-
-class FieldFormOptionalPostRequest(BaseModel):
-    name: str | None = None
-    flags: list[bool] | None = None
-    ratio: float | None = None
-
-
-class FieldFormEitherPostRequest(BaseModel):
-    either: str | int | None = None
-    items: list[int] | None = None
-
-
-class Point(BaseModel):
-    x: float | None = None
-
-
-class FieldFormNestedPostRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    __annotations__ = {
-        '__pydantic_extra__': Dict[str, int],
-    }
-    point: Point | None = None
-
-
-class FieldFormClosedPostRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str | None = None
-
-
-class FieldFormChoicePostRequest(BaseModel):
-    name: str | None = None
-
-
-class FieldUploadPostRequest(BaseModel):
-    file: bytes
-    extra: list[bytes] | None = None
-    note: str | None = None

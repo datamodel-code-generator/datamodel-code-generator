@@ -1,6 +1,6 @@
 {
   "backend": "pydantic_v2.BaseModel",
   "package": "codec_pets_schemas_scope",
-  "scopes": ["schemas"],
+  "scopes": ["schemas", "api"],
   "cases": []
 }

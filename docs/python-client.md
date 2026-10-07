@@ -11,10 +11,16 @@ version; a target below 3.11, including the default 3.10, is refused with `E_CON
 Settings of the generated client that change how its methods are declared or checked do not change the models: the
 same OpenAPI document and model settings produce the same model files whichever client settings you choose.
 
-The client adds `api` to the model's `openapi_scopes`, keeping the scopes you give, so that the models cover the
-parameters, bodies, and responses of the operations. Custom templates and custom formatters must keep the class and
-field names of the models: the client binds each operation to the names in the generated model graph and does not read
-the rendered model source.
+The model's `openapi_scopes` must include `api`, so that the models cover the parameters, bodies, and responses of
+the operations; without it, generation raises `datamodel_code_generator.Error`. The client keeps every model setting
+as given, including the generation timestamp, which `disable_timestamp` leaves out. The client files are headed,
+formatted, and encoded like the model files, by the same model settings: `formatters`, `custom_formatters` and
+`custom_formatters_kwargs`, `custom_file_header`, `custom_file_header_path` and `custom_file_header_mode`,
+`disable_timestamp`, `enable_version_header`, `enable_command_header`, `use_double_quotes`,
+`builtin_format_line_length`, `encoding` (for the Python files; the other files are UTF-8), and `settings_path`;
+`use_type_checking_imports` does not apply to the client files, whose annotations are read at run time. Custom
+templates and custom formatters must keep the class and field names of the models: the client binds each operation
+to the names in the generated model graph and does not read the rendered model source.
 
 ## Webhook contracts
 
@@ -450,11 +456,11 @@ helpers:
 | Binding | `{target, value}`, where `value` is `{source, selector}` with `source` `input`, `initial`, or `previous`, or `{literal}` with any JSON value whose text is UTF-8 and whose containers nest at most 64 levels |
 | End condition | `{kind: missing}`, `{kind: "null"}`, or `{kind: value, value}` with a JSON value other than null. A list of them is nonempty and names each condition once |
 
-A reference must select a root path operation of the input, or generation fails with `E_OPERATION_REF`; webhooks and
-path items of other documents are refused. An enabled helper whose operation the selection excludes fails with
-`E_SELECTOR_DEPENDENCY`; a disabled one may keep it. Each request target must exist in the operation it writes to:
-the declared parameter of that location and name, header names compared without case, the operation's own
-querystring, or its request body. An operation that owns a querystring takes no `in: query` target.
+A reference must select a root path operation of the input, or generation fails with `E_OPERATION_REF`; webhooks,
+path items of other documents, and paths that `--openapi-include-paths` leaves out are refused. Each request target
+must exist in the operation it writes to: the declared parameter of that location and name, header names compared
+without case, the operation's own querystring, or its request body. An operation that owns a querystring takes no
+`in: query` target.
 
 ### Helper kinds
 
@@ -510,7 +516,6 @@ with one of these names, generation fails with `E_NAME_COLLISION` instead of ren
 ```text
 E_NAME_COLLISION target protocols.helpers['tags.all'] /paths/~1tags/get: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with parameter_names or body_field_names
 E_NAME_COLLISION target protocols.helpers['jobs.run'] /paths/~1jobs/post: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with parameter_names or body_field_names
-E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/~1admin~1audit/get: The enabled pagination helper 'audit.all' needs GET /admin/audit, which the selection excludes (excluded by exclude_tags 'admin')
 ```
 
 <!-- fmt: on -->

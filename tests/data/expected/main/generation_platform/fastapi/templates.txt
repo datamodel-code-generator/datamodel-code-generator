@@ -5,29 +5,12 @@ render pydantic_v2.BaseModel
   write server/application.py
   write server/routers/__init__.py
   write server/routers/pets.py
-  write server/routers/files.py
-  write server/routers/untagged.py
+  write server/routers/store.py
   write server/_generated/__init__.py
   write server/_generated/contract.py
   write server/errors.py
-  write server/security.py
   write server/services.py
   write server/README.md
-  write server/routers/pets.json
-  write server/routers/files.json
-  write server/routers/untagged.json
-  write server/docs/get_pet.yml
-  write server/docs/add_pet.yml
-  write server/docs/post__uploads.yml
-  write server/docs/put__notes.yml
-  write server/docs/post__raw.yml
-  write server/settings.toml
-  write server/checks/get_pet.py
-  write server/checks/add_pet.py
-  write server/checks/post__uploads.py
-  write server/checks/put__notes.py
-  write server/checks/post__raw.py
-  write server/NOTES
   write server/_runtime/__init__.py (copied runtime)
   write server/_runtime/model_codecs/__init__.py (copied runtime)
   write server/_runtime/model_codecs/errors.py (copied runtime)
@@ -44,54 +27,14 @@ render pydantic_v2.BaseModel
   write server/py.typed
   write server/.dcg-target-manifest.json
   file server/README.md
-    | # Hooked pets
+    | # Pets
     |
-    | - `GET /pets/{petId}` is handled by `get_pet`
-    | - `POST /pets` is handled by `add_pet`
-    | - `POST /uploads` is handled by `post__uploads`
-    | - `PUT /notes` is handled by `put__notes`
-    | - `POST /raw` is handled by `post__raw`
-  file server/routers/pets.json
-    | {"router": "tag:pets", "tag": "pets", "operations": ["/paths/~1pets~1{petId}/get", "/paths/~1pets/post"]}
-  file server/routers/files.json
-    | {"router": "tag:files", "tag": "files", "operations": ["/paths/~1uploads/post"]}
-  file server/routers/untagged.json
-    | {"router": "untagged", "tag": null, "operations": ["/paths/~1notes/put", "/paths/~1raw/post"]}
-  file server/docs/get_pet.yml
-    | operation: "/paths/~1pets~1{petId}/get"
-    | arguments:
-    |   - "request"
-    |   - "principal"
-    |   - "pet_id"
-    |   - "limit"
-    |   - "x_trace"
-    |   - "after"
-    |   - "session"
-  file server/docs/add_pet.yml
-    | operation: "/paths/~1pets/post"
-    | arguments:
-    |   - "request"
-    |   - "principal"
-    |   - "body"
-  file server/docs/post__uploads.yml
-    | operation: "/paths/~1uploads/post"
-    | arguments:
-    |   - "request"
-    |   - "body"
-  file server/docs/put__notes.yml
-    | operation: "/paths/~1notes/put"
-    | arguments:
-    |   - "request"
-    |   - "principal"
-    |   - "body"
-    |   - "media_type"
-  file server/docs/post__raw.yml
-    | operation: "/paths/~1raw/post"
-    | arguments:
-    |   - "request"
-  file server/settings.toml
-    | title = "Hooked pets"
-    | operations = 5
-  file server/NOTES
-    | 3 routers
+    | Ask the platform team before changing the API document; regenerate the package instead of editing it.
+    |
+    | - `GET /pets` is handled by `PetsService.list_pets`
+    | - `POST /pets` is handled by `PetsService.create_pet`
+    | - `GET /pets/mine` is handled by `PetsService.list_my_pets`
+    | - `GET /pets/{petId}` is handled by `PetsService.get_pet`
+    | - `DELETE /pets/{petId}` is handled by `PetsService.delete_pet`
+    | - `GET /store/inventory` is handled by `StoreService.get_inventory`
   file server/py.typed

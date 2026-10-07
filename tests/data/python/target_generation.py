@@ -20,14 +20,12 @@ from datamodel_code_generator.fastapi import (
     GeneratedProject,
     GenerationReport,
     OperationRef,
-    OperationSelection,
     PublicationRollbackError,
     ResponseChoice,
     generate_fastapi,
     render_fastapi,
 )
 from datamodel_code_generator.remote_lock import RemoteLockError, RemoteReferenceLock
-from tests.data.python import fastapi_hooks
 from tests.data.python.client_generation import cyclic_input_failure
 
 if TYPE_CHECKING:
@@ -55,21 +53,12 @@ def _config(values: dict[str, Any]) -> FastAPIConfig:
     converted: dict[str, Any] = {}
     for key, value in values.items():
         match key:
-            case "output" | "formatter_settings" | "templates" if isinstance(value, str):
+            case "output" if isinstance(value, str):
                 converted[key] = Path(value)
-            case "selection" if value is not None:
-                converted[key] = OperationSelection(**{
-                    name: tuple(_selector(item) for item in item_value) if isinstance(item_value, list) else item_value
-                    for name, item_value in value.items()
-                })
             case "primary_responses":
                 converted[key] = {_selector(selector): ResponseChoice(**choice) for selector, choice in value}
             case "operation_names":
                 converted[key] = {_selector(selector): name for selector, name in value}
-            case "hooks":
-                converted[key] = tuple(getattr(fastapi_hooks, name) for name in value)
-            case "custom_formatters" | "formatters":
-                converted[key] = tuple(value)
             case _:
                 converted[key] = value
     return FastAPIConfig(**converted)
@@ -81,7 +70,7 @@ def _model(values: dict[str, Any], root: Path) -> GenerateConfig:
     resolved = None
     for key, value in values.items():
         match key:
-            case "output" | "emit_model_metadata" | "lockfile":
+            case "output" | "emit_model_metadata" | "lockfile" | "custom_template_dir":
                 converted[key] = None if value is None else Path(value)
             case "resolved_lock":
                 resolved = value

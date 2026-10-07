@@ -53,6 +53,27 @@ set it deliberately in `ClientOptions` or `RequestOptions`. This package does no
 
 See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
 
+## Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `explicit` |
+| `body_arguments` | `body` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+Each operation method declares its parameters, its body, and its options as keyword arguments.
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+
+## Operations
+
+- `files.create_file`: `POST /files`, no request body
+- `files.probe_file`: `HEAD /files/{fileId}`, no request body
+- `files.append_file`: `PATCH /files/{fileId}`, `body=` only (`application/offset+octet-stream`)
+- `files.put_file_chunk`: `PUT /files/{fileId}`, `body=` only (`application/octet-stream`)
+- `files.get_file_status`: `GET /files/{fileId}/status`, no request body
+- `files.complete_file`: `POST /files/{fileId}/complete`, no request body
+
 ## Selected operation contracts
 
 These declarations come from the finalized operation selection and generation configuration. A key contract does
@@ -165,6 +186,30 @@ holds. `close()` or `aclose()` stops only local uploading. See the runtime refer
   }
 ]
 ```
+
+## Dependencies
+
+The package needs these distributions at run time:
+
+- `httpx2>=2.13.0`
+- `typing-extensions>=4.16`
+- `pydantic>=2.13.5`
+
+Each generation reports them; add them to your project, for example with `uv add`.
+
+## Capabilities
+
+| Capability | Declared |
+| --- | --- |
+| Security | none |
+| Helpers | `uploads` |
+
+The package copies the runtime modules its capabilities and model backend need:
+
+- `_runtime`: `__init__.py`
+- `_runtime/client`: `__init__.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `coding.py`, `disk.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `redirects.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
+- `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
+- `_runtime/protocols`: `__init__.py`, `caches.py`, `errors.py`, `links.py`, `names.py`, `options.py`, `origins.py`, `pagination.py`, `records.py`, `references.py`, `resume.py`, `sources.py`, `uploads.py`, `values.py`, `websocket_types.py`, `writes.py`
 
 
 # artifact client/_generated_docs/runtime.md

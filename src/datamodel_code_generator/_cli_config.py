@@ -154,6 +154,12 @@ def _get_config_class() -> type[Config]:
             "duplicate_name_suffix",
             "import_overrides",
             "type_overrides",
+            "server_handler_modes",
+            "server_body_modes",
+            "server_primary_responses",
+            "server_operation_names",
+            "server_router_names",
+            "server_parameter_names",
             mode="before",
         )
         @classmethod
@@ -191,6 +197,7 @@ def _get_config_class() -> type[Config]:
             "custom_template_dir",
             "custom_file_header_path",
             "http_local_ref_path",
+            "server_output",
             mode="before",
         )
         @classmethod
@@ -435,6 +442,20 @@ def _get_config_class() -> type[Config]:
         watch_delay: float = 0.5
         list_deprecations: Optional[str] = None  # noqa: UP045
         list_experimental: Optional[str] = None  # noqa: UP045
+        generate_server: Optional[Literal["fastapi"]] = None  # noqa: UP045
+        server_output: Optional[Path] = None  # noqa: UP045
+        server_package: Optional[str] = None  # noqa: UP045
+        server_model_package: Optional[str] = None  # noqa: UP045
+        server_layout: Optional[Literal["routers", "single"]] = None  # noqa: UP045
+        server_handler_mode: Optional[Literal["sync", "async"]] = None  # noqa: UP045
+        server_handler_modes: Optional[Mapping[str, Literal["sync", "async"]]] = None  # noqa: UP045
+        server_include_request: Optional[bool] = None  # noqa: UP045
+        server_body_mode: Optional[Literal["typed", "request"]] = None  # noqa: UP045
+        server_body_modes: Optional[Mapping[str, Literal["typed", "request"]]] = None  # noqa: UP045
+        server_primary_responses: Optional[Mapping[str, Any]] = None  # noqa: UP045
+        server_operation_names: Optional[Mapping[str, str]] = None  # noqa: UP045
+        server_router_names: Optional[Mapping[str, str]] = None  # noqa: UP045
+        server_parameter_names: Optional[Mapping[str, Mapping[str, str]]] = None  # noqa: UP045
 
         def merge_args(self, args: Namespace) -> None:
             """Merge command-line arguments into config."""

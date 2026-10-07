@@ -1,0 +1,23 @@
+[tool.datamodel-codegen]
+input = "pets.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+generate-server = "fastapi"
+server-output = "server"
+server-package = "server"
+server-model-package = "models"
+server-handler-mode = "sync"
+
+[tool.datamodel-codegen.server-handler-modes]
+"/paths/~1pets~1{petId}/get" = "sync"
+
+[tool.datamodel-codegen.profiles.async]
+server-handler-mode = "async"
+
+[tool.datamodel-codegen.profiles.elsewhere]
+server-output = "elsewhere"

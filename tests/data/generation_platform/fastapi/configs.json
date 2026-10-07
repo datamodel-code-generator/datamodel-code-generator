@@ -44,18 +44,7 @@
           "query:limit": "page_size"
         }
       ]
-    ],
-    "hooks": [
-      {
-        "module": "project.hooks",
-        "callable": "rename"
-      },
-      {
-        "file": "hooks/extra.py"
-      },
-      "rename"
-    ],
-    "templates": "templates/custom"
+    ]
   },
   "invalid-values": {
     "layout": "grid",
@@ -98,22 +87,7 @@
           "body:limit": "limit"
         }
       ]
-    ],
-    "hooks": [
-      {
-        "module": "project hooks"
-      },
-      {
-        "module": "project.hooks",
-        "file": "hooks.py"
-      },
-      {
-        "file": "hooks.py",
-        "callable": "not-a-name"
-      },
-      7
-    ],
-    "templates": 7
+    ]
   },
   "invalid-shapes": {
     "body_modes": "request",
@@ -138,8 +112,7 @@
         "limit"
       ]
     ],
-    "handler_modes": "async",
-    "hooks": "hooks.py"
+    "handler_modes": "async"
   },
   "invalid-mappings": {
     "parameter_names": "limit"
