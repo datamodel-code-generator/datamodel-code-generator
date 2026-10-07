@@ -6,18 +6,24 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import RootModel, constr
+from pydantic import ConfigDict, RootModel, constr
 
 
 class Model(RootModel[Any]):
     root: Any
 
 
-class PythonRejected(RootModel[constr(pattern=r'^([a-z])\1\p{L}$')]):
+class PythonRejected(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
     root: constr(pattern=r'^([a-z])\1\p{L}$')
 
 
-class MidPatternFlag(RootModel[constr(pattern=r'^([a-z])\1(?i)$')]):
+class MidPatternFlag(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
     root: constr(pattern=r'^([a-z])\1(?i)$')
 
 
@@ -25,5 +31,31 @@ class VerboseFlag(RootModel[constr(pattern=r'(?x)^([a-z])\1$')]):
     root: constr(pattern=r'(?x)^([a-z])\1$')
 
 
-class NonAsciiCondition(RootModel[constr(pattern=r'^(a)?(?(١)b)$')]):
+class NonAsciiCondition(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
     root: constr(pattern=r'^(a)?(?(١)b)$')
+
+
+class UnknownCharacterName(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'^\N{MELTING FACE}$')
+
+
+class OverflowingRepetition(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'^a{99999999999}\Z')
+
+
+class DeepGroups(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(
+        pattern=r'((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((a))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))\Z'
+    )

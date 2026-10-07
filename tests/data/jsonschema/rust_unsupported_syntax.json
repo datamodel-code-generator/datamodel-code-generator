@@ -80,6 +80,10 @@
     "Possessive": {
       "type": "string",
       "pattern": "^[a-z]++$"
+    },
+    "ScopedAsciiFlag": {
+      "type": "string",
+      "pattern": "^(?a:\\w+)$"
     }
   }
 }

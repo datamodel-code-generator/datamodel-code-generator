@@ -15476,10 +15476,44 @@ def test_main_rust_unsupported_syntax(target_pydantic_version: str, output_file:
         ("EscapedSlash", "a/b", "ab"),
         ("AngleNamedGroup", "2024", "24"),
         ("Possessive", "abc", "abc\n"),
+        ("ScopedAsciiFlag", "abc", "\u00e9"),
     ):
         assert_generated_model_json_validation(
             output_file,
             module_name=f"rust_unsupported_syntax_{model_name}",
+            model_name=model_name,
+            valid_json=json.dumps(valid),
+            invalid_json=json.dumps(invalid),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=("root",),
+            expected_attribute_value=valid,
+        )
+
+
+def test_main_rust_only_syntax(output_file: Path) -> None:
+    r"""Rust-only syntax keeps pydantic-core's default regex engine and Rust semantics.
+
+    Counted repetitions with whitespace, braced escapes such as ``\p{L}``, ``\x{41}`` and ``\b{start}``,
+    and nested character classes are Rust syntax that Python's ``re`` reads differently or rejects.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_only_syntax.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="rust_only_syntax_pydantic_v2.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    for model_name, valid, invalid in (
+        ("BraceWhitespace", "ab", "abcd"),
+        ("UnicodeProperty", "\u00e9", "1"),
+        ("WordBoundary", "abc", "123"),
+        ("HexBrace", "AA", "B"),
+        ("NestedClass", "a{", "1"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"rust_only_syntax_{model_name}",
             model_name=model_name,
             valid_json=json.dumps(valid),
             invalid_json=json.dumps(invalid),
@@ -15537,10 +15571,12 @@ def test_main_rust_unsupported_target_python(
 
 
 def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
-    """Patterns not every supported Python's ``re`` parses the same way keep pydantic-core's default engine.
+    """Rust-rejected syntax selects Python's regex engine even when Python's ``re`` rejects the pattern too.
 
-    This covers patterns Python rejects, global flags after the start, verbose patterns, and conditionals
-    that reference a group by non-ASCII digits.
+    Such a model fails at import with either engine, and the decision never depends on the Python running the
+    generator: unknown character names, global flags after the start, non-ASCII conditional references,
+    overflowing repetitions, and deeply nested groups are switched without compiling the pattern. Verbose
+    patterns keep the default engine because the scan does not model their whitespace and comments.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_python_rejected.json",

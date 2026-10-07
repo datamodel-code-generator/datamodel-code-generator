@@ -124,3 +124,10 @@ class AngleNamedGroup(RootModel[constr(pattern=r'^(?<year>\d{4})$')]):
 
 class Possessive(RootModel[constr(pattern=r'^[a-z]++$')]):
     root: constr(pattern=r'^[a-z]++$')
+
+
+class ScopedAsciiFlag(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'^(?a:\w+)$')

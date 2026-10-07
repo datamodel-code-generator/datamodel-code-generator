@@ -13,7 +13,7 @@ from collections import defaultdict
 from pathlib import Path
 from types import MappingProxyType, NoneType
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
-from warnings import catch_warnings, simplefilter, warn
+from warnings import warn
 
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import Field, ValidationError, field_validator, model_validator
@@ -812,84 +812,72 @@ _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 
 _STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
-_REGEX_SYNTAX: re.Pattern[str] = re.compile(
-    r"\\(?P<escape>[0-9NZ])|(?P<end>\\z)|\\.|\[\^?\]?(?P<chars>(?:\\.|[^\]\\])*)\]?"
-    r"|(?P<atomic>\(\?>)|(?P<group>\(\?(?:#|P=|\())|\(\?(?P<flags>[aiLmsux-]*)[:)]"
-    r"|(?P<quantifier>(?:[*+?]|\{(?P<minimum>[0-9]+)?(?:,[0-9]*)?\})\+?)|(?P<brace>\{)",
+_UNICODE_WHITE_SPACE = "[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*"
+_REGEX_TOKEN: re.Pattern[str] = re.compile(
+    r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|\[:\^?[A-Za-z]+:\]|(?P<open>\[\^?\]?)|(?P<close>\])"
+    r"|\(\?(?P<group>[>(#]|P=)|\(\?(?P<flags>[A-Za-z-]*)[:)]"
+    rf"|(?:\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}(?:,{_UNICODE_WHITE_SPACE}[0-9]*{_UNICODE_WHITE_SPACE})?\}}"
+    r"|[*+?])(?P<possessive>\+)?|(?P<brace>\{)",
     re.DOTALL,
 )
-_NON_PORTABLE_REGEX_SYNTAX: re.Pattern[str] = re.compile(r"\(\?[aiLmsux-]*x|\(\?\([^)]*[^\x00-\x7f]")
-_LATE_GLOBAL_FLAGS: re.Pattern[str] = re.compile(r"(?=((?:\(\?[aiLmsux]+\))*))\1.+?\(\?[aiLmsux]+\)", re.DOTALL)
-_ESCAPED_CHARACTER: re.Pattern[str] = re.compile(r"\\(.)", re.DOTALL)
-_RUST_UNSUPPORTED_CLASS_ESCAPES = frozenset("0123456789Nb")
+_RUST_REJECTED_ESCAPES = frozenset("0123456789NZ")
+_RUST_REJECTED_CLASS_ESCAPES = frozenset("0123456789NZb")
+_RUST_REJECTED_FLAGS = frozenset("aL")
 _PY_310 = (3, 10)
 _PY_311 = (3, 11)
 _PY_314 = (3, 14)
 
 
-def _scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int], str] | None:
-    r"""Scan a pattern for syntax pydantic-core's Rust engine rejects and Python's ``re`` accepts.
+def _regex_token_requirements(match: re.Match[str]) -> tuple[bool, tuple[int, int]] | None:
+    """Return whether a token outside character classes is Rust-rejected and the Python its syntax needs."""
+    if (escape := match["escape"]) is not None:
+        return escape in _RUST_REJECTED_ESCAPES, _PY_314 if escape == "z" else _PY_310
+    if (flags := match["flags"]) is not None:
+        return None if "x" in flags else (not _RUST_REJECTED_FLAGS.isdisjoint(flags), _PY_310)
+    if group := match["group"]:
+        return True, _PY_311 if group == ">" else _PY_310
+    return match["brace"] is not None, _PY_311 if match["possessive"] else _PY_310
 
-    Returns whether such syntax is present, the oldest Python whose ``re`` parses the pattern, and the pattern
-    rewritten into syntax every supported Python parses. Returns None, conservatively, for verbose patterns,
-    global flags after the start, and conditionals with non-ASCII group references, which Python versions
-    parse differently. Rust rejects backreferences and octal escapes, ``\N{...}``, ``\Z``, ``[\b]``,
-    ``(?P=name)``, atomic groups, conditionals, comments, the ASCII flag, and braces that do not form a counted
-    repetition in every pydantic-core release. Escapes and character classes are consumed whole, so escaped
-    characters and class members never match outside their context.
+
+def _scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
+    r"""Return whether the Rust regex crate rejects a pattern's syntax, and the oldest Python that parses it.
+
+    The scan follows the Rust grammar of every pydantic-core release from 2.3.0 on, so it never reports a
+    pattern Rust accepts: nested and POSIX character classes, braced escapes such as ``\p{L}``,
+    ``\x{41}`` or ``\b{start}``, and counted repetitions with whitespace are consumed whole. It reports
+    backreferences and octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic groups,
+    conditionals, comments, the ``a`` and ``L`` flags, and braces that cannot start a counted repetition.
+    Atomic groups and possessive quantifiers need Python 3.11, and ``\z`` needs Python 3.14. Returns None
+    for verbose patterns, whose whitespace and comments the scan does not model.
     """
-    if _NON_PORTABLE_REGEX_SYNTAX.search(pattern) or _LATE_GLOBAL_FLAGS.match(pattern):
-        return None
-    unsupported = False
+    rejected = False
     minimum_python = _PY_310
-    replacements: list[tuple[int, int, str]] = []
-    for match in _REGEX_SYNTAX.finditer(pattern):
-        if match["atomic"]:
-            unsupported = True
-            minimum_python = max(minimum_python, _PY_311)
-            replacements.append((match.start(), match.end(), "(?:"))
-        elif match["end"]:
-            minimum_python = max(minimum_python, _PY_314)
-            replacements.append((match.start(), match.end(), "\\Z"))
-        elif quantifier := match["quantifier"]:
-            unsupported |= quantifier[0] == "{" and match["minimum"] is None
-            if len(quantifier) > 1 and quantifier[-1] == "+":
-                minimum_python = max(minimum_python, _PY_311)
-                replacements.append((match.end() - 1, match.end(), ""))
-        elif (chars := match["chars"]) is not None:
-            unsupported |= not _RUST_UNSUPPORTED_CLASS_ESCAPES.isdisjoint(_ESCAPED_CHARACTER.findall(chars))
-        elif (flags := match["flags"]) is not None:
-            unsupported |= "a" in flags
-        else:
-            unsupported |= bool(match["escape"] or match["group"] or match["brace"])
-    for start, end, text in reversed(replacements):
-        pattern = f"{pattern[:start]}{text}{pattern[end:]}"
-    return unsupported, minimum_python, pattern
+    depth = 0
+    for match in _REGEX_TOKEN.finditer(pattern):
+        if depth or match["open"]:
+            depth += bool(match["open"]) - bool(match["close"])
+            rejected |= match["escape"] in _RUST_REJECTED_CLASS_ESCAPES
+            continue
+        if (requirements := _regex_token_requirements(match)) is None:
+            return None
+        rejected |= requirements[0]
+        minimum_python = max(minimum_python, requirements[1])
+    return (rejected, minimum_python)
 
 
 def _needs_python_regex_engine(pattern: str, data_type: DataType) -> bool:
     """Return whether an emitted pattern needs Python's ``re``.
 
-    Lookaround keeps its long-standing textual check. Other syntax is detected statically for string patterns,
-    keyed on the target Python version, so the output never depends on the installed pydantic-core or on the
-    Python running the generator.
+    Lookaround keeps its long-standing textual check. Other syntax is detected statically for string patterns
+    and keyed on the target Python version, so the output never depends on the installed pydantic-core or on
+    the Python running the generator. A pattern Python's ``re`` also rejects fails at import either way.
     """
     if _LOOKAROUND_PATTERN.search(pattern) is not None:
         return True
     if not (data_type.type in _STRING_PATTERN_TYPES or getattr(data_type, "annotated_string", False)):
         return False
-    if (scan := _scan_regex_syntax(pattern)) is None:
-        return False
-    unsupported, minimum_python, portable_pattern = scan
-    if not unsupported or data_type.python_version.version_key < minimum_python:
-        return False
-    with catch_warnings():
-        simplefilter("ignore")
-        try:
-            re.compile(portable_pattern)
-        except (re.error, ValueError):
-            return False
-    return True
+    scan = _scan_regex_syntax(pattern)
+    return scan is not None and scan[0] and data_type.python_version.version_key >= scan[1]
 
 
 if TYPE_CHECKING:
