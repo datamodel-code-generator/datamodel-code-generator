@@ -13,7 +13,11 @@ same OpenAPI document and model settings produce the same model files whichever 
 
 The model's `openapi_scopes` must include `api`, so that the models cover the parameters, bodies, and responses of
 the operations; without it, generation raises `datamodel_code_generator.Error`. The client keeps every model setting
-as given, including the generation timestamp, which `disable_timestamp` leaves out. Custom templates and custom
+as given, including the generation timestamp, which `disable_timestamp` leaves out. The client files are headed,
+formatted, and encoded like the model files, by the same model settings: `formatters`, `custom_formatters` and
+`custom_formatters_kwargs`, `custom_file_header`, `custom_file_header_path` and `custom_file_header_mode`,
+`disable_timestamp`, `enable_version_header`, `enable_command_header`, `use_double_quotes`,
+`builtin_format_line_length`, `encoding`, and `settings_path`. Custom templates and custom
 formatters must keep the class and field names of the models: the client binds each operation to the names in the
 generated model graph and does not read the rendered model source.
 

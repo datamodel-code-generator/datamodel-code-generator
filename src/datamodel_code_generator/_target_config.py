@@ -2,21 +2,15 @@
 
 from __future__ import annotations
 
-import codecs
 import keyword
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field, fields
-from math import isfinite
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar
+from typing import Any, ClassVar, Final, Literal, TypeAlias, TypeVar
 
 from datamodel_code_generator._api_manifest import document_identity
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, OperationSelection
-from datamodel_code_generator._format_types import Formatter
-
-if TYPE_CHECKING:
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
 
 ModelMode: TypeAlias = Literal["generate", "verify"]
 PackageMode: TypeAlias = Literal["embedded", "standalone"]
@@ -54,19 +48,6 @@ def _dotted(value: object) -> bool:
     )
 
 
-def _json(value: object) -> bool:
-    match value:
-        case None | bool() | int() | str():
-            return True
-        case float():
-            return isfinite(value)
-        case tuple() | list():
-            return all(_json(item) for item in value)
-        case Mapping():
-            return all(type(key) is str and _json(item) for key, item in value.items())
-    return False
-
-
 def _selection_problems(selection: object) -> Iterator[Diagnostic]:
     if not isinstance(selection, OperationSelection):
         yield _diagnostic("E_CONFIG_VALUE", "selection", "selection must be an OperationSelection")
@@ -92,13 +73,6 @@ class TargetConfig:
     model_package: str
     model_mode: ModelMode = "generate"
     selection: OperationSelection = field(default_factory=OperationSelection)
-    formatters: tuple[Formatter, ...] = (Formatter.BUILTIN,)
-    formatter_settings: Path | None = None
-    custom_formatters: tuple[str, ...] = ()
-    custom_formatter_kwargs: Mapping[str, JSONValue] = field(default_factory=lambda: MappingProxyType({}))
-    encoding: str = "utf-8"
-    header: str | None = None
-    include_timestamp: bool = False
     package_mode: PackageMode = "embedded"
     package_version: str | None = None
     distribution_name: str | None = None
@@ -120,28 +94,7 @@ class TargetConfig:
         if self.model_mode not in _MODEL_MODES:
             yield _diagnostic("E_CONFIG_VALUE", "model_mode", "model_mode must be 'generate' or 'verify'")
         yield from _selection_problems(self.selection)
-        if not isinstance(self.formatters, tuple) or not all(isinstance(item, Formatter) for item in self.formatters):
-            yield _diagnostic("E_CONFIG_VALUE", "formatters", "formatters must be a tuple of Formatter values")
-        if self.formatter_settings is not None and not isinstance(self.formatter_settings, Path):
-            yield _diagnostic("E_CONFIG_VALUE", "formatter_settings", "formatter_settings must be a Path or None")
-        if not isinstance(self.custom_formatters, tuple) or not all(_dotted(item) for item in self.custom_formatters):
-            yield _diagnostic("E_CONFIG_VALUE", "custom_formatters", "custom_formatters must be module paths")
-        if not isinstance(self.custom_formatter_kwargs, Mapping) or not _json(self.custom_formatter_kwargs):
-            yield _diagnostic(
-                "E_CONFIG_VALUE", "custom_formatter_kwargs", "custom_formatter_kwargs must be a JSON object"
-            )
-        yield from self._encoding_problems()
-        if self.header is not None and not isinstance(self.header, str):
-            yield _diagnostic("E_CONFIG_VALUE", "header", "header must be a string or None")
-        if not isinstance(self.include_timestamp, bool):
-            yield _diagnostic("E_CONFIG_VALUE", "include_timestamp", "include_timestamp must be a boolean")
         yield from self._package_problems()
-
-    def _encoding_problems(self) -> Iterator[Diagnostic]:
-        try:
-            codecs.lookup(self.encoding)
-        except (LookupError, TypeError):
-            yield _diagnostic("E_CONFIG_VALUE", "encoding", "encoding must name a Python codec")
 
     def _package_problems(self) -> Iterator[Diagnostic]:
         match self.package_mode:
@@ -196,19 +149,6 @@ def _strings(value: object, base: Path, option_path: str) -> tuple[str, ...]:
     )
 
 
-def _formatters(value: object, base: Path, option_path: str) -> tuple[Formatter, ...]:
-    try:
-        return tuple(Formatter(item) for item in _strings(value, base, option_path))
-    except ValueError:
-        raise _ConfigValueError(option_path, f"{option_path} names an unknown formatter") from None
-
-
-def _json_table(value: object, _: Path, option_path: str) -> Mapping[str, JSONValue]:
-    if not isinstance(value, Mapping) or not _json(value):
-        raise _ConfigValueError(option_path, f"{option_path} must be a table of JSON values")
-    return MappingProxyType(dict(value))
-
-
 def _reference(value: object, base: Path, option_path: str) -> tuple[str, str | None]:
     table = _table(value, option_path, frozenset({"pointer", "document"}))
     pointer = _string(table.get("pointer"), base, f"{option_path}.pointer")
@@ -261,13 +201,6 @@ SHARED_TOML_CONVERTERS: Final[Mapping[str, Converter]] = MappingProxyType({
     "model_package": _string,
     "model_mode": _string,
     "selection": _selection,
-    "formatters": _formatters,
-    "formatter_settings": _path,
-    "custom_formatters": _strings,
-    "custom_formatter_kwargs": _json_table,
-    "encoding": _string,
-    "header": _string,
-    "include_timestamp": _boolean,
     "package_mode": _string,
     "package_version": _string,
     "distribution_name": _string,
@@ -311,8 +244,6 @@ def load_target_config(path: Path, config_type: type[ConfigT], *, output: Path |
                 values[key] = converted
     if output is not None:
         values["output"] = output
-    if "formatter_settings" not in data:
-        values["formatter_settings"] = path.parent
     reported = {item.option_path for item in diagnostics}
     diagnostics.extend(
         _diagnostic("E_CONFIG_VALUE", name, f"The target file needs {name}")

@@ -42,11 +42,11 @@ def _selector(value: object) -> object:
 
 def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
     """Build a FastAPI configuration from JSON fixture values."""
-    values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", "formatter_settings": ".", **values}
+    values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", **values}
     converted: dict[str, Any] = {}
     for key, value in values.items():
         match key:
-            case "output" | "formatter_settings":
+            case "output":
                 converted[key] = root / value
             case "selection":
                 converted[key] = OperationSelection(**{
@@ -60,8 +60,6 @@ def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
                 }
             case "handler_modes" | "body_modes" | "operation_names" | "parameter_names" if isinstance(value, list):
                 converted[key] = {_selector(selector): item for selector, item in value}
-            case "formatters":
-                converted[key] = tuple(value)
             case _:
                 converted[key] = value
     return FastAPIConfig(**converted)
@@ -123,7 +121,7 @@ def _render(
         )
     except APIGenerationError as error:
         return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
-    encoding = case.get("config", {}).get("encoding", "utf-8")
+    encoding = case.get("model", {}).get("encoding", "utf-8")
     lines: list[str] = []
     files: list[str] = []
     for artifact in project.artifacts:

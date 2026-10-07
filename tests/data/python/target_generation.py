@@ -54,7 +54,7 @@ def _config(values: dict[str, Any]) -> FastAPIConfig:
     converted: dict[str, Any] = {}
     for key, value in values.items():
         match key:
-            case "output" | "formatter_settings" if isinstance(value, str):
+            case "output" if isinstance(value, str):
                 converted[key] = Path(value)
             case "selection" if value is not None:
                 converted[key] = OperationSelection(**{
@@ -65,8 +65,6 @@ def _config(values: dict[str, Any]) -> FastAPIConfig:
                 converted[key] = {_selector(selector): ResponseChoice(**choice) for selector, choice in value}
             case "operation_names":
                 converted[key] = {_selector(selector): name for selector, name in value}
-            case "custom_formatters" | "formatters":
-                converted[key] = tuple(value)
             case _:
                 converted[key] = value
     return FastAPIConfig(**converted)

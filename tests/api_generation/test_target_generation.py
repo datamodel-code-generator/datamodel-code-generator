@@ -355,9 +355,7 @@ def _toml_arguments(*extra: str) -> list[str]:
         "toml-unknown",
         "toml-missing",
         "toml-values",
-        "toml-formatters",
         "toml-selection-unknown",
-        "toml-kwargs-date",
         "toml-records",
     ],
 )

@@ -62,7 +62,7 @@ class FieldFilesFileNameGetPathFileNameParameter(
     root: constr(pattern=r'^[a-z]+\.txt$')
 
 
-class FieldMenÃ¼ItemGetPathItemParameter(RootModel[constr(pattern=r'^[a-z]+$')]):
+class FieldMenUc3UbcItemGetPathItemParameter(RootModel[constr(pattern=r'^[a-z]+$')]):
     root: constr(pattern=r'^[a-z]+$')
 
 

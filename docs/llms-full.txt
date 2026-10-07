@@ -11167,6 +11167,12 @@ object with the right methods works, and type checkers check it where you pass i
   (only the command `--enable-command-header` records differs), and a model option the model generation refuses,
   such as `--collapse-root-models-name-strategy` without `--collapse-root-models`, is refused before anything is
   written.
+- The server files are headed, formatted, and encoded like the model files, by the same model options:
+  `--formatters` (including its default and warning), `--custom-formatters` and `--custom-formatters-kwargs`,
+  `--custom-file-header`, `--custom-file-header-path` and `--custom-file-header-mode`, `--disable-timestamp`,
+  `--enable-version-header`, `--enable-command-header`, `--use-double-quotes`, `--builtin-format-line-length`,
+  `--encoding`, and the formatter settings found from `--output`. The target settings have no output options of
+  their own.
 - Custom templates and custom formatters must keep the class and field names of the models: the server binds each
   operation to the names in the generated model graph and does not read the rendered model source.
 - `--output` names the model file or package, and `model_package` is its import path.
@@ -11229,8 +11235,6 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 | `parameter_names` | inferred | `[[parameter_names]]` rename method arguments |
 | `package_mode` | `"embedded"` | `"standalone"` writes a distribution with `pyproject.toml` under `output` |
 | `package_version`, `distribution_name`, `model_dependency` | none | Distribution metadata of standalone mode |
-| `formatters`, `formatter_settings`, `custom_formatters`, `custom_formatter_kwargs` | builtin | Formatting of the generated package |
-| `encoding`, `header`, `include_timestamp` | `"utf-8"` | Encoding and header of the generated files |
 
 Operations are selected by their key, the JSON pointer of the path item method, such as `/paths/~1pets/get`,
 or a table with `pointer` and `document`:
@@ -11282,10 +11286,10 @@ lacks a new method; your own modules are never touched. `--check` renders everyt
 with 0 when nothing would change, 1 when a file would change, such as a generated file you edited or deleted, and 2
 for an error; `render_fastapi` returns the same artifacts, each with its action.
 
-The models keep the generation timestamp unless `--disable-timestamp` or a preset that sets it leaves it out, as
-for model generation. Without the timestamp, a run on unchanged inputs reproduces every byte: it writes nothing, and
-`--check` exits with 0, also from another directory when the paths name the same input and target configuration
-files. Only `include_timestamp = true` puts a time into the server files, and then every run changes them. The remote
+The models and the server files keep the generation timestamp unless `--disable-timestamp` or a preset that sets it
+leaves it out, as for model generation; one run heads every file with the same timestamp. Without the timestamp, a
+run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0, also from another
+directory when the paths name the same input and target configuration files. The remote
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
 uses it, or the default `datamodel-codegen.lock` exists.
 
