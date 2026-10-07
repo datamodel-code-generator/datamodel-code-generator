@@ -19093,6 +19093,39 @@ def test_main_allof_inheritance_cycle_custom_class_template(output_file: Path) -
     )
 
 
+TYPED_DICT_FLAT_CLASS_TEMPLATE_ARGS = [
+    "--output-model-type",
+    "typing.TypedDict",
+    "--custom-template-dir",
+    str(DATA_PATH / "templates_typed_dict_flat_class"),
+    "--additional-imports",
+    "typing.TypedDict",
+]
+
+
+def test_main_allof_inheritance_cycle_custom_typed_dict_class_template(output_file: Path) -> None:
+    """Leave TypedDict bases to a custom class include that does not emit them."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=TYPED_DICT_FLAT_CLASS_TEMPLATE_ARGS,
+        assert_func=assert_file_content,
+        expected_file="allof_inheritance_cycle_custom_typed_dict_class_template.py",
+    )
+
+
+def test_main_allof_inheritance_late_local_base_custom_typed_dict_class_template(output_dir: Path) -> None:
+    """Keep reused TypedDict models whose custom class include does not reference their bases."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "late_local_base",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*TYPED_DICT_FLAT_CLASS_TEMPLATE_ARGS, "--reuse-model", "--reuse-scope", "tree"],
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "allof_inheritance_late_local_base_custom_typed_dict",
+    )
+
+
 @pytest.mark.parametrize(
     ("output_model", "expected_stderr"),
     [

@@ -51,6 +51,7 @@ from datamodel_code_generator import (
     ModuleSplitMode,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
+    cached_path_exists,
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._graph import stable_toposort
@@ -6422,6 +6423,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         typed_dict = backend == "datamodel_code_generator.model.typed_dict"
         struct = backend == "datamodel_code_generator.model.msgspec"
         if backend not in ordinary_backends and not typed_dict and not struct:
+            return
+        if (
+            typed_dict
+            and (custom_template_dir := self.custom_template_dir) is not None
+            and cached_path_exists(custom_template_dir / "TypedDictClass.jinja2")
+        ):
             return
 
         def builtin(model: DataModel) -> bool:

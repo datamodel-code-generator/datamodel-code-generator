@@ -5146,7 +5146,7 @@
     "verbatim": true
   },
   "trusted-template-cycle": {
-    "source": "generation_platform/binding/cycle.openapi.json",
+    "source": "generation_platform/binding/field-ownership-cycle.json",
     "backends": [
       "msgspec.Struct"
     ],
