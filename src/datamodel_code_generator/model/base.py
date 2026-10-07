@@ -2084,6 +2084,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return the model type that represents a root value as a type alias."""
         return configured_root_model_type
 
+    @classmethod
+    def supports_type_alias_pattern(cls, pattern: str) -> bool:  # noqa: ARG003  # pragma: no cover
+        """Return whether a type alias can validate a string pattern without model configuration."""
+        return True
+
     @staticmethod
     def store_additional_properties_value(
         extra_template_data: dict[str, Any],

@@ -48,13 +48,16 @@ def _mapping(value: YamlValue, path: Sequence[str]) -> dict[str, YamlValue]:
     raise SchemaParseError(msg, path=list(path))
 
 
-def _is_object_schema(raw: YamlValue) -> bool:
-    """Return whether a raw parameter schema declares an object, which stays a model."""
-    return isinstance(raw, dict) and (
-        "object" in (types if isinstance(types := raw.get("type"), list) else (types,))
-        or "properties" in raw
-        or "additionalProperties" in raw
-    )
+_ALIAS_VALUE_TYPES = frozenset({"string", "number", "integer", "boolean", "null", "array"})
+_NON_ALIAS_KEYWORDS = (
+    "properties",
+    "additionalProperties",
+    "patternProperties",
+    "propertyNames",
+    "required",
+    "allOf",
+    "discriminator",
+)
 
 
 SchemaRole: TypeAlias = Literal[
@@ -191,9 +194,15 @@ class ApiOpenAPIParser(OpenAPIParser):
         self._parameter_root_type = self.data_model_type.resolve_type_alias_model_type(
             self.data_model_root_type, self.target_python_version
         )
+        self._parameter_aliases = (
+            self._parameter_root_type is not self._schema_root_type
+            and not self.reuse_model
+            and not self.enable_faux_immutability
+        )
         self._schema_field_constraints = self.field_constraints
         self._parameter_root_models: set[DataModel] = set()
         self._claimed_models = 0
+        self._shared_schema_refs: set[str] = set()
 
     def _declaration_id(self, path: Sequence[str]) -> ApiDeclarationId:
         ref = self.model_resolver.join_path(tuple(path))
@@ -239,7 +248,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         if frame.role != "parameter":
             self.data_model_root_type, self.field_constraints = self._schema_root_type, self._schema_field_constraints
         elif role is not None:
-            alias = self._parameter_root_type is not self._schema_root_type and not _is_object_schema(raw_schema)
+            alias = self._parameter_aliases and self._is_parameter_alias(path, raw_schema)
             self.data_model_root_type = self._parameter_root_type if alias else self._schema_root_type
             self.field_constraints = alias or self._schema_field_constraints
         try:
@@ -261,6 +270,65 @@ class ApiOpenAPIParser(OpenAPIParser):
     def _is_root_model(self, model: DataModel) -> bool:
         """Treat parameter aliases as roots, as the configured alias representation does."""
         return isinstance(model, self.data_model_root_type) or model in self._parameter_root_models
+
+    def _is_parameter_alias(self, path: list[str], raw: YamlValue) -> bool:
+        """Alias only a parameter-local schema of primitive values, arrays, and unions of them."""
+        target = canonical_ref(self.model_resolver.join_path(tuple(path)))
+        return not any(
+            ref == target or ref.startswith(f"{target}/") for ref in self._shared_schema_refs
+        ) and self._holds_alias_values(raw, set())
+
+    def _holds_alias_values(self, raw: YamlValue, seen: set[ApiDeclarationId]) -> bool:
+        """Return whether a schema and everything it references hold no object and no unaliasable pattern."""
+        if not isinstance(raw, dict) or any(key in raw for key in _NON_ALIAS_KEYWORDS):
+            return False
+        if "$ref" in raw:
+            return len(raw) == 1 and self._holds_referenced_alias_values(raw, seen)
+        if isinstance(pattern := raw.get("pattern"), str) and not self.data_model_type.supports_type_alias_pattern(
+            pattern
+        ):
+            return False
+        types = raw.get("type")
+        declared = set(types if isinstance(types, list) else () if types is None else (types,))
+        members = [
+            *(value if isinstance(value := raw.get("anyOf"), list) else ()),
+            *(value if isinstance(value := raw.get("oneOf"), list) else ()),
+            *(value if isinstance(value := raw.get("prefixItems"), list) else ()),
+            *((raw["items"],) if "items" in raw else ()),
+        ]
+        return (
+            bool(declared or members or "enum" in raw or "const" in raw)
+            and declared <= _ALIAS_VALUE_TYPES
+            and all(self._holds_alias_values(member, seen) for member in members)
+        )
+
+    def _holds_referenced_alias_values(self, raw: dict[str, YamlValue], seen: set[ApiDeclarationId]) -> bool:
+        """Follow a plain reference once, judging its target in the target's own document."""
+        try:
+            target = self._resolve_api_object(raw, [*self.model_resolver.current_root, "#"])
+        except SchemaParseError:
+            return False
+        if target.declaration in seen:
+            return True
+        seen.add(target.declaration)
+        with self._api_object_context(target):
+            return self._holds_alias_values(target.value, seen)
+
+    def _collect_shared_schema_refs(self, specification: dict[str, YamlValue]) -> None:
+        """Record reference targets inside parameters so parameter schemas used elsewhere keep their models."""
+        pending: list[YamlValue] = [specification]
+        visited: set[int] = set()
+        while pending:
+            current = pending.pop()
+            if id(current) in visited:
+                continue
+            visited.add(id(current))
+            if isinstance(current, dict):
+                if isinstance(ref := current.get("$ref"), str) and "parameters" in ref:
+                    self._shared_schema_refs.add(canonical_ref(self.model_resolver.resolve_ref(ref)))
+                pending.extend(current.values())
+            elif isinstance(current, list):
+                pending.extend(current)
 
     def _parse_raw_or_validated_obj(
         self,
@@ -414,6 +482,8 @@ class ApiOpenAPIParser(OpenAPIParser):
         self._api_documents[document] = specification
         if self.openapi_include_info_version:
             self._update_openapi_info_version(specification)
+        if self._parameter_aliases:
+            self._collect_shared_schema_refs(specification)
         self._collect_discriminator_schemas()
         components = _mapping(specification.get("components", {}), [*path_parts, "#/components"])
         for key, value in _mapping(components.get("schemas", {}), ["#/components/schemas"]).items():
@@ -743,6 +813,8 @@ class ApiOpenAPIParser(OpenAPIParser):
             self._active_api_objects.clear()
             self._completed_api_objects.clear()
             self._parameter_root_models.clear()
+            self._claimed_models = 0
+            self._shared_schema_refs.clear()
             self.model_resolver.original_refs.clear()
 
     def _walk_api_operation(  # noqa: PLR0914

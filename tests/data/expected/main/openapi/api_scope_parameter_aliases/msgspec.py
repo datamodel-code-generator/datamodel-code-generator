@@ -59,6 +59,15 @@ FieldItemsItemIdGetQueryLabelsParameter: TypeAlias = dict[str, str]
 FieldItemsItemIdGetQueryAnythingParameter: TypeAlias = Any
 
 
+FieldItemsItemIdGetQueryTitledParameter: TypeAlias = list[str]
+
+
+FieldItemsItemIdGetQueryCodesParameter: TypeAlias = Code | list[Code]
+
+
+FieldItemsItemIdGetQueryNullableParameter: TypeAlias = Annotated[int, Meta(ge=0)] | None
+
+
 class FieldItemsItemIdGetQueryOwnerParameter(Struct):
     name: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
 

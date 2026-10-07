@@ -1,0 +1,6 @@
+Wrapper:
+  type: array
+  items: {$ref: '#/Inner'}
+Inner:
+  type: string
+  maxLength: 3

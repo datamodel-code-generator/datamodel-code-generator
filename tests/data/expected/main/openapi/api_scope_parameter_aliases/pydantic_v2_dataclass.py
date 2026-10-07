@@ -64,6 +64,15 @@ FieldItemsItemIdGetQueryLabelsParameter = TypeAliasType("FieldItemsItemIdGetQuer
 FieldItemsItemIdGetQueryAnythingParameter = TypeAliasType("FieldItemsItemIdGetQueryAnythingParameter", Any)
 
 
+FieldItemsItemIdGetQueryTitledParameter = TypeAliasType("FieldItemsItemIdGetQueryTitledParameter", list[str])
+
+
+FieldItemsItemIdGetQueryCodesParameter = TypeAliasType("FieldItemsItemIdGetQueryCodesParameter", Code | list[Code])
+
+
+FieldItemsItemIdGetQueryNullableParameter = TypeAliasType("FieldItemsItemIdGetQueryNullableParameter", conint(ge=0) | None)
+
+
 @dataclass
 class FieldItemsItemIdGetQueryOwnerParameter:
     name: constr(max_length=3) | None = None

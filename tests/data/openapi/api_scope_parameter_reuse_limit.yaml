@@ -1,0 +1,3 @@
+Limit:
+  type: integer
+  maximum: 50

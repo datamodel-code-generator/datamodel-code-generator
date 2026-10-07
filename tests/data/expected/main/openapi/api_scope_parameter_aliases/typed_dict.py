@@ -49,6 +49,15 @@ FieldItemsItemIdGetQueryLabelsParameter: TypeAlias = dict[str, str]
 FieldItemsItemIdGetQueryAnythingParameter: TypeAlias = Any
 
 
+FieldItemsItemIdGetQueryTitledParameter: TypeAlias = list[str]
+
+
+FieldItemsItemIdGetQueryCodesParameter: TypeAlias = Code | list[Code]
+
+
+FieldItemsItemIdGetQueryNullableParameter: TypeAlias = int | None
+
+
 class FieldItemsItemIdGetQueryOwnerParameter(TypedDict):
     name: NotRequired[str]
 

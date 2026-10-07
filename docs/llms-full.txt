@@ -3901,14 +3901,26 @@ Parameters generate individual schema types, including path parameters regardles
 `--include-path-parameters`. The legacy aggregate parameter wrapper is specific to the
 `parameters` scope without `api`.
 
-Primitive and array parameter schemas are emitted as type aliases, even without
-`--use-type-alias`, in the same form that option produces for the target Python version
-and output model type. For `pydantic_v2.BaseModel` this means `type LimitParameter = int`
-on Python 3.12+ (or `TypeAliasType` below 3.12) instead of a `RootModel` wrapper.
-Constraints use the `Annotated` form, such as `Annotated[int, Field(..., ge=1, le=100)]`, and,
-as with `--use-type-alias`, schema defaults are not emitted on the alias. Object parameters
-remain models, and component schemas, headers, and the other scopes keep their usual
-representation. Adding other scopes alongside `api` does not repeat
+With `--output-model-type pydantic_v2.BaseModel`, parameter schemas (including header,
+cookie, and path parameters) that hold only primitive values (string, number, integer, or
+boolean, including enums, consts, and nullable types), arrays of them, or unions of them
+are emitted as type aliases instead of `RootModel` wrappers, without `--use-type-alias`.
+The alias uses the form `--use-type-alias` produces for the target Python version:
+`type LimitParameter = Annotated[int, Field(..., ge=1, le=100)]` on Python 3.12+ and
+`TypeAliasType` below 3.12, with constraints in the `Annotated` form. An alias has no
+default value, so schema defaults of these parameters are no longer applied by the model;
+a constrained array alias may still list its default inside `Field(...)`, as
+`--use-type-alias` does.
+
+A parameter schema keeps its usual model when it contains an object anywhere (including
+`allOf`, `patternProperties`, discriminated or object unions, and references to object
+schemas), is a `true` schema, has a `$ref` with sibling keywords, uses a lookaround
+`pattern`, or is referenced from outside its parameter. The same applies to every
+parameter schema with `--reuse-model` or `--enable-faux-immutability`. Component schemas,
+response headers, the other scopes, the other output model types, and output generated
+with `--use-type-alias` are unchanged.
+
+Adding other scopes alongside `api` does not repeat
 schema generation. `--openapi-include-paths` filters root paths and their reachable
 callbacks; webhooks and standalone components retain their declarations.
 
