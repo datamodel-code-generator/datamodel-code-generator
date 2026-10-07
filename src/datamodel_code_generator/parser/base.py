@@ -6413,19 +6413,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _check_model_inheritance(self, contexts: Sequence[ModuleContext]) -> None:  # noqa: PLR0912, PLR0914, PLR0915
         """Reject invalid builtin inheritance; an existing topological order needs no DFS."""
-        if (
-            self.custom_template_dir is not None
-            or not self._configured_generation_types_are_builtin
-            or any((
-                self.custom_formatter,
-                self.class_decorators,
-                self.config.additional_imports,
-                self._import_overrides,
-                self.generate_schema_validators,
-            ))
-        ):
-            return
-
         backend = self.data_model_type.__module__
         ordinary_backends = {
             "datamodel_code_generator.model.pydantic_v2.base_model",
@@ -6437,10 +6424,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if backend not in ordinary_backends and not typed_dict and not struct:
             return
 
+        def builtin(model: DataModel) -> bool:
+            return type(model) is self.data_model_type and not (
+                self.custom_template_dir is not None and model._uses_custom_root_template  # noqa: SLF001
+            )
+
         def emitted_bases(model: DataModel) -> list[BaseClassDataType]:
-            if type(model) is not self.data_model_type or (
-                typed_dict and getattr(model, "is_functional_syntax", False)
-            ):
+            if not builtin(model) or (typed_dict and getattr(model, "is_functional_syntax", False)):
                 return []
             return model.base_classes
 
@@ -6464,7 +6454,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for model in models:
             paths[model.path].append(model)
         parents: list[list[int]] = [[] for _ in models]
-        closed = [type(model) is self.data_model_type and backend in ordinary_backends for model in models]
+        closed = [backend in ordinary_backends and builtin(model) for model in models]
+        overrides = self._import_overrides or {}
         ordered = True
         for index, model in enumerate(models):
             ctx_index, _ = positions[identities[id(model)]]
@@ -6493,7 +6484,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     parent.class_name
                     if ctx_index == parent_ctx_index
                     else (imported.alias or imported.import_)
-                    if imported is not None
+                    if imported is not None and imported.import_ not in overrides
                     else None
                 )
                 if base.type_hint != binding:
