@@ -23,4 +23,3 @@ body_arguments='body'
 default_base_url=None
 server_base_url=None
 protocols=PurePosixPath('protocols/disabled.yaml')
-templates=None

@@ -1,5 +1,0 @@
-# templates-missing
-render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_VALUE config templates: The template directory does not exist
-  files []
