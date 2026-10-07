@@ -1130,7 +1130,6 @@ class _Resources(_Typing):
         plan: ClientPlan,
         codecs: ClientCodecs,
         accessors: dict[TypeUseId, UseAccessors],
-        user_agent: str | None,
         *,
         unpacked: bool = False,
         helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec, ...] = (),
@@ -1138,9 +1137,8 @@ class _Resources(_Typing):
         sockets: tuple[SocketSpec, ...] = (),
         role: Role = builtin_role,
     ) -> None:
-        """Keep the typing context, User-Agent, unpacked methods' TypedDicts, and protocol helpers."""
+        """Keep the typing context, unpacked methods' TypedDicts, and protocol helpers."""
         super().__init__(plan, codecs, accessors, role)
-        self.user_agent = user_agent
         self.records = _Records(self) if unpacked else None
         self.helpers = helpers
         self.streams = streams
@@ -1148,7 +1146,7 @@ class _Resources(_Typing):
 
     def defaults(self, module: Module) -> str:
         """Return the generated defaults of the clients."""
-        entries: list[tuple[str, Doc]] = [("user_agent=", repr(self.user_agent))]
+        entries: list[tuple[str, Doc]] = [("user_agent=", "None")]
         if self.plan.security_schemes:
             entries.append(("security_schemes=", f"{module.local('_generated', 'security')}.ROOT_SCHEMES"))
         name = module.local("_runtime.client.client", "ClientDefaults")
@@ -3055,7 +3053,6 @@ class ClientRenderer:
         self,
         *,
         config: ClientGenerationConfig,
-        package: PurePosixPath,
         plan: ClientPlan,
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
@@ -3076,7 +3073,6 @@ class ClientRenderer:
         README names the model backend and the runtime dependencies, and a template directory overrides builtin roles.
         """
         self.config = config
-        self.package = package
         self.plan = plan
         self.batch = batch
         self.wire = wire
@@ -3101,9 +3097,10 @@ class ClientRenderer:
         """Return the codec accessors of every bound use."""
         return {item.use: item for item in self.bindings.uses}
 
-    def file(self, path: PurePosixPath, kind: str, text: str, *, verbatim: bool = False) -> RenderedFile:
+    @staticmethod
+    def file(path: PurePosixPath, kind: str, text: str, *, verbatim: bool = False) -> RenderedFile:
         """Return one owned file of the package."""
-        return RenderedFile(path=self.package / path, kind=kind, text=text, verbatim=verbatim)
+        return RenderedFile(path=path, kind=kind, text=text, verbatim=verbatim)
 
     def readme(self, capabilities: Capabilities, runtime: tuple[PurePosixPath, ...]) -> str:
         """Describe the finalized package: its profile, operations, contracts, helpers, dependencies, and capabilities.
@@ -3117,7 +3114,7 @@ class ClientRenderer:
             groups.setdefault(path.parent.as_posix(), []).append(path.name)
         return self.role("readme.jinja2", readme_template.render)(
             package=config.package,
-            reference="docs/runtime.md" if config.package_mode == "standalone" else "runtime.md",
+            reference="runtime.md",
             signature_style=config.signature_style,
             body_arguments=config.body_arguments,
             backend=self.backend,
@@ -3133,7 +3130,6 @@ class ClientRenderer:
             if (accepted := self._accepted_encodings())
             else "",
             dependencies=self.dependencies,
-            standalone=config.package_mode == "standalone",
             security=sorted(capabilities.security),
             capabilities=sorted(capabilities.helpers),
             runtime=[{"package": package, "modules": modules} for package, modules in groups.items()],
@@ -3744,14 +3740,10 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
     def files(self) -> tuple[RenderedFile, ...]:
         """Return every rendered client file in the fixed artifact order."""
         config = self.config
-        user_agent = None
-        if config.package_mode == "standalone":
-            user_agent = f"{config.distribution_name}/{config.package_version}"
         resources = _Resources(
             self.plan,
             self.codecs,
             self.accessors,
-            user_agent,
             unpacked=config.signature_style == "unpack",
             helpers=self.helpers,
             streams=self.streams,
@@ -3819,13 +3811,12 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
         files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
         helpers = (*self.helper_files(resources), *webhooks)
         runtime = tuple(runtime_sources(capabilities.modules()))
-        documentation = PurePosixPath() if config.package_mode == "standalone" else PurePosixPath("_generated_docs")
-        reference = documentation / ("docs/runtime.md" if config.package_mode == "standalone" else "runtime.md")
+        documentation = PurePosixPath("_generated_docs")
         readme = self.readme(capabilities, tuple(path for path, _ in runtime))
         return (
             *files,
             *(self.file(path, "runtime", text, verbatim=True) for path, text in runtime),
             *helpers,
-            RenderedFile(path=documentation / "README.md", kind="readme", text=readme),
-            RenderedFile(path=reference, kind="documentation", text=self.runtime_documentation(capabilities)),
+            self.file(documentation / "README.md", "readme", readme),
+            self.file(documentation / "runtime.md", "documentation", self.runtime_documentation(capabilities)),
         )

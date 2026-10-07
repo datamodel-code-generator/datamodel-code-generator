@@ -151,54 +151,20 @@ def test_fastapi_cli_lockfile(
     )
 
 
-@pytest.mark.parametrize(
-    ("config", "options", "stdout"),
-    [
-        ("standalone.toml", [], "standalone.txt"),
-        ("standalone.toml", ["--target-output", "pets service"], "standalone-spaced.txt"),
-        ("standalone.toml", ["--target-output", "$pets"], "standalone-expanded.txt"),
-        ("standalone.toml", ["--dependency-format", "requirements"], "standalone-requirements.txt"),
-        ("fastapi.toml", ["--target-output", "service", "--dependency-format", "requirements"], "requirements.txt"),
-    ],
-    ids=["standalone", "spaced", "expanded", "standalone-requirements", "requirements"],
-)
 def test_fastapi_cli_dependencies(
-    config: str,
-    options: list[str],
-    stdout: str,
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Print what adds the generated package to a project: a uv command quoted for any shell, or requirements."""
-    monkeypatch.chdir(tmp_path)
-    run_main_and_assert(
-        input_path=Path("pets.yaml"),
-        output_path=Path("models.py"),
-        input_file_type="openapi",
-        extra_args=_server(*options),
-        copy_files=_inputs(tmp_path, config),
-        capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / stdout,
-        file_should_not_exist=tmp_path / "server",
-    )
-
-
-def test_fastapi_cli_requirements_url(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Print a distribution path that needs quoting as a file URL, which pip and uv read alike in requirements."""
+    """Print the runtime dependencies of the generated package as requirements lines when asked to."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--target-output", "pets service", "--dependency-format", "requirements"),
-        copy_files=_inputs(tmp_path, "standalone.toml"),
-    )
-    assert_output(
-        capsys.readouterr().out.replace(tmp_path.resolve().as_uri(), "file:///tmp"),
-        EXPECTED / "cli" / "standalone-requirements-url.txt",
+        extra_args=_server("--target-output", "service", "--dependency-format", "requirements"),
+        copy_files=_inputs(tmp_path),
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "requirements.txt",
+        file_should_not_exist=tmp_path / "server",
     )
 
 

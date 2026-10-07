@@ -11221,7 +11221,7 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `output` | required | Directory of the generated package, or of the distribution in standalone mode |
+| `output` | required | Directory of the generated package |
 | `package` | required | Import path of the generated package |
 | `model_package` | required | Import path of the models `--output` generates |
 | `model_mode` | `"generate"` | `"verify"` compares the models with existing files instead of writing them |
@@ -11234,8 +11234,6 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 | `operation_names` | inferred | `[[operation_names]]` rename service methods |
 | `router_names` | inferred | Table of group keys to group names: router modules, service arguments, and `<Name>Service` Protocols |
 | `parameter_names` | inferred | `[[parameter_names]]` rename method arguments |
-| `package_mode` | `"embedded"` | `"standalone"` writes a distribution with `pyproject.toml` under `output` |
-| `package_version`, `distribution_name`, `model_dependency` | none | Distribution metadata of standalone mode |
 
 Operations are selected by their key, the JSON pointer of the path item method, such as `/paths/~1pets/get`,
 or a table with `pointer` and `document`:
@@ -11264,10 +11262,7 @@ mode = "request"
 
 The generator owns every file of the package and rewrites them on every generation, as it does the models,
 restoring any you edited or deleted. Keep the service implementations, the `authorize` callback, and the application in your
-own modules; a file the generator never wrote at a path it needs stops the run (`E_OUTPUT_CONFLICT`). In standalone
-mode the package lives under `output/src/<package>` next to `pyproject.toml` and `README.md`, the `pyproject.toml`
-declares the runtime dependencies, and generation prints the `uv add --editable` command that adds the distribution
-to your project instead.
+own modules; a file the generator never wrote at a path it needs stops the run (`E_OUTPUT_CONFLICT`).
 
 ## Regenerating and checking
 
@@ -40682,7 +40677,7 @@ default, prints a `uv add` command, and `requirements` prints the lines of a req
       --dependency-format requirements > requirements.txt
     ```
 
-In embedded mode, `requirements` prints one runtime dependency per line, each with the minimum version the
+`requirements` prints one runtime dependency per line, each with the minimum version the
 package needs:
 
 ```text
@@ -40694,8 +40689,7 @@ referencing>=0.37
 typing-extensions>=4.16
 ```
 
-In standalone mode it prints `-e` with the distribution's path, such as `-e ./service`; a path that needs
-quoting is written as a `file:` URL, which pip and uv both read. Nothing is printed for `--check`, and the option
+Nothing is printed for `--check`, and the option
 cannot be combined with `--diagnostics-json -`, which also writes to stdout (`E_CONFIG_CONFLICT`).
 
 ---

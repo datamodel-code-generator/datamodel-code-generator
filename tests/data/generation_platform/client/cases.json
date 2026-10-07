@@ -456,11 +456,7 @@
   "default-server": {
     "input": "default-server.yaml",
     "config": {
-      "default_base_url": "https://default.example.com/base",
-      "package_mode": "standalone",
-      "distribution_name": "pets-client",
-      "package_version": "1.2.3",
-      "model_dependency": "pets-models>=1"
+      "default_base_url": "https://default.example.com/base"
     }
   },
   "implicit-server": {
@@ -5081,20 +5077,6 @@
     "cwd": true,
     "model": {
       "custom_template_dir": "templates/invalid"
-    }
-  },
-  "standalone-bundled": {
-    "input": "pets.yaml",
-    "cwd": true,
-    "model": {
-      "output": "client/src/pets_models.py"
-    },
-    "config": {
-      "package": "pets_client",
-      "model_package": "pets_models",
-      "package_mode": "standalone",
-      "package_version": "1.2.3",
-      "distribution_name": "pets-client"
     }
   },
   "templates-not-found": {

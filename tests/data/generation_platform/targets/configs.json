@@ -1,9 +1,6 @@
 {
   "defaults": {},
-  "invalid-values": {"output": ["server"], "package": "example-server", "model_package": "1models", "model_mode": "update", "package_mode": "bundle"},
+  "invalid-values": {"output": ["server"], "package": "example-server", "model_package": "1models", "model_mode": "update"},
   "selection-type": {"selection": null},
-  "selection-problems": {"selection": {"include_operations": "/paths/~1pets/get", "include_tags": ["pets", "pets"], "reason": " "}},
-  "standalone-missing": {"package_mode": "standalone", "package_version": " "},
-  "embedded-standalone-fields": {"package_version": "1.0.0", "distribution_name": "example-server", "model_dependency": "example-models"},
-  "standalone": {"package_mode": "standalone", "package_version": "1.0.0", "distribution_name": "example-server", "model_dependency": "example-models>=1"}
+  "selection-problems": {"selection": {"include_operations": "/paths/~1pets/get", "include_tags": ["pets", "pets"], "reason": " "}}
 }

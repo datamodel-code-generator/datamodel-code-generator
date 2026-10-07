@@ -407,54 +407,12 @@
       {"show": "server/routers/pets.py"}
     ]
   },
-  "layout-standalone": {
-    "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"], "output": "server/src/example/models.py"},
-    "config": {"package_mode": "standalone", "package_version": "1.2.3", "distribution_name": "example-server"},
-    "steps": [
-      {"generate": {}},
-      {"tree": null},
-      {"show": "server/pyproject.toml"},
-      {"generate": {}}
-    ]
-  },
-  "layout-external": {
-    "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
-    "config": {
-      "package_mode": "standalone",
-      "package_version": "0.1.0",
-      "distribution_name": "example-client",
-      "model_dependency": "example-models>=1,<2"
-    },
-    "steps": [
-      {"render": {}},
-      {"dependencies": null},
-      {"generate": {}},
-      {"show": "server/pyproject.toml"}
-    ]
-  },
   "model-dependencies": {
     "input": {"path": "contacts.yaml"},
     "model": {"openapi_scopes": ["schemas", "api"], "use_pendulum": true},
     "steps": [
       {"render": {}},
       {"dependencies": null}
-    ]
-  },
-  "layout-errors": {
-    "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
-    "config": {"package_mode": "standalone", "package_version": "1.2.3", "distribution_name": "example-server"},
-    "steps": [
-      {"render": {}},
-      {
-        "render": {
-          "model": {"output": "server/src/example/models.py"},
-          "config": {"model_dependency": "example-models"}
-        }
-      },
-      {"render": {"model": {"output": "server/src/example/server/models.py"}}}
     ]
   },
   "format": {

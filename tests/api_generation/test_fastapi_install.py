@@ -35,23 +35,20 @@ OPTIONS = [
 ]
 
 
-@pytest.mark.parametrize(("layout", "models"), [("embedded", "models.py"), ("standalone", "service/src/models.py")])
-def test_fastapi_install(
-    layout: str, models: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fastapi_install(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
     """Install only the printed requirements with uv into a new environment, then serve requests from the package."""
     if not os.environ.get("DATAMODEL_CODE_GENERATOR_FASTAPI_INSTALL_E2E"):
         pytest.skip("DATAMODEL_CODE_GENERATOR_FASTAPI_INSTALL_E2E enables installing generated servers")
     monkeypatch.chdir(tmp_path)
-    requirements = EXPECTED / f"{layout}-requirements.txt"
+    requirements = EXPECTED / "requirements.txt"
     run_main_and_assert(
         input_path=Path("contacts.yaml"),
-        output_path=Path(models),
+        output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=OPTIONS,
         copy_files=[
             (SOURCE / "contacts.yaml", tmp_path / "contacts.yaml"),
-            (SOURCE / f"{layout}.toml", tmp_path / "fastapi.toml"),
+            (SOURCE / "fastapi.toml", tmp_path / "fastapi.toml"),
             (SOURCE / "app.py", tmp_path / "app.py"),
             (requirements, tmp_path / "requirements.txt"),
         ],

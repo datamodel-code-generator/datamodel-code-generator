@@ -54,10 +54,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "interference",
         "directory",
         "layout-embedded",
-        "layout-standalone",
-        "layout-external",
         "model-dependencies",
-        "layout-errors",
         "format-errors",
         "target-grammar-modern",
         "target-grammar-misplaced",
@@ -320,9 +317,6 @@ def test_target_generate_modes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         "invalid-values",
         "selection-type",
         "selection-problems",
-        "standalone-missing",
-        "embedded-standalone-fields",
-        "standalone",
     ],
 )
 def test_target_config(case: str) -> None:

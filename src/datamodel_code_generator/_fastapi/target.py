@@ -64,7 +64,6 @@ class FastAPITarget:
         docs = _docs(plan, request, wire)
         renderer = ServerRenderer(
             config=config,
-            package=request.layout.package,
             backend=_BACKENDS[request.model_config.output_model_type],
             plan=plan,
             batch=request.batch,

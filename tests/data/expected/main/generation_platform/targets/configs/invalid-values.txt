@@ -3,4 +3,3 @@ APIGenerationError
   E_CONFIG_VALUE error config package: package must be a dotted Python import path
   E_CONFIG_VALUE error config model_package: model_package must be a dotted Python import path
   E_CONFIG_VALUE error config model_mode: model_mode must be 'generate' or 'verify'
-  E_CONFIG_VALUE error config package_mode: package_mode must be 'embedded' or 'standalone'

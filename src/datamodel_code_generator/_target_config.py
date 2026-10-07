@@ -13,12 +13,10 @@ from datamodel_code_generator._api_manifest import document_identity
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, OperationSelection
 
 ModelMode: TypeAlias = Literal["generate", "verify"]
-PackageMode: TypeAlias = Literal["embedded", "standalone"]
 Converter: TypeAlias = Callable[[object, Path, str], object]
 ConfigT = TypeVar("ConfigT", bound="TargetConfig")
 
 _MODEL_MODES: Final = frozenset({"generate", "verify"})
-_STANDALONE_FIELDS: Final = ("package_version", "distribution_name", "model_dependency")
 _SELECTION_COLLECTIONS: Final = ("include_operations", "include_tags", "exclude_operations", "exclude_tags")
 
 
@@ -73,10 +71,6 @@ class TargetConfig:
     model_package: str
     model_mode: ModelMode = "generate"
     selection: OperationSelection = field(default_factory=OperationSelection)
-    package_mode: PackageMode = "embedded"
-    package_version: str | None = None
-    distribution_name: str | None = None
-    model_dependency: str | None = None
 
     toml_converters: ClassVar[Mapping[str, Converter]] = MappingProxyType({})
 
@@ -94,22 +88,6 @@ class TargetConfig:
         if self.model_mode not in _MODEL_MODES:
             yield _diagnostic("E_CONFIG_VALUE", "model_mode", "model_mode must be 'generate' or 'verify'")
         yield from _selection_problems(self.selection)
-        yield from self._package_problems()
-
-    def _package_problems(self) -> Iterator[Diagnostic]:
-        match self.package_mode:
-            case "standalone":
-                for name in ("package_version", "distribution_name"):
-                    if not (isinstance(value := getattr(self, name), str) and value.strip()):
-                        yield _diagnostic("E_CONFIG_VALUE", name, f"A standalone package needs {name}")
-            case "embedded":
-                for name in _STANDALONE_FIELDS:
-                    if getattr(self, name) is not None:
-                        yield _diagnostic(
-                            "E_CONFIG_CONFLICT", name, f"{name} applies only to package_mode='standalone'"
-                        )
-            case _:
-                yield _diagnostic("E_CONFIG_VALUE", "package_mode", "package_mode must be 'embedded' or 'standalone'")
 
 
 def _string(value: object, _: Path, option_path: str) -> str:
@@ -201,10 +179,6 @@ SHARED_TOML_CONVERTERS: Final[Mapping[str, Converter]] = MappingProxyType({
     "model_package": _string,
     "model_mode": _string,
     "selection": _selection,
-    "package_mode": _string,
-    "package_version": _string,
-    "distribution_name": _string,
-    "model_dependency": _string,
 })
 
 

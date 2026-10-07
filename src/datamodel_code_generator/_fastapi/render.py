@@ -220,7 +220,6 @@ class ServerRenderer:  # noqa: PLR0904
         self,
         *,
         config: FastAPIConfig,
-        package: PurePosixPath,
         backend: PydanticBackend,
         plan: ServerPlan,
         batch: GeneratedTypeContractBatch,
@@ -234,7 +233,6 @@ class ServerRenderer:  # noqa: PLR0904
         derive from the routes to its own document.
         """
         self.config = config
-        self.package = package
         self.backend = backend
         self.plan = plan
         self.role: Role = builtin_role if templates is None else templates.role
@@ -249,9 +247,10 @@ class ServerRenderer:  # noqa: PLR0904
             taken.add(name := _unique(normalize(scheme.name, empty="scheme", digit="s_"), taken))
             self.scheme_names[scheme.name] = name
 
-    def file(self, path: PurePosixPath, kind: str, text: str, *, verbatim: bool = False) -> RenderedFile:
+    @staticmethod
+    def file(path: PurePosixPath, kind: str, text: str, *, verbatim: bool = False) -> RenderedFile:
         """Return one owned file of the package."""
-        return RenderedFile(path=self.package / path, kind=kind, text=text, verbatim=verbatim)
+        return RenderedFile(path=path, kind=kind, text=text, verbatim=verbatim)
 
     def files(self) -> tuple[RenderedFile, ...]:
         """Return every rendered server file in the fixed artifact order."""
@@ -265,7 +264,7 @@ class ServerRenderer:  # noqa: PLR0904
             self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
             *((self.file(PurePosixPath("security.py"), "security", self.security()),) if self.plan.schemes else ()),
             self.file(PurePosixPath("services.py"), "services", self.services_module()),
-            RenderedFile(path=PurePosixPath("README.md"), kind="readme", text=self.readme()),
+            self.file(PurePosixPath("README.md"), "readme", self.readme()),
         )
         return (*files, *self.runtime())
 
@@ -307,7 +306,6 @@ class ServerRenderer:  # noqa: PLR0904
             raw_request=any(
                 spec.body is not None and spec.body.decision.transport == "raw_request" for spec in plan.operations
             ),
-            standalone=config.package_mode == "standalone",
         )
 
     def runtime(self) -> Iterator[RenderedFile]:

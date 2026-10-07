@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import json
 import os
 import sys
 import tempfile
@@ -77,15 +76,6 @@ Exclusion: TypeAlias = "tuple[OperationContract, str]"
 
 _PYTHON_MINIMUM = (3, 11)
 _PYTHON_MINIMUM_TEXT = f"{_PYTHON_MINIMUM[0]}.{_PYTHON_MINIMUM[1]}"
-_README = PurePosixPath("README.md")
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TargetLayout:
-    """Where the Python package lives below the target root, and whether that root is a distribution."""
-
-    package: PurePosixPath
-    distribution: bool
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -107,7 +97,6 @@ class TargetRequest:
     """Everything a target renders from: settings, the accepted model contracts, the selection, and the cwd."""
 
     config: TargetConfig
-    layout: TargetLayout
     model_config: GenerateConfig
     target_id: str
     batch: GeneratedTypeContractBatch
@@ -270,47 +259,14 @@ def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
     return RootInput(ROOT_URN, cwd)
 
 
-def target_layout(config: TargetConfig) -> TargetLayout:
-    """Return the package root below the target root: the root itself, or `src/<package>` in a distribution."""
-    if config.package_mode == "standalone":
-        return TargetLayout(package=PurePosixPath("src", *config.package.split(".")), distribution=True)
-    return TargetLayout(package=PurePosixPath(), distribution=False)
-
-
-def _bundled_models(root: Path, models: Path, model_package: str) -> PurePosixPath | None:
-    package = root.joinpath("src", *model_package.split("."))
-    for candidate in (package, package.with_name(f"{package.name}.py")):
-        if models == candidate:
-            return PurePosixPath(*candidate.relative_to(root).parts)
-    return None
-
-
 def _check_layout(config: TargetConfig, output: Path, cwd: Path) -> None:
-    root, models = (cwd / config.output.expanduser()).resolve(), (cwd / output.expanduser()).resolve()
-    package = root.joinpath(*target_layout(config).package.parts)
+    package, models = (cwd / config.output.expanduser()).resolve(), (cwd / output.expanduser()).resolve()
     if package == models or package in models.parents or models in package.parents:
         raise config_error(
             code="E_PATH_COLLISION",
             option_path="output",
             message="The target package and the model output must not contain each other",
         )
-    if config.package_mode != "standalone":
-        return
-    match _bundled_models(root, models, config.model_package), config.model_dependency:
-        case PurePosixPath(), str():
-            raise config_error(
-                code="E_CONFIG_CONFLICT",
-                option_path="model_dependency",
-                message="A distribution that bundles its models declares no model_dependency",
-            )
-        case None, None:
-            raise config_error(
-                code="E_CONFIG_VALUE",
-                option_path="model_dependency",
-                message="A distribution needs its models under src/ or an explicit model_dependency",
-            )
-        case _:
-            pass
 
 
 def _remote_lock(
@@ -441,15 +397,6 @@ def _normalized(text: str) -> str:
     return f"{text}\n" if text else ""
 
 
-def _toml_array(values: Iterable[str]) -> str:
-    return f"[{', '.join(json.dumps(value) for value in values)}]"
-
-
-def _dependencies(rendered: TargetRender, model_dependency: str | None) -> tuple[str, ...]:
-    """Return what a generated package needs at run time: the target's dependencies and any external models."""
-    return rendered.dependencies if model_dependency is None else (*rendered.dependencies, model_dependency)
-
-
 def _tags(operation: OperationContract) -> tuple[str, ...]:
     from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence  # noqa: PLC0415
 
@@ -559,7 +506,6 @@ class _Planner:
         self.operations: dict[str, OperationContract] = {}
         self.observed: dict[Path, Observed] = {}
         self.version, self.revision = get_version(), runtime_revision()
-        self.layout = target_layout(config)
 
     def locate(self, path: Path, *, option_path: str) -> str:
         return relative_uri(self.cwd / path.expanduser(), self.root, option_path)
@@ -697,7 +643,6 @@ class _Planner:
         rendered = generator.render(
             TargetRequest(
                 config=config,
-                layout=self.layout,
                 model_config=self.effective,
                 target_id=self.target_id,
                 batch=models.product.batch,
@@ -763,7 +708,7 @@ class _Planner:
             ),
             generator_version=self.version,
             runtime_revision=self.revision,
-            dependencies=_dependencies(rendered, config.model_dependency),
+            dependencies=rendered.dependencies,
         )
 
 
@@ -771,46 +716,9 @@ class _Finisher:
     def __init__(self, planner: _Planner) -> None:
         self.config = planner.config
         self.effective = planner.effective
-        self.root = planner.root
         self.cwd = planner.cwd
-        self.layout = planner.layout
         self.target_id = planner.target_id
         self.models = planner.models
-
-    def pyproject(self, rendered: TargetRender) -> str:
-        config, output = self.config, self.effective.output
-        assert output is not None
-        bundled = _bundled_models(self.root, (self.cwd / output.expanduser()).resolve(), config.model_package)
-        included = (self.layout.package.as_posix(), *(() if bundled is None else (bundled.as_posix(),)))
-        readme = ("README.md",) if any(file.path == _README for file in rendered.files) else ()
-        documentation = tuple(file.path.as_posix() for file in rendered.files if file.kind == "documentation")
-        return "\n".join((
-            "[build-system]",
-            'requires = ["hatchling>=1.27"]',
-            'build-backend = "hatchling.build"',
-            "",
-            "[project]",
-            f"name = {json.dumps(config.distribution_name)}",
-            f"version = {json.dumps(config.package_version)}",
-            f'requires-python = ">={self.effective.target_python_version.value}"',
-            *(f'readme = "{path}"' for path in readme),
-            f"dependencies = {_toml_array(_dependencies(rendered, config.model_dependency))}",
-            "",
-            "[tool.hatch.build.targets.wheel]",
-            f"only-include = {_toml_array(included)}",
-            'sources = ["src"]',
-            "",
-            "[tool.hatch.build.targets.sdist]",
-            f"only-include = {_toml_array((*included, *readme, *documentation, 'pyproject.toml'))}",
-        ))
-
-    def layout_files(self, rendered: TargetRender) -> tuple[RenderedFile, ...]:
-        typed = RenderedFile(path=self.layout.package / "py.typed", kind="typing", text="")
-        if not self.layout.distribution:
-            return (typed,)
-        return typed, RenderedFile(
-            path=PurePosixPath("pyproject.toml"), kind="pyproject", text=self.pyproject(rendered)
-        )
 
     def check_sources(self, files: Iterable[tuple[PurePosixPath, str]], stage: DiagnosticStage) -> None:
         version = self.effective.target_python_version.version_key
@@ -838,7 +746,7 @@ class _Finisher:
         from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
 
         effective, models = self.effective, self.models
-        files = (*rendered.files, *self.layout_files(rendered))
+        files = (*rendered.files, RenderedFile(path=PurePosixPath("py.typed"), kind="typing", text=""))
         self.check_sources(((file.path, file.text) for file in files if not file.verbatim), "target")
         formatter = TargetCodeFormatter(
             effective.target_python_version,
