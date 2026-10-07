@@ -48,7 +48,7 @@ paths:
             description: A described code.
         - name: wrapped
           in: query
-          schema: {$ref: 'api_scope_parameter_models_external.yaml#/Wrapper'}
+          schema: {$ref: 'api_scope_parameter_models_external.yaml#/components/schemas/Wrapper'}
         - name: pp
           in: query
           style: deepObject

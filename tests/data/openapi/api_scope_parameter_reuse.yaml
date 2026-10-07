@@ -8,10 +8,10 @@ paths:
       operationId: listItems
       parameters:
         - {name: first, in: query, schema: {type: integer, maximum: 50}}
-        - {name: limit, in: query, schema: {$ref: 'api_scope_parameter_reuse_limit.yaml#/Limit'}}
+        - {name: limit, in: query, schema: {$ref: 'api_scope_parameter_reuse_limit.yaml#/components/schemas/Limit'}}
       responses:
         '200':
           description: The limit.
           content:
             application/json:
-              schema: {$ref: 'api_scope_parameter_reuse_limit.yaml#/Limit'}
+              schema: {$ref: 'api_scope_parameter_reuse_limit.yaml#/components/schemas/Limit'}
