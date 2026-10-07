@@ -50,6 +50,7 @@ render pydantic_v2.dataclass default
   from __future__ import annotations
   from typing import Optional, Tuple, Union
   from pydantic.dataclasses import dataclass
+  from typing_extensions import TypeAliasType
   
   
   
@@ -59,7 +60,7 @@ render pydantic_v2.dataclass default
   
   
   
-  type NullableName = Optional[str]
+  NullableName = TypeAliasType("NullableName", Optional[str])
   
   
   

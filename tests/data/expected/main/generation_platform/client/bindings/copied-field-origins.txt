@@ -182,7 +182,7 @@ render pydantic_v2.dataclass all
   #   filename:  copied-field-origins.json
   
   from __future__ import annotations
-  from pydantic import Field, constr
+  from pydantic import AliasChoices, Field, constr
   from typing import Optional
   from pydantic.dataclasses import dataclass
   
@@ -190,21 +190,21 @@ render pydantic_v2.dataclass all
   
   @dataclass
   class BaseRequest:
-      raw_note: Optional[constr(min_length=1)] = Field('base', alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field('base', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       secret: Optional[str] = None
   
   
   
   @dataclass
   class BaseResponse:
-      raw_note: Optional[constr(min_length=1)] = Field('base', alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field('base', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
   
   
   
   @dataclass
   class Base:
-      raw_note: Optional[constr(min_length=1)] = Field('base', alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field('base', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
       secret: Optional[str] = None
   
@@ -212,41 +212,41 @@ render pydantic_v2.dataclass all
   
   @dataclass
   class ChildRequest:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       secret: Optional[str] = None
   
   
   
   @dataclass
   class ChildResponse:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
   
   
   
   @dataclass
   class Child(Base):
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
   
   
   
   @dataclass
   class GrandChildRequest:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note', description='Inherited note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, description='Inherited note', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       secret: Optional[str] = None
   
   
   
   @dataclass
   class GrandChildResponse:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note', description='Inherited note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, description='Inherited note', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
   
   
   
   @dataclass
   class GrandChild(Child):
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note', description='Inherited note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, description='Inherited note', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
   model_bindings.py
   codec_0 models.BaseRequest
   codec_1 models.BaseResponse
@@ -260,7 +260,7 @@ render pydantic_v2.dataclass constraints
   #   filename:  copied-field-origins.json
   
   from __future__ import annotations
-  from pydantic import Field, constr
+  from pydantic import AliasChoices, Field, constr
   from typing import Optional
   from pydantic.dataclasses import dataclass
   
@@ -268,21 +268,21 @@ render pydantic_v2.dataclass constraints
   
   @dataclass
   class BaseRequest:
-      raw_note: Optional[constr(min_length=1)] = Field('base', alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field('base', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       secret: Optional[str] = None
   
   
   
   @dataclass
   class BaseResponse:
-      raw_note: Optional[constr(min_length=1)] = Field('base', alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field('base', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
   
   
   
   @dataclass
   class Base:
-      raw_note: Optional[constr(min_length=1)] = Field('base', alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field('base', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
       secret: Optional[str] = None
   
@@ -290,41 +290,41 @@ render pydantic_v2.dataclass constraints
   
   @dataclass
   class ChildRequest:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       secret: Optional[str] = None
   
   
   
   @dataclass
   class ChildResponse:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
   
   
   
   @dataclass
   class Child(Base):
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
   
   
   
   @dataclass
   class GrandChildRequest:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note', description='Inherited note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, description='Inherited note', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       secret: Optional[str] = None
   
   
   
   @dataclass
   class GrandChildResponse:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note', description='Inherited note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, description='Inherited note', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
   
   
   
   @dataclass
   class GrandChild(Child):
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note', description='Inherited note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, description='Inherited note', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
   model_bindings.py
   codec_0 models.BaseRequest
   codec_1 models.BaseResponse
@@ -338,7 +338,7 @@ render pydantic_v2.dataclass none
   #   filename:  copied-field-origins.json
   
   from __future__ import annotations
-  from pydantic import Field, constr
+  from pydantic import AliasChoices, Field, constr
   from typing import Optional
   from pydantic.dataclasses import dataclass
   
@@ -346,21 +346,21 @@ render pydantic_v2.dataclass none
   
   @dataclass
   class BaseRequest:
-      raw_note: Optional[constr(min_length=1)] = Field('base', alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field('base', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       secret: Optional[str] = None
   
   
   
   @dataclass
   class BaseResponse:
-      raw_note: Optional[constr(min_length=1)] = Field('base', alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field('base', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
   
   
   
   @dataclass
   class Base:
-      raw_note: Optional[constr(min_length=1)] = Field('base', alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field('base', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
       secret: Optional[str] = None
   
@@ -368,41 +368,41 @@ render pydantic_v2.dataclass none
   
   @dataclass
   class ChildRequest:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       secret: Optional[str] = None
   
   
   
   @dataclass
   class ChildResponse:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
   
   
   
   @dataclass
   class Child(Base):
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
   
   
   
   @dataclass
   class GrandChildRequest:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note', description='Inherited note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, description='Inherited note', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       secret: Optional[str] = None
   
   
   
   @dataclass
   class GrandChildResponse:
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note', description='Inherited note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, description='Inherited note', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
       id: Optional[int] = None
   
   
   
   @dataclass
   class GrandChild(Child):
-      raw_note: Optional[constr(min_length=1)] = Field(None, alias='raw-note', description='Inherited note')
+      raw_note: Optional[constr(min_length=1)] = Field(None, description='Inherited note', serialization_alias='raw-note', validation_alias=AliasChoices('raw-note'))
   model_bindings.py
   codec_0 models.BaseRequest
   codec_1 models.BaseResponse

@@ -29,12 +29,12 @@ render pydantic_v2.dataclass default
   #   filename:  session-forward.json
   
   from __future__ import annotations
+  from typing import TypeAlias, Union
   from typing_extensions import TypeAliasType
-  from typing import Union
   
   
   
-  First = TypeAliasType("First", "Second")
+  First: TypeAlias = "Second"
   
   
   

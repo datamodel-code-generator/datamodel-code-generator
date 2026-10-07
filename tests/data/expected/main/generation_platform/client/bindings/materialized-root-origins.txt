@@ -35,7 +35,7 @@ render pydantic_v2.dataclass default
   
   from __future__ import annotations
   from typing import Dict, List, Optional
-  from pydantic import Field
+  from pydantic import AliasChoices, Field
   from pydantic.dataclasses import dataclass
   from typing_extensions import TypeAliasType
   
@@ -43,7 +43,7 @@ render pydantic_v2.dataclass default
   
   @dataclass
   class ArrItem:
-      ship_to: Optional[str] = Field(None, alias='ship-to')
+      ship_to: Optional[str] = Field(None, serialization_alias='ship-to', validation_alias=AliasChoices('ship-to'))
   
   
   
@@ -53,7 +53,7 @@ render pydantic_v2.dataclass default
   
   @dataclass
   class Map:
-      map_key: Optional[int] = Field(None, alias='map-key')
+      map_key: Optional[int] = Field(None, serialization_alias='map-key', validation_alias=AliasChoices('map-key'))
   
   
   

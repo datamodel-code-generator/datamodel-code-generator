@@ -42,7 +42,7 @@ render pydantic_v2.dataclass default
   from __future__ import annotations
   from typing_extensions import TypeAliasType
   from typing import List
-  from pydantic import Field
+  from pydantic import AliasChoices, Field
   from pydantic.dataclasses import dataclass
   
   
@@ -61,7 +61,7 @@ render pydantic_v2.dataclass default
   
   @dataclass
   class FieldExternalPostResponseItem:
-      wire_name: str = Field(..., alias='wire-name')
+      wire_name: str = Field(..., serialization_alias='wire-name', validation_alias=AliasChoices('wire-name'))
   
   
   
@@ -71,7 +71,7 @@ render pydantic_v2.dataclass default
   
   @dataclass
   class FieldExternalPostResponseModel:
-      wire_name: str = Field(..., alias='wire-name')
+      wire_name: str = Field(..., serialization_alias='wire-name', validation_alias=AliasChoices('wire-name'))
   model_bindings.py
   codec_0 models.FieldExternalPostRequestItem
   codec_1 models.FieldExternalPostResponseItem

@@ -42,7 +42,7 @@ render pydantic_v2.dataclass default
   
   from __future__ import annotations
   from typing import Optional
-  from pydantic import Field
+  from pydantic import AliasChoices, Field
   from pydantic.dataclasses import dataclass
   
   
@@ -50,27 +50,27 @@ render pydantic_v2.dataclass default
   @dataclass
   class A:
       root: Optional[str] = None
-      shared_key: Optional[str] = Field('A', alias='shared-key')
+      shared_key: Optional[str] = Field('A', serialization_alias='shared-key', validation_alias=AliasChoices('shared-key'))
   
   
   
   @dataclass
   class B(A):
       left: Optional[int] = None
-      shared_key: Optional[str] = Field('B', alias='shared-key')
+      shared_key: Optional[str] = Field('B', serialization_alias='shared-key', validation_alias=AliasChoices('shared-key'))
   
   
   
   @dataclass
   class C(A):
       right: Optional[bool] = None
-      shared_key: Optional[str] = Field('C', alias='shared-key')
+      shared_key: Optional[str] = Field('C', serialization_alias='shared-key', validation_alias=AliasChoices('shared-key'))
   
   
   
   @dataclass
   class Leaf(B, C):
-      leaf_key: Optional[float] = Field(None, alias='leaf-key')
+      leaf_key: Optional[float] = Field(None, serialization_alias='leaf-key', validation_alias=AliasChoices('leaf-key'))
   model_bindings.py
   codec_0 models.A
   codec_1 models.A

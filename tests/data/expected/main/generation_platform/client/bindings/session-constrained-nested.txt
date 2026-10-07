@@ -42,7 +42,7 @@ render pydantic_v2.BaseModel annotated
   
   from __future__ import annotations
   from typing import Annotated, Dict, List, Union
-  from pydantic import BaseModel, Field, StringConstraints
+  from pydantic import BaseModel, Field
   from typing_extensions import TypeAliasType
   
   
@@ -59,7 +59,7 @@ render pydantic_v2.BaseModel annotated
   
   
   
-  ValueObject = TypeAliasType("ValueObject", Dict[Annotated[str, StringConstraints(pattern=r'^x')], ValueObjectAdditionalProperty])
+  ValueObject = TypeAliasType("ValueObject", Dict[Annotated[str, Field(pattern=r'^x')], ValueObjectAdditionalProperty])
   
   
   
@@ -117,7 +117,7 @@ render pydantic_v2.dataclass annotated
   
   from __future__ import annotations
   from typing import Annotated, Dict, List, Union
-  from pydantic import Field, StringConstraints
+  from pydantic import Field
   from typing_extensions import TypeAliasType
   from pydantic.dataclasses import dataclass
   
@@ -135,7 +135,7 @@ render pydantic_v2.dataclass annotated
   
   
   
-  ValueObject = TypeAliasType("ValueObject", Dict[Annotated[str, StringConstraints(pattern=r'^x')], ValueObjectAdditionalProperty])
+  ValueObject = TypeAliasType("ValueObject", Dict[Annotated[str, Field(pattern=r'^x')], ValueObjectAdditionalProperty])
   
   
   

@@ -6,15 +6,14 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Annotated
 
-from pydantic import ConfigDict, StringConstraints
+from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
 
 @dataclass(config=ConfigDict(extra='forbid'))
 class SomeSpec:
     services: (
-        Mapping[Annotated[str, StringConstraints(pattern=r'^[a-zA-Z0-9._-]+$')], str]
-        | None
+        Mapping[Annotated[str, Field(pattern=r'^[a-zA-Z0-9._-]+$')], str] | None
     ) = None
     """
     Some property.

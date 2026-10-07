@@ -40,7 +40,7 @@ render pydantic_v2.dataclass default
   #   filename:  root-edges.json
   
   from __future__ import annotations
-  from typing import List, Optional
+  from typing import List, Optional, TypeAlias
   from pydantic.dataclasses import dataclass
   from pydantic import constr
   from typing_extensions import TypeAliasType
@@ -63,7 +63,7 @@ render pydantic_v2.dataclass default
   
   
   
-  Value = TypeAliasType("Value", Base)
+  Value: TypeAlias = Base
   model_bindings.py
   codec_0 models.Obj
   codec_1 models.Obj

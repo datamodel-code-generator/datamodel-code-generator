@@ -152,7 +152,7 @@ render pydantic_v2.dataclass plain
   from types import NoneType
   from typing_extensions import TypeAliasType
   from pydantic import constr
-  from typing import Any
+  from typing import Any, TypeAlias
   from types import NoneType
   from pydantic.dataclasses import dataclass
   
@@ -178,15 +178,15 @@ render pydantic_v2.dataclass plain
   
   
   
-  AnyChain = TypeAliasType("AnyChain", AnyValue)
+  AnyChain: TypeAlias = AnyValue
   
   
   
-  Chain = TypeAliasType("Chain", Nullable)
+  Chain: TypeAlias = Nullable
   
   
   
-  Chain2 = TypeAliasType("Chain2", Chain)
+  Chain2: TypeAlias = Chain
   
   
   
@@ -240,7 +240,7 @@ render pydantic_v2.dataclass annotated-remapped
   from __future__ import annotations
   from types import NoneType
   from typing_extensions import Any, TypeAliasType
-  from typing import Annotated
+  from typing import Annotated, TypeAlias
   from pydantic import Field
   from types import NoneType
   from pydantic.dataclasses import dataclass
@@ -271,15 +271,15 @@ render pydantic_v2.dataclass annotated-remapped
   
   
   
-  AnyChain = TypeAliasType("AnyChain", AnyValue)
+  AnyChain: TypeAlias = AnyValue
   
   
   
-  Chain = TypeAliasType("Chain", Nullable)
+  Chain: TypeAlias = Nullable
   
   
   
-  Chain2 = TypeAliasType("Chain2", Chain)
+  Chain2: TypeAlias = Chain
   
   
   

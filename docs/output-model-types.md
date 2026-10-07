@@ -78,6 +78,26 @@ class Pet:
 
 ---
 
+## Targeting a Pydantic version
+
+Pydantic output depends only on the inputs and options, never on the Pydantic version installed next to
+`datamodel-codegen`. Use `--target-pydantic-version` to choose the oldest Pydantic release the generated code must
+run on. Leaving it unset is the same as `--target-pydantic-version 2`, so the output runs on every Pydantic 2 release.
+
+| Generated form | `2` (default, Pydantic 2.0+) | `2.11` / `2.12` |
+| --- | --- | --- |
+| Constrained strings with `--use-annotated` | `Annotated[str, Field(...)]` | `Annotated[str, StringConstraints(...)]` |
+| Deprecated fields | `Field(json_schema_extra={'deprecated': True})` | `Field(deprecated=True)` |
+| Models used as dictionary keys | Defined before the models that use them as keys | Schema order |
+| `pydantic_v2.dataclass` aliases that are not identifiers | `Field(validation_alias=..., serialization_alias=...)` assignment | `Field(alias=...)` |
+| `pydantic_v2.dataclass` aliases of other models | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
+| `--allow-population-by-field-name` | `populate_by_name=True` | `validate_by_name=True` |
+
+`2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`, which implies
+`--target-pydantic-version 2.12` when the target is unset.
+
+---
+
 ## dataclasses
 
 **Use `--output-model-type dataclasses.dataclass`**

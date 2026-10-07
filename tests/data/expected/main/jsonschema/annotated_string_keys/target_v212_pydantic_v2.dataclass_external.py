@@ -5,12 +5,15 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import StringConstraints
 from pydantic.dataclasses import dataclass
 
 
 @dataclass
 class SomeSpec:
     services: dict[
-        Annotated[str, Field(pattern=r'^[a-z]+$', min_length=2, max_length=4)], str
+        Annotated[
+            str, StringConstraints(pattern=r'^[a-z]+$', min_length=2, max_length=4)
+        ],
+        str,
     ]

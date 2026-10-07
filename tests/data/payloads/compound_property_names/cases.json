@@ -27,8 +27,7 @@
   },
   "enum_refs": {
     "enum_refs_1_legacy_pydantic.py": "enum_refs_0_legacy_pydantic.py",
-    "enum_refs_runtime.txt": "patterns_runtime.txt",
-    "enum_refs_1.py": "enum_refs_0.py"
+    "enum_refs_runtime.txt": "patterns_runtime.txt"
   },
   "enum_oneof": {
     "enum_oneof_runtime.txt": "patterns_runtime.txt",
@@ -62,8 +61,7 @@
     "enum_then_true_0.py": "enum_then_any_0.py"
   },
   "ref_then_any": {
-    "ref_then_any_1_legacy_pydantic.py": "ref_then_any_0_legacy_pydantic.py",
-    "ref_then_any_1.py": "ref_then_any_0.py"
+    "ref_then_any_1_legacy_pydantic.py": "ref_then_any_0_legacy_pydantic.py"
   },
   "any_then_enum": {
     "any_then_enum_runtime.txt": "ref_then_any_runtime.txt",

@@ -64,7 +64,7 @@ render pydantic_v2.dataclass default
   
   from __future__ import annotations
   from pydantic import constr
-  from typing import Optional, Union
+  from typing import Optional, TypeAlias, Union
   from pydantic.dataclasses import dataclass
   from typing_extensions import TypeAliasType
   
@@ -109,7 +109,7 @@ render pydantic_v2.dataclass default
   
   
   
-  Choice = TypeAliasType("Choice", Choice1)
+  Choice: TypeAlias = Choice1
   
   
   

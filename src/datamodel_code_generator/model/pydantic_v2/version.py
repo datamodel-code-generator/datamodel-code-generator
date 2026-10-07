@@ -1,50 +1,35 @@
-"""Pydantic v2 runtime feature boundaries used by the generator."""
+"""Pydantic v2 feature boundaries keyed on the target Pydantic version, never on the installed one."""
 
 from __future__ import annotations
 
-import re
+from typing import TYPE_CHECKING, Final
 
-from pydantic import VERSION as PYDANTIC_VERSION
+from datamodel_code_generator.enums import TargetPydanticVersion, _is_pydantic_version_at_least
+
+if TYPE_CHECKING:
+    from datamodel_code_generator.model.base import DataModel
 
 _PYDANTIC_V2_MODEL_MODULE_PREFIX = "datamodel_code_generator.model.pydantic_v2."
+PYDANTIC_V2_STRING_CONSTRAINTS_MINIMUM: Final = "2.1"
+PYDANTIC_V2_DATACLASS_ALIAS_MINIMUM: Final = "2.4"
+PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM: Final = "2.7"
+PYDANTIC_V2_DICT_KEY_FORWARD_REF_MINIMUM: Final = "2.8"
+PYDANTIC_V2_DATACLASS_TYPE_ALIAS_MINIMUM: Final = "2.10"
+PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM: Final = "2.10"
 
 
-def _version_tuple(version: str) -> tuple[int, int, int]:
-    match = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", version)
-    if match is None:
-        return (0, 0, 0)
-    major, minor, patch = match.groups(default="0")
-    return int(major), int(minor), int(patch)
+def target_supports(target_version: TargetPydanticVersion | str | None, minimum: str) -> bool:
+    """Return whether every Pydantic the target allows has a feature added in ``minimum``; unset means 2.0."""
+    return target_version is not None and _is_pydantic_version_at_least(target_version, minimum)
 
 
-PYDANTIC_VERSION_TUPLE = _version_tuple(PYDANTIC_VERSION)
-PYDANTIC_V2_DATACLASS_ALIAS_FIXED_VERSION = (2, 4, 0)
-PYDANTIC_V2_DATACLASS_TYPE_ALIAS_FIXED_VERSION = (2, 10, 0)
-PYDANTIC_V2_DATACLASS_TYPE_ALIAS_NEEDS_FALLBACK = (
-    PYDANTIC_VERSION_TUPLE < PYDANTIC_V2_DATACLASS_TYPE_ALIAS_FIXED_VERSION
-)
-PYDANTIC_V2_FIELD_DEPRECATED_FIXED_VERSION = (2, 7, 0)
-PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_FIXED_VERSION = (2, 8, 0)
-PYDANTIC_V2_REGEX_ENGINE_FIXED_VERSION = (2, 5, 0)
-PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK = PYDANTIC_VERSION_TUPLE < PYDANTIC_V2_DATACLASS_ALIAS_FIXED_VERSION
-PYDANTIC_V2_FIELD_DEPRECATED_NEEDS_JSON_SCHEMA_EXTRA = (
-    PYDANTIC_VERSION_TUPLE < PYDANTIC_V2_FIELD_DEPRECATED_FIXED_VERSION
-)
-PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_NEEDS_SORTING = (
-    PYDANTIC_VERSION_TUPLE < PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_FIXED_VERSION
-)
-PYDANTIC_V2_REGEX_ENGINE_UNSUPPORTED = PYDANTIC_VERSION_TUPLE < PYDANTIC_V2_REGEX_ENGINE_FIXED_VERSION
+def model_target_supports(model: DataModel | None, minimum: str) -> bool:
+    """Return whether the target recorded for ``model`` has a feature added in ``minimum``."""
+    return model is not None and target_supports(model.extra_template_data.get("target_pydantic_version"), minimum)
 
 
-def _is_builtin_pydantic_v2_model(model_type: type[object]) -> bool:
-    return model_type.__module__.startswith(_PYDANTIC_V2_MODEL_MODULE_PREFIX)
-
-
-_DICT_KEY_REFERENCE_CLASSES_CAPABILITY = (
-    staticmethod(_is_builtin_pydantic_v2_model) if PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_NEEDS_SORTING else None
-)
-
-
-def _get_dict_key_reference_classes_capability() -> staticmethod[[type[object]], bool] | None:
-    """Return the shared dict-key dependency capability for built-in Pydantic v2 models."""
-    return _DICT_KEY_REFERENCE_CLASSES_CAPABILITY
+def _includes_dict_key_reference_classes(model: DataModel) -> bool:
+    """Order dict-key references first for built-in models whose target predates forward-ref dict keys."""
+    return type(model).__module__.startswith(_PYDANTIC_V2_MODEL_MODULE_PREFIX) and not model_target_supports(
+        model, PYDANTIC_V2_DICT_KEY_FORWARD_REF_MINIMUM
+    )

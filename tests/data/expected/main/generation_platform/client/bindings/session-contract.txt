@@ -104,7 +104,7 @@ render pydantic_v2.dataclass default
   
   from __future__ import annotations
   
-  from pydantic import ConfigDict, Field, conint
+  from pydantic import AliasChoices, ConfigDict, Field, conint
   from pydantic.dataclasses import dataclass
   from typing_extensions import TypeAliasType
   
@@ -112,7 +112,11 @@ render pydantic_v2.dataclass default
   @dataclass(config=ConfigDict(extra='forbid'))
   class Record:
       id: int
-      wire_name: str | None = Field(None, alias='wire-name')
+      wire_name: str | None = Field(
+          None,
+          serialization_alias='wire-name',
+          validation_alias=AliasChoices('wire-name'),
+      )
       nullable: str | None = None
       items: list[int] | None = None
   

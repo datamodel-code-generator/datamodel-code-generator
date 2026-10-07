@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TypeAlias
 
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
@@ -17,7 +17,7 @@ EscapedNeverValue = TypeAliasType("EscapedNeverValue", Any)
 Allowed = TypeAliasType("Allowed", Any)
 
 
-Indirect = TypeAliasType("Indirect", Never)
+Indirect: TypeAlias = Never
 
 
 Text = TypeAliasType("Text", str)

@@ -24,6 +24,7 @@ from typing import Any, Literal, get_type_hints
 import black
 import pytest
 from packaging import version
+from pydantic import VERSION as PYDANTIC_VERSION
 from pydantic import TypeAdapter, ValidationError
 from pydantic.errors import PydanticUndefinedAnnotation
 
@@ -150,6 +151,28 @@ BACKEND_GOLDEN_CASES = (
 
 CURRENT_PYTHON_VERSION = f"{sys.version_info[0]}.{sys.version_info[1]}"
 """Current Python version as string (e.g., '3.13')."""
+
+TARGET_PYDANTIC_VERSION_CASES = (
+    pytest.param(None, id="target-unset"),
+    pytest.param("2", id="target-2"),
+    pytest.param("2.12", id="target-2.12"),
+)
+
+
+def target_pydantic_args(target_pydantic_version: str | None) -> list[str]:
+    """Return CLI arguments selecting a target Pydantic version, or none for the default."""
+    return [] if target_pydantic_version is None else ["--target-pydantic-version", target_pydantic_version]
+
+
+def target_pydantic_expected_suffix(target_pydantic_version: str | None) -> str:
+    """Name the expected output for a target; an unset target shares the Pydantic 2.0 output."""
+    return "target_2_12" if target_pydantic_version == "2.12" else "target_2"
+
+
+def installed_pydantic_runs_target(target_pydantic_version: str | None) -> bool:
+    """Return whether the installed Pydantic can import code generated for the target."""
+    return target_pydantic_version is None or version.parse(PYDANTIC_VERSION) >= version.parse(target_pydantic_version)
+
 
 DATA_PATH: Path = Path(__file__).parent.parent / "data"
 EXPECTED_MAIN_PATH: Path = DATA_PATH / "expected" / "main"

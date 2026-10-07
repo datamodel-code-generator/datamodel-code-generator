@@ -42,7 +42,7 @@ render pydantic_v2.dataclass default
   
   from __future__ import annotations
   from typing import Optional
-  from pydantic import Field
+  from pydantic import AliasChoices, Field
   from pydantic.dataclasses import dataclass
   from typing_extensions import TypeAliasType
   
@@ -50,22 +50,22 @@ render pydantic_v2.dataclass default
   
   @dataclass
   class Envelope1:
-      ship_to: Optional[str] = Field(None, alias='ship-to')
-      other_key: Optional[int] = Field(None, alias='other-key')
+      ship_to: Optional[str] = Field(None, serialization_alias='ship-to', validation_alias=AliasChoices('ship-to'))
+      other_key: Optional[int] = Field(None, serialization_alias='other-key', validation_alias=AliasChoices('other-key'))
   
   
   
   @dataclass
   class Envelope2:
-      other_key: Optional[int] = Field(None, alias='other-key')
-      ship_to: Optional[str] = Field(None, alias='ship-to')
+      other_key: Optional[int] = Field(None, serialization_alias='other-key', validation_alias=AliasChoices('other-key'))
+      ship_to: Optional[str] = Field(None, serialization_alias='ship-to', validation_alias=AliasChoices('ship-to'))
   
   
   
   @dataclass
   class Variants1:
-      ship_to: Optional[str] = Field(None, alias='ship-to')
-      other_key: Optional[int] = Field(None, alias='other-key')
+      ship_to: Optional[str] = Field(None, serialization_alias='ship-to', validation_alias=AliasChoices('ship-to'))
+      other_key: Optional[int] = Field(None, serialization_alias='other-key', validation_alias=AliasChoices('other-key'))
   
   
   

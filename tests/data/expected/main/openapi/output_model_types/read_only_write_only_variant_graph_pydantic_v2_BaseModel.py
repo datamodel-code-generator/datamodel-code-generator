@@ -111,18 +111,6 @@ class ApiInlineObjectUnionResponseModel(
     root: ApiInlineObjectUnionResponseModel1 | ApiInlineObjectUnionModel
 
 
-class ApiForwardDictKeyMapRequestModel(
-    RootModel[dict["ApiReadOnlyLeafRequestModel", str]]
-):
-    root: dict["ApiReadOnlyLeafRequestModel", str]
-
-
-class ApiForwardDictKeyMapResponseModel(
-    RootModel[dict["ApiReadOnlyLeafResponseModel", str]]
-):
-    root: dict["ApiReadOnlyLeafResponseModel", str]
-
-
 class ApiConditionalEnvelopeModel(BaseModel):
     kind: str
 
@@ -162,14 +150,6 @@ class ApiForwardRootInlineUnionWrapperRequestModel(BaseModel):
 
 class ApiForwardRootInlineUnionWrapperResponseModel(BaseModel):
     value: ApiInlineObjectUnionResponseModel
-
-
-class ApiForwardDictKeyWrapperRequestModel(BaseModel):
-    values: ApiForwardDictKeyMapRequestModel
-
-
-class ApiForwardDictKeyWrapperResponseModel(BaseModel):
-    values: ApiForwardDictKeyMapResponseModel
 
 
 class ApiConditionalForwardWrapperModel(BaseModel):
@@ -212,6 +192,18 @@ class ApiForwardKeyedMapResponseModel(
     root: dict[ApiAllowedKeyModel, ApiReadOnlyLeafResponseModel]
 
 
+class ApiForwardDictKeyMapRequestModel(
+    RootModel[dict[ApiReadOnlyLeafRequestModel, str]]
+):
+    root: dict[ApiReadOnlyLeafRequestModel, str]
+
+
+class ApiForwardDictKeyMapResponseModel(
+    RootModel[dict[ApiReadOnlyLeafResponseModel, str]]
+):
+    root: dict[ApiReadOnlyLeafResponseModel, str]
+
+
 class ApiForwardGraphWrapperRequestModel(BaseModel):
     alias: ApiForwardAliasRequestModel
     items: ApiForwardArrayRequestModel
@@ -224,6 +216,14 @@ class ApiForwardGraphWrapperResponseModel(BaseModel):
     items: ApiForwardArrayResponseModel
     values: ApiForwardMapResponseModel
     keyedValues: ApiForwardKeyedMapResponseModel
+
+
+class ApiForwardDictKeyWrapperRequestModel(BaseModel):
+    values: ApiForwardDictKeyMapRequestModel
+
+
+class ApiForwardDictKeyWrapperResponseModel(BaseModel):
+    values: ApiForwardDictKeyMapResponseModel
 
 
 class ApiPositiveSccWrapperRequestModel(BaseModel):

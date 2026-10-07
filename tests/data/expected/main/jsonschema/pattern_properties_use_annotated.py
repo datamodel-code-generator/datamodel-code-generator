@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, Field
 
 
 class Bar(BaseModel):
@@ -14,6 +14,4 @@ class Bar(BaseModel):
 
 
 class Foo(BaseModel):
-    bar: dict[
-        Annotated[str, StringConstraints(pattern=r'^([a-zA-Z_][a-zA-Z0-9_]*)$')], Bar
-    ]
+    bar: dict[Annotated[str, Field(pattern=r'^([a-zA-Z_][a-zA-Z0-9_]*)$')], Bar]

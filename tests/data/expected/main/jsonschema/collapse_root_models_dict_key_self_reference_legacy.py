@@ -12,3 +12,6 @@ class KeyMap(RootModel[dict["KeyMap", str]]):
 
 class Model(BaseModel):
     keys: KeyMap | None = None
+
+
+KeyMap.model_rebuild()

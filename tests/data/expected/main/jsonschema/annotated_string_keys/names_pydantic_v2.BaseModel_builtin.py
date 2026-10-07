@@ -5,13 +5,10 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, Field
 
 
 class SomeSpec(BaseModel):
     services: dict[
-        Annotated[
-            str, StringConstraints(pattern=r'^[a-z]+$', min_length=2, max_length=4)
-        ],
-        str,
+        Annotated[str, Field(pattern=r'^[a-z]+$', min_length=2, max_length=4)], str
     ]

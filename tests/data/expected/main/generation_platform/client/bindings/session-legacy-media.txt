@@ -315,7 +315,7 @@ render pydantic_v2.dataclass plain
   from __future__ import annotations
   from typing_extensions import TypeAliasType
   from typing import Any, List, Union
-  from pydantic import Field
+  from pydantic import AliasChoices, Field
   from pydantic.dataclasses import dataclass
   from enum import StrEnum
   
@@ -335,7 +335,7 @@ render pydantic_v2.dataclass plain
   
   @dataclass
   class ObjectRequestItem:
-      wire_name: str = Field(..., alias='wire-name')
+      wire_name: str = Field(..., serialization_alias='wire-name', validation_alias=AliasChoices('wire-name'))
   
   
   
@@ -345,7 +345,7 @@ render pydantic_v2.dataclass plain
   
   @dataclass
   class ObjectRequest1:
-      wire_name: str = Field(..., alias='wire-name')
+      wire_name: str = Field(..., serialization_alias='wire-name', validation_alias=AliasChoices('wire-name'))
   
   
   class EnumRequestItem(StrEnum):
@@ -413,7 +413,7 @@ render pydantic_v2.dataclass plain
   
   @dataclass
   class ObjectResponseItem:
-      wire_name: str = Field(..., alias='wire-name')
+      wire_name: str = Field(..., serialization_alias='wire-name', validation_alias=AliasChoices('wire-name'))
   
   
   
@@ -423,7 +423,7 @@ render pydantic_v2.dataclass plain
   
   @dataclass
   class ObjectResponse1:
-      wire_name: str = Field(..., alias='wire-name')
+      wire_name: str = Field(..., serialization_alias='wire-name', validation_alias=AliasChoices('wire-name'))
   
   
   class EnumResponseItem(StrEnum):
@@ -495,7 +495,7 @@ render pydantic_v2.dataclass collapsed
   from __future__ import annotations
   from typing_extensions import TypeAliasType
   from typing import Any, List, Union
-  from pydantic import Field
+  from pydantic import AliasChoices, Field
   from pydantic.dataclasses import dataclass
   from enum import StrEnum
   
@@ -511,7 +511,7 @@ render pydantic_v2.dataclass collapsed
   
   @dataclass
   class ObjectRequestItem:
-      wire_name: str = Field(..., alias='wire-name')
+      wire_name: str = Field(..., serialization_alias='wire-name', validation_alias=AliasChoices('wire-name'))
   
   
   
@@ -521,7 +521,7 @@ render pydantic_v2.dataclass collapsed
   
   @dataclass
   class ObjectRequest1:
-      wire_name: str = Field(..., alias='wire-name')
+      wire_name: str = Field(..., serialization_alias='wire-name', validation_alias=AliasChoices('wire-name'))
   
   
   class EnumRequestItem(StrEnum):
@@ -573,7 +573,7 @@ render pydantic_v2.dataclass collapsed
   
   @dataclass
   class ObjectResponseItem:
-      wire_name: str = Field(..., alias='wire-name')
+      wire_name: str = Field(..., serialization_alias='wire-name', validation_alias=AliasChoices('wire-name'))
   
   
   
@@ -583,7 +583,7 @@ render pydantic_v2.dataclass collapsed
   
   @dataclass
   class ObjectResponse1:
-      wire_name: str = Field(..., alias='wire-name')
+      wire_name: str = Field(..., serialization_alias='wire-name', validation_alias=AliasChoices('wire-name'))
   
   
   class EnumResponseItem(StrEnum):

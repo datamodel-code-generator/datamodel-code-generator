@@ -105,14 +105,6 @@ render pydantic_v2.BaseModel default
       root: Union[InlineObjectUnion1Response, InlineObjectUnion]
   
   
-  class ForwardDictKeyMapRequest(RootModel[Dict["ReadOnlyLeafRequest", str]]):
-      root: Dict["ReadOnlyLeafRequest", str]
-  
-  
-  class ForwardDictKeyMapResponse(RootModel[Dict["ReadOnlyLeafResponse", str]]):
-      root: Dict["ReadOnlyLeafResponse", str]
-  
-  
   class ConditionalEnvelope(BaseModel):
       kind: str
   
@@ -154,14 +146,6 @@ render pydantic_v2.BaseModel default
       value: InlineObjectUnionResponse
   
   
-  class ForwardDictKeyWrapperRequest(BaseModel):
-      values: ForwardDictKeyMapRequest
-  
-  
-  class ForwardDictKeyWrapperResponse(BaseModel):
-      values: ForwardDictKeyMapResponse
-  
-  
   class ConditionalForwardWrapper(BaseModel):
       payload: ConditionalEnvelope
   
@@ -198,6 +182,14 @@ render pydantic_v2.BaseModel default
       root: Dict[AllowedKey, ReadOnlyLeafResponse]
   
   
+  class ForwardDictKeyMapRequest(RootModel[Dict[ReadOnlyLeafRequest, str]]):
+      root: Dict[ReadOnlyLeafRequest, str]
+  
+  
+  class ForwardDictKeyMapResponse(RootModel[Dict[ReadOnlyLeafResponse, str]]):
+      root: Dict[ReadOnlyLeafResponse, str]
+  
+  
   class ForwardGraphWrapperRequest(BaseModel):
       alias: ForwardAliasRequest
       items: ForwardArrayRequest
@@ -210,6 +202,14 @@ render pydantic_v2.BaseModel default
       items: ForwardArrayResponse
       values: ForwardMapResponse
       keyedValues: ForwardKeyedMapResponse
+  
+  
+  class ForwardDictKeyWrapperRequest(BaseModel):
+      values: ForwardDictKeyMapRequest
+  
+  
+  class ForwardDictKeyWrapperResponse(BaseModel):
+      values: ForwardDictKeyMapResponse
   
   
   class PositiveSccWrapperRequest(BaseModel):

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import TypeAlias
 
 from pydantic import Field
 from pydantic.dataclasses import dataclass
@@ -190,10 +191,10 @@ class ApiConditionalForwardWrapperModel:
     payload: ApiConditionalEnvelopeModel
 
 
-ApiForwardAliasRequestModel = TypeAliasType("ApiForwardAliasRequestModel", ApiReadOnlyLeafRequestModel)
+ApiForwardAliasRequestModel: TypeAlias = ApiReadOnlyLeafRequestModel
 
 
-ApiForwardAliasResponseModel = TypeAliasType("ApiForwardAliasResponseModel", ApiReadOnlyLeafResponseModel)
+ApiForwardAliasResponseModel: TypeAlias = ApiReadOnlyLeafResponseModel
 
 
 ApiForwardArrayRequestModel = TypeAliasType("ApiForwardArrayRequestModel", list[ApiReadOnlyLeafRequestModel])

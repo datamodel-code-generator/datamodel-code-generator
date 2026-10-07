@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, Field
 
 
 class SomeSpec(BaseModel):
-    services: dict[Annotated[str, StringConstraints(pattern=r'^x_|^y_')], str]
+    services: dict[Annotated[str, Field(pattern=r'^x_|^y_')], str]

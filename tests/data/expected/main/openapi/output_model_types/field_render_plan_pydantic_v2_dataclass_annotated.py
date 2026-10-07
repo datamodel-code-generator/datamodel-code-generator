@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Annotated, ClassVar
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic.dataclasses import dataclass
 
 
@@ -24,7 +24,11 @@ class RenderPlan:
     json_extra_marker: Annotated[
         str | None, Field(json_schema_extra={'x-render-marker': 'Field('})
     ] = 'value'
-    Field_: Annotated[str | None, Field(alias='Field(')] = 'value'
+    Field_: str | None = Field(
+        default='value',
+        serialization_alias='Field(',
+        validation_alias=AliasChoices('Field('),
+    )
     literal_convert_marker: str | None = 'lambda: convert'
     nested_factory: Nested | None = None
     nested_convert: Nested | None = Field(

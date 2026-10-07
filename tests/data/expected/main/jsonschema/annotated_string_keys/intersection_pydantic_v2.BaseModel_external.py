@@ -5,13 +5,11 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SomeSpec(BaseModel):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    services: dict[
-        Annotated[str, StringConstraints(pattern=r'(?=^x_[0-9]+$)(?=^x)')], str
-    ]
+    services: dict[Annotated[str, Field(pattern=r'(?=^x_[0-9]+$)(?=^x)')], str]

@@ -11,7 +11,6 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
-from datamodel_code_generator.enums import TargetPydanticVersion
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
     IMPORT_ANY,
@@ -73,7 +72,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_UUID4,
     IMPORT_UUID5,
 )
-from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_VERSION_TUPLE
+from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_V2_STRING_CONSTRAINTS_MINIMUM, target_supports
 from datamodel_code_generator.python_literal import PythonCode
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
@@ -89,6 +88,7 @@ from datamodel_code_generator.types import DataTypeManager as _DataTypeManagerBa
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Sequence
 
+    from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Import
 
 
@@ -412,13 +412,11 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
                     AnnotatedStringDataType,
                 )
 
-                match target_pydantic_version:
-                    case TargetPydanticVersion.V2:
-                        constraint_import = IMPORT_FIELD
-                    case None if PYDANTIC_VERSION_TUPLE < (2, 1, 0):
-                        constraint_import = IMPORT_FIELD
-                    case _:
-                        constraint_import = IMPORT_STRING_CONSTRAINTS
+                constraint_import = (
+                    IMPORT_STRING_CONSTRAINTS
+                    if target_supports(target_pydantic_version, PYDANTIC_V2_STRING_CONSTRAINTS_MINIMUM)
+                    else IMPORT_FIELD
+                )
                 data_type = AnnotatedStringDataType.from_import(constraint_import, kwargs=data_type_kwargs)
                 data_type._set_runtime_expression_imports(_ANNOTATED_STRING_IMPORTS)  # noqa: SLF001
                 return data_type
