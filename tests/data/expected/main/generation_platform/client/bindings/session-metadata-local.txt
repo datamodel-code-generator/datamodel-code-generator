@@ -5,15 +5,16 @@ render pydantic_v2.BaseModel default
   #   filename:  session-metadata-local.json
   
   from __future__ import annotations
-  from pydantic import BaseModel, RootModel
+  from pydantic import BaseModel
+  from typing_extensions import TypeAliasType
   
   
   class Item(BaseModel):
       id: int
   
   
-  class FieldItemsGetQueryTokenParameter(RootModel[str]):
-      root: str
+  
+  FieldItemsGetQueryTokenParameter = TypeAliasType("FieldItemsGetQueryTokenParameter", str)
   model_bindings.py
   codec_0 models.FieldItemsGetQueryTokenParameter
   codec_1 models.Item

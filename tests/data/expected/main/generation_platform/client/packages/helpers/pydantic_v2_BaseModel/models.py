@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, RootModel
+from typing_extensions import TypeAliasType
 
 
 class User(BaseModel):
@@ -47,20 +48,16 @@ class StreamError(BaseModel):
     message: str | None = None
 
 
-class FieldUsersGetQueryCursorParameter(RootModel[str]):
-    root: str
+FieldUsersGetQueryCursorParameter = TypeAliasType("FieldUsersGetQueryCursorParameter", str)
 
 
-class FieldUsersGetQueryOffsetParameter(RootModel[int]):
-    root: int
+FieldUsersGetQueryOffsetParameter = TypeAliasType("FieldUsersGetQueryOffsetParameter", int)
 
 
-class FieldUsersGetQueryPageParameter(RootModel[int]):
-    root: int
+FieldUsersGetQueryPageParameter = TypeAliasType("FieldUsersGetQueryPageParameter", int)
 
 
-class FieldUsersGetHeaderSnapshotParameter(RootModel[str]):
-    root: str
+FieldUsersGetHeaderSnapshotParameter = TypeAliasType("FieldUsersGetHeaderSnapshotParameter", str)
 
 
 class FieldUsersGetResponse200LinkHeader(RootModel[str]):
@@ -72,40 +69,33 @@ class FieldUsersSearchPostRequest(BaseModel):
     cursor: str | None = None
 
 
-class FieldTagsGetQueryItemsParameter(RootModel[int]):
-    root: int
+FieldTagsGetQueryItemsParameter = TypeAliasType("FieldTagsGetQueryItemsParameter", int)
 
 
-class FieldTagsGetQueryCursorParameter(RootModel[str]):
-    root: str
+FieldTagsGetQueryCursorParameter = TypeAliasType("FieldTagsGetQueryCursorParameter", str)
 
 
-class FieldLabelsGetQueryItemsParameter(RootModel[int]):
-    root: int
+FieldLabelsGetQueryItemsParameter = TypeAliasType("FieldLabelsGetQueryItemsParameter", int)
 
 
-class FieldJobsJobIdGetPathJobIdParameter(RootModel[str]):
-    root: str
+FieldJobsJobIdGetPathJobIdParameter = TypeAliasType("FieldJobsJobIdGetPathJobIdParameter", str)
 
 
 class FieldJobsJobIdGetResponse200RetryAfterHeader(RootModel[int]):
     root: int
 
 
-class FieldJobsJobIdResultGetPathJobIdParameter(RootModel[str]):
-    root: str
+FieldJobsJobIdResultGetPathJobIdParameter = TypeAliasType("FieldJobsJobIdResultGetPathJobIdParameter", str)
 
 
-class FieldEventsGetHeaderLastEventIDParameter(RootModel[str]):
-    root: str
+FieldEventsGetHeaderLastEventIDParameter = TypeAliasType("FieldEventsGetHeaderLastEventIDParameter", str)
 
 
 class FieldEventsGetResponse(RootModel[str]):
     root: str
 
 
-class FieldRecordsGetQueryAfterParameter(RootModel[str]):
-    root: str
+FieldRecordsGetQueryAfterParameter = TypeAliasType("FieldRecordsGetQueryAfterParameter", str)
 
 
 class FieldRecordsGetResponse(RootModel[str]):
@@ -117,5 +107,4 @@ class Record(BaseModel):
     value: str | None = None
 
 
-class FieldAdminAuditGetQueryCursorParameter(RootModel[str]):
-    root: str
+FieldAdminAuditGetQueryCursorParameter = TypeAliasType("FieldAdminAuditGetQueryCursorParameter", str)

@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum, StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
+from pydantic import BaseModel, ConfigDict, Field
+from typing_extensions import TypeAliasType
 
 
 class Filter(BaseModel):
@@ -24,46 +25,54 @@ class Blob(BaseModel):
     a: int | None = None
 
 
-class FieldSearchGetCookieSessionParameter(RootModel[constr(min_length=2)]):
-    root: constr(min_length=2)
+FieldSearchGetCookieSessionParameter = TypeAliasType(
+    "FieldSearchGetCookieSessionParameter", Annotated[str, Field(..., min_length=2)]
+)
 
 
-class FieldSearchGetQueryCodeParameter(RootModel[constr(pattern=r'^[A-Z]+$')]):
-    root: constr(pattern=r'^[A-Z]+$') = 'AB'
+FieldSearchGetQueryCodeParameter = TypeAliasType(
+    "FieldSearchGetQueryCodeParameter", Annotated[str, Field(..., pattern='^[A-Z]+$')]
+)
 
 
-class FieldSearchGetQueryIdsParameter(RootModel[list[int]]):
-    root: list[int]
+FieldSearchGetQueryIdsParameter = TypeAliasType("FieldSearchGetQueryIdsParameter", list[int])
 
 
-class FieldSearchGetHeaderXIdsParameter(RootModel[list[int]]):
-    root: list[int] = [3]
+FieldSearchGetHeaderXIdsParameter = TypeAliasType("FieldSearchGetHeaderXIdsParameter", list[int])
 
 
-class FieldRatiosGetQueryRatiosParameter(RootModel[list[float]]):
-    root: list[float]
+FieldRatiosGetQueryRatiosParameter = TypeAliasType("FieldRatiosGetQueryRatiosParameter", list[float])
 
 
-class FieldRatiosGetQueryLimitsParameter(RootModel[list[conint(ge=1)]]):
-    root: list[conint(ge=1)] = Field([1, 2], examples=[[1]], title='Limits')
+FieldRatiosGetQueryLimitsParameterItem = TypeAliasType(
+    "FieldRatiosGetQueryLimitsParameterItem", Annotated[int, Field(..., ge=1)]
+)
 
 
-class FieldRepeatIdAgainIdGetPathIdParameter(RootModel[int]):
-    root: int
+FieldRatiosGetQueryLimitsParameter = TypeAliasType(
+    "FieldRatiosGetQueryLimitsParameter",
+    Annotated[
+        list[FieldRatiosGetQueryLimitsParameterItem],
+        Field([1, 2], examples=[[1]], title='Limits'),
+    ],
+)
 
 
-class FieldNotesNoteIdGetPathNoteIdParameter(RootModel[int]):
-    root: int
+FieldRepeatIdAgainIdGetPathIdParameter = TypeAliasType("FieldRepeatIdAgainIdGetPathIdParameter", int)
 
 
-class FieldFilesFileNameGetPathFileNameParameter(
-    RootModel[constr(pattern=r'^[a-z]+\.txt$')]
-):
-    root: constr(pattern=r'^[a-z]+\.txt$')
+FieldNotesNoteIdGetPathNoteIdParameter = TypeAliasType("FieldNotesNoteIdGetPathNoteIdParameter", int)
 
 
-class FieldMenüItemGetPathItemParameter(RootModel[constr(pattern=r'^[a-z]+$')]):
-    root: constr(pattern=r'^[a-z]+$')
+FieldFilesFileNameGetPathFileNameParameter = TypeAliasType(
+    "FieldFilesFileNameGetPathFileNameParameter",
+    Annotated[str, Field(..., pattern='^[a-z]+\\.txt$')],
+)
+
+
+FieldMenüItemGetPathItemParameter = TypeAliasType(
+    "FieldMenüItemGetPathItemParameter", Annotated[str, Field(..., pattern='^[a-z]+$')]
+)
 
 
 class FieldItemsLevelGetPathLevelParameter(IntEnum):
@@ -81,8 +90,7 @@ class FieldItemsLevelGetQueryRatioParameter(Enum):
     number_1_5 = 1.5
 
 
-class FieldItemsLevelGetHeaderXFlagParameter(RootModel[Literal[True]]):
-    root: Literal[True]
+FieldItemsLevelGetHeaderXFlagParameter = TypeAliasType("FieldItemsLevelGetHeaderXFlagParameter", Literal[True])
 
 
 class FieldItemsLevelGetQueryKindParameter(StrEnum):
@@ -95,10 +103,7 @@ class FieldItemsLevelGetQueryTierParameter1(IntEnum):
     integer_2 = 2
 
 
-class FieldItemsLevelGetQueryTierParameter(
-    RootModel[FieldItemsLevelGetQueryTierParameter1 | None]
-):
-    root: FieldItemsLevelGetQueryTierParameter1 | None
+FieldItemsLevelGetQueryTierParameter = TypeAliasType("FieldItemsLevelGetQueryTierParameter", FieldItemsLevelGetQueryTierParameter1 | None)
 
 
 class FieldItemsLevelGetQueryLevelsParameterEnum(IntEnum):
@@ -106,7 +111,4 @@ class FieldItemsLevelGetQueryLevelsParameterEnum(IntEnum):
     integer_2 = 2
 
 
-class FieldItemsLevelGetQueryLevelsParameter(
-    RootModel[list[FieldItemsLevelGetQueryLevelsParameterEnum]]
-):
-    root: list[FieldItemsLevelGetQueryLevelsParameterEnum]
+FieldItemsLevelGetQueryLevelsParameter = TypeAliasType("FieldItemsLevelGetQueryLevelsParameter", list[FieldItemsLevelGetQueryLevelsParameterEnum])

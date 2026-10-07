@@ -7,7 +7,7 @@ from collections.abc import Generator, Sequence  # noqa: TC003 - Public annotati
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
-from typing import ClassVar, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, TypeAlias
 from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support get_type_hints().
 
 from typing_extensions import Unpack
@@ -34,6 +34,9 @@ from datamodel_code_generator.parser.openapi_media import (
 from datamodel_code_generator.reference import ModelResolver
 from datamodel_code_generator.types import DataType  # noqa: TC001 - Public annotations support get_type_hints().
 
+if TYPE_CHECKING:
+    from datamodel_code_generator.model import DataModel
+
 _FIXED_HTTP_METHODS = frozenset(method.upper() for method in (*OPERATION_NAMES, "query"))
 
 
@@ -43,6 +46,15 @@ def _mapping(value: YamlValue, path: Sequence[str]) -> dict[str, YamlValue]:
         return value
     msg = "API_INVALID_OBJECT: expected an object"
     raise SchemaParseError(msg, path=list(path))
+
+
+def _is_object_schema(raw: YamlValue) -> bool:
+    """Return whether a raw parameter schema declares an object, which stays a model."""
+    return isinstance(raw, dict) and (
+        "object" in (types if isinstance(types := raw.get("type"), list) else (types,))
+        or "properties" in raw
+        or "additionalProperties" in raw
+    )
 
 
 SchemaRole: TypeAlias = Literal[
@@ -175,6 +187,13 @@ class ApiOpenAPIParser(OpenAPIParser):
         if OpenAPIScope.Api not in self.open_api_scopes:
             msg = "ApiOpenAPIParser requires OpenAPIScope.Api"
             raise Error(msg)
+        self._schema_root_type = self.data_model_root_type
+        self._parameter_root_type = self.data_model_type.resolve_type_alias_model_type(
+            self.data_model_root_type, self.target_python_version
+        )
+        self._schema_field_constraints = self.field_constraints
+        self._parameter_root_models: set[DataModel] = set()
+        self._claimed_models = 0
 
     def _declaration_id(self, path: Sequence[str]) -> ApiDeclarationId:
         ref = self.model_resolver.join_path(tuple(path))
@@ -214,11 +233,34 @@ class ApiOpenAPIParser(OpenAPIParser):
             validated_schema=validated_schema,
             projection=projection,
         )
+        self._claim_parameter_root_models()
         self.declaration_frames.append(frame)
+        previous = self.data_model_root_type, self.field_constraints
+        if frame.role != "parameter":
+            self.data_model_root_type, self.field_constraints = self._schema_root_type, self._schema_field_constraints
+        elif role is not None:
+            alias = self._parameter_root_type is not self._schema_root_type and not _is_object_schema(raw_schema)
+            self.data_model_root_type = self._parameter_root_type if alias else self._schema_root_type
+            self.field_constraints = alias or self._schema_field_constraints
         try:
             yield frame
         finally:
+            self._claim_parameter_root_models()
             self.declaration_frames.pop()
+            self.data_model_root_type, self.field_constraints = previous
+
+    def _claim_parameter_root_models(self) -> None:
+        """Record parameter aliases registered since the previous declaration frame boundary."""
+        models = self.generation_store.models
+        if self.data_model_root_type is not self._schema_root_type:
+            self._parameter_root_models.update(
+                model for model in models[self._claimed_models :] if isinstance(model, self.data_model_root_type)
+            )
+        self._claimed_models = len(models)
+
+    def _is_root_model(self, model: DataModel) -> bool:
+        """Treat parameter aliases as roots, as the configured alias representation does."""
+        return isinstance(model, self.data_model_root_type) or model in self._parameter_root_models
 
     def _parse_raw_or_validated_obj(
         self,
@@ -700,6 +742,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             self._api_security = None
             self._active_api_objects.clear()
             self._completed_api_objects.clear()
+            self._parameter_root_models.clear()
             self.model_resolver.original_refs.clear()
 
     def _walk_api_operation(  # noqa: PLR0914

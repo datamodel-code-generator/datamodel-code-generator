@@ -15,16 +15,6 @@
         "operationId": "listAdapters",
         "parameters": [
           {
-            "name": "code",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Z]+$",
-              "title": "Code"
-            }
-          },
-          {
             "name": "mail",
             "in": "query",
             "required": false,
@@ -57,7 +47,6 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "default": "ten",
               "title": "Count"
             }
           },
@@ -142,6 +131,14 @@
             }
           },
           {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]+$"
+            }
+          },
+          {
             "name": "point",
             "in": "query",
             "schema": {
@@ -184,58 +181,11 @@
         "operationId": "getPart",
         "parameters": [
           {
-            "name": "dcg_p0",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "minimum": -10,
-              "exclusiveMaximum": 100,
-              "title": "Dcg P0"
-            }
-          },
-          {
-            "name": "part",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 8,
-              "title": "Part"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 50,
-              "minimum": -3000000000,
-              "description": "Page size.",
-              "default": 10,
-              "title": "Limit"
-            },
-            "description": "Page size."
-          },
-          {
-            "name": "ratio",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "multipleOf": 0.5,
-              "title": "Ratio"
-            }
-          },
-          {
             "name": "flag",
             "in": "query",
             "required": false,
             "schema": {
               "type": "boolean",
-              "default": false,
               "title": "Flag"
             }
           },
@@ -306,6 +256,48 @@
             "schema": {
               "type": "string",
               "title": "X-Trace"
+            }
+          },
+          {
+            "name": "dcg_p0",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": -10,
+              "exclusiveMaximum": 100
+            }
+          },
+          {
+            "name": "part",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": -3000000000,
+              "maximum": 50,
+              "default": 10
+            }
+          },
+          {
+            "name": "ratio",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "multipleOf": 0.5,
+              "title": "Ratio"
             }
           },
           {

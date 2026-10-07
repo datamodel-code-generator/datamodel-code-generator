@@ -1273,7 +1273,7 @@ render pydantic_v2.BaseModel
     |     },
     |     {
     |       "binding_id": "models:FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter",
-    |       "kind": "root",
+    |       "kind": "alias",
     |       "module": "models",
     |       "name": "FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter",
     |       "path": "models.py"
@@ -1294,7 +1294,7 @@ render pydantic_v2.BaseModel
     |     },
     |     {
     |       "binding_id": "models:FieldSecureGetCookieTokenParameter",
-    |       "kind": "root",
+    |       "kind": "alias",
     |       "module": "models",
     |       "name": "FieldSecureGetCookieTokenParameter",
     |       "path": "models.py"

@@ -13,7 +13,7 @@ from pydantic import TypeAdapter
 from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
-from .._runtime.server.requests import ParameterAdapter, ParameterArgument
+from .._runtime.server.requests import ParameterAdapter, ParameterArgument, RawPath
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationKey: TypeAlias = Literal[
@@ -51,10 +51,23 @@ class ListPets:
     class Parameters:
         """The adapter parameters of list_pets."""
 
+        limit: pets_basemodel_models.FieldPetsGetQueryLimitParameter | Unset
         session: str | Unset
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
+            ParameterArgument(
+                name='limit',
+                plan=ParameterPlan(
+                    location='query',
+                    name='limit',
+                    style='form',
+                    explode=True,
+                    kind='integer',
+                    reserved_names=('kind', 'since', 'tags'),
+                ),
+                adapter=TypeAdapter(pets_basemodel_models.FieldPetsGetQueryLimitParameter),
+            ),
             ParameterArgument(
                 name='session',
                 plan=ParameterPlan(
@@ -128,6 +141,29 @@ class GetPet:
         service='pets',
         keywords=('pet_id',),
     )
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of get_pet."""
+
+        pet_id: pets_basemodel_models.FieldPetsPetIdGetPathPetIdParameter
+
+    PARAMETERS: Final = ParameterAdapter(
+        arguments=(
+            ParameterArgument(
+                name='pet_id',
+                plan=ParameterPlan(
+                    location='path',
+                    name='petId',
+                    style='simple',
+                    required=True,
+                    kind='integer',
+                ),
+                adapter=TypeAdapter(pets_basemodel_models.FieldPetsPetIdGetPathPetIdParameter),
+            ),
+        ),
+        record=Parameters,
+        path=RawPath(template='/pets/{petId}', names=frozenset({'petId'})),
+    )
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(
@@ -150,6 +186,29 @@ class DeletePet:
         key='/paths/~1pets~1{petId}/delete',
         service='pets',
         keywords=('pet_id',),
+    )
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of delete_pet."""
+
+        pet_id: pets_basemodel_models.FieldPetsPetIdDeletePathPetIdParameter
+
+    PARAMETERS: Final = ParameterAdapter(
+        arguments=(
+            ParameterArgument(
+                name='pet_id',
+                plan=ParameterPlan(
+                    location='path',
+                    name='petId',
+                    style='simple',
+                    required=True,
+                    kind='integer',
+                ),
+                adapter=TypeAdapter(pets_basemodel_models.FieldPetsPetIdDeletePathPetIdParameter),
+            ),
+        ),
+        record=Parameters,
+        path=RawPath(template='/pets/{petId}', names=frozenset({'petId'})),
     )
     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 

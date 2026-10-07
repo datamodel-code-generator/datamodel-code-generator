@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, RootModel, conint, constr
+from typing import Annotated
+
+from pydantic import BaseModel, Field, RootModel
+from typing_extensions import TypeAliasType
 
 
 class Pet(BaseModel):
@@ -11,24 +14,24 @@ class Pet(BaseModel):
     name: str
 
 
-class FieldPetsPetIdGetPathPetIdParameter(RootModel[conint(ge=1)]):
-    root: conint(ge=1)
+FieldPetsPetIdGetPathPetIdParameter = TypeAliasType(
+    "FieldPetsPetIdGetPathPetIdParameter", Annotated[int, Field(..., ge=1)]
+)
 
 
-class FieldPetsPetIdGetQueryLimitParameter(RootModel[int]):
-    root: int = 10
+FieldPetsPetIdGetQueryLimitParameter = TypeAliasType("FieldPetsPetIdGetQueryLimitParameter", int)
 
 
-class FieldPetsPetIdGetHeaderXTraceParameter(RootModel[str]):
-    root: str
+FieldPetsPetIdGetHeaderXTraceParameter = TypeAliasType("FieldPetsPetIdGetHeaderXTraceParameter", str)
 
 
-class FieldPetsPetIdGetQueryAfterParameter(RootModel[str | None]):
-    root: str | None
+FieldPetsPetIdGetQueryAfterParameter = TypeAliasType("FieldPetsPetIdGetQueryAfterParameter", str | None)
 
 
-class FieldPetsPetIdGetCookieSessionParameter(RootModel[constr(pattern=r'^[a-z]+$')]):
-    root: constr(pattern=r'^[a-z]+$')
+FieldPetsPetIdGetCookieSessionParameter = TypeAliasType(
+    "FieldPetsPetIdGetCookieSessionParameter",
+    Annotated[str, Field(..., pattern='^[a-z]+$')],
+)
 
 
 class FieldPetsPetIdGetResponse200XRateHeader(RootModel[int]):

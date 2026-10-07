@@ -5,13 +5,13 @@ warning Duplicate Operation ID getRepeated for function get_repeated at <root>/d
 warning Duplicate Operation ID listAdapters for function list_adapters at <root>/docs_items/routers/adapters.py
 warning Duplicate Operation ID getPart for function get_part at <root>/docs_items/routers/items.py
 warning Duplicate Operation ID getRepeated for function get_repeated at <root>/docs_items/routers/adapters.py
-GET /v1/adapters listAdapters ['code', 'mail', 'other', 'none', 'count', 'stamp', 'page', 'session', 'filter', 'ids', 'X-Ids', 'blob', 'point']
-GET /v1/items/{dcg_p0}/parts/{part} getPart ['dcg_p0', 'part', 'limit', 'ratio', 'flag', 'day', 'ref', 'mode', 'request', 'part', '2fa', 'X-Trace', 'tags', 'level']
+GET /v1/adapters listAdapters ['mail', 'other', 'none', 'count', 'stamp', 'page', 'session', 'filter', 'ids', 'X-Ids', 'blob', 'code', 'point']
+GET /v1/items/{dcg_p0}/parts/{part} getPart ['flag', 'day', 'ref', 'mode', 'request', 'part', '2fa', 'X-Trace', 'dcg_p0', 'part', 'limit', 'ratio', 'tags', 'level']
 GET /v1/repeat/{dcg_p0}/again/{dcg_p1} getRepeated ['dcg_p0', 'dcg_p1']
-GET /v2/adapters listAdapters ['code', 'mail', 'other', 'none', 'count', 'stamp', 'page', 'session', 'filter', 'ids', 'X-Ids', 'blob', 'point']
-GET /v2/items/{dcg_p0}/parts/{part} getPart ['dcg_p0', 'part', 'limit', 'ratio', 'flag', 'day', 'ref', 'mode', 'request', 'part', '2fa', 'X-Trace', 'tags', 'level']
+GET /v2/adapters listAdapters ['mail', 'other', 'none', 'count', 'stamp', 'page', 'session', 'filter', 'ids', 'X-Ids', 'blob', 'code', 'point']
+GET /v2/items/{dcg_p0}/parts/{part} getPart ['flag', 'day', 'ref', 'mode', 'request', 'part', '2fa', 'X-Trace', 'dcg_p0', 'part', 'limit', 'ratio', 'tags', 'level']
 GET /v2/repeat/{dcg_p0}/again/{dcg_p1} getRepeated ['dcg_p0', 'dcg_p1']
-GET /api/outer/inner/adapters listAdapters ['code', 'mail', 'other', 'none', 'count', 'stamp', 'page', 'session', 'filter', 'ids', 'X-Ids', 'blob', 'point']
-GET /api/outer/inner/items/{dcg_p0}/parts/{part} getPart ['dcg_p0', 'part', 'limit', 'ratio', 'flag', 'day', 'ref', 'mode', 'request', 'part', '2fa', 'X-Trace', 'tags', 'level']
+GET /api/outer/inner/adapters listAdapters ['mail', 'other', 'none', 'count', 'stamp', 'page', 'session', 'filter', 'ids', 'X-Ids', 'blob', 'code', 'point']
+GET /api/outer/inner/items/{dcg_p0}/parts/{part} getPart ['flag', 'day', 'ref', 'mode', 'request', 'part', '2fa', 'X-Trace', 'dcg_p0', 'part', 'limit', 'ratio', 'tags', 'level']
 GET /api/outer/inner/repeat/{dcg_p0}/again/{dcg_p1} getRepeated ['dcg_p0', 'dcg_p1']
 create_app ['/root/adapters', '/root/items/{dcg_p0}/parts/{part}', '/root/repeat/{dcg_p0}/again/{dcg_p1}']

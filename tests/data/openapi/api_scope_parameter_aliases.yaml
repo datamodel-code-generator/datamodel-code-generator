@@ -1,0 +1,88 @@
+openapi: 3.1.0
+info:
+  title: Parameter aliases
+  version: 1.0.0
+paths:
+  /items/{itemId}:
+    parameters:
+      - name: itemId
+        in: path
+        required: true
+        schema: {type: integer}
+    get:
+      operationId: getItem
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items: {type: string, maxLength: 8}
+            maxItems: 5
+        - name: color
+          in: query
+          schema: {$ref: '#/components/schemas/Color'}
+        - name: colors
+          in: query
+          schema:
+            type: array
+            items: {$ref: '#/components/schemas/Color'}
+        - name: shade
+          in: query
+          schema: {type: string, enum: [light, dark]}
+        - name: filter
+          in: query
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              owner: {type: string, maxLength: 3}
+        - name: labels
+          in: query
+          style: deepObject
+          schema:
+            type: object
+            additionalProperties: {type: string}
+        - name: anything
+          in: query
+          schema: true
+        - name: owner
+          in: query
+          style: deepObject
+          schema:
+            type: [object, 'null']
+            properties:
+              name: {type: string, maxLength: 3}
+        - $ref: '#/components/parameters/Trace'
+      responses:
+        '200':
+          description: The item.
+          headers:
+            X-Count:
+              schema: {type: integer, minimum: 0}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Item'}
+components:
+  parameters:
+    Trace:
+      name: X-Trace
+      in: header
+      schema: {type: string, pattern: '^[a-f0-9]+$'}
+  schemas:
+    Color:
+      type: string
+      enum: [red, green]
+    Code:
+      type: string
+      maxLength: 4
+    Codes:
+      type: array
+      items: {$ref: '#/components/schemas/Code'}
+    Item:
+      type: object
+      properties:
+        code: {$ref: '#/components/schemas/Code'}
+        codes: {$ref: '#/components/schemas/Codes'}

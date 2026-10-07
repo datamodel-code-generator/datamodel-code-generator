@@ -1162,8 +1162,15 @@ render pydantic_v2.BaseModel
     |           "nullable": false,
     |           "type": {
     |             "kind": "surface",
-    |             "value": "int",
-    |             "imports": []
+    |             "value": "models.FieldPetsPetIdGetPathPetIdParameter",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
     |           },
     |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/0",
     |           "is_request": false,
@@ -1212,31 +1219,31 @@ render pydantic_v2.BaseModel
     |               }
     |             ],
     |             "site": "parameter",
-    |             "transport": "fastapi_native",
-    |             "reason": "native_supported",
+    |             "transport": "adapter",
+    |             "reason": "parameter_shape",
     |             "source": null
     |           },
-    |           "native_declaration": {
-    |             "api": "Path",
-    |             "alias": "petId",
-    |             "required": true,
-    |             "default_kind": "required",
-    |             "kwargs": {},
-    |             "media_type": null
-    |           }
+    |           "native_declaration": null
     |         },
     |         {
     |           "python_name": "limit",
     |           "wire_name": "limit",
     |           "location": "query",
     |           "required": false,
-    |           "default_present": true,
-    |           "default_value": 10,
+    |           "default_present": false,
+    |           "default_value": null,
     |           "nullable": false,
     |           "type": {
     |             "kind": "surface",
-    |             "value": "int",
-    |             "imports": []
+    |             "value": "int | Unset",
+    |             "imports": [
+    |               {
+    |                 "module": "server._runtime.model_codecs.unset",
+    |                 "name": "Unset",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
     |           },
     |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/1",
     |           "is_request": false,
@@ -1293,7 +1300,7 @@ render pydantic_v2.BaseModel
     |             "api": "Query",
     |             "alias": "limit",
     |             "required": false,
-    |             "default_kind": "literal",
+    |             "default_kind": "factory",
     |             "kwargs": {},
     |             "media_type": null
     |           }
@@ -1468,8 +1475,14 @@ render pydantic_v2.BaseModel
     |           "nullable": false,
     |           "type": {
     |             "kind": "surface",
-    |             "value": "str | Unset",
+    |             "value": "models.FieldPetsPetIdGetCookieSessionParameter | Unset",
     |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               },
     |               {
     |                 "module": "server._runtime.model_codecs.unset",
     |                 "name": "Unset",
@@ -1526,7 +1539,7 @@ render pydantic_v2.BaseModel
     |             ],
     |             "site": "parameter",
     |             "transport": "adapter",
-    |             "reason": "parameter_style",
+    |             "reason": "parameter_shape",
     |             "source": null
     |           },
     |           "native_declaration": null
@@ -1668,8 +1681,8 @@ render pydantic_v2.BaseModel
     |             }
     |           ],
     |           "site": "parameter",
-    |           "transport": "fastapi_native",
-    |           "reason": "native_supported",
+    |           "transport": "adapter",
+    |           "reason": "parameter_shape",
     |           "source": null
     |         },
     |         {
@@ -1813,7 +1826,7 @@ render pydantic_v2.BaseModel
     |           ],
     |           "site": "parameter",
     |           "transport": "adapter",
-    |           "reason": "parameter_style",
+    |           "reason": "parameter_shape",
     |           "source": null
     |         },
     |         {
@@ -1913,35 +1926,35 @@ render pydantic_v2.BaseModel
     |     },
     |     {
     |       "binding_id": "models:FieldPetsPetIdGetPathPetIdParameter",
-    |       "kind": "root",
+    |       "kind": "alias",
     |       "module": "models",
     |       "name": "FieldPetsPetIdGetPathPetIdParameter",
     |       "path": "models.py"
     |     },
     |     {
     |       "binding_id": "models:FieldPetsPetIdGetQueryLimitParameter",
-    |       "kind": "root",
+    |       "kind": "alias",
     |       "module": "models",
     |       "name": "FieldPetsPetIdGetQueryLimitParameter",
     |       "path": "models.py"
     |     },
     |     {
     |       "binding_id": "models:FieldPetsPetIdGetHeaderXTraceParameter",
-    |       "kind": "root",
+    |       "kind": "alias",
     |       "module": "models",
     |       "name": "FieldPetsPetIdGetHeaderXTraceParameter",
     |       "path": "models.py"
     |     },
     |     {
     |       "binding_id": "models:FieldPetsPetIdGetQueryAfterParameter",
-    |       "kind": "root",
+    |       "kind": "alias",
     |       "module": "models",
     |       "name": "FieldPetsPetIdGetQueryAfterParameter",
     |       "path": "models.py"
     |     },
     |     {
     |       "binding_id": "models:FieldPetsPetIdGetCookieSessionParameter",
-    |       "kind": "root",
+    |       "kind": "alias",
     |       "module": "models",
     |       "name": "FieldPetsPetIdGetCookieSessionParameter",
     |       "path": "models.py"

@@ -10403,3 +10403,43 @@ def test_numeric_union_preserves_nullable_warning(output_file: Path, entrypoint:
                 expected_file="type_union_nullable.py",
             )
     assert_warnings_contain(recorded, "nullable keyword is deprecated")
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("pydantic_v2.py", ["--output-model-type", "pydantic_v2.BaseModel"]),
+        (
+            "pydantic_v2_type_statement.py",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--target-python-version", "3.12"],
+        ),
+        ("pydantic_v2_collapse.py", ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models"]),
+        (
+            "pydantic_v2_root_model_type_alias.py",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-root-model-type-alias"],
+        ),
+        ("pydantic_v2_use_type_alias.py", ["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass"]),
+        ("dataclass.py", ["--output-model-type", "dataclasses.dataclass"]),
+        ("typed_dict.py", ["--output-model-type", "typing.TypedDict"]),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_openapi_api_scope_parameter_aliases(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Emit primitive and array API scope parameters in the alias form of --use-type-alias."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "api_scope_parameter_aliases.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=f"api_scope_parameter_aliases/{expected_file}",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "api",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *extra_args,
+        ],
+    )

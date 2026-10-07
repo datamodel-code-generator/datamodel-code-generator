@@ -8,6 +8,7 @@ from enum import StrEnum
 from typing import Dict
 
 from pydantic import BaseModel, ConfigDict, RootModel, constr
+from typing_extensions import TypeAliasType
 
 
 class Kind(StrEnum):
@@ -62,28 +63,23 @@ class Pet(BaseModel):
     tag: str | None = None
 
 
-class FieldPetsPostQueryTagParameter(RootModel[str]):
-    root: str
+FieldPetsPostQueryTagParameter = TypeAliasType("FieldPetsPostQueryTagParameter", str)
 
 
-class FieldPetsPetIdPatchPathPetIdParameter(RootModel[int]):
-    root: int
+FieldPetsPetIdPatchPathPetIdParameter = TypeAliasType("FieldPetsPetIdPatchPathPetIdParameter", int)
 
 
-class FieldPetsPetIdVisitsPostPathPetIdParameter(RootModel[int]):
-    root: int
+FieldPetsPetIdVisitsPostPathPetIdParameter = TypeAliasType("FieldPetsPetIdVisitsPostPathPetIdParameter", int)
 
 
-class FieldPetsPetIdOwnerPutPathPetIdParameter(RootModel[int]):
-    root: int
+FieldPetsPetIdOwnerPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdOwnerPutPathPetIdParameter", int)
 
 
 class FieldOwnersPostRequest(RootModel[Owner | None]):
     root: Owner | None
 
 
-class FieldPetsPetIdLabelsPutPathPetIdParameter(RootModel[int]):
-    root: int
+FieldPetsPetIdLabelsPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdLabelsPutPathPetIdParameter", int)
 
 
 class FieldSearchPostRequest(RootModel[ByName | ByKind]):
@@ -94,8 +90,7 @@ class FieldSearchPostResponse(RootModel[list[Pet]]):
     root: list[Pet]
 
 
-class FieldPetsPetIdPhotoPutPathPetIdParameter(RootModel[int]):
-    root: int
+FieldPetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdPhotoPutPathPetIdParameter", int)
 
 
 class FieldPetsPetIdPhotoPutRequest(BaseModel):
@@ -103,8 +98,7 @@ class FieldPetsPetIdPhotoPutRequest(BaseModel):
     caption: str | None = None
 
 
-class FieldPetsPetIdRecordsPutPathPetIdParameter(RootModel[int]):
-    root: int
+FieldPetsPetIdRecordsPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdRecordsPutPathPetIdParameter", int)
 
 
 class NewPet(BaseModel):

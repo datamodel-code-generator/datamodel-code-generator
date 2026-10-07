@@ -55,7 +55,16 @@ models indefinitely.
 
 Parameters generate individual schema types, including path parameters regardless of
 `--include-path-parameters`. The legacy aggregate parameter wrapper is specific to the
-`parameters` scope without `api`. Adding other scopes alongside `api` does not repeat
+`parameters` scope without `api`.
+
+Primitive and array parameter schemas are emitted as type aliases, even without
+`--use-type-alias`, in the same form that option produces for the target Python version
+and output model type. For `pydantic_v2.BaseModel` this means `type LimitParameter = int`
+on Python 3.12+ (or `TypeAliasType` below 3.12) instead of a `RootModel` wrapper.
+Constraints use the `Annotated` form, such as `Annotated[int, Field(..., ge=1, le=100)]`, and,
+as with `--use-type-alias`, schema defaults are not emitted on the alias. Object parameters
+remain models, and component schemas, headers, and the other scopes keep their usual
+representation. Adding other scopes alongside `api` does not repeat
 schema generation. `--openapi-include-paths` filters root paths and their reachable
 callbacks; webhooks and standalone components retain their declarations.
 

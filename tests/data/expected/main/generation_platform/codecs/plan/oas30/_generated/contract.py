@@ -40,6 +40,7 @@ class GetItems:
     class Parameters:
         """The adapter parameters of get__items."""
 
+        limit: plan_oas30_models.FieldItemsGetQueryLimitParameter
         flags: list[bool] | Unset
         page: plan_oas30_models.FieldItemsGetQueryPageParameter | Unset
         x_id: list[int]
@@ -47,6 +48,19 @@ class GetItems:
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
+            ParameterArgument(
+                name='limit',
+                plan=ParameterPlan(
+                    location='query',
+                    name='limit',
+                    style='form',
+                    explode=True,
+                    required=True,
+                    kind='integer',
+                    reserved_names=('flags', 'page', 'q'),
+                ),
+                adapter=TypeAdapter(plan_oas30_models.FieldItemsGetQueryLimitParameter),
+            ),
             ParameterArgument(
                 name='flags',
                 plan=ParameterPlan(

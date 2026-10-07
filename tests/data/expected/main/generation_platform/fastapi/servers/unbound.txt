@@ -9,7 +9,7 @@ service UntaggedService without its methods: TypeError
   get_value(id=42, at=datetime.datetime(2026, 10, 2, 12, 34, 56, tzinfo=TzInfo(0)), tags=['alpha', 'two words'], x_label=UNSET)
 < 200 application/json {"id":42}
 > GET /values/invalid
-< 422 application/json [{"type": "int_parsing", "loc": ["path", "id"]}]
+< 422 application/json [{"type": "type_error", "loc": ["path", "id"]}]
 > GET /values/0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "id"]}]
 > GET /values/7?at=invalid
