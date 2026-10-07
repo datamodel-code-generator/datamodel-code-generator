@@ -1083,6 +1083,7 @@ class BaseModel(BaseModelBase):
     _TYPED_EXTRA_DICT_KEY_CAPABILITY = staticmethod(_supports_pydantic_typed_extra_dict_key)
     TYPED_EXTRA_FIELD_NAME: ClassVar[str] = "__pydantic_extra__"
     TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
+    _config_follows_fields: bool = False
     # In Pydantic 2.11+, populate_by_name is deprecated in favor of validate_by_name + validate_by_alias
     # Default to V2 compatible (populate_by_name) unless target_pydantic_version is specified
     _CONFIG_ATTRIBUTES_V2: ClassVar[list[ConfigAttribute]] = [
@@ -1347,9 +1348,35 @@ class BaseModel(BaseModelBase):
         return 1 if cls._has_local_generated_generic_base_class(models) else 0
 
     def invalidate_render_caches(self) -> None:
-        """Clear the compact module plan with the model's other render caches."""
+        """Clear the compact module plan with the model's other render caches.
+
+        Field types replaced after ``__init__``, such as collapsed root models, also refresh the config they derive.
+        """
         super().invalidate_render_caches()
         self.__dict__.pop(self._SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY, None)
+        if self._config_follows_fields:
+            self._require_python_regex_engine()
+
+    def _require_python_regex_engine(self) -> None:
+        """Select Python's regex engine for lookaround patterns unless the config already chose an engine."""
+        if not has_lookaround_pattern(self.fields):
+            return
+        config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
+        if config_parameters.get("regex_engine") is None:
+            config_parameters["regex_engine"] = '"python-re"'
+            self._set_config(config_parameters)
+
+    def _set_config(self, config_parameters: dict[str, Any]) -> None:
+        """Store the ConfigDict rendered as ``model_config``."""
+        from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
+
+        self.extra_template_data["config"] = ConfigDict.model_validate(config_parameters)
+        self._set_internal_template_data(
+            _CONFIG_ITEMS_TEMPLATE_DATA_KEY,
+            _safe_config_dict_items(self.extra_template_data["config"]),
+        )
+        if IMPORT_CONFIG_DICT not in self._additional_imports:
+            self._additional_imports.append(IMPORT_CONFIG_DICT)
 
     @classmethod
     def invalidate_module_code_cache(cls, models: list[DataModel]) -> None:
@@ -1841,20 +1868,14 @@ class BaseModel(BaseModelBase):
             config_parameters["json_schema_extra"] = {**existing, **model_extras}
 
         if config_parameters:
-            from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
-
-            self.extra_template_data["config"] = ConfigDict.model_validate(config_parameters)
-            self._set_internal_template_data(
-                _CONFIG_ITEMS_TEMPLATE_DATA_KEY,
-                _safe_config_dict_items(self.extra_template_data["config"]),
-            )
-            self._additional_imports.append(IMPORT_CONFIG_DICT)
+            self._set_config(config_parameters)
         else:
             self.extra_template_data.pop("config", None)
             self._pop_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY)
 
         self._process_schema_runtime_validation()
         self._process_validators()
+        self._config_follows_fields = True
 
     def _get_schema_runtime_validation(self) -> SchemaRuntimeValidation | None:
         internal_runtime_validation = self._internal_template_data.get("schema_runtime_validation")

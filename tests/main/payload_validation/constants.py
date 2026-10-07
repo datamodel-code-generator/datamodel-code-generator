@@ -257,9 +257,14 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         case_id: {PayloadBackend.PYDANTIC_V2: ("--use-missing-sentinel",)}
         for case_id in MISSING_SENTINEL_PAYLOAD_CASE_IDS
     },
-    "jsonschema/collapse_root_models_property_names_reference.json": dict.fromkeys(
-        PayloadBackend, ("--collapse-root-models",)
-    ),
+    **{
+        f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--collapse-root-models",))
+        for name in (
+            "collapse_root_models_lookaround",
+            "collapse_root_models_lookaround_root",
+            "collapse_root_models_property_names_reference",
+        )
+    },
     "jsonschema/msgspec_boolean_enum_literal.json": {
         PayloadBackend.MSGSPEC: ("--enum-field-as-literal", "all"),
     },
