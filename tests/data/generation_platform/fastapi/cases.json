@@ -110,8 +110,10 @@
   },
   "encoding": {
     "input": "server-parameters.yaml",
+    "model": {
+      "encoding": "latin-1"
+    },
     "config": {
-      "encoding": "latin-1",
       "package_mode": "standalone",
       "package_version": "1.0.0",
       "distribution_name": "menu-server",

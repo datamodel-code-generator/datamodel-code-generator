@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from datamodel_code_generator import get_version
 from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_generated_modules_output, assert_output
 from tests.data.python.client_generation import (
@@ -15,9 +16,12 @@ from tests.data.python.client_generation import (
     client_input_report,
     client_model_parity_report,
     client_render,
+    generate_client,
 )
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client"
+DATA = Path(__file__).parents[1] / "data"
+SOURCE = DATA / "generation_platform" / "client"
 
 
 @pytest.mark.parametrize(
@@ -359,3 +363,30 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
 def test_client_config(case: str, tmp_path: Path) -> None:
     """Construct the client settings from Python values or a target file, reporting every invalid value."""
     assert_output(client_config_report(case, tmp_path), EXPECTED / "configs" / f"{case}.txt")
+
+
+@pytest.mark.parametrize(
+    ("case", "options"),
+    [
+        (
+            "header-quotes",
+            {
+                "custom_file_header_path": DATA / "custom_file_header_with_docstring.txt",
+                "custom_file_header_mode": "prepend",
+                "enable_version_header": True,
+                "use_double_quotes": True,
+            },
+        ),
+        ("encoding", {"encoding": "latin-1", "custom_file_header": "# -*- coding: latin-1 -*-\n# Café"}),
+        ("formatters", {"formatters": ["ruff-format"]}),
+    ],
+)
+def test_client_output_options(case: str, options: dict[str, object], tmp_path: Path) -> None:
+    """Head, format, and encode the client files with the model output options, exactly like the models."""
+    generate_client(SOURCE / "pets.yaml", tmp_path, "client", "pydantic_v2.BaseModel", model=options)
+    encoding = str(options.get("encoding", "utf-8"))
+    text = (tmp_path / "client" / "resources" / "pets" / "__init__.py").read_bytes().decode(encoding)
+    assert_output(
+        text.replace(f"#   version:   {get_version()}", "#   version:   0.0.0"),
+        EXPECTED / "output-options" / f"{case}.py",
+    )

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from datamodel_code_generator import get_version
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_directory_content, assert_output, create_assert_file_content, freeze_time
 from tests.main.conftest import TIMESTAMP, run_main_and_assert, run_main_with_args
@@ -320,6 +321,41 @@ def test_fastapi_cli_models_as_given(
             assert_func=assert_file_content,
             expected_file=expected,
         )
+
+
+@pytest.mark.parametrize(
+    ("case", "options"),
+    [
+        (
+            "header-quotes",
+            [
+                *("--custom-file-header-path", str(DATA / "custom_file_header.txt")),
+                *("--custom-file-header-mode", "prepend", "--enable-version-header", "--use-double-quotes"),
+            ],
+        ),
+        ("encoding", ["--encoding", "latin-1", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"]),
+        ("formatters", ["--formatters", "ruff-format"]),
+    ],
+)
+def test_fastapi_cli_output_options(
+    case: str, options: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Head, format, and encode the server files with the model output options, exactly like the models."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(*options),
+        copy_files=_inputs(tmp_path),
+        skip_code_validation="--encoding" in options,
+    )
+    encoding = options[options.index("--encoding") + 1] if "--encoding" in options else "utf-8"
+    text = (tmp_path / "server" / "routers" / "store.py").read_bytes().decode(encoding)
+    assert_output(
+        text.replace(f"#   version:   {get_version()}", "#   version:   0.0.0"),
+        EXPECTED / "cli" / "output-options" / f"{case}.py",
+    )
 
 
 @pytest.mark.parametrize(
