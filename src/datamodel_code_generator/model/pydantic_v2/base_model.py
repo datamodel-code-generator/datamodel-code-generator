@@ -552,6 +552,12 @@ class DataModelField(_PydanticBaseDataModelField):
             values["examples"] = [values.pop("example")]
         return values
 
+    def invalidate_semantic_caches(self, *, invalidate_parent: bool = True) -> None:
+        """Clear field caches and let a parent BaseModel refresh the config derived from this field."""
+        super().invalidate_semantic_caches(invalidate_parent=invalidate_parent)
+        if isinstance(parent := self.parent, BaseModel):
+            parent.refresh_field_config(self)
+
     def process_const(self) -> None:
         """Process const field constraint using literal type."""
         self._process_const_as_literal()
@@ -1348,23 +1354,24 @@ class BaseModel(BaseModelBase):
         return 1 if cls._has_local_generated_generic_base_class(models) else 0
 
     def invalidate_render_caches(self) -> None:
-        """Clear the compact module plan with the model's other render caches.
-
-        Field types replaced after ``__init__``, such as collapsed root models, also refresh the config they derive.
-        """
+        """Clear the compact module plan with the model's other render caches."""
         super().invalidate_render_caches()
         self.__dict__.pop(self._SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY, None)
-        if self._config_follows_fields:
-            self._require_python_regex_engine()
 
-    def _require_python_regex_engine(self) -> None:
-        """Select Python's regex engine for lookaround patterns unless the config already chose an engine."""
-        if not has_lookaround_pattern(self.fields):
+    def refresh_field_config(self, field: DataModelFieldBase) -> None:
+        """Refresh the config derived from a field whose type changed after ``__init__``.
+
+        Collapsed root models inline their patterns, so a lookaround pattern selects Python's regex engine
+        unless the config already chose one.
+        """
+        if not self._config_follows_fields or not has_lookaround_pattern([field]):
             return
         config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
-        if config_parameters.get("regex_engine") is None:
-            config_parameters["regex_engine"] = '"python-re"'
-            self._set_config(config_parameters)
+        if config_parameters.get("regex_engine") is not None:
+            return
+        config_parameters["regex_engine"] = '"python-re"'
+        self._set_config(config_parameters)
+        self.invalidate_render_caches()
 
     def _set_config(self, config_parameters: dict[str, Any]) -> None:
         """Store the ConfigDict rendered as ``model_config``."""
