@@ -199,9 +199,10 @@ show server/_runtime/model_codecs/unset.py
   | #   filename:  api.yaml
   | #   timestamp: 2026-09-25T12:00:00+00:00
   | 
+  | from __future__ import annotations
+  | 
   | """The single HTTP omission marker owned by one generated package runtime."""
   | 
-  | from __future__ import annotations
   | 
   | from enum import Enum
   | from typing import Final, Literal

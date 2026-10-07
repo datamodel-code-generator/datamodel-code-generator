@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -383,10 +384,30 @@ def test_client_config(case: str, tmp_path: Path) -> None:
 )
 def test_client_output_options(case: str, options: dict[str, object], tmp_path: Path) -> None:
     """Head, format, and encode the client files with the model output options, exactly like the models."""
-    generate_client(SOURCE / "pets.yaml", tmp_path, "client", "pydantic_v2.BaseModel", model=options)
+    source = shutil.copy2(SOURCE / "pets.yaml", tmp_path / "pets.yaml")
+    generate_client(source, tmp_path, "client", "pydantic_v2.BaseModel", model=options)
     encoding = str(options.get("encoding", "utf-8"))
     text = (tmp_path / "client" / "resources" / "pets" / "__init__.py").read_bytes().decode(encoding)
     assert_output(
         text.replace(f"#   version:   {get_version()}", "#   version:   0.0.0"),
         EXPECTED / "output-options" / f"{case}.py",
     )
+
+
+@pytest.mark.parametrize("formatters", [None, ["ruff-check", "ruff-format"]], ids=["default", "ruff-isort-rules"])
+def test_client_regenerate_unchanged(formatters: list[str] | None, tmp_path: Path) -> None:
+    """Write the same client files again in a copy of a fresh generation, though its models were staged at first."""
+    generated, copy = tmp_path / "generated", tmp_path / "copy"
+    generated.mkdir()
+    shutil.copy2(SOURCE / "pets.yaml", generated / "pets.yaml")
+    (generated / "pyproject.toml").write_text('[tool.ruff.lint]\nselect = ["I"]\n', encoding="utf-8")
+    model = {"formatters": formatters}
+    generate_client(generated / "pets.yaml", generated, "client", "pydantic_v2.BaseModel", model=model)
+    shutil.copytree(generated, copy)
+    generate_client(copy / "pets.yaml", copy, "client", "pydantic_v2.BaseModel", model=model)
+    changed = sorted(
+        path.relative_to(copy).as_posix()
+        for path in copy.rglob("*.py")
+        if path.read_bytes() != (generated / path.relative_to(copy)).read_bytes()
+    )
+    assert_output(f"changed {changed}\n", EXPECTED / "regenerated-unchanged.txt")

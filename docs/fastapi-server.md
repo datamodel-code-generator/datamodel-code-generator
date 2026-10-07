@@ -108,8 +108,9 @@ object with the right methods works, and type checkers check it where you pass i
   `--formatters` (including its default and warning), `--custom-formatters` and `--custom-formatters-kwargs`,
   `--custom-file-header`, `--custom-file-header-path` and `--custom-file-header-mode`, `--disable-timestamp`,
   `--enable-version-header`, `--enable-command-header`, `--use-double-quotes`, `--builtin-format-line-length`,
-  `--encoding`, and the formatter settings found from `--output`. The target settings have no output options of
-  their own.
+  `--encoding` (for the Python files; the other files are UTF-8), and the formatter settings found from `--output`.
+  The target settings have no output options of their own. `--use-type-checking-imports` does not apply to the
+  server files, because FastAPI reads their annotations at run time.
 - Custom templates and custom formatters must keep the class and field names of the models: the server binds each
   operation to the names in the generated model graph and does not read the rendered model source.
 - `--output` names the model file or package, and `model_package` is its import path.
