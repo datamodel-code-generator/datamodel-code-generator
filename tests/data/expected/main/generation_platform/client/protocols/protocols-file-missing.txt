@@ -1,4 +1,4 @@
 # protocols-file-missing
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CONFIG_VALUE config protocols: The protocol configuration file cannot be read
+  E_CONFIG_VALUE config protocols: Invalid JSON for protocols: Expecting value: line 1 column 1 (char 0)

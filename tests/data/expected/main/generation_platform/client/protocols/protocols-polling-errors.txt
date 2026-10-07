@@ -1,21 +1,21 @@
 # protocols-polling-errors
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CONFIG_VALUE config protocols.helpers['statuses.empty'].accepted_statuses: protocols.helpers['statuses.empty'].accepted_statuses must be a nonempty list
-  E_CONFIG_VALUE config protocols.helpers['statuses.range'].accepted_statuses[0]: protocols.helpers['statuses.range'].accepted_statuses[0] must be a status from 100 to 599
-  E_CONFIG_VALUE config protocols.helpers['statuses.range'].accepted_statuses[1]: protocols.helpers['statuses.range'].accepted_statuses[1] must be a status from 100 to 599
-  E_CONFIG_VALUE config protocols.helpers['statuses.boolean'].accepted_statuses[0]: protocols.helpers['statuses.boolean'].accepted_statuses[0] must be a status from 100 to 599
-  E_CONFIG_VALUE config protocols.helpers['statuses.repeated'].accepted_statuses[1]: protocols.helpers['statuses.repeated'].accepted_statuses[1] repeats a status
-  E_CONFIG_VALUE config protocols.helpers['bindings.missing'].bindings: protocols.helpers['bindings.missing'] needs 'bindings'
-  E_CONFIG_VALUE config protocols.helpers['pending.empty'].pending: protocols.helpers['pending.empty'].pending must be a nonempty list
-  E_CONFIG_VALUE config protocols.helpers['states.repeated'].pending[1]: protocols.helpers['states.repeated'].pending[1] repeats a state
-  E_CONFIG_CONFLICT config protocols.helpers['states.shared'].succeeded[1]: protocols.helpers['states.shared'].succeeded[1] is a state protocols.helpers['states.shared'].pending also lists
-  E_CONFIG_VALUE config protocols.helpers['failed.literal'].failed[0]: protocols.helpers['failed.literal'].failed[0] must be a JSON value
-  E_CONFIG_VALUE config protocols.helpers['result.inline'].result.schema: protocols.helpers['result.inline'].result needs 'schema'
-  E_CONFIG_VALUE config protocols.helpers['result.kind'].result.kind: protocols.helpers['result.kind'].result.kind must be 'inline', 'operation' or 'none'
-  E_CONFIG_VALUE config protocols.helpers['interval.zero'].interval.seconds: protocols.helpers['interval.zero'].interval.seconds must be positive finite seconds
-  E_CONFIG_VALUE config protocols.helpers['interval.text'].interval.seconds: protocols.helpers['interval.text'].interval.seconds must be positive finite seconds
-  E_CONFIG_VALUE config protocols.helpers['interval.header'].interval.retry_after_header: protocols.helpers['interval.header'].interval.retry_after_header must be a header name
-  E_CONFIG_CONFLICT config protocols.helpers['immediate.shared'].immediate_result.statuses: protocols.helpers['immediate.shared'].immediate_result.statuses lists the accepted statuses [202]
-  E_CONFIG_VALUE config protocols.helpers['cancel.missing'].remote_cancel.operation: protocols.helpers['cancel.missing'].remote_cancel needs 'operation'
-  E_CONFIG_VALUE config protocols.helpers['expires.source'].expires_at.from: protocols.helpers['expires.source'].expires_at.from must be 'body', 'header' or 'status'
+  E_CONFIG_VALUE config protocols['statuses.empty'].accepted_statuses: protocols['statuses.empty'].accepted_statuses must be a nonempty list
+  E_CONFIG_VALUE config protocols['statuses.range'].accepted_statuses[0]: protocols['statuses.range'].accepted_statuses[0] must be a status from 100 to 599
+  E_CONFIG_VALUE config protocols['statuses.range'].accepted_statuses[1]: protocols['statuses.range'].accepted_statuses[1] must be a status from 100 to 599
+  E_CONFIG_VALUE config protocols['statuses.boolean'].accepted_statuses[0]: protocols['statuses.boolean'].accepted_statuses[0] must be a status from 100 to 599
+  E_CONFIG_VALUE config protocols['statuses.repeated'].accepted_statuses[1]: protocols['statuses.repeated'].accepted_statuses[1] repeats a status
+  E_CONFIG_VALUE config protocols['bindings.missing'].bindings: protocols['bindings.missing'] needs 'bindings'
+  E_CONFIG_VALUE config protocols['pending.empty'].pending: protocols['pending.empty'].pending must be a nonempty list
+  E_CONFIG_VALUE config protocols['states.repeated'].pending[1]: protocols['states.repeated'].pending[1] repeats a state
+  E_CONFIG_CONFLICT config protocols['states.shared'].succeeded[1]: protocols['states.shared'].succeeded[1] is a state protocols['states.shared'].pending also lists
+  E_CONFIG_VALUE config protocols['failed.literal'].failed[0]: protocols['failed.literal'].failed[0] must be a JSON value
+  E_CONFIG_VALUE config protocols['result.inline'].result.schema: protocols['result.inline'].result needs 'schema'
+  E_CONFIG_VALUE config protocols['result.kind'].result.kind: protocols['result.kind'].result.kind must be 'inline', 'operation' or 'none'
+  E_CONFIG_VALUE config protocols['interval.zero'].interval.seconds: protocols['interval.zero'].interval.seconds must be positive finite seconds
+  E_CONFIG_VALUE config protocols['interval.text'].interval.seconds: protocols['interval.text'].interval.seconds must be positive finite seconds
+  E_CONFIG_VALUE config protocols['interval.header'].interval.retry_after_header: protocols['interval.header'].interval.retry_after_header must be a header name
+  E_CONFIG_CONFLICT config protocols['immediate.shared'].immediate_result.statuses: protocols['immediate.shared'].immediate_result.statuses lists the accepted statuses [202]
+  E_CONFIG_VALUE config protocols['cancel.missing'].remote_cancel.operation: protocols['cancel.missing'].remote_cancel needs 'operation'
+  E_CONFIG_VALUE config protocols['expires.source'].expires_at.from: protocols['expires.source'].expires_at.from must be 'body', 'header' or 'status'

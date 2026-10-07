@@ -1,0 +1,57 @@
+{
+  "stripe.event": {
+    "kind": "webhook",
+    "event_schema": {
+      "discriminator": {"from": "body", "pointer": "/type"},
+      "mapping": {
+        "invoice.paid": {"pointer": "/components/schemas/Invoice"},
+        "invoice.updated": {"pointer": "/components/schemas/Invoice"},
+        "customer.created": {"pointer": "/components/schemas/Customer"}
+      }
+    },
+    "signature": {"kind": "adapter", "timestamp": "required", "delivery_id": "none"}
+  },
+  "adapted.message": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "adapter", "timestamp": "required", "delivery_id": "required"}
+  },
+  "adapted.plain": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "signature": {"kind": "adapter", "timestamp": "none", "delivery_id": "none"}
+  },
+  "mapped.event": {
+    "kind": "webhook",
+    "event_schema": {
+      "discriminator": {"from": "body", "pointer": "/type"},
+      "mapping": {
+        "invoice.paid": {"pointer": "/components/schemas/Invoice"},
+        "customer.created": {"pointer": "/components/schemas/Customer"}
+      }
+    },
+    "signature": {
+      "kind": "body_hmac",
+      "header": "X-Signature",
+      "algorithm": "hmac-sha256",
+      "encoding": "hex",
+      "prefix": ""
+    }
+  },
+  "unsigned.event": {
+    "kind": "webhook",
+    "event_schema": {
+      "discriminator": {"from": "body", "pointer": "/meta/type"},
+      "mapping": {
+        "invoice.paid": {"pointer": "/components/schemas/Invoice"},
+        "customer.created": {"pointer": "/components/schemas/Customer"}
+      }
+    },
+    "signature": {"kind": "none"}
+  },
+  "unsigned.message": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/webhooks/message/post/requestBody/content/application~1json/schema"},
+    "signature": {"kind": "none"}
+  }
+}

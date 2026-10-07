@@ -1,0 +1,23 @@
+{
+  "rfc8032.ed25519": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Push"},
+    "signature": {"kind": "ed25519", "header": "X-Signature", "encoding": "hex", "prefix": ""}
+  },
+  "wycheproof.rsa": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Count"},
+    "signature": {"kind": "rsa-pss-sha256", "header": "X-Signature", "encoding": "hex", "prefix": ""}
+  },
+  "github.push": {
+    "kind": "webhook",
+    "event_schema": {"pointer": "/components/schemas/Push"},
+    "signature": {
+      "kind": "body_hmac",
+      "header": "X-Hub-Signature-256",
+      "algorithm": "hmac-sha256",
+      "encoding": "hex",
+      "prefix": "sha256="
+    }
+  }
+}
