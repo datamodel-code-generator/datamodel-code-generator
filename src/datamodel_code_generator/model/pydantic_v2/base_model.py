@@ -51,7 +51,10 @@ from datamodel_code_generator.model.pydantic_base import Constraints as _Constra
 from datamodel_code_generator.model.pydantic_base import (
     DataModelField as _PydanticBaseDataModelField,
 )
-from datamodel_code_generator.model.pydantic_v2._annotated_types import AnnotatedConstraintDataType
+from datamodel_code_generator.model.pydantic_v2._annotated_types import (
+    AnnotatedConstraintDataType,
+    annotated_constraint_metadata,
+)
 from datamodel_code_generator.model.pydantic_v2._config import (
     ConfigAttribute,
     build_base_config_parameters,
@@ -75,6 +78,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_FIELD_VALIDATOR,
     IMPORT_MISSING,
     IMPORT_MODEL_VALIDATOR,
+    IMPORT_MULTIPLE_OF,
     IMPORT_STRING_CONSTRAINTS,
     IMPORT_TYPE_ADAPTER,
     IMPORT_VALIDATION_INFO,
@@ -117,12 +121,12 @@ if TYPE_CHECKING:
 
 
 _CONSTRAINED_STRING_IMPORTS = frozenset({IMPORT_CONSTR, IMPORT_STRING_CONSTRAINTS, IMPORT_FIELD})
-_ANNOTATED_CONSTRAINT_BASES: dict[Import | None, str] = {
-    IMPORT_CONSTR: "str",
-    IMPORT_CONINT: "int",
-    IMPORT_CONFLOAT: "float",
-    IMPORT_CONDECIMAL: "Decimal",
-    IMPORT_CONBYTES: "bytes",
+_ANNOTATED_CONSTRAINT_BASES: dict[tuple[str | None, str], str] = {
+    (IMPORT_CONSTR.from_, IMPORT_CONSTR.import_): "str",
+    (IMPORT_CONINT.from_, IMPORT_CONINT.import_): "int",
+    (IMPORT_CONFLOAT.from_, IMPORT_CONFLOAT.import_): "float",
+    (IMPORT_CONDECIMAL.from_, IMPORT_CONDECIMAL.import_): "Decimal",
+    (IMPORT_CONBYTES.from_, IMPORT_CONBYTES.import_): "bytes",
 }
 
 
@@ -551,7 +555,11 @@ def _copy_alias_data_type(data_type: DataType, prepared: dict[str, PythonRuntime
     dict_key = None if data_type.dict_key is None else _copy_alias_data_type(data_type.dict_key, prepared)
     kwargs = data_type.kwargs
     pattern = _compiled_python_pattern(kwargs.get("pattern"), None, prepared) if kwargs else None
-    base = _ANNOTATED_CONSTRAINT_BASES.get(data_type.import_) if data_type.is_func and kwargs else None
+    base = (
+        _ANNOTATED_CONSTRAINT_BASES.get((import_.from_, import_.import_))
+        if (import_ := data_type.import_) is not None and data_type.is_func and kwargs
+        else None
+    )
     if pattern is None and base is None and dict_key is None and not any(nested):
         return None
     runtime_imports = data_type.runtime_expression_imports
@@ -566,7 +574,13 @@ def _copy_alias_data_type(data_type: DataType, prepared: dict[str, PythonRuntime
             "constrained_base": base,
         }
         copied = AnnotatedConstraintDataType.model_construct(**values)
-        runtime_imports = (IMPORT_ANNOTATED, IMPORT_FIELD, *runtime_imports)
+        field_keywords, multiple_of = annotated_constraint_metadata(base, cast("dict[str, Any]", kwargs))
+        annotation_imports = (IMPORT_FIELD,) if field_keywords else ()
+        if multiple_of is not None:
+            annotation_imports = (*annotation_imports, IMPORT_MULTIPLE_OF)
+        if annotation_imports:
+            annotation_imports = (IMPORT_ANNOTATED, *annotation_imports)
+        runtime_imports = (*annotation_imports, *runtime_imports)
     if pattern is not None:
         copied.kwargs = {**cast("dict[str, Any]", kwargs), "pattern": pattern}
         runtime_imports = (*runtime_imports, pattern.import_)

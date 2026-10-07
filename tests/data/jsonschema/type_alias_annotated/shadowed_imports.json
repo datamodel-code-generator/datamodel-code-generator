@@ -1,2 +1,50 @@
-{"title":"Holder","type":"object","properties":{"Decimal":{"type":"string"},"Field":{"type":"string"},"Annotated":{"type":"string"},"compile":{"type":"string"},"d":{"$ref":"#/definitions/D"},"p":{"$ref":"#/definitions/P"}},
- "definitions":{"D":{"type":"number","format":"decimal","multipleOf":0.25,"minimum":0},"P":{"type":"string","pattern":"^(?!x)[a-z]+$","maxLength":3}}}
+{
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "Decimal": {
+      "type": "string"
+    },
+    "Field": {
+      "type": "string"
+    },
+    "Annotated": {
+      "type": "string"
+    },
+    "compile": {
+      "type": "string"
+    },
+    "d": {
+      "$ref": "#/definitions/D"
+    },
+    "p": {
+      "$ref": "#/definitions/P"
+    },
+    "conint": {
+      "type": "string"
+    },
+    "MultipleOf": {
+      "type": "string"
+    },
+    "i": {
+      "$ref": "#/definitions/I"
+    }
+  },
+  "definitions": {
+    "D": {
+      "type": "number",
+      "format": "decimal",
+      "multipleOf": 0.25,
+      "minimum": 0
+    },
+    "P": {
+      "type": "string",
+      "pattern": "^(?!x)[a-z]+$",
+      "maxLength": 3
+    },
+    "I": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

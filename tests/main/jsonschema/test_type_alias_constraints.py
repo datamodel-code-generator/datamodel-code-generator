@@ -115,7 +115,7 @@ def test_type_alias_constraints_match_con_types(
 
 
 def test_type_alias_constraints_with_shadowed_imports(output_file: Path) -> None:
-    """Alias constraints use the aliased ``Annotated``, ``Field``, ``Decimal``, and ``compile`` imports."""
+    """Alias constraints use aliased annotation imports and drop a shadowed ``con*`` import."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_annotated" / "shadowed_imports.json",
         output_path=output_file,

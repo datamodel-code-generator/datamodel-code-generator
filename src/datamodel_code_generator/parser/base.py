@@ -6331,26 +6331,28 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 ctx.imports.append(import_ for import_ in prepared_imports if import_ not in model_imports[model])
                 model_imports[model] = prepared_imports
 
-    def __prepare_type_alias_fields(self, models: list[DataModel], unused_models: list[DataModel]) -> None:
+    def __prepare_type_alias_fields(self, contexts: list[ModuleContext], unused_models: list[DataModel]) -> None:
         """Prepare alias bodies once every module has collapsed its roots.
 
         A type alias has no model config to select Python's regex engine, so its patterns carry it,
         and its constraints use ``Annotated`` because type checkers reject ``con*`` calls in aliases.
+        Module imports drop the replaced ``con*`` imports; finalization adds the annotation imports.
         """
         if (prepare_field := self.data_model_field_type.PREPARE_TYPE_ALIAS_FIELD) is None:
             return
         prepared_patterns: dict[str, PythonRuntimeExpression] = {}
         unused_model_ids = {id(model) for model in unused_models}
         replace_field_type = self.generation_store.replace_field_type
-        for model in models:
-            if (
-                isinstance(model, TypeAliasBase)
-                and id(model) not in unused_model_ids
-                and model.fields
-                and prepare_field(field := model.fields[0], prepared_patterns, replace_field_type)
-            ):
-                field.invalidate_semantic_caches()
-                self._register_runtime_expression()
+        for ctx in contexts:
+            for model in ctx.models:
+                if not isinstance(model, TypeAliasBase) or id(model) in unused_model_ids or not model.fields:
+                    continue
+                previous_imports = model.imports
+                if prepare_field(field := model.fields[0], prepared_patterns, replace_field_type):
+                    field.invalidate_semantic_caches()
+                    current_imports = model.imports
+                    ctx.imports.remove(import_ for import_ in previous_imports if import_ not in current_imports)
+                    self._register_runtime_expression()
 
     def _finalize_modules(  # noqa: PLR0912
         self,
@@ -6362,7 +6364,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Finalize module processing: apply generic base class and remove unused imports."""
         self.__apply_generic_base_class(contexts)
         all_models = [model for ctx in contexts for model in ctx.models]
-        self.__prepare_type_alias_fields(all_models, unused_models)
+        self.__prepare_type_alias_fields(contexts, unused_models)
         self.__mark_set_item_models_hashable(all_models)
         self._finalize_structured_imports(contexts)
         if self.use_default_factory_for_optional_nested_models:

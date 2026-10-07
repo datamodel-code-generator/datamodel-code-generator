@@ -7,6 +7,7 @@ from decimal import Decimal as Decimal_aliased
 from re import compile as compile_aliased
 from typing import Annotated as Annotated_aliased
 
+from annotated_types import MultipleOf as MultipleOf_aliased
 from pydantic import BaseModel
 from pydantic import Field as Field_aliased
 from typing_extensions import TypeAliasType
@@ -15,7 +16,8 @@ D = TypeAliasType(
     "D",
     Annotated_aliased[
         Decimal_aliased,
-        Field_aliased(ge=Decimal_aliased('0'), multiple_of=Decimal_aliased('0.25')),
+        Field_aliased(ge=Decimal_aliased('0')),
+        MultipleOf_aliased(Decimal_aliased('0.25')),
     ],
 )
 
@@ -28,6 +30,9 @@ P = TypeAliasType(
 )
 
 
+I = TypeAliasType("I", Annotated_aliased[int, Field_aliased(ge=1)])
+
+
 class Holder(BaseModel):
     Decimal: str | None = None
     Field: str | None = None
@@ -35,3 +40,6 @@ class Holder(BaseModel):
     compile: str | None = None
     d: D | None = None
     p: P | None = None
+    conint: str | None = None
+    MultipleOf: str | None = None
+    i: I | None = None

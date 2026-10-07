@@ -17,6 +17,15 @@
       "minLength": 2,
       "maxLength": 4
     },
+    "LengthZero": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 3
+    },
+    "Empty": {
+      "type": "string",
+      "maxLength": 0
+    },
     "Hostname": {
       "type": "string",
       "format": "hostname"
@@ -35,6 +44,11 @@
       "type": "integer",
       "multipleOf": 3
     },
+    "IntZero": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 0
+    },
     "FloatRange": {
       "type": "number",
       "minimum": 0.5,
@@ -49,6 +63,11 @@
       "type": "number",
       "multipleOf": 0.5
     },
+    "FloatZero": {
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMaximum": 0.5
+    },
     "DecimalRange": {
       "type": "number",
       "format": "decimal",
@@ -56,11 +75,27 @@
       "maximum": 1,
       "multipleOf": 0.1
     },
+    "DecimalMultiple": {
+      "type": "number",
+      "format": "decimal",
+      "multipleOf": 0.25
+    },
     "Bytes": {
       "type": "string",
       "format": "binary",
       "minLength": 1,
       "maxLength": 3
+    },
+    "BytesZero": {
+      "type": "string",
+      "format": "binary",
+      "minLength": 0,
+      "maxLength": 3
+    },
+    "BytesAny": {
+      "type": "string",
+      "format": "binary",
+      "minLength": 0
     },
     "Items": {
       "type": "array",

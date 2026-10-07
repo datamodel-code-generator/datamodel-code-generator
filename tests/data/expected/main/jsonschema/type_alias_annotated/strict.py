@@ -6,6 +6,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Annotated
 
+from annotated_types import MultipleOf
 from pydantic import BaseModel, Field
 from typing_extensions import TypeAliasType
 
@@ -17,6 +18,14 @@ Pattern = TypeAliasType(
 Length = TypeAliasType(
     "Length", Annotated[str, Field(min_length=2, max_length=4, strict=True)]
 )
+
+
+LengthZero = TypeAliasType(
+    "LengthZero", Annotated[str, Field(min_length=0, max_length=3, strict=True)]
+)
+
+
+Empty = TypeAliasType("Empty", Annotated[str, Field(max_length=0, strict=True)])
 
 
 Hostname = TypeAliasType(
@@ -44,6 +53,9 @@ IntMultiple = TypeAliasType(
 )
 
 
+IntZero = TypeAliasType("IntZero", Annotated[int, Field(ge=0, le=0, strict=True)])
+
+
 FloatRange = TypeAliasType(
     "FloatRange", Annotated[float, Field(ge=0.5, le=9.5, strict=True)]
 )
@@ -59,15 +71,31 @@ FloatMultiple = TypeAliasType(
 )
 
 
+FloatZero = TypeAliasType(
+    "FloatZero", Annotated[float, Field(ge=0.0, lt=0.5, strict=True)]
+)
+
+
 DecimalRange = TypeAliasType(
     "DecimalRange",
     Annotated[
-        Decimal, Field(ge=Decimal('0.1'), le=Decimal('1'), multiple_of=Decimal('0.1'))
+        Decimal, Field(ge=Decimal('0.1'), le=Decimal('1')), MultipleOf(Decimal('0.1'))
     ],
 )
 
 
+DecimalMultiple = TypeAliasType(
+    "DecimalMultiple", Annotated[Decimal, MultipleOf(Decimal('0.25'))]
+)
+
+
 Bytes = TypeAliasType("Bytes", Annotated[bytes, Field(min_length=1, max_length=3)])
+
+
+BytesZero = TypeAliasType("BytesZero", Annotated[bytes, Field(max_length=3)])
+
+
+BytesAny = TypeAliasType("BytesAny", bytes)
 
 
 Items = TypeAliasType("Items", list[Annotated[int, Field(ge=1, strict=True)]])

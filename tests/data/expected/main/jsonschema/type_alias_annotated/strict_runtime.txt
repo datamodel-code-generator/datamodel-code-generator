@@ -202,6 +202,104 @@
       }
     ]
   },
+  "LengthZero": {
+    "schema": {
+      "maxLength": 3,
+      "minLength": 0,
+      "type": "string"
+    },
+    "values": [
+      {
+        "input": "",
+        "python": {
+          "value": "''",
+          "python": "",
+          "json": "\"\""
+        },
+        "json": {
+          "value": "''",
+          "python": "",
+          "json": "\"\""
+        }
+      },
+      {
+        "input": "abc",
+        "python": {
+          "value": "'abc'",
+          "python": "abc",
+          "json": "\"abc\""
+        },
+        "json": {
+          "value": "'abc'",
+          "python": "abc",
+          "json": "\"abc\""
+        }
+      },
+      {
+        "input": "abcd",
+        "python": {
+          "errors": [
+            [
+              "string_too_long",
+              [],
+              "String should have at most 3 characters"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_too_long",
+              [],
+              "String should have at most 3 characters"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "Empty": {
+    "schema": {
+      "maxLength": 0,
+      "type": "string"
+    },
+    "values": [
+      {
+        "input": "",
+        "python": {
+          "value": "''",
+          "python": "",
+          "json": "\"\""
+        },
+        "json": {
+          "value": "''",
+          "python": "",
+          "json": "\"\""
+        }
+      },
+      {
+        "input": "a",
+        "python": {
+          "errors": [
+            [
+              "string_too_long",
+              [],
+              "String should have at most 0 characters"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_too_long",
+              [],
+              "String should have at most 0 characters"
+            ]
+          ]
+        }
+      }
+    ]
+  },
   "Hostname": {
     "schema": {
       "pattern": "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]{0,61}[A-Za-z0-9])$",
@@ -613,6 +711,70 @@
       }
     ]
   },
+  "IntZero": {
+    "schema": {
+      "maximum": 0,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "values": [
+      {
+        "input": 0,
+        "python": {
+          "value": "0",
+          "python": 0,
+          "json": "0"
+        },
+        "json": {
+          "value": "0",
+          "python": 0,
+          "json": "0"
+        }
+      },
+      {
+        "input": -1,
+        "python": {
+          "errors": [
+            [
+              "greater_than_equal",
+              [],
+              "Input should be greater than or equal to 0"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "greater_than_equal",
+              [],
+              "Input should be greater than or equal to 0"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 1,
+        "python": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 0"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 0"
+            ]
+          ]
+        }
+      }
+    ]
+  },
   "FloatRange": {
     "schema": {
       "maximum": 9.5,
@@ -898,6 +1060,83 @@
       }
     ]
   },
+  "FloatZero": {
+    "schema": {
+      "exclusiveMaximum": 0.5,
+      "minimum": 0.0,
+      "type": "number"
+    },
+    "values": [
+      {
+        "input": 0,
+        "python": {
+          "value": "0.0",
+          "python": 0.0,
+          "json": "0.0"
+        },
+        "json": {
+          "value": "0.0",
+          "python": 0.0,
+          "json": "0.0"
+        }
+      },
+      {
+        "input": 0.25,
+        "python": {
+          "value": "0.25",
+          "python": 0.25,
+          "json": "0.25"
+        },
+        "json": {
+          "value": "0.25",
+          "python": 0.25,
+          "json": "0.25"
+        }
+      },
+      {
+        "input": 0.5,
+        "python": {
+          "errors": [
+            [
+              "less_than",
+              [],
+              "Input should be less than 0.5"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "less_than",
+              [],
+              "Input should be less than 0.5"
+            ]
+          ]
+        }
+      },
+      {
+        "input": -0.1,
+        "python": {
+          "errors": [
+            [
+              "greater_than_equal",
+              [],
+              "Input should be greater than or equal to 0"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "greater_than_equal",
+              [],
+              "Input should be greater than or equal to 0"
+            ]
+          ]
+        }
+      }
+    ]
+  },
   "DecimalRange": {
     "schema": {
       "anyOf": [
@@ -1018,6 +1257,69 @@
       }
     ]
   },
+  "DecimalMultiple": {
+    "schema": {
+      "anyOf": [
+        {
+          "multipleOf": 0.25,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        }
+      ]
+    },
+    "values": [
+      {
+        "input": "0.5",
+        "python": {
+          "value": "Decimal('0.5')",
+          "python": "0.5",
+          "json": "\"0.5\""
+        },
+        "json": {
+          "value": "Decimal('0.5')",
+          "python": "0.5",
+          "json": "\"0.5\""
+        }
+      },
+      {
+        "input": "0.3",
+        "python": {
+          "errors": [
+            [
+              "multiple_of",
+              [],
+              "Input should be a multiple of 0.25"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "multiple_of",
+              [],
+              "Input should be a multiple of 0.25"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 1,
+        "python": {
+          "value": "Decimal('1')",
+          "python": "1",
+          "json": "\"1\""
+        },
+        "json": {
+          "value": "Decimal('1')",
+          "python": "1",
+          "json": "\"1\""
+        }
+      }
+    ]
+  },
   "Bytes": {
     "schema": {
       "format": "binary",
@@ -1113,6 +1415,96 @@
               "Input should be a valid bytes"
             ]
           ]
+        }
+      }
+    ]
+  },
+  "BytesZero": {
+    "schema": {
+      "format": "binary",
+      "maxLength": 3,
+      "type": "string"
+    },
+    "values": [
+      {
+        "input": "",
+        "python": {
+          "value": "b''",
+          "python": "",
+          "json": "\"\""
+        },
+        "json": {
+          "value": "b''",
+          "python": "",
+          "json": "\"\""
+        }
+      },
+      {
+        "input": "abc",
+        "python": {
+          "value": "b'abc'",
+          "python": "abc",
+          "json": "\"abc\""
+        },
+        "json": {
+          "value": "b'abc'",
+          "python": "abc",
+          "json": "\"abc\""
+        }
+      },
+      {
+        "input": "abcd",
+        "python": {
+          "errors": [
+            [
+              "bytes_too_long",
+              [],
+              "Data should have at most 3 bytes"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "bytes_too_long",
+              [],
+              "Data should have at most 3 bytes"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "BytesAny": {
+    "schema": {
+      "format": "binary",
+      "type": "string"
+    },
+    "values": [
+      {
+        "input": "",
+        "python": {
+          "value": "b''",
+          "python": "",
+          "json": "\"\""
+        },
+        "json": {
+          "value": "b''",
+          "python": "",
+          "json": "\"\""
+        }
+      },
+      {
+        "input": "abcd",
+        "python": {
+          "value": "b'abcd'",
+          "python": "abcd",
+          "json": "\"abcd\""
+        },
+        "json": {
+          "value": "b'abcd'",
+          "python": "abcd",
+          "json": "\"abcd\""
         }
       }
     ]

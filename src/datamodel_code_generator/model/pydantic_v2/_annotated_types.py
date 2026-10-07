@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
 from datamodel_code_generator.python_literal import represent_python_value
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from datamodel_code_generator.imports import Import
 
@@ -35,14 +35,30 @@ class AnnotatedStringDataType(PydanticV2DataType):
         return "str"
 
 
+def annotated_constraint_metadata(base: str, keywords: Mapping[str, Any]) -> tuple[dict[str, Any], Any]:
+    """Split ``con*`` keywords into ``Field`` keywords and a ``Decimal`` ``multiple_of``.
+
+    ``conbytes`` omits a zero ``min_length`` from its JSON schema, so it is dropped. ``Field`` types
+    ``multiple_of`` as a float, so a ``Decimal`` one becomes ``annotated_types.MultipleOf``.
+    """
+    field_keywords = {
+        name: value for name, value in keywords.items() if not (base == "bytes" and name == "min_length" and value == 0)
+    }
+    multiple_of = field_keywords.pop("multiple_of", None) if base == "Decimal" else None
+    return field_keywords, multiple_of
+
+
 class AnnotatedConstraintDataType(PydanticV2DataType):
-    """Render a ``con*`` call as ``Annotated[base, Field(...)]``, which type checkers accept in type aliases.
+    """Render a ``con*`` call as ``Annotated`` constraints, which type checkers accept in type aliases.
 
     The data type keeps the ``con*`` import and keywords, so code that reads constraints sees the call it
-    replaces. Its runtime imports start with ``Annotated`` and ``Field`` so that aliasing reaches them.
+    replaces. Its runtime imports hold the annotation imports so that aliasing reaches them.
     """
 
     constrained_base: str = "str"
+
+    def _binding(self, name: str) -> str:
+        return next(import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)
 
     @property
     def annotated_base_type(self) -> str:
@@ -58,10 +74,17 @@ class AnnotatedConstraintDataType(PydanticV2DataType):
 
     @property
     def type_hint(self) -> str:
-        """Render the ``con*`` keywords as ``Field`` constraints inside an Annotated subscript."""
-        annotated, field = self.runtime_expression_imports[:2]
-        keywords = ", ".join(f"{name}={represent_python_value(value)}" for name, value in (self.kwargs or {}).items())
-        return f"{annotated.binding_name}[{self.annotated_base_type}, {field.binding_name}({keywords})]"
+        """Render the ``con*`` keywords as constraints inside an Annotated subscript."""
+        field_keywords, multiple_of = annotated_constraint_metadata(self.constrained_base, self.kwargs or {})
+        metadata: list[str] = []
+        if field_keywords:
+            keywords = ", ".join(f"{name}={represent_python_value(value)}" for name, value in field_keywords.items())
+            metadata.append(f"{self._binding('Field')}({keywords})")
+        if multiple_of is not None:
+            metadata.append(f"{self._binding('MultipleOf')}({represent_python_value(multiple_of)})")
+        if not metadata:
+            return self.annotated_base_type
+        return f"{self._binding('Annotated')}[{self.annotated_base_type}, {', '.join(metadata)}]"
 
     @property
     def imports(self) -> Iterator[Import]:
