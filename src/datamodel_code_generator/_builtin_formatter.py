@@ -1712,10 +1712,12 @@ def _format_nested_annotated_type_alias_assignment(
     """Split a too-long alias whose body nests ``Annotated`` constraints, as black does.
 
     Black first moves the arguments to one continuation line, then puts each argument on its own line.
+    Calls with keywords, such as ``type_params`` from a custom template, keep their existing layout.
     """
     if (
         len(line) <= line_length
         or statement.lineno != (statement.end_lineno or statement.lineno)
+        or call.keywords
         or not any(_contains_annotated(argument) for argument in call.args)
     ):
         return None
