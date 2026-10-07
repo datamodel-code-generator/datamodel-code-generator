@@ -68,6 +68,7 @@ nav = [
     { "OpenAPI Options" = "cli-reference/openapi-only-options.md" },
     { "GraphQL Options" = "cli-reference/graphql-only-options.md" },
     { "General Options" = "cli-reference/general-options.md" },
+    { "Target Generation Options" = "cli-reference/target-generation-options.md" },
     { "Utility Options" = "cli-reference/utility-options.md" },
     { "Focused Topics" = [
       { "Model Customization" = "cli-reference/topics/model-customization.md" },

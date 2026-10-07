@@ -11111,7 +11111,9 @@ datamodel-codegen \
   --preset standard-py312-20260909 \
   --output models.py \
   --generate-server fastapi \
-  --target-config fastapi.toml
+  --server-output server \
+  --server-package server \
+  --server-model-package models
 ```
 
 The preset supplies the model options, as in the model [quick start](getting-started.md).
@@ -11454,7 +11456,7 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 24 | Utilities and meta options |
-| 📋 [Target Generation Options](target-generation-options.md) | 14 |  |
+| 🚀 [Target Generation Options](target-generation-options.md) | 14 | Server generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 17 | Help, version, debug options |
 
 ## 🎯 Focused Topics
@@ -11502,6 +11504,22 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | `--all-jobs` | `--diff-against` compares one profile or input and cannot run named jobs. |
 | [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
 | [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-output`](target-generation-options.md#server-output) | `--generate-server` requires `--server-output`. |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-package`](target-generation-options.md#server-package) | `--generate-server` requires `--server-package`. |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-model-package`](target-generation-options.md#server-model-package) | `--generate-server` requires `--server-model-package`. |
+| [`--server-body-mode`](target-generation-options.md#server-body-mode) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-mode` requires `--generate-server fastapi`. |
+| [`--server-body-modes`](target-generation-options.md#server-body-modes) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-modes` requires `--generate-server fastapi`. |
+| [`--server-handler-mode`](target-generation-options.md#server-handler-mode) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-handler-mode` requires `--generate-server fastapi`. |
+| [`--server-handler-modes`](target-generation-options.md#server-handler-modes) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-handler-modes` requires `--generate-server fastapi`. |
+| [`--server-include-request`](target-generation-options.md#server-include-request) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-include-request` requires `--generate-server fastapi`. |
+| [`--server-layout`](target-generation-options.md#server-layout) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-layout` requires `--generate-server fastapi`. |
+| [`--server-model-package`](target-generation-options.md#server-model-package) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-model-package` requires `--generate-server fastapi`. |
+| [`--server-operation-names`](target-generation-options.md#server-operation-names) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-operation-names` requires `--generate-server fastapi`. |
+| [`--server-output`](target-generation-options.md#server-output) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-output` requires `--generate-server fastapi`. |
+| [`--server-package`](target-generation-options.md#server-package) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-package` requires `--generate-server fastapi`. |
+| [`--server-parameter-names`](target-generation-options.md#server-parameter-names) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-parameter-names` requires `--generate-server fastapi`. |
+| [`--server-primary-responses`](target-generation-options.md#server-primary-responses) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-primary-responses` requires `--generate-server fastapi`. |
+| [`--server-router-names`](target-generation-options.md#server-router-names) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-router-names` requires `--generate-server fastapi`. |
 
 ## All Options
 
@@ -40613,6 +40631,2080 @@ the generator waits the specified time before regenerating.
 
 ---
 
+# Target Generation Options
+
+Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/target-generation-options/
+
+## 📋 Options
+
+| Option | Description |
+|--------|-------------|
+| [`--generate-server`](#generate-server) | Generate a FastAPI server package for the models (experiment... |
+| [`--server-body-mode`](#server-body-mode) | Choose how service methods receive request bodies (experimen... |
+| [`--server-body-modes`](#server-body-modes) | Set the body mode of single operations (experimental). |
+| [`--server-handler-mode`](#server-handler-mode) | Declare the service methods as plain or coroutine functions ... |
+| [`--server-handler-modes`](#server-handler-modes) | Set the handler mode of single operations (experimental). |
+| [`--server-include-request`](#server-include-request) | Pass the Starlette Request to every service method (experime... |
+| [`--server-layout`](#server-layout) | Choose how the server package lays out its routes (experimen... |
+| [`--server-model-package`](#server-model-package) | Name the import path of the models the server package import... |
+| [`--server-operation-names`](#server-operation-names) | Name the service methods of single operations (experimental)... |
+| [`--server-output`](#server-output) | Write the server package to this directory (experimental). |
+| [`--server-package`](#server-package) | Name the import path of the server package (experimental). |
+| [`--server-parameter-names`](#server-parameter-names) | Name the method arguments of single operations (experimental... |
+| [`--server-primary-responses`](#server-primary-responses) | Choose the response a bare return value of an operation take... |
+| [`--server-router-names`](#server-router-names) | Name router groups (experimental). |
+
+---
+
+## `--generate-server` {#generate-server}
+
+Generate a FastAPI server package for the models (experimental).
+
+`--generate-server fastapi` generates the models of an OpenAPI document as usual and, in the same run, a FastAPI
+server package at `--server-output`: routers, a service Protocol for each router group, and the application. The
+models need the `api` scope (`--openapi-scopes schemas api`), a Pydantic v2 output model type, and a target Python
+version of 3.11 or later. Like every server setting, it can also be set in `[tool.datamodel-codegen]` of
+pyproject.toml, here as `generate-server = "fastapi"`.
+
+**Option relationships:**
+
+- **Requires:** [`--server-output`](target-generation-options.md#server-output) - `--generate-server` requires `--server-output`.
+- **Requires:** [`--server-package`](target-generation-options.md#server-package) - `--generate-server` requires `--server-package`.
+- **Requires:** [`--server-model-package`](target-generation-options.md#server-model-package) - `--generate-server` requires `--server-model-package`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    ```
+
+    1. :material-arrow-left: `--generate-server` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class PetsService(Protocol):
+        """Implement the pets operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        def list_pets(
+            self,
+            *,
+            limit: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        def create_pet(
+            self,
+            *,
+            body: models.Pet,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        def replace_pet(
+            self,
+            *,
+            name: str,
+            body: models.Pet,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-body-mode` {#server-body-mode}
+
+Choose how service methods receive request bodies (experimental).
+
+`typed` (the default) passes the body validated as its model; `request` passes the raw Starlette `Request` instead,
+for methods that read the body themselves. `--server-body-modes` overrides it for single operations.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-body-mode` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-body-mode request # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-body-mode` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi import Request
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class PetsService(Protocol):
+        """Implement the pets operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        def list_pets(
+            self,
+            *,
+            limit: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        def create_pet(
+            self,
+            *,
+            request: Request,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        def replace_pet(
+            self,
+            *,
+            request: Request,
+            name: str,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-body-modes` {#server-body-modes}
+
+Set the body mode of single operations (experimental).
+
+The JSON object, inline or in a file, maps operation references to `typed` or `request`, and overrides
+`--server-body-mode` for those operations.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-body-modes` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-body-modes '{"/paths/~1pets~1{name}/put": "request"}' # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-body-modes` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi import Request
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class PetsService(Protocol):
+        """Implement the pets operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        def list_pets(
+            self,
+            *,
+            limit: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        def create_pet(
+            self,
+            *,
+            body: models.Pet,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        def replace_pet(
+            self,
+            *,
+            request: Request,
+            name: str,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-handler-mode` {#server-handler-mode}
+
+Declare the service methods as plain or coroutine functions (experimental).
+
+`sync` (the default) declares plain methods, which FastAPI runs in a thread pool; `async` declares coroutine
+methods. `--server-handler-modes` overrides it for single operations.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-handler-mode` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-handler-mode async # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-handler-mode` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class PetsService(Protocol):
+        """Implement the pets operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        async def list_pets(
+            self,
+            *,
+            limit: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        async def create_pet(
+            self,
+            *,
+            body: models.Pet,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        async def replace_pet(
+            self,
+            *,
+            name: str,
+            body: models.Pet,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-handler-modes` {#server-handler-modes}
+
+Set the handler mode of single operations (experimental).
+
+The JSON object, inline or in a file, maps operation references to `sync` or `async`, and overrides
+`--server-handler-mode` for those operations. An operation reference is the JSON pointer of the path item method,
+such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`. In
+pyproject.toml, `server-handler-modes` is a table, and a command-line value replaces the whole table.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-handler-modes` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-handler-modes '{"/paths/~1pets/post": "async"}' # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-handler-modes` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class PetsService(Protocol):
+        """Implement the pets operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        def list_pets(
+            self,
+            *,
+            limit: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        async def create_pet(
+            self,
+            *,
+            body: models.Pet,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        def replace_pet(
+            self,
+            *,
+            name: str,
+            body: models.Pet,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-include-request` {#server-include-request}
+
+Pass the Starlette Request to every service method (experimental).
+
+Each service method takes a `request` keyword argument as well as the operation's arguments.
+`--no-server-include-request` turns off a `server-include-request = true` of pyproject.toml.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-include-request` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-include-request # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-include-request` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi import Request
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class PetsService(Protocol):
+        """Implement the pets operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        def list_pets(
+            self,
+            *,
+            request: Request,
+            limit: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        def create_pet(
+            self,
+            *,
+            request: Request,
+            body: models.Pet,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        def replace_pet(
+            self,
+            *,
+            request: Request,
+            name: str,
+            body: models.Pet,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-layout` {#server-layout}
+
+Choose how the server package lays out its routes (experimental).
+
+`routers` (the default) writes one router module per tag under `routers/`; `single` writes every route to one
+`routes.py` module.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-layout` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-layout single # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-layout` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Endpoints of every operation; regenerate them instead of editing."""
+
+    from collections.abc import Sequence
+    from typing import Annotated, Final
+
+    import models
+    from fastapi import APIRouter, Body, Path, Query
+    from fastapi.responses import Response
+
+    from ._generated import contract
+    from ._generated.contract import OperationDependencies
+    from ._runtime.server.application import Dependency, Wiring, build
+    from ._runtime.server.responses import dispatch
+    from .services import Service
+
+
+    def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+        list_pets_handler = wiring.handlers['list_pets']
+
+        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
+            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+
+        router.add_api_route(
+            '/pets',
+            list_pets,
+            methods=['GET'],
+            status_code=200,
+            response_model=models.FieldPetsGetResponse,
+            response_model_by_alias=True,
+            response_model_exclude_unset=True,
+            operation_id='listPets',
+            tags=['pets'],
+            response_description='The pets.',
+            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+        )
+
+
+    def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+        create_pet_handler = wiring.handlers['create_pet']
+
+        def create_pet(
+            *,
+            body: Annotated[models.Pet, Body(media_type='application/json')],
+        ) -> object:
+            return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+
+        router.add_api_route(
+            '/pets',
+            create_pet,
+            methods=['POST'],
+            status_code=200,
+            response_model=models.Pet,
+            response_model_by_alias=True,
+            response_model_exclude_unset=True,
+            operation_id='createPet',
+            tags=['pets'],
+            response_description='Already there.',
+            responses={'201': {'model': models.Pet, 'description': 'Created.'}},
+            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+        )
+
+
+    def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
+        replace_pet_handler = wiring.handlers['replace_pet']
+
+        def replace_pet(
+            *,
+            name: Annotated[str, Path(alias='name')],
+            body: Annotated[models.Pet, Body(media_type='application/json')],
+        ) -> object:
+            return dispatch(
+                replace_pet_handler(name=name, body=body),
+                contract.ReplacePet.RESPONSES,
+            )
+
+        router.add_api_route(
+            '/pets/{name}',
+            replace_pet,
+            methods=['PUT'],
+            status_code=204,
+            response_model=None,
+            response_class=Response,
+            operation_id='replacePet',
+            tags=['pets'],
+            response_description='Replaced.',
+            responses={'204': {'description': 'Replaced.'}},
+            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+        )
+
+
+    LITERAL_ROUTES: Final = (
+        (contract.ListPets.OPERATION, _add_list_pets),
+        (contract.CreatePet.OPERATION, _add_create_pet),
+    )
+    TEMPLATED_ROUTES: Final = ((contract.ReplacePet.OPERATION, _add_replace_pet),)
+
+
+    def build_router(
+        *,
+        service: Service,
+        dependencies: Sequence[Dependency] = (),
+        operation_dependencies: OperationDependencies | None = None,
+        prefix: str = "",
+    ) -> APIRouter:
+        """Check the service and settings, then register every operation on a new router, literal paths first."""
+        return build(
+            (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
+            services={'service': service},
+            dependencies=dependencies,
+            operation_dependencies=operation_dependencies,
+            prefix=prefix,
+        )
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-model-package` {#server-model-package}
+
+Name the import path of the models the server package imports (experimental).
+
+`--server-model-package` is required with `--generate-server`, and names the module or package `--output`
+generates.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-model-package` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-model-package` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class PetsService(Protocol):
+        """Implement the pets operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        def list_pets(
+            self,
+            *,
+            limit: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        def create_pet(
+            self,
+            *,
+            body: models.Pet,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        def replace_pet(
+            self,
+            *,
+            name: str,
+            body: models.Pet,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-operation-names` {#server-operation-names}
+
+Name the service methods of single operations (experimental).
+
+The JSON object, inline or in a file, maps operation references to method names. Other operations take the
+snake_case form of their operationId, or of their method and path.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-operation-names` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-operation-names '{"/paths/~1pets/get": "list_all"}' # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-operation-names` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class PetsService(Protocol):
+        """Implement the pets operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        def list_all(
+            self,
+            *,
+            limit: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        def create_pet(
+            self,
+            *,
+            body: models.Pet,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        def replace_pet(
+            self,
+            *,
+            name: str,
+            body: models.Pet,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-output` {#server-output}
+
+Write the server package to this directory (experimental).
+
+`--server-output` is required with `--generate-server`. A path given on the command line is relative to the working
+directory, and the `server-output` key of pyproject.toml is relative to the pyproject.toml directory, as for
+`--output`.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-output` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-output` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class PetsService(Protocol):
+        """Implement the pets operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        def list_pets(
+            self,
+            *,
+            limit: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        def create_pet(
+            self,
+            *,
+            body: models.Pet,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        def replace_pet(
+            self,
+            *,
+            name: str,
+            body: models.Pet,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-package` {#server-package}
+
+Name the import path of the server package (experimental).
+
+`--server-package` is required with `--generate-server`. The generated README and the dependency command a
+generation prints name the package by it; the package imports its own modules relatively.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-package` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-package` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class PetsService(Protocol):
+        """Implement the pets operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        def list_pets(
+            self,
+            *,
+            limit: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        def create_pet(
+            self,
+            *,
+            body: models.Pet,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        def replace_pet(
+            self,
+            *,
+            name: str,
+            body: models.Pet,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-parameter-names` {#server-parameter-names}
+
+Name the method arguments of single operations (experimental).
+
+The JSON object, inline or in a file, maps operation references to objects that map a parameter, written as its
+location and name such as `query:limit` or `header:X-Request-Id`, to the argument name.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-parameter-names` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-parameter-names '{"/paths/~1pets/get": {"query:limit": "page_size"}}' # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-parameter-names` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class PetsService(Protocol):
+        """Implement the pets operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        def list_pets(
+            self,
+            *,
+            page_size: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        def create_pet(
+            self,
+            *,
+            body: models.Pet,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        def replace_pet(
+            self,
+            *,
+            name: str,
+            body: models.Pet,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-primary-responses` {#server-primary-responses}
+
+Choose the response a bare return value of an operation takes (experimental).
+
+The JSON object, inline or in a file, maps operation references to an object with the `status_code` of a declared
+response and, when that response has several media types, its `media_type`. Without an entry, the server infers the
+primary response from the declared success responses.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-primary-responses` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-primary-responses '{"/paths/~1pets/post": {"status_code": 201}}' # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-primary-responses` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Endpoints of the pets operations; regenerate them instead of editing."""
+
+    from collections.abc import Sequence
+    from typing import Annotated, Final
+
+    import models
+    from fastapi import APIRouter, Body, Path, Query
+    from fastapi.responses import Response
+
+    from .._generated import contract
+    from .._generated.contract import OperationDependencies
+    from .._runtime.server.application import Dependency, Wiring, build
+    from .._runtime.server.responses import dispatch
+    from ..services import PetsService
+
+
+    def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+        list_pets_handler = wiring.handlers['list_pets']
+
+        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
+            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+
+        router.add_api_route(
+            '/pets',
+            list_pets,
+            methods=['GET'],
+            status_code=200,
+            response_model=models.FieldPetsGetResponse,
+            response_model_by_alias=True,
+            response_model_exclude_unset=True,
+            operation_id='listPets',
+            tags=['pets'],
+            response_description='The pets.',
+            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+        )
+
+
+    def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+        create_pet_handler = wiring.handlers['create_pet']
+
+        def create_pet(
+            *,
+            body: Annotated[models.Pet, Body(media_type='application/json')],
+        ) -> object:
+            return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+
+        router.add_api_route(
+            '/pets',
+            create_pet,
+            methods=['POST'],
+            status_code=201,
+            response_model=models.Pet,
+            response_model_by_alias=True,
+            response_model_exclude_unset=True,
+            operation_id='createPet',
+            tags=['pets'],
+            response_description='Created.',
+            responses={'200': {'model': models.Pet, 'description': 'Already there.'}},
+            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+        )
+
+
+    def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
+        replace_pet_handler = wiring.handlers['replace_pet']
+
+        def replace_pet(
+            *,
+            name: Annotated[str, Path(alias='name')],
+            body: Annotated[models.Pet, Body(media_type='application/json')],
+        ) -> object:
+            return dispatch(
+                replace_pet_handler(name=name, body=body),
+                contract.ReplacePet.RESPONSES,
+            )
+
+        router.add_api_route(
+            '/pets/{name}',
+            replace_pet,
+            methods=['PUT'],
+            status_code=204,
+            response_model=None,
+            response_class=Response,
+            operation_id='replacePet',
+            tags=['pets'],
+            response_description='Replaced.',
+            responses={'204': {'description': 'Replaced.'}},
+            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+        )
+
+
+    LITERAL_ROUTES: Final = (
+        (contract.ListPets.OPERATION, _add_list_pets),
+        (contract.CreatePet.OPERATION, _add_create_pet),
+    )
+    TEMPLATED_ROUTES: Final = ((contract.ReplacePet.OPERATION, _add_replace_pet),)
+
+
+    def build_router(
+        *,
+        pets: PetsService,
+        dependencies: Sequence[Dependency] = (),
+        operation_dependencies: OperationDependencies | None = None,
+        prefix: str = "",
+    ) -> APIRouter:
+        """Check the service and settings, then register the pets operations on a new router, literal paths first."""
+        return build(
+            (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
+            services={'pets': pets},
+            dependencies=dependencies,
+            operation_dependencies=operation_dependencies,
+            prefix=prefix,
+        )
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--server-router-names` {#server-router-names}
+
+Name router groups (experimental).
+
+The JSON object, inline or in a file, maps group keys, such as `tag:pets` for the operations whose first tag is
+`pets`, to the name of the router module, the `create_app` argument, and the `<Name>Service` Protocol.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-server`](target-generation-options.md#generate-server) - `--server-router-names` requires `--generate-server fastapi`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-router-names '{"tag:pets": "animals"}' # (1)!
+    ```
+
+    1. :material-arrow-left: `--server-router-names` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Pets, version: "1.0"}
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          tags: [pets]
+          parameters:
+            - {name: limit, in: query, schema: {type: integer, default: 20}}
+          responses:
+            "200":
+              description: The pets.
+              content:
+                application/json:
+                  schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        post:
+          operationId: createPet
+          tags: [pets]
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "200":
+              description: Already there.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+            "201":
+              description: Created.
+              content:
+                application/json:
+                  schema: {$ref: "#/components/schemas/Pet"}
+      /pets/{name}:
+        put:
+          operationId: replacePet
+          tags: [pets]
+          parameters:
+            - {name: name, in: path, required: true, schema: {type: string}}
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: {$ref: "#/components/schemas/Pet"}
+          responses:
+            "204": {description: Replaced.}
+    components:
+      schemas:
+        Pet:
+          type: object
+          required: [name]
+          properties:
+            name: {type: string}
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options.yaml
+
+    """Service interfaces of this package's router groups; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from abc import abstractmethod
+    from typing import Protocol
+
+    import models
+    from fastapi.responses import Response
+
+    from ._runtime.server.responses import HTTPResult
+
+
+    class AnimalsService(Protocol):
+        """Implement the animals operations: subclass this Protocol, or give an object its methods."""
+
+        @abstractmethod
+        def list_pets(
+            self,
+            *,
+            limit: int,
+        ) -> (
+            models.FieldPetsGetResponse
+            | HTTPResult[models.FieldPetsGetResponse]
+            | Response
+        ): ...
+
+        @abstractmethod
+        def create_pet(
+            self,
+            *,
+            body: models.Pet,
+        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+
+        @abstractmethod
+        def replace_pet(
+            self,
+            *,
+            name: str,
+            body: models.Pet,
+        ) -> None | HTTPResult[None] | Response: ...
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+---
+
 # Utility Options
 
 Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/utility-options/
@@ -41758,7 +43850,7 @@ datamodel-codegen [OPTIONS]
 | [`--watch`](general-options.md#watch) | Watch input file(s) for changes and regenerate output automatically. |
 | [`--watch-delay`](general-options.md#watch-delay) | Set debounce delay in seconds for watch mode. |
 
-### 📋 Target Generation Options
+### 🚀 Target Generation Options
 
 | Option | Description |
 |--------|-------------|

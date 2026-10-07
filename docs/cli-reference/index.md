@@ -16,7 +16,7 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 24 | Utilities and meta options |
-| 📋 [Target Generation Options](target-generation-options.md) | 14 |  |
+| 🚀 [Target Generation Options](target-generation-options.md) | 14 | Server generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 17 | Help, version, debug options |
 
 ## 🎯 Focused Topics
@@ -64,6 +64,22 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | `--all-jobs` | `--diff-against` compares one profile or input and cannot run named jobs. |
 | [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
 | [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-output`](target-generation-options.md#server-output) | `--generate-server` requires `--server-output`. |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-package`](target-generation-options.md#server-package) | `--generate-server` requires `--server-package`. |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-model-package`](target-generation-options.md#server-model-package) | `--generate-server` requires `--server-model-package`. |
+| [`--server-body-mode`](target-generation-options.md#server-body-mode) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-mode` requires `--generate-server fastapi`. |
+| [`--server-body-modes`](target-generation-options.md#server-body-modes) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-modes` requires `--generate-server fastapi`. |
+| [`--server-handler-mode`](target-generation-options.md#server-handler-mode) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-handler-mode` requires `--generate-server fastapi`. |
+| [`--server-handler-modes`](target-generation-options.md#server-handler-modes) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-handler-modes` requires `--generate-server fastapi`. |
+| [`--server-include-request`](target-generation-options.md#server-include-request) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-include-request` requires `--generate-server fastapi`. |
+| [`--server-layout`](target-generation-options.md#server-layout) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-layout` requires `--generate-server fastapi`. |
+| [`--server-model-package`](target-generation-options.md#server-model-package) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-model-package` requires `--generate-server fastapi`. |
+| [`--server-operation-names`](target-generation-options.md#server-operation-names) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-operation-names` requires `--generate-server fastapi`. |
+| [`--server-output`](target-generation-options.md#server-output) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-output` requires `--generate-server fastapi`. |
+| [`--server-package`](target-generation-options.md#server-package) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-package` requires `--generate-server fastapi`. |
+| [`--server-parameter-names`](target-generation-options.md#server-parameter-names) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-parameter-names` requires `--generate-server fastapi`. |
+| [`--server-primary-responses`](target-generation-options.md#server-primary-responses) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-primary-responses` requires `--generate-server fastapi`. |
+| [`--server-router-names`](target-generation-options.md#server-router-names) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-router-names` requires `--generate-server fastapi`. |
 
 ## All Options
 

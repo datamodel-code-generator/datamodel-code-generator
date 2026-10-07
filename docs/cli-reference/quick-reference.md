@@ -232,7 +232,7 @@ datamodel-codegen [OPTIONS]
 | [`--watch`](general-options.md#watch) | Watch input file(s) for changes and regenerate output automatically. |
 | [`--watch-delay`](general-options.md#watch-delay) | Set debounce delay in seconds for watch mode. |
 
-### 📋 Target Generation Options
+### 🚀 Target Generation Options
 
 | Option | Description |
 |--------|-------------|
