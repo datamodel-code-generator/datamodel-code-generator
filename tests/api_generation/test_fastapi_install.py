@@ -25,6 +25,7 @@ OPTIONS = [
     "pydantic_v2.BaseModel",
     "--formatters",
     "builtin",
+    "--disable-timestamp",
     "--generate-server",
     "fastapi",
     "--target-config",

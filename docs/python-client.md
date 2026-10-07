@@ -11,10 +11,11 @@ version; a target below 3.11, including the default 3.10, is refused with `E_CON
 Settings of the generated client that change how its methods are declared or checked do not change the models: the
 same OpenAPI document and model settings produce the same model files whichever client settings you choose.
 
-The client adds `api` to the model's `openapi_scopes`, keeping the scopes you give, so that the models cover the
-parameters, bodies, and responses of the operations. Custom templates and custom formatters must keep the class and
-field names of the models: the client binds each operation to the names in the generated model graph and does not read
-the rendered model source.
+The model's `openapi_scopes` must include `api`, so that the models cover the parameters, bodies, and responses of
+the operations; without it, generation raises `datamodel_code_generator.Error`. The client keeps every model setting
+as given, including the generation timestamp, which `disable_timestamp` leaves out. Custom templates and custom
+formatters must keep the class and field names of the models: the client binds each operation to the names in the
+generated model graph and does not read the rendered model source.
 
 ## Webhook contracts
 

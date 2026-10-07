@@ -214,7 +214,8 @@
     "input": "unbound.yaml",
     "model": {
       "openapi_scopes": [
-        "schemas"
+        "schemas",
+        "api"
       ]
     },
     "package_snapshots": []
@@ -282,7 +283,8 @@
     "input": "unbound-body.yaml",
     "model": {
       "openapi_scopes": [
-        "schemas"
+        "schemas",
+        "api"
       ],
       "collapse_root_models": true
     }

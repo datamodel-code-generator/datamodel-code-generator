@@ -1621,6 +1621,68 @@ def _target_settings(config: Config, args: Sequence[str], lockfile: Path | None)
     })
 
 
+def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_config: Mapping[str, Any]) -> Exit | None:
+    """Apply the checks, warnings and debug settings every generation run shares; return the exit code of a refusal."""
+    uses_black_formatter = config.formatters is None or Formatter.BLACK in config.formatters
+    if uses_black_formatter and not is_supported_in_black(config.target_python_version):  # pragma: no cover
+        print(  # noqa: T201
+            f"Installed black doesn't support Python version {config.target_python_version.value}.\n"
+            f"You have to install a newer black.\n"
+            f"Installed black version: {_get_black().__version__}",
+            file=sys.stderr,
+        )
+        return Exit.ERROR
+
+    if config.debug:  # pragma: no cover
+        enable_debug_message()
+
+    if config.disable_warnings:
+        warnings.simplefilter("ignore")
+
+    if (
+        config.output_model_type in {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}
+        and not config.use_annotated
+        and namespace.use_annotated is None
+        and pyproject_config.get("use_annotated") is None
+    ):
+        warn_deprecated(
+            "behavior.pydantic-v2-use-annotated-default",
+            details=(
+                "The current default (use_annotated=False) generates constrained types like "
+                "'conint(ge=1, le=365)' which are discouraged in Pydantic v2."
+            ),
+            stacklevel=1,
+        )
+
+    if config.reuse_scope == ReuseScope.Tree and not config.reuse_model:
+        print(  # noqa: T201
+            "Warning: --reuse-scope=tree has no effect without --reuse-model",
+            file=sys.stderr,
+        )
+
+    if config.collapse_root_models_name_strategy and not config.collapse_root_models:
+        print(  # noqa: T201
+            "Error: --collapse-root-models-name-strategy requires --collapse-root-models",
+            file=sys.stderr,
+        )
+        return Exit.ERROR
+
+    if (
+        config.use_specialized_enum
+        and namespace.use_specialized_enum is not False  # CLI didn't disable it
+        and (namespace.use_specialized_enum is True or pyproject_config.get("use_specialized_enum") is True)
+        and not config.target_python_version.has_strenum
+    ):
+        print(  # noqa: T201
+            f"Error: --use-specialized-enum requires --target-python-version 3.11 or later.\n"
+            f"Current target version: {config.target_python_version.value}\n"
+            f"StrEnum is only available in Python 3.11+.",
+            file=sys.stderr,
+        )
+        return Exit.ERROR
+    return None
+
+
 def _run_target(args: Sequence[str], namespace: Namespace, config: Config | None, pyproject_path: Path | None) -> Exit:
     """Hand the selected generation target to its runner, which reports every diagnostic."""
     from datamodel_code_generator._target_cli import run_target  # noqa: PLC0415
@@ -2506,6 +2568,8 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         return Exit.ERROR
 
     if "generate_server" in vars(namespace):
+        if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
+            return refusal
         return _run_target(args, namespace, config, pyproject_path)
 
     if config.watch and config.check:
@@ -2618,63 +2682,8 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
         return finish_watch_remote_lock_intent(result)
     config.resolve_remote_lock(None if remote_locks is None else remote_locks.collector_for(lock_plan))
-    uses_black_formatter = config.formatters is None or Formatter.BLACK in config.formatters
-    if uses_black_formatter and not is_supported_in_black(config.target_python_version):  # pragma: no cover
-        print(  # noqa: T201
-            f"Installed black doesn't support Python version {config.target_python_version.value}.\n"
-            f"You have to install a newer black.\n"
-            f"Installed black version: {_get_black().__version__}",
-            file=sys.stderr,
-        )
-        return Exit.ERROR
-
-    if config.debug:  # pragma: no cover
-        enable_debug_message()
-
-    if config.disable_warnings:
-        warnings.simplefilter("ignore")
-
-    if (
-        config.output_model_type in {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}
-        and not config.use_annotated
-        and namespace.use_annotated is None
-        and pyproject_config.get("use_annotated") is None
-    ):
-        warn_deprecated(
-            "behavior.pydantic-v2-use-annotated-default",
-            details=(
-                "The current default (use_annotated=False) generates constrained types like "
-                "'conint(ge=1, le=365)' which are discouraged in Pydantic v2."
-            ),
-            stacklevel=1,
-        )
-
-    if config.reuse_scope == ReuseScope.Tree and not config.reuse_model:
-        print(  # noqa: T201
-            "Warning: --reuse-scope=tree has no effect without --reuse-model",
-            file=sys.stderr,
-        )
-
-    if config.collapse_root_models_name_strategy and not config.collapse_root_models:
-        print(  # noqa: T201
-            "Error: --collapse-root-models-name-strategy requires --collapse-root-models",
-            file=sys.stderr,
-        )
-        return Exit.ERROR
-
-    if (
-        config.use_specialized_enum
-        and namespace.use_specialized_enum is not False  # CLI didn't disable it
-        and (namespace.use_specialized_enum is True or pyproject_config.get("use_specialized_enum") is True)
-        and not config.target_python_version.has_strenum
-    ):
-        print(  # noqa: T201
-            f"Error: --use-specialized-enum requires --target-python-version 3.11 or later.\n"
-            f"Current target version: {config.target_python_version.value}\n"
-            f"StrEnum is only available in Python 3.11+.",
-            file=sys.stderr,
-        )
-        return Exit.ERROR
+    if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
+        return refusal
 
     try:
         extra_template_data = _template_data(config)

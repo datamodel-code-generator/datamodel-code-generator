@@ -95,6 +95,7 @@ class ClientTarget:
     kind: TargetKind = "client"
     backends: frozenset[DataModelType] = frozenset(_BACKENDS)
     unsupported_backend: str = "E_CONFIG_VALUE"
+    selector: str = "--generate-client"
 
     def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[no-self-use, too-many-locals]
         """Plan the selected operations, bind their codecs, and render the package."""

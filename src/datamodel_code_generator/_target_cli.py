@@ -46,7 +46,16 @@ _FIELDS: Final = frozenset({
 
 
 def run_target(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path: Path | None) -> int:
-    """Generate or check the selected target from the finalized CLI config, reporting every diagnostic."""
+    """Generate or check the selected target from the finalized CLI config, reporting every diagnostic.
+
+    A model setting the target needs but the config lacks is refused like a model option conflict, before the run.
+    """
+    from datamodel_code_generator._api_generation import model_requirement  # noqa: PLC0415
+    from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
+
+    if config is not None and (requirement := model_requirement(config.openapi_scopes, FastAPITarget.selector)):
+        print(f"Error: {requirement}", file=sys.stderr)  # noqa: T201
+        return _ERROR
     report = _Report(vars(namespace).get("diagnostics_json"))
     try:
         code = _jobs(namespace, report) if config is None else _run(args, namespace, config, pyproject_path, report)

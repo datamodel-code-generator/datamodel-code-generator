@@ -4503,7 +4503,8 @@
     "modules": false,
     "model": {
       "openapi_scopes": [
-        "schemas"
+        "schemas",
+        "api"
       ]
     }
   },
@@ -4793,7 +4794,8 @@
     "modules": false,
     "model": {
       "openapi_scopes": [
-        "schemas"
+        "schemas",
+        "api"
       ]
     }
   },

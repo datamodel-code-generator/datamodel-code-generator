@@ -1,7 +1,7 @@
 {
   "backend": "dataclasses.dataclass",
   "package": "codec_aliases_type",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "options": {"use_type_alias": true, "use_type_alias_type": true},
   "cases": [
     {"name": "choice-server-decode", "use": "/paths/~1choices/post request_body", "op": "decode",
