@@ -66,6 +66,12 @@ FieldRatiosGetQueryLimitsParameter = TypeAliasType(
 )
 
 
+FieldSizesGetQueryOneParameter = TypeAliasType("FieldSizesGetQueryOneParameter", Literal['x'])
+
+
+FieldSizesGetQueryLeastParameter = TypeAliasType("FieldSizesGetQueryLeastParameter", Size)
+
+
 FieldRepeatIdAgainIdGetPathIdParameter = TypeAliasType("FieldRepeatIdAgainIdGetPathIdParameter", int)
 
 

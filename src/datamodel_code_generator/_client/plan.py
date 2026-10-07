@@ -38,7 +38,6 @@ from datamodel_code_generator._target_contract import (
     TypeUseBinding,
     UnionType,
 )
-from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -99,11 +98,6 @@ _MIN_ERROR: Final = 400
 _MAX_ERROR: Final = 599
 _CONFIG_CODES: Final = frozenset({"E_CONFIG_VALUE", "E_CONFIG_CONFLICT", "E_OPERATION_REF"})
 _STYLED: Final = ("style", "explode", "allowReserved")
-_CONVERTING: Final = frozenset({
-    DataModelType.PydanticV2BaseModel,
-    DataModelType.PydanticV2Dataclass,
-    DataModelType.MsgspecStruct,
-})
 _DEFAULTS: Final = {"bool": ("bool",), "int": ("int",), "float": ("int", "float"), "str": ("str",)}
 
 
@@ -370,7 +364,6 @@ class Planner:
         self.config = config
         self.wire = wire
         self.facts = facts
-        self.converting = request.model_config.output_model_type in _CONVERTING
         self.uses = {use.id: use for use in request.batch.type_uses}
         self.parameter_plans = parameter_plans(wire)
         self.header_plans = dict(wire.headers)
@@ -555,8 +548,7 @@ class Planner:
                     plan=plan,
                     argument=argument,
                     default=None if required else _default(self.wire, use, argument),
-                    converts=self.converting
-                    and use is not None
+                    converts=use is not None
                     and use.type is not None
                     and argument != self.facts.argument(use.type, ALIASES),
                 )

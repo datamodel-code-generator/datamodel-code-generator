@@ -725,7 +725,8 @@ class Planner:  # noqa: PLR0904
     ) -> tuple[FinalPythonType | None, Default | LiteralScalar | LiteralSequence]:
         """Return a parameter's type and default through the root models and aliases whose type alone validates.
 
-        An alias carries no default of a constrained scalar, so the parameter schema's default stands in for it.
+        The parameter schema's own boolean, number, or string default comes first, since an alias carries none and a
+        referenced root model's is not the parameter's; one of an enum stays the model's.
         """
         default: Default | LiteralScalar | LiteralSequence = Default.ABSENT
         if use is None or use.type is None:
@@ -744,9 +745,8 @@ class Planner:  # noqa: PLR0904
             default = _default(facts) if default is Default.ABSENT else default
         if (
             seen
-            and default is Default.ABSENT
             and use.schema is not None
-            and not self.literal(value)
+            and (isinstance(value, LiteralType) or not self.literal(value))
             and (literal := self.wire.default(use.schema)) is not None
         ):
             default = literal

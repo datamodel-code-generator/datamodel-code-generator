@@ -487,7 +487,10 @@ async def _async_backends(package: ModuleType, lines: list[str]) -> None:
 
 
 def pagination_limits(package: ModuleType, lines: list[str]) -> None:
-    """Send a server's cursor and a caller's start cursor as they came, past their parameter's schema."""
+    """Send a server's cursor and a caller's start cursor as they came, past their parameter's schema.
+
+    A caller's start offset is built into the root model its parameter is before it is sent.
+    """
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native) as api:
         helper = api.protocols.codes.all
@@ -497,3 +500,8 @@ def pagination_limits(package: ModuleType, lines: list[str]) -> None:
         drained(lines, "a long server cursor", helper.iterate())
         exchange.respond(json_response(200, {"data": [{"id": "1"}]}))
         drained(lines, "a long start cursor", helper.iterate(cursor="longer"))
+        exchange.respond(
+            json_response(200, {"data": [{"id": "1"}], "has_more": True}),
+            json_response(200, {"data": [{"id": "2"}], "has_more": False}),
+        )
+        drained(lines, "a start offset its root model takes", api.protocols.users.offsets.iterate(offset=4))

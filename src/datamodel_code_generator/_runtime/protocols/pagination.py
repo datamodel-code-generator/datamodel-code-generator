@@ -806,7 +806,7 @@ class _Walk(Generic[T, P]):
             return replace(call, body=replace(body, media=media))
         parameters = list(call.parameters)
         spec = parameters[position]
-        parameters[position] = ReadParameter(plan=spec.plan, codec=spec.codec, read=read)
+        parameters[position] = ReadParameter(plan=spec.plan, codec=spec.codec, converts=spec.converts, read=read)
         return replace(call, parameters=tuple(parameters))
 
     def started(self, wire: JSONValue) -> None:
