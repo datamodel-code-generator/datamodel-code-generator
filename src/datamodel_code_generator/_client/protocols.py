@@ -691,14 +691,11 @@ def _encodable(text: str) -> bool:
 def _literal_problem(value: object) -> str | None:
     """Return why a value is no JSON literal: another type, a lone surrogate, or containers nested too deep.
 
-    Depth counts from the literal, whether projection cut a Python container or a JSON value nests it.
+    Projection cuts Python containers nested too deep, and reading a file refuses deep nesting before this runs.
     """
-    pending: list[tuple[object, int]] = [(value, 1)]
+    pending = [value]
     while pending:
-        item, depth = pending.pop()
-        match item:
-            case list() | dict() if depth > _MAX_DEPTH:
-                return f"nests deeper than {_MAX_DEPTH} levels"
+        match item := pending.pop():
             case None | bool() | int():
                 continue
             case float() if isfinite(item):
@@ -708,10 +705,10 @@ def _literal_problem(value: object) -> str | None:
                     return "has text that is not UTF-8"
                 continue
             case list():
-                pending.extend((child, depth + 1) for child in item)
+                pending.extend(item)
                 continue
             case dict() if all(isinstance(key, str) and _encodable(key) for key in item):
-                pending.extend((child, depth + 1) for child in item.values())
+                pending.extend(item.values())
                 continue
             case _:
                 pass
@@ -808,13 +805,13 @@ def load_protocols(
 
 
 def _read(path: Path) -> tuple[object, list[Diagnostic]]:
-    """Read a JSON object from a file as JSON configuration options read theirs."""
+    """Read a JSON object from a file as JSON configuration options read theirs, refusing deep nesting first."""
     from datamodel_code_generator.json_config import JsonConfigError, validate_json_value_or_file  # noqa: PLC0415
     from datamodel_code_generator.util import record_watch_dependency  # noqa: PLC0415
 
     record_watch_dependency(path)
     try:
-        return validate_json_value_or_file(str(path), option_name=_ROOT), []
+        return validate_json_value_or_file(str(path), option_name=_ROOT, max_depth=_MAX_DEPTH), []
     except JsonConfigError as error:
         return None, [_diagnostic("E_CONFIG_VALUE", _ROOT, str(error))]
 

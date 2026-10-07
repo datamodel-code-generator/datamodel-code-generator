@@ -5864,6 +5864,30 @@ def test_default_values_invalid_json(output_file: Path, capsys: pytest.CaptureFi
     )
 
 
+@pytest.mark.parametrize(
+    ("aliases", "message"),
+    [
+        ("[" * 1_000_000, "Unable to load alias mapping: nests too deeply to parse"),
+        ('{"name": ' + "1" * 5000 + "}", "Unable to load alias mapping: has an integer with too many digits"),
+    ],
+    ids=["deep", "long-integer"],
+)
+def test_aliases_unparsable_json(
+    aliases: str, message: str, output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test --aliases JSON the parser cannot build reports a JSON error instead of crashing."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--aliases", aliases],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=message,
+        file_should_not_exist=output_file,
+    )
+
+
 def test_default_values_non_dict(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test --default-values with non-dict JSON file returns error."""
     run_main_and_assert(

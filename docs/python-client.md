@@ -443,8 +443,10 @@ The file holds one JSON object mapping each helper's name to its definition, in 
 - The file is read as JSON options such as `--aliases` read a JSON file: UTF-8 text parsed by Python's `json`
   module, so a key repeated in one object keeps its last value. A file that cannot be read, text that is not JSON,
   including a path that names no file, and a value that is not an object fail with `E_CONFIG_VALUE` and the message
-  those options give, such as `Invalid JSON for protocols: ...` or `Expected a JSON object, got list`. `NaN` and
-  `Infinity`, which the parser accepts, are not JSON values for a literal.
+  those options give, such as `Invalid JSON for protocols: ...` or `Expected a JSON object, got list`. Before parsing,
+  text that opens more than 64 arrays and objects at once fails the same way, with
+  `Invalid JSON for protocols: nests collections deeper than 64 levels`. `NaN` and `Infinity`, which the parser
+  accepts, are not JSON values for a literal.
 - Every key is checked at every level. A key the definition does not have, including a setting of another kind or
   one that the chosen variant does not take, fails with `E_CONFIG_UNKNOWN`; a missing required key or a value of
   the wrong type fails with `E_CONFIG_VALUE`; and settings that contradict each other fail with `E_CONFIG_CONFLICT`.

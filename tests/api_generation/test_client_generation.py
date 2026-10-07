@@ -171,6 +171,8 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-not-json",
         "protocols-not-object",
         "protocols-deep",
+        "protocols-deep-limit",
+        "protocols-deep-huge",
         "protocols-names",
         "protocols-shared-errors",
         "protocols-pagination-errors",

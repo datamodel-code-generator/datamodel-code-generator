@@ -3163,6 +3163,50 @@
     },
     "modules": false
   },
+  "protocols-deep-limit": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/deep-limit.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/deep-limit.json"
+    },
+    "modules": false,
+    "expected": "protocols-empty"
+  },
+  "protocols-deep-huge": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/deep-huge.json"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/users*",
+        "/tags",
+        "/labels",
+        "/jobs*",
+        "/events",
+        "/records"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/deep-huge.json"
+    },
+    "modules": false,
+    "expected": "protocols-deep"
+  },
   "protocols-not-object": {
     "input": "helpers.yaml",
     "references": [
