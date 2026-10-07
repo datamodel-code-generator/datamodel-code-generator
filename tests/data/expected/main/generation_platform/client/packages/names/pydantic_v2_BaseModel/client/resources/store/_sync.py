@@ -8,7 +8,7 @@ from functools import cached_property
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import RequestOptions
 from ...responses import RawResponse, Response
 from ...types.store import GetFilesByFileNameByExtResponse
 
@@ -41,7 +41,7 @@ class StoreResource:
         file_name: str,
         ext: str,
         class_: str = 'full',
-        two_factor: str | None | Unset = UNSET,
+        two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> GetFilesByFileNameByExtResponse:
         """Call GET /files/{fileName}.{ext}."""
@@ -65,7 +65,7 @@ class StoreWithResponse:
         file_name: str,
         ext: str,
         class_: str = 'full',
-        two_factor: str | None | Unset = UNSET,
+        two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> Response[GetFilesByFileNameByExtResponse]:
         """Call GET /files/{fileName}.{ext}."""
@@ -89,7 +89,7 @@ class StoreWithRawResponse:
         file_name: str,
         ext: str,
         class_: str = 'full',
-        two_factor: str | None | Unset = UNSET,
+        two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /files/{fileName}.{ext}."""
@@ -113,7 +113,7 @@ class StoreWithStreamingResponse:
         file_name: str,
         ext: str,
         class_: str = 'full',
-        two_factor: str | None | Unset = UNSET,
+        two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /files/{fileName}.{ext}."""

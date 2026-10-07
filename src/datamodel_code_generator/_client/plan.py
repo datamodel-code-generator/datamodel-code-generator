@@ -33,8 +33,10 @@ from datamodel_code_generator._target_contract import (
     BuiltinType,
     LiteralScalar,
     LiteralSequence,
+    NoneType,
     SourceLocation,
     TypeUseBinding,
+    UnionType,
 )
 from datamodel_code_generator.enums import DataModelType
 
@@ -896,11 +898,17 @@ class Planner:
 
 
 def _default(wire: WirePlan, use: TypeUseBinding | None, argument: FinalPythonType | None) -> LiteralScalar | None:
-    """Return the default the schema of a builtin scalar argument declares, when it is a value of its type."""
-    if not isinstance(argument, BuiltinType) or use is None or use.schema is None:
+    """Return the default the schema of a builtin scalar argument, or one or None, declares when it is of its type."""
+    present = (
+        tuple(member for member in argument.members if not isinstance(member, NoneType))
+        if isinstance(argument, UnionType)
+        else (argument,)
+    )
+    scalar = present[0] if len(present) == 1 else None
+    if not isinstance(scalar, BuiltinType) or use is None or use.schema is None:
         return None
     literal = wire.default(use.schema)
-    return literal if literal is not None and literal.kind in _DEFAULTS.get(argument.name, ()) else None
+    return literal if literal is not None and literal.kind in _DEFAULTS.get(scalar.name, ()) else None
 
 
 def _success(status: str, success_statuses: tuple[int, ...]) -> bool:

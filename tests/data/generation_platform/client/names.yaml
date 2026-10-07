@@ -27,7 +27,7 @@ paths:
           schema: {type: string, default: full}
         - name: 2fa
           in: header
-          schema: {type: [string, 'null']}
+          schema: {type: [string, 'null'], default: 'off'}
       responses:
         '204':
           description: A file.
