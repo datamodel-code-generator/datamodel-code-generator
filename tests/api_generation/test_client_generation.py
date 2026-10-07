@@ -98,6 +98,9 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "sockets",
         "caching",
         "compression",
+        "templates",
+        "templates-invalid",
+        "templates-not-found",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -217,6 +220,45 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    ("case", "builtin_sources"),
+    [
+        ("auth", True),
+        ("caching", True),
+        ("compression", True),
+        ("empty", True),
+        ("media", True),
+        ("ndjson", True),
+        ("pagination", True),
+        ("pagination-counts", True),
+        ("pagination-links", True),
+        ("pets-unpack", True),
+        ("polling", True),
+        ("retries", True),
+        ("sockets", True),
+        ("stream-resume", True),
+        ("streams", True),
+        ("uploads", True),
+        ("templates-missing", False),
+    ],
+)
+def test_client_template_fallback(case: str, *, builtin_sources: bool, tmp_path: Path) -> None:
+    """Render a package from copies of the builtin templates' Jinja sources, or without client overrides, unchanged.
+
+    The copies live in the client directory of a custom template directory; a custom template directory without one
+    falls back to the builtin roles. Each case reports under the name of the case it equals.
+    """
+    report, rendered = client_render(case, tmp_path / "render", builtin_sources=builtin_sources)
+    expected = report.splitlines()[0].removeprefix("# ")
+    assert_output(report, EXPECTED / f"{expected}.txt")
+    for backend, modules in rendered.items():
+        assert_generated_modules_output(modules, EXPECTED / "packages" / expected / backend)
+    assert_output(
+        client_documentation_report(case, tmp_path / "documentation", builtin_sources=builtin_sources),
+        EXPECTED / "documentation" / f"{expected}.txt",
+    )
+
+
+@pytest.mark.parametrize(
     ("first", "second", "expected"),
     [
         ("pagination-root", "pagination-documents", "helper-documents"),
@@ -249,6 +291,11 @@ def test_client_helper_spellings(first: str, second: str, expected: str, tmp_pat
         "sockets",
         "caching",
         "compression",
+        "fields-both",
+        "pets-unpack",
+        "media",
+        "templates",
+        "standalone-bundled",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:

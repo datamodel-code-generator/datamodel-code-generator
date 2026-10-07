@@ -255,14 +255,9 @@ class ServerRenderer:  # noqa: PLR0904
 
     def role(self, name: str, compiled: Callable[..., str], **frame: object) -> Callable[..., str]:
         """Return the renderer of one builtin role: the template directory's override, or the compiled builtin."""
-        if (templates := self.templates) is None or name not in templates.roles:
+        if (templates := self.templates) is None:
             return compiled
-        values = {"context": self.context, **frame}
-
-        def render(**context: object) -> str:
-            return templates.render(name, {**context, **values})
-
-        return render
+        return templates.role(name, compiled, context=self.context, **frame)
 
     def router_frame(self, group: GroupSpec | None) -> dict[str, object]:
         """Return the router view and tag a router template receives."""

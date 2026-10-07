@@ -198,7 +198,10 @@ class FieldBranch:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class OperationSpec:
-    """Everything the renderer needs for one selected operation."""
+    """Everything the renderer needs for one selected operation.
+
+    `body_only` pairs each body media type of a 'both' operation that has no field arguments with the reason.
+    """
 
     contract: OperationContract
     index: int
@@ -217,6 +220,7 @@ class OperationSpec:
     body_arguments: BodyArguments = "body"
     body_field_names: tuple[BodyFieldName, ...] = ()
     fields: tuple[FieldBranch, ...] = ()
+    body_only: tuple[tuple[str, str], ...] = ()
     retry_safety: Literal["method_default", "idempotent", "never"] = "method_default"
     idempotency: IdempotencyMetadata | None = None
     retry_after_ms_header: str | None = None

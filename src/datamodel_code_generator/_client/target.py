@@ -71,6 +71,7 @@ if TYPE_CHECKING:
         TypeUseBinding,
         TypeUseId,
     )
+    from datamodel_code_generator._target_templates import TemplateOverlay
 
 DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
 PYDANTIC: Final = "pydantic>=2.13.5"
@@ -165,6 +166,13 @@ class ClientTarget:
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
         fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
+        dependencies = (
+            *DEPENDENCIES,
+            *((WEBSOCKETS,) if sockets else ()),
+            *BACKEND_DEPENDENCIES.get(backend, ()),
+            *webhook_dependencies(webhooks),
+            *model_dependencies(request.models),
+        )
         renderer = ClientRenderer(
             config=config,
             package=request.layout.package,
@@ -178,17 +186,26 @@ class ClientTarget:
             fingerprints=fingerprints,
             webhooks=partial(webhook_files, webhooks, dict(codecs.imports)),
             signatures=frozenset(spec.helper.tree["signature"]["kind"] for spec in webhooks),
+            backend=backend,
+            dependencies=(*dependencies, *(() if config.model_dependency is None else (config.model_dependency,))),
+            templates=_templates(request),
         )
-        return TargetRender(
-            files=renderer.files(),
-            dependencies=(
-                *DEPENDENCIES,
-                *((WEBSOCKETS,) if sockets else ()),
-                *BACKEND_DEPENDENCIES.get(backend, ()),
-                *webhook_dependencies(webhooks),
-                *model_dependencies(request.models),
-            ),
-        )
+        return TargetRender(files=renderer.files(), dependencies=dependencies)
+
+
+def _templates(request: TargetRequest) -> TemplateOverlay | None:
+    """Return the client overrides of the custom template directory with the `#all#` template data, if one is set.
+
+    The overlay and the model template module are imported only for a custom template directory.
+    """
+    model_config = request.model_config
+    if (directory := model_config.custom_template_dir) is None:
+        return None
+    from datamodel_code_generator._client.templates import ClientTemplates  # noqa: PLC0415
+    from datamodel_code_generator.model.base import ALL_MODEL  # noqa: PLC0415
+
+    data = (model_config.extra_template_data or {}).get(ALL_MODEL, {})
+    return ClientTemplates(directory, "client", request.target_id, data)
 
 
 def _wire(
