@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
-import shlex
 import sys
 import traceback
 from collections.abc import Mapping
@@ -28,8 +26,6 @@ _ERROR: Final = 2
 _JOBS: Final = (("job", "--job"), ("all_jobs", "--all-jobs"))
 _CONFLICTS: Final = (("watch", "--watch"), ("diff_against", "--diff-against"), ("input_model", "--input-model"))
 _TARGET: Final = "fastapi"
-_PLAIN: Final = re.compile(r"[\w./+-]+", re.ASCII)
-_EXPANDED: Final = re.compile(r"[$`\"\\!]")
 _REPORT: Final = frozenset({"schema_version", "target", "diagnostics"})
 _FIELDS: Final = frozenset({
     "code",
@@ -113,32 +109,11 @@ def _shown(path: Path) -> str:
 
 
 def _next_step(target: FastAPIConfig, dependencies: tuple[str, ...], form: str | None) -> str:
-    """Return what adds a generated package to a project: a uv command, or the lines of a requirements file.
-
-    A standalone distribution is added editable; a path that needs quoting becomes a file URL, which pip and uv read
-    alike in a requirements file.
-    """
-    if target.package_mode != "standalone":
-        subject, arguments, requirements = f"the runtime dependencies of {target.package}", dependencies, dependencies
-    else:
-        path = _shown(target.output)
-        location = path if Path(path).is_absolute() else f"./{path}"
-        editable = location if _PLAIN.fullmatch(location) else (Path.cwd() / target.output).resolve().as_uri()
-        subject, arguments, requirements = (
-            f"the {target.distribution_name} distribution",
-            ("--editable", location),
-            (f"-e {editable}",),
-        )
+    """Return what adds the runtime dependencies of a generated package to a project: a uv command or requirements."""
     if form == "requirements":
-        return "\n".join(requirements)
-    return f"Add {subject} to your project:\n  uv add {' '.join(map(_argument, arguments))}"
-
-
-def _argument(value: str) -> str:
-    """Leave an argument bare, double-quote it for every common shell, or POSIX-quote one that double quotes expand."""
-    if _PLAIN.fullmatch(value):
-        return value
-    return shlex.quote(value) if _EXPANDED.search(value) else f'"{value}"'
+        return "\n".join(dependencies)
+    arguments = " ".join(f'"{dependency}"' for dependency in dependencies)
+    return f"Add the runtime dependencies of {target.package} to your project:\n  uv add {arguments}"
 
 
 def _jobs(namespace: Namespace, report: _Report) -> NoReturn:

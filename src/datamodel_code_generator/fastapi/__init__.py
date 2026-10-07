@@ -19,7 +19,6 @@ from datamodel_code_generator.api_types import (
     GeneratedProject,
     GenerationReport,
     OperationRef,
-    OperationSelection,
     PublicationRollbackError,
     SchemaRef,
 )
@@ -56,7 +55,6 @@ __all__ = [
     "GenerationInput",
     "GenerationReport",
     "OperationRef",
-    "OperationSelection",
     "PublicationRollbackError",
     "ResponseChoice",
     "SchemaRef",

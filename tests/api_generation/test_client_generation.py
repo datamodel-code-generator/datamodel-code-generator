@@ -301,11 +301,10 @@ def test_client_helper_spellings(first: str, second: str, expected: str, tmp_pat
         "pets-unpack",
         "media",
         "templates",
-        "standalone-bundled",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:
-    """Keep metadata, explicit retry overrides, documentation ownership, and source distribution inputs visible."""
+    """Keep metadata, explicit retry overrides, and documentation ownership visible."""
     assert_output(client_documentation_report(case, tmp_path), EXPECTED / "documentation" / f"{case}.txt")
 
 

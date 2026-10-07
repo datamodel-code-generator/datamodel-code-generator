@@ -2,7 +2,6 @@
   "backend": "dataclasses.dataclass",
   "package": "codec_shapes_stdlib_aliases",
   "options": {"use_type_alias": true, "use_type_alias_type": true},
-  "config": {"selection": {"exclude_operations": ["/paths/~1animals/post", "/paths/~1kin/get"], "reason": "The client cannot convert its unions whose members only their schemas tell apart."}},
   "cases": [
     {"name": "animal-server-dog", "use": "/paths/~1animals~1any/put request_body", "op": "decode", "value": {"bark": 1}},
     {"name": "animal-any-decode-cat", "use": "/paths/~1animals~1any/put request_body", "op": "decode",

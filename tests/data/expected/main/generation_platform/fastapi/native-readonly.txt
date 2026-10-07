@@ -23,20 +23,6 @@ render pydantic_v2.BaseModel
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
   write server/.dcg-target-manifest.json
-  S_OPERATION_EXCLUDED selection /paths/~1json/post: POST /json is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1json~1optional/post: POST /json/optional is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1json~1nullable/post: POST /json/nullable is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1json~1many/post: POST /json/many is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1text/post: POST /text is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1binary/put: PUT /binary is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1raw/post: POST /raw is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1form/post: POST /form is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1form~1optional/post: POST /form/optional is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1form~1either/post: POST /form/either is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1form~1nested/post: POST /form/nested is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1form~1closed/post: POST /form/closed is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1form~1choice/post: POST /form/choice is matched by no include rule: Split models.
-  S_OPERATION_EXCLUDED selection /paths/~1upload/post: POST /upload is matched by no include rule: Split models.
   file server/README.md
     | # Bodies
     |

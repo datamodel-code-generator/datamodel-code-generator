@@ -456,11 +456,11 @@ helpers:
 | Binding | `{target, value}`, where `value` is `{source, selector}` with `source` `input`, `initial`, or `previous`, or `{literal}` with any JSON value whose text is UTF-8 and whose containers nest at most 64 levels |
 | End condition | `{kind: missing}`, `{kind: "null"}`, or `{kind: value, value}` with a JSON value other than null. A list of them is nonempty and names each condition once |
 
-A reference must select a root path operation of the input, or generation fails with `E_OPERATION_REF`; webhooks and
-path items of other documents are refused. An enabled helper whose operation the selection excludes fails with
-`E_SELECTOR_DEPENDENCY`; a disabled one may keep it. Each request target must exist in the operation it writes to:
-the declared parameter of that location and name, header names compared without case, the operation's own
-querystring, or its request body. An operation that owns a querystring takes no `in: query` target.
+A reference must select a root path operation of the input, or generation fails with `E_OPERATION_REF`; webhooks,
+path items of other documents, and paths that `--openapi-include-paths` leaves out are refused. Each request target
+must exist in the operation it writes to: the declared parameter of that location and name, header names compared
+without case, the operation's own querystring, or its request body. An operation that owns a querystring takes no
+`in: query` target.
 
 ### Helper kinds
 
@@ -516,7 +516,6 @@ with one of these names, generation fails with `E_NAME_COLLISION` instead of ren
 ```text
 E_NAME_COLLISION target protocols.helpers['tags.all'] /paths/~1tags/get: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with parameter_names or body_field_names
 E_NAME_COLLISION target protocols.helpers['jobs.run'] /paths/~1jobs/post: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with parameter_names or body_field_names
-E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/~1admin~1audit/get: The enabled pagination helper 'audit.all' needs GET /admin/audit, which the selection excludes (excluded by exclude_tags 'admin')
 ```
 
 <!-- fmt: on -->

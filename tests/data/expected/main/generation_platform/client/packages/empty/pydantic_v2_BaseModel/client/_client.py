@@ -20,7 +20,7 @@ from .model_codecs import JSONValue
 from .options import ClientOptions, RequestOptions
 from .responses import RawResponse
 
-_DEFAULTS = ClientDefaults(user_agent=None)
+_DEFAULTS = ClientDefaults()
 
 
 class ClientView:

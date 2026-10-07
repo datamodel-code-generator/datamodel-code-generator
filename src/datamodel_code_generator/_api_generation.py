@@ -1,9 +1,8 @@
-"""Coordinate one target: validate settings, generate models once in staging, select operations, and plan files."""
+"""Coordinate one target: validate settings, generate models once in staging, and plan files."""
 
 from __future__ import annotations
 
 import ast
-import json
 import os
 import sys
 import tempfile
@@ -12,7 +11,7 @@ from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import ParseResult
 
 from datamodel_code_generator._api_manifest import (
@@ -56,8 +55,6 @@ if TYPE_CHECKING:
         ArtifactKind,
         DiagnosticStage,
         GenerationReport,
-        OperationSelection,
-        OperationSelector,
         TargetKind,
     )
     from datamodel_code_generator._openapi_generation import ModelGenerationProduct, SourceLease
@@ -66,26 +63,14 @@ if TYPE_CHECKING:
         GeneratedTypeContractBatch,
         ModelArtifact,
         OperationContract,
-        OperationId,
     )
     from datamodel_code_generator._target_format import TargetCodeFormatter
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.enums import DataModelType, OpenAPIScope
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
-Exclusion: TypeAlias = "tuple[OperationContract, str]"
-
 _PYTHON_MINIMUM = (3, 11)
 _PYTHON_MINIMUM_TEXT = f"{_PYTHON_MINIMUM[0]}.{_PYTHON_MINIMUM[1]}"
-_README = PurePosixPath("README.md")
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TargetLayout:
-    """Where the Python package lives below the target root, and whether that root is a distribution."""
-
-    package: PurePosixPath
-    distribution: bool
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -104,20 +89,25 @@ class RenderedFile:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TargetRequest:
-    """Everything a target renders from: settings, the accepted model contracts, the selection, and the cwd."""
+    """Everything a target renders from: settings, the accepted model contracts, the root operations, and the cwd."""
 
     config: TargetConfig
-    layout: TargetLayout
     model_config: GenerateConfig
     target_id: str
     batch: GeneratedTypeContractBatch
     lease: SourceLease
     models: tuple[ModelArtifact, ...]
     operations: tuple[OperationContract, ...]
-    excluded: tuple[Exclusion, ...]
     documents: DocumentTable
     resolve: Callable[[OperationRef], OperationContract | None]
     cwd: Path
+
+    @property
+    def unresolved(self) -> str:
+        """Say why an operation reference resolved to nothing, naming the include filter when one is set."""
+        if self.model_config.openapi_include_paths:
+            return "selects no root path operation that --openapi-include-paths keeps"
+        return "selects no root path operation"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -270,47 +260,14 @@ def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
     return RootInput(ROOT_URN, cwd)
 
 
-def target_layout(config: TargetConfig) -> TargetLayout:
-    """Return the package root below the target root: the root itself, or `src/<package>` in a distribution."""
-    if config.package_mode == "standalone":
-        return TargetLayout(package=PurePosixPath("src", *config.package.split(".")), distribution=True)
-    return TargetLayout(package=PurePosixPath(), distribution=False)
-
-
-def _bundled_models(root: Path, models: Path, model_package: str) -> PurePosixPath | None:
-    package = root.joinpath("src", *model_package.split("."))
-    for candidate in (package, package.with_name(f"{package.name}.py")):
-        if models == candidate:
-            return PurePosixPath(*candidate.relative_to(root).parts)
-    return None
-
-
 def _check_layout(config: TargetConfig, output: Path, cwd: Path) -> None:
-    root, models = (cwd / config.output.expanduser()).resolve(), (cwd / output.expanduser()).resolve()
-    package = root.joinpath(*target_layout(config).package.parts)
+    package, models = (cwd / config.output.expanduser()).resolve(), (cwd / output.expanduser()).resolve()
     if package == models or package in models.parents or models in package.parents:
         raise config_error(
             code="E_PATH_COLLISION",
             option_path="output",
             message="The target package and the model output must not contain each other",
         )
-    if config.package_mode != "standalone":
-        return
-    match _bundled_models(root, models, config.model_package), config.model_dependency:
-        case PurePosixPath(), str():
-            raise config_error(
-                code="E_CONFIG_CONFLICT",
-                option_path="model_dependency",
-                message="A distribution that bundles its models declares no model_dependency",
-            )
-        case None, None:
-            raise config_error(
-                code="E_CONFIG_VALUE",
-                option_path="model_dependency",
-                message="A distribution needs its models under src/ or an explicit model_dependency",
-            )
-        case _:
-            pass
 
 
 def _remote_lock(
@@ -441,105 +398,20 @@ def _normalized(text: str) -> str:
     return f"{text}\n" if text else ""
 
 
-def _toml_array(values: Iterable[str]) -> str:
-    return f"[{', '.join(json.dumps(value) for value in values)}]"
+def _root_operations(batch: GeneratedTypeContractBatch) -> tuple[OperationContract, ...]:
+    """Return the operations of the root document's `paths`, in document order.
 
-
-def _dependencies(rendered: TargetRender, model_dependency: str | None) -> tuple[str, ...]:
-    """Return what a generated package needs at run time: the target's dependencies and any external models."""
-    return rendered.dependencies if model_dependency is None else (*rendered.dependencies, model_dependency)
-
-
-def _tags(operation: OperationContract) -> tuple[str, ...]:
-    from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence  # noqa: PLC0415
-
-    if not isinstance(tags := dict(operation.facts).get("tags"), LiteralSequence):
-        return ()
-    return tuple(item.value for item in tags.items if isinstance(item, LiteralScalar) and isinstance(item.value, str))
-
-
-class _Selector:
-    def __init__(self, batch: GeneratedTypeContractBatch, source: RootInput, cwd: Path) -> None:
-        root = batch.documents[0].id
-        self.operations = {
-            operation.id.use_site.pointer: operation
-            for operation in batch.operations
-            if operation.id.parent is None and operation.id.use_site.document == root
-        }
-        self.endpoints = [operation for operation in self.operations.values() if operation.id.kind == "path"]
-        self.source = source
-        self.cwd = cwd
-        self.problems: list[Diagnostic] = []
-
-    def report(self, code: str, option_path: str, message: str, pointer: str | None = None) -> None:
-        self.problems.append(
-            Diagnostic(
-                code=code,
-                severity="error",
-                stage="selection",
-                message=message,
-                source_pointer=pointer,
-                option_path=option_path,
-            )
-        )
-
-    def resolve(self, name: str, selectors: tuple[OperationSelector, ...]) -> set[OperationId]:
-        resolved: set[OperationId] = set()
-        for index, selector in enumerate(selectors):
-            pointer, document = (selector, None) if isinstance(selector, str) else (selector.pointer, selector.document)
-            if document is not None and document_identity(document, self.cwd) != self.source.identity:
-                message = "The operation reference names a document other than the root input"
-            elif (operation := self.operations.get(pointer)) is None:
-                message = "The operation reference selects no root operation"
-            elif operation.id.kind != "path":
-                message = "The operation reference selects a webhook, not a path operation"
-            elif operation.id in resolved:
-                self.report("E_SELECTION", f"selection.{name}[{index}]", "The selection repeats an operation", pointer)
-                continue
-            else:
-                resolved.add(operation.id)
-                continue
-            self.report("E_OPERATION_REF", f"selection.{name}[{index}]", message, pointer)
-        return resolved
-
-    def known(self, name: str, values: tuple[str, ...]) -> frozenset[str]:
-        present = {tag for operation in self.endpoints for tag in _tags(operation)}
-        for index, tag in enumerate(values):
-            if tag not in present:
-                self.report("E_SELECTION", f"selection.{name}[{index}]", f"No path operation has the tag {tag!r}")
-        return frozenset(values)
-
-
-def select_operations(
-    batch: GeneratedTypeContractBatch, selection: OperationSelection, source: RootInput, cwd: Path
-) -> tuple[tuple[OperationContract, ...], tuple[Exclusion, ...]]:
-    """Resolve selectors against root use sites, then include by OR and subtract exclusions, keeping order."""
-    selector = _Selector(batch, source, cwd)
-    include_operations = selector.resolve("include_operations", selection.include_operations)
-    include_tags = selector.known("include_tags", selection.include_tags)
-    exclude_operations = selector.resolve("exclude_operations", selection.exclude_operations)
-    exclude_tags = selector.known("exclude_tags", selection.exclude_tags)
-    if selector.problems:
-        raise APIGenerationError(tuple(selector.problems))
-    everything = not (include_operations or include_tags)
-    selected: list[OperationContract] = []
-    excluded: list[Exclusion] = []
-    for operation in selector.endpoints:
-        found = _tags(operation)
-        included = ["include_operations"] if operation.id in include_operations else []
-        included += [f"include_tags {tag!r}" for tag in found if tag in include_tags]
-        dropped = ["exclude_operations"] if operation.id in exclude_operations else []
-        dropped += [f"exclude_tags {tag!r}" for tag in found if tag in exclude_tags]
-        match bool(included), bool(dropped):
-            case True, True:
-                excluded.append((operation, f"included by {', '.join(included)} but excluded by {', '.join(dropped)}"))
-            case _, True:
-                excluded.append((operation, f"excluded by {', '.join(dropped)}"))
-            case False, _ if not everything:
-                excluded.append((operation, "matched by no include rule"))
-            case _:
-                selected.append(operation)
-    return tuple(selected), tuple(excluded)
+    A component path item that no included path references is walked on its own; it has no URL, so it is left out.
+    """
+    root = batch.documents[0].id
+    return tuple(
+        operation
+        for operation in batch.operations
+        if operation.id.parent is None
+        and operation.id.kind == "path"
+        and operation.id.use_site.document == root
+        and operation.id.use_site.pointer.startswith("/paths/")
+    )
 
 
 class _Planner:
@@ -559,7 +431,6 @@ class _Planner:
         self.operations: dict[str, OperationContract] = {}
         self.observed: dict[Path, Observed] = {}
         self.version, self.revision = get_version(), runtime_revision()
-        self.layout = target_layout(config)
 
     def locate(self, path: Path, *, option_path: str) -> str:
         return relative_uri(self.cwd / path.expanduser(), self.root, option_path)
@@ -570,44 +441,10 @@ class _Planner:
             return self.operations.get(reference.pointer)
         return None
 
-    def exclusions(self, excluded: tuple[Exclusion, ...]) -> tuple[Diagnostic, ...]:
-        reason = self.config.selection.reason
-        return tuple(
-            Diagnostic(
-                code="S_OPERATION_EXCLUDED",
-                severity="info",
-                stage="selection",
-                message=f"{operation.method.upper()} {operation.path} is {grounds}: {reason}",
-                source_uri=self.documents.root_uri,
-                source_pointer=operation.id.use_site.pointer,
-                operation=OperationRef(pointer=operation.id.use_site.pointer),
-                target_id=self.target_id,
-            )
-            for operation, grounds in excluded
-        )
-
     def model_path(self, artifact: ModelArtifact) -> Path:
         output = self.effective.output
         assert output is not None
         return output if self.models.single else output.joinpath(*artifact.path)
-
-    def verify(self) -> None:
-        problems = [
-            Diagnostic(
-                code="E_MODEL_MISMATCH",
-                severity="error",
-                stage="verify",
-                message="The model file differs from the verified candidate"
-                if present
-                else "The verified candidate has no model file",
-                artifact_path=path.as_posix(),
-            )
-            for artifact in self.models.artifacts
-            if not (present := (location := self.cwd / (path := self.model_path(artifact))).is_file())
-            or location.read_bytes() != artifact.content
-        ]
-        if problems:
-            raise APIGenerationError(tuple(problems))
 
     def artifact(
         self,
@@ -689,45 +526,32 @@ class _Planner:
 
     def project(self) -> GeneratedProject:
         models, config, generator = self.models, self.config, self.generator
-        selected, excluded = select_operations(models.product.batch, config.selection, models.source, self.cwd)
-        self.operations = {
-            operation.id.use_site.pointer: operation for operation in (*selected, *(item for item, _ in excluded))
-        }
+        operations = _root_operations(models.product.batch)
+        self.operations = {operation.id.use_site.pointer: operation for operation in operations}
         state = read_target_state(self.root, generator.kind, config.package)
         rendered = generator.render(
             TargetRequest(
                 config=config,
-                layout=self.layout,
                 model_config=self.effective,
                 target_id=self.target_id,
                 batch=models.product.batch,
                 lease=models.product.source_lease,
                 models=models.artifacts,
-                operations=selected,
-                excluded=excluded,
+                operations=operations,
                 documents=self.documents,
                 resolve=self.operation,
                 cwd=self.cwd,
             )
         )
-        if verifying := config.model_mode == "verify":
-            self.verify()
         finished = _Finisher(self).finish(rendered)
         plans = plan_files(self.root, state, finished, self.target_id)
         output = self.effective.output
         assert output is not None
         model = model_record(output=self.locate(output, option_path="model_config.output"), artifacts=models.artifacts)
-        exclusions = self.exclusions(excluded)
         manifest = self.manifest(plans, model)
         artifacts = (
             *(
-                self.artifact(
-                    self.model_path(artifact),
-                    "model",
-                    artifact.content,
-                    None,
-                    ("unchanged", observe(artifact.content)) if verifying else None,
-                )
+                self.artifact(self.model_path(artifact), "model", artifact.content, None)
                 for artifact in models.artifacts
             ),
             *(
@@ -742,7 +566,7 @@ class _Planner:
             ),
             *(
                 ()
-                if verifying or models.metadata is None
+                if models.metadata is None
                 else (self.artifact(models.metadata[0], "model_metadata", models.metadata[1], None),)
             ),
             *self.lock_artifacts(),
@@ -757,13 +581,12 @@ class _Planner:
             artifacts=artifacts,
             diagnostics=(
                 *state.diagnostics,
-                *exclusions,
                 *rendered.diagnostics,
                 *hand_edits(state, plans, self.target_id),
             ),
             generator_version=self.version,
             runtime_revision=self.revision,
-            dependencies=_dependencies(rendered, config.model_dependency),
+            dependencies=rendered.dependencies,
         )
 
 
@@ -771,46 +594,9 @@ class _Finisher:
     def __init__(self, planner: _Planner) -> None:
         self.config = planner.config
         self.effective = planner.effective
-        self.root = planner.root
         self.cwd = planner.cwd
-        self.layout = planner.layout
         self.target_id = planner.target_id
         self.models = planner.models
-
-    def pyproject(self, rendered: TargetRender) -> str:
-        config, output = self.config, self.effective.output
-        assert output is not None
-        bundled = _bundled_models(self.root, (self.cwd / output.expanduser()).resolve(), config.model_package)
-        included = (self.layout.package.as_posix(), *(() if bundled is None else (bundled.as_posix(),)))
-        readme = ("README.md",) if any(file.path == _README for file in rendered.files) else ()
-        documentation = tuple(file.path.as_posix() for file in rendered.files if file.kind == "documentation")
-        return "\n".join((
-            "[build-system]",
-            'requires = ["hatchling>=1.27"]',
-            'build-backend = "hatchling.build"',
-            "",
-            "[project]",
-            f"name = {json.dumps(config.distribution_name)}",
-            f"version = {json.dumps(config.package_version)}",
-            f'requires-python = ">={self.effective.target_python_version.value}"',
-            *(f'readme = "{path}"' for path in readme),
-            f"dependencies = {_toml_array(_dependencies(rendered, config.model_dependency))}",
-            "",
-            "[tool.hatch.build.targets.wheel]",
-            f"only-include = {_toml_array(included)}",
-            'sources = ["src"]',
-            "",
-            "[tool.hatch.build.targets.sdist]",
-            f"only-include = {_toml_array((*included, *readme, *documentation, 'pyproject.toml'))}",
-        ))
-
-    def layout_files(self, rendered: TargetRender) -> tuple[RenderedFile, ...]:
-        typed = RenderedFile(path=self.layout.package / "py.typed", kind="typing", text="")
-        if not self.layout.distribution:
-            return (typed,)
-        return typed, RenderedFile(
-            path=PurePosixPath("pyproject.toml"), kind="pyproject", text=self.pyproject(rendered)
-        )
 
     def check_sources(self, files: Iterable[tuple[PurePosixPath, str]], stage: DiagnosticStage) -> None:
         version = self.effective.target_python_version.version_key
@@ -838,7 +624,7 @@ class _Finisher:
         from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
 
         effective, models = self.effective, self.models
-        files = (*rendered.files, *self.layout_files(rendered))
+        files = (*rendered.files, RenderedFile(path=PurePosixPath("py.typed"), kind="typing", text=""))
         self.check_sources(((file.path, file.text) for file in files if not file.verbatim), "target")
         formatter = TargetCodeFormatter(
             effective.target_python_version,

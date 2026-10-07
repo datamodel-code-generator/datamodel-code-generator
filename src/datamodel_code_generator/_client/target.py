@@ -176,7 +176,6 @@ class ClientTarget:
         )
         renderer = ClientRenderer(
             config=config,
-            package=request.layout.package,
             plan=plan,
             batch=batch,
             wire=wire,
@@ -188,7 +187,7 @@ class ClientTarget:
             webhooks=partial(webhook_files, webhooks, dict(codecs.imports)),
             signatures=frozenset(spec.helper.tree["signature"]["kind"] for spec in webhooks),
             backend=backend,
-            dependencies=(*dependencies, *(() if config.model_dependency is None else (config.model_dependency,))),
+            dependencies=dependencies,
             templates=ClientTemplates.custom(request.model_config, request.target_id, request.cwd),
         )
         return TargetRender(files=renderer.files(), dependencies=dependencies)

@@ -25,7 +25,7 @@ from .responses import AsyncRawResponse
 if TYPE_CHECKING:
     from .resources.auth._async import AsyncAuthResource
 
-_DEFAULTS = ClientDefaults(user_agent=None, security_schemes=security.ROOT_SCHEMES)
+_DEFAULTS = ClientDefaults(security_schemes=security.ROOT_SCHEMES)
 
 
 class AsyncClientView:

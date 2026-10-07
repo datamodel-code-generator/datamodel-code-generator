@@ -1,12 +1,6 @@
 output='server'
 package='example.server'
 model_package='example.models'
-model_mode='generate'
-selection=OperationSelection(include_operations=(), include_tags=(), exclude_operations=(), exclude_tags=(), reason=None)
-package_mode='embedded'
-package_version=None
-distribution_name=None
-model_dependency=None
 layout='routers'
 handler_mode='sync'
 handler_modes=mappingproxy({})

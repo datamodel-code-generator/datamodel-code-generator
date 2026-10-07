@@ -35,7 +35,6 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "native-generator",
         "unbound",
         "single",
-        "standalone",
         "encoding",
         "route-errors",
         "name-errors",

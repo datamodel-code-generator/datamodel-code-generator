@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from .resources.files._sync import FilesResource
     from .resources.forms._sync import FormsResource
 
-_DEFAULTS = ClientDefaults(user_agent=None)
+_DEFAULTS = ClientDefaults()
 
 
 class ClientView:

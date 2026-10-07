@@ -141,11 +141,7 @@ The package needs these distributions at run time:
 - `{{ dependency }}`
 {%- endfor %}
 
-{% if standalone -%}
-`pyproject.toml` declares them.
-{%- else -%}
 Each generation reports them; add them to your project, for example with `uv add`.
-{%- endif %}
 
 ## Capabilities
 

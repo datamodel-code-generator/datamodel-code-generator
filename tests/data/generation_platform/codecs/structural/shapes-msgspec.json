@@ -2,7 +2,6 @@
   "backend": "msgspec.Struct",
   "package": "codec_shapes_msgspec",
   "strategies": true,
-  "config": {"selection": {"exclude_operations": ["/paths/~1animals/post", "/paths/~1kin/get"], "reason": "The client cannot convert its unions whose members only their schemas tell apart."}},
   "cases": [
     {"name": "animal-client-cat", "use": "/paths/~1animals~1any/put request_body", "surface": "client", "op": "from_wire",
      "value": {"id": 3, "meow": true}},

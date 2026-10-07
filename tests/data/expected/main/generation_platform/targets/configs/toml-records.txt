@@ -1,1 +1,0 @@
-E_CONFIG_VALUE error config selection: selection must be a table

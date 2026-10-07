@@ -25,7 +25,7 @@ from .responses import RawResponse
 if TYPE_CHECKING:
     from .resources.default._sync import DefaultResource
 
-_DEFAULTS = ClientDefaults(user_agent=None, security_schemes=security.ROOT_SCHEMES)
+_DEFAULTS = ClientDefaults(security_schemes=security.ROOT_SCHEMES)
 
 
 class ClientView:

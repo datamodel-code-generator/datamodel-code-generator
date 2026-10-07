@@ -108,7 +108,7 @@ default, prints a `uv add` command, and `requirements` prints the lines of a req
       --dependency-format requirements > requirements.txt
     ```
 
-In embedded mode, `requirements` prints one runtime dependency per line, each with the minimum version the
+`requirements` prints one runtime dependency per line, each with the minimum version the
 package needs:
 
 ```text
@@ -120,8 +120,7 @@ referencing>=0.37
 typing-extensions>=4.16
 ```
 
-In standalone mode it prints `-e` with the distribution's path, such as `-e ./service`; a path that needs
-quoting is written as a `file:` URL, which pip and uv both read. Nothing is printed for `--check`, and the option
+Nothing is printed for `--check`, and the option
 cannot be combined with `--diagnostics-json -`, which also writes to stdout (`E_CONFIG_CONFLICT`).
 
 ---

@@ -33,7 +33,6 @@ if TYPE_CHECKING:
     from .resources.users._async import AsyncUsersResource
 
 _DEFAULTS = ClientDefaults(
-    user_agent=None,
     security_schemes=security.ROOT_SCHEMES,
     helpers=(
         ('users.all', 'pagination'),

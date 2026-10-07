@@ -39,8 +39,6 @@
   write client/py.typed
   write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
-  S_OPERATION_EXCLUDED selection /paths/~1items~1{id}/get: GET /items/{id} is excluded by exclude_tags 'items': Checked elsewhere
-  S_OPERATION_EXCLUDED selection /paths/~1reports/get: GET /reports is excluded by exclude_tags 'reports': Checked elsewhere
 
 # artifact client/_generated_docs/README.md
 # client

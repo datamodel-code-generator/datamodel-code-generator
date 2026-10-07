@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from .resources.store._sync import StoreResource
     from .resources.u30e6_u30fc_u30b6_u30fc._sync import U30e6U30fcU30b6U30fcResource
 
-_DEFAULTS = ClientDefaults(user_agent=None)
+_DEFAULTS = ClientDefaults()
 
 
 class ClientView:

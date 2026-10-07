@@ -39,9 +39,10 @@ def client_typing_report(
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
             output_model_type=backend,
             formatters=[Formatter.BUILTIN],
+            **case.get("model", {}),
         ),
         config=client_config(
-            {"output": "pets", "package": "pets", "model_package": "pets_models", **case["config"]}, root
+            {"output": "pets", "package": "pets", "model_package": "pets_models", **case.get("config", {})}, root
         ),
         generator=ClientTarget(),
     )

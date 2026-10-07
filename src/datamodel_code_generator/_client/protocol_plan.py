@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan
     from datamodel_code_generator._client.protocols import Helper, Link, ProtocolConfiguration
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
-    from datamodel_code_generator._target_contract import OperationContract, OperationId
+    from datamodel_code_generator._target_contract import OperationContract
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -56,7 +56,7 @@ def _undocumented(at: str, document: str | None) -> Diagnostic:
 def plan_protocols(request: TargetRequest, source: Path | ProtocolConfiguration | None) -> Protocols | None:
     """Load the target's helpers and resolve their references, raising every problem with the target's identity.
 
-    An enabled helper needs each operation it sends selected; a disabled one only needs its references to resolve.
+    Every helper, enabled or not, needs each operation it names among the root path operations.
     """
     if source is None:
         return None
@@ -67,7 +67,7 @@ def plan_protocols(request: TargetRequest, source: Path | ProtocolConfiguration 
     if not problems:
         for helper in helpers:
             for link in helper.links:
-                problems.extend(resolver.link(helper, link))
+                problems.extend(resolver.link(link))
             for at, schema in helper.schemas:
                 problems.extend(resolver.schema(at, schema))
     if problems:
@@ -81,7 +81,6 @@ class _Resolver:
     def __init__(self, request: TargetRequest, base: Path) -> None:
         self.request = request
         self.base = base
-        self.excluded: Mapping[OperationId, str] = {operation.id: reason for operation, reason in request.excluded}
         self.operations: dict[OperationRef, OperationContract] = {}
         self.documents: dict[SchemaRef, str] = {}
 
@@ -94,8 +93,8 @@ class _Resolver:
             raise ValueError(msg)
         return document_identity(document, self.base)
 
-    def link(self, helper: Helper, link: Link) -> Iterator[Diagnostic]:
-        """Resolve one operation reference, and check its selection and each request target it takes."""
+    def link(self, link: Link) -> Iterator[Diagnostic]:
+        """Resolve one operation reference, and check each request target it takes."""
         reference = link.ref
         try:
             document = self.identity(reference.document)
@@ -104,17 +103,11 @@ class _Resolver:
             return
         if (operation := self.request.resolve(OperationRef(pointer=reference.pointer, document=document))) is None:
             named = "" if reference.document is None else f" in {reference.document!r}"
-            message = f"{link.at} {reference.pointer!r}{named} selects no root path operation"
+            message = f"{link.at} {reference.pointer!r}{named} {self.request.unresolved}"
             yield _problem("E_OPERATION_REF", "config", link.at, message, reference)
             return
         self.operations[reference] = operation
         found = OperationRef(pointer=operation.id.use_site.pointer)
-        if helper.enabled and (reason := self.excluded.get(operation.id)) is not None:
-            message = (
-                f"The enabled {helper.kind} helper {helper.name!r} needs {_label(operation)}, "
-                f"which the selection excludes ({reason})"
-            )
-            yield _problem("E_SELECTOR_DEPENDENCY", "selection", link.at, message, found)
         for at, target in link.targets:
             if (message := _target_problem(operation, target)) is not None:
                 yield _problem("E_CONFIG_VALUE", "config", at, f"{at}: {message}", found)
