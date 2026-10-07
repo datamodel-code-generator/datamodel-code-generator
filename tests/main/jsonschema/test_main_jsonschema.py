@@ -15351,14 +15351,27 @@ def test_main_lookaround_union_types_pydantic_v2(output_file: Path) -> None:
 
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
-    ("output_model_type", "expected_file", "doubled_path"),
+    ("args", "expected_file", "doubled_path"),
     [
-        ("pydantic_v2.BaseModel", "rust_unsupported_pattern_pydantic_v2.py", ("doubled", "root")),
-        ("pydantic_v2.dataclass", "rust_unsupported_pattern_pydantic_v2_dataclass.py", ("doubled",)),
+        (
+            ["--output-model-type", "pydantic_v2.BaseModel"],
+            "rust_unsupported_pattern_pydantic_v2.py",
+            ("doubled", "root"),
+        ),
+        (
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"],
+            "rust_unsupported_pattern_pydantic_v2_annotated.py",
+            ("doubled", "root"),
+        ),
+        (
+            ["--output-model-type", "pydantic_v2.dataclass"],
+            "rust_unsupported_pattern_pydantic_v2_dataclass.py",
+            ("doubled",),
+        ),
     ],
 )
 def test_main_rust_unsupported_pattern(
-    output_model_type: str, expected_file: str, doubled_path: tuple[str, ...], output_file: Path
+    args: list[str], expected_file: str, doubled_path: tuple[str, ...], output_file: Path
 ) -> None:
     """Patterns pydantic-core's Rust engine rejects, such as backreferences, select Python's regex engine.
 
@@ -15370,7 +15383,7 @@ def test_main_rust_unsupported_pattern(
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file=expected_file,
-        extra_args=["--output-model-type", output_model_type],
+        extra_args=args,
         force_exec_validation=True,
     )
     for path in (("pair",), doubled_path):

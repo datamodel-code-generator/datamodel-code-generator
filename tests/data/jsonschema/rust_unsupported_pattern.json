@@ -30,6 +30,15 @@
           "$ref": "#/definitions/Lookahead"
         }
       }
+    },
+    "KeyHolder": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(k)\\1$"
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
     }
   },
   "type": "object",

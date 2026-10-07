@@ -829,7 +829,8 @@ def _rust_regex_rejects(pattern: str) -> bool:
 def _needs_python_regex_engine(pattern: str, data_type: DataType) -> bool:
     """Return whether an emitted pattern needs Python's ``re``; only string patterns are probed."""
     return _LOOKAROUND_PATTERN.search(pattern) is not None or (
-        data_type.type in _STRING_PATTERN_TYPES and _rust_regex_rejects(pattern)
+        (data_type.type in _STRING_PATTERN_TYPES or getattr(data_type, "annotated_string", False))
+        and _rust_regex_rejects(pattern)
     )
 
 

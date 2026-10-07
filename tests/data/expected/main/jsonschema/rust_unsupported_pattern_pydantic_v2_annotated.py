@@ -4,31 +4,37 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field, RootModel, StringConstraints
 
 
 class Doubled(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: constr(pattern=r'^(a)\1$') = Field(
-        ..., description="Backreference only Python's regex engine supports."
-    )
+    root: Annotated[
+        str,
+        Field(
+            description="Backreference only Python's regex engine supports.",
+            pattern='^(a)\\1$',
+        ),
+    ]
 
 
 class Lookahead(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: constr(pattern=r'^(?=.*[A-Z]).+$')
+    root: Annotated[str, Field(pattern='^(?=.*[A-Z]).+$')]
 
 
-class Plain(RootModel[constr(pattern=r'^[a-z]+$')]):
-    root: constr(pattern=r'^[a-z]+$')
+class Plain(RootModel[str]):
+    root: Annotated[str, Field(pattern='^[a-z]+$')]
 
 
 class PlainHolder(BaseModel):
-    name: constr(pattern=r'^[a-z]+$') | None = None
+    name: Annotated[str | None, Field(pattern='^[a-z]+$')] = None
 
 
 class LookaheadHolder(BaseModel):
@@ -39,14 +45,14 @@ class KeyHolder(RootModel[dict[str, int]]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: dict[constr(pattern=r'^(k)\1$'), int]
+    root: dict[Annotated[str, StringConstraints(pattern=r'^(k)\1$')], int]
 
 
 class Model(BaseModel):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    pair: constr(pattern=r'^(?P<letter>[a-z])(?P=letter)$') | None = None
+    pair: Annotated[str | None, Field(pattern='^(?P<letter>[a-z])(?P=letter)$')] = None
     doubled: Doubled | None = None
     plain: Plain | None = None
     holder: PlainHolder | None = None
