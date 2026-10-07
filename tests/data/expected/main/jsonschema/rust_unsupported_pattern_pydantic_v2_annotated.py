@@ -48,6 +48,13 @@ class KeyHolder(RootModel[dict[str, int]]):
     root: dict[Annotated[str, StringConstraints(pattern=r'^(k)\1$')], int]
 
 
+class NullableHolder(BaseModel):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    code: Annotated[str | None, Field(pattern='^(?P<c>[a-z])(?P=c)$')] = None
+
+
 class Model(BaseModel):
     model_config = ConfigDict(
         regex_engine="python-re",

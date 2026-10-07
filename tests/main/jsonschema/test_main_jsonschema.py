@@ -15364,6 +15364,11 @@ def test_main_lookaround_union_types_pydantic_v2(output_file: Path) -> None:
             ("doubled", "root"),
         ),
         (
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            "rust_unsupported_pattern_pydantic_v2_field_constraints.py",
+            ("doubled", "root"),
+        ),
+        (
             ["--output-model-type", "pydantic_v2.dataclass"],
             "rust_unsupported_pattern_pydantic_v2_dataclass.py",
             ("doubled",),
@@ -15494,7 +15499,8 @@ def test_main_rust_only_syntax(output_file: Path) -> None:
     r"""Rust-only syntax keeps pydantic-core's default regex engine and Rust semantics.
 
     Counted repetitions with whitespace, braced escapes such as ``\p{L}``, ``\x{41}`` and ``\b{start}``,
-    and nested character classes are Rust syntax that Python's ``re`` reads differently or rejects.
+    nested character classes, and capture names with brackets are Rust syntax that Python's ``re`` reads
+    differently or rejects.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_only_syntax.json",
@@ -15510,6 +15516,8 @@ def test_main_rust_only_syntax(output_file: Path) -> None:
         ("WordBoundary", "abc", "123"),
         ("HexBrace", "AA", "B"),
         ("NestedClass", "a{", "1"),
+        ("BracketedCaptureName", "12", "a"),
+        ("ClassBeforeCaptureName", "m>x", "a>x"),
     ):
         assert_generated_model_json_validation(
             output_file,

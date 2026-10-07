@@ -20,6 +20,14 @@
     "NestedClass": {
       "type": "string",
       "pattern": "^[[a-z]{]+$"
+    },
+    "BracketedCaptureName": {
+      "type": "string",
+      "pattern": "^(?P<ids[]>[0-9]+)\\b"
+    },
+    "ClassBeforeCaptureName": {
+      "type": "string",
+      "pattern": "^[](?<m]>\\bx$"
     }
   }
 }

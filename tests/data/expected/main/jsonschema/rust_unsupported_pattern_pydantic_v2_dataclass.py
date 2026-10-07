@@ -39,6 +39,11 @@ KeyHolder = TypeAliasType("KeyHolder", dict[constr(pattern=r'^(k)\1$'), int])
 
 
 @dataclass(config=ConfigDict(regex_engine="python-re"))
+class NullableHolder:
+    code: constr(pattern=r'^(?P<c>[a-z])(?P=c)$') | None = None
+
+
+@dataclass(config=ConfigDict(regex_engine="python-re"))
 class Model:
     pair: constr(pattern=r'^(?P<letter>[a-z])(?P=letter)$') | None = None
     doubled: Doubled | None = None

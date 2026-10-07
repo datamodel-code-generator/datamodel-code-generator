@@ -11,8 +11,10 @@ class Doubled(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: constr(pattern=r'^(a)\1$') = Field(
-        ..., description="Backreference only Python's regex engine supports."
+    root: str = Field(
+        ...,
+        description="Backreference only Python's regex engine supports.",
+        pattern='^(a)\\1$',
     )
 
 
@@ -20,15 +22,15 @@ class Lookahead(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: constr(pattern=r'^(?=.*[A-Z]).+$')
+    root: str = Field(..., pattern='^(?=.*[A-Z]).+$')
 
 
-class Plain(RootModel[constr(pattern=r'^[a-z]+$')]):
-    root: constr(pattern=r'^[a-z]+$')
+class Plain(RootModel[str]):
+    root: str = Field(..., pattern='^[a-z]+$')
 
 
 class PlainHolder(BaseModel):
-    name: constr(pattern=r'^[a-z]+$') | None = None
+    name: str | None = Field(None, pattern='^[a-z]+$')
 
 
 class LookaheadHolder(BaseModel):
@@ -46,14 +48,14 @@ class NullableHolder(BaseModel):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    code: constr(pattern=r'^(?P<c>[a-z])(?P=c)$') | None = None
+    code: str | None = Field(None, pattern='^(?P<c>[a-z])(?P=c)$')
 
 
 class Model(BaseModel):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    pair: constr(pattern=r'^(?P<letter>[a-z])(?P=letter)$') | None = None
+    pair: str | None = Field(None, pattern='^(?P<letter>[a-z])(?P=letter)$')
     doubled: Doubled | None = None
     plain: Plain | None = None
     holder: PlainHolder | None = None

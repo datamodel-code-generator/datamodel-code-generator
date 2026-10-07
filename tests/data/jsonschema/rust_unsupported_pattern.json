@@ -39,6 +39,18 @@
       "additionalProperties": {
         "type": "integer"
       }
+    },
+    "NullableHolder": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(?P<c>[a-z])(?P=c)$"
+        }
+      }
     }
   },
   "type": "object",

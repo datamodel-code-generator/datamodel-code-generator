@@ -31,3 +31,11 @@ class HexBrace(RootModel[constr(pattern=r'^\x{41}+$')]):
 
 class NestedClass(RootModel[constr(pattern=r'^[[a-z]{]+$')]):
     root: constr(pattern=r'^[[a-z]{]+$')
+
+
+class BracketedCaptureName(RootModel[constr(pattern=r'^(?P<ids[]>[0-9]+)\b')]):
+    root: constr(pattern=r'^(?P<ids[]>[0-9]+)\b')
+
+
+class ClassBeforeCaptureName(RootModel[constr(pattern=r'^[](?<m]>\bx$')]):
+    root: constr(pattern=r'^[](?<m]>\bx$')

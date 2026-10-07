@@ -4589,23 +4589,24 @@ the installed pydantic-core or on the Python running the generator, and it is th
 | Comments | `(?#note)` | `python-re` |
 | Named characters | `\N{LATIN SMALL LETTER A}` | `python-re` |
 | Backspace in a character class | `[\b]` | `python-re` |
-| `a` and `L` flags | `(?a)`, `(?a:x)`, `(?ia)` | `python-re` |
+| ASCII flag | `(?a)`, `(?a:x)`, `(?ia)` | `python-re` |
 | Braces that cannot start a counted repetition | `a{,3}`, `{[a-z]+}` | `python-re` |
 | Atomic groups | `(?>a+)` | `python-re` with `--target-python-version` 3.11 or later; unchanged for 3.10 |
-| Escaped characters and character class members | `\\1`, `\(\?>`, `[(?>{]` | Rust engine (default) |
-| Rust-only syntax | `a{2, 3}`, `\p{L}`, `\x{41}`, `\b{start}`, `[[a-z]{]` | Rust engine |
+| Escaped characters and character class members | `\\1`, `\(\?>`, `[(?>{]` | Rust engine (default); the lookaround check still matches `(?=` and `(?<!` even when escaped or inside a class |
+| Rust-only syntax | `a{2, 3}`, `\p{L}`, `\x{41}`, `\b{start}`, `[[a-z]{]`, `(?P<ids[]>x)` | Rust engine |
+| Syntax both engines reject | `(?L)`, `([a-z])\1\p{L}` | `python-re`; still fails at import, with Python's error |
 | Possessive quantifiers | `a++`, `a*+` | Rust engine; pydantic-core accepts them as nested repetitions |
 | Syntax only Pydantic 2.0.0-2.0.2 rejects | `\/`, `\:`, `(?<name>x)`, `[a&&b]` | Rust engine |
 | Patterns over Rust's compiled size limit | `[\w.-]{1,256}` | Rust engine; not detectable from the syntax |
 | Verbose patterns | `(?x) a b` | Rust engine; the scan does not model verbose whitespace and comments |
 
-The scan follows the Rust grammar of every pydantic-core release from 2.3.0 on, so a pattern pydantic-core
-accepts is never switched. A switched pattern that also contains syntax the target Python's `re` does not parse
-keeps the default engine: possessive quantifiers need Python 3.11 and `\z` needs Python 3.14. The generator does
-not compile the pattern with Python's `re`. A pattern both engines reject, such as `([a-z])\1\p{L}`, is still
-switched and still fails at import, with Python's error instead of Rust's.
-Lookaround keeps its existing detection for every field. The other rules apply only to patterns emitted for string
-fields: a `pattern` on `format: uri` (`AnyUrl`) is not emitted, and Pydantic ignores a `pattern` on `bytes`.
+Apart from the lookaround check, the scan follows the Rust grammar of every pydantic-core release from 2.3.0 on,
+so a pattern pydantic-core accepts is never switched. A switched pattern that also contains syntax the target
+Python's `re` does not parse keeps the default engine: possessive quantifiers need Python 3.11 and `\z` needs
+Python 3.14. The generator does not compile the pattern with Python's `re`. Lookaround keeps its existing detection
+for every field. The other rules apply only to patterns emitted for string fields, including unions of strings such
+as `type: ["string", "null"]`: a `pattern` on `format: uri` (`AnyUrl`) is not emitted, and Pydantic ignores a
+`pattern` on `bytes`.
 Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
 example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
 linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they

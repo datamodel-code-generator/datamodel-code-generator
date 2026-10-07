@@ -813,16 +813,18 @@ _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 _STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
 _UNICODE_WHITE_SPACE = "[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*"
+_REGEX_ESCAPE_TOKENS = r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
 _REGEX_TOKEN: re.Pattern[str] = re.compile(
-    r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|\[:\^?[A-Za-z]+:\]|(?P<open>\[\^?\]?)|(?P<close>\])"
-    r"|\(\?(?P<group>[>(#]|P=)|\(\?(?P<flags>[A-Za-z-]*)[:)]"
-    rf"|(?:\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}(?:,{_UNICODE_WHITE_SPACE}[0-9]*{_UNICODE_WHITE_SPACE})?\}}"
-    r"|[*+?])(?P<possessive>\+)?|(?P<brace>\{)",
+    rf"{_REGEX_ESCAPE_TOKENS}|\(\?P?<(?![=!])[^>()\\]*>|\(\?(?P<group>[>(#]|P=)|\(\?(?P<flags>[A-Za-z-]*)[:)]"
+    rf"|(?:\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}"
+    rf"(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}|[*+?])(?P<possessive>\+)?|(?P<brace>\{{)",
     re.DOTALL,
 )
+_REGEX_CLASS_TOKEN: re.Pattern[str] = re.compile(rf"\[:\^?[A-Za-z]+:\]|{_REGEX_ESCAPE_TOKENS}|(?P<close>\])", re.DOTALL)
 _RUST_REJECTED_ESCAPES = frozenset("0123456789NZ")
 _RUST_REJECTED_CLASS_ESCAPES = frozenset("0123456789NZb")
 _RUST_REJECTED_FLAGS = frozenset("aL")
+_CONTAINER_DATA_TYPE_FLAGS = ("is_dict", "is_list", "is_set", "is_frozen_set", "is_mapping", "is_sequence", "is_tuple")
 _PY_310 = (3, 10)
 _PY_311 = (3, 11)
 _PY_314 = (3, 14)
@@ -843,19 +845,22 @@ def _scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
     r"""Return whether the Rust regex crate rejects a pattern's syntax, and the oldest Python that parses it.
 
     The scan follows the Rust grammar of every pydantic-core release from 2.3.0 on, so it never reports a
-    pattern Rust accepts: nested and POSIX character classes, braced escapes such as ``\p{L}``,
-    ``\x{41}`` or ``\b{start}``, and counted repetitions with whitespace are consumed whole. It reports
-    backreferences and octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic groups,
-    conditionals, comments, the ``a`` and ``L`` flags, and braces that cannot start a counted repetition.
-    Atomic groups and possessive quantifiers need Python 3.11, and ``\z`` needs Python 3.14. Returns None
-    for verbose patterns, whose whitespace and comments the scan does not model.
+    pattern Rust accepts. Capture names such as ``(?P<ids[]>...)``, nested and POSIX character classes, braced
+    escapes such as ``\p{L}``, ``\x{41}`` or ``\b{start}``, and counted repetitions with whitespace are
+    consumed whole, with separate tokens inside and outside character classes. It reports backreferences and
+    octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic groups, conditionals, comments, the
+    ``a`` and ``L`` flags, and braces that cannot start a counted repetition. Atomic groups and possessive
+    quantifiers need Python 3.11, and ``\z`` needs Python 3.14. Returns None for verbose patterns, whose
+    whitespace and comments the scan does not model.
     """
     rejected = False
     minimum_python = _PY_310
     depth = 0
-    for match in _REGEX_TOKEN.finditer(pattern):
+    position = 0
+    while (match := (_REGEX_CLASS_TOKEN if depth else _REGEX_TOKEN).search(pattern, position)) is not None:
+        position = match.end()
         if depth or match["open"]:
-            depth += bool(match["open"]) - bool(match["close"])
+            depth += bool(match["open"]) - bool(depth and match["close"])
             rejected |= match["escape"] in _RUST_REJECTED_CLASS_ESCAPES
             continue
         if (requirements := _regex_token_requirements(match)) is None:
@@ -863,6 +868,20 @@ def _scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
         rejected |= requirements[0]
         minimum_python = max(minimum_python, requirements[1])
     return (rejected, minimum_python)
+
+
+def _string_pattern_data_type(data_type: DataType) -> DataType | None:
+    """Return the string type a pattern constrains, looking through unions of string types such as ``str | None``."""
+    if data_type.type in _STRING_PATTERN_TYPES or getattr(data_type, "annotated_string", False):
+        return data_type
+    if (
+        data_type.type is None
+        and (members := data_type.data_types)
+        and not any(getattr(data_type, flag) for flag in _CONTAINER_DATA_TYPE_FLAGS)
+        and all(_string_pattern_data_type(member) is member for member in members)
+    ):
+        return members[0]
+    return None
 
 
 def _needs_python_regex_engine(pattern: str, data_type: DataType) -> bool:
@@ -874,10 +893,10 @@ def _needs_python_regex_engine(pattern: str, data_type: DataType) -> bool:
     """
     if _LOOKAROUND_PATTERN.search(pattern) is not None:
         return True
-    if not (data_type.type in _STRING_PATTERN_TYPES or getattr(data_type, "annotated_string", False)):
+    if (string_type := _string_pattern_data_type(data_type)) is None:
         return False
     scan = _scan_regex_syntax(pattern)
-    return scan is not None and scan[0] and data_type.python_version.version_key >= scan[1]
+    return scan is not None and scan[0] and string_type.python_version.version_key >= scan[1]
 
 
 if TYPE_CHECKING:
