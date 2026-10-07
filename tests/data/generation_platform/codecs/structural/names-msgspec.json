@@ -1,7 +1,7 @@
 {
   "backend": "msgspec.Struct",
   "package": "codec_names_msgspec",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "strategies": true,
   "options": {"snake_case_field": true, "no_alias": true},
   "cases": [

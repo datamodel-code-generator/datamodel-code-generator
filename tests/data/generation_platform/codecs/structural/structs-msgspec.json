@@ -1,7 +1,7 @@
 {
   "backend": "msgspec.Struct",
   "package": "codec_structs_msgspec",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "strategies": true,
   "options": {"use_annotated": true, "field_constraints": true, "use_standard_primitive_types": true, "output_datetime_class": "datetime"},
   "cases": [

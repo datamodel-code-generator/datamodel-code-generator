@@ -1,7 +1,7 @@
 {
   "backend": "typing.TypedDict",
   "package": "codec_records_total",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "options": {"use_total_false_for_typed_dict": true},
   "cases": [
     {"name": "sealed-server-decode", "use": "/paths/~1sealed/post request_body", "op": "decode", "value": {"a": "x"}},

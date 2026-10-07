@@ -70,7 +70,7 @@ if TYPE_CHECKING:
         OperationId,
     )
     from datamodel_code_generator.config import GenerateConfig
-    from datamodel_code_generator.enums import DataModelType
+    from datamodel_code_generator.enums import DataModelType, OpenAPIScope
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
@@ -149,6 +149,10 @@ class TargetGenerator(Protocol):
     def unsupported_backend(self) -> str:
         """Return the diagnostic code for a backend the target does not accept."""
 
+    @property
+    def selector(self) -> str:
+        """Return the command-line option that selects the target, which its requirement errors name."""
+
     def render(self, request: TargetRequest) -> TargetRender:
         """Render the target's files from one accepted model generation."""
 
@@ -170,8 +174,8 @@ def prepare_target(
 ) -> GenerateConfig:
     """Validate target settings in the contract order and return the effective model settings.
 
-    A target always renders its models without the generation timestamp, so a rerun on unchanged inputs reproduces
-    every byte and `--check` reports no difference.
+    The model settings stay as given, so a target writes the models a model-only run writes; a setting the target
+    needs but the settings lack is an `Error` that names the missing option.
     """
     from datamodel_code_generator import (  # noqa: PLC0415
         Error,
@@ -198,8 +202,19 @@ def prepare_target(
             error, Diagnostic(code="E_MODEL_CONFIG", severity="error", stage="config", message=str(error))
         )
         raise
-    if not effective.disable_timestamp:
-        effective = effective.model_copy(update={"disable_timestamp": True})
+    if (requirement := model_requirement(effective.openapi_scopes, generator.selector)) is not None:
+        error = Error(requirement)
+        attach_diagnostic(
+            error,
+            Diagnostic(
+                code="E_MODEL_CONFIG",
+                severity="error",
+                stage="config",
+                message=requirement,
+                option_path="model_config.openapi_scopes",
+            ),
+        )
+        raise error
     if (backend := effective.output_model_type) not in generator.backends:
         allowed = " or ".join(repr(item.value) for item in DataModelType if item in generator.backends)
         raise config_error(
@@ -219,6 +234,15 @@ def prepare_target(
     raise APIGenerationError((
         Diagnostic(code="E_INPUT_ROOT", severity="error", stage="input", message=message, option_path=option_path),
     ))
+
+
+def model_requirement(scopes: Iterable[OpenAPIScope] | None, selector: str) -> str | None:
+    """Return the "X requires Y" message for the api scope a target needs, or None while the scopes include it."""
+    from datamodel_code_generator.enums import OpenAPIScope  # noqa: PLC0415
+
+    if scopes is not None and OpenAPIScope.Api in scopes:
+        return None
+    return f"{selector} requires --openapi-scopes to include api"
 
 
 def _root_problem(input_: _GenerationInput, effective: GenerateConfig) -> tuple[str, str] | None:
@@ -329,7 +353,6 @@ def _generate_models(
     from datamodel_code_generator import _run_generation  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._openapi_generation import TargetGenerationSession  # noqa: PLC0415
     from datamodel_code_generator._target_binding import MetadataCycleError  # noqa: PLC0415
-    from datamodel_code_generator.enums import OpenAPIScope  # noqa: PLC0415
 
     source = _root_input(input_, cwd)
     output = config.output
@@ -343,10 +366,7 @@ def _generate_models(
         staged_output = _staging(stack, output, cwd) / (output.name or "output")
         if (cwd / output).is_dir():
             staged_output.mkdir()
-        scopes = list(prepared.openapi_scopes) if prepared.openapi_scopes is not None else [OpenAPIScope.Schemas]
-        if OpenAPIScope.Api not in scopes:
-            scopes.append(OpenAPIScope.Api)
-        updates: dict[str, Any] = {"output": staged_output, "openapi_scopes": scopes}
+        updates: dict[str, Any] = {"output": staged_output}
         if (metadata := config.emit_model_metadata) is not None:
             updates["emit_model_metadata"] = _staging(stack, metadata, cwd) / (metadata.name or "model-metadata.json")
         staged = prepared.model_copy(update=updates)

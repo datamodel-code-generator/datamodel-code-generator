@@ -3,30 +3,27 @@
 from __future__ import annotations
 
 import shutil
+import warnings
 from pathlib import Path
 
 import pytest
 
 from datamodel_code_generator.__main__ import Exit
-from tests.conftest import assert_directory_content, assert_output, create_assert_file_content
-from tests.main.conftest import run_main_and_assert, run_main_with_args
+from tests.conftest import assert_directory_content, assert_output, create_assert_file_content, freeze_time
+from tests.main.conftest import TIMESTAMP, run_main_and_assert, run_main_with_args
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "fastapi"
 CLI = SOURCE / "cli"
 EXPECTED = DATA / "expected" / "main" / "generation_platform" / "fastapi"
 PACKAGE = EXPECTED / "packages" / "pets" / "pydantic_v2_BaseModel"
-OPTIONS = [
-    "--target-python-version",
-    "3.11",
-    "--openapi-scopes",
-    "schemas",
-    "api",
-    "--output-model-type",
-    "pydantic_v2.BaseModel",
-    "--formatters",
-    "builtin",
-]
+PYTHON = ["--target-python-version", "3.11"]
+SCOPES = ["--openapi-scopes", "schemas", "api"]
+BACKEND = ["--output-model-type", "pydantic_v2.BaseModel"]
+FORMATTERS = ["--formatters", "builtin"]
+MODEL_OPTIONS = [*PYTHON, *SCOPES, *BACKEND, *FORMATTERS]
+OPTIONS = [*MODEL_OPTIONS, "--disable-timestamp"]
+SERVER = ["--generate-server", "fastapi", "--target-config", "fastapi.toml"]
 EXCLUDED = (
     "S_OPERATION_EXCLUDED info selection /paths/~1store~1inventory/get: "
     "GET /store/inventory is excluded by exclude_tags 'store': The store is internal\n"
@@ -302,23 +299,138 @@ def test_fastapi_cli_usage(
     )
 
 
-def test_fastapi_cli_schemas_scope(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("server", [[], SERVER], ids=["models", "server"])
+@pytest.mark.parametrize(
+    ("options", "expected"),
+    [([], "cli/timestamp-models.py"), (["--disable-timestamp"], PACKAGE / "models.py")],
+    ids=["timestamp", "no-timestamp"],
+)
+def test_fastapi_cli_models_as_given(
+    server: list[str], options: list[str], expected: str | Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Add the API scope to a server's schema-only models, writing what the schema and API scopes write."""
+    """Write the models a model-only run writes, with the generation timestamp exactly when the options keep it."""
+    monkeypatch.chdir(tmp_path)
+    with freeze_time(TIMESTAMP):
+        run_main_and_assert(
+            input_path=Path("pets.yaml"),
+            output_path=Path("models.py"),
+            input_file_type="openapi",
+            extra_args=[*MODEL_OPTIONS, *options, *server],
+            copy_files=_inputs(tmp_path),
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+
+
+@pytest.mark.parametrize(
+    "scopes",
+    [["--openapi-scopes", "schemas"], ["--openapi-scopes", "schemas", "paths"], []],
+    ids=["schemas", "paths", "default"],
+)
+def test_fastapi_cli_api_scope_required(
+    scopes: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a server whose model options leave out the api scope, instead of adding it to the models."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--openapi-scopes", "schemas"),
+        extra_args=[*PYTHON, *BACKEND, *FORMATTERS, "--disable-timestamp", *scopes, *SERVER],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr="Error: --generate-server requires --openapi-scopes to include api\n",
+        file_should_not_exist=[tmp_path / "models.py", tmp_path / "server"],
+    )
+
+
+@pytest.mark.parametrize(
+    ("options", "stderr"),
+    [
+        (
+            ["--collapse-root-models-name-strategy", "child"],
+            "Error: --collapse-root-models-name-strategy requires --collapse-root-models\n",
+        ),
+        (
+            ["--use-specialized-enum", "--target-python-version", "3.10"],
+            (
+                "Error: --use-specialized-enum requires --target-python-version 3.11 or later.\n"
+                "Current target version: 3.10\n"
+                "StrEnum is only available in Python 3.11+.\n"
+            ),
+        ),
+    ],
+    ids=["collapse-root-models-name-strategy", "use-specialized-enum"],
+)
+def test_fastapi_cli_model_option_errors(
+    options: list[str], stderr: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse model options a model-only run refuses, before the server runs."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(*options),
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=stderr,
+        file_should_not_exist=[tmp_path / "models.py", tmp_path / "server"],
+    )
+
+
+def test_fastapi_cli_model_option_warning(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Warn of a model option without effect as a model-only run does, and write the same files."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--reuse-scope", "tree"),
         copy_files=_inputs(tmp_path),
         capsys=capsys,
         expected_stdout_path=EXPECTED / "cli" / "dependencies.txt",
+        expected_stderr="Warning: --reuse-scope=tree has no effect without --reuse-model\n",
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
+
+
+@pytest.mark.parametrize(
+    ("options", "expected"),
+    [([], "warning.txt"), (["--disable-warnings"], "no_warning.txt")],
+    ids=["shown", "disabled"],
+)
+def test_fastapi_cli_disable_warnings(
+    options: list[str], expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Silence the model warnings of a server run with --disable-warnings, as for a model-only run."""
+    monkeypatch.chdir(tmp_path)
+    for source, destination in _inputs(tmp_path):
+        shutil.copy2(source, destination)
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", FutureWarning)
+        run_main_with_args(
+            [
+                *("--input", "pets.yaml", "--input-file-type", "openapi", "--output", "models.py"),
+                *PYTHON,
+                *SCOPES,
+                *BACKEND,
+                "--disable-timestamp",
+                *SERVER,
+                *options,
+            ],
+            use_builtin_default_formatter=False,
+        )
+    assert_output(
+        "\n".join(str(item.message) for item in recorded if "Default formatters" in str(item.message)),
+        DATA / "expected" / "main" / "formatter_policy" / expected,
+    )
 
 
 def test_fastapi_cli_target_python(
@@ -330,7 +442,7 @@ def test_fastapi_cli_target_python(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=[*OPTIONS[2:], "--generate-server", "fastapi", "--target-config", "fastapi.toml"],
+        extra_args=[*SCOPES, *BACKEND, *FORMATTERS, "--disable-timestamp", *SERVER],
         copy_files=_inputs(tmp_path),
         expected_exit=Exit.ERROR,
         capsys=capsys,
@@ -349,7 +461,7 @@ def test_fastapi_cli_target_python_pyproject(tmp_path: Path, monkeypatch: pytest
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=[*OPTIONS[2:], "--generate-server", "fastapi", "--target-config", "fastapi.toml"],
+        extra_args=[*SCOPES, *BACKEND, *FORMATTERS, "--disable-timestamp", *SERVER],
         copy_files=[*_inputs(tmp_path), (CLI / "pyproject-target.toml", tmp_path / "pyproject.toml")],
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",

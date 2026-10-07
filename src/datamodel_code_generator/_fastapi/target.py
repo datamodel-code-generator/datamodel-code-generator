@@ -42,6 +42,7 @@ class FastAPITarget:
     kind: TargetKind = "fastapi"
     backends: frozenset[DataModelType] = frozenset(_BACKENDS)
     unsupported_backend: str = "E_FASTAPI_BACKEND_UNSUPPORTED"
+    selector: str = "--generate-server"
 
     def render(self, request: TargetRequest) -> TargetRender:  # noqa: PLR6301
         """Plan the selected operations, let the hooks revise the plan, and render the package."""

@@ -1,0 +1,4 @@
+# api-scope-required
+render pydantic_v2.BaseModel
+  Error
+  E_MODEL_CONFIG config model_config.openapi_scopes: --generate-client requires --openapi-scopes to include api

@@ -11,6 +11,6 @@
   "directions-accepted": {"instances": "directions-accepted-instances.json"},
   "dialects": {},
   "dialects32": {},
-  "legacy": {"model": {"openapi_scopes": ["schemas", "paths"]}},
+  "legacy": {"model": {"openapi_scopes": ["schemas", "paths", "api"]}},
   "querystring-version": {"model": {"schema_version": "3.2"}}
 }

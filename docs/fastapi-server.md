@@ -36,6 +36,7 @@ Generate the models and the server:
 datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
+  --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
   --preset standard-py312-20260909 \
   --output models.py \
@@ -96,8 +97,14 @@ object with the right methods works, and type checkers check it where you pass i
   files is `E_INPUT_ROOT`.
 - `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
   `E_FASTAPI_BACKEND_UNSUPPORTED`. Custom templates, base classes, and types do not add backends.
-- The server adds `api` to `--openapi-scopes`, keeping the scopes you give, so that the models cover the
-  parameters, bodies, and responses of the operations.
+- `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
+  operations: `--openapi-scopes schemas api`. Without it, generation stops with
+  `Error: --generate-server requires --openapi-scopes to include api` and exit code 2, and the Python API raises
+  `datamodel_code_generator.Error` with the same message.
+- The model options apply as they do without `--generate-server`, so the same options write the same model files
+  (only the command `--enable-command-header` records differs), and a model option the model generation refuses,
+  such as `--collapse-root-models-name-strategy` without `--collapse-root-models`, is refused before anything is
+  written.
 - Custom templates and custom formatters must keep the class and field names of the models: the server binds each
   operation to the names in the generated model graph and does not read the rendered model source.
 - `--output` names the model file or package, and `model_package` is its import path.
@@ -220,10 +227,10 @@ lacks a new method; your own modules are never touched. `--check` renders everyt
 with 0 when nothing would change, 1 when a file would change, such as a generated file you edited or deleted, and 2
 for an error; `render_fastapi` returns the same artifacts, each with its action.
 
-Server generation always writes the models without the generation timestamp, as `--disable-timestamp` does, so a
-run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0, also from another
-directory when the paths name the same input and target configuration files.
-Only `include_timestamp = true` puts a time into the server files, and then every run changes them. The remote
+The models keep the generation timestamp unless `--disable-timestamp` or a preset that sets it leaves it out, as
+for model generation. Without the timestamp, a run on unchanged inputs reproduces every byte: it writes nothing, and
+`--check` exits with 0, also from another directory when the paths name the same input and target configuration
+files. Only `include_timestamp = true` puts a time into the server files, and then every run changes them. The remote
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
 uses it, or the default `datamodel-codegen.lock` exists.
 

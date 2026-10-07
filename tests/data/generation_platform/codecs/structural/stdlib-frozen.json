@@ -1,7 +1,7 @@
 {
   "backend": "dataclasses.dataclass",
   "package": "codec_stdlib_frozen",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "options": {"use_unique_items_as_set": true, "field_extra_keys": ["init", "kw_only"],
               "dataclass_arguments": {"frozen": true, "slots": true, "kw_only": true}},
   "cases": [
