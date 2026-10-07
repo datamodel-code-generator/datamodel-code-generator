@@ -1268,7 +1268,7 @@ input = "schema.yaml"
 aliases = {"first name" = "first_name", id = ["id_", "identifier"]}
 extra-template-data = {Person = {comment = "it's ü $HOME"}}
 dataclass-arguments = {frozen = true, kw_only = false}
-external-ref-mapping = {"../common/a b.yaml" = "pkg.models", "other.yaml" = "pkg.other"}
+external-ref-mapping = {"../common/a b.yaml" = "pkg.models", "$HOME/other.yaml" = "pkg.other"}
 """
     (tmp_path / "pyproject.toml").write_text(pyproject_toml, encoding="utf-8")
 

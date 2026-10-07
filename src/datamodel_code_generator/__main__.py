@@ -1309,7 +1309,7 @@ def _format_cli_value(value: str | list[str]) -> str:
 def _format_cli_mapping(key: str, value: Mapping[str, Any]) -> str:
     """Format a pyproject table as the argument its CLI option accepts."""
     if key == "external_ref_mapping":
-        return _format_cli_value([f"{path}={package}" for path, package in value.items()])
+        return " ".join(shlex.quote(f"{path}={package}") for path, package in value.items())
     return shlex.quote(_compact_json(value))
 
 
