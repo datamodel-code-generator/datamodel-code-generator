@@ -10,16 +10,14 @@ import json
 import keyword
 import re
 from collections import defaultdict
-from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType, NoneType
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
-from warnings import warn
+from warnings import catch_warnings, simplefilter, warn
 
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import Field, ValidationError, field_validator, model_validator
 from pydantic.alias_generators import to_camel, to_pascal, to_snake
-from pydantic_core import SchemaError, SchemaValidator, core_schema
 
 from datamodel_code_generator import Error
 from datamodel_code_generator.enums import AliasGenerator, TargetPydanticVersion, _is_pydantic_version_at_least
@@ -814,23 +812,54 @@ _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 
 _STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
+_RUST_UNSUPPORTED_SYNTAX: re.Pattern[str] = re.compile(
+    r"\\(?P<escape>[0-9NZ])|\\.|\[\^?\]?(?P<chars>(?:\\.|[^\]\\])*)\]?"
+    r"|(?P<group>\(\?(?:[>(#]|P=|[iLmsux]*a))|(?P<brace>\{)(?![0-9]+(?:,[0-9]*)?\})",
+    re.DOTALL,
+)
+_ESCAPED_CHARACTER: re.Pattern[str] = re.compile(r"\\(.)", re.DOTALL)
+_RUST_UNSUPPORTED_CLASS_ESCAPES = frozenset("0123456789Nb")
 
 
-@lru_cache(maxsize=4096)
-def _rust_regex_rejects(pattern: str) -> bool:
-    """Return whether pydantic-core's Rust regex engine rejects a pattern."""
-    try:
-        SchemaValidator(core_schema.str_schema(pattern=pattern))
-    except SchemaError:
-        return True
+def _has_rust_unsupported_syntax(pattern: str) -> bool:
+    r"""Return whether a pattern uses syntax the Rust regex crate rejects in every pydantic-core release.
+
+    This covers backreferences and octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic
+    groups, conditionals, comments, the ASCII flag, and braces that do not form a counted repetition. Escapes
+    and character classes are consumed whole, so escaped characters and class members never match outside
+    their context.
+    """
+    for match in _RUST_UNSUPPORTED_SYNTAX.finditer(pattern):
+        if match["escape"] or match["group"] or match["brace"]:
+            return True
+        if (chars := match["chars"]) and not _RUST_UNSUPPORTED_CLASS_ESCAPES.isdisjoint(
+            _ESCAPED_CHARACTER.findall(chars)
+        ):
+            return True
     return False
 
 
+def _python_regex_compiles(pattern: str) -> bool:
+    """Return whether Python's ``re`` accepts a pattern."""
+    with catch_warnings():
+        simplefilter("ignore")
+        try:
+            re.compile(pattern)
+        except re.error:
+            return False
+    return True
+
+
 def _needs_python_regex_engine(pattern: str, data_type: DataType) -> bool:
-    """Return whether an emitted pattern needs Python's ``re``; only string patterns are probed."""
+    """Return whether an emitted pattern needs Python's ``re``.
+
+    Lookaround keeps its long-standing textual check. Other unsupported syntax is detected statically, so the
+    output never depends on the installed pydantic-core, and only for string patterns Python's ``re`` compiles.
+    """
     return _LOOKAROUND_PATTERN.search(pattern) is not None or (
         (data_type.type in _STRING_PATTERN_TYPES or getattr(data_type, "annotated_string", False))
-        and _rust_regex_rejects(pattern)
+        and _has_rust_unsupported_syntax(pattern)
+        and _python_regex_compiles(pattern)
     )
 
 

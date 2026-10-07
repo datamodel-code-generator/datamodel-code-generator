@@ -15435,6 +15435,96 @@ def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file
 
 
 @pytest.mark.benchmark
+@pytest.mark.parametrize("target_pydantic_version", ["2", "2.12"])
+def test_main_rust_unsupported_syntax(target_pydantic_version: str, output_file: Path) -> None:
+    """Syntax no pydantic-core release supports selects Python's regex engine, detected statically.
+
+    Escaped characters and character class members never trigger it, and neither does syntax newer
+    pydantic-core releases accept. The target Pydantic version does not change the decision.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_syntax.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="rust_unsupported_syntax_pydantic_v2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-pydantic-version",
+            target_pydantic_version,
+        ],
+    )
+    for model_name, valid, invalid in (
+        ("Backreference", "aa", "ab"),
+        ("NamedBackreference", "bb", "bc"),
+        ("Conditional", "<a>", "<a"),
+        ("EndOfString", "abc", "abc\n"),
+        ("Comment", "abc", "ABC"),
+        ("NamedCharacter", "aa", "ab"),
+        ("ClassBackspace", "\b", "b"),
+        ("ClassOctal", "AA", "B"),
+        ("AsciiFlag", "abc", "\u00e9"),
+        ("OmittedMinimum", "ab", "abcd"),
+        ("LiteralBrace", "{ab}", "ab"),
+        ("EscapedBackslash", "\\1", "1"),
+        ("EscapedGroup", "(?>ab)", "ab"),
+        ("ClassMembers", "(?>{", "a"),
+        ("EscapedBrace", "{ab}", "ab"),
+        ("CountedRepetition", "ab", "abcd"),
+        ("ClassEscapedBackslash", "\\b", "a"),
+        ("EscapedSlash", "a/b", "ab"),
+        ("AngleNamedGroup", "2024", "24"),
+        ("Possessive", "abc", "abc\n"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"rust_unsupported_syntax_{model_name}",
+            model_name=model_name,
+            valid_json=json.dumps(valid),
+            invalid_json=json.dumps(invalid),
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=("root",),
+            expected_attribute_value=valid,
+        )
+
+
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="Python's re supports atomic groups from 3.11")
+def test_main_rust_unsupported_atomic_group(output_file: Path) -> None:
+    """Atomic groups select Python's regex engine when the generating Python's ``re`` supports them."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_atomic_group.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="rust_unsupported_atomic_group_pydantic_v2.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="rust_unsupported_atomic_group",
+        model_name="AtomicGroup",
+        valid_json='"abc"',
+        invalid_json='"ABC"',
+        expected_error_type="string_pattern_mismatch",
+        expected_attribute_path=("root",),
+        expected_attribute_value="abc",
+    )
+
+
+def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
+    """Patterns Python's ``re`` also rejects keep pydantic-core's default regex engine."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_python_rejected.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="rust_unsupported_python_rejected_pydantic_v2.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+
+
+@pytest.mark.benchmark
 def test_main_nested_lookaround_array_generic_container(output_file: Path) -> None:
     """Test lookaround pattern with --use-generic-container-types for Sequence path."""
     run_main_and_assert(
