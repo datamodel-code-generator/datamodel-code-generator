@@ -249,7 +249,9 @@ The Python engine is selected only when Python's `re` compiles the pattern; othe
 Lookaround keeps its existing detection for every field. The other rules apply only to patterns emitted for string
 fields: a `pattern` on `format: uri` (`AnyUrl`) is not emitted, and Pydantic ignores a `pattern` on `bytes`.
 Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
-example `$` also matches before a trailing newline.
+example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
+linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they
+validate untrusted input.
 
 ## Limitations
 
