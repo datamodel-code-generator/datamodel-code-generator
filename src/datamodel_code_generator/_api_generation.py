@@ -433,24 +433,6 @@ class _Planner:
         assert output is not None
         return output if self.models.single else output.joinpath(*artifact.path)
 
-    def verify(self) -> None:
-        problems = [
-            Diagnostic(
-                code="E_MODEL_MISMATCH",
-                severity="error",
-                stage="verify",
-                message="The model file differs from the verified candidate"
-                if present
-                else "The verified candidate has no model file",
-                artifact_path=path.as_posix(),
-            )
-            for artifact in self.models.artifacts
-            if not (present := (location := self.cwd / (path := self.model_path(artifact))).is_file())
-            or location.read_bytes() != artifact.content
-        ]
-        if problems:
-            raise APIGenerationError(tuple(problems))
-
     def artifact(
         self,
         path: Path,
@@ -548,8 +530,6 @@ class _Planner:
                 cwd=self.cwd,
             )
         )
-        if verifying := config.model_mode == "verify":
-            self.verify()
         finished = _Finisher(self).finish(rendered)
         plans = plan_files(self.root, state, finished, self.target_id)
         output = self.effective.output
@@ -558,13 +538,7 @@ class _Planner:
         manifest = self.manifest(plans, model)
         artifacts = (
             *(
-                self.artifact(
-                    self.model_path(artifact),
-                    "model",
-                    artifact.content,
-                    None,
-                    ("unchanged", observe(artifact.content)) if verifying else None,
-                )
+                self.artifact(self.model_path(artifact), "model", artifact.content, None)
                 for artifact in models.artifacts
             ),
             *(
@@ -579,7 +553,7 @@ class _Planner:
             ),
             *(
                 ()
-                if verifying or models.metadata is None
+                if models.metadata is None
                 else (self.artifact(models.metadata[0], "model_metadata", models.metadata[1], None),)
             ),
             *self.lock_artifacts(),

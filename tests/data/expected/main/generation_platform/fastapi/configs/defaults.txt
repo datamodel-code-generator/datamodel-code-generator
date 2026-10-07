@@ -1,7 +1,6 @@
 output=PurePosixPath('server')
 package='server'
 model_package='models'
-model_mode='generate'
 layout='routers'
 handler_mode='sync'
 handler_modes=mappingproxy({})

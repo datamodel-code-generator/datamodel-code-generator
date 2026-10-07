@@ -1,7 +1,6 @@
 output=PurePosixPath('server')
 package='server'
 model_package='models'
-model_mode='generate'
 layout='single'
 handler_mode='async'
 handler_modes=mappingproxy({'/paths/~1pets/get': 'sync'})

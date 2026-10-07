@@ -12,11 +12,8 @@ from typing import Any, ClassVar, Final, Literal, TypeAlias, TypeVar
 from datamodel_code_generator._api_manifest import document_identity
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 
-ModelMode: TypeAlias = Literal["generate", "verify"]
 Converter: TypeAlias = Callable[[object, Path, str], object]
 ConfigT = TypeVar("ConfigT", bound="TargetConfig")
-
-_MODEL_MODES: Final = frozenset({"generate", "verify"})
 
 
 class _ConfigValueError(Exception):
@@ -52,7 +49,6 @@ class TargetConfig:
     output: Path
     package: str
     model_package: str
-    model_mode: ModelMode = "generate"
 
     toml_converters: ClassVar[Mapping[str, Converter]] = MappingProxyType({})
 
@@ -67,8 +63,6 @@ class TargetConfig:
         for name in ("package", "model_package"):
             if not _dotted(getattr(self, name)):
                 yield _diagnostic("E_CONFIG_VALUE", name, f"{name} must be a dotted Python import path")
-        if self.model_mode not in _MODEL_MODES:
-            yield _diagnostic("E_CONFIG_VALUE", "model_mode", "model_mode must be 'generate' or 'verify'")
 
 
 def _string(value: object, _: Path, option_path: str) -> str:
@@ -136,7 +130,6 @@ SHARED_TOML_CONVERTERS: Final[Mapping[str, Converter]] = MappingProxyType({
     "output": _path,
     "package": _string,
     "model_package": _string,
-    "model_mode": _string,
 })
 
 

@@ -99,20 +99,6 @@
       {"render": {}}
     ]
   },
-  "verify": {
-    "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"], "emit_model_metadata": "meta/deep/models.json"},
-    "steps": [
-      {"render": {}},
-      {"publish": null},
-      {"render": {"config": {"model_mode": "verify"}}},
-      {"manifest": null},
-      {"write": ["models.py", "# Edited.\n"]},
-      {"render": {"config": {"model_mode": "verify"}}},
-      {"remove": "models.py"},
-      {"render": {"config": {"model_mode": "verify"}}}
-    ]
-  },
   "include-paths": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"], "openapi_include_paths": ["/pets"]},
@@ -249,15 +235,6 @@
       },
       {"tree": null},
       {"render": {"model": {"openapi_include_paths": ["/pets", "/health"]}}}
-    ]
-  },
-  "publish-verify": {
-    "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"], "emit_model_metadata": "meta/models.json"},
-    "steps": [
-      {"generate": {}},
-      {"generate": {"config": {"model_mode": "verify"}}},
-      {"tree": null}
     ]
   },
   "publish-lock": {

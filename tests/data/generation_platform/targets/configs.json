@@ -1,4 +1,4 @@
 {
   "defaults": {},
-  "invalid-values": {"output": ["server"], "package": "example-server", "model_package": "1models", "model_mode": "update"}
+  "invalid-values": {"output": ["server"], "package": "example-server", "model_package": "1models"}
 }

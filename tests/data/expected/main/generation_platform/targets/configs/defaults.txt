@@ -1,7 +1,6 @@
 output='server'
 package='example.server'
 model_package='example.models'
-model_mode='generate'
 layout='routers'
 handler_mode='sync'
 handler_modes=mappingproxy({})

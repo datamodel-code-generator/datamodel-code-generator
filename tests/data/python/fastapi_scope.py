@@ -55,12 +55,7 @@ def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> s
         use_missing_sentinel=sentinel,
         openapi_include_paths=INCLUDED.get(name),
     )
-    config = FastAPIConfig(
-        output=root / "server",
-        package="server",
-        model_package="models",
-        model_mode="verify" if mode == "verify" else "generate",
-    )
+    config = FastAPIConfig(output=root / "server", package="server", model_package="models")
     entry = render_fastapi if mode == "render" else generate_fastapi
     try:
         entry(root / f"{name}.yaml", model_config=model, config=config)
@@ -105,7 +100,7 @@ def main(root: Path) -> None:
     runs = [
         f"{name} {mode}: {_api(root, name, mode, 'msgspec.Struct', sentinel=False)}"
         for name in ("primitive", "empty", "unselected")
-        for mode in ("generate", "render", "verify")
+        for mode in ("generate", "render")
     ]
     runs.extend(f"{name} check: {_cli(root, name, 'msgspec.Struct')}" for name in ("primitive", "empty", "unselected"))
     runs.append(f"empty sentinel: {_api(root, 'empty', 'generate', 'msgspec.Struct', sentinel=True)}")

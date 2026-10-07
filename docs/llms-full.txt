@@ -11224,7 +11224,6 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 | `output` | required | Directory of the generated package |
 | `package` | required | Import path of the generated package |
 | `model_package` | required | Import path of the models `--output` generates |
-| `model_mode` | `"generate"` | `"verify"` compares the models with existing files instead of writing them |
 | `layout` | `"routers"` | One router module per tag, or `"single"` for one `routes.py` |
 | `handler_mode` | `"sync"` | `"async"` makes service methods coroutine functions; `[[handler_modes]]` sets one operation |
 | `include_request` | `false` | Pass the Starlette `Request` to every service method |
@@ -11292,9 +11291,8 @@ directory when the paths name the same input and target configuration files. The
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
 uses it, or the default `datamodel-codegen.lock` exists.
 
-`model_mode = "verify"` lets several targets share models generated once: each target compares the models with
-the existing files instead of writing them, and reports `E_MODEL_MISMATCH` when they differ. Generate those
-models with `--disable-timestamp` too.
+Several targets can share one models module: with the same model options and `--disable-timestamp`, each run
+writes the same bytes, and `--check` reports a module that differs.
 
 ## Models and adapters
 
