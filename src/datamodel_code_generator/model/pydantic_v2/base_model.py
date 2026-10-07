@@ -813,16 +813,24 @@ class DataModelField(_PydanticBaseDataModelField):
 _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 
+_STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
+
+
 @lru_cache(maxsize=4096)
-def _needs_python_regex_engine(pattern: str) -> bool:
-    """Return whether a pattern needs Python's ``re`` because pydantic-core's Rust engine rejects it."""
-    if _LOOKAROUND_PATTERN.search(pattern):
-        return True
+def _rust_regex_rejects(pattern: str) -> bool:
+    """Return whether pydantic-core's Rust regex engine rejects a pattern."""
     try:
         SchemaValidator(core_schema.str_schema(pattern=pattern))
     except SchemaError:
         return True
     return False
+
+
+def _needs_python_regex_engine(pattern: str, data_type: DataType) -> bool:
+    """Return whether an emitted pattern needs Python's ``re``; only string patterns are probed."""
+    return _LOOKAROUND_PATTERN.search(pattern) is not None or (
+        data_type.type in _STRING_PATTERN_TYPES and _rust_regex_rejects(pattern)
+    )
 
 
 if TYPE_CHECKING:
@@ -907,8 +915,8 @@ def has_lookaround_pattern(
 ) -> bool:
     """Check if any field has a regex pattern that needs pydantic's ``python-re`` regex engine.
 
-    This covers lookaround assertions and any other syntax pydantic-core's Rust engine rejects,
-    such as backreferences.
+    This covers lookaround assertions and, for string patterns pydantic compiles, any other syntax
+    pydantic-core's Rust engine rejects, such as backreferences.
 
     When ``follow_references`` is True, also inspect patterns reachable through referenced
     models (generated type aliases/root types) -- needed for Pydantic v2 dataclasses, where
@@ -918,13 +926,13 @@ def has_lookaround_pattern(
         _visited = set()
     for field in fields:
         pattern = isinstance(field.constraints, Constraints) and field.constraints.pattern
-        if pattern and _needs_python_regex_engine(pattern):
+        if pattern and _needs_python_regex_engine(pattern, field.data_type):
             return True
         for data_type in field.data_type.all_data_types:
             pattern = (data_type.kwargs or {}).get("pattern")
             if isinstance(pattern, PythonRuntimeExpression):
                 pattern = str(pattern)
-            if pattern and _needs_python_regex_engine(pattern):
+            if pattern and _needs_python_regex_engine(pattern, data_type):
                 return True
             if not follow_references or data_type.reference is None:
                 continue
