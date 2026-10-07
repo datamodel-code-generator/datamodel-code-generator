@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 type Code = Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)]
 
 
-type CodeCopy = Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)]
+type Dup = Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)]
 
 
 type Codes = list[Annotated[str, Field(pattern=compile('^(?=x)[a-z]+$'))]]
@@ -20,7 +20,10 @@ type Codes = list[Annotated[str, Field(pattern=compile('^(?=x)[a-z]+$'))]]
 type Mapping = dict[str, Annotated[str, Field(pattern=compile('^[a-z]+(?<!z)$'))]]
 
 
-type Keys = dict[Annotated[str, Field(pattern=compile('^(?=k)[a-z]+$'))], int]
+type Keys = dict[Annotated[str, Field(pattern=compile('^(?=key)[a-z0-9_]+$'))], int]
+
+
+type Tags = dict[Annotated[str, Field(pattern=compile('^(?=t)'))], str]
 
 
 type Either = Annotated[str, Field(pattern=compile('^(?!no)[a-z]+$'))] | int
@@ -28,8 +31,9 @@ type Either = Annotated[str, Field(pattern=compile('^(?!no)[a-z]+$'))] | int
 
 class Holder(BaseModel):
     code: Code | None = None
-    codeCopy: CodeCopy | None = None
+    dup: Dup | None = None
     codes: Codes | None = None
     mapping: Mapping | None = None
     keys: Keys | None = None
+    tags: Tags | None = None
     either: Either | None = None

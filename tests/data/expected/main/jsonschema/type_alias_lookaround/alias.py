@@ -14,8 +14,8 @@ Code = TypeAliasType(
 )
 
 
-CodeCopy = TypeAliasType(
-    "CodeCopy", Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)]
+Dup = TypeAliasType(
+    "Dup", Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)]
 )
 
 
@@ -30,7 +30,12 @@ Mapping = TypeAliasType(
 
 
 Keys = TypeAliasType(
-    "Keys", dict[Annotated[str, Field(pattern=compile('^(?=k)[a-z]+$'))], int]
+    "Keys", dict[Annotated[str, Field(pattern=compile('^(?=key)[a-z0-9_]+$'))], int]
+)
+
+
+Tags = TypeAliasType(
+    "Tags", dict[Annotated[str, Field(pattern=compile('^(?=t)'))], str]
 )
 
 
@@ -41,8 +46,9 @@ Either = TypeAliasType(
 
 class Holder(BaseModel):
     code: Code | None = None
-    codeCopy: CodeCopy | None = None
+    dup: Dup | None = None
     codes: Codes | None = None
     mapping: Mapping | None = None
     keys: Keys | None = None
+    tags: Tags | None = None
     either: Either | None = None
