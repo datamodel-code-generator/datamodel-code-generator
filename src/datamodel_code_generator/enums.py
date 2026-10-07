@@ -250,7 +250,7 @@ class ModuleSplitMode(Enum):
 
 
 class TargetPydanticVersion(Enum):
-    """Target Pydantic version for generated code.
+    """Target Pydantic version for generated code; an unset target means the newest choice.
 
     V2: Generate code compatible with Pydantic 2.0+ (uses populate_by_name).
     V2_11: Generate code for Pydantic 2.11+ (uses validate_by_name).

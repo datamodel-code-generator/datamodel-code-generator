@@ -5,16 +5,17 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, StringConstraints
 
 
 class SomeSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    services: dict[Annotated[str, Field(pattern=r'^[a-zA-Z0-9._-]+$')], str] | None = (
-        None
-    )
+    services: (
+        dict[Annotated[str, StringConstraints(pattern=r'^[a-zA-Z0-9._-]+$')], str]
+        | None
+    ) = None
     """
     Some property.
     """

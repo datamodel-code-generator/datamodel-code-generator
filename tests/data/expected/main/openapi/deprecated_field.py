@@ -10,8 +10,6 @@ from pydantic import BaseModel, Field
 class Service(BaseModel):
     name: str = Field(..., description='Name of the service')
     location: str | None = Field(
-        None,
-        description='Location of the service (deprecated)',
-        json_schema_extra={'deprecated': True},
+        None, deprecated=True, description='Location of the service (deprecated)'
     )
-    old_id: int | None = Field(None, json_schema_extra={'deprecated': True})
+    old_id: int | None = Field(None, deprecated=True)

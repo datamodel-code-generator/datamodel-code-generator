@@ -32,8 +32,9 @@ render pydantic_v2.dataclass default
   #   filename:  session-common-any.json
   
   from __future__ import annotations
-  from typing import Optional, TypeAlias, Union
+  from typing import Optional, Union
   from pydantic.dataclasses import dataclass
+  from typing_extensions import TypeAliasType
   
   
   
@@ -55,7 +56,7 @@ render pydantic_v2.dataclass default
   
   
   
-  Payload: TypeAlias = Payload1
+  Payload = TypeAliasType("Payload", Payload1)
   model_bindings.py
   codec_0 models.Payload
   codec_1 models.Payload

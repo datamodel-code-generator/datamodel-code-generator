@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import ConfigDict, Field, RootModel
+from pydantic import ConfigDict, Field, RootModel, StringConstraints
 
 
 class SomeSpec(RootModel[dict[str, str]]):
@@ -13,6 +13,6 @@ class SomeSpec(RootModel[dict[str, str]]):
         regex_engine="python-re",
     )
     root: Annotated[
-        dict[Annotated[str, Field(pattern=r'^x(?=_[0-9]+$)')], str],
+        dict[Annotated[str, StringConstraints(pattern=r'^x(?=_[0-9]+$)')], str],
         Field(title='SomeSpec'),
     ]

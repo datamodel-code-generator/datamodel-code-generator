@@ -3945,7 +3945,7 @@ def test_main_pydantic_v2_dataclass_reference_alias_defaults(
     output_file: Path, extra_args: list[str], template_dir: Path | None, target_pydantic_version: str | None
 ) -> None:
     """Choose reference alias syntax from the target Pydantic version and validate it where the runtime allows."""
-    suffix = "modern" if target_pydantic_version == "2.12" else "legacy"
+    suffix = "legacy" if target_pydantic_version == "2" else "modern"
     if template_dir is not None and template_dir.name == "type_alias_compat":
         suffix = "custom"
     run_main_and_assert(
@@ -7412,7 +7412,11 @@ def test_main_jsonschema_additional_properties_value_constraints_annotated(
     output_model_type: DataModelType,
     expected_file: str,
 ) -> None:
-    """Preserve constrained mapping values across every additionalProperties path."""
+    """Preserve constrained mapping values across every additionalProperties path, executing where Pydantic allows."""
+    runs = installed_pydantic_runs_target(None) or output_model_type not in {
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+    }
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "additional_properties_value_constraints_annotated.json",
         output_path=output_file,
@@ -7429,7 +7433,10 @@ def test_main_jsonschema_additional_properties_value_constraints_annotated(
             "--disable-timestamp",
         ],
         force_exec_validation=True,
+        skip_code_validation=not runs,
     )
+    if not runs:
+        return
 
     match output_model_type:
         case DataModelType.PydanticV2BaseModel | DataModelType.PydanticV2Dataclass:
@@ -7644,7 +7651,8 @@ def test_main_jsonschema_additional_properties_value_constraints_annotated_py312
     reason="Installed black doesn't support Python version 3.11",
 )
 def test_main_jsonschema_additional_properties_value_constraints_schema_validators(output_file: Path) -> None:
-    """Preserve constrained unmatched values in generated patternProperties validators."""
+    """Preserve constrained unmatched values in generated patternProperties validators where Pydantic allows."""
+    runs = installed_pydantic_runs_target(None)
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "additional_properties_value_constraints_annotated.json",
         output_path=output_file,
@@ -7662,7 +7670,10 @@ def test_main_jsonschema_additional_properties_value_constraints_schema_validato
             "--disable-timestamp",
         ],
         force_exec_validation=True,
+        skip_code_validation=not runs,
     )
+    if not runs:
+        return
     assert_generated_model_json_validation(
         output_file,
         module_name="heterogeneous_mapping_schema_validators",
@@ -9231,9 +9242,7 @@ def test_main_jsonschema_property_names_allof_ref(output_file: Path) -> None:
 def test_main_jsonschema_property_names_ref_enum(output_file: Path, target_pydantic_version: str | None) -> None:
     """Define enum dict keys first for targets before Pydantic 2.8 and keep schema order for newer targets."""
     expected_file = (
-        "property_names_ref_enum.py"
-        if target_pydantic_version == "2.12"
-        else "property_names_ref_enum_legacy_pydantic.py"
+        "property_names_ref_enum_legacy_pydantic.py" if target_pydantic_version == "2" else "property_names_ref_enum.py"
     )
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "property_names_ref_enum.json",
@@ -21522,7 +21531,6 @@ EXPLICIT_ALIAS_ALIASES = json.loads((ALIASES_DATA_PATH / "explicit_alias_names.j
         ("reserved_config", DataModelType.PydanticV2BaseModel),
         ("reserved_validate", DataModelType.PydanticV2BaseModel),
         ("reserved_legacy", DataModelType.PydanticV2BaseModel),
-        ("reserved_unset", DataModelType.PydanticV2BaseModel),
         ("reserved_msgspec", DataModelType.MsgspecStruct),
         ("discriminator_invalid", DataModelType.PydanticV2BaseModel),
         ("discriminator_keyword", DataModelType.PydanticV2BaseModel),
@@ -21662,6 +21670,7 @@ def test_explicit_alias_names_valid(case: str, output_file: Path) -> None:
             "shadow_copy",
             "shadow_schema",
             "shadow_validate",
+            "shadow_model_fields",
             "namespace_warning",
         ]
     ]
@@ -24594,10 +24603,7 @@ COMPOUND_PROPERTY_CASES = json.loads((COMPOUND_PROPERTY_PAYLOADS / "cases.json")
 def test_compound_property_name_generation(name: str, constraints: bool, entry: str, output_file: Path) -> None:
     """Preserve string keys, native acceptance, and deterministic generated output."""
     input_path = COMPOUND_PROPERTY_INPUTS / f"{name}.json"
-    suffix = "_legacy_pydantic" if name in {"enum_refs", "ref_then_any"} else ""
-    expected_file = COMPOUND_PROPERTY_CASES[name].get(
-        f"{name}_{int(constraints)}{suffix}.py", f"{name}_{int(constraints)}{suffix}.py"
-    )
+    expected_file = COMPOUND_PROPERTY_CASES[name].get(f"{name}_{int(constraints)}.py", f"{name}_{int(constraints)}.py")
     expected_file = f"compound_property_names/{expected_file}"
     if entry == "cli":
         run_main_and_assert(

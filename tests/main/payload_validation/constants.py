@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 
+from datamodel_code_generator import TargetPydanticVersion
 from datamodel_code_generator.format import PythonVersion, is_supported_in_black
-from tests.main.conftest import CURRENT_PYTHON_VERSION, DATA_PATH
+from tests.main.conftest import CURRENT_PYTHON_VERSION, DATA_PATH, installed_pydantic_runs_target
 from tests.main.payload_validation.models import PayloadBackend
 
 PAYLOAD_CODEGEN_WARNING_FILES: dict[str, str] = json.loads(
@@ -467,3 +468,8 @@ def _payload_target_python_version() -> str:
 
 
 PAYLOAD_TARGET_PYTHON_VERSION = _payload_target_python_version()
+PAYLOAD_TARGET_PYDANTIC_VERSION = max(
+    (target.value for target in TargetPydanticVersion if installed_pydantic_runs_target(target.value)),
+    key=lambda value: tuple(map(int, value.split("."))),
+)
+"""The newest target the installed Pydantic can run, so payload models execute on every pinned runtime."""

@@ -16,7 +16,7 @@ class Level(StrEnum):
 
 class Sample(BaseModel):
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     user_name: Annotated[str, Field(alias='userName')]
     level: Level

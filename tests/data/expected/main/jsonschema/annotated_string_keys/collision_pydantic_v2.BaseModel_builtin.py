@@ -5,7 +5,8 @@ from __future__ import annotations
 
 from typing import Annotated as Annotated_aliased
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
+from pydantic import StringConstraints as StringConstraints_aliased
 
 
 class SomeSpec(BaseModel):
@@ -13,7 +14,13 @@ class SomeSpec(BaseModel):
         extra='forbid',
     )
     services: (
-        dict[Annotated_aliased[str, Field(pattern=r'^[a-zA-Z0-9._-]+$')], str] | None
+        dict[
+            Annotated_aliased[
+                str, StringConstraints_aliased(pattern=r'^[a-zA-Z0-9._-]+$')
+            ],
+            str,
+        ]
+        | None
     ) = None
     """
     Some property.

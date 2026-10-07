@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import AliasChoices, Field, constr
+from pydantic import Field, constr
 from pydantic.dataclasses import dataclass
 
 
@@ -46,11 +46,7 @@ class InheritedInitDefaultChild(InitBase):
 
 @dataclass
 class RequiredAliasBase:
-    aliased_value: str = Field(
-        ...,
-        serialization_alias='aliased-value',
-        validation_alias=AliasChoices('aliased-value'),
-    )
+    aliased_value: str = Field(..., alias='aliased-value')
 
 
 @dataclass

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import ConfigDict, Field, StrictStr
+from pydantic import ConfigDict, StrictStr, StringConstraints
 from pydantic.dataclasses import dataclass
 
 
@@ -13,7 +13,10 @@ from pydantic.dataclasses import dataclass
 class SomeSpec:
     services: (
         dict[
-            Annotated[str, Field(pattern=r'^[a-zA-Z0-9._-]+$', strict=True)], StrictStr
+            Annotated[
+                str, StringConstraints(pattern=r'^[a-zA-Z0-9._-]+$', strict=True)
+            ],
+            StrictStr,
         ]
         | None
     ) = None

@@ -8,6 +8,6 @@ from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
 
-@dataclass(config=ConfigDict(populate_by_name=True))
+@dataclass(config=ConfigDict(validate_by_name=True))
 class Model:
     s: str

@@ -6,7 +6,8 @@ from __future__ import annotations
 from typing import Annotated as Annotated_aliased
 from typing import Dict
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
+from pydantic import StringConstraints as StringConstraints_aliased
 
 
 class SomeSpec(BaseModel):
@@ -15,7 +16,8 @@ class SomeSpec(BaseModel):
     )
     __annotations__ = {
         '__pydantic_extra__': Dict[
-            Annotated_aliased[str, Field(pattern=r'^[A-Za-z_]+$')], int
+            Annotated_aliased[str, StringConstraints_aliased(pattern=r'^[A-Za-z_]+$')],
+            int,
         ],
     }
     Annotated: str | None = None

@@ -124,9 +124,6 @@
   "reserved_legacy": {
     "a": "model_fields"
   },
-  "reserved_unset": {
-    "a": "model_fields"
-  },
   "discriminator_modular_collision": {
     "AliasNames.a": "K",
     "pet_type": "K"

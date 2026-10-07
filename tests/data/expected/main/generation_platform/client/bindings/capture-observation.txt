@@ -50,21 +50,21 @@ render pydantic_v2.dataclass default
   
   from __future__ import annotations
   from typing import List, Optional
-  from pydantic import AliasChoices, Field, constr
+  from pydantic import Field, constr
   from pydantic.dataclasses import dataclass
   
   
   
   @dataclass
   class BaseRequest:
-      ship_to: Optional[str] = Field(None, serialization_alias='ship-to', validation_alias=AliasChoices('ship-to'))
+      ship_to: Optional[str] = Field(None, alias='ship-to')
   
   
   
   @dataclass
   class Base:
       id: Optional[int] = None
-      ship_to: Optional[str] = Field(None, serialization_alias='ship-to', validation_alias=AliasChoices('ship-to'))
+      ship_to: Optional[str] = Field(None, alias='ship-to')
   
   
   

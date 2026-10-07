@@ -93,7 +93,6 @@ from datamodel_code_generator.enums import (
     TargetPydanticVersion,
     VersionMode,
     XMLSchemaVersion,
-    _is_pydantic_version_at_least,
 )
 
 # Pydantic 2.5 cannot build schemas from stdlib TypeAliasType on Python 3.12.
@@ -608,22 +607,17 @@ def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
         msg = "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`"
         raise Error(msg)
 
-    match target_version := config.target_pydantic_version:
-        case None:
-            return config.model_copy(update={"target_pydantic_version": TargetPydanticVersion.V2_12})
-        case _ if _is_pydantic_version_at_least(target_version, TargetPydanticVersion.V2_12):
-            return config
-        case _:
-            target_version_value = (
-                target_version.value if isinstance(target_version, TargetPydanticVersion) else target_version
-            )
-            msg = (
-                "`--use-missing-sentinel` requires "
-                f"`--target-pydantic-version {TargetPydanticVersion.V2_12.value}` or later; "
-                f"got {target_version_value!r}"
-            )
-            raise Error(msg)
-    raise AssertionError  # pragma: no cover
+    from datamodel_code_generator.model.pydantic_v2.version import target_supports  # noqa: PLC0415
+
+    if target_supports(target_version := config.target_pydantic_version, TargetPydanticVersion.V2_12.value):
+        return config
+    target_version_value = target_version.value if isinstance(target_version, TargetPydanticVersion) else target_version
+    msg = (
+        "`--use-missing-sentinel` requires "
+        f"`--target-pydantic-version {TargetPydanticVersion.V2_12.value}` or later; "
+        f"got {target_version_value!r}"
+    )
+    raise Error(msg)
 
 
 class InvalidFileFormatError(Error):

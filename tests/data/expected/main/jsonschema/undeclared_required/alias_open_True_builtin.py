@@ -60,7 +60,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 class Root(_JsonSchemaRuntimeValidationBase):
     model_config = ConfigDict(
         extra='allow',
-        populate_by_name=True,
+        validate_by_name=True,
     )
 
     __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (

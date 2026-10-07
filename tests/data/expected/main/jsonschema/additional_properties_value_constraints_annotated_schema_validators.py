@@ -12,6 +12,7 @@ from pydantic import (
     ConfigDict,
     Field,
     RootModel,
+    StringConstraints,
     TypeAdapter,
     conint,
     model_validator,
@@ -227,7 +228,8 @@ class Payload(_JsonSchemaRuntimeValidationBase):
     titledRefMap: dict[str, TitledRefMapAdditionalProperty]
     localTitleRefMap: dict[str, LocalTitleRefMapAdditionalProperty]
     namedMap: dict[
-        Annotated[str, Field(pattern=r'^[a-z]+$')], NamedMapAdditionalProperty
+        Annotated[str, StringConstraints(pattern=r'^[a-z]+$')],
+        NamedMapAdditionalProperty,
     ]
     rootMap: RootMap
     nullableValueMap: dict[str, NullableValueMapAdditionalProperty]

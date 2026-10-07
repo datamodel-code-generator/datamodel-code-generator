@@ -132,7 +132,7 @@ Generated model class and package behavior.
 - `--reuse-model`: Reuse models on the field when a module has the model with the same content
 - `--reuse-scope`: Scope for model reuse deduplication: module (per-file, default) or tree (cross-file with shared module). Only effective when --reuse-model is set. Choices: `module`, `tree`.
 - `--target-python-version`: target python version Choices: `3.10`, `3.11`, `3.12`, `3.13`, `3.14`.
-- `--target-pydantic-version`: Target Pydantic version for generated code. '2': Pydantic 2.0+ compatible (default, uses populate_by_name). '2.11': Pydantic 2.11+ (uses validate_by_name). '2.12': Pydantic 2.12+ (supports MISSING sentinel). Choices: `2`, `2.11`, `2.12`.
+- `--target-pydantic-version`: Oldest Pydantic version the generated code must support. Unset: the newest supported forms (same as the newest choice). '2': Pydantic 2.0+ compatible (uses populate_by_name). '2.11': Pydantic 2.11+ (uses validate_by_name). '2.12': Pydantic 2.12+ (supports MISSING sentinel). Choices: `2`, `2.11`, `2.12`.
 - `--alias-generator`: Pydantic v2 BaseModel alias generator to use in ConfigDict. Matching generated aliases are omitted from individual Field() calls. Choices: `to_camel`, `to_pascal`, `to_snake`.
 - `--use-generic-base-class`: Generate a shared base class with model configuration (e.g., extra='forbid') instead of repeating the configuration in each model. Keeps code DRY.
 - `--parent-scoped-naming` (deprecated): Deprecated: --parent-scoped-naming is deprecated. Use --naming-strategy parent-prefixed instead.

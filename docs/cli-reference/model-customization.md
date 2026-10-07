@@ -128,7 +128,7 @@ Pydantic v2 BaseModel output and omits matching per-field aliases.
 
     class AliasGeneratorModel(BaseModel):
         model_config = ConfigDict(
-            populate_by_name=True,
+            validate_by_name=True,
             alias_generator=to_camel,
         )
         first_name: str
@@ -747,7 +747,7 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 
         class Pet(BaseModel):
             model_config = ConfigDict(
-                populate_by_name=True,
+                validate_by_name=True,
             )
             id: int
             name: str
@@ -760,7 +760,7 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 
         class User(BaseModel):
             model_config = ConfigDict(
-                populate_by_name=True,
+                validate_by_name=True,
             )
             id: int
             name: str
@@ -781,7 +781,7 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 
         class Error(BaseModel):
             model_config = ConfigDict(
-                populate_by_name=True,
+                validate_by_name=True,
             )
             code: int
             message: str
@@ -789,7 +789,7 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 
         class Api(BaseModel):
             model_config = ConfigDict(
-                populate_by_name=True,
+                validate_by_name=True,
             )
             apiKey: str | None = Field(
                 None, description='To be used as a dataset parameter value'
@@ -811,14 +811,14 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 
         class Event(BaseModel):
             model_config = ConfigDict(
-                populate_by_name=True,
+                validate_by_name=True,
             )
             name: str | None = None
 
 
         class Result(BaseModel):
             model_config = ConfigDict(
-                populate_by_name=True,
+                validate_by_name=True,
             )
             event: Event | None = None
         ```
@@ -5467,9 +5467,10 @@ default to None.
 Target Pydantic version for generated code compatibility.
 
 The `--target-pydantic-version` flag chooses the oldest Pydantic the generated code must run on.
-Output never depends on the Pydantic installed with datamodel-code-generator; unset means `2`.
+Output never depends on the Pydantic installed with datamodel-code-generator.
 
-- **2** (default): Pydantic 2.0+ forms, such as `populate_by_name=True`, `Field(...)` string constraints,
+- **unset**: the newest supported forms, the same as the newest choice (`2.12`)
+- **2**: Pydantic 2.0+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
   `json_schema_extra` for deprecated fields, and dictionary-key models defined first
 - **2.11**: Pydantic 2.11+ forms, such as `validate_by_name=True`, `StringConstraints`,
   `Field(deprecated=True)`, and `TypeAliasType` dataclass aliases

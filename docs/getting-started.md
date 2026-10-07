@@ -140,7 +140,7 @@ class Species(StrEnum):
 
 class Pet(BaseModel):
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     name: Annotated[str, Field(description="The pet's name")]
     species: Species = Species.dog

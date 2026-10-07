@@ -5,8 +5,13 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Union
 
 from pydantic import Field, RootModel
+
+
+class AnyOfKeys(RootModel[dict[Union["KeyA", "KeyB"], str]]):
+    root: dict[Union["KeyA", "KeyB"], str] = Field(..., title='AnyOfKeys')
 
 
 class KeyA(Enum):
@@ -17,7 +22,3 @@ class KeyA(Enum):
 class KeyB(Enum):
     c = 'c'
     d = 'd'
-
-
-class AnyOfKeys(RootModel[dict[KeyA | KeyB, str]]):
-    root: dict[KeyA | KeyB, str] = Field(..., title='AnyOfKeys')

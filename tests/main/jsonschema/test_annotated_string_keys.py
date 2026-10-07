@@ -42,8 +42,9 @@ def test_annotated_string_keys(
     """Check exact output everywhere and native constraints where the installed Pydantic supports the case."""
     source = JSON_SCHEMA_DATA_PATH / "annotated_string_keys" / f"{case['schema']}.json"
     expected = f"annotated_string_keys/{case['name']}_{backend}_{formatter}.py"
-    runs = installed_pydantic_runs_target(
-        ".".join(map(str, minimum)) if (minimum := case.get("minimum_pydantic_version")) else None
+    runs = installed_pydantic_runs_target(case["options"].get("target_pydantic_version")) and (
+        not (minimum := case.get("minimum_pydantic_version"))
+        or installed_pydantic_runs_target(".".join(map(str, minimum)))
     )
     formatters = ["builtin"] if formatter == "builtin" else ["black", "isort"]
     options: dict[str, Any] = {"field_constraints": True, "use_field_description": True, **case["options"]}

@@ -17,7 +17,7 @@ class Status(str, Enum):
 
 class EnumLiteralTypedDict(BaseModel):
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     status: Annotated[Status | None, Field(title='Status')] = None
     priority: Annotated[Literal['high'] | None, Field(title='Priority')] = None

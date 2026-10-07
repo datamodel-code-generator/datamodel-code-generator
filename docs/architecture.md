@@ -146,7 +146,7 @@ classDiagram
 | Output model type | Data model | Root model | Field model | Type manager |
 | --- | --- | --- | --- | --- |
 | `pydantic_v2.BaseModel` | `model.pydantic_v2.base_model.BaseModel` | `model.pydantic_v2.root_model.RootModel` | `model.pydantic_v2.base_model.DataModelField` | `model.pydantic_v2.types.DataTypeManager` |
-| `pydantic_v2.dataclass` | `model.pydantic_v2.dataclass.DataClass` | `model.pydantic_v2.type_alias.TypeAlias` | `model.pydantic_v2.dataclass.DataModelFieldBackport` | `model.pydantic_v2.types.DataTypeManager` |
+| `pydantic_v2.dataclass` | `model.pydantic_v2.dataclass.DataClass` | `model.type_alias.TypeAliasTypeBackport` | `model.pydantic_v2.dataclass.DataModelField` | `model.pydantic_v2.types.DataTypeManager` |
 | `dataclasses.dataclass` | `model.dataclass.DataClass` | `model.type_alias.TypeAlias` | `model.dataclass.DataModelField` | `model.dataclass.DataTypeManager` |
 | `typing.TypedDict` | `model.typed_dict.TypedDict` | `model.type_alias.TypeAlias` | `model.typed_dict.DataModelFieldBackport` | `model.types.DataTypeManager` |
 | `msgspec.Struct` | `model.msgspec.Struct` | `model.type_alias.TypeAlias` | `model.msgspec.DataModelField` | `model.msgspec.DataTypeManager` |

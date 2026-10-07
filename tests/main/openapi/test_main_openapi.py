@@ -3978,17 +3978,13 @@ def test_main_openapi_allof_required_inherited_dataclass_metadata(
     additional_args: tuple[str, ...],
 ) -> None:
     """Preserve explicit field metadata and exact dataclass ordering across required overrides."""
-    expected_output_name = (
-        f"{expected_name}_alias_fallback"
-        if output_model_type == DataModelType.PydanticV2Dataclass.value
-        else expected_name
-    )
+    runs = installed_pydantic_runs_target(None) or output_model_type != DataModelType.PydanticV2Dataclass.value
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "allof_required_inherited_dataclass_metadata.yaml",
         output_path=output_file,
         input_file_type="openapi",
         assert_func=assert_file_content,
-        expected_file=f"output_model_types/allof_required_inherited_dataclass_metadata_{expected_output_name}.py",
+        expected_file=f"output_model_types/allof_required_inherited_dataclass_metadata_{expected_name}.py",
         extra_args=[
             *BACKEND_GOLDEN_TARGET_ARGS,
             "--formatters",
@@ -4004,7 +4000,10 @@ def test_main_openapi_allof_required_inherited_dataclass_metadata(
             "--disable-timestamp",
         ],
         force_exec_validation=True,
+        skip_code_validation=not runs,
     )
+    if not runs:
+        return
 
     match model_type := DataModelType(output_model_type):
         case DataModelType.PydanticV2BaseModel | DataModelType.PydanticV2Dataclass | DataModelType.DataclassesDataclass:

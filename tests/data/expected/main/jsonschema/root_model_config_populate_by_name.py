@@ -17,7 +17,7 @@ class Items(RootModel[list[ConstrainedString]]):
 
 class Model(BaseModel):
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     name: str
     items: Items | None = None

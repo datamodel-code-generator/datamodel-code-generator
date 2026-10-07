@@ -82,19 +82,20 @@ class Pet:
 
 Pydantic output depends only on the inputs and options, never on the Pydantic version installed next to
 `datamodel-codegen`. Use `--target-pydantic-version` to choose the oldest Pydantic release the generated code must
-run on. Leaving it unset is the same as `--target-pydantic-version 2`, so the output runs on every Pydantic 2 release.
+run on. Leaving it unset gives the newest supported forms, the same as the newest choice (`2.12`). Pass
+`--target-pydantic-version 2` when the generated code must also run on older Pydantic 2 releases.
 
-| Generated form | `2` (default, Pydantic 2.0+) | `2.11` / `2.12` |
+| Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12` |
 | --- | --- | --- |
-| Constrained strings with `--use-annotated` | `Annotated[str, Field(...)]` | `Annotated[str, StringConstraints(...)]` |
-| Deprecated fields | `Field(json_schema_extra={'deprecated': True})` | `Field(deprecated=True)` |
-| Models used as dictionary keys | Defined before the models that use them as keys | Schema order |
-| `pydantic_v2.dataclass` aliases that are not identifiers | `Field(validation_alias=..., serialization_alias=...)` assignment | `Field(alias=...)` |
-| `pydantic_v2.dataclass` aliases of other models | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
-| `--allow-population-by-field-name` | `populate_by_name=True` | `validate_by_name=True` |
+| Constrained strings with `--use-annotated` (2.1+) | `Annotated[str, Field(...)]` | `Annotated[str, StringConstraints(...)]` |
+| `pydantic_v2.dataclass` aliases that are not identifiers (2.4+) | `Field(validation_alias=..., serialization_alias=...)` assignment | `Field(alias=...)` |
+| Deprecated fields (2.7+) | `Field(json_schema_extra={'deprecated': True})` | `Field(deprecated=True)` |
+| Models used as dictionary keys (2.8+) | Defined before the models that use them as keys | Schema order |
+| `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
+| Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected for every `model_` name | Rejected only for `model_validate*` and `model_dump*` names |
+| `--allow-population-by-field-name` (2.11+) | `populate_by_name=True` | `validate_by_name=True` |
 
-`2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`, which implies
-`--target-pydantic-version 2.12` when the target is unset.
+`2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
 
 ---
 

@@ -1082,7 +1082,7 @@ class BaseModel(BaseModelBase):
     TYPED_EXTRA_FIELD_NAME: ClassVar[str] = "__pydantic_extra__"
     TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
     # In Pydantic 2.11+, populate_by_name is deprecated in favor of validate_by_name + validate_by_alias
-    # Default to V2 compatible (populate_by_name) unless target_pydantic_version is specified
+    # An unset target_pydantic_version means the newest choice; only targets before 2.11 use populate_by_name
     _CONFIG_ATTRIBUTES_V2: ClassVar[list[ConfigAttribute]] = [
         ConfigAttribute("allow_population_by_field_name", "populate_by_name", False),  # noqa: FBT003
         ConfigAttribute("populate_by_name", "populate_by_name", False),  # noqa: FBT003

@@ -554,7 +554,7 @@ def test_generation_store_records_nested_and_dict_key_roles() -> None:
             ("base", None),
         ],
     )
-    assert store.index.reference_classes_for_model(model) == snapshot(frozenset({"Key", "Value"}))
+    assert store.index.reference_classes_for_model(model) == snapshot(frozenset({"Value"}))
 
 
 @pytest.mark.parametrize(
@@ -579,10 +579,7 @@ def test_generation_index_dict_key_reference_policy_matrix(
     target_pydantic_version: TargetPydanticVersion | None,
 ) -> None:
     """Only built-in Pydantic v2 models targeting Pydantic before 2.8 order dict-key references first."""
-    include_dict_key_reference = builtin_pydantic_model and target_pydantic_version in {
-        None,
-        TargetPydanticVersion.V2,
-    }
+    include_dict_key_reference = builtin_pydantic_model and target_pydantic_version is TargetPydanticVersion.V2
     expected = frozenset({"Key", "Value"} if include_dict_key_reference else {"Value"})
 
     assert _dict_key_reference_classes(model_type, target_pydantic_version=target_pydantic_version) == expected
@@ -601,8 +598,8 @@ def test_generation_index_external_pydantic_subclasses_do_not_inherit_dict_key_r
         pass
 
     assert [
-        _dict_key_reference_classes(ExternalBaseModel),
-        _dict_key_reference_classes(ExternalDataClass),
+        _dict_key_reference_classes(ExternalBaseModel, target_pydantic_version=TargetPydanticVersion.V2),
+        _dict_key_reference_classes(ExternalDataClass, target_pydantic_version=TargetPydanticVersion.V2),
     ] == [frozenset({"Value"}), frozenset({"Value"})]
 
 

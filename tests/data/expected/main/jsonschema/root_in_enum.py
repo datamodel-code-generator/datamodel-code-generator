@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class Model(BaseModel):
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     order_reference: str | None = Field(
         alias='orderReference',

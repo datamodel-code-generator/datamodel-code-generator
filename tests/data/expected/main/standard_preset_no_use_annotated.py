@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, conint
 
 class Person(BaseModel):
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     first_name: str | None = Field(
         None, alias='firstName', description="The person's first name."

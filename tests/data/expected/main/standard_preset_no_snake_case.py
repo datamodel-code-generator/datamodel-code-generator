@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class Person(BaseModel):
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     firstName: Annotated[str | None, Field(description="The person's first name.")] = (
         None

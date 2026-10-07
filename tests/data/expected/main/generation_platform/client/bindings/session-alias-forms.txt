@@ -266,7 +266,7 @@ render pydantic_v2.dataclass py311
   from types import NoneType
   from typing_extensions import TypeAliasType
   from pydantic import constr
-  from typing import Any, TypeAlias
+  from typing import Any
   from types import NoneType
   from pydantic.dataclasses import dataclass
   
@@ -292,15 +292,15 @@ render pydantic_v2.dataclass py311
   
   
   
-  AnyChain: TypeAlias = AnyValue
+  AnyChain = TypeAliasType("AnyChain", AnyValue)
   
   
   
-  Chain: TypeAlias = Nullable
+  Chain = TypeAliasType("Chain", Nullable)
   
   
   
-  Chain2: TypeAlias = Chain
+  Chain2 = TypeAliasType("Chain2", Chain)
   
   
   
@@ -326,7 +326,7 @@ render pydantic_v2.dataclass py311-annotated
   from __future__ import annotations
   from types import NoneType
   from typing_extensions import TypeAliasType
-  from typing import Annotated, Any, TypeAlias
+  from typing import Annotated, Any
   from pydantic import Field
   from types import NoneType
   from pydantic.dataclasses import dataclass
@@ -357,15 +357,15 @@ render pydantic_v2.dataclass py311-annotated
   
   
   
-  AnyChain: TypeAlias = AnyValue
+  AnyChain = TypeAliasType("AnyChain", AnyValue)
   
   
   
-  Chain: TypeAlias = Nullable
+  Chain = TypeAliasType("Chain", Nullable)
   
   
   
-  Chain2: TypeAlias = Chain
+  Chain2 = TypeAliasType("Chain2", Chain)
   
   
   
@@ -390,43 +390,42 @@ render pydantic_v2.dataclass py312
   
   from __future__ import annotations
   from types import NoneType
-  from typing_extensions import TypeAliasType
   from pydantic import constr
-  from typing import Any, TypeAlias
+  from typing import Any
   from types import NoneType
   from pydantic.dataclasses import dataclass
   
   
   
-  Plain = TypeAliasType("Plain", str)
+  type Plain = str
   
   
   
-  Nullable = TypeAliasType("Nullable", str | None)
+  type Nullable = str | None
   
   
   
-  NullUnion = TypeAliasType("NullUnion", constr(min_length=3) | None)
+  type NullUnion = constr(min_length=3) | None
   
   
   
-  Items = TypeAliasType("Items", list[str])
+  type Items = list[str]
   
   
   
-  AnyValue = TypeAliasType("AnyValue", Any)
+  type AnyValue = Any
   
   
   
-  AnyChain: TypeAlias = AnyValue
+  type AnyChain = AnyValue
   
   
   
-  Chain: TypeAlias = Nullable
+  type Chain = Nullable
   
   
   
-  Chain2: TypeAlias = Chain
+  type Chain2 = Chain
   
   
   
@@ -451,47 +450,46 @@ render pydantic_v2.dataclass py312-annotated
   
   from __future__ import annotations
   from types import NoneType
-  from typing_extensions import TypeAliasType
-  from typing import Annotated, Any, TypeAlias
+  from typing import Annotated, Any
   from pydantic import Field
   from types import NoneType
   from pydantic.dataclasses import dataclass
   
   
   
-  Plain = TypeAliasType("Plain", str)
+  type Plain = str
   
   
   
-  Nullable = TypeAliasType("Nullable", str | None)
+  type Nullable = str | None
   
   
   
-  NullUnion1 = TypeAliasType("NullUnion1", Annotated[str, Field(min_length=3)])
+  type NullUnion1 = Annotated[str, Field(min_length=3)]
   
   
   
-  NullUnion = TypeAliasType("NullUnion", NullUnion1 | None)
+  type NullUnion = NullUnion1 | None
   
   
   
-  Items = TypeAliasType("Items", list[str])
+  type Items = list[str]
   
   
   
-  AnyValue = TypeAliasType("AnyValue", Any)
+  type AnyValue = Any
   
   
   
-  AnyChain: TypeAlias = AnyValue
+  type AnyChain = AnyValue
   
   
   
-  Chain: TypeAlias = Nullable
+  type Chain = Nullable
   
   
   
-  Chain2: TypeAlias = Chain
+  type Chain2 = Chain
   
   
   

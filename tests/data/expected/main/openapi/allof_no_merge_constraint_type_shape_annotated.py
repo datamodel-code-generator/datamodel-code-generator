@@ -8,7 +8,7 @@ from enum import Enum
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, Field, RootModel, StringConstraints
 from typing_extensions import TypeAliasType
 
 
@@ -240,7 +240,7 @@ class Child(Base):
     containsTrueValue: Annotated[list[str], Field(min_length=1)]
     containsFalseValue: list[str]
     containsCountValue: Annotated[list[str], Field(min_length=2)]
-    propertyNamesValue: dict[Annotated[str, Field(min_length=1)], str]
+    propertyNamesValue: dict[Annotated[str, StringConstraints(min_length=1)], str]
     nullableValue: NullableValue | None
     nonNullableValue: Annotated[str, Field(min_length=1)]
     refSiblingValue: Annotated[str, Field(min_length=1)]
@@ -255,7 +255,9 @@ class Child(Base):
     unionArrayContainsValue: UnionArrayContainsValue | str
     unionArrayLengthValue: UnionArrayLengthValue | str
     unionObjectValuesValue: dict[str, UnionObjectValuesValueAdditionalProperty] | str
-    unionObjectNamesValue: dict[Annotated[str, Field(min_length=1)], str] | str
+    unionObjectNamesValue: (
+        dict[Annotated[str, StringConstraints(min_length=1)], str] | str
+    )
     unionObjectCountValue: UnionObjectCountValue | str
     nestedObjectValue: NestedObjectValue
     itemsTrueValue: list[Any]

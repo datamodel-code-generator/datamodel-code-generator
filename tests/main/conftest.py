@@ -28,7 +28,14 @@ from pydantic import VERSION as PYDANTIC_VERSION
 from pydantic import TypeAdapter, ValidationError
 from pydantic.errors import PydanticUndefinedAnnotation
 
-from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, enable_parsed_source_cache, generate
+from datamodel_code_generator import (
+    DataModelType,
+    GenerateConfig,
+    InputFileType,
+    TargetPydanticVersion,
+    enable_parsed_source_cache,
+    generate,
+)
 from datamodel_code_generator.__main__ import Exit, main
 from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.format import Formatter, PythonVersion, is_supported_in_black
@@ -165,13 +172,16 @@ def target_pydantic_args(target_pydantic_version: str | None) -> list[str]:
 
 
 def target_pydantic_expected_suffix(target_pydantic_version: str | None) -> str:
-    """Name the expected output for a target; an unset target shares the Pydantic 2.0 output."""
-    return "target_2_12" if target_pydantic_version == "2.12" else "target_2"
+    """Name the expected output for a target; an unset target shares the newest target's output."""
+    return "target_2" if target_pydantic_version == "2" else "target_2_12"
+
+
+NEWEST_TARGET_PYDANTIC_VERSION = max((target.value for target in TargetPydanticVersion), key=version.parse)
 
 
 def installed_pydantic_runs_target(target_pydantic_version: str | None) -> bool:
-    """Return whether the installed Pydantic can import code generated for the target."""
-    return target_pydantic_version is None or version.parse(PYDANTIC_VERSION) >= version.parse(target_pydantic_version)
+    """Return whether the installed Pydantic can import code generated for the target; unset is the newest."""
+    return version.parse(PYDANTIC_VERSION) >= version.parse(target_pydantic_version or NEWEST_TARGET_PYDANTIC_VERSION)
 
 
 DATA_PATH: Path = Path(__file__).parent.parent / "data"

@@ -5,13 +5,13 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import StringConstraints
 from pydantic.dataclasses import dataclass
 
 
 @dataclass
 class SomeSpec:
     services: (
-        dict[Annotated[str, Field(pattern=r'^s_')], str]
-        | dict[Annotated[str, Field(pattern=r'^i_')], int]
+        dict[Annotated[str, StringConstraints(pattern=r'^s_')], str]
+        | dict[Annotated[str, StringConstraints(pattern=r'^i_')], int]
     )

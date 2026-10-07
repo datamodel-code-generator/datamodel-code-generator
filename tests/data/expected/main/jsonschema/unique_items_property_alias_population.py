@@ -227,7 +227,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 class UniqueItemsPropertyAlias(_JsonSchemaRuntimeValidationBase):
     model_config = ConfigDict(
         extra='allow',
-        populate_by_name=True,
+        validate_by_name=True,
     )
     __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
         (('my-list', 'my_list'),),

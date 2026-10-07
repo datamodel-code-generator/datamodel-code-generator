@@ -23,4 +23,3 @@ class Model(BaseModel):
 
 
 JsonValue.model_rebuild()
-KeyMap.model_rebuild()

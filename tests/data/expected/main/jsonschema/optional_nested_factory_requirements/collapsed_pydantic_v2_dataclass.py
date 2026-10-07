@@ -3,9 +3,8 @@
 
 from __future__ import annotations
 
-from typing import TypeAlias
-
 from pydantic.dataclasses import dataclass
+from typing_extensions import TypeAliasType
 
 
 @dataclass
@@ -13,7 +12,7 @@ class Item:
     value: int
 
 
-ItemAlias: TypeAlias = Item
+ItemAlias = TypeAliasType("ItemAlias", Item)
 
 
 @dataclass

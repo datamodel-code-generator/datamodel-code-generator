@@ -13,7 +13,7 @@ class Address2(BaseModel):
     """Inline billing address that should not take the primary Address name."""
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     street_name: Annotated[
         str | None, Field(alias='streetName', examples=['Main Street'])
@@ -30,7 +30,7 @@ class AuditActor(BaseModel):
     """Actor associated with the catalog entry."""
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     display_name: Annotated[
         str | None, Field(alias='displayName', examples=['Jane Admin'])
@@ -56,7 +56,7 @@ class Address1(BaseModel):
     """External address definition that should not take the primary Address name."""
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     street_name: Annotated[str | None, Field(alias='streetName')] = None
     """Street name stored by an upstream service."""
@@ -67,7 +67,7 @@ class Address(BaseModel):
     """Primary reusable address definition."""
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     street_name: Annotated[str | None, Field(alias='streetName')] = None
     """Street name stored in the canonical address."""
@@ -78,7 +78,7 @@ class CatalogDocument(BaseModel):
     """Catalog payload accepted by the public API."""
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
     )
     primary_address: Annotated[Address | None, Field(alias='primaryAddress')] = None
     external_address: Annotated[Address1 | None, Field(alias='externalAddress')] = None
