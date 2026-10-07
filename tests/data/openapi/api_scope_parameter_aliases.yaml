@@ -48,6 +48,21 @@ paths:
         - name: anything
           in: query
           schema: true
+        - name: titled
+          in: query
+          schema:
+            type: array
+            items: {type: string, title: Tag}
+        - name: codes
+          in: query
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/Code'
+              - type: array
+                items: {$ref: '#/components/schemas/Code'}
+        - name: nullable
+          in: query
+          schema: {type: [integer, 'null'], minimum: 0, default: 3}
         - name: owner
           in: query
           style: deepObject

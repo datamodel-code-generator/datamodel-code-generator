@@ -65,7 +65,18 @@ class FieldItemsItemIdGetQueryFilterParameter(BaseModel):
 FieldItemsItemIdGetQueryLabelsParameter = RootModel[dict[str, str]]
 
 
-FieldItemsItemIdGetQueryAnythingParameter = TypeAliasType("FieldItemsItemIdGetQueryAnythingParameter", Any)
+FieldItemsItemIdGetQueryAnythingParameter = RootModel[Any]
+
+
+FieldItemsItemIdGetQueryTitledParameter = TypeAliasType("FieldItemsItemIdGetQueryTitledParameter", list[str])
+
+
+FieldItemsItemIdGetQueryCodesParameter = TypeAliasType("FieldItemsItemIdGetQueryCodesParameter", Code | list[Code])
+
+
+FieldItemsItemIdGetQueryNullableParameter = TypeAliasType(
+    "FieldItemsItemIdGetQueryNullableParameter", Annotated[int | None, Field(..., ge=0)]
+)
 
 
 class FieldItemsItemIdGetQueryOwnerParameter(BaseModel):

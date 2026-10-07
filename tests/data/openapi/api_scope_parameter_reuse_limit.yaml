@@ -1,0 +1,10 @@
+openapi: 3.1.0
+info:
+  title: Parameter reuse components
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Limit:
+      type: integer
+      maximum: 50

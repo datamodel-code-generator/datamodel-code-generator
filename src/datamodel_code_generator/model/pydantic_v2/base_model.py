@@ -1180,6 +1180,11 @@ class BaseModel(BaseModelBase):
         return TypeStatement if target_python_version.has_type_statement else TypeAliasTypeBackport
 
     @classmethod
+    def supports_type_alias_pattern(cls, pattern: str) -> bool:
+        """Keep lookaround patterns on models, whose config selects the regex engine they need."""
+        return not _LOOKAROUND_PATTERN.search(pattern)
+
+    @classmethod
     def prepare_module_code(cls, models: list[DataModel]) -> None:
         """Plan shared schema validation helpers before imports are collected."""
         cls._get_schema_runtime_validation_module_plan(models, scan_later_models=True)

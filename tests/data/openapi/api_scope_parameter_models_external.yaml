@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info:
+  title: Parameter model components
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Wrapper:
+      type: array
+      items: {$ref: '#/components/schemas/Inner'}
+    Inner:
+      type: string
+      maxLength: 3

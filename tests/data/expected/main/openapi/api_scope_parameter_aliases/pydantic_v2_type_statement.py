@@ -59,7 +59,17 @@ class FieldItemsItemIdGetQueryLabelsParameter(RootModel[dict[str, str]]):
     root: dict[str, str]
 
 
-type FieldItemsItemIdGetQueryAnythingParameter = Any
+class FieldItemsItemIdGetQueryAnythingParameter(RootModel[Any]):
+    root: Any
+
+
+type FieldItemsItemIdGetQueryTitledParameter = list[str]
+
+
+type FieldItemsItemIdGetQueryCodesParameter = Code | list[Code]
+
+
+type FieldItemsItemIdGetQueryNullableParameter = Annotated[int | None, Field(..., ge=0)]
 
 
 class FieldItemsItemIdGetQueryOwnerParameter(BaseModel):

@@ -10415,6 +10415,10 @@ def test_numeric_union_preserves_nullable_warning(output_file: Path, entrypoint:
         ),
         ("pydantic_v2_collapse.py", ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models"]),
         (
+            "pydantic_v2_collapse_titles.py",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models", "--use-title-as-name"],
+        ),
+        (
             "pydantic_v2_root_model_type_alias.py",
             ["--output-model-type", "pydantic_v2.BaseModel", "--use-root-model-type-alias"],
         ),
@@ -10441,5 +10445,78 @@ def test_main_openapi_api_scope_parameter_aliases(output_file: Path, expected_fi
             "--formatters",
             "builtin",
             *extra_args,
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("pydantic_v2.py", []),
+        ("pydantic_v2_collapse.py", ["--collapse-root-models"]),
+        ("pydantic_v2_frozen.py", ["--enable-faux-immutability"]),
+    ],
+)
+def test_main_openapi_api_scope_parameter_models(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Keep API scope parameters as models when they hold objects, need model config, or are referenced elsewhere."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "api_scope_parameter_models.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=f"api_scope_parameter_models/{expected_file}",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "api",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            *extra_args,
+        ],
+    )
+
+
+@pytest.mark.parametrize("collapse_reuse_models", [False, True], ids=["inherit", "collapse"])
+def test_main_openapi_api_scope_parameter_reuse(output_file: Path, *, collapse_reuse_models: bool) -> None:
+    """Keep API scope parameters as models when model reuse may share them with other schemas."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "api_scope_parameter_reuse.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=f"api_scope_parameter_reuse/{'collapse' if collapse_reuse_models else 'inherit'}.py",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "api",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--reuse-model",
+            *(["--collapse-reuse-models"] if collapse_reuse_models else []),
+        ],
+    )
+
+
+def test_main_openapi_api_scope_parameter_reuse_tree(output_dir: Path) -> None:
+    """Keep the shared module that tree-scoped reuse builds from an API scope parameter."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "api_scope_parameter_reuse.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        expected_directory=EXPECTED_OPENAPI_PATH / "api_scope_parameter_reuse" / "tree",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "api",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
         ],
     )

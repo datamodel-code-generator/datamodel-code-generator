@@ -1,0 +1,112 @@
+openapi: 3.1.0
+info:
+  title: Parameter models
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - $ref: '#/components/parameters/Trace'
+        - name: page
+          in: query
+          schema: {type: integer, minimum: 1, default: 1}
+        - name: rows
+          in: query
+          style: deepObject
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                x: {type: integer, maximum: 5}
+        - name: mixed
+          in: query
+          style: deepObject
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Base'
+              - properties:
+                  a: {type: integer, minimum: 1}
+        - name: pet
+          in: query
+          style: deepObject
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/Cat'
+              - $ref: '#/components/schemas/Dog'
+            discriminator: {propertyName: kind}
+        - name: pets
+          in: query
+          schema:
+            type: array
+            items: {$ref: '#/components/schemas/Cat'}
+        - name: described
+          in: query
+          schema:
+            $ref: '#/components/schemas/Code'
+            description: A described code.
+        - name: wrapped
+          in: query
+          schema: {$ref: 'api_scope_parameter_models_external.yaml#/components/schemas/Wrapper'}
+        - name: pp
+          in: query
+          style: deepObject
+          schema:
+            patternProperties:
+              '^a': {type: integer}
+        - name: either
+          in: query
+          style: deepObject
+          schema:
+            anyOf:
+              - type: object
+                properties:
+                  q: {type: integer, maximum: 9}
+              - type: string
+        - name: anything
+          in: query
+          schema: true
+        - name: loose
+          in: query
+          schema:
+            type: array
+            items: {$ref: '#/components/schemas/AnyValue'}
+        - name: look
+          in: query
+          schema: {type: string, pattern: '^(?!foo).*$'}
+      responses:
+        '200':
+          description: The items.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Holder'}
+components:
+  parameters:
+    Trace:
+      name: X-Trace
+      in: header
+      schema: {type: string, pattern: '^[a-f0-9]+$'}
+  schemas:
+    Code: {type: string, maxLength: 4}
+    AnyValue: true
+    Base:
+      type: object
+      properties:
+        id: {type: integer, minimum: 0}
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, const: cat}
+        lives: {type: integer, maximum: 9}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, const: dog}
+    Holder:
+      type: object
+      properties:
+        trace: {$ref: '#/components/parameters/Trace/schema'}
+        page: {$ref: '#/paths/~1items/get/parameters/1/schema'}
