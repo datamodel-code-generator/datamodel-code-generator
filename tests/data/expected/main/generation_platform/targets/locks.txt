@@ -1,7 +1,24 @@
 # locks
-render
+generate
   APIGenerationError
   E_CONFIG_CONFLICT error config model_config.update_lock: A target run cannot publish a remote lock update that another caller owns
+render
+  target=fastapi schema_version=1
+  write model models.py
+  write target server/__init__.py (target)
+  write target server/application.py (target)
+  write target server/routers/__init__.py (target)
+  write target server/routers/pets.py (target)
+  write target server/routers/store.py (target)
+  write target server/routers/untagged.py (target)
+  write target server/_generated/__init__.py (target)
+  write target server/_generated/contract.py (target)
+  write target server/errors.py (target)
+  write target server/services.py (target)
+  write target server/README.md (target)
+  write target server/py.typed (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  13 runtime modules ['write']
 render
   target=fastapi schema_version=1
   write model models.py

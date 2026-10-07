@@ -751,19 +751,127 @@ def test_fastapi_cli_conflicts(
     )
 
 
+def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write the models and the package of a server job as a single run does, check them, then check a drift."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-jobs.toml")
+    run_main_with_args(["--job", "server"], capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    run_main_with_args(["--job", "server", "--check"], capsys=capsys, assert_no_stderr=True)
+    (tmp_path / "models.py").write_text("# edited\n", encoding="utf-8")
+    (tmp_path / "server" / "README.md").unlink()
+    run_main_with_args(
+        ["--all-jobs", "--check"],
+        expected_exit=Exit.DIFF,
+        capsys=capsys,
+        expected_stderr="write models.py\nwrite server/README.md\n",
+    )
+
+
+def test_fastapi_cli_mixed_jobs(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Run a model-only job and a server job together; both write the models a model-only run writes."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-mixed-jobs.toml")
+    run_main_with_args(["--all-jobs"], capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    assert_file_content(tmp_path / "schemas.py", PACKAGE / "models.py")
+    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_directory_content(tmp_path / "server", PACKAGE / "server")
+    run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
+
+
+@pytest.mark.parametrize(
+    ("name", "arguments"),
+    [
+        ("job", ["--job", "server"]),
+        ("cli-over-job", ["--job", "server", "--server-handler-mode", "async"]),
+        ("cli-table-over-job", ["--job", "server", "--server-handler-modes", '{"/paths/~1pets/get": "async"}']),
+    ],
+)
+def test_fastapi_cli_job_precedence(
+    name: str,
+    arguments: list[str],
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Take each server setting of a job from the command line, then the job table, then its profile."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-mixed-jobs.toml")
+    run_main_with_args(arguments, capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    assert_output(
+        f"$ datamodel-codegen {' '.join(arguments)}\n{_methods(tmp_path / 'server' / 'services.py')}",
+        EXPECTED / "cli" / "precedence" / f"{name}.txt",
+    )
+
+
+def test_fastapi_cli_job_lockfile(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Publish the remote lock a server job updates with the batch, next to pyproject.toml."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-jobs.toml")
+    run_main_with_args(["--job", "server", "--update-lock"])
+    assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
+    assert_output(
+        (tmp_path / "datamodel-codegen.lock").read_text(encoding="utf-8"),
+        DATA / "expected" / "http" / "remote_lock_empty.txt",
+    )
+
+
+def test_fastapi_cli_job_changed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Publish nothing when a file a server job planned changes before the batch publishes it."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-jobs.toml")
+    run_main_with_args(["--job", "server"], capsys=capsys, expected_stdout_path=DEPENDENCIES)
+    shutil.copy2(CLI / "pyproject-interfered-jobs.toml", tmp_path / "pyproject.toml")
+    run_main_with_args(
+        ["--all-jobs"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Error: could not publish batch output: E_STATE_CHANGED: The file changed after the target was planned\n"
+        ),
+    )
+    assert_output(
+        "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())), EXPECTED / "cli" / "jobs-changed.txt"
+    )
+
+
 @pytest.mark.parametrize(
     ("pyproject", "arguments", "stderr"),
     [
-        ("pyproject-jobs.toml", ["--all-jobs"], f"{CONFLICT} --all-jobs\n"),
-        ("pyproject-jobs.toml", ["--job", "server"], f"{CONFLICT} --job\n"),
-        ("pyproject-jobs.toml", ["--all-jobs", "--diagnostics-json", "pyproject.toml"], READ_OR_WRITTEN),
+        ("pyproject-jobs.toml", ["--all-jobs", "--watch"], "Error: --generate-server cannot be used with --watch\n"),
+        ("pyproject-jobs.toml", ["--all-jobs", "--output-format", "json"], f"{CONFLICT} --output-format json\n"),
+        (
+            "pyproject-jobs.toml",
+            ["--job", "server", "--diagnostics-json", "report.json"],
+            "E_CONFIG_CONFLICT error config: --diagnostics-json cannot be used with --job or --all-jobs\n",
+        ),
         (
             "pyproject-model-jobs.toml",
             ["--all-jobs", "--server-layout", "single"],
             "Error: --server-layout requires --generate-server\n",
         ),
+        (
+            "pyproject-failing-jobs.toml",
+            ["--all-jobs"],
+            "Error: --collapse-root-models-name-strategy requires --collapse-root-models\n",
+        ),
+        (
+            "pyproject-overlap-jobs.toml",
+            ["--all-jobs"],
+            "Jobs 'schemas' (output: {root}) and 'server' (server output: {server}) have overlapping output paths\n",
+        ),
+        (
+            "pyproject-shared-models-jobs.toml",
+            ["--all-jobs"],
+            "Jobs 'server' (output: {models}) and 'admin' (output: {models}) have overlapping output paths\n",
+        ),
     ],
-    ids=["all-jobs", "job", "jobs-pyproject", "model-job-server-option"],
+    ids=["watch", "json", "diagnostics-json", "model-job-server-option", "later-job-fails", "overlap", "shared-models"],
 )
 def test_fastapi_cli_jobs(
     pyproject: str,
@@ -773,13 +881,21 @@ def test_fastapi_cli_jobs(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse server jobs and server options of model-only jobs, writing nothing.
+    """Refuse what a server job cannot honor, and publish nothing of a batch whose later job fails.
 
-    A job cannot select the server until the job runner stages target packages.
+    Server jobs refuse the options a single server run refuses, and their outputs must not overlap other outputs.
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, pyproject)
-    run_main_with_args(arguments, expected_exit=Exit.ERROR, capsys=capsys, expected_stderr=stderr)
+    root = tmp_path.resolve()
+    run_main_with_args(
+        arguments,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=stderr.format(
+            root=root / "server" / "schemas.py", server=root / "server", models=root / "models.py"
+        ),
+    )
     assert_output(
         "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())), EXPECTED / "cli" / "jobs-unwritten.txt"
     )

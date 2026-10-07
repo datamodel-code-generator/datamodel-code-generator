@@ -1,6 +1,6 @@
 """Publish target candidates through staged sources and a reversible journal."""
 
-# ruff: noqa: EM101, EM102, SLF001, PERF203, TRY003, TRY301
+# ruff: noqa: EM101, EM102, SLF001, PERF203, TRY003
 
 from __future__ import annotations
 
@@ -19,10 +19,11 @@ from datamodel_code_generator._api_types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
     from pathlib import Path
 
     from datamodel_code_generator import _publication
+    from datamodel_code_generator._api_generation import PlannedTarget
     from datamodel_code_generator._api_manifest import Observed
     from datamodel_code_generator._api_types import GeneratedArtifact, GeneratedProject
     from datamodel_code_generator._publication import PublicationAnchor, StagedFile, StagingDirectory
@@ -294,6 +295,50 @@ def _record(artifact: GeneratedArtifact, digest: str, size: int) -> ArtifactReco
     )
 
 
+def _entries(
+    batch: _Batch,
+    project: GeneratedProject,
+    observed: Mapping[Path, Observed],
+    cwd: Path,
+    lock: RemoteReferenceLock | None,
+) -> list[BatchEntry]:
+    """Stage every change of a project, then recheck all its planned files."""
+    entries = [
+        batch.entry(artifact, cwd / artifact.path, lock if artifact.kind == "remote_lock" else None)
+        for artifact in project.artifacts
+        if artifact.action != "unchanged"
+    ]
+    if changed := [
+        artifact
+        for artifact in project.artifacts
+        if observe_file(location := cwd / artifact.path) != observed[location]
+    ]:
+        raise APIGenerationError(
+            tuple(
+                Diagnostic(
+                    code="E_STATE_CHANGED",
+                    severity="error",
+                    stage="publication",
+                    message="The file changed after the target was planned",
+                    artifact_path=artifact.path.as_posix(),
+                    target_id=artifact.target_id,
+                )
+                for artifact in changed
+            )
+        )
+    return entries
+
+
+def publish_planned(files: Iterable[StagedFile], targets: Sequence[PlannedTarget]) -> None:
+    """Publish staged files and the changes of planned targets through one reversible journal."""
+    with ExitStack() as stack:
+        batch = _Batch(stack)
+        entries = [BatchEntry("write", file) for file in files]
+        for target in targets:
+            entries.extend(_entries(batch, target.project, target.observed, target.cwd, None))
+        publish_batch(entries)
+
+
 def publish_project(
     project: GeneratedProject,
     observed: Mapping[Path, Observed],
@@ -303,32 +348,8 @@ def publish_project(
 ) -> GenerationReport:
     """Stage every change, recheck all planned files, then publish one reversible journal."""
     with ExitStack() as stack:
-        batch = _Batch(stack)
         try:
-            entries = [
-                batch.entry(artifact, cwd / artifact.path, lock if artifact.kind == "remote_lock" else None)
-                for artifact in project.artifacts
-                if artifact.action != "unchanged"
-            ]
-            if changed := [
-                artifact
-                for artifact in project.artifacts
-                if observe_file(location := cwd / artifact.path) != observed[location]
-            ]:
-                raise APIGenerationError(
-                    tuple(
-                        Diagnostic(
-                            code="E_STATE_CHANGED",
-                            severity="error",
-                            stage="publication",
-                            message="The file changed after the target was planned",
-                            artifact_path=artifact.path.as_posix(),
-                            target_id=artifact.target_id,
-                        )
-                        for artifact in changed
-                    )
-                )
-            publish_batch(entries)
+            publish_batch(_entries(_Batch(stack), project, observed, cwd, lock))
         except BaseException:
             if lock is not None:
                 with suppress(OSError):

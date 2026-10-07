@@ -390,6 +390,7 @@ class _StagedJobPlan(NamedTuple):
     output_anchor: _PublicationAnchor | None
     model_metadata_anchor: _PublicationAnchor | None
     staging_contexts: tuple[tempfile.TemporaryDirectory[str], ...]
+    targets: list[Any]
 
 
 class _RemoteLockPlan(NamedTuple):
@@ -776,6 +777,8 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
         _validate_generation_path_conflicts(config.input, config.output, config.emit_model_metadata)
         inputs.append((plan.name, config.input.expanduser().resolve()))
         artifacts.append((plan.name, "output", cast("Path", plan.resolved_output_root)))
+        if config.generate_server is not None and (server_output := config.server_output) is not None:
+            artifacts.append((plan.name, "server output", server_output.expanduser().resolve(strict=False)))
         if (model_metadata := config.emit_model_metadata) is not None:
             if plan.resolved_model_metadata_root is None:  # pragma: no cover - set when metadata is configured
                 msg = f"Job '{plan.name}' cannot resolve model metadata output: {model_metadata}"
@@ -1683,11 +1686,21 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
     return None
 
 
-def _run_target(args: Sequence[str], namespace: Namespace, config: Config | None, pyproject_path: Path | None) -> Exit:
-    """Hand the selected generation target to its runner, which reports every diagnostic."""
+def _run_target(  # noqa: PLR0913, PLR0917
+    args: Sequence[str],
+    namespace: Namespace,
+    config: Config,
+    pyproject_path: Path | None,
+    batch: list[Any] | None = None,
+    lock: Any = None,
+) -> Exit:
+    """Hand the selected generation target to its runner, which reports every diagnostic.
+
+    A batch job plans the target into `batch` for publication with the batch, recording into the batch's lock.
+    """
     from datamodel_code_generator._target_cli import run_target  # noqa: PLC0415
 
-    return Exit(run_target(args, namespace, config, pyproject_path))
+    return Exit(run_target(args, namespace, config, pyproject_path, batch, lock))
 
 
 def _staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
@@ -1699,9 +1712,13 @@ def _staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
 
 
 def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
-    """Redirect a write-mode job's artifacts to private, same-filesystem staging paths."""
-    if plan.config.check:
-        return _StagedJobPlan(plan, plan.config, None, None, None, None, None, None, None, None, ())
+    """Redirect a write-mode job's artifacts to private, same-filesystem staging paths.
+
+    A server job stages nothing: it renders its models and package without writing them, for publication with the
+    batch.
+    """
+    if plan.config.check or plan.config.generate_server is not None:
+        return _StagedJobPlan(plan, plan.config, None, None, None, None, None, None, None, None, (), [])
 
     output = plan.config.output
     from datamodel_code_generator._publication import publication_anchor  # noqa: PLC0415
@@ -1748,6 +1765,7 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
             output_anchor,
             model_metadata_anchor,
             tuple(contexts),
+            [],
         )
     except OSError as exc:
         cleanup_errors = _cleanup_staging_resources(contexts, anchors)
@@ -1873,16 +1891,28 @@ def _staged_files(staged_plan: _StagedJobPlan) -> Iterator[_StagedFile]:
         )
 
 
-def _publish_staged_files(files: Iterable[tuple[Path, Path] | _StagedFile]) -> None:
-    """Load the publication journal only when an artifact must be published."""
+def _publish_staged_files(files: Iterable[tuple[Path, Path] | _StagedFile], targets: Sequence[Any] = ()) -> None:
+    """Load the publication journal only when an artifact must be published, with the targets server jobs planned."""
+    if targets:
+        from datamodel_code_generator._target_cli import publish_targets  # noqa: PLC0415
+
+        publish_targets(cast("Iterable[_StagedFile]", files), targets)
+        return
     from datamodel_code_generator._publication import publish_staged_files  # noqa: PLC0415
 
     publish_staged_files(files)
 
 
+def _planned_targets(staged_plans: Sequence[_StagedJobPlan]) -> tuple[Any, ...]:
+    """Return the targets the server jobs of a batch planned, in job order."""
+    return tuple(target for staged_plan in staged_plans for target in staged_plan.targets)
+
+
 def _publish_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> None:
     """Publish every generated batch artifact after all jobs have completed successfully."""
-    _publish_staged_files(file for staged_plan in staged_plans for file in _staged_files(staged_plan))
+    _publish_staged_files(
+        (file for staged_plan in staged_plans for file in _staged_files(staged_plan)), _planned_targets(staged_plans)
+    )
 
 
 def _validate_staged_job_plans(staged_plans: Sequence[_StagedJobPlan]) -> None:
@@ -1993,7 +2023,7 @@ def _publish_or_error(
             lock_files = remote_locks.staged_files()
             if lock_files:
                 output_files = tuple(file for staged_plan in staged_plans for file in _staged_files(staged_plan))
-                _publish_staged_files((*output_files, *lock_files))
+                _publish_staged_files((*output_files, *lock_files), _planned_targets(staged_plans))
                 remote_locks.mark_committed()
             else:
                 _publish_staged_job_plans(staged_plans)
@@ -2020,6 +2050,7 @@ def _run_jobs_text(
             _batch_pyproject_path=staged_plan.plan.pyproject_path,
             _batch_original_output=staged_plan.output,
             _batch_output_is_staged=staged_plan.staged_output is not None,
+            _batch_targets=staged_plan.targets,
             _remote_locks=remote_locks,
             _bound_remote_lock_plan=remote_lock_plan,
         )
@@ -2069,6 +2100,7 @@ def _run_jobs_json(
                             _batch_pyproject_path=staged_plan.plan.pyproject_path,
                             _batch_original_output=staged_plan.output,
                             _batch_output_is_staged=staged_plan.staged_output is not None,
+                            _batch_targets=staged_plan.targets,
                             _remote_locks=remote_locks,
                             _bound_remote_lock_plan=remote_lock_plan,
                         )
@@ -2299,6 +2331,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     _batch_pyproject_path: Path | None = None,
     _batch_original_output: Path | None = None,
     _batch_output_is_staged: bool = False,
+    _batch_targets: list[Any] | None = None,
     _remote_locks: _RemoteLockTransaction | _UnresolvedRemoteLocks | None = _UNRESOLVED_REMOTE_LOCKS,
     _bound_remote_lock_plan: _RemoteLockPlan | None = None,
 ) -> Exit:
@@ -2391,6 +2424,9 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             return _run_jobs(args, batch_plan.jobs)
         if any(plan.config.check for plan in batch_plan.jobs):
             print("Error: --watch and --check cannot be used together", file=sys.stderr)  # noqa: T201
+            return Exit.ERROR
+        if any(plan.config.generate_server is not None for plan in batch_plan.jobs):
+            print("Error: --generate-server cannot be used with --watch", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
         if namespace.output_format == "json":
             print("Error: --output-format json cannot be used with --watch", file=sys.stderr)  # noqa: T201
@@ -2567,7 +2603,9 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     if config.generate_server is not None:
         if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
             return refusal
-        return _run_target(args, namespace, None if _batch_config is not None else config, pyproject_path)
+        job_locks = None if _batch_targets is None else cast("_RemoteLockTransaction | None", _remote_locks)
+        lock = None if job_locks is None else job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
+        return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock)
 
     if config.watch and config.check:
         print(  # noqa: T201

@@ -278,12 +278,6 @@ def _remote_lock(
         _resolve_generation_remote_lock,  # pyright: ignore[reportPrivateUsage]
     )
 
-    if config.remote_lock_resolved and getattr(config.remote_lock, "update", False):
-        raise config_error(
-            code="E_CONFIG_CONFLICT",
-            option_path="model_config.update_lock",
-            message="A target run cannot publish a remote lock update that another caller owns",
-        )
     if config.update_lock and not config.remote_lock_resolved:
         config, _, lock = _prepare_atomic_generation_remote_lock(input_, config, cwd)
         return config, lock
@@ -705,11 +699,23 @@ def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: Tar
 
 
 def _plan(
-    input_: _GenerationInput, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
+    input_: _GenerationInput,
+    model_config: GenerateConfig,
+    config: TargetConfig,
+    generator: TargetGenerator,
+    *,
+    publish: bool,
 ) -> tuple[_Planner, GeneratedProject]:
+    """Render one target; a run that publishes it cannot leave a lock update another caller owns unpublished."""
     from datamodel_code_generator import Error  # noqa: PLC0415
 
     effective = prepare_target(input_, model_config, generator)
+    if publish and effective.remote_lock_resolved and getattr(effective.remote_lock, "update", False):
+        raise config_error(
+            code="E_CONFIG_CONFLICT",
+            option_path="model_config.update_lock",
+            message="A target run cannot publish a remote lock update that another caller owns",
+        )
     if not effective.disable_timestamp and effective._generation_timestamp is None:  # noqa: SLF001
         effective = effective.model_copy()
         effective._generation_timestamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()  # noqa: SLF001
@@ -729,14 +735,34 @@ def render_target(
     input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> GeneratedProject:
     """Render one target and its models once, returning every publication candidate without writing it."""
-    return _plan(input_, model_config, config, generator)[1]
+    return _plan(input_, model_config, config, generator, publish=False)[1]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PlannedTarget:
+    """A rendered target and the state of every file it plans, which its later publication rechecks."""
+
+    project: GeneratedProject
+    observed: dict[Path, Observed]
+    cwd: Path
+
+
+def plan_target(
+    input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
+) -> PlannedTarget:
+    """Render one target like `render_target` for a caller that publishes it later with other files.
+
+    The caller owns the remote lock the models record into, so the target leaves the lock out.
+    """
+    planner, project = _plan(input_, model_config, config, generator, publish=False)
+    return PlannedTarget(project=project, observed=planner.observed, cwd=planner.models.cwd)
 
 
 def generate_target(
     input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> GenerationReport:
     """Render one target and its models once, then publish every change together through one journal."""
-    planner, project = _plan(input_, model_config, config, generator)
+    planner, project = _plan(input_, model_config, config, generator, publish=True)
     from datamodel_code_generator._api_publication import publish_project  # noqa: PLC0415
 
     return publish_project(project, planner.observed, cwd=planner.models.cwd, lock=planner.models.lock)

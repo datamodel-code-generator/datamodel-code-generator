@@ -170,6 +170,8 @@ and nothing is written to it; the check runs before anything is generated. An ex
 when it has the exact shape of a diagnostics document for the same target. A directory, a path in a missing
 directory, or a file that cannot be written is `E_CONFIG_VALUE`, and the command exits with 2.
 
+One document covers one run, so `--job` and `--all-jobs` refuse it with `E_CONFIG_CONFLICT`.
+
 ---
 
 ## `--generate-prompt` {#generate-prompt}
@@ -350,6 +352,9 @@ one profile or input at a time. With `--watch`, one outer scheduler watches the
 selected jobs' combined dependency graph and `pyproject.toml`. Every event replans and
 transactionally reruns the complete selection; failures retain the published
 outputs and continue watching for recovery.
+
+A job whose settings select `generate-server` also generates the FastAPI server
+package; see [Batch jobs](../fastapi-server.md#batch-jobs).
 
 ---
 

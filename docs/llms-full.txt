@@ -10147,6 +10147,9 @@ selection, and transactionally reruns the whole batch; it does not partially
 rebuild individual jobs. A failed cycle keeps the last published outputs and
 continues watching both prior and newly discovered dependencies for recovery.
 
+A job whose settings select `generate-server` also generates the FastAPI server
+package; see [Batch jobs](fastapi-server.md#batch-jobs).
+
 ## 🎯 Configuration Priority
 
 Settings are applied in the following priority order (highest to lowest):
@@ -11257,8 +11260,7 @@ directory, and command-line paths are relative to the working directory.
 
 `--generate-server` requires `--server-output`, `--server-package`, and `--server-model-package`, and a `--server-*`
 option given on the command line requires `--generate-server`; both stop with `Error:` and exit code 2. Server keys
-of `pyproject.toml` are validated like model keys, but have no effect while no server is selected. Batch jobs
-(`--job`, `--all-jobs`) cannot generate a server yet.
+of `pyproject.toml` are validated like model keys, but have no effect while no server is selected.
 
 The package serves every operation under `paths` of the input; a path item under `components.pathItems` that no
 path references has no URL and is not served. To leave paths out, pass
@@ -11282,6 +11284,50 @@ document, such as `/paths/~1pets/get`, or a document and a pointer joined by `#`
 ```bash
 datamodel-codegen --server-handler-modes '{"/paths/~1pets/get": "async"}'
 ```
+
+## Batch jobs
+
+A [named job](pyproject_toml.md#named-jobs-experimental) whose settings select the server generates it as a single run
+with the same settings does, so one `pyproject.toml` can describe model-only jobs and server jobs together. Put
+`generate-server` in each server job or in a profile it selects, not in the base table, when other jobs generate
+models only.
+
+```toml
+[tool.datamodel-codegen]
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+
+[tool.datamodel-codegen.profiles.server]
+generate-server = "fastapi"
+server-package = "app.server"
+server-model-package = "app.models"
+
+[tool.datamodel-codegen.jobs.schemas]
+input = "openapi.yaml"
+output = "client/schemas.py"
+
+[tool.datamodel-codegen.jobs.server]
+profile = "server"
+input = "openapi.yaml"
+output = "app/models.py"
+server-output = "app/server"
+```
+
+```bash
+datamodel-codegen --all-jobs
+datamodel-codegen --job server --server-handler-mode async
+datamodel-codegen --all-jobs --check
+```
+
+A server option on the command line applies to every selected job and takes precedence over the job table, its
+profile, and the base table, as a model option does; every selected job must then select the server. Each job writes
+its own models: `server-output`, like `output`, must not overlap the outputs of other jobs, so two jobs cannot share
+one models file. The batch publishes the server packages together with the models of every job once all jobs
+succeed, and publishes nothing when a job fails or a file that a server job planned changed in the meantime; the
+`uv add` notice of each package follows the publication. `--check` checks every job and exits with 1 when any of them
+would change. Server jobs refuse `--watch` and `--output-format json`, as a single server run does, and
+`--diagnostics-json`, whose report covers one run.
 
 ## The generated package
 
@@ -42879,6 +42925,8 @@ and nothing is written to it; the check runs before anything is generated. An ex
 when it has the exact shape of a diagnostics document for the same target. A directory, a path in a missing
 directory, or a file that cannot be written is `E_CONFIG_VALUE`, and the command exits with 2.
 
+One document covers one run, so `--job` and `--all-jobs` refuse it with `E_CONFIG_CONFLICT`.
+
 ---
 
 ## `--generate-prompt` {#generate-prompt}
@@ -43059,6 +43107,9 @@ one profile or input at a time. With `--watch`, one outer scheduler watches the
 selected jobs' combined dependency graph and `pyproject.toml`. Every event replans and
 transactionally reruns the complete selection; failures retain the published
 outputs and continue watching for recovery.
+
+A job whose settings select `generate-server` also generates the FastAPI server
+package; see [Batch jobs](../fastapi-server.md#batch-jobs).
 
 ---
 
@@ -45054,7 +45105,7 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 
 FastAPI server generation from the CLI is experimental; its options, generated package, and diagnostics may change.
 
---generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml and in its profiles. --check compares without writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add command or requirements lines. It needs Python 3.11 or later, both to run and as --target-python-version.
+--generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add command or requirements lines. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.install-skill`
 

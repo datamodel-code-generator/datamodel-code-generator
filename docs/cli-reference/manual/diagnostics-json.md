@@ -44,3 +44,5 @@ A path the generation reads or writes, or one inside the model or target output,
 and nothing is written to it; the check runs before anything is generated. An existing file is replaced only
 when it has the exact shape of a diagnostics document for the same target. A directory, a path in a missing
 directory, or a file that cannot be written is `E_CONFIG_VALUE`, and the command exits with 2.
+
+One document covers one run, so `--job` and `--all-jobs` refuse it with `E_CONFIG_CONFLICT`.

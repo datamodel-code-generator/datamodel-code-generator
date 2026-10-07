@@ -194,8 +194,7 @@ directory, and command-line paths are relative to the working directory.
 
 `--generate-server` requires `--server-output`, `--server-package`, and `--server-model-package`, and a `--server-*`
 option given on the command line requires `--generate-server`; both stop with `Error:` and exit code 2. Server keys
-of `pyproject.toml` are validated like model keys, but have no effect while no server is selected. Batch jobs
-(`--job`, `--all-jobs`) cannot generate a server yet.
+of `pyproject.toml` are validated like model keys, but have no effect while no server is selected.
 
 The package serves every operation under `paths` of the input; a path item under `components.pathItems` that no
 path references has no URL and is not served. To leave paths out, pass
@@ -219,6 +218,50 @@ document, such as `/paths/~1pets/get`, or a document and a pointer joined by `#`
 ```bash
 datamodel-codegen --server-handler-modes '{"/paths/~1pets/get": "async"}'
 ```
+
+## Batch jobs
+
+A [named job](pyproject_toml.md#named-jobs-experimental) whose settings select the server generates it as a single run
+with the same settings does, so one `pyproject.toml` can describe model-only jobs and server jobs together. Put
+`generate-server` in each server job or in a profile it selects, not in the base table, when other jobs generate
+models only.
+
+```toml
+[tool.datamodel-codegen]
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+
+[tool.datamodel-codegen.profiles.server]
+generate-server = "fastapi"
+server-package = "app.server"
+server-model-package = "app.models"
+
+[tool.datamodel-codegen.jobs.schemas]
+input = "openapi.yaml"
+output = "client/schemas.py"
+
+[tool.datamodel-codegen.jobs.server]
+profile = "server"
+input = "openapi.yaml"
+output = "app/models.py"
+server-output = "app/server"
+```
+
+```bash
+datamodel-codegen --all-jobs
+datamodel-codegen --job server --server-handler-mode async
+datamodel-codegen --all-jobs --check
+```
+
+A server option on the command line applies to every selected job and takes precedence over the job table, its
+profile, and the base table, as a model option does; every selected job must then select the server. Each job writes
+its own models: `server-output`, like `output`, must not overlap the outputs of other jobs, so two jobs cannot share
+one models file. The batch publishes the server packages together with the models of every job once all jobs
+succeed, and publishes nothing when a job fails or a file that a server job planned changed in the meantime; the
+`uv add` notice of each package follows the publication. `--check` checks every job and exits with 1 when any of them
+would change. Server jobs refuse `--watch` and `--output-format json`, as a single server run does, and
+`--diagnostics-json`, whose report covers one run.
 
 ## The generated package
 

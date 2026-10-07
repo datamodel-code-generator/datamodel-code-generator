@@ -7,7 +7,7 @@ import sys
 import traceback
 from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, NoReturn
+from typing import TYPE_CHECKING, Any, Final
 
 from typing_extensions import TypeIs
 
@@ -18,14 +18,15 @@ if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Iterable, Sequence
 
+    from datamodel_code_generator._api_generation import PlannedTarget
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig
+    from datamodel_code_generator._publication import StagedFile
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
 
 _OK: Final = 0
 _DIFF: Final = 1
 _ERROR: Final = 2
-_JOBS: Final = (("job", "--job"), ("all_jobs", "--all-jobs"))
 _CONFLICTS: Final = (("watch", "--watch"), ("diff_against", "--diff-against"), ("input_model", "--input-model"))
 _TARGET: Final = "fastapi"
 _SERVER_SETTINGS: Final = ("layout", "handler_mode", "include_request", "body_mode", "router_names")
@@ -45,24 +46,29 @@ _FIELDS: Final = frozenset({
 })
 
 
-def run_target(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path: Path | None) -> int:
+def run_target(  # noqa: PLR0913, PLR0917
+    args: Sequence[str],
+    namespace: Namespace,
+    config: Any,
+    pyproject_path: Path | None,
+    batch: list[tuple[PlannedTarget, str]] | None = None,
+    lock: Any = None,
+) -> int:
     """Generate or check the selected target from the finalized CLI config, reporting every diagnostic.
 
-    A model setting the target needs but the config lacks is refused like a model option conflict, before the run.
+    A model setting the target needs but the config lacks is refused like a model option conflict, before the run. A
+    batch job appends the planned target to `batch` instead of publishing it, and its models record into the batch's
+    remote `lock`.
     """
     from datamodel_code_generator._api_generation import model_requirement  # noqa: PLC0415
     from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
 
-    if config is not None and (requirement := model_requirement(config.openapi_scopes, FastAPITarget.selector)):
+    if requirement := model_requirement(config.openapi_scopes, FastAPITarget.selector):
         print(f"Error: {requirement}", file=sys.stderr)  # noqa: T201
         return _ERROR
-    report = _Report(vars(namespace).get("diagnostics_json"))
+    report = _Report(None if batch is not None else vars(namespace).get("diagnostics_json"))
     try:
-        code = (
-            _jobs(namespace, pyproject_path, report)
-            if config is None
-            else _run(args, namespace, config, pyproject_path, report)
-        )
+        code = _run(args, namespace, config, pyproject_path, report, batch, lock)
     except APIGenerationError as error:
         report.extend(error.diagnostics)
         code = _ERROR
@@ -72,14 +78,29 @@ def run_target(args: Sequence[str], namespace: Namespace, config: Any, pyproject
     return code if report.write() else _ERROR
 
 
-def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path: Path | None, report: _Report) -> int:
+def _run(  # noqa: PLR0913, PLR0917
+    args: Sequence[str],
+    namespace: Namespace,
+    config: Any,
+    pyproject_path: Path | None,
+    report: _Report,
+    batch: list[tuple[PlannedTarget, str]] | None,
+    lock: Any,
+) -> int:
     from datamodel_code_generator.__main__ import (  # noqa: PLC0415
         _target_lockfile,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
         _target_settings,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
     )
-    from datamodel_code_generator._api_generation import generate_target, prepare_target, render_target  # noqa: PLC0415
+    from datamodel_code_generator._api_generation import (  # noqa: PLC0415
+        generate_target,
+        plan_target,
+        prepare_target,
+        render_target,
+    )
     from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
 
+    if batch is not None and vars(namespace).get("diagnostics_json") is not None:
+        raise APIGenerationError((_conflict("--diagnostics-json cannot be used with --job or --all-jobs"),))
     lockfile = _target_lockfile(config, pyproject_path)
     report.guard(
         (pyproject_path, config.input, config.output, config.emit_model_metadata, lockfile),
@@ -91,6 +112,8 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
         raise APIGenerationError((_conflict("--dependency-format cannot be used with --diagnostics-json -"),))
     target = _server_config(config, namespace, pyproject_path)
     effective = _target_settings(config, args, lockfile)
+    if batch is not None:
+        effective.resolve_remote_lock(lock)
     generator = FastAPITarget()
     if (source := config.url or config.input) is None:
         prepare_target("", effective, generator)
@@ -102,11 +125,34 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
         for artifact in changes:
             print(f"{artifact.action} {_shown(artifact.path)}", file=sys.stderr)  # noqa: T201
         return _DIFF if changes else _OK
+    if batch is not None:
+        planned = plan_target(source, model_config=effective, config=target, generator=generator)
+        report.extend(planned.project.diagnostics)
+        batch.append((planned, _next_step(target, planned.project.dependencies, form)))
+        return _OK
     generated = generate_target(source, model_config=effective, config=target, generator=generator)
     report.extend(generated.diagnostics)
     if report.destination != "-":
         print(_next_step(target, generated.dependencies, form))  # noqa: T201
     return _OK
+
+
+def publish_targets(files: Iterable[StagedFile], targets: Sequence[tuple[PlannedTarget, str]]) -> None:
+    """Publish the staged files of a batch and the targets its server jobs planned through one journal.
+
+    Each target's dependency notice follows the publication, as after a single run. A planned file that changed since
+    its job ran, or a rollback that could not restore every file, is an `Error`.
+    """
+    from datamodel_code_generator import Error  # noqa: PLC0415
+    from datamodel_code_generator._api_publication import publish_planned  # noqa: PLC0415
+    from datamodel_code_generator._api_types import PublicationRollbackError  # noqa: PLC0415
+
+    try:
+        publish_planned(files, [planned for planned, _ in targets])
+    except (APIGenerationError, PublicationRollbackError) as error:
+        raise Error(str(error)) from error
+    for _, notice in targets:
+        print(notice)  # noqa: T201
 
 
 def _shown(path: Path) -> str:
@@ -121,11 +167,6 @@ def _next_step(target: FastAPIConfig, dependencies: tuple[str, ...], form: str |
         return "\n".join(dependencies)
     arguments = " ".join(f'"{dependency}"' for dependency in dependencies)
     return f"Add the runtime dependencies of {target.package} to your project:\n  uv add {arguments}"
-
-
-def _jobs(namespace: Namespace, pyproject_path: Path | None, report: _Report) -> NoReturn:
-    report.guard((pyproject_path,), ())
-    raise _refused(_flags(namespace, namespace, _JOBS))
 
 
 def _flags(namespace: Namespace, source: object, options: tuple[tuple[str, str], ...]) -> list[str]:
