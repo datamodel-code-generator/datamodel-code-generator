@@ -1346,7 +1346,8 @@ def generate_cli_command(config: dict[str, TomlValue]) -> str:
         elif isinstance(value, list):
             parts.extend((f"--{cli_key}", _format_cli_value(cast("list[str]", value))))
         elif isinstance(value, Mapping):
-            parts.extend((f"--{cli_key}", _format_cli_mapping(key, value)))
+            if argument := _format_cli_mapping(key, value):
+                parts.extend((f"--{cli_key}", argument))
         else:
             parts.extend((f"--{cli_key}", _format_cli_value(str(value))))
 

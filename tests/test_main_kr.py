@@ -1280,6 +1280,25 @@ external-ref-mapping = {"../common/a b.yaml" = "pkg.models", "$HOME/other.yaml" 
         )
 
 
+def test_generate_cli_command_skips_empty_external_ref_mapping(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test --generate-cli-command omits an empty external-ref-mapping table."""
+    pyproject_toml = """
+[tool.datamodel-codegen]
+input = "schema.yaml"
+external-ref-mapping = {}
+"""
+    (tmp_path / "pyproject.toml").write_text(pyproject_toml, encoding="utf-8")
+
+    with chdir(tmp_path):
+        run_main_with_args(
+            ["--generate-cli-command"],
+            capsys=capsys,
+            expected_stdout_path=EXPECTED_GENERATE_CLI_COMMAND_PATH / "empty_external_ref_mapping.txt",
+        )
+
+
 def test_generate_cli_command_reconstructs_mapping_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test reconstructed CLI commands apply table options like the pyproject configuration."""
     shutil.copy(JSON_SCHEMA_DATA_PATH / "person.json", tmp_path / "schema.json")
