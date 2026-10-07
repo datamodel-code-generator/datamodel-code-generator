@@ -15489,31 +15489,47 @@ def test_main_rust_unsupported_syntax(target_pydantic_version: str, output_file:
         )
 
 
-@pytest.mark.skipif(sys.version_info < (3, 11), reason="Python's re supports atomic groups from 3.11")
-def test_main_rust_unsupported_atomic_group(output_file: Path) -> None:
-    """Atomic groups select Python's regex engine when the generating Python's ``re`` supports them."""
+@pytest.mark.parametrize(
+    ("fixture", "target_python_version", "expected_file", "switched"),
+    [
+        ("rust_unsupported_atomic_group", "3.10", "rust_unsupported_atomic_group_py310.py", False),
+        ("rust_unsupported_atomic_group", "3.11", "rust_unsupported_atomic_group_py311.py", True),
+        ("rust_unsupported_end_of_string", "3.13", "rust_unsupported_end_of_string_py313.py", False),
+        ("rust_unsupported_end_of_string", "3.14", "rust_unsupported_end_of_string_py314.py", True),
+    ],
+)
+def test_main_rust_unsupported_target_python(
+    fixture: str, target_python_version: str, expected_file: str, switched: bool, output_file: Path
+) -> None:
+    r"""Python-only regex syntax selects Python's regex engine only when the target Python's ``re`` parses it.
+
+    Atomic groups and possessive quantifiers need Python 3.11 and ``\z`` needs Python 3.14. The decision
+    depends on ``--target-python-version``, never on the Python running the generator. Switched models are
+    imported when the running Python is at least the target.
+    """
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_atomic_group.json",
+        input_path=JSON_SCHEMA_DATA_PATH / f"{fixture}.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        expected_file="rust_unsupported_atomic_group_pydantic_v2.py",
-        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
-    )
-    assert_generated_model_json_validation(
-        output_file,
-        module_name="rust_unsupported_atomic_group",
-        model_name="AtomicGroup",
-        valid_json='"abc"',
-        invalid_json='"ABC"',
-        expected_error_type="string_pattern_mismatch",
-        expected_attribute_path=("root",),
-        expected_attribute_value="abc",
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            target_python_version,
+        ],
+        skip_code_validation=not switched,
+        force_exec_validation=switched,
     )
 
 
 def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
-    """Patterns Python's ``re`` also rejects keep pydantic-core's default regex engine."""
+    """Patterns not every supported Python's ``re`` parses the same way keep pydantic-core's default engine.
+
+    This covers patterns Python rejects, global flags after the start, verbose patterns, and conditionals
+    that reference a group by non-ASCII digits.
+    """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_python_rejected.json",
         output_path=output_file,

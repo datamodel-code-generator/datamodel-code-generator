@@ -4,6 +4,18 @@
     "PythonRejected": {
       "type": "string",
       "pattern": "^([a-z])\\1\\p{L}$"
+    },
+    "MidPatternFlag": {
+      "type": "string",
+      "pattern": "^([a-z])\\1(?i)$"
+    },
+    "VerboseFlag": {
+      "type": "string",
+      "pattern": "(?x)^([a-z])\\1$"
+    },
+    "NonAsciiCondition": {
+      "type": "string",
+      "pattern": "^(a)?(?(\u0661)b)$"
     }
   }
 }

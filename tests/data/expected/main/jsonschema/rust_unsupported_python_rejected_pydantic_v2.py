@@ -15,3 +15,15 @@ class Model(RootModel[Any]):
 
 class PythonRejected(RootModel[constr(pattern=r'^([a-z])\1\p{L}$')]):
     root: constr(pattern=r'^([a-z])\1\p{L}$')
+
+
+class MidPatternFlag(RootModel[constr(pattern=r'^([a-z])\1(?i)$')]):
+    root: constr(pattern=r'^([a-z])\1(?i)$')
+
+
+class VerboseFlag(RootModel[constr(pattern=r'(?x)^([a-z])\1$')]):
+    root: constr(pattern=r'(?x)^([a-z])\1$')
+
+
+class NonAsciiCondition(RootModel[constr(pattern=r'^(a)?(?(١)b)$')]):
+    root: constr(pattern=r'^(a)?(?(١)b)$')

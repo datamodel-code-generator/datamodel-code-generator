@@ -223,29 +223,33 @@ This allows you to set a default base class with `--base-class`, override specif
 Pydantic v2 validates `pattern` with pydantic-core's Rust regex engine by default. Some syntax that Python's `re`
 accepts is rejected by every pydantic-core release, so a model that uses it fails at import. For Pydantic v2 output
 from JSON Schema and OpenAPI, the generator detects this syntax statically and sets `regex_engine="python-re"` on
-the model that owns the pattern. The decision depends only on the pattern text, not on the installed pydantic-core,
-and is the same for every `--target-pydantic-version`.
+the model that owns the pattern. The decision depends only on the pattern text and `--target-python-version`. It
+does not depend on the installed pydantic-core or on the Python running the generator, and it is the same for
+every `--target-pydantic-version`.
 
 | Pattern syntax | Example | Generated model |
 |----------------|---------|-----------------|
 | Lookahead and lookbehind | `(?=x)`, `(?<!x)` | `python-re` |
 | Numbered backreferences and octal escapes | `([a-z])\1`, `\0`, `[\101]` | `python-re` |
 | Named backreferences | `(?P<c>x)(?P=c)` | `python-re` |
-| Atomic groups | `(?>a+)` | `python-re`, when the generating Python is 3.11 or later |
 | Conditionals | `(<)?a(?(1)>)` | `python-re` |
 | End of string | `\Z` | `python-re` |
 | Comments | `(?#note)` | `python-re` |
 | Named characters | `\N{LATIN SMALL LETTER A}` | `python-re` |
 | Backspace in a character class | `[\b]` | `python-re` |
-| ASCII flag | `(?a)` | `python-re` |
+| ASCII flag at the start | `(?a)` | `python-re` |
 | Braces that are not a counted repetition | `a{,3}`, `{[a-z]+}` | `python-re` |
+| Atomic groups | `(?>a+)` | `python-re` with `--target-python-version` 3.11 or later; unchanged for 3.10 |
 | Escaped characters and character class members | `\\1`, `\(\?>`, `[(?>{]` | Rust engine (default) |
 | Possessive quantifiers | `a++`, `a*+` | Rust engine; pydantic-core accepts them as nested repetitions |
 | Syntax only Pydantic 2.0.0-2.0.2 rejects | `\/`, `\:`, `(?<name>x)`, `[a&&b]` | Rust engine |
 | Patterns over Rust's compiled size limit | `[\w.-]{1,256}` | Rust engine; not detectable from the syntax |
 | Nested character classes | `[[]` | Rust engine; not detected |
+| Verbose patterns, global flags after the start, non-ASCII conditional references | `(?x)a`, `a(?i)`, `(?(١)a)` | Rust engine; Python versions parse these differently |
 
-The Python engine is selected only when Python's `re` compiles the pattern; otherwise the output is unchanged.
+Python's `re` accepts each switched construct on every Python from 3.10 to 3.14, except atomic groups, which need
+3.11. A pattern that also contains syntax the target Python's `re` does not parse keeps the default engine: possessive
+quantifiers need 3.11 and `\z` needs 3.14, and patterns Python never accepts, such as `\p{L}`, stay unchanged.
 Lookaround keeps its existing detection for every field. The other rules apply only to patterns emitted for string
 fields: a `pattern` on `format: uri` (`AnyUrl`) is not emitted, and Pydantic ignores a `pattern` on `bytes`.
 Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for

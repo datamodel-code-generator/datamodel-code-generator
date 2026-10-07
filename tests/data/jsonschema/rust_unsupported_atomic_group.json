@@ -4,6 +4,10 @@
     "AtomicGroup": {
       "type": "string",
       "pattern": "^(?>[a-z]+)$"
+    },
+    "PossessiveBackreference": {
+      "type": "string",
+      "pattern": "^([a-z])\\1[a-z]*+$"
     }
   }
 }

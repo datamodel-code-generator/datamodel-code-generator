@@ -812,55 +812,84 @@ _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 
 _STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
-_RUST_UNSUPPORTED_SYNTAX: re.Pattern[str] = re.compile(
-    r"\\(?P<escape>[0-9NZ])|\\.|\[\^?\]?(?P<chars>(?:\\.|[^\]\\])*)\]?"
-    r"|(?P<group>\(\?(?:[>(#]|P=|[iLmsux]*a))|(?P<brace>\{)(?![0-9]+(?:,[0-9]*)?\})",
+_REGEX_SYNTAX: re.Pattern[str] = re.compile(
+    r"\\(?P<escape>[0-9NZ])|(?P<end>\\z)|\\.|\[\^?\]?(?P<chars>(?:\\.|[^\]\\])*)\]?"
+    r"|(?P<atomic>\(\?>)|(?P<group>\(\?(?:#|P=|\())|\(\?(?P<flags>[aiLmsux-]*)[:)]"
+    r"|(?P<quantifier>(?:[*+?]|\{(?P<minimum>[0-9]+)?(?:,[0-9]*)?\})\+?)|(?P<brace>\{)",
     re.DOTALL,
 )
+_NON_PORTABLE_REGEX_SYNTAX: re.Pattern[str] = re.compile(r"\(\?[aiLmsux-]*x|\(\?\([^)]*[^\x00-\x7f]")
+_LATE_GLOBAL_FLAGS: re.Pattern[str] = re.compile(r"(?=((?:\(\?[aiLmsux]+\))*))\1.+?\(\?[aiLmsux]+\)", re.DOTALL)
 _ESCAPED_CHARACTER: re.Pattern[str] = re.compile(r"\\(.)", re.DOTALL)
 _RUST_UNSUPPORTED_CLASS_ESCAPES = frozenset("0123456789Nb")
+_PY_310 = (3, 10)
+_PY_311 = (3, 11)
+_PY_314 = (3, 14)
 
 
-def _has_rust_unsupported_syntax(pattern: str) -> bool:
-    r"""Return whether a pattern uses syntax the Rust regex crate rejects in every pydantic-core release.
+def _scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int], str] | None:
+    r"""Scan a pattern for syntax pydantic-core's Rust engine rejects and Python's ``re`` accepts.
 
-    This covers backreferences and octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic
-    groups, conditionals, comments, the ASCII flag, and braces that do not form a counted repetition. Escapes
-    and character classes are consumed whole, so escaped characters and class members never match outside
-    their context.
+    Returns whether such syntax is present, the oldest Python whose ``re`` parses the pattern, and the pattern
+    rewritten into syntax every supported Python parses. Returns None, conservatively, for verbose patterns,
+    global flags after the start, and conditionals with non-ASCII group references, which Python versions
+    parse differently. Rust rejects backreferences and octal escapes, ``\N{...}``, ``\Z``, ``[\b]``,
+    ``(?P=name)``, atomic groups, conditionals, comments, the ASCII flag, and braces that do not form a counted
+    repetition in every pydantic-core release. Escapes and character classes are consumed whole, so escaped
+    characters and class members never match outside their context.
     """
-    for match in _RUST_UNSUPPORTED_SYNTAX.finditer(pattern):
-        if match["escape"] or match["group"] or match["brace"]:
-            return True
-        if (chars := match["chars"]) and not _RUST_UNSUPPORTED_CLASS_ESCAPES.isdisjoint(
-            _ESCAPED_CHARACTER.findall(chars)
-        ):
-            return True
-    return False
-
-
-def _python_regex_compiles(pattern: str) -> bool:
-    """Return whether Python's ``re`` accepts a pattern."""
-    with catch_warnings():
-        simplefilter("ignore")
-        try:
-            re.compile(pattern)
-        except re.error:
-            return False
-    return True
+    if _NON_PORTABLE_REGEX_SYNTAX.search(pattern) or _LATE_GLOBAL_FLAGS.match(pattern):
+        return None
+    unsupported = False
+    minimum_python = _PY_310
+    replacements: list[tuple[int, int, str]] = []
+    for match in _REGEX_SYNTAX.finditer(pattern):
+        if match["atomic"]:
+            unsupported = True
+            minimum_python = max(minimum_python, _PY_311)
+            replacements.append((match.start(), match.end(), "(?:"))
+        elif match["end"]:
+            minimum_python = max(minimum_python, _PY_314)
+            replacements.append((match.start(), match.end(), "\\Z"))
+        elif quantifier := match["quantifier"]:
+            unsupported |= quantifier[0] == "{" and match["minimum"] is None
+            if len(quantifier) > 1 and quantifier[-1] == "+":
+                minimum_python = max(minimum_python, _PY_311)
+                replacements.append((match.end() - 1, match.end(), ""))
+        elif (chars := match["chars"]) is not None:
+            unsupported |= not _RUST_UNSUPPORTED_CLASS_ESCAPES.isdisjoint(_ESCAPED_CHARACTER.findall(chars))
+        elif (flags := match["flags"]) is not None:
+            unsupported |= "a" in flags
+        else:
+            unsupported |= bool(match["escape"] or match["group"] or match["brace"])
+    for start, end, text in reversed(replacements):
+        pattern = f"{pattern[:start]}{text}{pattern[end:]}"
+    return unsupported, minimum_python, pattern
 
 
 def _needs_python_regex_engine(pattern: str, data_type: DataType) -> bool:
     """Return whether an emitted pattern needs Python's ``re``.
 
-    Lookaround keeps its long-standing textual check. Other unsupported syntax is detected statically, so the
-    output never depends on the installed pydantic-core, and only for string patterns Python's ``re`` compiles.
+    Lookaround keeps its long-standing textual check. Other syntax is detected statically for string patterns,
+    keyed on the target Python version, so the output never depends on the installed pydantic-core or on the
+    Python running the generator.
     """
-    return _LOOKAROUND_PATTERN.search(pattern) is not None or (
-        (data_type.type in _STRING_PATTERN_TYPES or getattr(data_type, "annotated_string", False))
-        and _has_rust_unsupported_syntax(pattern)
-        and _python_regex_compiles(pattern)
-    )
+    if _LOOKAROUND_PATTERN.search(pattern) is not None:
+        return True
+    if not (data_type.type in _STRING_PATTERN_TYPES or getattr(data_type, "annotated_string", False)):
+        return False
+    if (scan := _scan_regex_syntax(pattern)) is None:
+        return False
+    unsupported, minimum_python, portable_pattern = scan
+    if not unsupported or data_type.python_version.version_key < minimum_python:
+        return False
+    with catch_warnings():
+        simplefilter("ignore")
+        try:
+            re.compile(portable_pattern)
+        except (re.error, ValueError):
+            return False
+    return True
 
 
 if TYPE_CHECKING:
