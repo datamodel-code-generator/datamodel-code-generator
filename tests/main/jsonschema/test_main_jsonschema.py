@@ -24589,6 +24589,8 @@ COMPOUND_PROPERTY_EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "compound_property_name
 
 
 COMPOUND_PROPERTY_CASES = json.loads((COMPOUND_PROPERTY_PAYLOADS / "cases.json").read_text())
+COMPOUND_DICT_KEY_FORWARD_REFERENCE_CASES = frozenset({"enum_refs", "ref_then_any"})
+"""Cases whose unset output keeps enum dict keys after their users, which needs Pydantic 2.8 at runtime."""
 
 
 @pytest.mark.parametrize(
@@ -24638,6 +24640,8 @@ def test_compound_property_name_generation(name: str, constraints: bool, entry: 
         json.dumps([validator.is_valid(value) for value in payloads], indent=2) + "\n",
         COMPOUND_PROPERTY_EXPECTED / COMPOUND_PROPERTY_CASES[name].get(f"{name}_runtime.txt", f"{name}_runtime.txt"),
     )
+    if name in COMPOUND_DICT_KEY_FORWARD_REFERENCE_CASES and not installed_pydantic_runs_target(None):
+        return
     actual = []
     context = (
         nullcontext(
