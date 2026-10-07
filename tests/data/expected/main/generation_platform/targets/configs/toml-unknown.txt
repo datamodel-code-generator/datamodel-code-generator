@@ -1,2 +1,0 @@
-E_CONFIG_UNKNOWN error config targets: The target file has no setting 'targets'
-E_CONFIG_UNKNOWN error config hook: The target file has no setting 'hook'

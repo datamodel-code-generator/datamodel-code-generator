@@ -1,7 +1,7 @@
 {
   "backend": "typing.TypedDict",
   "package": "codec_records_open",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "options": {"use_closed_typed_dict": false},
   "cases": [
     {"name": "counts-server-decode", "use": "/paths/~1counts/post request_body", "op": "decode", "value": {"total": 1, "x": 2}},

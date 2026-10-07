@@ -1,4 +1,0 @@
-# template-missing
-render pydantic_v2.BaseModel
-  APIGenerationError
-  F_TEMPLATE_INVALID target templates: The template directory does not exist

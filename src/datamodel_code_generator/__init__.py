@@ -691,6 +691,17 @@ def get_first_file(path: Path) -> Path:  # pragma: no cover
     raise FileNotFoundError(msg)
 
 
+def _is_comment_only_source(source: str) -> bool:
+    """Return whether every physical line is blank or a comment.
+
+    Split only at CR/LF: ``splitlines()`` adds Unicode boundaries the tokenizer does not treat as line breaks.
+    """
+    return all(
+        not (content := line.lstrip(" \t\f")) or content.startswith("#")
+        for line in source.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    )
+
+
 def _find_future_import_insertion_point(header: str) -> int:  # noqa: PLR0911, PLR0912, PLR0915
     """Find the future-import position without crossing into target-version syntax.
 
@@ -711,12 +722,7 @@ def _find_future_import_insertion_point(header: str) -> int:  # noqa: PLR0911, P
             return header_size
         # Keep the speculative scan bounded: a comment-prefixed code header
         # must not pay an unbounded second pass before runtime tokenization.
-        # Do not use splitlines(): its extra Unicode boundaries are not the
-        # physical CR/LF boundaries normalized by the tokenizer adapter.
-        if header[first_content] == "#" and all(
-            not (content := line.lstrip(" \t\f")) or content.startswith("#")
-            for line in header.replace("\r\n", "\n").replace("\r", "\n").split("\n")
-        ):
+        if header[first_content] == "#" and _is_comment_only_source(header):
             return header_size
 
     import io  # noqa: PLC0415
@@ -849,15 +855,22 @@ def _build_file_header_parts(custom_file_header: str | None, config: GenerateCon
     return header_prefix, header_suffix
 
 
-def _extract_leading_future_imports(body: str, future_imports: str) -> tuple[str, str]:
-    """Extract generated future imports after leading comments or a module docstring."""
+def _extract_leading_future_imports(body: str, future_imports: str, header: str) -> tuple[str, str]:
+    """Extract generated future imports after leading comments or a module docstring.
+
+    A body docstring stays the module docstring under a comment-only header, so nothing is extracted then.
+    """
     future_start = 0
     while (
         not body.startswith("from __future__ import ", future_start)
         and (line_end := body.find("\n", future_start)) >= 0
     ):
         if (leading_line := body[future_start:line_end].lstrip()) and not leading_line.startswith("#"):
-            future_start = _find_future_import_insertion_point(body)
+            if (insertion_point := _find_future_import_insertion_point(body)) > future_start and (
+                _is_comment_only_source(header)
+            ):
+                return body, ""
+            future_start = insertion_point
             break
         future_start = line_end + 1
     if not body.startswith("from __future__ import ", future_start):
@@ -891,7 +904,7 @@ def _build_module_content(
         return f"{header}\n\n{body.rstrip()}"
 
     # Custom formatters may add comments or a module docstring before the import.
-    body_without_future, extracted_future = _extract_leading_future_imports(body, future_imports)
+    body_without_future, extracted_future = _extract_leading_future_imports(body, future_imports, header)
 
     if not extracted_future:
         return f"{header}\n\n{body.rstrip()}"
@@ -1606,6 +1619,33 @@ def _format_deferred_output(
     code_formatter.format_directory(output)
 
 
+def _default_input_filename(input_: _GenerationInput) -> str:
+    """Return the file name a header shows for an input that names none, such as a dict given directly."""
+    match input_:
+        case str():
+            return "<stdin>"
+        case ParseResult():
+            return input_.geturl()
+        case Path():
+            return input_.name
+        case _:
+            pass
+    return getattr(input_, "name", "<dict>")
+
+
+def _read_custom_file_header(
+    custom_file_header: str | None, custom_file_header_path: Path | None, encoding: str
+) -> str | None:
+    """Return the custom file header text, reading `custom_file_header_path` when no text is given."""
+    if custom_file_header is not None or custom_file_header_path is None:
+        return custom_file_header
+    try:
+        return custom_file_header_path.read_text(encoding=encoding)
+    except (OSError, UnicodeDecodeError) as e:
+        msg = f"Unable to read custom file header {custom_file_header_path}: {e}"
+        raise Error(msg) from e
+
+
 def _emit_results(  # noqa: PLR0913
     results: _ParserResults,
     input_: _GenerationInput,
@@ -1619,29 +1659,14 @@ def _emit_results(  # noqa: PLR0913
     allow_empty_api: bool = False,
 ) -> str | GeneratedModules | None:
     if not input_filename:  # pragma: no cover
-        match input_:
-            case str():
-                input_filename = "<stdin>"
-            case ParseResult():
-                input_filename = input_.geturl()
-            case Path():
-                input_filename = input_.name
-            case _:
-                # input_ might be a dict object provided directly, and missing a name field
-                input_filename = getattr(input_, "name", "<dict>")
+        input_filename = _default_input_filename(input_)
     if not results:
         if allow_empty_api:
             return None
         msg = "Models not found in the input data"
         raise Error(msg)
 
-    if custom_file_header is None and (custom_file_header_path := config.custom_file_header_path):
-        try:
-            custom_file_header = custom_file_header_path.read_text(encoding=config.encoding)
-        except (OSError, UnicodeDecodeError) as e:
-            msg = f"Unable to read custom file header {custom_file_header_path}: {e}"
-            raise Error(msg) from e
-
+    custom_file_header = _read_custom_file_header(custom_file_header, config.custom_file_header_path, config.encoding)
     has_custom_file_header = bool(custom_file_header)
     header_prefix, header_suffix = _build_file_header_parts(custom_file_header, config)
 

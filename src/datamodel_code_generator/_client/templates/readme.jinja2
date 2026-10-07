@@ -1,0 +1,156 @@
+# {{ package }}
+
+This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
+its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
+explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+
+```python
+from {{ package }} import Client
+from {{ package }}.options import ClientOptions, RetryOptions
+
+with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+    response = client.request_raw("GET", "https://api.example.com/health")
+    status = response.info.status_code
+```
+
+Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+
+See the [runtime reference]({{ reference }}) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+
+## Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `{{ signature_style }}` |
+| `body_arguments` | `{{ body_arguments }}` |
+| Model backend | `{{ backend }}` |
+| Models | `{{ model_package }}` |
+
+{% if signature_style == "unpack" -%}
+Each operation method takes `**kwargs` typed as `Unpack` of a `TypedDict`, which `_generated/client_arguments.py`
+declares, and checks the keywords it receives before sending.
+{%- else -%}
+Each operation method declares its parameters, its body, and its options as keyword arguments.
+{%- endif %}
+{% if body_arguments == "both" -%}
+A request body whose media is JSON or a URL-encoded form of an object model is given as `body=` or as the keyword
+arguments of its fields, unless an operation's `body_arguments` is `body`.
+{%- else -%}
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+{%- endif %}
+
+## Operations
+{% for operation in operations %}
+- `{{ operation.name }}`: `{{ operation.method }} {{ operation.path }}`,
+{%- if not operation.media %} no request body
+{%- elif operation.body_arguments == "body" %} `body=` only (
+{%- for media in operation.media %}`{{ media.media_type }}`{% if not loop.last %}, {% endif %}{% endfor %})
+{%- else %} body arguments `both`
+{%- for media in operation.media %}
+  - `{{ media.media_type }}`:
+{%- if media.fields %} `body=` or the fields {% for argument in media.fields %}`{{ argument.name }}`
+{%- if argument.required %} (required){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+{%- else %} `body=` only, since {{ media.reason }}
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+{%- else %}
+This package has no operations.
+{%- endfor %}
+
+## Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
+No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+
+```json
+{{ contracts }}
+```
+{%- if helpers %}
+
+## Protocol helpers
+
+`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
+{%- if stream_label %}
+An {{ stream_label }} helper's `open` sends its operation in a session of its own and returns an event stream once the
+response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
+the response.
+{%- if resumes %} A helper that declares `resume` also has `resume`, which reopens a stream after its
+`checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`.
+{%- endif %}
+{%- endif %}
+{%- if sockets %}
+A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
+server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection.
+{%- endif %}
+{%- if "pagination" in kinds %}
+A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
+session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
+once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime
+reference for their limits and checkpoints.
+{%- endif %}
+{%- if "polling" in kinds %}
+A polling helper's `start` creates the operation and returns a handle: `status` polls it once and `wait` polls until
+it settles and returns its result, each poll after the wait the last response requires; `close()` or `aclose()`
+stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
+operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
+the runtime reference for their limits and checkpoints.
+{%- endif %}
+{%- if "cache" in kinds %}
+A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
+sends the request, revalidating a stale entry. See the runtime
+reference for their limits.
+{%- endif %}
+{%- if "resumable_upload" in kinds %}
+An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
+`run` appends the rest and completes it, and `resume` continues a handle's `checkpoint()` from the offset the server
+holds. `close()` or `aclose()` stops only local uploading. See the runtime reference for their limits.
+{%- endif %}
+{%- if not kinds %}
+See the runtime reference for their limits.
+{%- endif %}
+
+```json
+{{ helpers }}
+```
+{%- endif %}
+{%- if compression %}
+
+## Request compression
+
+These operations declare request compression. Their bodies are gzipped by default;
+`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
+
+```json
+{{ compression }}
+```
+{%- endif %}
+
+## Dependencies
+
+The package needs these distributions at run time:
+{% for dependency in dependencies %}
+- `{{ dependency }}`
+{%- endfor %}
+
+Each generation reports them; add them to your project, for example with `uv add`.
+
+## Capabilities
+
+| Capability | Declared |
+| --- | --- |
+| Security | {% for name in security %}`{{ name }}`{% if not loop.last %}, {% endif %}{% else %}none{% endfor %} |
+| Helpers | {% for name in capabilities %}`{{ name }}`{% if not loop.last %}, {% endif %}{% else %}none{% endfor %} |
+
+The package copies the runtime modules its capabilities and model backend need:
+{% for group in runtime %}
+- `{{ group.package }}`: {% for module in group.modules %}`{{ module }}`{% if not loop.last %}, {% endif %}{% endfor %}
+{%- endfor %}

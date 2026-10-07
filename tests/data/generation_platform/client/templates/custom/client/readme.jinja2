@@ -1,0 +1,10 @@
+# {{ package }}
+
+The `{{ signature_style }}` methods of this package send through HTTPX2 and decode with the `{{ backend }}` models.
+{% for operation in operations %}
+- `{{ operation.name }}`: `{{ operation.method }} {{ operation.path }}`
+{%- endfor %}
+
+## Support
+
+{{ support }}

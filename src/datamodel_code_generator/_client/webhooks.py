@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
+    from datamodel_code_generator._target_templates import Role
 
 __all__ = (
     "WebhookEvent",
@@ -239,10 +240,12 @@ class _Webhooks:
         specs: tuple[WebhookSpec, ...],
         symbols: Mapping[int, str],
         accessors: Mapping[TypeUseId, UseAccessors],
+        role: Role,
     ) -> None:
         self.specs = specs
         self.symbols = symbols
         self.accessors = accessors
+        self.role = role
 
     def files(self) -> tuple[tuple[PurePosixPath, str], ...]:
         """Return the package's webhook files, nothing without helpers, and a keys module only for builtin kinds."""
@@ -376,7 +379,7 @@ class _Webhooks:
             sections = [plan, *self.functions(module, event, key, signature)]
         docstring = _docstring(summary, text, "")
         exported = ", ".join(f'"{name}"' for name in sorted(names - {"_PLAN"}))
-        return types_template.render(
+        return self.role("types.jinja2", types_template.render)(
             docstring=docstring.removeprefix('"""').removesuffix('"""'),
             imports=module.imports(),
             sections=[f"__all__ = [{exported}]", *sections],
@@ -464,6 +467,10 @@ def webhook_files(
     specs: tuple[WebhookSpec, ...],
     symbols: Mapping[int, str],
     accessors: Mapping[TypeUseId, UseAccessors],
+    role: Role,
 ) -> tuple[tuple[PurePosixPath, str], ...]:
-    """Return the path and text of every webhook file of a package, nothing without webhook helpers."""
-    return _Webhooks(specs, symbols, accessors).files()
+    """Return the path and text of every webhook file of a package, nothing without webhook helpers.
+
+    The modules render through the package's template roles.
+    """
+    return _Webhooks(specs, symbols, accessors, role).files()

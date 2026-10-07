@@ -142,13 +142,6 @@ DISABLED = ProtocolConfiguration(
                 empty_string="end",
             ),
         ),
-        "audit.all": PaginationHelper(
-            enabled=False,
-            operation="/paths/~1admin~1audit/get",
-            items=DATA,
-            item_schema=SchemaRef(pointer="/components/schemas/NamePage/properties/data/items"),
-            continuation=LinkContinuation(header="Link", rel="more"),
-        ),
         "jobs.run": PollingHelper(
             enabled=False,
             create="/paths/~1jobs/post",

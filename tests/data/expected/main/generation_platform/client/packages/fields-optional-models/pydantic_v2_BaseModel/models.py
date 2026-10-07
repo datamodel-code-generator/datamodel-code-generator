@@ -86,14 +86,6 @@ class FieldPetsPetIdLabelsPutPathPetIdParameter(RootModel[int | None]):
     root: int | None = None
 
 
-class FieldSearchPostRequest(RootModel[ByName | ByKind | None]):
-    root: ByName | ByKind | None = None
-
-
-class FieldSearchPostResponse(RootModel[list[Pet] | None]):
-    root: list[Pet] | None = None
-
-
 class FieldPetsPetIdPhotoPutPathPetIdParameter(RootModel[int | None]):
     root: int | None = None
 
