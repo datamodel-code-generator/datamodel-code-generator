@@ -102,6 +102,13 @@ class TargetRequest:
     resolve: Callable[[OperationRef], OperationContract | None]
     cwd: Path
 
+    @property
+    def unresolved(self) -> str:
+        """Say why an operation reference resolved to nothing, naming the include filter when one is set."""
+        if self.model_config.openapi_include_paths:
+            return "selects no root path operation that --openapi-include-paths keeps"
+        return "selects no root path operation"
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TargetRender:

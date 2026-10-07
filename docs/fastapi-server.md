@@ -170,9 +170,12 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 | `router_names` | inferred | Table of group keys to group names: router modules, service arguments, and `<Name>Service` Protocols |
 | `parameter_names` | inferred | `[[parameter_names]]` rename method arguments |
 
-The package serves every path operation of the input. To leave paths out, pass
-[`--openapi-include-paths`](cli-reference/openapi-only-options.md#openapi-include-paths); the models only those
-operations use are not generated either.
+The package serves every operation under `paths` of the input; a path item under `components.pathItems` that no
+path references has no URL and is not served. To leave paths out, pass
+[`--openapi-include-paths`](cli-reference/openapi-only-options.md#openapi-include-paths). The models follow the
+`api` scope as in a model-only run: inline schemas of the paths left out are not generated, while the schemas and
+path items under `components` still are. A per-operation setting that names a path left out fails with
+`E_OPERATION_REF`.
 
 Operations are selected by their key, the JSON pointer of the path item method, such as `/paths/~1pets/get`,
 or a table with `pointer` and `document`:
@@ -228,8 +231,9 @@ directory when the paths name the same input and target configuration files. The
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
 uses it, or the default `datamodel-codegen.lock` exists.
 
-Several targets can share one models module: with the same model options and `--disable-timestamp`, each run
-writes the same bytes, and `--check` reports a module that differs.
+Several targets can share one models module: with the same model options, including the same
+`--openapi-include-paths`, and `--disable-timestamp`, each run writes the same bytes, and `--check` reports a
+module that differs.
 
 ## Models and adapters
 

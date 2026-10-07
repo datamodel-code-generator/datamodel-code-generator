@@ -32,7 +32,7 @@ show models.py
   |     root: list[Pet]
 render
   APIGenerationError
-  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1store~1orders/get' selects no root path operation
+  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1store~1orders/get' selects no root path operation that --openapi-include-paths keeps
 render
   target=fastapi schema_version=1
   unchanged model models.py
@@ -82,4 +82,4 @@ render
 manifest identical to shorthand: True
 render
   APIGenerationError
-  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1pets/get' selects no root path operation
+  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1pets/get' selects no root path operation that --openapi-include-paths keeps

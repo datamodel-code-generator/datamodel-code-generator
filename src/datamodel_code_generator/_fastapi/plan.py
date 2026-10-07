@@ -414,7 +414,7 @@ class Planner:  # noqa: PLR0904
         for selector, value in values.items():
             reference = OperationRef(pointer=selector) if isinstance(selector, str) else selector
             if (operation := self.request.resolve(reference)) is None:
-                message = f"The {option} entry {reference.pointer!r} selects no root path operation"
+                message = f"The {option} entry {reference.pointer!r} {self.request.unresolved}"
                 self.problems.append(_problem("E_OPERATION_REF", message, option_path=option))
             elif (key := operation.id.use_site.pointer) in resolved:
                 message = f"The {option} setting names {key!r} twice"

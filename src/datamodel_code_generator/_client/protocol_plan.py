@@ -56,7 +56,7 @@ def _undocumented(at: str, document: str | None) -> Diagnostic:
 def plan_protocols(request: TargetRequest, source: Path | ProtocolConfiguration | None) -> Protocols | None:
     """Load the target's helpers and resolve their references, raising every problem with the target's identity.
 
-    An enabled helper needs each operation it sends selected; a disabled one only needs its references to resolve.
+    Every helper, enabled or not, needs each operation it names among the root path operations.
     """
     if source is None:
         return None
@@ -103,7 +103,7 @@ class _Resolver:
             return
         if (operation := self.request.resolve(OperationRef(pointer=reference.pointer, document=document))) is None:
             named = "" if reference.document is None else f" in {reference.document!r}"
-            message = f"{link.at} {reference.pointer!r}{named} selects no root path operation"
+            message = f"{link.at} {reference.pointer!r}{named} {self.request.unresolved}"
             yield _problem("E_OPERATION_REF", "config", link.at, message, reference)
             return
         self.operations[reference] = operation
