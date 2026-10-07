@@ -552,12 +552,6 @@ class DataModelField(_PydanticBaseDataModelField):
             values["examples"] = [values.pop("example")]
         return values
 
-    def invalidate_semantic_caches(self, *, invalidate_parent: bool = True) -> None:
-        """Clear field caches and let a parent BaseModel refresh the config derived from this field."""
-        super().invalidate_semantic_caches(invalidate_parent=invalidate_parent)
-        if isinstance(parent := self.parent, BaseModel):
-            parent.refresh_field_config(self)
-
     def process_const(self) -> None:
         """Process const field constraint using literal type."""
         self._process_const_as_literal()
@@ -1089,7 +1083,6 @@ class BaseModel(BaseModelBase):
     _TYPED_EXTRA_DICT_KEY_CAPABILITY = staticmethod(_supports_pydantic_typed_extra_dict_key)
     TYPED_EXTRA_FIELD_NAME: ClassVar[str] = "__pydantic_extra__"
     TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
-    _config_follows_fields: bool = False
     # In Pydantic 2.11+, populate_by_name is deprecated in favor of validate_by_name + validate_by_alias
     # Default to V2 compatible (populate_by_name) unless target_pydantic_version is specified
     _CONFIG_ATTRIBUTES_V2: ClassVar[list[ConfigAttribute]] = [
@@ -1358,16 +1351,15 @@ class BaseModel(BaseModelBase):
         super().invalidate_render_caches()
         self.__dict__.pop(self._SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY, None)
 
-    def refresh_field_config(self, field: DataModelFieldBase) -> None:
-        """Refresh the config derived from a field whose type changed after ``__init__``.
+    def refresh_field_config(self) -> None:
+        """Select Python's regex engine for lookaround patterns that fields gained after ``__init__``.
 
-        Collapsed root models inline their patterns, so a lookaround pattern selects Python's regex engine
-        unless the config already chose one.
+        Collapsed root models inline their patterns; a config that already names an engine is kept.
         """
-        if not self._config_follows_fields or not has_lookaround_pattern([field]):
+        if not has_lookaround_pattern(self.fields):
             return
         config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
-        if config_parameters.get("regex_engine") is not None:
+        if "regex_engine" in config_parameters:
             return
         config_parameters["regex_engine"] = '"python-re"'
         self._set_config(config_parameters)
@@ -1882,7 +1874,6 @@ class BaseModel(BaseModelBase):
 
         self._process_schema_runtime_validation()
         self._process_validators()
-        self._config_follows_fields = True
 
     def _get_schema_runtime_validation(self) -> SchemaRuntimeValidation | None:
         internal_runtime_validation = self._internal_template_data.get("schema_runtime_validation")

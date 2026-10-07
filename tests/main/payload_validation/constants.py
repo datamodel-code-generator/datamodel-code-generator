@@ -241,6 +241,10 @@ EXCLUDED_CASES: dict[str, str] = {
     "openapi/ref_nullable.yaml::components.schemas.NullableChild": (
         "top-level nullable object components need a wrapper policy; nullable refs are covered via Parent"
     ),
+    "jsonschema/collapse_root_models_lookaround_discriminator.json": (
+        "discriminator tags come from a referenced pattern rather than an enum, so schema-valid tags miss the mapping; "
+        "test_main_jsonschema_collapse_root_models_lookaround checks the generated tags and regex engine"
+    ),
 }
 MISSING_SENTINEL_PAYLOAD_CASE_IDS = (
     "jsonschema/missing_sentinel_payload.json",
@@ -261,6 +265,7 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--collapse-root-models",))
         for name in (
             "collapse_root_models_lookaround",
+            "collapse_root_models_lookaround_inheritance",
             "collapse_root_models_lookaround_root",
             "collapse_root_models_property_names_reference",
         )
@@ -344,7 +349,11 @@ PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES: dict[str, str] = {
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to intersected literal patterns",
     ),
     **dict.fromkeys(
-        ("jsonschema/collapse_root_models_lookaround.json", "jsonschema/collapse_root_models_lookaround_root.json"),
+        (
+            "jsonschema/collapse_root_models_lookaround.json",
+            "jsonschema/collapse_root_models_lookaround_inheritance.json",
+            "jsonschema/collapse_root_models_lookaround_root.json",
+        ),
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to collapsed lookaround pattern validators",
     ),
     "jsonschema/lookaround_anyof_nullable.json": (
