@@ -10,7 +10,7 @@ import json
 import keyword
 import re
 from collections import defaultdict
-from functools import cache
+from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType, NoneType
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
@@ -813,7 +813,7 @@ class DataModelField(_PydanticBaseDataModelField):
 _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 
-@cache
+@lru_cache(maxsize=4096)
 def _needs_python_regex_engine(pattern: str) -> bool:
     """Return whether a pattern needs Python's ``re`` because pydantic-core's Rust engine rejects it."""
     if _LOOKAROUND_PATTERN.search(pattern):
