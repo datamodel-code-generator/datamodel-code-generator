@@ -1,0 +1,28 @@
+openapi: "3.0.3"
+info:
+  title: API
+  version: "1.0.0"
+paths: {}
+components:
+  schemas:
+    UserResponse:
+      type: object
+      properties:
+        user:
+          $ref: "schema=v2.yaml#/components/schemas/User"
+        request_id:
+          type: string
+      required:
+        - user
+        - request_id
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          $ref: "schema=v2.yaml#/components/schemas/Error"
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - error
+        - timestamp

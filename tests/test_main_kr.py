@@ -1322,6 +1322,29 @@ def test_generate_cli_command_reconstructs_mapping_options(tmp_path: Path, capsy
     validate_generated_code(command_output.read_text(), str(command_output), do_exec=True)
 
 
+def test_generate_cli_command_reconstructs_external_ref_mapping_with_equals_path(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test a reconstructed external-ref-mapping keeps a file path that contains `=`."""
+    shutil.copytree(DATA_PATH / "config" / "external_ref_mapping_round_trip", tmp_path, dirs_exist_ok=True)
+    config_output = tmp_path / "from-config.py"
+    command_output = tmp_path / "from-command.py"
+
+    with chdir(tmp_path):
+        run_main_with_args(["--output", str(config_output)])
+        run_main_with_args(["--generate-cli-command", "--output-format", "json"], capsys=capsys)
+        generated_command = json.loads(capsys.readouterr().out)
+        run_main_with_args([
+            *generated_command["arguments"][1:],
+            "--ignore-pyproject",
+            "--output",
+            str(command_output),
+        ])
+
+    assert_file_content(config_output, "generate_cli_command/external_ref_mapping_round_trip.py")
+    assert_file_content(command_output, "generate_cli_command/external_ref_mapping_round_trip.py")
+
+
 def test_generate_cli_command_excludes_excluded_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test --generate-cli-command excludes options like debug, version, etc."""
     pyproject_toml = """
