@@ -1,4 +1,4 @@
-"""Render FastAPI server targets from OpenAPI fixtures and report their files, decisions, and failures."""
+"""Render FastAPI server targets from OpenAPI fixtures and report their files, diagnostics, and failures."""
 
 from __future__ import annotations
 

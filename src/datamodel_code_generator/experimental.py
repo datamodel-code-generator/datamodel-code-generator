@@ -246,7 +246,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         kind="python-api",
         target="datamodel_code_generator.fastapi and datamodel_code_generator.api_types",
         message=(
-            "The FastAPI server target is experimental; its entry points, settings, context, generated package, "
+            "The FastAPI server target is experimental; its entry points, settings, templates, generated package, "
             "and served OpenAPI document may change."
         ),
         since_version="0.83.1",

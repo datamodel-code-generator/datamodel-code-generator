@@ -3,7 +3,7 @@
 !!! warning "Experimental"
 
     FastAPI server generation is experimental. Its options, target configuration file, generated package,
-    template context, and served OpenAPI document may change. See [Experimental Features](experimental.md).
+    template values, and served OpenAPI document may change. See [Experimental Features](experimental.md).
 
 `--generate-server fastapi` generates the models of one OpenAPI document with the usual model options and, in
 the same run, a FastAPI server package for its operations: routers, a service Protocol for each router group,

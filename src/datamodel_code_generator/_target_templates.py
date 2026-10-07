@@ -29,8 +29,7 @@ class TemplateOverlay:
     override may include or import any other builtin template. A missing directory or role falls back to the builtin
     role, as model templates do, and overrides receive the template data, as custom model templates do. A target names
     its builtin directory, its roles, its subdirectory, and the code of a template that does not render.
-    A `Role` returns the renderer of a builtin role from its name, its compiled renderer, and the values only overrides
-    receive.
+    A `Role` returns the renderer of a builtin role from its name and its compiled renderer.
     """
 
     BUILTIN: ClassVar[Path]
@@ -52,12 +51,15 @@ class TemplateOverlay:
         self.roles = frozenset(role for role in self.ROLES if (self.directory / role).is_file())
 
     @classmethod
-    def custom(cls, model_config: GenerateConfig, target_id: str) -> Self | None:
+    def custom(cls, model_config: GenerateConfig, target_id: str, cwd: Path) -> Self | None:
         """Return the overrides of the model configuration's custom template directory, if it sets one.
 
-        Overrides receive the `#all#` extra template data, as custom model templates do.
+        A relative directory resolves against the caller's working directory, as for the models, and overrides receive
+        the `#all#` extra template data, as custom model templates do.
         """
-        if (directory := model_config.custom_template_dir) is None:
+        from datamodel_code_generator import _absolute_generation_path  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
+
+        if (directory := _absolute_generation_path(model_config.custom_template_dir, cwd)) is None:
             return None
         from datamodel_code_generator.model.base import ALL_MODEL  # noqa: PLC0415
 
@@ -94,16 +96,16 @@ class TemplateOverlay:
             where = name if line is None else f"{name} line {line}"
             raise APIGenerationError((self.problem(f"{where}: {error}"),)) from None
 
-    def role(self, name: str, compiled: Callable[..., str], **frame: object) -> Callable[..., str]:
+    def role(self, name: str, compiled: Callable[..., str]) -> Callable[..., str]:
         """Return the renderer of one builtin role: this directory's override, or the builtin.
 
-        An override receives the template data, then the role's values and the frame, which take precedence.
+        An override receives the template data, then the role's values, which take precedence.
         """
         if name not in self.roles:
             return compiled
 
         def render(**values: object) -> str:
-            return self.render(name, {**self.data, **values, **frame})
+            return self.render(name, {**self.data, **values})
 
         return render
 
@@ -119,6 +121,6 @@ class TemplateOverlay:
         )
 
 
-def builtin_role(_name: str, compiled: Callable[..., str], **_frame: object) -> Callable[..., str]:
+def builtin_role(_name: str, compiled: Callable[..., str]) -> Callable[..., str]:
     """Return the compiled builtin renderer of a role, for a target without a template directory."""
     return compiled

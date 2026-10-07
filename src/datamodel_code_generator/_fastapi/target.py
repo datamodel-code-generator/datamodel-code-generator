@@ -69,7 +69,7 @@ class FastAPITarget:
             plan=plan,
             batch=request.batch,
             wire=wire,
-            templates=FastAPITemplates.custom(request.model_config, request.target_id),
+            templates=FastAPITemplates.custom(request.model_config, request.target_id, request.cwd),
             docs=docs,
         )
         return TargetRender(
