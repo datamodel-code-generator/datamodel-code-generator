@@ -1,6 +1,6 @@
 # parameters
 serve pydantic_v2.BaseModel
-service UntaggedService: get_file, get_item, get_menu, get_note, get_ratios, repeat, search
+service UntaggedService: get_file, get_item, get_menu, get_note, get_ratios, get_sizes, repeat, search
 service UntaggedService without its methods: TypeError
 > GET /search
 < 422 application/json [{"type": "missing", "loc": ["cookie", "session"]}]
@@ -34,6 +34,14 @@ service UntaggedService without its methods: TypeError
 < 204 - b''
 > GET /ratios?ratios=1&limits=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limits", 0]}]
+> GET /sizes
+  get_sizes(size=10, words=['a', 'b'])
+< 204 - b''
+> GET /sizes?size=3&words=x&words=y
+  get_sizes(size=3, words=['x', 'y'])
+< 204 - b''
+> GET /sizes?size=0
+< 422 application/json [{"type": "greater_than_equal", "loc": ["query", "size"]}]
 > GET /repeat/1/again/1
   repeat(id=1)
 < 204 - b''

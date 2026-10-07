@@ -9,6 +9,10 @@ from pydantic import BaseModel, Field, RootModel
 from typing_extensions import TypeAliasType
 
 
+class Limit(RootModel[int]):
+    root: int = 10
+
+
 class Pet(BaseModel):
     id: int
     name: str
@@ -17,9 +21,6 @@ class Pet(BaseModel):
 FieldPetsPetIdGetPathPetIdParameter = TypeAliasType(
     "FieldPetsPetIdGetPathPetIdParameter", Annotated[int, Field(..., ge=1)]
 )
-
-
-FieldPetsPetIdGetQueryLimitParameter = TypeAliasType("FieldPetsPetIdGetQueryLimitParameter", int)
 
 
 FieldPetsPetIdGetHeaderXTraceParameter = TypeAliasType("FieldPetsPetIdGetHeaderXTraceParameter", str)

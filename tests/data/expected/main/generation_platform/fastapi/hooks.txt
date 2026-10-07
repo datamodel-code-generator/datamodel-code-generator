@@ -1230,27 +1230,20 @@ render pydantic_v2.BaseModel
     |           "wire_name": "limit",
     |           "location": "query",
     |           "required": false,
-    |           "default_present": false,
-    |           "default_value": null,
+    |           "default_present": true,
+    |           "default_value": 10,
     |           "nullable": false,
     |           "type": {
     |             "kind": "surface",
-    |             "value": "int | Unset",
-    |             "imports": [
-    |               {
-    |                 "module": "server._runtime.model_codecs.unset",
-    |                 "name": "Unset",
-    |                 "alias": null,
-    |                 "type_checking": false
-    |               }
-    |             ]
+    |             "value": "int",
+    |             "imports": []
     |           },
     |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/1",
     |           "is_request": false,
     |           "is_principal": false,
     |           "bound_type": {
     |             "kind": "surface",
-    |             "value": "models.FieldPetsPetIdGetQueryLimitParameter",
+    |             "value": "models.Limit",
     |             "imports": [
     |               {
     |                 "module": "models",
@@ -1300,7 +1293,7 @@ render pydantic_v2.BaseModel
     |             "api": "Query",
     |             "alias": "limit",
     |             "required": false,
-    |             "default_kind": "factory",
+    |             "default_kind": "literal",
     |             "kwargs": {},
     |             "media_type": null
     |           }
@@ -1918,6 +1911,13 @@ render pydantic_v2.BaseModel
     |   ],
     |   "models": [
     |     {
+    |       "binding_id": "models:Limit",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "Limit",
+    |       "path": "models.py"
+    |     },
+    |     {
     |       "binding_id": "models:Pet",
     |       "kind": "model",
     |       "module": "models",
@@ -1929,13 +1929,6 @@ render pydantic_v2.BaseModel
     |       "kind": "alias",
     |       "module": "models",
     |       "name": "FieldPetsPetIdGetPathPetIdParameter",
-    |       "path": "models.py"
-    |     },
-    |     {
-    |       "binding_id": "models:FieldPetsPetIdGetQueryLimitParameter",
-    |       "kind": "alias",
-    |       "module": "models",
-    |       "name": "FieldPetsPetIdGetQueryLimitParameter",
     |       "path": "models.py"
     |     },
     |     {

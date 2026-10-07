@@ -11,7 +11,7 @@ paths:
       tags: [pets]
       parameters:
         - {name: petId, in: path, required: true, schema: {type: integer, minimum: 1}}
-        - {name: limit, in: query, schema: {type: integer, default: 10}}
+        - {name: limit, in: query, schema: {$ref: "#/components/schemas/Limit"}}
         - {name: X-Trace, in: header, schema: {type: string}}
         - {name: after, in: query, schema: {type: [string, "null"]}}
         - {name: session, in: cookie, schema: {type: string, pattern: "^[a-z]+$"}}
@@ -64,6 +64,7 @@ paths:
         "204": {description: Accepted.}
 components:
   schemas:
+    Limit: {type: integer, default: 10}
     Pet:
       type: object
       required: [id, name]

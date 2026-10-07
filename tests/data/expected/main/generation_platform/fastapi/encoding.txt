@@ -43,6 +43,7 @@ render pydantic_v2.BaseModel
     | | --- | --- | --- | --- | --- |
     | | `UntaggedService` | `search` | GET | `/search` | `/paths/~1search/get` |
     | | `UntaggedService` | `get_ratios` | GET | `/ratios` | `/paths/~1ratios/get` |
+    | | `UntaggedService` | `get_sizes` | GET | `/sizes` | `/paths/~1sizes/get` |
     | | `UntaggedService` | `repeat` | GET | `/repeat/{id}/again/{id}` | `/paths/~1repeat~1{id}~1again~1{id}/get` |
     | | `UntaggedService` | `get_note` | GET | `/notes/{note.id}` | `/paths/~1notes~1{note.id}/get` |
     | | `UntaggedService` | `get_file` | GET | `/files/{file.name}` | `/paths/~1files~1{file.name}/get` |
@@ -64,7 +65,7 @@ render pydantic_v2.BaseModel
     |
     |
     | class Untagged(UntaggedService):
-    |     """Implement `search`, `get_ratios`, `repeat`, `get_note`, `get_file`, `get_menu`, and `get_item`."""
+    |     """Implement `search`, `get_ratios`, `get_sizes`, `repeat`, `get_note`, `get_file`, `get_menu`, and `get_item`."""
     |
     |
     | app = create_app(untagged=Untagged())

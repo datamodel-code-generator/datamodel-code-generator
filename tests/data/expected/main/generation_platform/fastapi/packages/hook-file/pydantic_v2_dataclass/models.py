@@ -7,6 +7,8 @@ from pydantic import conint, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
+Limit = TypeAliasType("Limit", int)
+
 
 @dataclass
 class Pet:
@@ -15,9 +17,6 @@ class Pet:
 
 
 FieldPetsPetIdGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdGetPathPetIdParameter", conint(ge=1))
-
-
-FieldPetsPetIdGetQueryLimitParameter = TypeAliasType("FieldPetsPetIdGetQueryLimitParameter", int)
 
 
 FieldPetsPetIdGetHeaderXTraceParameter = TypeAliasType("FieldPetsPetIdGetHeaderXTraceParameter", str)
