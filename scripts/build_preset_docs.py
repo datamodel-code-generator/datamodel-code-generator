@@ -341,6 +341,7 @@ def _render_fastapi_quick_start(preset_name: str) -> str:
 datamodel-codegen \\
   --input openapi.yaml \\
   --input-file-type openapi \\
+  --openapi-scopes schemas api \\
   --output-model-type pydantic_v2.BaseModel \\
   --preset {preset_name} \\
   --output models.py \\
