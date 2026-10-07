@@ -1620,12 +1620,14 @@ def _default_input_filename(input_: _GenerationInput) -> str:
     return getattr(input_, "name", "<dict>")
 
 
-def _read_custom_file_header(custom_file_header: str | None, config: GenerateConfig) -> str | None:
+def _read_custom_file_header(
+    custom_file_header: str | None, custom_file_header_path: Path | None, encoding: str
+) -> str | None:
     """Return the custom file header text, reading `custom_file_header_path` when no text is given."""
-    if custom_file_header is not None or (custom_file_header_path := config.custom_file_header_path) is None:
+    if custom_file_header is not None or custom_file_header_path is None:
         return custom_file_header
     try:
-        return custom_file_header_path.read_text(encoding=config.encoding)
+        return custom_file_header_path.read_text(encoding=encoding)
     except (OSError, UnicodeDecodeError) as e:
         msg = f"Unable to read custom file header {custom_file_header_path}: {e}"
         raise Error(msg) from e
@@ -1651,7 +1653,7 @@ def _emit_results(  # noqa: PLR0913
         msg = "Models not found in the input data"
         raise Error(msg)
 
-    custom_file_header = _read_custom_file_header(custom_file_header, config)
+    custom_file_header = _read_custom_file_header(custom_file_header, config.custom_file_header_path, config.encoding)
     has_custom_file_header = bool(custom_file_header)
     header_prefix, header_suffix = _build_file_header_parts(custom_file_header, config)
 

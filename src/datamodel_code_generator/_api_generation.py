@@ -68,9 +68,9 @@ if TYPE_CHECKING:
         OperationContract,
         OperationId,
     )
+    from datamodel_code_generator._target_format import TargetCodeFormatter
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.enums import DataModelType, OpenAPIScope
-    from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 Exclusion: TypeAlias = "tuple[OperationContract, str]"
@@ -168,6 +168,8 @@ class _Models:
     cwd: Path
     filename: str
     settings_path: Path | None
+    formatter_cwd: Path | None
+    custom_header: str | None
 
 
 def prepare_target(
@@ -355,6 +357,7 @@ def _generate_models(
         _absolute_generation_path,  # pyright: ignore[reportPrivateUsage]
         _default_input_filename,  # pyright: ignore[reportPrivateUsage]
         _output_context_path,  # pyright: ignore[reportPrivateUsage]
+        _read_custom_file_header,  # pyright: ignore[reportPrivateUsage]
         _run_generation,  # pyright: ignore[reportPrivateUsage]
         _settings_path_from,  # pyright: ignore[reportPrivateUsage]
     )
@@ -369,12 +372,9 @@ def _generate_models(
     lock_state = None if lock is None else observe_file(lock.path)
     output = prepared.output
     assert output is not None
+    formatter_cwd = None if use_output_cwd else _output_context_path(_absolute_generation_path(output, cwd), cwd)
     settings_path = (
-        prepared.settings_path
-        if use_output_cwd
-        else _settings_path_from(
-            _output_context_path(_absolute_generation_path(output, cwd), cwd), prepared.settings_path
-        )
+        prepared.settings_path if formatter_cwd is None else _settings_path_from(formatter_cwd, prepared.settings_path)
     )
     with ExitStack() as stack:
         staged_output = _staging(stack, output, cwd) / (output.name or "output")
@@ -426,6 +426,12 @@ def _generate_models(
             cwd=cwd,
             filename=prepared.input_filename or _default_input_filename(input_),
             settings_path=settings_path,
+            formatter_cwd=formatter_cwd,
+            custom_header=_read_custom_file_header(
+                prepared.custom_file_header,
+                _absolute_generation_path(prepared.custom_file_header_path, cwd),
+                prepared.encoding,
+            ),
         )
 
 
@@ -772,8 +778,7 @@ class _Finisher:
         self.cwd = planner.cwd
         self.layout = planner.layout
         self.target_id = planner.target_id
-        self.filename = planner.models.filename
-        self.settings_path = planner.models.settings_path
+        self.models = planner.models
 
     def pyproject(self, rendered: TargetRender) -> str:
         config, output = self.config, self.effective.output
@@ -827,28 +832,23 @@ class _Finisher:
             raise APIGenerationError(problems)
 
     def finish(self, rendered: TargetRender) -> tuple[PlannedFile, ...]:
-        """Format, head, and encode every file like a model file, from the model output settings.
-
-        Future imports move above the header, as in a model file, only when the custom header holds more than
-        comments, so a header of comments keeps each module's docstring.
-        """
+        """Format, head, and encode every Python file like a model file, from the model output settings."""
         from datamodel_code_generator import (  # noqa: PLC0415
             _build_file_header_parts,  # pyright: ignore[reportPrivateUsage]
             _build_module_content,  # pyright: ignore[reportPrivateUsage]
             _format_file_header,  # pyright: ignore[reportPrivateUsage]
-            _read_custom_file_header,  # pyright: ignore[reportPrivateUsage]
         )
-        from datamodel_code_generator.format import CodeFormatter  # noqa: PLC0415
+        from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
 
-        effective = self.effective
+        effective, models = self.effective, self.models
         files = (*rendered.files, *self.layout_files(rendered))
         self.check_sources(((file.path, file.text) for file in files if not file.verbatim), "target")
-        formatter = CodeFormatter(
+        formatter = TargetCodeFormatter(
             effective.target_python_version,
-            self.settings_path,
+            models.settings_path,
             effective.wrap_string_literal,
             skip_string_normalization=not effective.use_double_quotes,
-            known_third_party=None,
+            model_package=self.config.model_package,
             custom_formatters=effective.custom_formatters,
             custom_formatters_kwargs=effective.custom_formatters_kwargs,
             encoding=effective.encoding,
@@ -856,28 +856,28 @@ class _Finisher:
             builtin_format_line_length=effective.builtin_format_line_length,
             use_type_checking_imports=False,
             defer_formatting=True,
-            formatter_cwd=self.cwd,
+            formatter_cwd=models.formatter_cwd,
         )
-        custom_header = _read_custom_file_header(effective.custom_file_header, effective)
-        header = _format_file_header(*_build_file_header_parts(custom_header, effective), self.filename)
-        hoisted = custom_header is not None and any(
-            line.strip() and not line.lstrip().startswith("#") for line in custom_header.splitlines()
-        )
+        custom_header = models.custom_header
+        header = _format_file_header(*_build_file_header_parts(custom_header, effective), models.filename)
         formatted = {file.path for file in files if _is_python(file.path) and not file.verbatim}
         texts: dict[PurePosixPath, str] = {}
         for file in files:
             body = formatter.format_code(file.text) if file.path in formatted else file.text
             texts[file.path] = (
-                _build_module_content(body, header, has_custom_file_header=hoisted)
+                _build_module_content(body, header, has_custom_file_header=bool(custom_header))
                 if file.header and _is_python(file.path)
                 else body
             )
         self.defer(formatter, texts, formatted)
         texts = {path: _normalized(text) for path, text in texts.items()}
         self.check_sources(((file.path, texts[file.path]) for file in files if not file.verbatim), "format")
-        return tuple(PlannedFile(path=path, content=text.encode(effective.encoding)) for path, text in texts.items())
+        return tuple(
+            PlannedFile(path=path, content=text.encode(effective.encoding if _is_python(path) else "utf-8"))
+            for path, text in texts.items()
+        )
 
-    def defer(self, formatter: CodeFormatter, texts: dict[PurePosixPath, str], paths: set[PurePosixPath]) -> None:
+    def defer(self, formatter: TargetCodeFormatter, texts: dict[PurePosixPath, str], paths: set[PurePosixPath]) -> None:
         """Run the Ruff formatters once over the formatted files, staged beside the target like a model directory."""
         from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
 

@@ -324,6 +324,39 @@ def test_fastapi_cli_models_as_given(
 
 
 @pytest.mark.parametrize(
+    "formatters", [[], ["--formatters", "ruff-check", "ruff-format"]], ids=["default", "ruff-isort-rules"]
+)
+def test_fastapi_cli_check_after_generate(
+    formatters: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Find nothing to change in a copy of a fresh generation, though its models were still staged when formatted.
+
+    The copy also gives isort, which caches where it places a module per configuration, a configuration of its own.
+    """
+    generated, copy = tmp_path / "generated", tmp_path / "copy"
+    generated.mkdir()
+    monkeypatch.chdir(generated)
+    for source, destination in _inputs(generated):
+        shutil.copy2(source, destination)
+    (generated / "pyproject.toml").write_text('[tool.ruff.lint]\nselect = ["I"]\n', encoding="utf-8")
+    arguments = [
+        *("--input", "pets.yaml", "--input-file-type", "openapi", "--output", "models.py"),
+        *PYTHON,
+        *SCOPES,
+        *BACKEND,
+        "--disable-timestamp",
+        *formatters,
+        *SERVER,
+    ]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", FutureWarning)
+        run_main_with_args(arguments, use_builtin_default_formatter=False)
+        shutil.copytree(generated, copy)
+        monkeypatch.chdir(copy)
+        run_main_with_args([*arguments, "--check"], use_builtin_default_formatter=False)
+
+
+@pytest.mark.parametrize(
     ("case", "options"),
     [
         (
@@ -334,7 +367,7 @@ def test_fastapi_cli_models_as_given(
             ],
         ),
         ("encoding", ["--encoding", "latin-1", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"]),
-        ("formatters", ["--formatters", "ruff-format"]),
+        ("formatters", ["--formatters", "ruff-format", "--enable-command-header"]),
     ],
 )
 def test_fastapi_cli_output_options(

@@ -109,7 +109,7 @@
     "package_snapshots": []
   },
   "encoding": {
-    "input": "server-parameters.yaml",
+    "input": "server-parameters-latin1.yaml",
     "model": {
       "encoding": "latin-1"
     },
