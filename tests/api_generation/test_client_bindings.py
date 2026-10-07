@@ -84,8 +84,6 @@ def test_capture_preserves_ordinary_model_bytes(
                 output=captured / "server",
                 package="server",
                 model_package="models",
-                formatter_settings=tmp_path,
-                formatters=(),
             ),
         )
         actual = {

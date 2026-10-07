@@ -1,7 +1,7 @@
 {
   "backend": "typing.TypedDict",
   "package": "codec_aliases_typeddict",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "cases": [
     {"name": "choice-server-decode", "use": "/paths/~1choices/post request_body", "op": "decode",
      "value": {"color_or_count": "red", "word_or_list": "w", "maybe_or_flag": null}},

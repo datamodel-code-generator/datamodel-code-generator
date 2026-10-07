@@ -1,0 +1,69 @@
+openapi: 3.1.0
+info:
+  title: Regeneration
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            $ref: '#/components/schemas/PageSize'
+      responses:
+        '200':
+          description: The pets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      tags: [pets]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PetId'
+      responses:
+        '200':
+          description: The pet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+  /archive/{petId}:
+    post:
+      operationId: archivePet
+      tags: [archive]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PetId'
+      responses:
+        '204':
+          description: Archived
+components:
+  schemas:
+    PageSize:
+      type: integer
+    PetId:
+      type: integer
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string

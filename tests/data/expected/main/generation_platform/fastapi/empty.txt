@@ -1,6 +1,5 @@
 # empty
 render pydantic_v2.BaseModel
-  write models.py
   write server/__init__.py
   write server/application.py
   write server/routers/__init__.py
@@ -22,10 +21,6 @@ render pydantic_v2.BaseModel
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
   write server/.dcg-target-manifest.json
-  S_OPERATION_EXCLUDED selection /paths/~1pets/get: GET /pets is excluded by exclude_operations: No operations yet.
-  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}/delete: DELETE /pets/{petId} is excluded by exclude_operations: No operations yet.
-  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}~1moves/post: POST /pets/{petId}/moves is excluded by exclude_operations: No operations yet.
-  S_OPERATION_EXCLUDED selection /paths/~1health/get: GET /health is excluded by exclude_operations: No operations yet.
   file server/README.md
     | # Services
     |

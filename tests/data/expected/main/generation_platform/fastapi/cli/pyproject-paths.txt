@@ -1,0 +1,16 @@
+# in project
+# server/services.py
+def list_all
+async def create_pet
+def list_my_pets
+def get_pet
+def delete_pet
+def get_inventory
+# in project/work
+# service/services.py
+def find_pets
+async def create_pet
+def list_my_pets
+def get_pet
+def delete_pet
+def get_inventory

@@ -198,6 +198,7 @@ CATEGORY_EMOJIS = {
     OptionCategory.TEMPLATE: "🎨",
     OptionCategory.OPENAPI: "📘",
     OptionCategory.GENERAL: "⚙️",
+    OptionCategory.TARGET: "🚀",
 }
 CATEGORY_INTROS = {
     OptionCategory.OPENAPI: (
@@ -216,6 +217,7 @@ OPTION_CATEGORY_ORDER = (
     OptionCategory.OPENAPI,
     OptionCategory.GRAPHQL,
     OptionCategory.GENERAL,
+    OptionCategory.TARGET,
 )
 
 TOPIC_DESCRIPTIONS = {
@@ -372,9 +374,6 @@ MANUAL_OPTION_DESCRIPTIONS = {
     "--overwrite-skill": "Replace an existing Agent Skill installation",
     "--list-deprecations": "List registered deprecations and scheduled breaking changes",
     "--list-experimental": "List registered experimental features",
-    "--generate-server": "Generate a FastAPI server package with the models (experimental)",
-    "--target-config": "Read the generation target's settings from a TOML file",
-    "--target-output": "Override the generation target's output directory",
     "--diagnostics-json": "Write the generation target's diagnostics as JSON",
     "--dependency-format": "Print the generation target's dependencies for uv or a requirements file",
 }
@@ -1345,6 +1344,7 @@ def generate_index_page(
         OptionCategory.TEMPLATE: "Output formatting and custom rendering",
         OptionCategory.OPENAPI: "OpenAPI-specific features",
         OptionCategory.GENERAL: "Utilities and meta options",
+        OptionCategory.TARGET: "Server generation with the models (experimental)",
     }
 
     for category in OptionCategory:

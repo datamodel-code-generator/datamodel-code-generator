@@ -1,0 +1,1 @@
+datamodel-codegen --aliases '{"first name":"first_name","id":["id_","identifier"]}' --dataclass-arguments '{"frozen":true,"kw_only":false}' --external-ref-mapping '../common/a b.yaml=pkg.models' '$HOME/other.yaml=pkg.other' --extra-template-data '{"Person":{"comment":"it'"'"'s ü $HOME"}}' --input schema.yaml

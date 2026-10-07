@@ -3,14 +3,12 @@
   "oas31": {"instances": "oas31-instances.json"},
   "oas32": {
     "refusal": {},
-    "config": {
-      "selection": {"exclude_operations": ["/paths/~1deep/get"], "reason": "Its expanded query parameter names collide."}
-    }
+    "config": {"model": {"openapi_include_paths": ["/search", "/spread", "/raw"]}}
   },
   "parameters": {},
   "directions-accepted": {"instances": "directions-accepted-instances.json"},
   "dialects": {},
   "dialects32": {},
-  "legacy": {"model": {"openapi_scopes": ["schemas", "paths"]}},
+  "legacy": {"model": {"openapi_scopes": ["schemas", "paths", "api"]}},
   "querystring-version": {"model": {"schema_version": "3.2"}}
 }

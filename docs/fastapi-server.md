@@ -2,8 +2,8 @@
 
 !!! warning "Experimental"
 
-    FastAPI server generation is experimental. Its options, target configuration file, generated package,
-    template context, and served OpenAPI document may change. See [Experimental Features](experimental.md).
+    FastAPI server generation is experimental. Its options, generated package, template values, and served
+    OpenAPI document may change. See [Experimental Features](experimental.md).
 
 `--generate-server fastapi` generates the models of one OpenAPI document with the usual model options and, in
 the same run, a FastAPI server package for its operations: routers, a service Protocol for each router group,
@@ -19,28 +19,38 @@ default target, 3.10, is refused with `E_CONFIG_VALUE`, and running on Python 3.
 
 ## Quick start
 
-Write a target configuration file:
+Set the server options in `[tool.datamodel-codegen]` of `pyproject.toml`, next to the model options:
 
 ```toml
-# fastapi.toml
-schema_version = 1
-package = "server"
-model_package = "models"
-output = "server"
+[tool.datamodel-codegen]
+input = "openapi.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+preset = "standard-py312-20260909"
+generate-server = "fastapi"
+server-output = "server"
+server-package = "server"
+server-model-package = "models"
 ```
 
-Generate the models and the server:
+Then run `datamodel-codegen` without arguments to generate the models and the server, or pass the same settings
+as options:
 
 <!-- BEGIN AUTO-GENERATED FASTAPI QUICK START -->
 ```bash
 datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
+  --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
   --preset standard-py312-20260909 \
   --output models.py \
   --generate-server fastapi \
-  --target-config fastapi.toml
+  --server-output server \
+  --server-package server \
+  --server-model-package models
 ```
 
 The preset supplies the model options, as in the model [quick start](getting-started.md).
@@ -96,11 +106,24 @@ object with the right methods works, and type checkers check it where you pass i
   files is `E_INPUT_ROOT`.
 - `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
   `E_FASTAPI_BACKEND_UNSUPPORTED`. Custom templates, base classes, and types do not add backends.
-- The server adds `api` to `--openapi-scopes`, keeping the scopes you give, so that the models cover the
-  parameters, bodies, and responses of the operations.
+- `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
+  operations: `--openapi-scopes schemas api`. Without it, generation stops with
+  `Error: --generate-server requires --openapi-scopes to include api` and exit code 2, and the Python API raises
+  `datamodel_code_generator.Error` with the same message.
+- The model options apply as they do without `--generate-server`, so the same options write the same model files
+  (only the command `--enable-command-header` records differs), and a model option the model generation refuses,
+  such as `--collapse-root-models-name-strategy` without `--collapse-root-models`, is refused before anything is
+  written.
+- The server files are headed, formatted, and encoded like the model files, by the same model options:
+  `--formatters` (including its default and warning), `--custom-formatters` and `--custom-formatters-kwargs`,
+  `--custom-file-header`, `--custom-file-header-path` and `--custom-file-header-mode`, `--disable-timestamp`,
+  `--enable-version-header`, `--enable-command-header`, `--use-double-quotes`, `--builtin-format-line-length`,
+  `--encoding` (for the Python files; the other files are UTF-8), and the formatter settings found from `--output`.
+  The target settings have no output options of their own. `--use-type-checking-imports` does not apply to the
+  server files, because FastAPI reads their annotations at run time.
 - Custom templates and custom formatters must keep the class and field names of the models: the server binds each
   operation to the names in the generated model graph and does not read the rendered model source.
-- `--output` names the model file or package, and `model_package` is its import path.
+- `--output` names the model file or package, and `--server-model-package` is its import path.
 - The generated package needs FastAPI 0.141 and the other requirements it lists.
 
 ## Python API
@@ -134,53 +157,67 @@ for record in report.written_files:
 Both results list the package's runtime requirement specifiers in `dependencies`, which the command line prints
 as a `uv add` command.
 Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, whose `diagnostics` are
-ordered `Diagnostic` records; model generation errors keep their own types. The records, errors, operation
-selection, and codec registrations are also available from `datamodel_code_generator.api_types`, and the
-context records hooks read from `datamodel_code_generator.fastapi.templates`.
+ordered `Diagnostic` records; model generation errors keep their own types. The records, errors, and codec
+registrations are also available from `datamodel_code_generator.api_types`.
 
-## Target configuration
+## Server options
 
-The target configuration file holds `schema_version = 1` and the target's own settings. Model options stay on
-the command line or in `pyproject.toml`. Relative paths are resolved against the file's directory, and
-`--target-output` replaces `output`.
+Every server setting is a command-line option and a `[tool.datamodel-codegen]` key of the same name, like the
+model options, so profiles, `--ignore-pyproject`, `--generate-pyproject-config`, and `--generate-cli-command`
+work for them as well. See [Target Generation Options](cli-reference/target-generation-options.md) for examples.
 
-| Setting | Default | Meaning |
+| Option | Default | Meaning |
 | --- | --- | --- |
-| `output` | required | Directory of the generated package, or of the distribution in standalone mode |
-| `package` | required | Import path of the generated package |
-| `model_package` | required | Import path of the models `--output` generates |
-| `model_mode` | `"generate"` | `"verify"` compares the models with existing files instead of writing them |
-| `selection` | every operation | Table of `include_operations`, `include_tags`, `exclude_operations`, `exclude_tags`, and a required `reason` |
-| `layout` | `"routers"` | One router module per tag, or `"single"` for one `routes.py` |
-| `handler_mode` | `"sync"` | `"async"` makes service methods coroutine functions; `[[handler_modes]]` sets one operation |
-| `include_request` | `false` | Pass the Starlette `Request` to every service method |
-| `body_mode` | `"typed"` | `"request"` passes the raw `Request` instead of a validated body; `[[body_modes]]` sets one operation |
-| `primary_responses` | inferred | `[[primary_responses]]` choose the response a bare return value takes |
-| `operation_names` | inferred | `[[operation_names]]` rename service methods |
-| `router_names` | inferred | Table of group keys to group names: router modules, service arguments, and `<Name>Service` Protocols |
-| `parameter_names` | inferred | `[[parameter_names]]` rename method arguments |
-| `hooks` | none | `[[hooks]]` tables with `module` or `file`, and `callable` (default `transform`) |
-| `templates` | none | Directory of template overrides and extra files |
-| `package_mode` | `"embedded"` | `"standalone"` writes a distribution with `pyproject.toml` under `output` |
-| `package_version`, `distribution_name`, `model_dependency` | none | Distribution metadata of standalone mode |
-| `formatters`, `formatter_settings`, `custom_formatters`, `custom_formatter_kwargs` | builtin | Formatting of the generated package |
-| `encoding`, `header`, `include_timestamp` | `"utf-8"` | Encoding and header of the generated files |
+| `--generate-server fastapi` | off | Generate the server package with the models |
+| `--server-output` | required | Directory of the generated package |
+| `--server-package` | required | Import path of the generated package |
+| `--server-model-package` | required | Import path of the models `--output` generates |
+| `--server-layout` | `routers` | One router module per tag, or `single` for one `routes.py` |
+| `--server-handler-mode` | `sync` | `async` makes service methods coroutine functions |
+| `--server-handler-modes` | none | The handler mode of single operations, over `--server-handler-mode` |
+| `--server-include-request` | off | Pass the Starlette `Request` to every service method |
+| `--server-body-mode` | `typed` | `request` passes the raw `Request` instead of a validated body |
+| `--server-body-modes` | none | The body mode of single operations, over `--server-body-mode` |
+| `--server-primary-responses` | inferred | The response a bare return value takes: `status_code` and an optional `media_type` |
+| `--server-operation-names` | inferred | Service method names of single operations |
+| `--server-router-names` | inferred | Group keys, such as `tag:pets`, to group names: router modules, service arguments, and `<Name>Service` Protocols |
+| `--server-parameter-names` | inferred | Method argument names of single operations, keyed by location and name such as `query:limit` |
 
-Operations are selected by their key, the JSON pointer of the path item method, such as `/paths/~1pets/get`,
-or a table with `pointer` and `document`:
+`--server-handler-modes`, `--server-body-modes`, `--server-primary-responses`, `--server-operation-names`,
+`--server-router-names`, and `--server-parameter-names` take a JSON object, inline or as the path of a JSON file, as
+`--aliases` does; in `pyproject.toml` they are tables. `--generate-cli-command` does not yet print these tables as
+JSON, as for the model options that take JSON objects. A value on the command line takes precedence over the
+selected profile, which takes precedence over the base table, and a command-line table replaces the whole table of
+`pyproject.toml`. An operation's own entry takes precedence over the global setting, wherever each comes from. Paths
+in `pyproject.toml`, including the JSON files and the documents of operation references, are relative to its
+directory, and command-line paths are relative to the working directory.
+
+`--generate-server` requires `--server-output`, `--server-package`, and `--server-model-package`, and a `--server-*`
+option given on the command line requires `--generate-server`; both stop with `Error:` and exit code 2. Server keys
+of `pyproject.toml` are validated like model keys, but have no effect while no server is selected. Batch jobs
+(`--job`, `--all-jobs`) cannot generate a server yet.
+
+The package serves every operation under `paths` of the input; a path item under `components.pathItems` that no
+path references has no URL and is not served. To leave paths out, pass
+[`--openapi-include-paths`](cli-reference/openapi-only-options.md#openapi-include-paths). The models follow the
+`api` scope as in a model-only run: inline schemas of the paths left out are not generated, while the schemas and
+path items under `components` still are. A per-operation setting that names a path left out fails with
+`E_OPERATION_REF`.
+
+Per-operation settings are keyed by operation reference: the JSON pointer of the path item method in the input
+document, such as `/paths/~1pets/get`, or a document and a pointer joined by `#`, such as
+`pets.yaml#/paths/~1pets/get`. The README of the generated package lists the reference of every operation.
 
 ```toml
-[[handler_modes]]
-operation = "/paths/~1pets/get"
-mode = "async"
+[tool.datamodel-codegen.server-handler-modes]
+"/paths/~1pets/get" = "async"
 
-[[body_modes]]
-operation = "/paths/~1upload/post"
-mode = "request"
+[tool.datamodel-codegen.server-body-modes]
+"/paths/~1upload/post" = "request"
+```
 
-[[hooks]]
-module = "project.hooks"
-callable = "rename"
+```bash
+datamodel-codegen --server-handler-modes '{"/paths/~1pets/get": "async"}'
 ```
 
 ## The generated package
@@ -197,10 +234,7 @@ callable = "rename"
 
 The generator owns every file of the package and rewrites them on every generation, as it does the models,
 restoring any you edited or deleted. Keep the service implementations, the `authorize` callback, and the application in your
-own modules; a file the generator never wrote at a path it needs stops the run (`E_OUTPUT_CONFLICT`). In standalone
-mode the package lives under `output/src/<package>` next to `pyproject.toml` and `README.md`, the `pyproject.toml`
-declares the runtime dependencies, and generation prints the `uv add --editable` command that adds the distribution
-to your project instead.
+own modules; a file the generator never wrote at a path it needs stops the run (`E_OUTPUT_CONFLICT`).
 
 ## Regenerating and checking
 
@@ -220,16 +254,16 @@ lacks a new method; your own modules are never touched. `--check` renders everyt
 with 0 when nothing would change, 1 when a file would change, such as a generated file you edited or deleted, and 2
 for an error; `render_fastapi` returns the same artifacts, each with its action.
 
-Server generation always writes the models without the generation timestamp, as `--disable-timestamp` does, so a
+The models and the server files keep the generation timestamp unless `--disable-timestamp` or a preset that sets it
+leaves it out, as for model generation; one run heads every file with the same timestamp. Without the timestamp, a
 run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0, also from another
-directory when the paths name the same input and target configuration files.
-Only `include_timestamp = true` puts a time into the server files, and then every run changes them. The remote
+directory when the paths name the same input and outputs. The remote
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
 uses it, or the default `datamodel-codegen.lock` exists.
 
-`model_mode = "verify"` lets several targets share models generated once: each target compares the models with
-the existing files instead of writing them, and reports `E_MODEL_MISMATCH` when they differ. Generate those
-models with `--disable-timestamp` too.
+Several targets can share one models module: with the same input, whose file name the model header records, the
+same model options, including the same `--openapi-include-paths`, and `--disable-timestamp`, each run writes the same
+bytes, and `--check` reports a module that differs.
 
 ## Models and adapters
 
@@ -282,40 +316,50 @@ adapters read, with schema references resolved in place (a schema that refers to
 reference as `{}`). Path placeholders that are not Python identifiers, or that repeat, appear under the route's
 own placeholder names.
 
-## Templates and hooks
+## Templates
 
-A `templates` directory overrides builtin roles by file name: `application.jinja2`, `router.jinja2`,
-`services.jinja2`, and `readme.jinja2`. Each role
-receives the values its builtin template uses and the frozen `context`. A `fastapi-templates.toml` file in the
-directory declares extra files, rendered on every generation once for the project, each router, or each
-operation:
+The server templates come from [`--custom-template-dir`](cli-reference/template-customization.md#custom-template-dir),
+as model templates do: the files of its `fastapi` directory replace the builtin roles of the same name,
+`application.jinja2`, `router.jinja2`, `services.jinja2`, and `readme.jinja2`. A role the directory does not hold,
+or a custom template directory without a `fastapi` directory, keeps its builtin template. The builtin templates are
+in the `_fastapi/templates` directory of the installed package; copy one to start from it. An override may include
+or import the other builtin templates.
 
-```toml
-schema_version = 1
-
-[[files]]
-template = "operation.md.jinja2"
-path = "docs/{operation}.md"
-scope = "operation"
+```text
+templates/
+├── fastapi/
+│   └── services.jinja2
+└── pydantic_v2/
+    └── BaseModel.jinja2
 ```
 
-A hook is a function that receives the `FastAPIContext` and returns a `FastAPIContextPatch`, which can rename
-methods and router groups, reorder or remove operations, change method modes, and add extras and imports that
-templates read:
+Each role receives the values its builtin template uses and, as custom model templates do, the `#all#` entry of
+[`--extra-template-data`](cli-reference/template-customization.md#extra-template-data); the role's own values take
+precedence over the extra data:
 
-```python
-from datamodel_code_generator.fastapi.templates import FastAPIContext, FastAPIContextPatch
-
-
-def transform(context: FastAPIContext) -> FastAPIContextPatch:
-    return FastAPIContextPatch(
-        handler_modes={operation.key: "async" for operation in context.operations},
-    )
+```json
+{"#all#": {"team": "the platform team"}}
 ```
 
-An invalid patch is `E_HOOK_CONTRACT`, a patch that makes the plan conflict is `E_HOOK_CONFLICT`, and an
-exception the hook raises is reported as `E_HOOK_FAILURE` by the command line and propagates from the Python
-API.
+```bash
+datamodel-codegen \
+  --input openapi.yaml \
+  --input-file-type openapi \
+  --output-model-type pydantic_v2.BaseModel \
+  --preset standard-py312-20260909 \
+  --openapi-scopes schemas api \
+  --output models.py \
+  --custom-template-dir templates \
+  --extra-template-data extra.json \
+  --generate-server fastapi \
+  --server-output server \
+  --server-package server \
+  --server-model-package models
+```
+
+A template that does not parse or render stops the run with `F_TEMPLATE_INVALID`, which names the file in the custom
+template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same
+directory, so the model templates must keep the class and field names, as the requirements above describe.
 
 ## Diagnostics
 
@@ -323,6 +367,6 @@ The command line prints each diagnostic to stderr as `CODE severity stage locati
 [`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes them as JSON. Errors
 stop the run before anything is written: an unsupported Python (`E_PYTHON_UNSUPPORTED`), configuration
 (`E_CONFIG_*`), input (`E_INPUT_ROOT`), model
-(`E_MODEL_CONFIG`, `E_MODEL_PARSE`), binding and planning (`BND_*`, `F_*`), hooks (`E_HOOK_*`), and ownership
+(`E_MODEL_CONFIG`, `E_MODEL_PARSE`), binding, planning, and templates (`BND_*`, `F_*`), and ownership
 (`E_OUTPUT_*`, `E_STATE_*`). Warnings, such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the
-served document cannot carry, and informational records, such as `S_OPERATION_EXCLUDED`, do not.
+served document cannot carry, do not.

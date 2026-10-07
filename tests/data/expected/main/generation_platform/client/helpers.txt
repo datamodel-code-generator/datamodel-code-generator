@@ -52,4 +52,3 @@ render pydantic_v2.BaseModel
   write client/py.typed
   write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
-  S_OPERATION_EXCLUDED selection /paths/~1admin~1audit/get: GET /admin/audit is excluded by exclude_tags 'admin': Administration stays internal

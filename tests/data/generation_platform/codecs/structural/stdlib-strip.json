@@ -1,7 +1,7 @@
 {
   "backend": "dataclasses.dataclass",
   "package": "codec_stdlib_strip",
-  "scopes": ["schemas", "paths"],
+  "scopes": ["schemas", "paths", "api"],
   "options": {"use_unique_items_as_set": true, "field_extra_keys": ["init", "kw_only"], "strip_default_none": true},
   "cases": [
     {"name": "record-client-decode-gap", "use": "/paths/~1records/put response_body 200", "surface": "client", "op": "decode",
