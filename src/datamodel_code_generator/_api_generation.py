@@ -166,7 +166,7 @@ class _Models:
     source: RootInput
     cwd: Path
     filename: str
-    settings_path: Path | None
+    settings_path: Path
 
 
 def prepare_target(
@@ -368,12 +368,8 @@ def _generate_models(
     lock_state = None if lock is None else observe_file(lock.path)
     output = prepared.output
     assert output is not None
-    settings_path = (
-        prepared.settings_path
-        if use_output_cwd
-        else _settings_path_from(
-            _output_context_path(_absolute_generation_path(output, cwd), cwd), prepared.settings_path
-        )
+    settings_path = _settings_path_from(
+        _output_context_path(_absolute_generation_path(output, cwd), cwd), prepared.settings_path
     )
     with ExitStack() as stack:
         staged_output = _staging(stack, output, cwd) / (output.name or "output")
