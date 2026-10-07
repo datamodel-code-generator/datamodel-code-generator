@@ -186,7 +186,7 @@ def _render(
     model = case.get("model", {})
     if builtin_sources:
         shutil.copytree(ClientTemplates.BUILTIN, root / "builtin-sources" / "client")
-        model = {**model, "custom_template_dir": root / "builtin-sources", "settings_path": root}
+        model = {**model, "custom_template_dir": root / "builtin-sources"}
     try:
         with _working_directory(case, root):
             if (toml := case.get("toml")) is not None:
