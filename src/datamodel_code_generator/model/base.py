@@ -543,7 +543,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     PREPARE_PYTHON_PATTERNS: ClassVar[
         Callable[[DataModelFieldBase, str, dict[str, PythonRuntimeExpression]], None] | None
     ] = None
-    COMPILE_ALIAS_PYTHON_PATTERNS: ClassVar[
+    PREPARE_TYPE_ALIAS_FIELD: ClassVar[
         Callable[
             [DataModelFieldBase, dict[str, PythonRuntimeExpression], Callable[[DataModelFieldBase, DataType], None]],
             bool,

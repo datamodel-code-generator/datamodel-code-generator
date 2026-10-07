@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import Field, confloat, conint, constr
 from pydantic.dataclasses import dataclass
@@ -70,7 +70,7 @@ class Package:
     sku: constr(min_length=1)
 
 
-TrackingCode = TypeAliasType("TrackingCode", constr(min_length=1))
+TrackingCode = TypeAliasType("TrackingCode", Annotated[str, Field(min_length=1)])
 
 
 @dataclass(kw_only=True)

@@ -6331,12 +6331,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 ctx.imports.append(import_ for import_ in prepared_imports if import_ not in model_imports[model])
                 model_imports[model] = prepared_imports
 
-    def __compile_type_alias_python_patterns(self, models: list[DataModel], unused_models: list[DataModel]) -> None:
-        """Compile Python-only alias patterns once every module has collapsed its roots.
+    def __prepare_type_alias_fields(self, models: list[DataModel], unused_models: list[DataModel]) -> None:
+        """Prepare alias bodies once every module has collapsed its roots.
 
-        A type alias has no model config to select Python's regex engine, so its patterns carry it.
+        A type alias has no model config to select Python's regex engine, so its patterns carry it,
+        and its constraints use ``Annotated`` because type checkers reject ``con*`` calls in aliases.
         """
-        if (compile_patterns := self.data_model_field_type.COMPILE_ALIAS_PYTHON_PATTERNS) is None:
+        if (prepare_field := self.data_model_field_type.PREPARE_TYPE_ALIAS_FIELD) is None:
             return
         prepared_patterns: dict[str, PythonRuntimeExpression] = {}
         unused_model_ids = {id(model) for model in unused_models}
@@ -6346,7 +6347,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 isinstance(model, TypeAliasBase)
                 and id(model) not in unused_model_ids
                 and model.fields
-                and compile_patterns(field := model.fields[0], prepared_patterns, replace_field_type)
+                and prepare_field(field := model.fields[0], prepared_patterns, replace_field_type)
             ):
                 field.invalidate_semantic_caches()
                 self._register_runtime_expression()
@@ -6361,7 +6362,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Finalize module processing: apply generic base class and remove unused imports."""
         self.__apply_generic_base_class(contexts)
         all_models = [model for ctx in contexts for model in ctx.models]
-        self.__compile_type_alias_python_patterns(all_models, unused_models)
+        self.__prepare_type_alias_fields(all_models, unused_models)
         self.__mark_set_item_models_hashable(all_models)
         self._finalize_structured_imports(contexts)
         if self.use_default_factory_for_optional_nested_models:

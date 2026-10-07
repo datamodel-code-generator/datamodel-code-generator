@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
-from pydantic import conint, constr
+from typing import Annotated
+
+from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -14,7 +16,9 @@ class Pet:
     name: str
 
 
-FieldPetsPetIdGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdGetPathPetIdParameter", conint(ge=1))
+FieldPetsPetIdGetPathPetIdParameter = TypeAliasType(
+    "FieldPetsPetIdGetPathPetIdParameter", Annotated[int, Field(ge=1)]
+)
 
 
 FieldPetsPetIdGetQueryLimitParameter = TypeAliasType("FieldPetsPetIdGetQueryLimitParameter", int)
@@ -26,7 +30,10 @@ FieldPetsPetIdGetHeaderXTraceParameter = TypeAliasType("FieldPetsPetIdGetHeaderX
 FieldPetsPetIdGetQueryAfterParameter = TypeAliasType("FieldPetsPetIdGetQueryAfterParameter", str | None)
 
 
-FieldPetsPetIdGetCookieSessionParameter = TypeAliasType("FieldPetsPetIdGetCookieSessionParameter", constr(pattern=r'^[a-z]+$'))
+FieldPetsPetIdGetCookieSessionParameter = TypeAliasType(
+    "FieldPetsPetIdGetCookieSessionParameter",
+    Annotated[str, Field(pattern=r'^[a-z]+$')],
+)
 
 
 FieldPetsPetIdGetResponse200XRateHeader = TypeAliasType("FieldPetsPetIdGetResponse200XRateHeader", int)

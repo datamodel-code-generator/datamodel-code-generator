@@ -1,0 +1,1519 @@
+{
+  "Pattern": {
+    "schema": {
+      "pattern": "^[a-z]+$",
+      "type": "string"
+    },
+    "values": [
+      {
+        "input": "abc",
+        "python": {
+          "value": "'abc'",
+          "python": "abc",
+          "json": "\"abc\""
+        },
+        "json": {
+          "value": "'abc'",
+          "python": "abc",
+          "json": "\"abc\""
+        }
+      },
+      {
+        "input": "ABC",
+        "python": {
+          "errors": [
+            [
+              "string_pattern_mismatch",
+              [],
+              "String should match pattern '^[a-z]+$'"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_pattern_mismatch",
+              [],
+              "String should match pattern '^[a-z]+$'"
+            ]
+          ]
+        }
+      },
+      {
+        "input": "",
+        "python": {
+          "errors": [
+            [
+              "string_pattern_mismatch",
+              [],
+              "String should match pattern '^[a-z]+$'"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_pattern_mismatch",
+              [],
+              "String should match pattern '^[a-z]+$'"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 1,
+        "python": {
+          "errors": [
+            [
+              "string_type",
+              [],
+              "Input should be a valid string"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_type",
+              [],
+              "Input should be a valid string"
+            ]
+          ]
+        }
+      },
+      {
+        "input": null,
+        "python": {
+          "errors": [
+            [
+              "string_type",
+              [],
+              "Input should be a valid string"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_type",
+              [],
+              "Input should be a valid string"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "Length": {
+    "schema": {
+      "maxLength": 4,
+      "minLength": 2,
+      "type": "string"
+    },
+    "values": [
+      {
+        "input": "a",
+        "python": {
+          "errors": [
+            [
+              "string_too_short",
+              [],
+              "String should have at least 2 characters"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_too_short",
+              [],
+              "String should have at least 2 characters"
+            ]
+          ]
+        }
+      },
+      {
+        "input": "ab",
+        "python": {
+          "value": "'ab'",
+          "python": "ab",
+          "json": "\"ab\""
+        },
+        "json": {
+          "value": "'ab'",
+          "python": "ab",
+          "json": "\"ab\""
+        }
+      },
+      {
+        "input": "abcd",
+        "python": {
+          "value": "'abcd'",
+          "python": "abcd",
+          "json": "\"abcd\""
+        },
+        "json": {
+          "value": "'abcd'",
+          "python": "abcd",
+          "json": "\"abcd\""
+        }
+      },
+      {
+        "input": "abcde",
+        "python": {
+          "errors": [
+            [
+              "string_too_long",
+              [],
+              "String should have at most 4 characters"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_too_long",
+              [],
+              "String should have at most 4 characters"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 12,
+        "python": {
+          "errors": [
+            [
+              "string_type",
+              [],
+              "Input should be a valid string"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_type",
+              [],
+              "Input should be a valid string"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "Hostname": {
+    "schema": {
+      "pattern": "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]{0,61}[A-Za-z0-9])$",
+      "type": "string"
+    },
+    "values": [
+      {
+        "input": "example.com",
+        "python": {
+          "value": "'example.com'",
+          "python": "example.com",
+          "json": "\"example.com\""
+        },
+        "json": {
+          "value": "'example.com'",
+          "python": "example.com",
+          "json": "\"example.com\""
+        }
+      },
+      {
+        "input": "-bad-",
+        "python": {
+          "errors": [
+            [
+              "string_pattern_mismatch",
+              [],
+              "String should match pattern '^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]{0,61}[A-Za-z0-9])$'"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_pattern_mismatch",
+              [],
+              "String should match pattern '^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]{0,61}[A-Za-z0-9])$'"
+            ]
+          ]
+        }
+      },
+      {
+        "input": "a..b",
+        "python": {
+          "errors": [
+            [
+              "string_pattern_mismatch",
+              [],
+              "String should match pattern '^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]{0,61}[A-Za-z0-9])$'"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_pattern_mismatch",
+              [],
+              "String should match pattern '^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]{0,61}[A-Za-z0-9])$'"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "IntRange": {
+    "schema": {
+      "maximum": 10,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "values": [
+      {
+        "input": 0,
+        "python": {
+          "errors": [
+            [
+              "greater_than_equal",
+              [],
+              "Input should be greater than or equal to 1"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "greater_than_equal",
+              [],
+              "Input should be greater than or equal to 1"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 1,
+        "python": {
+          "value": "1",
+          "python": 1,
+          "json": "1"
+        },
+        "json": {
+          "value": "1",
+          "python": 1,
+          "json": "1"
+        }
+      },
+      {
+        "input": 10,
+        "python": {
+          "value": "10",
+          "python": 10,
+          "json": "10"
+        },
+        "json": {
+          "value": "10",
+          "python": 10,
+          "json": "10"
+        }
+      },
+      {
+        "input": 11,
+        "python": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 10"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 10"
+            ]
+          ]
+        }
+      },
+      {
+        "input": "5",
+        "python": {
+          "errors": [
+            [
+              "int_type",
+              [],
+              "Input should be a valid integer"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "int_type",
+              [],
+              "Input should be a valid integer"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 5.0,
+        "python": {
+          "errors": [
+            [
+              "int_type",
+              [],
+              "Input should be a valid integer"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "int_type",
+              [],
+              "Input should be a valid integer"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 5.5,
+        "python": {
+          "errors": [
+            [
+              "int_type",
+              [],
+              "Input should be a valid integer"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "int_type",
+              [],
+              "Input should be a valid integer"
+            ]
+          ]
+        }
+      },
+      {
+        "input": true,
+        "python": {
+          "errors": [
+            [
+              "int_type",
+              [],
+              "Input should be a valid integer"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "int_type",
+              [],
+              "Input should be a valid integer"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "IntExclusive": {
+    "schema": {
+      "exclusiveMaximum": 10,
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "values": [
+      {
+        "input": 0,
+        "python": {
+          "errors": [
+            [
+              "greater_than",
+              [],
+              "Input should be greater than 0"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "greater_than",
+              [],
+              "Input should be greater than 0"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 1,
+        "python": {
+          "value": "1",
+          "python": 1,
+          "json": "1"
+        },
+        "json": {
+          "value": "1",
+          "python": 1,
+          "json": "1"
+        }
+      },
+      {
+        "input": 9,
+        "python": {
+          "value": "9",
+          "python": 9,
+          "json": "9"
+        },
+        "json": {
+          "value": "9",
+          "python": 9,
+          "json": "9"
+        }
+      },
+      {
+        "input": 10,
+        "python": {
+          "errors": [
+            [
+              "less_than",
+              [],
+              "Input should be less than 10"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "less_than",
+              [],
+              "Input should be less than 10"
+            ]
+          ]
+        }
+      },
+      {
+        "input": -1,
+        "python": {
+          "errors": [
+            [
+              "greater_than",
+              [],
+              "Input should be greater than 0"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "greater_than",
+              [],
+              "Input should be greater than 0"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "IntMultiple": {
+    "schema": {
+      "multipleOf": 3,
+      "type": "integer"
+    },
+    "values": [
+      {
+        "input": 0,
+        "python": {
+          "value": "0",
+          "python": 0,
+          "json": "0"
+        },
+        "json": {
+          "value": "0",
+          "python": 0,
+          "json": "0"
+        }
+      },
+      {
+        "input": 3,
+        "python": {
+          "value": "3",
+          "python": 3,
+          "json": "3"
+        },
+        "json": {
+          "value": "3",
+          "python": 3,
+          "json": "3"
+        }
+      },
+      {
+        "input": 4,
+        "python": {
+          "errors": [
+            [
+              "multiple_of",
+              [],
+              "Input should be a multiple of 3"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "multiple_of",
+              [],
+              "Input should be a multiple of 3"
+            ]
+          ]
+        }
+      },
+      {
+        "input": -6,
+        "python": {
+          "value": "-6",
+          "python": -6,
+          "json": "-6"
+        },
+        "json": {
+          "value": "-6",
+          "python": -6,
+          "json": "-6"
+        }
+      },
+      {
+        "input": "9",
+        "python": {
+          "errors": [
+            [
+              "int_type",
+              [],
+              "Input should be a valid integer"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "int_type",
+              [],
+              "Input should be a valid integer"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "FloatRange": {
+    "schema": {
+      "maximum": 9.5,
+      "minimum": 0.5,
+      "type": "number"
+    },
+    "values": [
+      {
+        "input": 0.4,
+        "python": {
+          "errors": [
+            [
+              "greater_than_equal",
+              [],
+              "Input should be greater than or equal to 0.5"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "greater_than_equal",
+              [],
+              "Input should be greater than or equal to 0.5"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 0.5,
+        "python": {
+          "value": "0.5",
+          "python": 0.5,
+          "json": "0.5"
+        },
+        "json": {
+          "value": "0.5",
+          "python": 0.5,
+          "json": "0.5"
+        }
+      },
+      {
+        "input": 9.5,
+        "python": {
+          "value": "9.5",
+          "python": 9.5,
+          "json": "9.5"
+        },
+        "json": {
+          "value": "9.5",
+          "python": 9.5,
+          "json": "9.5"
+        }
+      },
+      {
+        "input": 9.6,
+        "python": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 9.5"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 9.5"
+            ]
+          ]
+        }
+      },
+      {
+        "input": "1.5",
+        "python": {
+          "errors": [
+            [
+              "float_type",
+              [],
+              "Input should be a valid number"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "float_type",
+              [],
+              "Input should be a valid number"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 1,
+        "python": {
+          "value": "1.0",
+          "python": 1.0,
+          "json": "1.0"
+        },
+        "json": {
+          "value": "1.0",
+          "python": 1.0,
+          "json": "1.0"
+        }
+      }
+    ]
+  },
+  "FloatExclusive": {
+    "schema": {
+      "exclusiveMaximum": 1.5,
+      "exclusiveMinimum": -1.5,
+      "type": "number"
+    },
+    "values": [
+      {
+        "input": -1.5,
+        "python": {
+          "errors": [
+            [
+              "greater_than",
+              [],
+              "Input should be greater than -1.5"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "greater_than",
+              [],
+              "Input should be greater than -1.5"
+            ]
+          ]
+        }
+      },
+      {
+        "input": -1.4,
+        "python": {
+          "value": "-1.4",
+          "python": -1.4,
+          "json": "-1.4"
+        },
+        "json": {
+          "value": "-1.4",
+          "python": -1.4,
+          "json": "-1.4"
+        }
+      },
+      {
+        "input": 1.4,
+        "python": {
+          "value": "1.4",
+          "python": 1.4,
+          "json": "1.4"
+        },
+        "json": {
+          "value": "1.4",
+          "python": 1.4,
+          "json": "1.4"
+        }
+      },
+      {
+        "input": 1.5,
+        "python": {
+          "errors": [
+            [
+              "less_than",
+              [],
+              "Input should be less than 1.5"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "less_than",
+              [],
+              "Input should be less than 1.5"
+            ]
+          ]
+        }
+      },
+      {
+        "input": "inf",
+        "python": {
+          "errors": [
+            [
+              "float_type",
+              [],
+              "Input should be a valid number"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "float_type",
+              [],
+              "Input should be a valid number"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "FloatMultiple": {
+    "schema": {
+      "multipleOf": 0.5,
+      "type": "number"
+    },
+    "values": [
+      {
+        "input": 0.5,
+        "python": {
+          "value": "0.5",
+          "python": 0.5,
+          "json": "0.5"
+        },
+        "json": {
+          "value": "0.5",
+          "python": 0.5,
+          "json": "0.5"
+        }
+      },
+      {
+        "input": 0.75,
+        "python": {
+          "errors": [
+            [
+              "multiple_of",
+              [],
+              "Input should be a multiple of 0.5"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "multiple_of",
+              [],
+              "Input should be a multiple of 0.5"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 1,
+        "python": {
+          "value": "1.0",
+          "python": 1.0,
+          "json": "1.0"
+        },
+        "json": {
+          "value": "1.0",
+          "python": 1.0,
+          "json": "1.0"
+        }
+      },
+      {
+        "input": "2.5",
+        "python": {
+          "errors": [
+            [
+              "float_type",
+              [],
+              "Input should be a valid number"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "float_type",
+              [],
+              "Input should be a valid number"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "DecimalRange": {
+    "schema": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.1,
+          "multipleOf": 0.1,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        }
+      ]
+    },
+    "values": [
+      {
+        "input": "0.1",
+        "python": {
+          "value": "Decimal('0.1')",
+          "python": "0.1",
+          "json": "\"0.1\""
+        },
+        "json": {
+          "value": "Decimal('0.1')",
+          "python": "0.1",
+          "json": "\"0.1\""
+        }
+      },
+      {
+        "input": "0.15",
+        "python": {
+          "errors": [
+            [
+              "multiple_of",
+              [],
+              "Input should be a multiple of 0.1"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "multiple_of",
+              [],
+              "Input should be a multiple of 0.1"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 0.3,
+        "python": {
+          "value": "Decimal('0.3')",
+          "python": "0.3",
+          "json": "\"0.3\""
+        },
+        "json": {
+          "value": "Decimal('0.3')",
+          "python": "0.3",
+          "json": "\"0.3\""
+        }
+      },
+      {
+        "input": 1,
+        "python": {
+          "value": "Decimal('1')",
+          "python": "1",
+          "json": "\"1\""
+        },
+        "json": {
+          "value": "Decimal('1')",
+          "python": "1",
+          "json": "\"1\""
+        }
+      },
+      {
+        "input": "1.1",
+        "python": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 1"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 1"
+            ]
+          ]
+        }
+      },
+      {
+        "input": "abc",
+        "python": {
+          "errors": [
+            [
+              "decimal_parsing",
+              [],
+              "Input should be a valid decimal"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "decimal_parsing",
+              [],
+              "Input should be a valid decimal"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "Bytes": {
+    "schema": {
+      "format": "binary",
+      "maxLength": 3,
+      "minLength": 1,
+      "type": "string"
+    },
+    "values": [
+      {
+        "input": "",
+        "python": {
+          "errors": [
+            [
+              "bytes_too_short",
+              [],
+              "Data should have at least 1 byte"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "bytes_too_short",
+              [],
+              "Data should have at least 1 byte"
+            ]
+          ]
+        }
+      },
+      {
+        "input": "a",
+        "python": {
+          "value": "b'a'",
+          "python": "a",
+          "json": "\"a\""
+        },
+        "json": {
+          "value": "b'a'",
+          "python": "a",
+          "json": "\"a\""
+        }
+      },
+      {
+        "input": "abc",
+        "python": {
+          "value": "b'abc'",
+          "python": "abc",
+          "json": "\"abc\""
+        },
+        "json": {
+          "value": "b'abc'",
+          "python": "abc",
+          "json": "\"abc\""
+        }
+      },
+      {
+        "input": "abcd",
+        "python": {
+          "errors": [
+            [
+              "bytes_too_long",
+              [],
+              "Data should have at most 3 bytes"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "bytes_too_long",
+              [],
+              "Data should have at most 3 bytes"
+            ]
+          ]
+        }
+      },
+      {
+        "input": 1,
+        "python": {
+          "errors": [
+            [
+              "bytes_type",
+              [],
+              "Input should be a valid bytes"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "bytes_type",
+              [],
+              "Input should be a valid bytes"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "Items": {
+    "schema": {
+      "items": {
+        "minimum": 1,
+        "type": "integer"
+      },
+      "type": "array"
+    },
+    "values": [
+      {
+        "input": [
+          1,
+          2
+        ],
+        "python": {
+          "value": "[1, 2]",
+          "python": [
+            1,
+            2
+          ],
+          "json": "[1,2]"
+        },
+        "json": {
+          "value": "[1, 2]",
+          "python": [
+            1,
+            2
+          ],
+          "json": "[1,2]"
+        }
+      },
+      {
+        "input": [
+          0
+        ],
+        "python": {
+          "errors": [
+            [
+              "greater_than_equal",
+              [
+                0
+              ],
+              "Input should be greater than or equal to 1"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "greater_than_equal",
+              [
+                0
+              ],
+              "Input should be greater than or equal to 1"
+            ]
+          ]
+        }
+      },
+      {
+        "input": [
+          "3"
+        ],
+        "python": {
+          "errors": [
+            [
+              "int_type",
+              [
+                0
+              ],
+              "Input should be a valid integer"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "int_type",
+              [
+                0
+              ],
+              "Input should be a valid integer"
+            ]
+          ]
+        }
+      },
+      {
+        "input": "x",
+        "python": {
+          "errors": [
+            [
+              "list_type",
+              [],
+              "Input should be a valid list"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "list_type",
+              [],
+              "Input should be a valid array"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "Values": {
+    "schema": {
+      "additionalProperties": {
+        "maxLength": 2,
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "values": [
+      {
+        "input": {
+          "a": "xy"
+        },
+        "python": {
+          "value": "{'a': 'xy'}",
+          "python": {
+            "a": "xy"
+          },
+          "json": "{\"a\":\"xy\"}"
+        },
+        "json": {
+          "value": "{'a': 'xy'}",
+          "python": {
+            "a": "xy"
+          },
+          "json": "{\"a\":\"xy\"}"
+        }
+      },
+      {
+        "input": {
+          "a": "xyz"
+        },
+        "python": {
+          "errors": [
+            [
+              "string_too_long",
+              [
+                "a"
+              ],
+              "String should have at most 2 characters"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_too_long",
+              [
+                "a"
+              ],
+              "String should have at most 2 characters"
+            ]
+          ]
+        }
+      },
+      {
+        "input": {
+          "a": 1
+        },
+        "python": {
+          "errors": [
+            [
+              "string_type",
+              [
+                "a"
+              ],
+              "Input should be a valid string"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_type",
+              [
+                "a"
+              ],
+              "Input should be a valid string"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "Keys": {
+    "schema": {
+      "patternProperties": {
+        "^k[a-z]$": {
+          "maximum": 5.0,
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "values": [
+      {
+        "input": {
+          "ka": 5
+        },
+        "python": {
+          "value": "{'ka': 5.0}",
+          "python": {
+            "ka": 5.0
+          },
+          "json": "{\"ka\":5.0}"
+        },
+        "json": {
+          "value": "{'ka': 5.0}",
+          "python": {
+            "ka": 5.0
+          },
+          "json": "{\"ka\":5.0}"
+        }
+      },
+      {
+        "input": {
+          "kab": 1
+        },
+        "python": {
+          "errors": [
+            [
+              "string_pattern_mismatch",
+              [
+                "kab",
+                "[key]"
+              ],
+              "String should match pattern '^k[a-z]$'"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "string_pattern_mismatch",
+              [
+                "kab",
+                "[key]"
+              ],
+              "String should match pattern '^k[a-z]$'"
+            ]
+          ]
+        }
+      },
+      {
+        "input": {
+          "ka": 6
+        },
+        "python": {
+          "errors": [
+            [
+              "less_than_equal",
+              [
+                "ka"
+              ],
+              "Input should be less than or equal to 5"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "less_than_equal",
+              [
+                "ka"
+              ],
+              "Input should be less than or equal to 5"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "Nullable": {
+    "schema": {
+      "anyOf": [
+        {
+          "maximum": 3,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "values": [
+      {
+        "input": null,
+        "python": {
+          "value": "None",
+          "python": null,
+          "json": "null"
+        },
+        "json": {
+          "value": "None",
+          "python": null,
+          "json": "null"
+        }
+      },
+      {
+        "input": 3,
+        "python": {
+          "value": "3",
+          "python": 3,
+          "json": "3"
+        },
+        "json": {
+          "value": "3",
+          "python": 3,
+          "json": "3"
+        }
+      },
+      {
+        "input": 4,
+        "python": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 3"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 3"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "Described": {
+    "schema": {
+      "description": "A digit.",
+      "maximum": 9,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "values": [
+      {
+        "input": 0,
+        "python": {
+          "value": "0",
+          "python": 0,
+          "json": "0"
+        },
+        "json": {
+          "value": "0",
+          "python": 0,
+          "json": "0"
+        }
+      },
+      {
+        "input": 9,
+        "python": {
+          "value": "9",
+          "python": 9,
+          "json": "9"
+        },
+        "json": {
+          "value": "9",
+          "python": 9,
+          "json": "9"
+        }
+      },
+      {
+        "input": 10,
+        "python": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 9"
+            ]
+          ]
+        },
+        "json": {
+          "errors": [
+            [
+              "less_than_equal",
+              [],
+              "Input should be less than or equal to 9"
+            ]
+          ]
+        }
+      }
+    ]
+  }
+}

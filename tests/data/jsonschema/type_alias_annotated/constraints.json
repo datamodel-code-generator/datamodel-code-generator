@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Constraints",
+  "type": "object",
+  "properties": {
+    "intRange": {
+      "$ref": "#/definitions/IntRange"
+    }
+  },
+  "definitions": {
+    "Pattern": {
+      "type": "string",
+      "pattern": "^[a-z]+$"
+    },
+    "Length": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 4
+    },
+    "Hostname": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "IntRange": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "IntExclusive": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "exclusiveMaximum": 10
+    },
+    "IntMultiple": {
+      "type": "integer",
+      "multipleOf": 3
+    },
+    "FloatRange": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 9.5
+    },
+    "FloatExclusive": {
+      "type": "number",
+      "exclusiveMinimum": -1.5,
+      "exclusiveMaximum": 1.5
+    },
+    "FloatMultiple": {
+      "type": "number",
+      "multipleOf": 0.5
+    },
+    "DecimalRange": {
+      "type": "number",
+      "format": "decimal",
+      "minimum": 0.1,
+      "maximum": 1,
+      "multipleOf": 0.1
+    },
+    "Bytes": {
+      "type": "string",
+      "format": "binary",
+      "minLength": 1,
+      "maxLength": 3
+    },
+    "Items": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "Values": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 2
+      }
+    },
+    "Keys": {
+      "type": "object",
+      "patternProperties": {
+        "^k[a-z]$": {
+          "type": "number",
+          "maximum": 5
+        }
+      },
+      "additionalProperties": false
+    },
+    "Nullable": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "maximum": 3
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Described": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9,
+      "description": "A digit."
+    }
+  }
+}

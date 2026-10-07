@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
-from pydantic import constr
+from typing import Annotated
+
+from pydantic import Field
 from typing_extensions import TypeAliasType
 
-Name = TypeAliasType("Name", constr(min_length=1))
+Name = TypeAliasType("Name", Annotated[str, Field(min_length=1)])

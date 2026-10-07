@@ -4,25 +4,26 @@
 from __future__ import annotations
 
 from re import compile
+from typing import Annotated
 
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, Field
 
-type Code = constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)
-
-
-type CodeCopy = constr(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)
+type Code = Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)]
 
 
-type Codes = list[constr(pattern=compile('^(?=x)[a-z]+$'))]
+type CodeCopy = Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'), max_length=8)]
 
 
-type Mapping = dict[str, constr(pattern=compile('^[a-z]+(?<!z)$'))]
+type Codes = list[Annotated[str, Field(pattern=compile('^(?=x)[a-z]+$'))]]
 
 
-type Keys = dict[constr(pattern=compile('^(?=k)[a-z]+$')), int]
+type Mapping = dict[str, Annotated[str, Field(pattern=compile('^[a-z]+(?<!z)$'))]]
 
 
-type Either = constr(pattern=compile('^(?!no)[a-z]+$')) | int
+type Keys = dict[Annotated[str, Field(pattern=compile('^(?=k)[a-z]+$'))], int]
+
+
+type Either = Annotated[str, Field(pattern=compile('^(?!no)[a-z]+$'))] | int
 
 
 class Holder(BaseModel):
